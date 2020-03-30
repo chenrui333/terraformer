@@ -41,6 +41,7 @@ require (
 	github.com/hashicorp/terraform v0.12.18
 	github.com/hashicorp/terraform-svchost v0.0.0-20191119180714-d2e4933b9136 // indirect
 	github.com/hashicorp/yamux v0.0.0-20190923154419-df201c70410d // indirect
+	github.com/heimweh/go-pagerduty v0.0.0-20200314051819-4b75e8d46b79 // indirect
 	github.com/heroku/heroku-go/v5 v5.1.0
 	github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334
 	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af

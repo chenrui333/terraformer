@@ -82,6 +82,7 @@ func providerGenerators() map[string]func() terraform_utils.ProviderGenerator {
 		newHerokuProvider,
 		newLinodeProvider,
 		newOpenStackProvider,
+		newPagerDutyProvider,
 		newVultrProvider,
 		// Infrastructure Software
 		newKubernetesProvider,
