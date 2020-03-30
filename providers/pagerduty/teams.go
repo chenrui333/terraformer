@@ -1,4 +1,4 @@
-// Copyright 2018 The Terraformer Authors.
+// Copyright 2020 The Terraformer Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,12 +15,7 @@
 package pagerduty
 
 import (
-	"context"
-	"log"
-	"strconv"
-
 	"github.com/GoogleCloudPlatform/terraformer/terraform_utils"
-
 	"github.com/heimweh/go-pagerduty/pagerduty"
 )
 
@@ -28,115 +23,50 @@ type TeamsGenerator struct {
 	PagerDutyService
 }
 
-func (g *TeamsGenerator) createTeamsResources(ctx context.Context, teams []*pagerduty.Team, client *pagerduty.Client) []terraform_utils.Resource {
-	resources := []terraform_utils.Resource{}
-
-	for _, team := range teams {
-		resource := terraform_utils.NewSimpleResource(
-			strconv.FormatInt(team.GetID(), 10),
-			team.GetName(),
-			"github_team",
-			"github",
-			[]string{},
-		)
-		resource.SlowQueryRequired = true
-		resources = append(resources, resource)
-		resources = append(resources, g.createTeamMembersResources(ctx, team, client)...)
-		resources = append(resources, g.createTeamRepositoriesResources(ctx, team, client)...)
-	}
-
-	return resources
-}
-
-func (g *TeamsGenerator) createTeamMembersResources(ctx context.Context, team *githubAPI.Team, client *githubAPI.Client) []terraform_utils.Resource {
-	resources := []terraform_utils.Resource{}
-	members, _, err := client.Teams.ListTeamMembers(ctx, team.GetID(), nil)
-	if err != nil {
-		log.Println(err)
-	}
-	for _, member := range members {
-		resources = append(resources, terraform_utils.NewSimpleResource(
-			strconv.FormatInt(team.GetID(), 10)+":"+member.GetLogin(),
-			team.GetName()+"_"+member.GetLogin(),
-			"github_team_membership",
-			"github",
-			[]string{},
-		))
-	}
-	return resources
-}
-
-func (g *TeamsGenerator) createTeamRepositoriesResources(ctx context.Context, team *githubAPI.Team, client *githubAPI.Client) []terraform_utils.Resource {
-	resources := []terraform_utils.Resource{}
-	repos, _, err := client.Teams.ListTeamRepos(ctx, team.GetID(), nil)
-	if err != nil {
-		log.Println(err)
-	}
-	for _, repo := range repos {
-		resources = append(resources, terraform_utils.NewSimpleResource(
-			strconv.FormatInt(team.GetID(), 10)+":"+repo.GetName(),
-			team.GetName()+"_"+repo.GetName(),
-			"github_team_repository",
-			"github",
-			[]string{},
-		))
-	}
-	return resources
-}
-
-// InitResources generates TerraformResources from Github API,
-func (g *TeamsGenerator) InitResources() error {
-	ctx := context.Background()
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: g.Args["token"].(string)},
-	)
-	tc := oauth2.NewClient(ctx, ts)
-
-	client := githubAPI.NewClient(tc)
-
-	opt := &githubAPI.ListOptions{PerPage: 1}
+func (g *TeamsGenerator) createTeamsResources(client *pagerduty.Client) ([]*pagerduty.Team, error) {
+	limit, offset := 100, 0
+	opt := &pagerduty.ListTeamsOptions{Limit: limit, Offset: offset}
+	teamsResponse := &pagerduty.ListTeamsResponse{}
 
 	for {
-		teams, resp, err := client.Teams.ListTeams(ctx, g.Args["organization"].(string), opt)
+		teamsResponse, _, err := client.Teams.List(opt)
+
 		if err != nil {
-			log.Println(err)
-			return nil
+			return nil, err
 		}
 
-		g.Resources = append(g.Resources, g.createTeamsResources(ctx, teams, client)...)
+		for _, team := range teamsResponse.Teams {
+			g.Resources = append(g.Resources, terraform_utils.NewSimpleResource(
+				team.ID,
+				team.ID,
+				"pagerduty_team",
+				"pagerduty",
+				[]string{}))
+		}
 
-		if resp.NextPage == 0 {
+		if !teamsResponse.More {
 			break
 		}
-		opt.Page = resp.NextPage
+
+		opt.Offset = opt.Offset + opt.Limit
 	}
-
-	return nil
-
+	return teamsResponse.Teams, nil
 }
 
-// PostConvertHook for connect between team and members
-func (g *TeamsGenerator) PostConvertHook() error {
-	for _, team := range g.Resources {
-		if team.InstanceInfo.Type != "github_team" {
-			continue
-		}
-		for i, member := range g.Resources {
-			if member.InstanceInfo.Type != "github_team_membership" {
-				continue
-			}
-			if member.InstanceState.Attributes["team_id"] == team.InstanceState.Attributes["id"] {
-				g.Resources[i].Item["team_id"] = "${github_team." + team.ResourceName + ".id}"
-			}
-		}
-		for i, repo := range g.Resources {
-			if repo.InstanceInfo.Type != "github_team_repository" {
-				continue
-			}
-			if repo.InstanceState.Attributes["team_id"] == team.InstanceState.Attributes["id"] {
-				g.Resources[i].Item["team_id"] = "${github_team." + team.ResourceName + ".id}"
-			}
-		}
+// InitResources generates TerraformResources from PagerDuty API,
+func (g *TeamsGenerator) InitResources() error {
+	client, err := pagerduty.NewClient(&pagerduty.Config{Token:g.Args["api_key"].(string)})
+
+	if err != nil {
+		return err
 	}
+
+	teams, err := g.createTeamsResources(client)
+	if err != nil {
+		return err
+	}
+
+	print(teams)
+
 	return nil
 }

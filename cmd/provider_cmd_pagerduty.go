@@ -23,8 +23,8 @@ import (
 func newCmdpagerdutyImporter(options ImportOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pagerduty",
-		Short: "Import current state to Terraform configuration from pagerduty",
-		Long:  "Import current state to Terraform configuration from pagerduty",
+		Short: "Import current state to Terraform configuration from PagerDuty",
+		Long:  "Import current state to Terraform configuration from PagerDuty",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := newPagerDutyProvider()
 			err := Import(provider, options, []string{})
@@ -36,7 +36,7 @@ func newCmdpagerdutyImporter(options ImportOptions) *cobra.Command {
 	}
 
 	cmd.AddCommand(listCmd(newPagerDutyProvider()))
-	baseProviderFlags(cmd.PersistentFlags(), &options, "service_v1", "pagerduty_service_v1=id1:id2:id3")
+	baseProviderFlags(cmd.PersistentFlags(), &options, "teams", "pagerduty_team=id1:id2:id3")
 	return cmd
 }
 

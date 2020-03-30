@@ -49,6 +49,7 @@ func providerImporterSubcommands() []func(options ImportOptions) *cobra.Command 
 		newCmdHerokuImporter,
 		newCmdLinodeImporter,
 		newCmdOpenStackImporter,
+		newCmdpagerdutyImporter,
 		newCmdVultrImporter,
 		// Infrastructure Software
 		newCmdKubernetesImporter,

@@ -57,7 +57,7 @@ func (PagerDutyProvider) GetResourceConnections() map[string]map[string][]string
 
 func (p *PagerDutyProvider) GetSupportedService() map[string]terraform_utils.ServiceGenerator {
 	return map[string]terraform_utils.ServiceGenerator{
-		"service_v1": &ServiceV1Generator{},
+		"teams": &TeamsGenerator{},
 	}
 }
 
