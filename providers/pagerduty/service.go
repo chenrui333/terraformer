@@ -55,7 +55,7 @@ func (g *ServicesGenerator) createServicesResources(client *pagerduty.Client) ([
 
 // InitResources generates TerraformResources from PagerDuty API,
 func (g *ServicesGenerator) InitResources() error {
-	client, err := pagerduty.NewClient(&pagerduty.Config{Token:g.Args["api_key"].(string)})
+	client, err := pagerduty.NewClient(&pagerduty.Config{Token: g.Args["api_key"].(string)})
 
 	if err != nil {
 		return err
