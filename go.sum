@@ -1038,8 +1038,8 @@ github.com/hashicorp/yamux v0.0.0-20211028200310-0bc27b27de87 h1:xixZ2bWeofWV68J
 github.com/hashicorp/yamux v0.0.0-20211028200310-0bc27b27de87/go.mod h1:CtWFDAQgb7dxtzFs4tWbplKIe2jSi3+5vKbgIO0SLnQ=
 github.com/heimweh/go-pagerduty v0.0.0-20210930203304-530eff2acdc6 h1:/D0VtHEOCdotE1vSB9XznceAjIGkUieZ4BF6VKUIqNU=
 github.com/heimweh/go-pagerduty v0.0.0-20210930203304-530eff2acdc6/go.mod h1:JtJGtgN0y9KOCaqFMZFaBCWskpO/KK3Ro9TwjP9ss6w=
-github.com/heroku/heroku-go/v5 v5.4.1 h1:J1nNnR3/571b2iUDHl+y1B3VkhKm6YOXIq9GGzQUv5s=
-github.com/heroku/heroku-go/v5 v5.4.1/go.mod h1:Uo3XhGPwaTpniR4X1e50BDjg4SzdFk2Bd2mgYZVkfHo=
+github.com/heroku/heroku-go/v5 v5.5.0 h1:+pKHpiPskqkkarrPHF7RpeUveXl+mAsKLAEI/ZIY9uA=
+github.com/heroku/heroku-go/v5 v5.5.0/go.mod h1:Uo3XhGPwaTpniR4X1e50BDjg4SzdFk2Bd2mgYZVkfHo=
 github.com/hokaccha/go-prettyjson v0.0.0-20210113012101-fb4e108d2519 h1:nqAlWFEdqI0ClbTDrhDvE/8LeQ4pftrqKUX9w5k0j3s=
 github.com/hokaccha/go-prettyjson v0.0.0-20210113012101-fb4e108d2519/go.mod h1:pFlLw2CfqZiIBOx6BuCeRLCrfxBJipTY0nIOF/VbGcI=
 github.com/honeycombio/terraform-provider-honeycombio v0.10.0 h1:860Lh9qPUr31seT2vwOFEkQZfoweoBZcPRt95NXU5GI=
