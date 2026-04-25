@@ -8,6 +8,12 @@ on:
     branches:
     - main
 
+permissions:
+  contents: read
+
+env:
+  GOWORK: off
+
 jobs:
   test:
     strategy:
@@ -24,5 +30,11 @@ jobs:
         cache-dependency-path: go.sum
     - name: Go Mod Tidy
       run: go mod tidy
+    - name: Check go.mod and go.sum
+      run: git diff --exit-code -- go.mod go.sum
+    - name: Build
+      run: go build -v ./...
     - name: Test
-      run: go build -v && go test ./...
+      run: go test ./... -count=1
+    - name: Vet
+      run: go vet ./...
