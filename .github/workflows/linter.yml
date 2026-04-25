@@ -6,6 +6,11 @@ on:
     - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pull-requests: read
+  checks: write
+
 jobs:
   linter:
     name: golangci-lint
