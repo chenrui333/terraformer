@@ -124,7 +124,7 @@ require (
 	github.com/google/go-github/v35 v35.1.0
 	github.com/gophercloud/gophercloud v1.0.0
 	github.com/grafana/grafana-api-golang-client v0.0.0-20210218192924-9ccd2365d2a6
-	github.com/hashicorp/go-azure-helpers v0.36.0
+	github.com/hashicorp/go-azure-helpers v0.48.0
 	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/go-memdb v1.3.2 // indirect
@@ -356,7 +356,7 @@ require (
 	github.com/DataDog/datadog-api-client-go/v2 v2.11.0
 	github.com/Myra-Security-GmbH/myrasec-go/v2 v2.28.0
 	github.com/bradleyfalzon/ghinstallation/v2 v2.1.0
-	github.com/manicminer/hamilton v0.44.0
+	github.com/manicminer/hamilton v0.50.0
 	github.com/opalsecurity/opal-go v1.0.19
 	gopkg.in/ns1/ns1-go.v2 v2.6.5
 )
