@@ -11,15 +11,18 @@
   "labels": ["dependencies"],
   "minimumReleaseAge": "2 days",
   "platformAutomerge": false,
-  "prConcurrentLimit": 5,
+  "prConcurrentLimit": 8,
   "prHourlyLimit": 2,
   "rebaseWhen": "conflicted",
+  "separateMajorMinor": true,
+  "separateMinorPatch": true,
   "timezone": "America/New_York",
   "packageRules": [
     {
       "description": "Keep GitHub Actions updates together and allow safe automerge.",
       "matchManagers": ["github-actions"],
       "groupName": "GitHub Actions",
+      "groupSlug": "github-actions",
       "automerge": true,
       "automergeType": "pr",
       "matchUpdateTypes": ["minor", "patch", "digest"]
@@ -30,41 +33,149 @@
       "postUpdateOptions": ["gomodTidy"]
     },
     {
-      "description": "Allow Go patch and digest updates to automerge after checks pass.",
+      "description": "Do not auto-bump the Go directive; handle Go version changes manually.",
       "matchManagers": ["gomod"],
-      "matchUpdateTypes": ["patch", "digest"],
-      "automerge": true,
-      "automergeType": "pr"
+      "matchDepNames": ["go"],
+      "matchDepTypes": ["golang"],
+      "enabled": false
     },
     {
-      "description": "Group AWS SDK for Go v2 modules.",
+      "description": "Hold major Go module updates for manual review.",
       "matchManagers": ["gomod"],
-      "matchPackageNames": ["/^github\\.com/aws/aws-sdk-go-v2($|\\/)/"],
-      "groupName": "AWS SDK for Go v2"
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
     },
     {
-      "description": "Group Google Cloud Go modules.",
+      "description": "Terraform and HashiCorp core dependencies.",
       "matchManagers": ["gomod"],
-      "matchPackageNames": ["/^cloud\\.google\\.com\\/go($|\\/)/", "/^google\\.golang\\.org\\//"],
-      "groupName": "Google Cloud Go modules"
+      "matchPackageNames": [
+        "/^github\\.com/hashicorp/(errwrap|go-cleanhttp|go-getter|go-hclog|go-multierror|go-plugin|go-retryablehttp|go-rootcerts|go-safetemp|go-secure-stdlib\\/|go-sockaddr|go-uuid|go-version|hcl($|\\/)|hil|terraform($|\\/)|terraform-plugin-|terraform-svchost|vault\\/api|yamux)/",
+        "/^github\\.com/zclconf\\//"
+      ],
+      "groupName": "terraform core dependencies",
+      "groupSlug": "go-terraform-core",
+      "dependencyDashboardApproval": true
     },
     {
-      "description": "Group Azure Go modules.",
+      "description": "AWS provider dependency family.",
       "matchManagers": ["gomod"],
-      "matchPackageNames": ["/^github\\.com\\/Azure\\//", "/^github\\.com\\/hashicorp\\/go-azure-helpers$/"],
-      "groupName": "Azure Go modules"
+      "matchPackageNames": [
+        "/^github\\.com/aws/aws-sdk-go$/",
+        "/^github\\.com/aws/aws-sdk-go-v2($|\\/)/",
+        "/^github\\.com/aws/smithy-go$/"
+      ],
+      "groupName": "aws provider dependencies",
+      "groupSlug": "go-aws-provider"
     },
     {
-      "description": "Group IBM Cloud Go modules.",
+      "description": "GCP provider dependency family.",
       "matchManagers": ["gomod"],
-      "matchPackageNames": ["/^github\\.com\\/IBM(-Cloud)?\\//"],
-      "groupName": "IBM Cloud Go modules"
+      "matchPackageNames": [
+        "/^cloud\\.google\\.com/go($|\\/)/",
+        "/^github\\.com/GoogleCloudPlatform\\//",
+        "/^github\\.com/googleapis\\//",
+        "/^google\\.golang\\.org/api$/",
+        "/^google\\.golang\\.org/appengine$/",
+        "/^google\\.golang\\.org/genproto/",
+        "/^google\\.golang\\.org/grpc$/",
+        "/^google\\.golang\\.org/protobuf$/"
+      ],
+      "groupName": "gcp provider dependencies",
+      "groupSlug": "go-gcp-provider"
     },
     {
-      "description": "Group Kubernetes Go modules.",
+      "description": "Azure provider dependency family.",
       "matchManagers": ["gomod"],
-      "matchPackageNames": ["/^k8s\\.io\\//"],
-      "groupName": "Kubernetes Go modules"
+      "matchPackageNames": [
+        "/^github\\.com/Azure\\//",
+        "/^github\\.com/hashicorp/go-azure-helpers$/",
+        "/^github\\.com/manicminer/hamilton($|\\/)/",
+        "/^github\\.com/microsoft/azure-devops-go-api($|\\/)/"
+      ],
+      "groupName": "azure provider dependencies",
+      "groupSlug": "go-azure-provider"
+    },
+    {
+      "description": "IBM provider dependency family.",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": [
+        "/^github\\.com/IBM($|\\/)/",
+        "/^github\\.com/IBM-Cloud($|\\/)/"
+      ],
+      "groupName": "ibm provider dependencies",
+      "groupSlug": "go-ibm-provider"
+    },
+    {
+      "description": "Kubernetes provider dependency family.",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": [
+        "/^k8s\\.io\\//",
+        "/^sigs\\.k8s\\.io\\//"
+      ],
+      "groupName": "kubernetes provider dependencies",
+      "groupSlug": "go-kubernetes-provider"
+    },
+    {
+      "description": "VCS provider dependency family.",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": [
+        "/^github\\.com/bradleyfalzon/ghinstallation($|\\/)/",
+        "/^github\\.com/google/go-github($|\\/)/",
+        "/^github\\.com/xanzy/go-gitlab($|\\/)/"
+      ],
+      "groupName": "vcs provider dependencies",
+      "groupSlug": "go-vcs-provider"
+    },
+    {
+      "description": "Monitoring provider dependency family.",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": [
+        "/^github\\.com/DataDog($|\\/)/",
+        "/^github\\.com/grafana($|\\/)/",
+        "/^github\\.com/heimweh/go-pagerduty$/",
+        "/^github\\.com/honeycombio($|\\/)/",
+        "/^github\\.com/jonboydell/logzio_client$/",
+        "/^github\\.com/mackerelio($|\\/)/",
+        "/^github\\.com/newrelic/newrelic-client-go$/",
+        "/^github\\.com/opsgenie($|\\/)/",
+        "/^github\\.com/zorkian/go-datadog-api$/"
+      ],
+      "groupName": "monitoring provider dependencies",
+      "groupSlug": "go-monitoring-provider"
+    },
+    {
+      "description": "Identity and community provider dependency family.",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": [
+        "/^github\\.com/crewjam/saml($|\\/)/",
+        "/^github\\.com/dgrijalva/jwt-go$/",
+        "/^github\\.com/go-jose/go-jose($|\\/)/",
+        "/^github\\.com/mrparkers/terraform-provider-keycloak($|\\/)/",
+        "/^github\\.com/okta($|\\/)/",
+        "/^github\\.com/opalsecurity/opal-go$/",
+        "/^github\\.com/russellhaering/goxmldsig($|\\/)/",
+        "/^gopkg\\.in/square/go-jose\\.v2$/"
+      ],
+      "groupName": "identity and community provider dependencies",
+      "groupSlug": "go-identity-community-provider"
+    },
+    {
+      "description": "Core shared Go dependencies.",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": [
+        "/^github\\.com/spf13\\//",
+        "/^go\\.opentelemetry\\.io\\//",
+        "/^golang\\.org/x\\//",
+        "/^gonum\\.org\\//"
+      ],
+      "groupName": "core shared go dependencies",
+      "groupSlug": "go-core-shared"
+    },
+    {
+      "description": "Keep indirect dependency updates opt-in during provider renovation.",
+      "matchManagers": ["gomod"],
+      "matchDepTypes": ["indirect"],
+      "enabled": false
     }
   ]
 }
