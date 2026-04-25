@@ -1,0 +1,70 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits"
+  ],
+  "baseBranches": ["main"],
+  "dependencyDashboard": true,
+  "enabledManagers": ["github-actions", "gomod"],
+  "internalChecksFilter": "strict",
+  "labels": ["dependencies"],
+  "minimumReleaseAge": "2 days",
+  "platformAutomerge": false,
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
+  "rebaseWhen": "conflicted",
+  "timezone": "America/New_York",
+  "packageRules": [
+    {
+      "description": "Keep GitHub Actions updates together and allow safe automerge.",
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions",
+      "automerge": true,
+      "automergeType": "pr",
+      "matchUpdateTypes": ["minor", "patch", "digest"]
+    },
+    {
+      "description": "Run go mod tidy after Go module updates.",
+      "matchManagers": ["gomod"],
+      "postUpdateOptions": ["gomodTidy"]
+    },
+    {
+      "description": "Allow Go patch and digest updates to automerge after checks pass.",
+      "matchManagers": ["gomod"],
+      "matchUpdateTypes": ["patch", "digest"],
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "description": "Group AWS SDK for Go v2 modules.",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": ["/^github\\.com/aws/aws-sdk-go-v2($|\\/)/"],
+      "groupName": "AWS SDK for Go v2"
+    },
+    {
+      "description": "Group Google Cloud Go modules.",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": ["/^cloud\\.google\\.com\\/go($|\\/)/", "/^google\\.golang\\.org\\//"],
+      "groupName": "Google Cloud Go modules"
+    },
+    {
+      "description": "Group Azure Go modules.",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": ["/^github\\.com\\/Azure\\//", "/^github\\.com\\/hashicorp\\/go-azure-helpers$/"],
+      "groupName": "Azure Go modules"
+    },
+    {
+      "description": "Group IBM Cloud Go modules.",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": ["/^github\\.com\\/IBM(-Cloud)?\\//"],
+      "groupName": "IBM Cloud Go modules"
+    },
+    {
+      "description": "Group Kubernetes Go modules.",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": ["/^k8s\\.io\\//"],
+      "groupName": "Kubernetes Go modules"
+    }
+  ]
+}
