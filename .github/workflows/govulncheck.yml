@@ -1,0 +1,40 @@
+name: govulncheck
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "20 4 * * 1"
+
+permissions:
+  contents: read
+
+env:
+  GOWORK: off
+
+jobs:
+  module-scan:
+    name: module scan
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - name: Install Go
+      uses: actions/setup-go@v6
+      with:
+        go-version-file: go.mod
+        cache: true
+        cache-dependency-path: go.sum
+    - name: Install govulncheck
+      run: go install golang.org/x/vuln/cmd/govulncheck@v1.3.0
+    - name: Run module vulnerability scan
+      id: govulncheck
+      continue-on-error: true
+      run: govulncheck -scan=module
+    - name: Record non-blocking baseline
+      if: steps.govulncheck.outcome == 'failure'
+      run: |
+        {
+          echo "### govulncheck module scan"
+          echo
+          echo "The module scan found vulnerabilities in the current dependency baseline."
+          echo "This workflow is non-blocking while provider-scoped dependency cleanup is in progress."
+        } >> "$GITHUB_STEP_SUMMARY"
