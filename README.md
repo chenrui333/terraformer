@@ -1,14 +1,12 @@
 # Terraformer
 
-[![tests](https://github.com/GoogleCloudPlatform/terraformer/actions/workflows/test.yml/badge.svg)](https://github.com/GoogleCloudPlatform/terraformer/actions/workflows/test.yml)
-[![linter](https://github.com/GoogleCloudPlatform/terraformer/actions/workflows/linter.yml/badge.svg)](https://github.com/GoogleCloudPlatform/terraformer/actions/workflows/linter.yml)
+[![tests](https://github.com/chenrui333/terraformer/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/chenrui333/terraformer/actions/workflows/test.yml)
+[![linter](https://github.com/chenrui333/terraformer/actions/workflows/linter.yml/badge.svg?branch=main)](https://github.com/chenrui333/terraformer/actions/workflows/linter.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/GoogleCloudPlatform/terraformer)](https://goreportcard.com/report/github.com/GoogleCloudPlatform/terraformer)
 [![AUR package](https://img.shields.io/aur/version/terraformer)](https://aur.archlinux.org/packages/terraformer/)
 [![Homebrew](https://img.shields.io/badge/dynamic/json.svg?url=https://formulae.brew.sh/api/formula/terraformer.json&query=$.versions.stable&label=homebrew)](https://formulae.brew.sh/formula/terraformer)
 
-**This project is no longer maintained and is deprecated.**
-
-As of March 16, 2026, this repository has been archived. It is now read-only, and no further updates, security patches, or support will be provided.
+**Maintenance status:** The original `GoogleCloudPlatform/terraformer` repository was archived on March 16, 2026. This standalone repository continues maintenance for dependency updates, bug fixes, and focused improvements.
 
 A CLI tool that generates `tf`/`json` and `tfstate` files based on existing infrastructure
 (reverse Terraform).
