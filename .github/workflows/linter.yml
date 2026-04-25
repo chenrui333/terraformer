@@ -14,10 +14,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: golangci-lint
-      uses: reviewdog/action-golangci-lint@v2
+      uses: reviewdog/action-golangci-lint@v2.10.0
       with:
+        cache: true
         go_version_file: go.mod
         github_token: ${{ secrets.GITHUB_TOKEN }}
         tool_name: golangci-lint
