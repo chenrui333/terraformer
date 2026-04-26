@@ -144,8 +144,8 @@ require (
 	github.com/tencentyun/cos-go-sdk-v5 v0.7.73
 	github.com/vultr/govultr v1.1.1
 	github.com/xanzy/go-gitlab v0.50.2
-	github.com/yandex-cloud/go-genproto v0.0.0-20220314102905-1acaee8ca7eb
-	github.com/yandex-cloud/go-sdk v0.0.0-20220314105123-d0c2a928feb6
+	github.com/yandex-cloud/go-genproto v0.74.0
+	github.com/yandex-cloud/go-sdk v0.31.0
 	github.com/zclconf/go-cty v1.11.0
 	github.com/zorkian/go-datadog-api v2.30.0+incompatible
 	golang.org/x/oauth2 v0.36.0
