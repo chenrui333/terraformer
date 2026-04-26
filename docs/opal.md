@@ -2,7 +2,7 @@
 
 ##  Usage
 ### 1. Installation
-First you will need to install terraformer with the opal provider. See the [readme](https://github.com/GoogleCloudPlatform/terraformer#installation).
+First you will need to install terraformer with the opal provider. See the [readme](https://github.com/chenrui333/terraformer#installation).
 
 ### 2. Set up a template terraform workspace
 Before you can use terraformer, you need to create a template workspace so that terraformer

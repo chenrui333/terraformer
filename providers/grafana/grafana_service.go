@@ -21,7 +21,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	gapi "github.com/grafana/grafana-api-golang-client"
 	"github.com/hashicorp/go-cleanhttp"
 	"github.com/hashicorp/terraform/helper/logging"

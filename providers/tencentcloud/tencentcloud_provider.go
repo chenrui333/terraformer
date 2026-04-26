@@ -18,7 +18,7 @@ import (
 	"errors"
 	"os"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common"
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile"
 	"github.com/zclconf/go-cty/cty"

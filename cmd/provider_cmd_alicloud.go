@@ -16,8 +16,8 @@ package cmd
 import (
 	"log"
 
-	alicloud_terraforming "github.com/GoogleCloudPlatform/terraformer/providers/alicloud"
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	alicloud_terraforming "github.com/chenrui333/terraformer/providers/alicloud"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/spf13/cobra"
 )
 

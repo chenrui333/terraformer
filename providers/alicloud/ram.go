@@ -17,8 +17,8 @@ package alicloud
 import (
 	"strings"
 
-	"github.com/GoogleCloudPlatform/terraformer/providers/alicloud/connectivity"
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/providers/alicloud/connectivity"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 )
 

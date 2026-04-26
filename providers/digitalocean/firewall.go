@@ -17,7 +17,7 @@ package digitalocean
 import (
 	"context"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/digitalocean/godo"
 )
 

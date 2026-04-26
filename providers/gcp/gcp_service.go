@@ -15,7 +15,7 @@
 package gcp
 
 import (
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 type GCPService struct { //nolint

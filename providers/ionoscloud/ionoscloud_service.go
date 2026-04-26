@@ -23,8 +23,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/GoogleCloudPlatform/terraformer/providers/ionoscloud/helpers"
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/providers/ionoscloud/helpers"
+	"github.com/chenrui333/terraformer/terraformutils"
 	certificateManager "github.com/ionos-cloud/sdk-go-cert-manager"
 	containerRegistry "github.com/ionos-cloud/sdk-go-container-registry"
 	dataPlatform "github.com/ionos-cloud/sdk-go-dataplatform"

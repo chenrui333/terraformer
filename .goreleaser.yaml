@@ -6,7 +6,11 @@ before:
   hooks:
     - go mod tidy
     - rm -rf dist/provider-binaries
-    - env TERRAFORMER_BUILD_OUTPUT_DIR=dist/provider-binaries go run build/multi-build/main.go
+    - >-
+      sh -c 'TERRAFORMER_BUILD_OUTPUT_DIR=dist/provider-binaries
+      TERRAFORMER_LDFLAGS="-s -w -X github.com/chenrui333/terraformer/version.Version={{ .Version }}
+      -X github.com/chenrui333/terraformer/version.GitCommit={{ .Commit }}"
+      go run build/multi-build/main.go'
 
 builds:
   - id: all
@@ -14,6 +18,11 @@ builds:
     binary: "terraformer-all-{{ .Os }}-{{ .Arch }}"
     env:
       - CGO_ENABLED=0
+    ldflags:
+      - >-
+        -s -w
+        -X github.com/chenrui333/terraformer/version.Version={{ .Version }}
+        -X github.com/chenrui333/terraformer/version.GitCommit={{ .Commit }}
     goos:
       - linux
       - darwin

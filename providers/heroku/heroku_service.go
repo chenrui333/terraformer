@@ -15,7 +15,7 @@
 package heroku
 
 import (
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	heroku "github.com/heroku/heroku-go/v5"
 )
 

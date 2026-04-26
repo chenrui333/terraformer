@@ -15,7 +15,8 @@
 package cmd
 
 import (
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
+	terraformerVersion "github.com/chenrui333/terraformer/version"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +24,7 @@ func NewCmdRoot() *cobra.Command {
 	cmd := &cobra.Command{
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		Version:       version,
+		Version:       terraformerVersion.Version,
 	}
 	cmd.AddCommand(newImportCmd())
 	cmd.AddCommand(newPlanCmd())

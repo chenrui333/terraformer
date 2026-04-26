@@ -21,7 +21,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	bluemix "github.com/IBM-Cloud/bluemix-go"
 	"github.com/IBM-Cloud/bluemix-go/session"
 

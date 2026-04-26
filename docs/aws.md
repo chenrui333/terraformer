@@ -403,4 +403,4 @@ Terraformer uses AWS [ListQueues](https://docs.aws.amazon.com/AWSSimpleQueueServ
 
 #### Security groups and rules
 
-Terraformer by default will try to keep rules in security groups as long as no circular dependencies are detected. This approach is implemented to keep the rules as tidy as possible but there can be cases when this behaviour is not desirable (see [GoogleCloudPlatform/terraformer#493](https://github.com/GoogleCloudPlatform/terraformer/issues/493)). To make Terraformer split rules from security groups, add `SPLIT_SG_RULES` environmental variable with any value.
+Terraformer by default will try to keep rules in security groups as long as no circular dependencies are detected. This approach is implemented to keep the rules as tidy as possible but there can be cases when this behaviour is not desirable (see [chenrui333/terraformer#493](https://github.com/chenrui333/terraformer/issues/493)). To make Terraformer split rules from security groups, add `SPLIT_SG_RULES` environmental variable with any value.

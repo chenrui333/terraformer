@@ -17,7 +17,7 @@ package cloudflare
 import (
 	"fmt"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	cf "github.com/cloudflare/cloudflare-go"
 )
 

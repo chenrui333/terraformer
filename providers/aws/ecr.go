@@ -20,7 +20,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 var ecrAllowEmptyValues = []string{"tags."}

@@ -21,7 +21,7 @@ import (
 
 	"google.golang.org/api/cloudkms/v1"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 var kmsAllowEmptyValues = []string{""}

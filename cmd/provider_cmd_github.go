@@ -17,8 +17,8 @@ import (
 	"log"
 	"strings"
 
-	github_terraforming "github.com/GoogleCloudPlatform/terraformer/providers/github"
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	github_terraforming "github.com/chenrui333/terraformer/providers/github"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/spf13/cobra"
 )
 

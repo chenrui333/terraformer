@@ -16,7 +16,7 @@ package mikrotik
 import (
 	"fmt"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/ddelnano/terraform-provider-mikrotik/client"
 )
 

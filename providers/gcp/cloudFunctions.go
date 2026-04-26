@@ -22,7 +22,7 @@ import (
 	"google.golang.org/api/cloudfunctions/v2"
 	"google.golang.org/api/compute/v1"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 var cloudFunctionsAllowEmptyValues = []string{""}

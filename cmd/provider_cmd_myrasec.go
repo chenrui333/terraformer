@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	myrasec_terraforming "github.com/GoogleCloudPlatform/terraformer/providers/myrasec"
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	myrasec_terraforming "github.com/chenrui333/terraformer/providers/myrasec"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/spf13/cobra"
 )
 

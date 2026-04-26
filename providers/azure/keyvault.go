@@ -20,7 +20,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2018-02-14/keyvault"
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/hashicorp/go-azure-helpers/authentication"
 )
 

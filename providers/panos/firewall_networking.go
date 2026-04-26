@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/PaloAltoNetworks/pango"
 	"github.com/PaloAltoNetworks/pango/netw/interface/eth"
 	"github.com/PaloAltoNetworks/pango/netw/interface/subinterface/layer2"

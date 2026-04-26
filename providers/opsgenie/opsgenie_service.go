@@ -6,7 +6,7 @@ import (
 	"github.com/opsgenie/opsgenie-go-sdk-v2/team"
 	"github.com/opsgenie/opsgenie-go-sdk-v2/user"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 type OpsgenieService struct { //nolint

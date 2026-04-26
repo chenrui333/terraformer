@@ -15,7 +15,7 @@
 package tencentcloud
 
 import (
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common"
 	es "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/es/v20180416"
 )

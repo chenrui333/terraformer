@@ -17,9 +17,9 @@ import (
 	"errors"
 	"os"
 
-	heroku_terraforming "github.com/GoogleCloudPlatform/terraformer/providers/heroku"
+	heroku_terraforming "github.com/chenrui333/terraformer/providers/heroku"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/spf13/cobra"
 )
 

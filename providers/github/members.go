@@ -18,7 +18,7 @@ import (
 	"context"
 	"log"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 
 	githubAPI "github.com/google/go-github/v35/github"
 )

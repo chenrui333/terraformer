@@ -2,19 +2,12 @@
 
 [![tests](https://github.com/chenrui333/terraformer/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/chenrui333/terraformer/actions/workflows/test.yml)
 [![linter](https://github.com/chenrui333/terraformer/actions/workflows/linter.yml/badge.svg?branch=main)](https://github.com/chenrui333/terraformer/actions/workflows/linter.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/GoogleCloudPlatform/terraformer)](https://goreportcard.com/report/github.com/GoogleCloudPlatform/terraformer)
+[![Go Report Card](https://goreportcard.com/badge/github.com/chenrui333/terraformer)](https://goreportcard.com/report/github.com/chenrui333/terraformer)
 [![AUR package](https://img.shields.io/aur/version/terraformer)](https://aur.archlinux.org/packages/terraformer/)
 [![Homebrew](https://img.shields.io/badge/dynamic/json.svg?url=https://formulae.brew.sh/api/formula/terraformer.json&query=$.versions.stable&label=homebrew)](https://formulae.brew.sh/formula/terraformer)
 
-**Maintenance status:** The original `GoogleCloudPlatform/terraformer` repository was archived on March 16, 2026. This standalone repository continues maintenance for dependency updates, bug fixes, and focused improvements.
-
 A CLI tool that generates `tf`/`json` and `tfstate` files based on existing infrastructure
 (reverse Terraform).
-
-*   Disclaimer: This is not an official Google product
-*   Created by: Waze SRE
-
-![Waze SRE logo](assets/waze-sre-logo.png)
 
 # Table of Contents
 - [Demo GCP](#demo-gcp)
@@ -234,20 +227,20 @@ This installs all providers, set `PROVIDER` to one of `google`, `aws` or `kubern
 * Linux
 ```
 export PROVIDER=all
-curl -LO "https://github.com/GoogleCloudPlatform/terraformer/releases/download/$(curl -s https://api.github.com/repos/GoogleCloudPlatform/terraformer/releases/latest | grep tag_name | cut -d '"' -f 4)/terraformer-${PROVIDER}-linux-amd64"
+curl -LO "https://github.com/chenrui333/terraformer/releases/download/$(curl -s https://api.github.com/repos/chenrui333/terraformer/releases/latest | grep tag_name | cut -d '"' -f 4)/terraformer-${PROVIDER}-linux-amd64"
 chmod +x terraformer-${PROVIDER}-linux-amd64
 sudo mv terraformer-${PROVIDER}-linux-amd64 /usr/local/bin/terraformer
 ```
 * MacOS
 ```
 export PROVIDER=all
-curl -LO "https://github.com/GoogleCloudPlatform/terraformer/releases/download/$(curl -s https://api.github.com/repos/GoogleCloudPlatform/terraformer/releases/latest | grep tag_name | cut -d '"' -f 4)/terraformer-${PROVIDER}-darwin-amd64"
+curl -LO "https://github.com/chenrui333/terraformer/releases/download/$(curl -s https://api.github.com/repos/chenrui333/terraformer/releases/latest | grep tag_name | cut -d '"' -f 4)/terraformer-${PROVIDER}-darwin-amd64"
 chmod +x terraformer-${PROVIDER}-darwin-amd64
 sudo mv terraformer-${PROVIDER}-darwin-amd64 /usr/local/bin/terraformer
 ```
 * Windows
 1. Install Terraform - https://www.terraform.io/downloads
-2. Download exe file for required provider from here - https://github.com/GoogleCloudPlatform/terraformer/releases
+2. Download exe file for required provider from here - https://github.com/chenrui333/terraformer/releases
 3. Add the exe file path to path variable
 
 **From source**
@@ -396,4 +389,4 @@ Terraforming lacks full coverage for resources - as an example you can see that 
 
 ## Stargazers over time
 
-[![Stargazers over time](https://starchart.cc/GoogleCloudPlatform/terraformer.svg)](https://starchart.cc/GoogleCloudPlatform/terraformer)
+[![Stargazers over time](https://starchart.cc/chenrui333/terraformer.svg)](https://starchart.cc/chenrui333/terraformer)

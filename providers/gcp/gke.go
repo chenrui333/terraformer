@@ -20,7 +20,7 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 
 	container "google.golang.org/api/container/v1beta1"
 )

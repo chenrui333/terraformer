@@ -14,9 +14,9 @@
 package cmd
 
 import (
-	cloudflare_terraforming "github.com/GoogleCloudPlatform/terraformer/providers/cloudflare"
+	cloudflare_terraforming "github.com/chenrui333/terraformer/providers/cloudflare"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/spf13/cobra"
 )
 

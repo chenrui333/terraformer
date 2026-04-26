@@ -3,8 +3,8 @@ package ionoscloud
 import (
 	"log"
 
-	"github.com/GoogleCloudPlatform/terraformer/providers/ionoscloud/helpers"
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/providers/ionoscloud/helpers"
+	"github.com/chenrui333/terraformer/terraformutils"
 	ionoscloud "github.com/ionos-cloud/sdk-go/v6"
 )
 

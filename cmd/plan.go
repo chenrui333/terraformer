@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
+	terraformerVersion "github.com/chenrui333/terraformer/version"
 	"github.com/spf13/cobra"
 )
 
@@ -100,15 +101,15 @@ func LoadPlanfile(path string) (*ImportPlan, error) {
 		return nil, err
 	}
 
-	if plan.Version != version {
-		return nil, fmt.Errorf("planfile version did not match. expected: %s, actual: %s", version, plan.Version)
+	if plan.Version != terraformerVersion.Version {
+		return nil, fmt.Errorf("planfile version did not match. expected: %s, actual: %s", terraformerVersion.Version, plan.Version)
 	}
 
 	return plan, nil
 }
 
 func ExportPlanFile(plan *ImportPlan, path, filename string) error {
-	plan.Version = version
+	plan.Version = terraformerVersion.Version
 
 	planfilePath := filepath.Join(path, filename)
 	log.Println("Saving planfile to", planfilePath)

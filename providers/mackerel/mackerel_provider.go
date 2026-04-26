@@ -18,7 +18,7 @@ import (
 	"errors"
 	"os"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	mackerel "github.com/mackerelio/mackerel-client-go"
 	"github.com/zclconf/go-cty/cty"
 )
