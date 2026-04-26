@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go v0.123.0 // indirect
 	cloud.google.com/go/logging v1.16.0
 	cloud.google.com/go/storage v1.62.1
-	github.com/Azure/azure-sdk-for-go v63.4.0+incompatible
+	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
 	github.com/Azure/azure-storage-blob-go v0.15.0
 	github.com/Azure/go-autorest/autorest v0.11.30
 	github.com/IBM-Cloud/bluemix-go v0.0.0-20220624043500-d538cb4fd9be
