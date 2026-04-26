@@ -35,14 +35,26 @@ because the Go toolchain floor moved to Go 1.26.2.
    GOWORK=off go vet ./...
    git diff --check
    ```
-4. If GoReleaser is configured, run the release preflight before publishing:
+4. Run the GoReleaser config and snapshot preflight before publishing:
    ```sh
    goreleaser check
    goreleaser release --snapshot --clean --skip=publish
    ```
+   You can also run the `release` workflow manually to exercise the same
+   snapshot path in GitHub Actions.
 5. Confirm the GitHub release body, tag, and artifact list are final.
-6. Publish the release through the release workflow.
-7. Verify the published release:
+6. Create and push the release tag from the intended `main` commit:
+   ```sh
+   git fetch origin main --tags
+   git checkout main
+   git pull --ff-only origin main
+   git tag -a 0.9.0 -m "0.9.0"
+   git push origin 0.9.0
+   ```
+   The tag push runs GoReleaser and creates a draft GitHub release.
+7. Review the draft release, then publish it once the notes and assets are
+   final.
+8. Verify the published release:
    - the tag points at the intended `main` commit
    - the release notes match [CHANGELOG.md](CHANGELOG.md)
    - expected artifacts and checksums are attached
@@ -56,10 +68,12 @@ and assets as final before publishing.
 - Do not publish a release expecting to replace assets or retarget the tag later.
 - If a published release is wrong, prefer a follow-up release over mutating the
   existing one.
-- Keep draft/preflight checks ahead of publish so the final release is boring.
+- Keep draft/preflight checks ahead of publish so the final release has no asset
+  or note churn.
 
 ## Notes
 
 - Terraformer version tags use plain version tags such as `0.9.0`.
-- The first GoReleaser migration should preserve the existing binary asset names
-  used by README install snippets and downstream packaging.
+- GoReleaser creates draft releases for manual review before publication.
+- The GoReleaser config preserves the existing binary asset names used by README
+  install snippets and downstream packaging.

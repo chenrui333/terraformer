@@ -1,5 +1,6 @@
 .idea
 generated
+dist/
 terraformer*
 cmd/tmp
 .DS_Store
