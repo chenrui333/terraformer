@@ -34,7 +34,7 @@ type SyntheticsTestGenerator struct {
 	DatadogService
 }
 
-func (g *SyntheticsTestGenerator) createResources(syntheticsList []datadogV1.SyntheticsTestDetails) []terraformutils.Resource {
+func (g *SyntheticsTestGenerator) createResources(syntheticsList []datadogV1.SyntheticsTestDetailsWithoutSteps) []terraformutils.Resource {
 	resources := []terraformutils.Resource{}
 	for _, synthetics := range syntheticsList {
 		resourceName := synthetics.GetPublicId()
