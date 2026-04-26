@@ -746,8 +746,8 @@ github.com/gorilla/websocket v1.4.1/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/ad
 github.com/gorilla/websocket v1.4.2/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674 h1:JeSE6pjso5THxAzdVpqr6/geYxZytqFMBCOtn/ujyeo=
 github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674/go.mod h1:r4w70xmWCQKmi1ONH4KIaBptdivuRPyosB9RmPlGEwA=
-github.com/grafana/grafana-api-golang-client v0.0.0-20210218192924-9ccd2365d2a6 h1:jFAfnEad6JNc0EFbCGxL75m8GoBG/J7/1fAAXseaIf8=
-github.com/grafana/grafana-api-golang-client v0.0.0-20210218192924-9ccd2365d2a6/go.mod h1:jFjwT3lvwl4JKqCw3guRJvlQ1/fmhER1h3Zgix3z7jw=
+github.com/grafana/grafana-api-golang-client v0.27.0 h1:zIwMXcbCB4n588i3O2N6HfNcQogCNTd/vPkEXTr7zX8=
+github.com/grafana/grafana-api-golang-client v0.27.0/go.mod h1:uNLZEmgKtTjHBtCQMwNn3qsx2mpMb8zU+7T4Xv3NR9Y=
 github.com/grpc-ecosystem/go-grpc-middleware v1.0.0/go.mod h1:FiyG127CGDf3tlThmgyCl78X/SZQqEOJBCDaAfeWzPs=
 github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0/go.mod h1:8NvIoxWQoOIhqOTXgfV/d3M/q6VIi02HzZEHgUlZvzk=
 github.com/grpc-ecosystem/grpc-gateway v1.8.5/go.mod h1:vNeuVxBJEsws4ogUvrchl83t/GYV9WGTSLVdBhOQFDY=
@@ -846,8 +846,8 @@ github.com/hashicorp/vault/api v1.23.0/go.mod h1:zransKiB9ftp+kgY8ydjnvCU7Wk8i9L
 github.com/hashicorp/yamux v0.0.0-20180604194846-3520598351bb/go.mod h1:+NfK9FKeTrX5uv1uIXGdwYDTeHna2qgaIlx54MXqjAM=
 github.com/hashicorp/yamux v0.0.0-20211028200310-0bc27b27de87 h1:xixZ2bWeofWV68J+x6AzmKuVM/JWCQwkWm6GW/MUR6I=
 github.com/hashicorp/yamux v0.0.0-20211028200310-0bc27b27de87/go.mod h1:CtWFDAQgb7dxtzFs4tWbplKIe2jSi3+5vKbgIO0SLnQ=
-github.com/heimweh/go-pagerduty v0.0.0-20210930203304-530eff2acdc6 h1:/D0VtHEOCdotE1vSB9XznceAjIGkUieZ4BF6VKUIqNU=
-github.com/heimweh/go-pagerduty v0.0.0-20210930203304-530eff2acdc6/go.mod h1:JtJGtgN0y9KOCaqFMZFaBCWskpO/KK3Ro9TwjP9ss6w=
+github.com/heimweh/go-pagerduty v0.0.0-20250801140645-0b96cfc9bf17 h1:hYkLKNMdmayQ2vYYit9AlcxmiQ3AdXtEfcZIrKG6SZ4=
+github.com/heimweh/go-pagerduty v0.0.0-20250801140645-0b96cfc9bf17/go.mod h1:r59w5iyN01Qvi734yA5hZldbSeJJmsJzee/1kQ/MK7s=
 github.com/heroku/heroku-go/v5 v5.5.0 h1:+pKHpiPskqkkarrPHF7RpeUveXl+mAsKLAEI/ZIY9uA=
 github.com/heroku/heroku-go/v5 v5.5.0/go.mod h1:Uo3XhGPwaTpniR4X1e50BDjg4SzdFk2Bd2mgYZVkfHo=
 github.com/hokaccha/go-prettyjson v0.0.0-20210113012101-fb4e108d2519 h1:nqAlWFEdqI0ClbTDrhDvE/8LeQ4pftrqKUX9w5k0j3s=
@@ -1519,8 +1519,9 @@ github.com/yandex-cloud/go-genproto v0.74.0 h1:3zG7irGeOGmS/MVFZs6262hXTNPGoU9Vh
 github.com/yandex-cloud/go-genproto v0.74.0/go.mod h1:0LDD/IZLIUIV4iPH+YcF+jysO3jkSvADFGm4dCAuwQo=
 github.com/yandex-cloud/go-sdk v0.31.0 h1:iPixKMu7t64xziWRIEW3pKkq3kGuvgNmiwH/Vl1FcqY=
 github.com/yandex-cloud/go-sdk v0.31.0/go.mod h1:C27Pqw9umTq3vi3ZM8tfmc5Rb0rt6Fxnl7nimQT1aM0=
-github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d h1:splanxYIlg+5LfHAM6xpdFEAYOk8iySO56hMFq6uLyA=
 github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d/go.mod h1:rHwXgn7JulP+udvsHwJoVG1YGAP6VLg4y9I5dyZdqmA=
+github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a h1:fZHgsYlfvtyqToslyjUt3VOPF4J7aK/3MPcK7xp3PDk=
+github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a/go.mod h1:ul22v+Nro/R083muKhosV54bj5niojjWZvU8xrevuH4=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.32/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=

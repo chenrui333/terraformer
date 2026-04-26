@@ -112,14 +112,14 @@ require (
 	github.com/fastly/go-fastly/v7 v7.5.5
 	github.com/google/go-github/v35 v35.3.0
 	github.com/gophercloud/gophercloud v1.14.1
-	github.com/grafana/grafana-api-golang-client v0.0.0-20210218192924-9ccd2365d2a6
+	github.com/grafana/grafana-api-golang-client v0.27.0
 	github.com/hashicorp/go-azure-helpers v0.48.0
 	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/go-plugin v1.4.4
 	github.com/hashicorp/hcl v1.0.1-vault-7
 	github.com/hashicorp/terraform v0.12.31
-	github.com/heimweh/go-pagerduty v0.0.0-20210930203304-530eff2acdc6
+	github.com/heimweh/go-pagerduty v0.0.0-20250801140645-0b96cfc9bf17
 	github.com/heroku/heroku-go/v5 v5.5.0
 	github.com/hokaccha/go-prettyjson v0.0.0-20210113012101-fb4e108d2519 // indirect
 	github.com/honeycombio/terraform-provider-honeycombio v0.10.0
@@ -288,7 +288,7 @@ require (
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
-	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
+	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
 	go.mongodb.org/mongo-driver v1.14.0 // indirect
 	golang.org/x/crypto v0.50.0 // indirect
 	golang.org/x/net v0.53.0 // indirect
