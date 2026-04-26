@@ -61,6 +61,5 @@ and assets as final before publishing.
 ## Notes
 
 - Terraformer version tags use plain version tags such as `0.9.0`.
-- Do not add action-style floating major tags such as `v2` or `v3`.
 - The first GoReleaser migration should preserve the existing binary asset names
   used by README install snippets and downstream packaging.
