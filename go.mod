@@ -107,7 +107,7 @@ require (
 	github.com/ddelnano/terraform-provider-mikrotik/client v0.0.0-20210401060029-7f652169b2c4
 	github.com/ddelnano/terraform-provider-xenorchestra/client v0.0.0-20210401070256-0d721c6762ef
 	github.com/denverdino/aliyungo v0.0.0-20200327235253-d59c209c7e93
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/digitalocean/godo v1.83.0
 	github.com/fastly/go-fastly/v7 v7.0.0
 	github.com/google/go-github/v35 v35.1.0
@@ -361,7 +361,6 @@ require (
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/go-playground/validator/v10 v10.19.0 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
-	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect
 	github.com/google/go-github/v45 v45.2.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
@@ -413,6 +412,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.34.2
 	github.com/aws/aws-sdk-go-v2/service/directconnect v1.38.16
 	github.com/gofrs/uuid/v3 v3.1.2
+	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/ionos-cloud/sdk-go-cert-manager v1.0.0
 	github.com/ionos-cloud/sdk-go-container-registry v1.0.0
@@ -447,3 +447,6 @@ replace gopkg.in/jarcoal/httpmock.v1 => github.com/jarcoal/httpmock v1.0.5
 replace gopkg.in/ns1/ns1-go.v2 => github.com/ns1/ns1-go/v2 v2.6.5
 
 replace github.com/tencentcloud/tencentcloud-sdk-go => github.com/tencentcloud/tencentcloud-sdk-go v1.0.392
+
+// Redirect stale transitive imports from abandoned dgrijalva/jwt-go to a compatible maintained fork.
+replace github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v3.2.5+incompatible
