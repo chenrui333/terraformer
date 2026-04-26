@@ -15,7 +15,7 @@
 package okta
 
 import (
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/okta/terraform-provider-okta/sdk"
 )
 

@@ -17,7 +17,7 @@ package logzio
 import (
 	"strconv"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 
 	"github.com/jonboydell/logzio_client/alerts"
 )

@@ -20,10 +20,10 @@ import (
 	"os/exec"
 	"sort"
 
-	"github.com/GoogleCloudPlatform/terraformer/cmd"
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/cmd"
+	"github.com/chenrui333/terraformer/terraformutils"
 
-	commercetools_terraforming "github.com/GoogleCloudPlatform/terraformer/providers/commercetools"
+	commercetools_terraforming "github.com/chenrui333/terraformer/providers/commercetools"
 )
 
 const command = "terraform init && terraform plan"

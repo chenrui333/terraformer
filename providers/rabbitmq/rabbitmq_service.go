@@ -18,7 +18,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 type RBTService struct { //nolint

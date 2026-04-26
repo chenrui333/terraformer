@@ -1,28 +1,36 @@
-# How to Contribute
+# Contributing
 
-We'd love to accept your patches and contributions to this project. There are
-just a few small guidelines you need to follow.
+Terraformer is maintained as a standalone GitHub repository. Contributions are
+welcome when they are focused, reviewable, and aligned with the existing provider
+boundaries.
 
-## Contributor License Agreement
+## Pull Requests
 
-Contributions to this project must be accompanied by a Contributor License
-Agreement. You (or your employer) retain the copyright to your contribution;
-this simply gives us permission to use and redistribute your contributions as
-part of the project. Head over to <https://cla.developers.google.com/> to see
-your current agreements on file or to sign a new one.
+- Open pull requests against `main`.
+- Use conventional commit style for PR titles, such as `fix(aws): ...`,
+  `deps(kubernetes): ...`, `docs: ...`, or `ci: ...`.
+- Keep each PR focused on one provider, subsystem, bug, or maintenance task.
+- Include a concise summary and any important notes or upstream references in
+  the PR body.
 
-You generally only need to submit a CLA once, so if you've already submitted one
-(even if it was for a different project), you probably don't need to do it
-again.
+## Validation
 
-## Code reviews
+Run the relevant focused checks for the change, and prefer the existing full
+validation set before merge:
 
-All submissions, including submissions by project members, require review. We
-use GitHub pull requests for this purpose. Consult
-[GitHub Help](https://help.github.com/articles/about-pull-requests/) for more
-information on using pull requests.
+- `GOWORK=off go mod tidy`
+- `git diff --exit-code -- go.mod go.sum`
+- `GOWORK=off go build -v ./...`
+- `GOWORK=off go test ./... -count=1`
+- `GOWORK=off go vet ./...`
+- `git diff --check`
 
-## Community Guidelines
+For release workflow changes, also run:
 
-This project follows
-[Google's Open Source Community Guidelines](https://opensource.google.com/conduct/).
+- `GOWORK=off go run github.com/goreleaser/goreleaser/v2@v2.15.4 check`
+
+## Dependency Updates
+
+Provider dependencies should be updated in small, provider-scoped PRs when
+possible. The goal is for each PR to make the affected provider or subsystem easy
+to identify and test.

@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	vault "github.com/hashicorp/vault/api"
 )
 

@@ -14,9 +14,9 @@
 package cmd
 
 import (
-	honeycombio_terraforming "github.com/GoogleCloudPlatform/terraformer/providers/honeycombio"
+	honeycombio_terraforming "github.com/chenrui333/terraformer/providers/honeycombio"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/spf13/cobra"
 )
 

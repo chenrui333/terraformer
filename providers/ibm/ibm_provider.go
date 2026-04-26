@@ -19,7 +19,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 const DefaultRegion = "us-south"

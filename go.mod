@@ -1,4 +1,4 @@
-module github.com/GoogleCloudPlatform/terraformer
+module github.com/chenrui333/terraformer
 
 go 1.26.2
 

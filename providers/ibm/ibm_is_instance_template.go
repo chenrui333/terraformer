@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/IBM/go-sdk-core/v4/core"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 )

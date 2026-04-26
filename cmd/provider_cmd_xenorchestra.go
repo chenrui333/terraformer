@@ -14,8 +14,8 @@
 package cmd
 
 import (
-	xenorchestra_terraforming "github.com/GoogleCloudPlatform/terraformer/providers/xenorchestra"
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	xenorchestra_terraforming "github.com/chenrui333/terraformer/providers/xenorchestra"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/spf13/cobra"
 )
 

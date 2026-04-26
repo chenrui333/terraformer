@@ -17,7 +17,7 @@ package newrelic
 import (
 	"fmt"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	newrelic "github.com/newrelic/newrelic-client-go/newrelic"
 )
 

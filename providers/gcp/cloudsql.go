@@ -17,7 +17,7 @@ package gcp
 import (
 	"context"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 
 	sqladmin "google.golang.org/api/sqladmin/v1beta4"
 )

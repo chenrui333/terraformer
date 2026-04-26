@@ -16,8 +16,8 @@ package cmd
 import (
 	"log"
 
-	awsterraformer "github.com/GoogleCloudPlatform/terraformer/providers/aws"
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	awsterraformer "github.com/chenrui333/terraformer/providers/aws"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/spf13/cobra"
 )
 

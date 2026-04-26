@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/go-azure-helpers/authentication"
 
 	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v3.0/security"
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 type SecurityCenterContactGenerator struct {

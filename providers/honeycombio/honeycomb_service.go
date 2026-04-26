@@ -20,7 +20,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	hnyclient "github.com/honeycombio/terraform-provider-honeycombio/client"
 )
 

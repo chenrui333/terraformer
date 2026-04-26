@@ -21,7 +21,7 @@ import (
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/dataproc/v1"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 var dataprocAllowEmptyValues = []string{""}

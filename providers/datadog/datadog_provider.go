@@ -24,7 +24,7 @@ import (
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/zclconf/go-cty/cty"
 )
 

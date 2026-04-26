@@ -17,7 +17,7 @@ package rabbitmq
 import (
 	"encoding/json"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 type UserGenerator struct {

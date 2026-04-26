@@ -4,10 +4,10 @@ import (
 	"context"
 	"log"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	uuid "github.com/gofrs/uuid/v3"
 
-	"github.com/GoogleCloudPlatform/terraformer/providers/ionoscloud/helpers"
+	"github.com/chenrui333/terraformer/providers/ionoscloud/helpers"
 )
 
 type IPFailoverGenerator struct {

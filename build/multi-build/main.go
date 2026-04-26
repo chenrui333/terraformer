@@ -117,7 +117,11 @@ func main() {
 
 				// build....
 				binaryPath := filepath.Join(outputDir, binaryName)
-				cmd := exec.Command("go", "build", "-v", "-o", binaryPath)
+				args := []string{"build", "-v", "-o", binaryPath}
+				if ldflags := os.Getenv("TERRAFORMER_LDFLAGS"); ldflags != "" {
+					args = append(args, "-ldflags", ldflags)
+				}
+				cmd := exec.Command("go", args...)
 				cmd.Env = os.Environ()
 				cmd.Env = append(cmd.Env, "GOOS="+GOOS)
 				cmd.Env = append(cmd.Env, "GOARCH="+arch)

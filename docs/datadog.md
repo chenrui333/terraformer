@@ -4,7 +4,7 @@ This provider uses the [terraform-provider-datadog](https://registry.terraform.i
 
 ##  Usage
 ### 1. Installation
-First you will need to install Terraformer with the Datadog provider. See the [README](https://github.com/GoogleCloudPlatform/terraformer#installation).
+First you will need to install Terraformer with the Datadog provider. See the [README](https://github.com/chenrui333/terraformer#installation).
 
 ### 2. Set up a template Terraform workspace
 Before you can use Terraformer, you need to create a template workspace so that Terraformer
@@ -147,4 +147,4 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `user`
     * `datadog_user`
 
-[1]: https://github.com/GoogleCloudPlatform/terraformer/blob/master/README.md#filtering
+[1]: https://github.com/chenrui333/terraformer/blob/main/README.md#filtering

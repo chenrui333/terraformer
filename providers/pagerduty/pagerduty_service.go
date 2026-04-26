@@ -15,7 +15,7 @@
 package pagerduty
 
 import (
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	pagerduty "github.com/heimweh/go-pagerduty/pagerduty"
 )
 

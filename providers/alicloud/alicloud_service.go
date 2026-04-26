@@ -20,8 +20,8 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/GoogleCloudPlatform/terraformer/providers/alicloud/connectivity"
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/providers/alicloud/connectivity"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 // AliCloudService Service struct for AliCloud

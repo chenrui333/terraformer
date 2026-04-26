@@ -14,9 +14,9 @@
 package cmd
 
 import (
-	linode_terraforming "github.com/GoogleCloudPlatform/terraformer/providers/linode"
+	linode_terraforming "github.com/chenrui333/terraformer/providers/linode"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/spf13/cobra"
 )
 

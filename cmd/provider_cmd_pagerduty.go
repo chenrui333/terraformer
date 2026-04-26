@@ -14,9 +14,9 @@
 package cmd
 
 import (
-	pagerduty_terraforming "github.com/GoogleCloudPlatform/terraformer/providers/pagerduty"
+	pagerduty_terraforming "github.com/chenrui333/terraformer/providers/pagerduty"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/spf13/cobra"
 )
 

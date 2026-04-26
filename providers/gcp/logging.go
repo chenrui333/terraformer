@@ -17,7 +17,7 @@ package gcp
 import (
 	"context"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"google.golang.org/api/iterator"
 
 	"cloud.google.com/go/logging/logadmin"

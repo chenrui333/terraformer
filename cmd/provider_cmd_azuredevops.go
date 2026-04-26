@@ -14,9 +14,9 @@
 package cmd
 
 import (
-	azuredevops "github.com/GoogleCloudPlatform/terraformer/providers/azuredevops"
+	azuredevops "github.com/chenrui333/terraformer/providers/azuredevops"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/spf13/cobra"
 )
 

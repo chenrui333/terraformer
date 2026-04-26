@@ -14,9 +14,9 @@
 package cmd
 
 import (
-	digitalocean_terraforming "github.com/GoogleCloudPlatform/terraformer/providers/digitalocean"
+	digitalocean_terraforming "github.com/chenrui333/terraformer/providers/digitalocean"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/spf13/cobra"
 )
 

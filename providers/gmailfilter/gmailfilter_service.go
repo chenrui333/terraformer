@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/hashicorp/terraform/helper/pathorcontents"
 	"golang.org/x/oauth2"
 	googleoauth "golang.org/x/oauth2/google"

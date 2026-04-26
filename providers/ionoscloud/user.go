@@ -4,8 +4,8 @@ import (
 	"context"
 	"log"
 
-	"github.com/GoogleCloudPlatform/terraformer/providers/ionoscloud/helpers"
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/providers/ionoscloud/helpers"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 type UserGenerator struct {

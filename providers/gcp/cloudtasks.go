@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"google.golang.org/api/iterator"
 
 	cloudtasks "cloud.google.com/go/cloudtasks/apiv2"

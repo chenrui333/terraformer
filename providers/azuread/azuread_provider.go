@@ -19,7 +19,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 type AzureADProvider struct { //nolint

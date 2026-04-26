@@ -14,9 +14,9 @@
 package cmd
 
 import (
-	launchdarkly_terraforming "github.com/GoogleCloudPlatform/terraformer/providers/launchdarkly"
+	launchdarkly_terraforming "github.com/chenrui333/terraformer/providers/launchdarkly"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/spf13/cobra"
 )
 

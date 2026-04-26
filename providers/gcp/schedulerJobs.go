@@ -22,7 +22,7 @@ import (
 	cloudscheduler "google.golang.org/api/cloudscheduler/v1beta1"
 	"google.golang.org/api/compute/v1"
 
-	"github.com/GoogleCloudPlatform/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 var schedulerJobsAllowEmptyValues = []string{""}
