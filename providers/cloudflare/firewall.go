@@ -15,6 +15,7 @@
 package cloudflare
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -28,33 +29,24 @@ type FirewallGenerator struct {
 
 func (*FirewallGenerator) createZoneLockdownsResources(api *cf.API, zoneID, zoneName string) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
-	page := 1
 
-	for {
-		zonelockdowns, err := api.ListZoneLockdowns(zoneID, page)
-		if err != nil {
-			return resources, err
-		}
-		for _, zonelockdown := range zonelockdowns.Result {
-			resources = append(resources, terraformutils.NewResource(
-				zonelockdown.ID,
-				fmt.Sprintf("%s_%s", zoneName, zonelockdown.ID),
-				"cloudflare_zone_lockdown",
-				"cloudflare",
-				map[string]string{
-					"zone_id": zoneID,
-					"zone":    zoneName,
-				},
-				[]string{},
-				map[string]interface{}{},
-			))
-		}
-
-		if zonelockdowns.TotalPages > page {
-			page++
-		} else {
-			break
-		}
+	zonelockdowns, _, err := api.ListZoneLockdowns(context.Background(), cf.ZoneIdentifier(zoneID), cf.LockdownListParams{})
+	if err != nil {
+		return resources, err
+	}
+	for _, zonelockdown := range zonelockdowns {
+		resources = append(resources, terraformutils.NewResource(
+			zonelockdown.ID,
+			fmt.Sprintf("%s_%s", zoneName, zonelockdown.ID),
+			"cloudflare_zone_lockdown",
+			"cloudflare",
+			map[string]string{
+				"zone_id": zoneID,
+				"zone":    zoneName,
+			},
+			[]string{},
+			map[string]interface{}{},
+		))
 	}
 
 	return resources, nil
@@ -62,7 +54,8 @@ func (*FirewallGenerator) createZoneLockdownsResources(api *cf.API, zoneID, zone
 
 func (g *FirewallGenerator) createAccountAccessRuleResources(api *cf.API) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
-	rules, err := api.ListAccountAccessRules(api.AccountID, cf.AccessRule{}, 1)
+	accountID := g.accountID()
+	rules, err := api.ListAccountAccessRules(context.Background(), accountID, cf.AccessRule{}, 1)
 	if err != nil {
 		return resources, err
 	}
@@ -79,7 +72,7 @@ func (g *FirewallGenerator) createAccountAccessRuleResources(api *cf.API) ([]ter
 	}
 
 	for page := 2; page <= totalPages; page++ {
-		rules, err := api.ListAccountAccessRules(api.AccountID, cf.AccessRule{}, page)
+		rules, err := api.ListAccountAccessRules(context.Background(), accountID, cf.AccessRule{}, page)
 		if err != nil {
 			return resources, err
 		}
@@ -99,7 +92,7 @@ func (g *FirewallGenerator) createAccountAccessRuleResources(api *cf.API) ([]ter
 
 func (*FirewallGenerator) createZoneAccessRuleResources(api *cf.API, zoneID, zoneName string) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
-	rules, err := api.ListZoneAccessRules(zoneID, cf.AccessRule{}, 1)
+	rules, err := api.ListZoneAccessRules(context.Background(), zoneID, cf.AccessRule{}, 1)
 	if err != nil {
 		return resources, err
 	}
@@ -122,7 +115,7 @@ func (*FirewallGenerator) createZoneAccessRuleResources(api *cf.API, zoneID, zon
 	}
 
 	for page := 2; page <= totalPages; page++ {
-		rules, err := api.ListZoneAccessRules(zoneID, cf.AccessRule{}, page)
+		rules, err := api.ListZoneAccessRules(context.Background(), zoneID, cf.AccessRule{}, page)
 		if err != nil {
 			return resources, err
 		}
@@ -148,7 +141,7 @@ func (*FirewallGenerator) createZoneAccessRuleResources(api *cf.API, zoneID, zon
 
 func (*FirewallGenerator) createFilterResources(api *cf.API, zoneID, zoneName string) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
-	filters, err := api.Filters(zoneID, cf.PaginationOptions{})
+	filters, _, err := api.Filters(context.Background(), cf.ZoneIdentifier(zoneID), cf.FilterListParams{})
 	if err != nil {
 		return resources, err
 	}
@@ -173,7 +166,7 @@ func (*FirewallGenerator) createFilterResources(api *cf.API, zoneID, zoneName st
 func (*FirewallGenerator) createFirewallRuleResources(api *cf.API, zoneID, zoneName string) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 
-	fwrules, err := api.FirewallRules(zoneID, cf.PaginationOptions{})
+	fwrules, _, err := api.FirewallRules(context.Background(), cf.ZoneIdentifier(zoneID), cf.FirewallRuleListParams{})
 	if err != nil {
 		return resources, err
 	}
@@ -197,7 +190,7 @@ func (*FirewallGenerator) createFirewallRuleResources(api *cf.API, zoneID, zoneN
 func (g *FirewallGenerator) createRateLimitResources(api *cf.API, zoneID, zoneName string) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 
-	rateLimits, err := api.ListAllRateLimits(zoneID)
+	rateLimits, err := api.ListAllRateLimits(context.Background(), zoneID)
 	if err != nil {
 		return resources, err
 	}
@@ -219,7 +212,7 @@ func (g *FirewallGenerator) InitResources() error {
 		return err
 	}
 
-	if len(api.AccountID) > 0 {
+	if g.accountID() != "" {
 		resources, err := g.createAccountAccessRuleResources(api)
 		if err != nil {
 			return err
@@ -228,7 +221,7 @@ func (g *FirewallGenerator) InitResources() error {
 
 	}
 
-	zones, err := api.ListZones()
+	zones, err := api.ListZones(context.Background())
 	if err != nil {
 		return err
 	}

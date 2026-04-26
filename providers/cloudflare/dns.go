@@ -15,6 +15,7 @@
 package cloudflare
 
 import (
+	"context"
 	"fmt"
 	"log"
 
@@ -26,8 +27,8 @@ type DNSGenerator struct {
 	CloudflareService
 }
 
-func (*DNSGenerator) createZonesResource(api *cf.API, zoneID string) ([]terraformutils.Resource, error) {
-	zoneDetails, err := api.ZoneDetails(zoneID)
+func (*DNSGenerator) createZonesResource(api *cf.API, zoneID, _ string) ([]terraformutils.Resource, error) {
+	zoneDetails, err := api.ZoneDetails(context.Background(), zoneID)
 	if err != nil {
 		log.Println(err)
 		return []terraformutils.Resource{}, err
@@ -49,9 +50,9 @@ func (*DNSGenerator) createZonesResource(api *cf.API, zoneID string) ([]terrafor
 	return []terraformutils.Resource{resource}, nil
 }
 
-func (*DNSGenerator) createRecordsResources(api *cf.API, zoneID string) ([]terraformutils.Resource, error) {
+func (*DNSGenerator) createRecordsResources(api *cf.API, zoneID, zoneName string) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
-	records, err := api.DNSRecords(zoneID, cf.DNSRecord{})
+	records, _, err := api.ListDNSRecords(context.Background(), cf.ZoneIdentifier(zoneID), cf.ListDNSRecordsParams{})
 	if err != nil {
 		log.Println(err)
 		return resources, err
@@ -60,12 +61,12 @@ func (*DNSGenerator) createRecordsResources(api *cf.API, zoneID string) ([]terra
 	for _, record := range records {
 		r := terraformutils.NewResource(
 			record.ID,
-			fmt.Sprintf("%s_%s_%s", record.Type, record.ZoneName, record.ID),
+			fmt.Sprintf("%s_%s_%s", record.Type, zoneName, record.ID),
 			"cloudflare_record",
 			"cloudflare",
 			map[string]string{
 				"zone_id": zoneID,
-				"domain":  record.ZoneName,
+				"domain":  zoneName,
 				"name":    record.Name,
 			},
 			[]string{},
@@ -86,20 +87,20 @@ func (g *DNSGenerator) InitResources() error {
 		return err
 	}
 
-	zones, err := api.ListZones()
+	zones, err := api.ListZones(context.Background())
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 
-	funcs := []func(*cf.API, string) ([]terraformutils.Resource, error){
+	funcs := []func(*cf.API, string, string) ([]terraformutils.Resource, error){
 		g.createZonesResource,
 		g.createRecordsResources,
 	}
 
 	for _, zone := range zones {
 		for _, f := range funcs {
-			tmpRes, err := f(api, zone.ID)
+			tmpRes, err := f(api, zone.ID, zone.Name)
 			if err != nil {
 				log.Println(err)
 				return err
