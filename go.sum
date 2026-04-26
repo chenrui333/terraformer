@@ -131,8 +131,8 @@ github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapp
 github.com/HdrHistogram/hdrhistogram-go v1.1.2/go.mod h1:yDgFjdqOqDEKOvasDdhWNXYg9BVp4O+o5f6V/ehm6Oo=
 github.com/IBM-Cloud/bluemix-go v0.0.0-20220624043500-d538cb4fd9be h1:PTW3J9z39tJYnmtdAxi8WvTWQXfkOflTJw6noyjnno4=
 github.com/IBM-Cloud/bluemix-go v0.0.0-20220624043500-d538cb4fd9be/go.mod h1:tfNN3lCKuA2+SQvndt0+5CjPr2qn/wdNLjrue1GrOhY=
-github.com/IBM-Cloud/container-services-go-sdk v0.0.0-20210705152127-41ca00fc9a62 h1:MOkcr6qQGk4tY542ZJ1DggVh2WUP72EEyLB79llFVH8=
-github.com/IBM-Cloud/container-services-go-sdk v0.0.0-20210705152127-41ca00fc9a62/go.mod h1:xUQL9SGAjoZFd4GNjrjjtEpjpkgU7RFXRyHesbKTjiY=
+github.com/IBM-Cloud/container-services-go-sdk v0.0.0-20250409011111-61af13302654 h1:9paic8qCEa9Q/Hr88DxReT8CKqBUfpVCJpcDKaEKF3E=
+github.com/IBM-Cloud/container-services-go-sdk v0.0.0-20250409011111-61af13302654/go.mod h1:xUQL9SGAjoZFd4GNjrjjtEpjpkgU7RFXRyHesbKTjiY=
 github.com/IBM/continuous-delivery-go-sdk/v2 v2.0.8 h1:FebE9maXXOMBbDJVLUakHZiD+WUhakfI9yr/qckkXqI=
 github.com/IBM/continuous-delivery-go-sdk/v2 v2.0.8/go.mod h1:7WrLR340P1r4rVJPQPmwsZIs8eDPw+IEJt787v3mLN8=
 github.com/IBM/go-sdk-core v1.1.0 h1:pV73lZqr9r1xKb3h08c1uNG3AphwoV5KzUzhS+pfEqY=
