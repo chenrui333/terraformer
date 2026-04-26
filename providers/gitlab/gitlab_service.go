@@ -16,7 +16,7 @@ package gitlab
 
 import (
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 const gitLabDefaultURL = "https://gitlab.com/api/v4/"

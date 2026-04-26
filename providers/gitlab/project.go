@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type ProjectGenerator struct {

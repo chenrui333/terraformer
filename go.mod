@@ -141,7 +141,6 @@ require (
 	github.com/spf13/pflag v1.0.10
 	github.com/tencentyun/cos-go-sdk-v5 v0.7.73
 	github.com/vultr/govultr v1.1.1
-	github.com/xanzy/go-gitlab v0.50.2
 	github.com/yandex-cloud/go-genproto v0.74.0
 	github.com/yandex-cloud/go-sdk v0.31.0
 	github.com/zclconf/go-cty v1.18.1
@@ -439,6 +438,7 @@ require (
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tat v1.3.52
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tcaplusdb v1.3.17
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc v1.3.83
+	gitlab.com/gitlab-org/api/client-go v1.46.0
 )
 
 replace gopkg.in/jarcoal/httpmock.v1 => github.com/jarcoal/httpmock v1.0.5
