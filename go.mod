@@ -128,7 +128,6 @@ require (
 	github.com/ionos-cloud/sdk-go-dbaas-postgres v1.1.4
 	github.com/ionos-cloud/sdk-go/v6 v6.3.7
 	github.com/jmespath/go-jmespath v0.4.0
-	github.com/jonboydell/logzio_client v1.2.0
 	github.com/labd/commercetools-go-sdk v0.3.1
 	github.com/linode/linodego v1.68.0
 	github.com/microsoft/azure-devops-go-api/azuredevops v1.0.0-b5
@@ -339,6 +338,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.1.1 // indirect
 	github.com/Masterminds/sprig/v3 v3.2.1 // indirect
 	github.com/Myra-Security-GmbH/signature v1.0.0 // indirect
+	github.com/avast/retry-go v3.0.0+incompatible // indirect
 	github.com/aws/aws-sdk-go-v2/service/signin v1.0.10 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clbanning/mxj v1.8.4 // indirect
@@ -418,6 +418,7 @@ require (
 	github.com/ionos-cloud/sdk-go-dataplatform v1.1.1
 	github.com/ionos-cloud/sdk-go-dns v1.4.0
 	github.com/ionos-cloud/sdk-go-logging v1.3.0
+	github.com/logzio/logzio_terraform_client v1.30.2
 	github.com/okta/okta-sdk-golang/v5 v5.0.6
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/as v1.3.53
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cbs v1.3.40
