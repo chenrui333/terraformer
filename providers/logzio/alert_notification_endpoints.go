@@ -19,7 +19,7 @@ import (
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
-	"github.com/jonboydell/logzio_client/endpoints"
+	"github.com/logzio/logzio_terraform_client/endpoints"
 )
 
 type AlertNotificationEndpointsGenerator struct {
@@ -36,9 +36,10 @@ func (g *AlertNotificationEndpointsGenerator) InitResources() error {
 		return err
 	}
 	for _, endpoint := range endpoints {
+		endpointID := strconv.FormatInt(int64(endpoint.Id), 10)
 		g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-			strconv.FormatInt(endpoint.Id, 10),
-			createSlug(endpoint.Title+"-"+string(endpoint.EndpointType)+"-"+strconv.FormatInt(endpoint.Id, 10)),
+			endpointID,
+			createSlug(endpoint.Title+"-"+endpoint.Type+"-"+endpointID),
 			"logzio_endpoint",
 			"logzio",
 			[]string{},
