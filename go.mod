@@ -116,7 +116,7 @@ require (
 	github.com/hashicorp/go-azure-helpers v0.48.0
 	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/hashicorp/go-hclog v1.6.3
-	github.com/hashicorp/go-plugin v1.4.4
+	github.com/hashicorp/go-plugin v1.7.0
 	github.com/hashicorp/hcl v1.0.1-vault-7
 	github.com/hashicorp/terraform v0.12.31
 	github.com/heimweh/go-pagerduty v0.0.0-20250801140645-0b96cfc9bf17
@@ -242,7 +242,7 @@ require (
 	github.com/hashicorp/go-version v1.8.0 // indirect
 	github.com/hashicorp/hcl/v2 v2.14.0 // indirect
 	github.com/hashicorp/hil v0.0.0-20190212112733-ab17b08d6590 // indirect
-	github.com/hashicorp/yamux v0.0.0-20211028200310-0bc27b27de87 // indirect
+	github.com/hashicorp/yamux v0.1.2 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -258,7 +258,6 @@ require (
 	github.com/mitchellh/cli v1.1.5 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/mitchellh/hashstructure v1.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
