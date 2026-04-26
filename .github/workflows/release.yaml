@@ -3,9 +3,11 @@ name: release
 on:
   pull_request:
     paths:
+    - .github/release.yml
     - .github/workflows/release.yaml
     - .goreleaser.yaml
     - build/**
+    - CHANGELOG.md
     - go.mod
     - go.sum
     - RELEASE.md

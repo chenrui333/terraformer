@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.10.0
+
+`0.10.0` is a minor maintenance release that continues Terraformer's post-fork
+dependency recovery. It clears the known module-level vulnerability findings,
+expands changed-line lint coverage, refreshes a large set of provider SDKs, and
+keeps the remaining source-heavy provider and Terraform-core migrations tracked
+separately for follow-up work.
+
+## What's Changed
+
+### Security And CI
+
+* Update Okta SDK dependencies and replace the legacy `jwt-go` module path so
+  `govulncheck` module scans are clean.
+* Expand golangci-lint changed-line audit coverage.
+* Let PR workflows run for branch-to-branch stacked PRs during large backlog
+  triage.
+
+### Dependency And Provider Maintenance
+
+* Refresh Datadog, Okta, GitHub, Opsgenie, Fastly, Equinix Metal, PAN-OS, IBM,
+  Azure, Keycloak, and shared HashiCorp/ZCL dependencies.
+* Batch-update provider client libraries across Azure, IONOS, Mackerel,
+  DigitalOcean, Linode, OpenStack, TencentCloud, Alicloud, Yandex, Grafana,
+  PagerDuty, Mikrotik, Opal, NS1, and Logz.io.
+* Migrate the Logz.io provider to the maintained Terraform client module.
+* Migrate the Keycloak provider import path to the maintained module path.
+
+### Follow-Up Tracking
+
+* Track the remaining broad SDK and Terraform-core migrations in issue #155
+  instead of blocking this release on source-heavy provider rewrites.
+
+**Full Changelog**: https://github.com/chenrui333/terraformer/compare/0.9.0...0.10.0
+
 ## 0.9.0
 
 `0.9.0` is a minor maintenance release that refreshes Terraformer's supported

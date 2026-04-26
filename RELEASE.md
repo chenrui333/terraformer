@@ -10,8 +10,10 @@ Use this checklist when cutting a new Terraformer release.
   user-visible or maintainer-relevant changes.
 - Make sure `main` is current and the worktree is clean before publishing.
 
-For `0.9.0`, use tracking issue #120 and treat the release as a minor release
-because the Go toolchain floor moved to Go 1.26.2.
+For `0.10.0`, treat the release as a minor release because it contains broad
+provider dependency modernization after `0.9.0`. Use issue #155 for follow-up
+tracking of the larger provider SDK and Terraform-core migrations that should
+not block this release once validation is green.
 
 ## Checklist
 
@@ -22,9 +24,12 @@ because the Go toolchain floor moved to Go 1.26.2.
    - Keep the compare link at the end of the entry.
 2. Preview GitHub-generated notes for comparison:
    ```sh
+   VERSION=0.10.0
+   PREVIOUS_VERSION=0.9.0
    gh api repos/chenrui333/terraformer/releases/generate-notes \
-     -f tag_name=0.9.0 \
-     -f previous_tag_name=0.8.30
+     -f tag_name="$VERSION" \
+     -f target_commitish=main \
+     -f previous_tag_name="$PREVIOUS_VERSION"
    ```
 3. Run the local validation set:
    ```sh
@@ -45,11 +50,12 @@ because the Go toolchain floor moved to Go 1.26.2.
 5. Confirm the GitHub release body, tag, and artifact list are final.
 6. Create and push the release tag from the intended `main` commit:
    ```sh
+   VERSION=0.10.0
    git fetch origin main --tags
    git checkout main
    git pull --ff-only origin main
-   git tag -a 0.9.0 -m "0.9.0"
-   git push origin 0.9.0
+   git tag -a "$VERSION" -m "$VERSION"
+   git push origin "$VERSION"
    ```
    The tag push runs GoReleaser and creates a draft GitHub release.
 7. Review the draft release, then publish it once the notes and assets are
