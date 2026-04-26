@@ -136,7 +136,7 @@ require (
 	github.com/nicksnyder/go-i18n v1.10.1 // indirect
 	github.com/okta/okta-sdk-golang/v2 v2.20.0
 	github.com/opsgenie/opsgenie-go-sdk-v2 v1.2.23
-	github.com/packethost/packngo v0.30.0
+	github.com/packethost/packngo v0.31.0
 	github.com/pkg/errors v0.9.1
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/spf13/cobra v1.1.1
