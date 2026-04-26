@@ -21,9 +21,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	bluemix "github.com/IBM-Cloud/bluemix-go"
 	"github.com/IBM-Cloud/bluemix-go/session"
+	"github.com/chenrui333/terraformer/terraformutils"
 
 	"github.com/IBM/go-sdk-core/v3/core"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
@@ -331,9 +331,9 @@ func (g *SatelliteDataPlaneGenerator) InitResources() error {
 							g.Resources = append(g.Resources, g.loadSecurityGroupRuleResources(*group.ID, *rule.ID, sgDependsOn))
 						}
 
-					case "*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll":
+					case "*vpcv1.SecurityGroupRuleProtocolAny":
 						{
-							rule := sgrule.(*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll)
+							rule := sgrule.(*vpcv1.SecurityGroupRuleProtocolAny)
 							g.Resources = append(g.Resources, g.loadSecurityGroupRuleResources(*group.ID, *rule.ID, sgDependsOn))
 						}
 

@@ -153,8 +153,8 @@ github.com/IBM/networking-go-sdk v0.30.0 h1:GUfvq4AOK0iTUEodPL2k812y2W1GdZs6hUTa
 github.com/IBM/networking-go-sdk v0.30.0/go.mod h1:tVxXclpQs8nQJYPTr9ZPNC1voaPNQLy8iy/72oVfFtM=
 github.com/IBM/platform-services-go-sdk v0.97.2 h1:CdiLSFB0+oaAsucgVnpwn31YTAr47qFROPes4zXJalk=
 github.com/IBM/platform-services-go-sdk v0.97.2/go.mod h1:t93mozFmKrxexnKNdx2gNOtEI9Wd62dKAVffQYm0vRM=
-github.com/IBM/vpc-go-sdk v0.64.0 h1:0x2jakapXxXYTTr0EdrwuXa6h0couSK+FTDGxd8jChA=
-github.com/IBM/vpc-go-sdk v0.64.0/go.mod h1:VBR6bAznHsNCFA89Ue4JFQpqCcFp8F5neqbCFCyks4Q=
+github.com/IBM/vpc-go-sdk v0.83.2 h1:RLMha7+buktU9hrhvAMF2QRHIvxaAsuU14W6akybJqs=
+github.com/IBM/vpc-go-sdk v0.83.2/go.mod h1:85bJ/0FS7vYAifHdZvlnXypf8pQSmuf9kxReDDI5ZdY=
 github.com/Masterminds/goutils v1.1.1 h1:5nUrii3FMTL5diU80unEVvNevw1nH4+ZV4DSLVJLSYI=
 github.com/Masterminds/goutils v1.1.1/go.mod h1:8cTjp+g8YejhMuvIA5y2vz3BpJxksy863GQaJW2MFNU=
 github.com/Masterminds/semver/v3 v3.1.1/go.mod h1:VPu/7SZ7ePZ3QOrcuXROw5FAcLl4a0cBrbBpGY/8hQs=
