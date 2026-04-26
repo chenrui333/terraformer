@@ -5,9 +5,9 @@ project_name: terraformer
 before:
   hooks:
     - go mod tidy
-    - rm -rf dist/provider-binaries
+    - rm -rf .goreleaser-extra/provider-binaries
     - >-
-      sh -c 'TERRAFORMER_BUILD_OUTPUT_DIR=dist/provider-binaries
+      sh -c 'TERRAFORMER_BUILD_OUTPUT_DIR=.goreleaser-extra/provider-binaries
       TERRAFORMER_LDFLAGS="-s -w -X github.com/chenrui333/terraformer/version.Version={{ .Version }}
       -X github.com/chenrui333/terraformer/version.GitCommit={{ .Commit }}"
       go run build/multi-build/main.go'
@@ -43,7 +43,7 @@ checksum:
   name_template: "terraformer_{{ .Version }}_checksums.txt"
   algorithm: sha256
   extra_files:
-    - glob: dist/provider-binaries/terraformer-*
+    - glob: .goreleaser-extra/provider-binaries/terraformer-*
 
 changelog:
   use: github-native
@@ -57,4 +57,4 @@ release:
   replace_existing_draft: true
   mode: replace
   extra_files:
-    - glob: dist/provider-binaries/terraformer-*
+    - glob: .goreleaser-extra/provider-binaries/terraformer-*
