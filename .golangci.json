@@ -18,11 +18,20 @@
     "max-same-issues": 0
   },
   "linters": {
+    "default": "standard",
     "enable": [
+      "bodyclose",
+      "copyloopvar",
+      "errorlint",
       "gocritic",
+      "gosec",
+      "misspell",
+      "nilerr",
+      "nolintlint",
       "revive",
       "unconvert",
-      "unparam"
+      "unparam",
+      "whitespace"
     ],
     "exclusions": {
       "generated": "lax",
