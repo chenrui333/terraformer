@@ -1,0 +1,32 @@
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+      - Stale
+  categories:
+    - title: Breaking Changes
+      labels:
+        - breaking-change
+    - title: Features
+      labels:
+        - enhancement
+    - title: Bug Fixes
+      labels:
+        - bug
+    - title: Release
+      labels:
+        - release
+    - title: CI And Maintenance
+      labels:
+        - ci
+        - github_actions
+    - title: Dependency Updates
+      labels:
+        - dependencies
+        - go
+    - title: Documentation
+      labels:
+        - documentation
+    - title: Other Changes
+      labels:
+        - "*"

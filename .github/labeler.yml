@@ -1,0 +1,53 @@
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.md"
+          - "docs/**"
+
+release:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/release.yml"
+          - ".github/labeler.yml"
+          - ".github/workflows/labeler.yml"
+          - ".github/workflows/release.yaml"
+          - ".goreleaser.yaml"
+          - "CHANGELOG.md"
+          - "RELEASE.md"
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/workflows/**"
+          - ".github/labeler.yml"
+          - ".github/release.yml"
+          - ".golangci.*"
+
+github_actions:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/workflows/**"
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "go.mod"
+          - "go.sum"
+          - "renovate.json"
+
+go:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.go"
+          - "go.mod"
+          - "go.sum"
+
+enhancement:
+  - head-branch:
+      - "^feat/"
+      - "^feature/"
+
+bug:
+  - head-branch:
+      - "^fix/"
+      - "^bugfix/"
