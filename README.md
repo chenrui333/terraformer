@@ -2,9 +2,6 @@
 
 [![tests](https://github.com/chenrui333/terraformer/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/chenrui333/terraformer/actions/workflows/test.yml)
 [![linter](https://github.com/chenrui333/terraformer/actions/workflows/linter.yml/badge.svg?branch=main)](https://github.com/chenrui333/terraformer/actions/workflows/linter.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/chenrui333/terraformer)](https://goreportcard.com/report/github.com/chenrui333/terraformer)
-[![AUR package](https://img.shields.io/aur/version/terraformer)](https://aur.archlinux.org/packages/terraformer/)
-[![Homebrew](https://img.shields.io/badge/dynamic/json.svg?url=https://formulae.brew.sh/api/formula/terraformer.json&query=$.versions.stable&label=homebrew)](https://formulae.brew.sh/formula/terraformer)
 
 A CLI tool that generates `tf`/`json` and `tfstate` files based on existing infrastructure
 (reverse Terraform).
@@ -69,7 +66,6 @@ A CLI tool that generates `tf`/`json` and `tfstate` files based on existing infr
 - [Contributing](#contributing)
 - [Developing](#developing)
 - [Infrastructure](#infrastructure)
-- [Stargazers over time](#stargazers-over-time)
 
 ## Demo GCP
 [![asciicast](https://asciinema.org/a/243961.svg)](https://asciinema.org/a/243961)
@@ -216,11 +212,6 @@ Both Terraformer and a Terraform provider plugin need to be installed.
 
 #### Terraformer
 
-**From a package manager**
-- [Homebrew](https://brew.sh/) users can use `brew install terraformer`.
-- [MacPorts](https://www.macports.org/) users can use `sudo port install terraformer`.
-- [Chocolatey](https://chocolatey.org/) users can use `choco install terraformer`.
-
 **From releases**
 This installs all providers, set `PROVIDER` to one of `google`, `aws` or `kubernetes` if you only need one.
 
@@ -238,11 +229,6 @@ curl -LO "https://github.com/chenrui333/terraformer/releases/download/$(curl -s 
 chmod +x terraformer-${PROVIDER}-darwin-amd64
 sudo mv terraformer-${PROVIDER}-darwin-amd64 /usr/local/bin/terraformer
 ```
-* Windows
-1. Install Terraform - https://www.terraform.io/downloads
-2. Download exe file for required provider from here - https://github.com/chenrui333/terraformer/releases
-3. Add the exe file path to path variable
-
 **From source**
 1.  Run `git clone <terraformer repo> && cd terraformer/`
 2.  Run `go mod download`
@@ -386,7 +372,3 @@ Terraforming lacks full coverage for resources - as an example you can see that 
 
 * terraforming - https://github.com/dtan4/terraforming/blob/master/lib/terraforming/template/tf/s3.erb
 * official S3 support - https://www.terraform.io/docs/providers/aws/r/s3_bucket
-
-## Stargazers over time
-
-[![Stargazers over time](https://starchart.cc/chenrui333/terraformer.svg)](https://starchart.cc/chenrui333/terraformer)
