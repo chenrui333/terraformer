@@ -155,7 +155,7 @@ require (
 )
 
 require (
-	github.com/IBM-Cloud/container-services-go-sdk v0.0.0-20210705152127-41ca00fc9a62
+	github.com/IBM-Cloud/container-services-go-sdk v0.0.0-20250409011111-61af13302654
 	github.com/IBM/go-sdk-core v1.1.0
 	github.com/hashicorp/terraform-svchost v0.1.1 // indirect
 	github.com/mackerelio/mackerel-client-go v0.41.0
