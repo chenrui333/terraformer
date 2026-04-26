@@ -409,7 +409,7 @@ require (
 
 require (
 	github.com/IBM/continuous-delivery-go-sdk/v2 v2.0.2
-	github.com/aws/aws-sdk-go v1.55.8
+	github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.34.2
 	github.com/aws/aws-sdk-go-v2/service/directconnect v1.38.16
 	github.com/gofrs/uuid/v3 v3.1.2
 	github.com/hashicorp/vault/api v1.23.0
