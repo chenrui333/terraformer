@@ -310,7 +310,7 @@ require (
 	cloud.google.com/go/iam v1.9.0
 	cloud.google.com/go/monitoring v1.27.0
 	github.com/DataDog/datadog-api-client-go/v2 v2.59.0
-	github.com/Myra-Security-GmbH/myrasec-go/v2 v2.28.0
+	github.com/Myra-Security-GmbH/myrasec-go/v2 v2.40.20
 	github.com/bradleyfalzon/ghinstallation/v2 v2.18.0
 	github.com/manicminer/hamilton v0.50.0
 	github.com/opalsecurity/opal-go v1.4.0
@@ -329,7 +329,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.55.0 // indirect
 	github.com/Masterminds/semver/v3 v3.1.1 // indirect
 	github.com/Masterminds/sprig/v3 v3.2.1 // indirect
-	github.com/Myra-Security-GmbH/signature v1.0.0 // indirect
+	github.com/Myra-Security-GmbH/signature v1.1.0 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/avast/retry-go v3.0.0+incompatible // indirect
 	github.com/aws/aws-sdk-go-v2/service/signin v1.0.10 // indirect
