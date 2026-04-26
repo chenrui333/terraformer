@@ -9,7 +9,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/IBM-Cloud/bluemix-go"
 	"github.com/IBM-Cloud/bluemix-go/api/resource/resourcev1/catalog"
 	"github.com/IBM-Cloud/bluemix-go/api/resource/resourcev2/controllerv2"
@@ -18,6 +17,7 @@ import (
 	"github.com/IBM/continuous-delivery-go-sdk/v2/cdtoolchainv2"
 	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/platform-services-go-sdk/iampolicymanagementv1"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 type ToolchainGenerator struct {
@@ -271,10 +271,10 @@ func (g *ToolchainGenerator) HandleTool(t cdtoolchainv2.ToolModel, toolType stri
 }
 
 // Called within InitResources when IBM_CD_TOOLCHAIN_INCLUDE_S2S is set
-func getS2SPolicies(sess *session.Session, targetTcID string) (map[string][]iampolicymanagementv1.Policy, error) {
+func getS2SPolicies(sess *session.Session, targetTcID string) (map[string][]iampolicymanagementv1.PolicyTemplateMetaData, error) {
 	apiKey := os.Getenv("IC_API_KEY")
 
-	emptyPolicies := map[string][]iampolicymanagementv1.Policy{}
+	emptyPolicies := map[string][]iampolicymanagementv1.PolicyTemplateMetaData{}
 
 	iamPolicyOptions := &iampolicymanagementv1.IamPolicyManagementV1Options{
 		URL: "https://iam.cloud.ibm.com",
@@ -305,7 +305,7 @@ func getS2SPolicies(sess *session.Session, targetTcID string) (map[string][]iamp
 	}
 	authPolicies := authPolicyList.Policies
 
-	s2sPolicies := map[string][]iampolicymanagementv1.Policy{} // map of toolchain id to s2s policies under it
+	s2sPolicies := map[string][]iampolicymanagementv1.PolicyTemplateMetaData{} // map of toolchain id to s2s policies under it
 
 	for _, ap := range authPolicies {
 		for _, a := range ap.Subjects[0].Attributes {
@@ -315,7 +315,7 @@ func getS2SPolicies(sess *session.Session, targetTcID string) (map[string][]iamp
 			if (targetTcID != "" && *(a.Value) == targetTcID) || targetTcID == "" {
 				// get s2s policies for target toolchain
 				if _, ok := s2sPolicies[*(a.Value)]; !ok {
-					s2sPolicies[*(a.Value)] = []iampolicymanagementv1.Policy{}
+					s2sPolicies[*(a.Value)] = []iampolicymanagementv1.PolicyTemplateMetaData{}
 				}
 				s2sPolicies[*(a.Value)] = append(s2sPolicies[*(a.Value)], ap)
 			}
@@ -379,7 +379,7 @@ func (g *ToolchainGenerator) InitResources() error {
 	}
 
 	// Get s2s policies
-	s2sPolicies := map[string][]iampolicymanagementv1.Policy{}
+	s2sPolicies := map[string][]iampolicymanagementv1.PolicyTemplateMetaData{}
 
 	includeS2S := os.Getenv("IBM_CD_TOOLCHAIN_INCLUDE_S2S")
 	if includeS2S != "" {
