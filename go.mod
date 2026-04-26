@@ -110,7 +110,7 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/digitalocean/godo v1.83.0
 	github.com/fastly/go-fastly/v7 v7.0.0
-	github.com/google/go-github/v35 v35.1.0
+	github.com/google/go-github/v35 v35.3.0
 	github.com/gophercloud/gophercloud v1.0.0
 	github.com/grafana/grafana-api-golang-client v0.0.0-20210218192924-9ccd2365d2a6
 	github.com/hashicorp/go-azure-helpers v0.48.0
