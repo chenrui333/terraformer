@@ -16,7 +16,7 @@ package keycloak
 
 import (
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/mrparkers/terraform-provider-keycloak/keycloak"
+	"github.com/keycloak/terraform-provider-keycloak/keycloak"
 )
 
 func (g RealmGenerator) createOpenIDClientResources(openIDClients []*keycloak.OpenidClient) []terraformutils.Resource {
