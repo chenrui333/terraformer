@@ -28,7 +28,10 @@ type ZoneGenerator struct {
 
 func (g *ZoneGenerator) createZoneRecordResources(client *ns1.Client, zone_name string) error {
 
-	zone, _, err := client.Zones.Get(zone_name)
+	zone, resp, err := client.Zones.Get(zone_name, true)
+	if resp != nil && resp.Body != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		return err
 	}
@@ -61,7 +64,10 @@ func (g *ZoneGenerator) createZoneResources(client *ns1.Client, includeZones []s
 	if len(includeZones) > 0 {
 		for _, filter := range includeZones {
 			var z *dns.Zone
-			z, _, err := client.Zones.Get(filter)
+			z, resp, err := client.Zones.Get(filter, false)
+			if resp != nil && resp.Body != nil {
+				defer resp.Body.Close()
+			}
 			if err != nil {
 				return err
 			}

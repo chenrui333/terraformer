@@ -17,7 +17,7 @@ func (g *GroupGenerator) InitResources() error {
 		return fmt.Errorf("unable to list opal groups: %v", err)
 	}
 
-	groups, _, err := client.GroupsApi.GetGroups(context.TODO()).Execute()
+	groups, _, err := client.GroupsAPI.GetGroups(context.TODO()).Execute()
 	if err != nil {
 		return fmt.Errorf("unable to list opal groups: %v", err)
 	}
@@ -43,11 +43,11 @@ func (g *GroupGenerator) InitResources() error {
 			))
 		}
 
-		if !groups.HasNext() || groups.Next.Get() == nil {
+		if !groups.HasNext() || groups.Next == nil {
 			break
 		}
 
-		groups, _, err = client.GroupsApi.GetGroups(context.TODO()).Cursor(*groups.Next.Get()).Execute()
+		groups, _, err = client.GroupsAPI.GetGroups(context.TODO()).Cursor(*groups.Next).Execute()
 		if err != nil {
 			return fmt.Errorf("unable to list opal groups: %v", err)
 		}

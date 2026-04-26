@@ -17,7 +17,7 @@ func (g *OwnerGenerator) InitResources() error {
 		return fmt.Errorf("unable to list opal owners: %v", err)
 	}
 
-	owners, _, err := client.OwnersApi.GetOwners(context.TODO()).Execute()
+	owners, _, err := client.OwnersAPI.GetOwners(context.TODO()).Execute()
 	if err != nil {
 		return fmt.Errorf("unable to list opal owners: %v", err)
 	}
@@ -43,11 +43,11 @@ func (g *OwnerGenerator) InitResources() error {
 			))
 		}
 
-		if !owners.HasNext() || owners.Next.Get() == nil {
+		if !owners.HasNext() || owners.Next == nil {
 			break
 		}
 
-		owners, _, err = client.OwnersApi.GetOwners(context.TODO()).Cursor(*owners.Next.Get()).Execute()
+		owners, _, err = client.OwnersAPI.GetOwners(context.TODO()).Cursor(*owners.Next).Execute()
 		if err != nil {
 			return fmt.Errorf("unable to list opal owners: %v", err)
 		}

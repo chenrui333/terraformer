@@ -104,7 +104,7 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cloudflare/cloudflare-go v0.13.6
 	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 // indirect
-	github.com/ddelnano/terraform-provider-mikrotik/client v0.0.0-20210401060029-7f652169b2c4
+	github.com/ddelnano/terraform-provider-mikrotik/client v0.0.0-20250110092516-5bc3b68c6245
 	github.com/ddelnano/terraform-provider-xenorchestra/client v0.0.0-20210401070256-0d721c6762ef
 	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
@@ -322,8 +322,8 @@ require (
 	github.com/Myra-Security-GmbH/myrasec-go/v2 v2.28.0
 	github.com/bradleyfalzon/ghinstallation/v2 v2.18.0
 	github.com/manicminer/hamilton v0.50.0
-	github.com/opalsecurity/opal-go v1.0.19
-	gopkg.in/ns1/ns1-go.v2 v2.6.5
+	github.com/opalsecurity/opal-go v1.4.0
+	gopkg.in/ns1/ns1-go.v2 v2.17.2
 )
 
 require (
@@ -399,6 +399,7 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260414002931-afd174a4e478 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
+	gopkg.in/validator.v2 v2.0.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20260317180543-43fb72c5454a // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
@@ -442,7 +443,7 @@ require (
 
 replace gopkg.in/jarcoal/httpmock.v1 => github.com/jarcoal/httpmock v1.0.5
 
-replace gopkg.in/ns1/ns1-go.v2 => github.com/ns1/ns1-go/v2 v2.6.5
+replace gopkg.in/ns1/ns1-go.v2 => github.com/ns1/ns1-go/v2 v2.17.2
 
 replace github.com/tencentcloud/tencentcloud-sdk-go => github.com/tencentcloud/tencentcloud-sdk-go v1.0.392
 
