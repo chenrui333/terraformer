@@ -22,7 +22,7 @@ require (
 	github.com/PaloAltoNetworks/pango v0.10.2
 	github.com/aliyun/alibaba-cloud-sdk-go v1.63.107
 	github.com/aliyun/aliyun-tablestore-go-sdk v4.1.3+incompatible
-	github.com/apache/openwhisk-client-go v0.0.0-20210106144548-17d556327cd3
+	github.com/apache/openwhisk-client-go v0.0.0-20250309042127-fa7fa7e48863
 	github.com/aws/aws-sdk-go-v2 v1.41.6
 	github.com/aws/aws-sdk-go-v2/config v1.32.16
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.15
@@ -121,7 +121,7 @@ require (
 	github.com/hashicorp/terraform v0.12.31
 	github.com/heimweh/go-pagerduty v0.0.0-20250801140645-0b96cfc9bf17
 	github.com/heroku/heroku-go/v5 v5.5.0
-	github.com/hokaccha/go-prettyjson v0.0.0-20210113012101-fb4e108d2519 // indirect
+	github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f // indirect
 	github.com/honeycombio/terraform-provider-honeycombio v0.10.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/ionos-cloud/sdk-go-dbaas-mongo v1.4.1
@@ -132,7 +132,7 @@ require (
 	github.com/linode/linodego v1.68.0
 	github.com/microsoft/azure-devops-go-api/azuredevops v1.0.0-b5
 	github.com/mrparkers/terraform-provider-keycloak v0.0.0-20221013232944-56f37a07590d
-	github.com/nicksnyder/go-i18n v1.10.1 // indirect
+	github.com/nicksnyder/go-i18n v1.10.3 // indirect
 	github.com/okta/okta-sdk-golang/v2 v2.20.0
 	github.com/opsgenie/opsgenie-go-sdk-v2 v1.2.23
 	github.com/packethost/packngo v0.31.0
@@ -270,7 +270,7 @@ require (
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/patrickmn/go-cache v0.0.0-20180815053127-5633e0862627 // indirect
 	github.com/pborman/uuid v1.2.0 // indirect
-	github.com/pelletier/go-toml v1.7.0 // indirect
+	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/peterhellberg/link v1.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/posener/complete v1.2.1 // indirect
