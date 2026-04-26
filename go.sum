@@ -162,10 +162,10 @@ github.com/Masterminds/semver/v3 v3.1.1 h1:hLg3sBzpNErnxhQtUy/mmLR2I9foDujNK030I
 github.com/Masterminds/semver/v3 v3.1.1/go.mod h1:VPu/7SZ7ePZ3QOrcuXROw5FAcLl4a0cBrbBpGY/8hQs=
 github.com/Masterminds/sprig/v3 v3.2.1 h1:n6EPaDyLSvCEa3frruQvAiHuNp2dhBlMSmkEr+HuzGc=
 github.com/Masterminds/sprig/v3 v3.2.1/go.mod h1:UoaO7Yp8KlPnJIYWTFkMaqPUYKTfGFPhxNuwnnxkKlk=
-github.com/Myra-Security-GmbH/myrasec-go/v2 v2.28.0 h1:/j5vGm0MB++gzimxjR53JCB/7PApCfxdaV52nU5FTC8=
-github.com/Myra-Security-GmbH/myrasec-go/v2 v2.28.0/go.mod h1:A3VaeNipYmfNnHIJVEzyBmfHSWjK7c9aNfbpmRbFiS8=
-github.com/Myra-Security-GmbH/signature v1.0.0 h1:u46nIxnffLLb8pCe6ic2w7OmSSEJk4warn3W4Vp2GjQ=
-github.com/Myra-Security-GmbH/signature v1.0.0/go.mod h1:zgyy5MGBCezqxVOjrG3THQJqsIfJ04LWtQv3Q4Ug2+Y=
+github.com/Myra-Security-GmbH/myrasec-go/v2 v2.40.20 h1:iY6RDw+YZYfgbCuZCaRGf5Djh0gvVQRh1OcIOIiGTjU=
+github.com/Myra-Security-GmbH/myrasec-go/v2 v2.40.20/go.mod h1:wlzlsUZt27+L8mbka1UiBZeoGR0x4Lu8WnxczwWkfO0=
+github.com/Myra-Security-GmbH/signature v1.1.0 h1:/Tv8SilN0P8k5fKArvQHkf9iJWU5H34TSvgEyyZ32f4=
+github.com/Myra-Security-GmbH/signature v1.1.0/go.mod h1:kyX4FQ2XWvJQnvxkWmcyUIqG0jAzGL22fQMf2RTvoj0=
 github.com/OctopusDeploy/go-octopusdeploy v1.8.6 h1:HvdMKaVNhbmlyXF7Y9+HO4ZcF7+e9WlkETcgoTvG5xM=
 github.com/OctopusDeploy/go-octopusdeploy v1.8.6/go.mod h1:53/298KRhEbphPJaTRRpjTuNMBjdb567XCAtnu0yuzg=
 github.com/PaloAltoNetworks/pango v0.10.2 h1:Tjn6vIzzAq6Dd7N0mDuiP8w8pz8k5W9zz/TTSUQCsQY=
