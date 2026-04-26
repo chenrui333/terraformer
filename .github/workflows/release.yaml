@@ -12,6 +12,11 @@ on:
     - go.sum
     - RELEASE.md
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing tag to publish; leave empty to run a snapshot preflight.
+        required: false
+        type: string
   push:
     tags:
     - "[0-9]*.[0-9]*.[0-9]*"
@@ -22,6 +27,7 @@ permissions:
 env:
   GOWORK: off
   GORELEASER_VERSION: v2.15.4
+  GORELEASER_TIMEOUT: 3h
 
 jobs:
   check:
@@ -44,7 +50,7 @@ jobs:
 
   snapshot:
     name: Snapshot Release
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.release_tag == ''
     runs-on: ubuntu-latest
 
     steps:
@@ -66,13 +72,13 @@ jobs:
       with:
         distribution: goreleaser
         version: ${{ env.GORELEASER_VERSION }}
-        args: release --snapshot --clean --skip=publish
+        args: release --snapshot --clean --skip=publish --timeout=${{ env.GORELEASER_TIMEOUT }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   release:
     name: Release
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -81,6 +87,7 @@ jobs:
     - uses: actions/checkout@v6
       with:
         fetch-depth: 0
+        ref: ${{ inputs.release_tag || github.ref }}
     - name: Install Go
       uses: actions/setup-go@v6
       with:
@@ -96,6 +103,6 @@ jobs:
       with:
         distribution: goreleaser
         version: ${{ env.GORELEASER_VERSION }}
-        args: release --clean
+        args: release --clean --timeout=${{ env.GORELEASER_TIMEOUT }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
