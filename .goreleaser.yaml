@@ -1,0 +1,51 @@
+version: 2
+
+project_name: terraformer
+
+before:
+  hooks:
+    - go mod tidy
+    - rm -rf dist/provider-binaries
+    - env TERRAFORMER_BUILD_OUTPUT_DIR=dist/provider-binaries go run build/multi-build/main.go
+
+builds:
+  - id: all
+    main: .
+    binary: "terraformer-all-{{ .Os }}-{{ .Arch }}"
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    no_unique_dist_dir: true
+
+archives:
+  - id: binaries
+    ids:
+      - all
+    formats:
+      - binary
+    name_template: "{{ .Binary }}"
+
+checksum:
+  name_template: "terraformer_{{ .Version }}_checksums.txt"
+  algorithm: sha256
+  extra_files:
+    - glob: dist/provider-binaries/terraformer-*
+
+changelog:
+  use: github-native
+
+release:
+  github:
+    owner: chenrui333
+    name: terraformer
+  name_template: "{{ .Tag }}"
+  draft: true
+  replace_existing_draft: true
+  mode: replace
+  extra_files:
+    - glob: dist/provider-binaries/terraformer-*

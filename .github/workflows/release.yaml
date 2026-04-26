@@ -1,41 +1,101 @@
-name: "tagged-release"
+name: release
+
 on:
+  pull_request:
+    branches:
+    - main
+    paths:
+    - .github/workflows/release.yaml
+    - .goreleaser.yaml
+    - build/**
+    - go.mod
+    - go.sum
+    - RELEASE.md
   workflow_dispatch:
-    inputs:
-      version:
-        description: Bump Version
-        required: true
+  push:
+    tags:
+    - "[0-9]*.[0-9]*.[0-9]*"
+
 permissions:
-  contents: write
+  contents: read
+
+env:
+  GOWORK: off
+  GORELEASER_VERSION: v2.15.4
+
 jobs:
-  tagged-release:
-    name: "Tagged Release"
-    runs-on: "ubuntu-latest"
+  check:
+    name: GoReleaser Check
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
-      - name: Install Go
-        uses: actions/setup-go@v6
-        with:
-          go-version-file: go.mod
-          cache: true
-          cache-dependency-path: go.sum
-      - name: Test
-        run: go build -v && go test ./...
-      - name: Build for linux/amd64
-        run: go build -o terraformer-all-linux-amd64
-      - name: Build for linux/arm64
-        run: GOOS=linux GOARCH=arm64 go build -o terraformer-all-linux-arm64
-      - name: Build for mac
-        run: GOOS=darwin go build -o terraformer-all-darwin-amd64
-      - name: Build for mac Apple Silicon
-        run: GOOS=darwin GOARCH=arm64 go build -o terraformer-all-darwin-arm64
-      - name: Build for all providers
-        run: go run build/multi-build/main.go
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+    - name: GoReleaser Check
+      uses: goreleaser/goreleaser-action@v7.1.0
+      with:
+        distribution: goreleaser
+        version: ${{ env.GORELEASER_VERSION }}
+        args: check
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: "softprops/action-gh-release@v3"
-        with:
-          tag_name: ${{ github.event.inputs.version }}
-          prerelease: false
-          files: |
-            terraformer-*
+  snapshot:
+    name: Snapshot Release
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+    - name: Install Go
+      uses: actions/setup-go@v6
+      with:
+        go-version-file: go.mod
+        cache: true
+        cache-dependency-path: go.sum
+    - name: Build
+      run: go build -v ./...
+    - name: Test
+      run: go test ./... -count=1
+    - name: GoReleaser Snapshot
+      uses: goreleaser/goreleaser-action@v7.1.0
+      with:
+        distribution: goreleaser
+        version: ${{ env.GORELEASER_VERSION }}
+        args: release --snapshot --clean --skip=publish
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release:
+    name: Release
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+    - name: Install Go
+      uses: actions/setup-go@v6
+      with:
+        go-version-file: go.mod
+        cache: true
+        cache-dependency-path: go.sum
+    - name: Build
+      run: go build -v ./...
+    - name: Test
+      run: go test ./... -count=1
+    - name: GoReleaser Release
+      uses: goreleaser/goreleaser-action@v7.1.0
+      with:
+        distribution: goreleaser
+        version: ${{ env.GORELEASER_VERSION }}
+        args: release --clean
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

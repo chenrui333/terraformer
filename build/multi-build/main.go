@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -15,6 +16,14 @@ const packageCmdPath = "cmd"
 
 func main() {
 	// provider := os.Args[1]
+	outputDir := os.Getenv("TERRAFORMER_BUILD_OUTPUT_DIR")
+	if outputDir == "" {
+		outputDir = "."
+	}
+	if err := os.MkdirAll(outputDir, os.ModePerm); err != nil {
+		log.Fatal("err:", err)
+	}
+
 	allProviders := []string{}
 	files, err := os.ReadDir(packageCmdPath)
 	if err != nil {
@@ -65,11 +74,26 @@ func main() {
 						log.Println(err)
 					}
 				}
+				restoreProviderFiles := func() {
+					for _, provider := range deletedProvider {
+						err := os.Rename(packageCmdPath+"/tmp/"+filePrefix+provider+fileSuffix, packageCmdPath+"/"+filePrefix+provider+fileSuffix)
+						if err != nil {
+							log.Println(err)
+						}
+					}
+				}
 
 				// comment deleted providers in code
 				rootCode, err := os.ReadFile(packageCmdPath + "/root.go")
 				if err != nil {
+					restoreProviderFiles()
 					log.Fatal("err:", err)
+				}
+				cleanupCodeAndFiles := func() {
+					if err := os.WriteFile(packageCmdPath+"/root.go", rootCode, os.ModePerm); err != nil {
+						log.Println(err)
+					}
+					restoreProviderFiles()
 				}
 				lines := strings.Split(string(rootCode), "\n")
 				newRootCodeLines := make([]string, len(lines))
@@ -87,11 +111,13 @@ func main() {
 				newRootCode := strings.Join(newRootCodeLines, "\n")
 				err = os.WriteFile(packageCmdPath+"/root.go", []byte(newRootCode), os.ModePerm)
 				if err != nil {
+					cleanupCodeAndFiles()
 					log.Fatal("err:", err)
 				}
 
 				// build....
-				cmd := exec.Command("go", "build", "-v", "-o", binaryName)
+				binaryPath := filepath.Join(outputDir, binaryName)
+				cmd := exec.Command("go", "build", "-v", "-o", binaryPath)
 				cmd.Env = os.Environ()
 				cmd.Env = append(cmd.Env, "GOOS="+GOOS)
 				cmd.Env = append(cmd.Env, "GOARCH="+arch)
@@ -100,6 +126,7 @@ func main() {
 				cmd.Stderr = &errb
 				err = cmd.Run()
 				if err != nil {
+					cleanupCodeAndFiles()
 					log.Fatal("err:", errb.String())
 				}
 				fmt.Println(outb.String())
@@ -107,14 +134,10 @@ func main() {
 				// revert code and files
 				err = os.WriteFile(packageCmdPath+"/root.go", rootCode, os.ModePerm)
 				if err != nil {
+					restoreProviderFiles()
 					log.Fatal("err:", err)
 				}
-				for _, provider := range deletedProvider {
-					err := os.Rename(packageCmdPath+"/tmp/"+filePrefix+provider+fileSuffix, "cmd/"+filePrefix+provider+fileSuffix)
-					if err != nil {
-						log.Println(err)
-					}
-				}
+				restoreProviderFiles()
 			}
 		}
 	}
