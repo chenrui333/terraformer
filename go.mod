@@ -141,7 +141,7 @@ require (
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
-	github.com/tencentyun/cos-go-sdk-v5 v0.7.34
+	github.com/tencentyun/cos-go-sdk-v5 v0.7.73
 	github.com/vultr/govultr v1.1.1
 	github.com/xanzy/go-gitlab v0.50.2
 	github.com/yandex-cloud/go-genproto v0.0.0-20220314102905-1acaee8ca7eb
@@ -417,26 +417,26 @@ require (
 	github.com/ionos-cloud/sdk-go-dns v1.4.0
 	github.com/ionos-cloud/sdk-go-logging v1.3.0
 	github.com/okta/okta-sdk-golang/v5 v5.0.6
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/as v1.0.392
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cbs v1.0.392
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cdb v1.0.392
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cdn v1.0.392
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cfs v1.0.392
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/clb v1.0.392
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.694
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cvm v1.0.392
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.392
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/es v1.0.392
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/gaap v1.0.392
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/mongodb v1.0.392
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/pts v1.0.694
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/redis v1.0.392
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/scf v1.0.392
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/ses v1.0.392
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/ssl v1.0.392
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tat v1.0.392
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tcaplusdb v1.0.392
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc v1.0.392
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/as v1.3.53
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cbs v1.3.40
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cdb v1.3.86
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cdn v1.3.61
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cfs v1.3.85
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/clb v1.3.83
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.86
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cvm v1.3.78
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.3.78
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/es v1.3.84
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/gaap v1.3.34
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/mongodb v1.3.80
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/pts v1.3.29
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/redis v1.3.79
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/scf v1.3.29
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/ses v1.3.86
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/ssl v1.3.52
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tat v1.3.52
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tcaplusdb v1.3.17
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc v1.3.83
 )
 
 replace gopkg.in/jarcoal/httpmock.v1 => github.com/jarcoal/httpmock v1.0.5
