@@ -102,7 +102,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/workspaces v1.67.3
 	github.com/aws/aws-sdk-go-v2/service/xray v1.36.22
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
-	github.com/cloudflare/cloudflare-go v0.13.6
+	github.com/cloudflare/cloudflare-go v0.116.0
 	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 // indirect
 	github.com/ddelnano/terraform-provider-mikrotik/client v0.0.0-20250110092516-5bc3b68c6245
 	github.com/ddelnano/terraform-provider-xenorchestra/client v0.0.0-20210401070256-0d721c6762ef
@@ -350,7 +350,7 @@ require (
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/go-playground/validator/v10 v10.28.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
-	github.com/goccy/go-json v0.10.2 // indirect
+	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect
 	github.com/google/go-github/v84 v84.0.0 // indirect

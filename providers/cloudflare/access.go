@@ -15,6 +15,7 @@
 package cloudflare
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -27,7 +28,7 @@ type AccessGenerator struct {
 
 func (g *AccessGenerator) createAccessApplications(api *cf.API, zoneID string) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
-	accessApplications, _, err := api.AccessApplications(zoneID, cf.PaginationOptions{})
+	accessApplications, _, err := api.ListAccessApplications(context.Background(), cf.ZoneIdentifier(zoneID), cf.ListAccessApplicationsParams{})
 	if err != nil {
 		return []terraformutils.Resource{}, err
 	}
@@ -56,7 +57,7 @@ func (g *AccessGenerator) InitResources() error {
 		return err
 	}
 
-	zones, err := api.ListZones()
+	zones, err := api.ListZones(context.Background())
 	if err != nil {
 		return err
 	}

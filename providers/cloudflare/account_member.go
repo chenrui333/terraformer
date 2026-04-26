@@ -15,6 +15,8 @@
 package cloudflare
 
 import (
+	"context"
+
 	"github.com/chenrui333/terraformer/terraformutils"
 	cf "github.com/cloudflare/cloudflare-go"
 )
@@ -30,7 +32,7 @@ func (g *AccountMemberGenerator) createAccountMemberResources(api *cf.API) ([]te
 		PerPage: 10}
 
 	for {
-		members, info, err := api.AccountMembers(api.AccountID, pageOpt)
+		members, info, err := api.AccountMembers(context.Background(), g.accountID(), pageOpt)
 		if err != nil {
 			return resources, err
 		}
