@@ -20,8 +20,8 @@ require (
 	github.com/IBM/vpc-go-sdk v0.64.0
 	github.com/OctopusDeploy/go-octopusdeploy v1.6.0
 	github.com/PaloAltoNetworks/pango v0.8.0
-	github.com/aliyun/alibaba-cloud-sdk-go v1.61.1247
-	github.com/aliyun/aliyun-tablestore-go-sdk v4.1.2+incompatible
+	github.com/aliyun/alibaba-cloud-sdk-go v1.63.107
+	github.com/aliyun/aliyun-tablestore-go-sdk v4.1.3+incompatible
 	github.com/apache/openwhisk-client-go v0.0.0-20210106144548-17d556327cd3
 	github.com/aws/aws-sdk-go-v2 v1.41.6
 	github.com/aws/aws-sdk-go-v2/config v1.32.16
@@ -106,7 +106,7 @@ require (
 	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 // indirect
 	github.com/ddelnano/terraform-provider-mikrotik/client v0.0.0-20210401060029-7f652169b2c4
 	github.com/ddelnano/terraform-provider-xenorchestra/client v0.0.0-20210401070256-0d721c6762ef
-	github.com/denverdino/aliyungo v0.0.0-20200327235253-d59c209c7e93
+	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/digitalocean/godo v1.187.0
 	github.com/fastly/go-fastly/v7 v7.5.5
@@ -377,6 +377,7 @@ require (
 	github.com/manicminer/hamilton-autorest v0.2.0 // indirect
 	github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/opentracing/opentracing-go v1.2.1-0.20220228012449-10b1cf09e00b // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
