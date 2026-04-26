@@ -20,7 +20,7 @@ func (g SecurityCenterSubscriptionPricingGenerator) listSubscriptionPricing() ([
 	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
 	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
 
-	securityCenterPricingClient := security.NewPricingsClientWithBaseURI(resourceManagerEndpoint, subscriptionID, "")
+	securityCenterPricingClient := security.NewPricingsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 	securityCenterPricingClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
 
 	if rg := g.Args["resource_group"].(string); rg != "" {
