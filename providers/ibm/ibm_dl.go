@@ -18,10 +18,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/IBM/go-sdk-core/v4/core"
 	dlProviderV2 "github.com/IBM/networking-go-sdk/directlinkproviderv2"
 	dl "github.com/IBM/networking-go-sdk/directlinkv1"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 // DLGenerator ...
@@ -89,19 +89,24 @@ func (g *DLGenerator) InitResources() error {
 	}
 	if gateways.Gateways != nil {
 		for _, gateway := range gateways.Gateways {
-			g.Resources = append(g.Resources, g.createDirectLinkGatewayResources(*gateway.ID, *gateway.Name))
+			gatewayID, gatewayName, err := directLinkGatewayIDName(gateway)
+			if err != nil {
+				return err
+			}
+
+			g.Resources = append(g.Resources, g.createDirectLinkGatewayResources(*gatewayID, *gatewayName))
 			resourceName := g.Resources[len(g.Resources)-1:][0].ResourceName
 			var dependsOn []string
 			dependsOn = append(dependsOn, "ibm_dl_gateway."+resourceName)
 			listGatewayVirtualConnectionsOptions := &dl.ListGatewayVirtualConnectionsOptions{
-				GatewayID: gateway.ID,
+				GatewayID: gatewayID,
 			}
 			connections, response, err := dlclient.ListGatewayVirtualConnections(listGatewayVirtualConnectionsOptions)
 			if err != nil {
 				return fmt.Errorf("Error Fetching Direct Link Virtual connections %s\n%s", err, response)
 			}
 			for _, connection := range connections.VirtualConnections {
-				g.Resources = append(g.Resources, g.createDirectLinkVirtualConnectionResources(*gateway.ID, *connection.ID, *connection.Name, dependsOn))
+				g.Resources = append(g.Resources, g.createDirectLinkVirtualConnectionResources(*gatewayID, *connection.ID, *connection.Name, dependsOn))
 			}
 		}
 	}
@@ -140,4 +145,29 @@ func (g *DLGenerator) InitResources() error {
 		g.Resources = append(g.Resources, g.createDirectLinkProviderGatewayResources(*providerGateway.ID, *providerGateway.Name))
 	}
 	return nil
+}
+
+func directLinkGatewayIDName(gateway dl.GatewayCollectionGatewaysItemIntf) (*string, *string, error) {
+	var id *string
+	var name *string
+
+	switch gateway := gateway.(type) {
+	case *dl.GatewayCollectionGatewaysItem:
+		id = gateway.ID
+		name = gateway.Name
+	case *dl.GatewayCollectionGatewaysItemGateway:
+		id = gateway.ID
+		name = gateway.Name
+	case *dl.GatewayCollectionGatewaysItemCrossAccountGateway:
+		id = gateway.ID
+		name = gateway.Name
+	default:
+		return nil, nil, fmt.Errorf("unsupported Direct Link gateway type %T", gateway)
+	}
+
+	if id == nil || name == nil {
+		return nil, nil, fmt.Errorf("direct link gateway missing id or name")
+	}
+
+	return id, name, nil
 }
