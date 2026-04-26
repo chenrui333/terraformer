@@ -1,27 +1,35 @@
 package connectivity
 
 import (
-	"context"
 	"strings"
 
-	"github.com/labd/commercetools-go-sdk/commercetools"
+	"github.com/labd/commercetools-go-sdk/platform"
 	"golang.org/x/oauth2/clientcredentials"
 )
 
-func (c *Config) NewClient() *commercetools.Client {
-	oauth2Config := &clientcredentials.Config{
-		ClientID:     c.ClientID,
-		ClientSecret: c.ClientSecret,
-		Scopes:       strings.Split(c.ClientScope, " "),
-		TokenURL:     c.TokenURL,
+type Client struct {
+	*platform.Client
+	projectKey string
+}
+
+func (c *Config) NewClient() (*Client, error) {
+	client, err := platform.NewClient(&platform.ClientConfig{
+		URL: c.BaseURL,
+		Credentials: &clientcredentials.Config{
+			ClientID:     c.ClientID,
+			ClientSecret: c.ClientSecret,
+			Scopes:       strings.Split(c.ClientScope, " "),
+			TokenURL:     c.TokenURL,
+		},
+		UserAgent: "terraformer",
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	httpClient := oauth2Config.Client(context.TODO())
+	return &Client{Client: client, projectKey: c.ProjectKey}, nil
+}
 
-	return commercetools.New(&commercetools.Config{
-		ProjectKey:  c.ProjectKey,
-		URL:         c.BaseURL,
-		HTTPClient:  httpClient,
-		LibraryName: "terraformer",
-	})
+func (c *Client) Project() *platform.ByProjectKeyRequestBuilder {
+	return c.WithProjectKey(c.projectKey)
 }

@@ -17,9 +17,7 @@ package commercetools
 import (
 	"context"
 
-	"github.com/chenrui333/terraformer/providers/commercetools/connectivity"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/labd/commercetools-go-sdk/commercetools"
 )
 
 type SubscriptionGenerator struct {
@@ -28,24 +26,19 @@ type SubscriptionGenerator struct {
 
 // InitResources generates Terraform Resources from Commercetools API
 func (g *SubscriptionGenerator) InitResources() error {
-	cfg := connectivity.Config{
-		ClientID:     g.GetArgs()["client_id"].(string),
-		ClientSecret: g.GetArgs()["client_secret"].(string),
-		ClientScope:  g.GetArgs()["client_scope"].(string),
-		TokenURL:     g.GetArgs()["token_url"].(string) + "/oauth/token",
-		BaseURL:      g.GetArgs()["base_url"].(string),
+	client, err := g.newClient()
+	if err != nil {
+		return err
 	}
 
-	client := cfg.NewClient()
-
-	subscriptions, err := client.SubscriptionQuery(context.Background(), &commercetools.QueryInput{})
+	subscriptions, err := client.Project().Subscriptions().Get().Execute(context.Background())
 	if err != nil {
 		return err
 	}
 	for _, subscription := range subscriptions.Results {
 		g.Resources = append(g.Resources, terraformutils.NewResource(
 			subscription.ID,
-			subscription.Key,
+			stringValue(subscription.Key),
 			"commercetools_subscription",
 			"commercetools",
 			map[string]string{},

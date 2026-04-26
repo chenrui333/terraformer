@@ -17,9 +17,7 @@ package commercetools
 import (
 	"context"
 
-	"github.com/chenrui333/terraformer/providers/commercetools/connectivity"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/labd/commercetools-go-sdk/commercetools"
 )
 
 type ProductTypeGenerator struct {
@@ -28,22 +26,17 @@ type ProductTypeGenerator struct {
 
 // InitResources generates Terraform Resources from Commercetools API
 func (g *ProductTypeGenerator) InitResources() error {
-	cfg := connectivity.Config{
-		ClientID:     g.GetArgs()["client_id"].(string),
-		ClientSecret: g.GetArgs()["client_secret"].(string),
-		ClientScope:  g.GetArgs()["client_scope"].(string),
-		TokenURL:     g.GetArgs()["token_url"].(string) + "/oauth/token",
-		BaseURL:      g.GetArgs()["base_url"].(string),
+	client, err := g.newClient()
+	if err != nil {
+		return err
 	}
 
-	client := cfg.NewClient()
-
-	productTypes, err := client.ProductTypeQuery(context.Background(), &commercetools.QueryInput{})
+	productTypes, err := client.Project().ProductTypes().Get().Execute(context.Background())
 	if err != nil {
 		return err
 	}
 	for _, productType := range productTypes.Results {
-		resourceName := productType.Key
+		resourceName := stringValue(productType.Key)
 		if resourceName == "" {
 			resourceName = normalizeResourceName(productType.Name)
 		}

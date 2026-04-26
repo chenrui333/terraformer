@@ -17,9 +17,7 @@ package commercetools
 import (
 	"context"
 
-	"github.com/chenrui333/terraformer/providers/commercetools/connectivity"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/labd/commercetools-go-sdk/commercetools"
 )
 
 type TypesGenerator struct {
@@ -28,17 +26,12 @@ type TypesGenerator struct {
 
 // InitResources generates Terraform Resources from Commercetools API
 func (g *TypesGenerator) InitResources() error {
-	cfg := connectivity.Config{
-		ClientID:     g.GetArgs()["client_id"].(string),
-		ClientSecret: g.GetArgs()["client_secret"].(string),
-		ClientScope:  g.GetArgs()["client_scope"].(string),
-		TokenURL:     g.GetArgs()["token_url"].(string) + "/oauth/token",
-		BaseURL:      g.GetArgs()["base_url"].(string),
+	client, err := g.newClient()
+	if err != nil {
+		return err
 	}
 
-	client := cfg.NewClient()
-
-	types, err := client.TypeQuery(context.Background(), &commercetools.QueryInput{})
+	types, err := client.Project().Types().Get().Execute(context.Background())
 	if err != nil {
 		return err
 	}

@@ -17,9 +17,7 @@ package commercetools
 import (
 	"context"
 
-	"github.com/chenrui333/terraformer/providers/commercetools/connectivity"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/labd/commercetools-go-sdk/commercetools"
 )
 
 type ShippingMethodGenerator struct {
@@ -28,24 +26,19 @@ type ShippingMethodGenerator struct {
 
 // InitResources generates Terraform Resources from Commercetools API
 func (g *ShippingMethodGenerator) InitResources() error {
-	cfg := connectivity.Config{
-		ClientID:     g.GetArgs()["client_id"].(string),
-		ClientSecret: g.GetArgs()["client_secret"].(string),
-		ClientScope:  g.GetArgs()["client_scope"].(string),
-		TokenURL:     g.GetArgs()["token_url"].(string) + "/oauth/token",
-		BaseURL:      g.GetArgs()["base_url"].(string),
+	client, err := g.newClient()
+	if err != nil {
+		return err
 	}
 
-	client := cfg.NewClient()
-
-	zones, err := client.ShippingMethodQuery(context.Background(), &commercetools.QueryInput{})
+	zones, err := client.Project().ShippingMethods().Get().Execute(context.Background())
 	if err != nil {
 		return err
 	}
 	for _, zone := range zones.Results {
 		g.Resources = append(g.Resources, terraformutils.NewResource(
 			zone.ID,
-			zone.Key,
+			stringValue(zone.Key),
 			"commercetools_shipping_method",
 			"commercetools",
 			map[string]string{},
