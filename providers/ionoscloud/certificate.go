@@ -17,7 +17,7 @@ func (g *CertificateGenerator) InitResources() error {
 	certManagerAPIClient := client.CertificateManagerAPIClient
 	resourceType := "ionoscloud_certificate"
 
-	response, _, err := certManagerAPIClient.CertificatesApi.CertificatesGet(context.TODO()).Execute()
+	response, _, err := certManagerAPIClient.CertificateApi.CertificatesGet(context.TODO()).Execute()
 	if err != nil {
 		return err
 	}

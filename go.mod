@@ -124,8 +124,8 @@ require (
 	github.com/hokaccha/go-prettyjson v0.0.0-20210113012101-fb4e108d2519 // indirect
 	github.com/honeycombio/terraform-provider-honeycombio v0.10.0
 	github.com/iancoleman/strcase v0.3.0
-	github.com/ionos-cloud/sdk-go-dbaas-mongo v1.3.1
-	github.com/ionos-cloud/sdk-go-dbaas-postgres v1.1.2
+	github.com/ionos-cloud/sdk-go-dbaas-mongo v1.4.1
+	github.com/ionos-cloud/sdk-go-dbaas-postgres v1.1.4
 	github.com/ionos-cloud/sdk-go/v6 v6.3.7
 	github.com/jmespath/go-jmespath v0.4.0
 	github.com/jonboydell/logzio_client v1.2.0
@@ -411,8 +411,8 @@ require (
 	github.com/gofrs/uuid/v3 v3.1.2
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/hashicorp/vault/api v1.23.0
-	github.com/ionos-cloud/sdk-go-cert-manager v1.0.0
-	github.com/ionos-cloud/sdk-go-container-registry v1.0.0
+	github.com/ionos-cloud/sdk-go-cert-manager v1.3.0
+	github.com/ionos-cloud/sdk-go-container-registry v1.3.1
 	github.com/ionos-cloud/sdk-go-dataplatform v1.1.1
 	github.com/ionos-cloud/sdk-go-dns v1.4.0
 	github.com/ionos-cloud/sdk-go-logging v1.3.0
