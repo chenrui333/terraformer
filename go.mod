@@ -131,7 +131,6 @@ require (
 	github.com/labd/commercetools-go-sdk v0.3.1
 	github.com/linode/linodego v1.68.0
 	github.com/microsoft/azure-devops-go-api/azuredevops v1.0.0-b5
-	github.com/mrparkers/terraform-provider-keycloak v0.0.0-20221013232944-56f37a07590d
 	github.com/nicksnyder/go-i18n v1.10.3 // indirect
 	github.com/okta/okta-sdk-golang/v2 v2.20.0
 	github.com/opsgenie/opsgenie-go-sdk-v2 v1.2.23
@@ -159,7 +158,7 @@ require (
 require (
 	github.com/IBM-Cloud/container-services-go-sdk v0.0.0-20210705152127-41ca00fc9a62
 	github.com/IBM/go-sdk-core v1.1.0
-	github.com/hashicorp/terraform-svchost v0.0.0-20200729002733-f050f53b9734 // indirect
+	github.com/hashicorp/terraform-svchost v0.1.1 // indirect
 	github.com/mackerelio/mackerel-client-go v0.41.0
 	github.com/okta/terraform-provider-okta v0.0.0-20210924173942-a5a664459d3b
 	github.com/zclconf/go-cty-yaml v1.0.2 // indirect
@@ -187,7 +186,6 @@ require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
 	github.com/apparentlymart/go-cidr v1.1.0 // indirect
-	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/appscode/go-querystring v0.0.0-20170504095604-0126cfb3f1dc // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
@@ -239,8 +237,8 @@ require (
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
 	github.com/hashicorp/go-sockaddr v1.0.7 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
-	github.com/hashicorp/go-version v1.8.0 // indirect
-	github.com/hashicorp/hcl/v2 v2.14.0 // indirect
+	github.com/hashicorp/go-version v1.9.0 // indirect
+	github.com/hashicorp/hcl/v2 v2.24.0 // indirect
 	github.com/hashicorp/hil v0.0.0-20190212112733-ab17b08d6590 // indirect
 	github.com/hashicorp/yamux v0.1.2 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
@@ -265,7 +263,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/mozillazg/go-httpheader v0.2.1 // indirect
-	github.com/oklog/run v1.1.0 // indirect
+	github.com/oklog/run v1.2.0 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/patrickmn/go-cache v0.0.0-20180815053127-5633e0862627 // indirect
 	github.com/pborman/uuid v1.2.0 // indirect
@@ -274,7 +272,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/posener/complete v1.2.1 // indirect
 	github.com/russellhaering/goxmldsig v1.6.0 // indirect
-	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/sourcegraph/jsonrpc2 v0.0.0-20210201082850-366fbb520750 // indirect
 	github.com/spf13/afero v1.10.0 // indirect
@@ -355,6 +352,7 @@ require (
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/go-playground/validator/v10 v10.19.0 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
+	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect
 	github.com/google/go-github/v84 v84.0.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
@@ -380,7 +378,7 @@ require (
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.6.0 // indirect
 	github.com/valyala/fastjson v1.6.3 // indirect
-	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
+	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
@@ -394,6 +392,8 @@ require (
 	go.opentelemetry.io/otel/trace v1.43.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
+	golang.org/x/mod v0.34.0 // indirect
+	golang.org/x/tools v0.43.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260414002931-afd174a4e478 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260414002931-afd174a4e478 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
@@ -417,6 +417,7 @@ require (
 	github.com/ionos-cloud/sdk-go-dataplatform v1.1.1
 	github.com/ionos-cloud/sdk-go-dns v1.4.0
 	github.com/ionos-cloud/sdk-go-logging v1.3.0
+	github.com/keycloak/terraform-provider-keycloak v0.0.0-20260424143515-c4c53ecc9c95
 	github.com/logzio/logzio_terraform_client v1.30.2
 	github.com/okta/okta-sdk-golang/v5 v5.0.6
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/as v1.3.53
