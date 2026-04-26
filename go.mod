@@ -19,7 +19,7 @@ require (
 	github.com/IBM/platform-services-go-sdk v0.26.1
 	github.com/IBM/vpc-go-sdk v0.64.0
 	github.com/OctopusDeploy/go-octopusdeploy v1.6.0
-	github.com/PaloAltoNetworks/pango v0.8.0
+	github.com/PaloAltoNetworks/pango v0.10.2
 	github.com/aliyun/alibaba-cloud-sdk-go v1.63.107
 	github.com/aliyun/aliyun-tablestore-go-sdk v4.1.3+incompatible
 	github.com/apache/openwhisk-client-go v0.0.0-20210106144548-17d556327cd3
