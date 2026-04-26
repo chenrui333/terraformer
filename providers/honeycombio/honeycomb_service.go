@@ -32,7 +32,7 @@ type HoneycombService struct { //nolint
 func (s *HoneycombService) newClient() (*hnyclient.Client, error) {
 	enableDebug, _ := strconv.ParseBool(os.Getenv("HONEYCOMBIO_DEBUG"))
 
-	client, err := hnyclient.NewClient(&hnyclient.Config{
+	client, err := hnyclient.NewClientWithConfig(&hnyclient.Config{
 		APIKey:    s.GetArgs()["api_key"].(string),
 		APIUrl:    s.GetArgs()["api_url"].(string),
 		UserAgent: fmt.Sprintf("terraformer-honeycombio/%s", honeycombTerraformerProviderVersion),

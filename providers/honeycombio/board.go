@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
+	hnyclient "github.com/honeycombio/terraform-provider-honeycombio/client"
 )
 
 type BoardGenerator struct {
@@ -25,12 +26,9 @@ func (g *BoardGenerator) InitResources() error {
 	for _, board := range boards {
 		// all of a board's queries must be in our list of target datasets or we don't import it
 		onlyValidDatasets := true
-		for _, query := range board.Queries {
-			if query.Dataset == "" {
-				// assume an unset dataset is an environment-wide query
-				query.Dataset = environmentWideDatasetSlug
-			}
-			if _, exists := g.datasets[query.Dataset]; !exists {
+		for _, query := range boardQueryPanels(board) {
+			dataset := boardQueryDataset(query)
+			if _, exists := g.datasets[dataset]; !exists {
 				onlyValidDatasets = false
 				break
 			}
@@ -48,4 +46,28 @@ func (g *BoardGenerator) InitResources() error {
 	}
 
 	return nil
+}
+
+func boardQueryPanels(board hnyclient.Board) []hnyclient.BoardQueryPanel {
+	queryPanels := make([]hnyclient.BoardQueryPanel, 0, len(board.Panels))
+	for _, panel := range board.Panels {
+		if panel.QueryPanel == nil {
+			continue
+		}
+		if panel.PanelType != "" && panel.PanelType != hnyclient.BoardPanelTypeQuery {
+			continue
+		}
+		queryPanels = append(queryPanels, *panel.QueryPanel)
+	}
+
+	return queryPanels
+}
+
+func boardQueryDataset(query hnyclient.BoardQueryPanel) string {
+	if query.Dataset == "" {
+		// assume an unset dataset is an environment-wide query
+		return environmentWideDatasetSlug
+	}
+
+	return query.Dataset
 }

@@ -48,19 +48,16 @@ func (g *QueryGenerator) InitResources() error {
 	}
 
 	for _, board := range boards {
-		for _, query := range board.Queries {
-			if query.Dataset == "" {
-				// assume an unset dataset is an environment-wide query
-				query.Dataset = environmentWideDatasetSlug
-			}
-			if _, exists := g.datasets[query.Dataset]; exists {
+		for _, query := range boardQueryPanels(board) {
+			dataset := boardQueryDataset(query)
+			if _, exists := g.datasets[dataset]; exists {
 				g.Resources = append(g.Resources, terraformutils.NewResource(
 					query.QueryID,
 					query.QueryID,
 					"honeycombio_query",
 					"honeycombio",
 					map[string]string{
-						"dataset": query.Dataset,
+						"dataset": dataset,
 					},
 					[]string{"caption", "query_annotation_id"},
 					map[string]interface{}{},
