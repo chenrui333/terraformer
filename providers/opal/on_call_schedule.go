@@ -17,7 +17,7 @@ func (g *OnCallScheduleGenerator) InitResources() error {
 		return fmt.Errorf("unable to list opal on call schedules: %v", err)
 	}
 
-	onCallSchedules, _, err := client.OnCallSchedulesApi.GetOnCallSchedules(context.TODO()).Execute()
+	onCallSchedules, _, err := client.OnCallSchedulesAPI.GetOnCallSchedules(context.TODO()).Execute()
 	if err != nil {
 		return fmt.Errorf("unable to list opal on call schedules: %v", err)
 	}

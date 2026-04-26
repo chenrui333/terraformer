@@ -17,7 +17,7 @@ func (g *MessageChannelGenerator) InitResources() error {
 		return fmt.Errorf("unable to list opal message channels: %v", err)
 	}
 
-	messageChannels, _, err := client.MessageChannelsApi.GetMessageChannels(context.TODO()).Execute()
+	messageChannels, _, err := client.MessageChannelsAPI.GetMessageChannels(context.TODO()).Execute()
 	if err != nil {
 		return fmt.Errorf("unable to list opal message channels: %v", err)
 	}

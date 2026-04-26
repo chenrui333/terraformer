@@ -18,7 +18,7 @@ func (g *ResourceGenerator) InitResources() error {
 		return fmt.Errorf("unable to list opal resources: %v", err)
 	}
 
-	resources, _, err := client.ResourcesApi.GetResources(context.TODO()).Execute()
+	resources, _, err := client.ResourcesAPI.GetResources(context.TODO()).Execute()
 	if err != nil {
 		return fmt.Errorf("unable to list opal resources: %v", err)
 	}
@@ -30,11 +30,11 @@ func (g *ResourceGenerator) InitResources() error {
 			opalResources = append(opalResources, &resourceRef)
 		}
 
-		if !resources.HasNext() || resources.Next.Get() == nil {
+		if !resources.HasNext() || resources.Next == nil {
 			break
 		}
 
-		resources, _, err = client.ResourcesApi.GetResources(context.TODO()).Cursor(*resources.Next.Get()).Execute()
+		resources, _, err = client.ResourcesAPI.GetResources(context.TODO()).Cursor(*resources.Next).Execute()
 		if err != nil {
 			return fmt.Errorf("unable to list opal resources: %v", err)
 		}
