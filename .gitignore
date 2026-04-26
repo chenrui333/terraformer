@@ -1,6 +1,7 @@
 .idea
 generated
 dist/
+.goreleaser-extra/
 terraformer*
 cmd/tmp
 .DS_Store
