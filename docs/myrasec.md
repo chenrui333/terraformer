@@ -22,8 +22,6 @@ List of supported Myra Security services:
   * `myrasec_ip_filter`
 * `maintenance`
   * `myrasec_maintenance`
-* `ratelimit`
-  * `myrasec_ratelimit`
 * `redirect`
   * `myrasec_redirect`
 * `settings`
