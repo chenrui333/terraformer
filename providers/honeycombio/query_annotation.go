@@ -23,16 +23,13 @@ func (g *QueryAnnotationGenerator) InitResources() error {
 	}
 
 	for _, board := range boards {
-		for _, query := range board.Queries {
+		for _, query := range boardQueryPanels(board) {
 			if query.QueryAnnotationID == "" {
 				continue
 			}
 
-			if query.Dataset == "" {
-				// assume unset dataset is an environment-wide query
-				query.Dataset = g.environmentWideDataset().Name
-			}
-			if _, exists := g.datasets[query.Dataset]; exists {
+			dataset := boardQueryDataset(query)
+			if _, exists := g.datasets[dataset]; exists {
 				g.Resources = append(g.Resources, terraformutils.NewResource(
 					query.QueryAnnotationID,
 					query.QueryAnnotationID,
@@ -40,7 +37,7 @@ func (g *QueryAnnotationGenerator) InitResources() error {
 					"honeycombio",
 					map[string]string{
 						"query_id": query.QueryID,
-						"dataset":  query.Dataset,
+						"dataset":  dataset,
 					},
 					[]string{},
 					map[string]interface{}{},
