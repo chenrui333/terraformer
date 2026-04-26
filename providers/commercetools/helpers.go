@@ -31,3 +31,11 @@ func normalizeResourceName(s string) string {
 
 	return strings.ToLower(s)
 }
+
+func stringValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+
+	return *value
+}

@@ -128,7 +128,7 @@ require (
 	github.com/ionos-cloud/sdk-go-dbaas-postgres v1.1.4
 	github.com/ionos-cloud/sdk-go/v6 v6.3.7
 	github.com/jmespath/go-jmespath v0.4.0
-	github.com/labd/commercetools-go-sdk v0.3.1
+	github.com/labd/commercetools-go-sdk v1.9.0
 	github.com/linode/linodego v1.68.0
 	github.com/microsoft/azure-devops-go-api/azuredevops v1.0.0-b5
 	github.com/nicksnyder/go-i18n v1.10.3 // indirect
@@ -185,7 +185,6 @@ require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
 	github.com/apparentlymart/go-cidr v1.1.0 // indirect
-	github.com/appscode/go-querystring v0.0.0-20170504095604-0126cfb3f1dc // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.9 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.22 // indirect
