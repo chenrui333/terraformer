@@ -134,7 +134,7 @@ require (
 	github.com/microsoft/azure-devops-go-api/azuredevops v1.0.0-b5
 	github.com/mrparkers/terraform-provider-keycloak v0.0.0-20221013232944-56f37a07590d
 	github.com/nicksnyder/go-i18n v1.10.1 // indirect
-	github.com/okta/okta-sdk-golang/v2 v2.12.2-0.20220602195034-d7ea6917663f
+	github.com/okta/okta-sdk-golang/v2 v2.20.0
 	github.com/opsgenie/opsgenie-go-sdk-v2 v1.2.9
 	github.com/packethost/packngo v0.30.0
 	github.com/pkg/errors v0.9.1
@@ -306,7 +306,6 @@ require (
 	gopkg.in/go-playground/validator.v9 v9.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
-	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.36.0 // indirect
