@@ -55,7 +55,7 @@ func (g StorageBlobGenerator) getContainerURL(ctx context.Context, accountName, 
 	return containerURL, nil
 }
 
-func (g StorageBlobGenerator) getBlobsFromContainer(ctx context.Context, accountName, accountGroupName, containerName string) ([]azblob.BlobItem, error) {
+func (g StorageBlobGenerator) getBlobsFromContainer(ctx context.Context, accountName, accountGroupName, containerName string) ([]azblob.BlobItemInternal, error) {
 	containerURL, err := g.getContainerURL(ctx, accountName, accountGroupName, containerName)
 	if err != nil {
 		return nil, err

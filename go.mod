@@ -7,7 +7,7 @@ require (
 	cloud.google.com/go/logging v1.16.0
 	cloud.google.com/go/storage v1.62.1
 	github.com/Azure/azure-sdk-for-go v63.4.0+incompatible
-	github.com/Azure/azure-storage-blob-go v0.10.0
+	github.com/Azure/azure-storage-blob-go v0.15.0
 	github.com/Azure/go-autorest/autorest v0.11.30
 	github.com/IBM-Cloud/bluemix-go v0.0.0-20220624043500-d538cb4fd9be
 	github.com/IBM/go-sdk-core/v3 v3.3.1
@@ -108,10 +108,10 @@ require (
 	github.com/ddelnano/terraform-provider-xenorchestra/client v0.0.0-20210401070256-0d721c6762ef
 	github.com/denverdino/aliyungo v0.0.0-20200327235253-d59c209c7e93
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
-	github.com/digitalocean/godo v1.83.0
+	github.com/digitalocean/godo v1.187.0
 	github.com/fastly/go-fastly/v7 v7.5.5
 	github.com/google/go-github/v35 v35.3.0
-	github.com/gophercloud/gophercloud v1.0.0
+	github.com/gophercloud/gophercloud v1.14.1
 	github.com/grafana/grafana-api-golang-client v0.0.0-20210218192924-9ccd2365d2a6
 	github.com/hashicorp/go-azure-helpers v0.48.0
 	github.com/hashicorp/go-cleanhttp v0.5.2
@@ -130,7 +130,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0
 	github.com/jonboydell/logzio_client v1.2.0
 	github.com/labd/commercetools-go-sdk v0.3.1
-	github.com/linode/linodego v0.24.1
+	github.com/linode/linodego v1.68.0
 	github.com/microsoft/azure-devops-go-api/azuredevops v1.0.0-b5
 	github.com/mrparkers/terraform-provider-keycloak v0.0.0-20221013232944-56f37a07590d
 	github.com/nicksnyder/go-i18n v1.10.1 // indirect
@@ -175,7 +175,7 @@ require (
 require github.com/newrelic/newrelic-client-go v1.1.0
 
 require (
-	github.com/Azure/azure-pipeline-go v0.2.2 // indirect
+	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.24 // indirect
 	github.com/Azure/go-autorest/autorest/azure/cli v0.4.7 // indirect
@@ -223,7 +223,7 @@ require (
 	github.com/go-openapi/strfmt v0.23.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/go-resty/resty/v2 v2.1.1-0.20191201195748-d7b97669fe48 // indirect
+	github.com/go-resty/resty/v2 v2.17.2 // indirect
 	github.com/go-routeros/routeros v0.0.0-20210123142807-2a44d57c6730 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
@@ -254,7 +254,7 @@ require (
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mattermost/xml-roundtrip-validator v0.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
-	github.com/mattn/go-ieproxy v0.0.0-20190702010315-6dee0af9227d // indirect
+	github.com/mattn/go-ieproxy v0.0.1 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/cli v1.1.5 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
@@ -302,7 +302,7 @@ require (
 	gopkg.in/auth0.v5 v5.21.1
 	gopkg.in/go-playground/validator.v9 v9.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	gopkg.in/ini.v1 v1.62.0 // indirect
+	gopkg.in/ini.v1 v1.67.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.36.0 // indirect
