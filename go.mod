@@ -18,7 +18,7 @@ require (
 	github.com/IBM/networking-go-sdk v0.30.0
 	github.com/IBM/platform-services-go-sdk v0.26.1
 	github.com/IBM/vpc-go-sdk v0.64.0
-	github.com/OctopusDeploy/go-octopusdeploy v1.6.0
+	github.com/OctopusDeploy/go-octopusdeploy v1.8.6
 	github.com/PaloAltoNetworks/pango v0.10.2
 	github.com/aliyun/alibaba-cloud-sdk-go v1.63.107
 	github.com/aliyun/aliyun-tablestore-go-sdk v4.1.3+incompatible
@@ -397,7 +397,6 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20260414002931-afd174a4e478 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260414002931-afd174a4e478 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
-	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/validator.v2 v2.0.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20260317180543-43fb72c5454a // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect

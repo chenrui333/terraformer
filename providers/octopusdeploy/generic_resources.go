@@ -3,8 +3,8 @@ package octopusdeploy
 import (
 	"strings"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/OctopusDeploy/go-octopusdeploy/octopusdeploy"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 type GenericGenerator struct {
@@ -37,29 +37,29 @@ func (g *GenericGenerator) InitResources() error {
 func (g *GenericGenerator) createResources(client *octopusdeploy.Client) error {
 	switch strings.ToLower(g.APIService) {
 	case "accounts":
-		resources, err := client.Account.GetAll()
+		resources, err := client.Accounts.GetAll()
 		if err != nil {
 			return err
 		}
 
-		for _, ressource := range *resources {
+		for _, ressource := range resources {
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				ressource.ID,
-				ressource.Name,
+				ressource.GetID(),
+				ressource.GetName(),
 				"octopusdeploy_account",
 				g.ProviderName,
 				[]string{},
 			))
 		}
 	case "certificates":
-		resources, err := client.Certificate.GetAll()
+		resources, err := client.Certificates.GetAll()
 		if err != nil {
 			return err
 		}
 
-		for _, ressource := range *resources {
+		for _, ressource := range resources {
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				ressource.ID,
+				ressource.GetID(),
 				ressource.Name,
 				"octopusdeploy_certificate",
 				g.ProviderName,
@@ -71,14 +71,14 @@ func (g *GenericGenerator) createResources(client *octopusdeploy.Client) error {
 	//    2020/02/24 16:35:55 octopusdeploy importing... channels
 	//    2020/02/24 16:35:55 cannot find the item
 
-	// 	resources, err := client.Channel.GetAll()
+	// 	resources, err := client.Channels.GetAll()
 	// 	if err != nil {
 	// 		return err
 	// 	}
 
 	// 	for _, ressource := range *resources {
 	// 		g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-	// 			ressource.ID,
+	// 			ressource.GetID(),
 	// 			ressource.Name
 	// 			"octopusdeploy_channel",
 	// 			g.ProviderName,
@@ -86,14 +86,14 @@ func (g *GenericGenerator) createResources(client *octopusdeploy.Client) error {
 	// 		))
 	// 	}
 	case "environments":
-		resources, err := client.Environment.GetAll()
+		resources, err := client.Environments.GetAll()
 		if err != nil {
 			return err
 		}
 
-		for _, ressource := range *resources {
+		for _, ressource := range resources {
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				ressource.ID,
+				ressource.GetID(),
 				ressource.Name,
 				"octopusdeploy_environment",
 				g.ProviderName,
@@ -101,29 +101,29 @@ func (g *GenericGenerator) createResources(client *octopusdeploy.Client) error {
 			))
 		}
 	case "feeds":
-		resources, err := client.Feed.GetAll()
+		resources, err := client.Feeds.GetAll()
 		if err != nil {
 			return err
 		}
 
-		for _, ressource := range *resources {
+		for _, ressource := range resources {
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				ressource.ID,
-				ressource.Name,
+				ressource.GetID(),
+				ressource.GetName(),
 				"octopusdeploy_feed",
 				g.ProviderName,
 				[]string{},
 			))
 		}
 	case "libraryvariablesets":
-		resources, err := client.LibraryVariableSet.GetAll()
+		resources, err := client.LibraryVariableSets.GetAll()
 		if err != nil {
 			return err
 		}
 
-		for _, ressource := range *resources {
+		for _, ressource := range resources {
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				ressource.ID,
+				ressource.GetID(),
 				ressource.Name,
 				"octopusdeploy_library_variable_set",
 				g.ProviderName,
@@ -131,14 +131,14 @@ func (g *GenericGenerator) createResources(client *octopusdeploy.Client) error {
 			))
 		}
 	case "lifecycles":
-		resources, err := client.Lifecycle.GetAll()
+		resources, err := client.Lifecycles.GetAll()
 		if err != nil {
 			return err
 		}
 
-		for _, ressource := range *resources {
+		for _, ressource := range resources {
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				ressource.ID,
+				ressource.GetID(),
 				ressource.Name,
 				"octopusdeploy_lifecycle",
 				g.ProviderName,
@@ -146,14 +146,14 @@ func (g *GenericGenerator) createResources(client *octopusdeploy.Client) error {
 			))
 		}
 	case "projects":
-		resources, err := client.Project.GetAll()
+		resources, err := client.Projects.GetAll()
 		if err != nil {
 			return err
 		}
 
-		for _, ressource := range *resources {
+		for _, ressource := range resources {
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				ressource.ID,
+				ressource.GetID(),
 				ressource.Name,
 				"octopusdeploy_project",
 				g.ProviderName,
@@ -161,14 +161,14 @@ func (g *GenericGenerator) createResources(client *octopusdeploy.Client) error {
 			))
 		}
 	case "projectgroups":
-		resources, err := client.ProjectGroup.GetAll()
+		resources, err := client.ProjectGroups.GetAll()
 		if err != nil {
 			return err
 		}
 
-		for _, ressource := range *resources {
+		for _, ressource := range resources {
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				ressource.ID,
+				ressource.GetID(),
 				ressource.Name,
 				"octopusdeploy_project_group",
 				g.ProviderName,
@@ -176,14 +176,14 @@ func (g *GenericGenerator) createResources(client *octopusdeploy.Client) error {
 			))
 		}
 	case "projecttriggers":
-		resources, err := client.ProjectTrigger.GetAll()
+		resources, err := client.ProjectTriggers.GetAll()
 		if err != nil {
 			return err
 		}
 
-		for _, ressource := range *resources {
+		for _, ressource := range resources {
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				ressource.ID,
+				ressource.GetID(),
 				ressource.Name,
 				"octopusdeploy_project_deployment_target_trigger",
 				g.ProviderName,
@@ -191,14 +191,14 @@ func (g *GenericGenerator) createResources(client *octopusdeploy.Client) error {
 			))
 		}
 	case "tagsets":
-		resources, err := client.TagSet.GetAll()
+		resources, err := client.TagSets.GetAll()
 		if err != nil {
 			return err
 		}
 
-		for _, ressource := range *resources {
+		for _, ressource := range resources {
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				ressource.ID,
+				ressource.GetID(),
 				ressource.Name,
 				"octopusdeploy_tag_set",
 				g.ProviderName,
@@ -215,14 +215,14 @@ func (g *GenericGenerator) createResources(client *octopusdeploy.Client) error {
 
 		// for _, project := range *projects {
 		// 	// Variable.GetAll() returns all the variables for a specific project ID.
-		// 	resources, err := client.Variable.GetAll(project.ID)
+		// 	resources, err := client.Variables.GetAll(project.GetID())
 		// 	if err != nil {
 		// 		return err
 		// 	}
 
 		// 	for _, ressource := range resources.Variables {
 		// 		g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-		// 			ressource.ID,
+		// 			ressource.GetID(),
 		// 			ressource.Name
 		// 			"octopusdeploy_variable",
 		// 			g.ProviderName,

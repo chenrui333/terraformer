@@ -3,9 +3,10 @@ package octopusdeploy
 import (
 	"errors"
 	"net/http"
+	"net/url"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/OctopusDeploy/go-octopusdeploy/octopusdeploy"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 type OctopusDeployService struct { //nolint
@@ -21,8 +22,16 @@ func (s *OctopusDeployService) Client() (*octopusdeploy.Client, error) {
 		return nil, err
 	}
 
+	apiURL, err := url.Parse(octopusURL)
+	if err != nil {
+		return nil, err
+	}
+
 	httpClient := http.Client{}
-	client := octopusdeploy.NewClient(&httpClient, octopusURL, octopusAPIKey)
+	client, err := octopusdeploy.NewClient(&httpClient, apiURL, octopusAPIKey, "")
+	if err != nil {
+		return nil, err
+	}
 
 	return client, nil
 }
