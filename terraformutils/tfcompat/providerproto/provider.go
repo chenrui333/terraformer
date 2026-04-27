@@ -36,6 +36,9 @@ var VersionedPlugins = map[int]plugin.PluginSet{
 	5: {
 		ProviderPluginName: &GRPCProviderPlugin{},
 	},
+	6: {
+		ProviderPluginName: &GRPCProviderPlugin6{},
+	},
 }
 
 type GRPCProviderPlugin struct{}
@@ -50,7 +53,7 @@ func (p *GRPCProviderPlugin) Client(*plugin.MuxBroker, *rpc.Client) (interface{}
 
 func (p *GRPCProviderPlugin) GRPCClient(ctx context.Context, _ *plugin.GRPCBroker, conn *grpc.ClientConn) (interface{}, error) {
 	return &GRPCProvider{
-		client: tfplugin5.NewProviderClient(conn),
+		client: provider5Client{client: tfplugin5.NewProviderClient(conn)},
 		ctx:    ctx,
 	}, nil
 }
@@ -60,9 +63,20 @@ func (p *GRPCProviderPlugin) GRPCServer(*plugin.GRPCBroker, *grpc.Server) error 
 }
 
 type GRPCProvider struct {
-	client tfplugin5.ProviderClient
+	client providerClient
 	ctx    context.Context
 	schema *GetProviderSchemaResponse
+}
+
+type providerClient interface {
+	GetProviderSchema(context.Context) (GetProviderSchemaResponse, bool)
+	ConfigureProvider(context.Context, ConfigureProviderRequest, GetProviderSchemaResponse) ConfigureProviderResponse
+	ReadResource(context.Context, ReadResourceRequest, GetProviderSchemaResponse) ReadResourceResponse
+	ImportResourceState(context.Context, ImportResourceStateRequest, GetProviderSchemaResponse) ImportResourceStateResponse
+}
+
+type provider5Client struct {
+	client tfplugin5.ProviderClient
 }
 
 type GetProviderSchemaResponse struct {
@@ -158,8 +172,31 @@ func (p *GRPCProvider) GetProviderSchema() GetProviderSchemaResponse {
 		return *p.schema
 	}
 
+	resp, cache := p.client.GetProviderSchema(p.ctx)
+	if cache {
+		p.schema = &resp
+	}
+	return resp
+}
+
+func (p *GRPCProvider) ConfigureProvider(r ConfigureProviderRequest) ConfigureProviderResponse {
+	schema := p.GetProviderSchema()
+	return p.client.ConfigureProvider(p.ctx, r, schema)
+}
+
+func (p *GRPCProvider) ReadResource(r ReadResourceRequest) ReadResourceResponse {
+	schema := p.GetProviderSchema()
+	return p.client.ReadResource(p.ctx, r, schema)
+}
+
+func (p *GRPCProvider) ImportResourceState(r ImportResourceStateRequest) ImportResourceStateResponse {
+	schema := p.GetProviderSchema()
+	return p.client.ImportResourceState(p.ctx, r, schema)
+}
+
+func (p provider5Client) GetProviderSchema(ctx context.Context) (GetProviderSchemaResponse, bool) {
 	protoResp, err := p.client.GetSchema(
-		p.ctx,
+		ctx,
 		&tfplugin5.GetProviderSchema_Request{},
 		grpc.MaxCallRecvMsgSize(maxSchemaRecvSize),
 	)
@@ -169,7 +206,7 @@ func (p *GRPCProvider) GetProviderSchema() GetProviderSchemaResponse {
 			ResourceTypes: map[string]configschema.Schema{},
 			DataSources:   map[string]configschema.Schema{},
 			Diagnostics:   diagnosticsFromError(err),
-		}
+		}, false
 	}
 	resp := GetProviderSchemaResponse{
 		Provider:      protoToProviderSchema(protoResp.Provider),
@@ -184,12 +221,10 @@ func (p *GRPCProvider) GetProviderSchema() GetProviderSchemaResponse {
 	for name, schema := range protoResp.DataSourceSchemas {
 		resp.DataSources[name] = protoToProviderSchema(schema)
 	}
-	p.schema = &resp
-	return resp
+	return resp, true
 }
 
-func (p *GRPCProvider) ConfigureProvider(r ConfigureProviderRequest) ConfigureProviderResponse {
-	schema := p.GetProviderSchema()
+func (p provider5Client) ConfigureProvider(ctx context.Context, r ConfigureProviderRequest, schema GetProviderSchemaResponse) ConfigureProviderResponse {
 	configType := schema.Provider.Block.ImpliedType()
 	mp, err := msgpack.Marshal(r.Config, configType)
 	if err != nil {
@@ -199,7 +234,7 @@ func (p *GRPCProvider) ConfigureProvider(r ConfigureProviderRequest) ConfigurePr
 	if terraformVersion == "" {
 		terraformVersion = tfcompat.TerraformVersion
 	}
-	protoResp, err := p.client.Configure(p.ctx, &tfplugin5.Configure_Request{
+	protoResp, err := p.client.Configure(ctx, &tfplugin5.Configure_Request{
 		TerraformVersion: terraformVersion,
 		Config:           &tfplugin5.DynamicValue{Msgpack: mp},
 	})
@@ -209,8 +244,7 @@ func (p *GRPCProvider) ConfigureProvider(r ConfigureProviderRequest) ConfigurePr
 	return ConfigureProviderResponse{Diagnostics: diagnosticsFromProto(protoResp.Diagnostics)}
 }
 
-func (p *GRPCProvider) ReadResource(r ReadResourceRequest) ReadResourceResponse {
-	schema := p.GetProviderSchema()
+func (p provider5Client) ReadResource(ctx context.Context, r ReadResourceRequest, schema GetProviderSchemaResponse) ReadResourceResponse {
 	resourceSchema, ok := schema.ResourceTypes[r.TypeName]
 	if !ok {
 		return ReadResourceResponse{Diagnostics: diagnosticsFromError(fmt.Errorf("missing schema for resource type %q", r.TypeName))}
@@ -232,7 +266,7 @@ func (p *GRPCProvider) ReadResource(r ReadResourceRequest) ReadResourceResponse 
 		}
 		protoReq.ProviderMeta = &tfplugin5.DynamicValue{Msgpack: metaMP}
 	}
-	protoResp, err := p.client.ReadResource(p.ctx, protoReq)
+	protoResp, err := p.client.ReadResource(ctx, protoReq)
 	if err != nil {
 		return ReadResourceResponse{Diagnostics: diagnosticsFromError(err)}
 	}
@@ -248,8 +282,8 @@ func (p *GRPCProvider) ReadResource(r ReadResourceRequest) ReadResourceResponse 
 	}
 }
 
-func (p *GRPCProvider) ImportResourceState(r ImportResourceStateRequest) ImportResourceStateResponse {
-	protoResp, err := p.client.ImportResourceState(p.ctx, &tfplugin5.ImportResourceState_Request{
+func (p provider5Client) ImportResourceState(ctx context.Context, r ImportResourceStateRequest, schema GetProviderSchemaResponse) ImportResourceStateResponse {
+	protoResp, err := p.client.ImportResourceState(ctx, &tfplugin5.ImportResourceState_Request{
 		TypeName: r.TypeName,
 		Id:       r.ID,
 	})
@@ -257,7 +291,6 @@ func (p *GRPCProvider) ImportResourceState(r ImportResourceStateRequest) ImportR
 		return ImportResourceStateResponse{Diagnostics: diagnosticsFromError(err)}
 	}
 	resp := ImportResourceStateResponse{Diagnostics: diagnosticsFromProto(protoResp.Diagnostics)}
-	schema := p.GetProviderSchema()
 	for _, imported := range protoResp.ImportedResources {
 		resourceSchema, ok := schema.ResourceTypes[imported.TypeName]
 		if !ok {
