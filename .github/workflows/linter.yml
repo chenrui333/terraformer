@@ -25,6 +25,7 @@ jobs:
       with:
         cache: true
         golangci_lint_version: v2.11.4
+        reviewdog_version: v0.21.0
         go_version_file: go.mod
         github_token: ${{ secrets.GITHUB_TOKEN }}
         tool_name: golangci-lint
