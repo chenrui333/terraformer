@@ -2,6 +2,9 @@ name: tests
 
 on:
   pull_request:
+  workflow_dispatch:
+  schedule:
+  - cron: "0 12 * * 1"
 
 permissions:
   contents: read
@@ -15,7 +18,29 @@ env:
 
 jobs:
   test:
+    name: test (ubuntu-latest)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - name: Install Go
+      uses: actions/setup-go@v6
+      with:
+        go-version-file: go.mod
+        cache: true
+        cache-dependency-path: go.sum
+    - name: Go Mod Tidy
+      run: go mod tidy
+    - name: Check go.mod and go.sum
+      run: git diff --exit-code -- go.mod go.sum
+    - name: Test core packages
+      run: go test ./build/... ./terraformutils/... ./version -count=1
+
+  full:
+    name: full test (${{ matrix.platform }})
+    if: github.event_name != 'pull_request'
     strategy:
+      fail-fast: false
       matrix:
         platform: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.platform }}

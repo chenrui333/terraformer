@@ -22,14 +22,14 @@ import (
 	"time"
 
 	"github.com/chenrui333/terraformer/terraformutils/providerwrapper"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 	"github.com/zclconf/go-cty/cty"
 )
 
 type Resource struct {
-	InstanceInfo      *terraform.InstanceInfo
-	InstanceState     *terraform.InstanceState
-	Outputs           map[string]*terraform.OutputState `json:",omitempty"`
+	InstanceInfo      *tfcompat.InstanceInfo
+	InstanceState     *tfcompat.InstanceState
+	Outputs           map[string]*tfcompat.OutputState `json:",omitempty"`
 	ResourceName      string
 	Provider          string
 	Item              map[string]interface{} `json:",omitempty"`
@@ -97,11 +97,11 @@ func NewResource(id, resourceName, resourceType, provider string,
 		ResourceName: TfSanitize(resourceName),
 		Item:         nil,
 		Provider:     provider,
-		InstanceState: &terraform.InstanceState{
+		InstanceState: &tfcompat.InstanceState{
 			ID:         id,
 			Attributes: attributes,
 		},
-		InstanceInfo: &terraform.InstanceInfo{
+		InstanceInfo: &tfcompat.InstanceInfo{
 			Type: resourceType,
 			Id:   fmt.Sprintf("%s.%s", resourceType, TfSanitize(resourceName)),
 		},

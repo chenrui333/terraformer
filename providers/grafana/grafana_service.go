@@ -24,7 +24,6 @@ import (
 	"github.com/chenrui333/terraformer/terraformutils"
 	gapi "github.com/grafana/grafana-api-golang-client"
 	"github.com/hashicorp/go-cleanhttp"
-	"github.com/hashicorp/terraform/helper/logging"
 )
 
 type GrafanaService struct { //nolint
@@ -65,7 +64,7 @@ func (s *GrafanaService) buildClient() (*gapi.Client, error) {
 		transport.TLSClientConfig.InsecureSkipVerify = true
 	}
 
-	cli.Transport = logging.NewTransport("Grafana", transport)
+	cli.Transport = transport
 	cfg := gapi.Config{
 		Client: cli,
 		OrgID:  int64(s.Args["org_id"].(int)),

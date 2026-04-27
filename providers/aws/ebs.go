@@ -19,9 +19,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/hashicorp/terraform/helper/hashcode"
+	"github.com/chenrui333/terraformer/terraformutils"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
@@ -34,7 +33,7 @@ type EbsGenerator struct {
 }
 
 func (g *EbsGenerator) volumeAttachmentID(device, volumeID, instanceID string) string {
-	return fmt.Sprintf("vai-%d", hashcode.String(fmt.Sprintf("%s-%s-%s-", device, instanceID, volumeID)))
+	return fmt.Sprintf("vai-%d", terraformutils.HashString(fmt.Sprintf("%s-%s-%s-", device, instanceID, volumeID)))
 }
 
 func (g *EbsGenerator) InitResources() error {
