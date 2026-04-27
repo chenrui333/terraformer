@@ -87,15 +87,15 @@ func TestMskSecretNameExtraction(t *testing.T) {
 	}{
 		{
 			secretArn:    "arn:aws:secretsmanager:us-east-1:123456789012:secret:my-secret-AbCdEf",
-			expectedName: "my-secret",
+			expectedName: "my-secret-AbCdEf",
 		},
 		{
 			secretArn:    "arn:aws:secretsmanager:us-east-1:123456789012:secret:kafka-credentials-XyZ123",
-			expectedName: "kafka-credentials",
+			expectedName: "kafka-credentials-XyZ123",
 		},
 		{
-			secretArn:    "arn:aws:secretsmanager:us-east-1:123456789012:secret:my-secret-with-longersuffix",
-			expectedName: "my-secret-with-longersuffix",
+			secretArn:    "arn:aws:secretsmanager:us-east-1:123456789012:secret:my-secret-prod",
+			expectedName: "my-secret-prod",
 		},
 	}
 
@@ -103,9 +103,6 @@ func TestMskSecretNameExtraction(t *testing.T) {
 		secretName := tc.secretArn
 		if parts := strings.Split(tc.secretArn, ":"); len(parts) >= 7 {
 			secretName = parts[6]
-			if idx := strings.LastIndex(secretName, "-"); idx > 0 && len(secretName)-idx <= 7 {
-				secretName = secretName[:idx]
-			}
 		}
 		if secretName != tc.expectedName {
 			t.Errorf("Secret name extraction: expected %s, got %s (from %s)", tc.expectedName, secretName, tc.secretArn)

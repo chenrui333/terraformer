@@ -200,7 +200,7 @@ func (g *MskGenerator) loadMskScramSecretAssociations(svc *kafka.Client) error {
 			for sp.HasMorePages() {
 				secretPage, err := sp.NextPage(context.TODO())
 				if err != nil {
-					break
+					return err
 				}
 				secretArns = append(secretArns, secretPage.SecretArnList...)
 			}
@@ -226,9 +226,6 @@ func (g *MskGenerator) loadMskScramSecretAssociations(svc *kafka.Client) error {
 				secretName := secretArn
 				if parts := strings.Split(secretArn, ":"); len(parts) >= 7 {
 					secretName = parts[6]
-					if idx := strings.LastIndex(secretName, "-"); idx > 0 && len(secretName)-idx <= 7 {
-						secretName = secretName[:idx]
-					}
 				}
 
 				g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
