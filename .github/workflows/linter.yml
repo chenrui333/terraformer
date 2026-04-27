@@ -20,6 +20,8 @@ jobs:
     steps:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
     - name: golangci-lint
       uses: reviewdog/action-golangci-lint@v2.10.0
       with:
@@ -28,6 +30,7 @@ jobs:
         reviewdog_version: v0.21.0
         go_version_file: go.mod
         github_token: ${{ secrets.GITHUB_TOKEN }}
+        golangci_lint_flags: ${{ github.event_name == 'pull_request' && format('--new-from-rev={0}', github.event.pull_request.base.sha) || '' }}
         filter_mode: added
         fail_level: error
         tool_name: golangci-lint
