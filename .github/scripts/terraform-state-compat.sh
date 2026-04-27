@@ -2,11 +2,13 @@
 
 set -euo pipefail
 
+# Keep this default list aligned with Terraform minor lines supported by generated state.
 minors=${TERRAFORM_COMPAT_MINORS:-"1.9 1.10 1.11 1.12 1.13 1.14"}
 work_dir=${RUNNER_TEMP:-${TMPDIR:-/tmp}}/terraformer-state-compat
 
 rm -rf "$work_dir"
 mkdir -p "$work_dir/bin" "$work_dir/downloads"
+trap 'rm -rf "$work_dir"' EXIT
 
 case "$(uname -s | tr '[:upper:]' '[:lower:]')" in
   darwin) os=darwin ;;
