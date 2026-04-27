@@ -64,6 +64,9 @@ func (p *AzureProvider) setEnvConfig() error {
 	if subscriptionID == "" {
 		return errors.New("set ARM_SUBSCRIPTION_ID env var")
 	}
+	if os.Getenv("ARM_USE_ADAL") != "" {
+		return errors.New("ARM_USE_ADAL is no longer supported; unset it to use Azure SDK authentication")
+	}
 	var auxTenants []string
 	if v := os.Getenv("ARM_AUXILIARY_TENANT_IDS"); v != "" {
 		auxTenants = strings.Split(v, ";")
