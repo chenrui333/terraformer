@@ -1,4 +1,4 @@
-// Copyright 2026 The Terraformer Authors.
+// Copyright HashiCorp, Inc.
 // SPDX-License-Identifier: MPL-2.0
 
 package configschema
