@@ -4,11 +4,13 @@ package aws
 
 import (
 	"context"
+	"errors"
 	"sort"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/kafka"
 	"github.com/aws/aws-sdk-go-v2/service/kafka/types"
+	"github.com/aws/smithy-go"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -35,7 +37,7 @@ func mskClusterPolicyName(clusterArn string) string {
 // mskSecretName extracts the secret name from a Secrets Manager ARN.
 // ARN format: arn:aws:secretsmanager:region:account:secret:name-suffix
 func mskSecretName(secretArn string) string {
-	if parts := strings.Split(secretArn, ":"); len(parts) >= 7 {
+	if parts := strings.SplitN(secretArn, ":", 7); len(parts) == 7 {
 		return parts[6]
 	}
 	return secretArn
@@ -183,7 +185,11 @@ func (g *MskGenerator) loadMskClusterPolicies(svc *kafka.Client) error {
 			ClusterArn: &clusterArn,
 		})
 		if err != nil {
-			continue
+			var apiErr smithy.APIError
+			if errors.As(err, &apiErr) && apiErr.ErrorCode() == "NotFoundException" {
+				continue
+			}
+			return err
 		}
 
 		g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
