@@ -23,8 +23,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
-      with:
-        fetch-depth: 0
     - name: Install Go
       uses: actions/setup-go@v6
       with:
@@ -35,37 +33,8 @@ jobs:
       run: go mod tidy
     - name: Check go.mod and go.sum
       run: git diff --exit-code -- go.mod go.sum
-    - name: Test changed packages
-      run: |
-        set -euo pipefail
-
-        declare -A package_set=(
-          [.]=""
-          [./build/...]=""
-          [./cmd]=""
-          [./terraformutils/...]=""
-          [./version]=""
-        )
-
-        while IFS= read -r file; do
-          case "$file" in
-            providers/*/*)
-              provider="${file#providers/}"
-              provider="${provider%%/*}"
-              package_set["./providers/${provider}/..."]=""
-              ;;
-            tests/*/*)
-              suite="${file#tests/}"
-              suite="${suite%%/*}"
-              package_set["./tests/${suite}/..."]=""
-              ;;
-          esac
-        done < <(git diff --name-only "${{ github.event.pull_request.base.sha }}...HEAD")
-
-        mapfile -t packages < <(printf '%s\n' "${!package_set[@]}" | sort)
-        printf 'Testing packages:\n'
-        printf '  %s\n' "${packages[@]}"
-        go test "${packages[@]}" -count=1
+    - name: Test core packages
+      run: go test . ./build/... ./cmd ./terraformutils/... ./version -count=1
 
   full:
     name: full test (${{ matrix.platform }})
