@@ -17,25 +17,41 @@ package terraformutils
 import "testing"
 
 func TestProviderSource(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]string{
-		"aws":          "hashicorp/aws",
-		"cloudflare":   "cloudflare/cloudflare",
-		"github":       "integrations/github",
-		"keycloak":     "keycloak/keycloak",
-		"tencentcloud": "tencentcloudstack/tencentcloud",
+		"aws":                         "hashicorp/aws",
+		"cloudflare":                  "cloudflare/cloudflare",
+		"github":                      "integrations/github",
+		"keycloak":                    "keycloak/keycloak",
+		"registry.example.com/custom": "registry.example.com/custom",
+		"tencentcloud":                "tencentcloudstack/tencentcloud",
 	}
 
 	for provider, want := range testCases {
-		if got := ProviderSource(provider); got != want {
-			t.Fatalf("ProviderSource(%q) = %q, want %q", provider, got, want)
-		}
+		t.Run(provider, func(t *testing.T) {
+			t.Parallel()
+			if got := ProviderSource(provider); got != want {
+				t.Fatalf("ProviderSource(%q) = %q, want %q", provider, got, want)
+			}
+		})
 	}
 }
 
 func TestProviderConfigAddress(t *testing.T) {
-	got := ProviderConfigAddress("aws")
-	want := "provider[\"registry.terraform.io/hashicorp/aws\"]"
-	if got != want {
-		t.Fatalf("ProviderConfigAddress(%q) = %q, want %q", "aws", got, want)
+	t.Parallel()
+
+	testCases := map[string]string{
+		"aws":        "provider[\"registry.terraform.io/hashicorp/aws\"]",
+		"cloudflare": "provider[\"registry.terraform.io/cloudflare/cloudflare\"]",
+	}
+
+	for provider, want := range testCases {
+		t.Run(provider, func(t *testing.T) {
+			t.Parallel()
+			if got := ProviderConfigAddress(provider); got != want {
+				t.Fatalf("ProviderConfigAddress(%q) = %q, want %q", provider, got, want)
+			}
+		})
 	}
 }

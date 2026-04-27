@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -76,7 +77,7 @@ func TestPrintTfStateCanBeListedByTerraformCLI(t *testing.T) {
 		t.Skip("terraform CLI not found")
 	}
 
-	statePath := t.TempDir() + "/terraform.tfstate"
+	statePath := filepath.Join(t.TempDir(), "terraform.tfstate")
 	if err := os.WriteFile(statePath, testStateBytes(t), 0o600); err != nil {
 		t.Fatal(err)
 	}
