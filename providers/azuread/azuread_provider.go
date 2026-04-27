@@ -48,7 +48,7 @@ func (p *AzureADProvider) setEnvConfig() error {
 	return nil
 }
 
-func (p *AzureADProvider) Init(args []string) error {
+func (p *AzureADProvider) Init(_ []string) error {
 	err := p.setEnvConfig()
 	if err != nil {
 		log.Println(err.Error())
@@ -62,7 +62,7 @@ func (p *AzureADProvider) GetName() string {
 	return "azuread"
 }
 
-func (p *AzureADProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *AzureADProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{}
 }
 

@@ -185,7 +185,7 @@ func (GCPProvider) GetResourceConnections() map[string]map[string][]string {
 		},
 	}
 }
-func (p GCPProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p GCPProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{
 		"provider": map[string]interface{}{
 			p.GetName(): map[string]interface{}{

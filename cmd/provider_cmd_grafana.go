@@ -25,7 +25,7 @@ func newCmdGrafanaImporter(options ImportOptions) *cobra.Command {
 		Use:   "grafana",
 		Short: "Import current state to Terraform configuration from Grafana",
 		Long:  "Import current state to Terraform configuration from Grafana",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			provider := newGrafanaProvider()
 			err := Import(provider, options, []string{})
 			if err != nil {

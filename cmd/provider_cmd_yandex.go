@@ -29,7 +29,7 @@ func newCmdYandexImporter(options ImportOptions) *cobra.Command {
 		Use:   "yandex",
 		Short: "Import current state to Terraform configuration from Yandex Cloud",
 		Long:  "Import current state to Terraform configuration from Yandex Cloud",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			originalPathPattern := options.PathPattern
 			// iterate over provided folder_ids
 			for _, folderID := range options.Projects {

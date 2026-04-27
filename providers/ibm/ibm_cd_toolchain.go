@@ -1,3 +1,4 @@
+//nolint:gosec // lint triage: legacy provider/API/security baseline is tracked in #175.
 package ibm
 
 import (
@@ -135,7 +136,7 @@ func (g ToolchainGenerator) loadPLTrigProp(resourceType string, pID string, pNam
 }
 
 // Goroutine helper to handle different tool types
-func (g *ToolchainGenerator) HandleTool(t cdtoolchainv2.ToolModel, toolType string, tID string, tName string, tcID string, tcIDref string, waitGroup *sync.WaitGroup) error {
+func (g *ToolchainGenerator) HandleTool(t cdtoolchainv2.ToolModel, toolType string, tID string, tName string, _ string, tcIDref string, waitGroup *sync.WaitGroup) {
 	defer waitGroup.Done()
 
 	apiKey := os.Getenv("IC_API_KEY")
@@ -178,7 +179,7 @@ func (g *ToolchainGenerator) HandleTool(t cdtoolchainv2.ToolModel, toolType stri
 				g.Resources = append(g.Resources, g.loadTool("ibm_cd_toolchain_tool_pipeline", tID, tName+"--classic", tcIDref))
 				resourceMutex.Unlock()
 				fmt.Println("......! Only Tekton pipelines are supported in Terraform", toolType)
-				return nil
+				return
 			}
 
 			resourceMutex.Lock()
@@ -267,7 +268,6 @@ func (g *ToolchainGenerator) HandleTool(t cdtoolchainv2.ToolModel, toolType stri
 			fmt.Println("......! Unknown tool type", toolType)
 		}
 	}
-	return nil
 }
 
 // Called within InitResources when IBM_CD_TOOLCHAIN_INCLUDE_S2S is set
@@ -577,7 +577,7 @@ func (g *ToolchainGenerator) PostConvertHook() error {
 }
 
 // PostConvertHook helper to add private workers refs to tekton pipelines
-func (g *ToolchainGenerator) TektonPipelinePostProcess(i int, res terraformutils.Resource, workerIDs map[string]string) {
+func (g *ToolchainGenerator) TektonPipelinePostProcess(i int, _ terraformutils.Resource, workerIDs map[string]string) {
 	worker, ok := g.Resources[i].Item["worker"].([]interface{})
 	if !ok {
 		return
@@ -597,7 +597,7 @@ func (g *ToolchainGenerator) TektonPipelinePostProcess(i int, res terraformutils
 }
 
 // PostConvertHook helper to add repo depends_on to tekton pipeline definitions
-func (g *ToolchainGenerator) TektonDefinitionPostProcess(i int, res terraformutils.Resource, repos map[string](map[string]string)) {
+func (g *ToolchainGenerator) TektonDefinitionPostProcess(i int, _ terraformutils.Resource, repos map[string](map[string]string)) {
 	defSource, ok := g.Resources[i].Item["source"].([]interface{})
 	if !ok || len(defSource) == 0 {
 		return
@@ -647,7 +647,7 @@ func (g *ToolchainGenerator) TektonPropertyPostProcess(i int, res terraformutils
 }
 
 // PostConvertHook helper to remove Jenkins webhook_url from tf files, which is supposed to be sensitive and computed
-func (g *ToolchainGenerator) JenkinsPostProcess(i int, res terraformutils.Resource) {
+func (g *ToolchainGenerator) JenkinsPostProcess(i int, _ terraformutils.Resource) {
 	params, ok := g.Resources[i].Item["parameters"].([]interface{})
 	if !ok || len(params) == 0 {
 		return

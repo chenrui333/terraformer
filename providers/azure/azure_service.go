@@ -49,7 +49,7 @@ func (az *AzureService) AppendSimpleResourceWithDuplicateCheck(id string, resour
 
 // This method checks if same resource name(tfer) exists with
 // same id
-func (az *AzureService) DuplicateCheck(id string, resourceName string, resourceType string) (bool, bool) {
+func (az *AzureService) DuplicateCheck(id string, resourceName string, _ string) (bool, bool) {
 	var tferexist, idexist bool
 	tferName := terraformutils.TfSanitize(resourceName)
 	for _, resource := range az.Resources {

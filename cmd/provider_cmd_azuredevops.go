@@ -25,7 +25,7 @@ func newCmdAzureDevOpsImporter(options ImportOptions) *cobra.Command {
 		Use:   "azuredevops",
 		Short: "Import current state to Terraform configuration from Azure DevOps",
 		Long:  "Import current state to Terraform configuration from Azure DevOps",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			provider := newAzureDevOpsProvider()
 			err := Import(provider, options, []string{options.ResourceGroup})
 			if err != nil {

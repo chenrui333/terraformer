@@ -26,7 +26,7 @@ type LinodeProvider struct { //nolint
 	token string
 }
 
-func (p *LinodeProvider) Init(args []string) error {
+func (p *LinodeProvider) Init(_ []string) error {
 	if os.Getenv("LINODE_TOKEN") == "" {
 		return errors.New("set LINODE_TOKEN env var")
 	}
@@ -39,7 +39,7 @@ func (p *LinodeProvider) GetName() string {
 	return "linode"
 }
 
-func (p *LinodeProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *LinodeProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{}
 }
 

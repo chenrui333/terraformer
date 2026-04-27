@@ -72,7 +72,7 @@ func (p *NewRelicProvider) GetConfig() cty.Value {
 	})
 }
 
-func (p *NewRelicProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *NewRelicProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{}
 }
 

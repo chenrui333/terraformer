@@ -13,7 +13,7 @@ func newCmdOpsgenieImporter(options ImportOptions) *cobra.Command {
 		Use:   "opsgenie",
 		Short: "Import current state to Terraform configuration from Opsgenie",
 		Long:  "Import current state to Terraform configuration from Opsgenie",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			provider := newOpsgenieProvider()
 			err := Import(provider, options, []string{apiKey})
 			if err != nil {

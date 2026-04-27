@@ -47,7 +47,7 @@ func (p KubernetesProvider) GetResourceConnections() map[string]map[string][]str
 	return map[string]map[string][]string{}
 }
 
-func (p KubernetesProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p KubernetesProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{}
 }
 
@@ -221,7 +221,7 @@ func applyGlobalOptionsToConfig(config *restclient.Config) error {
 		impersonateGroupJSON := []string{}
 		err := json.Unmarshal([]byte(impersonateGroup), &impersonateGroupJSON)
 		if err != nil {
-			return errors.New(fmt.Sprintf("error parsing global option %q: %v", "--as-group", err))
+			return fmt.Errorf("error parsing global option %q: %w", "--as-group", err)
 		}
 		if len(impersonateGroupJSON) > 0 {
 			config.Impersonate.Groups = impersonateGroupJSON
@@ -249,7 +249,7 @@ func applyGlobalOptionsToConfig(config *restclient.Config) error {
 	if len(requestTimeout) > 0 {
 		t, err := time.ParseDuration(requestTimeout)
 		if err != nil {
-			return errors.New(fmt.Sprintf("%v", err))
+			return fmt.Errorf("%w", err)
 		}
 		config.Timeout = t
 	}

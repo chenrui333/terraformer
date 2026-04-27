@@ -1,3 +1,4 @@
+//nolint:revive // lint triage: legacy provider/API/security baseline is tracked in #175.
 package myrasec
 
 import (
@@ -47,7 +48,7 @@ func (g *SettingsGenerator) InitResources() error {
 
 	api, err := g.initializeAPI()
 	if err != nil {
-		return nil
+		return err
 	}
 
 	funcs := []func(*mgo.API, int, mgo.VHost, *sync.WaitGroup) error{
@@ -56,7 +57,7 @@ func (g *SettingsGenerator) InitResources() error {
 
 	err = createResourcesPerSubDomain(api, funcs, &wg, true)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	wg.Wait()

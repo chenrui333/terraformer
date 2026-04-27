@@ -32,7 +32,7 @@ func (g AppSignOnPolicyGenerator) createResources(policies []okta.ListPolicies20
 			continue
 		}
 
-		resourceName := normalizeResourceNameWithRandom(policy.AccessPolicy.GetName(), true)
+		resourceName := normalizeResourceNameWithRandom(policy.AccessPolicy.GetName())
 		resourceID := policy.AccessPolicy.GetId()
 
 		resources = append(resources, terraformutils.NewSimpleResource(

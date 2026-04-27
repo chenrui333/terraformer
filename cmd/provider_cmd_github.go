@@ -30,7 +30,7 @@ func newCmdGithubImporter(options ImportOptions) *cobra.Command {
 		Use:   "github",
 		Short: "Import current state to Terraform configuration from GitHub",
 		Long:  "Import current state to Terraform configuration from GitHub",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			originalPathPattern := options.PathPattern
 			for _, organization := range owner {
 				provider := newGitHubProvider()

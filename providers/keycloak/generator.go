@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:revive // lint triage: legacy provider/API/security baseline is tracked in #175.
 package keycloak
 
 import (
@@ -238,7 +239,7 @@ func (g *RealmGenerator) InitResources() error {
 		g.Resources = append(g.Resources, g.createUserResources(realmUsers)...)
 
 		// Get realm open id client scopes resources
-		realmScopes, err := kck.ListOpenidClientScopesWithFilter(ctx, realm.Realm, func(scope *keycloak.OpenidClientScope) bool { return true })
+		realmScopes, err := kck.ListOpenidClientScopesWithFilter(ctx, realm.Realm, func(_ *keycloak.OpenidClientScope) bool { return true })
 		if err != nil {
 			return errors.New("keycloak: could not get realm scopes of realm " + realm.Realm + " in Keycloak")
 		}
@@ -312,7 +313,8 @@ func (g *RealmGenerator) InitResources() error {
 		// Set ContainerId of the roles, for realm = "", for open id clients = "_" + client.ClientId
 		// and get roles resources
 		mapContainerIDs[realm.Realm] = ""
-		roles := append(clientRoles, realmRoles...)
+		roles := append([]*keycloak.Role{}, clientRoles...)
+		roles = append(roles, realmRoles...)
 		for _, role := range roles {
 			role.ContainerId = mapContainerIDs[role.ContainerId]
 		}

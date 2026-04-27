@@ -30,7 +30,7 @@ type OpalProvider struct { //nolint
 	baseURL string
 }
 
-func (p OpalProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p OpalProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{
 		"provider": map[string]interface{}{
 			"opal": map[string]interface{}{
@@ -78,7 +78,7 @@ func (p OpalProvider) GetResourceConnections() map[string]map[string][]string {
 	}
 }
 
-func (p *OpalProvider) Init(args []string) error {
+func (p *OpalProvider) Init(_ []string) error {
 	p.token = os.Getenv("OPAL_AUTH_TOKEN")
 	if p.token == "" {
 		return errors.New("the Opal API key must be set via `OPAL_AUTH_TOKEN` env var")

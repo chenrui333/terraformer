@@ -61,7 +61,7 @@ func (p *KeycloakProvider) GetName() string {
 	return "keycloak"
 }
 
-func (p *KeycloakProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *KeycloakProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{}
 }
 

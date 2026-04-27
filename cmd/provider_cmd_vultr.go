@@ -25,7 +25,7 @@ func newCmdVultrImporter(options ImportOptions) *cobra.Command {
 		Use:   "vultr",
 		Short: "Import current state to Terraform configuration from Vultr",
 		Long:  "Import current state to Terraform configuration from Vultr",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			provider := newVultrProvider()
 			err := Import(provider, options, []string{})
 			if err != nil {

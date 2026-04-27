@@ -27,7 +27,10 @@ type TeamGenerator struct {
 }
 
 func (g *TeamGenerator) createTeamResources(client *ns1.Client) error {
-	teams, _, err := client.Teams.List()
+	teams, resp, err := client.Teams.List()
+	if resp != nil && resp.Body != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		return err
 	}

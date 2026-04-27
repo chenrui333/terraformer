@@ -25,7 +25,7 @@ func newCmdNs1Importer(options ImportOptions) *cobra.Command {
 		Use:   "ns1",
 		Short: "Import current state to Terraform configuration from NS1",
 		Long:  "Import current state to Terraform configuration from NS1",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			provider := newNs1Provider()
 			err := Import(provider, options, []string{})
 			if err != nil {

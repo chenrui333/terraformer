@@ -25,7 +25,7 @@ func newCmdDigitalOceanImporter(options ImportOptions) *cobra.Command {
 		Use:   "digitalocean",
 		Short: "Import current state to Terraform configuration from DigitalOcean",
 		Long:  "Import current state to Terraform configuration from DigitalOcean",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			provider := newDigitalOceanProvider()
 			err := Import(provider, options, []string{})
 			if err != nil {

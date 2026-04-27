@@ -89,7 +89,7 @@ func (p *MackerelProvider) GetSupportedService() map[string]terraformutils.Servi
 }
 
 // GetProviderData return map of provider data for Mackerel
-func (p MackerelProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p MackerelProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{}
 }
 

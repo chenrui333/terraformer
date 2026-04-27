@@ -26,7 +26,7 @@ func newCmdPagerDutyImporter(options ImportOptions) *cobra.Command {
 		Use:   "pagerduty",
 		Short: "Import current state to Terraform configuration from PagerDuty",
 		Long:  "Import current state to Terraform configuration from PagerDuty",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			provider := newPagerDutyProvider()
 			err := Import(provider, options, []string{token})
 			if err != nil {

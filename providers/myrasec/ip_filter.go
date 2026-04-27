@@ -1,3 +1,4 @@
+//nolint:revive // lint triage: legacy provider/API/security baseline is tracked in #175.
 package myrasec
 
 import (
@@ -71,7 +72,7 @@ func (g *IPFilterGenerator) InitResources() error {
 
 	err = createResourcesPerSubDomain(api, funcs, &wg, true)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	wg.Wait()

@@ -73,7 +73,7 @@ func (p AliCloudProvider) GetResourceConnections() map[string]map[string][]strin
 }
 
 // GetProviderData Used for generated HCL2 for the provider
-func (p AliCloudProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p AliCloudProvider) GetProviderData(_ ...string) map[string]interface{} {
 	alicloudConfig := map[string]interface{}{}
 	if p.region == GlobalRegion {
 		alicloudConfig["region"] = "cn-hangzhou"

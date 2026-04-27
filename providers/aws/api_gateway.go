@@ -173,7 +173,7 @@ func (g *APIGatewayGenerator) loadModels(svc *apigateway.Client, restAPIID *stri
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
 		if err != nil {
-			return nil
+			return err
 		}
 		for _, model := range page.Items {
 			resourceID := *restAPIID + "/" + *model.Id

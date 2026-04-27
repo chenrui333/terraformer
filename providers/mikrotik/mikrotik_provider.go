@@ -26,7 +26,7 @@ type MikrotikProvider struct { //nolint
 	client.Mikrotik
 }
 
-func (p *MikrotikProvider) Init(args []string) error {
+func (p *MikrotikProvider) Init(_ []string) error {
 	// The mikrotik provider gets its credentials through environment variables
 	// and therefore nothing needs to be done here
 	return nil
@@ -36,7 +36,7 @@ func (p *MikrotikProvider) GetName() string {
 	return "mikrotik"
 }
 
-func (p *MikrotikProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *MikrotikProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{
 		"provider": map[string]interface{}{
 			"mikrotik": map[string]interface{}{

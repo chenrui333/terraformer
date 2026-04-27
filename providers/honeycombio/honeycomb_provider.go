@@ -32,7 +32,7 @@ type HoneycombProvider struct {
 	datasets []string
 }
 
-func (p HoneycombProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p HoneycombProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{
 		"provider": map[string]interface{}{
 			"honeycomb": map[string]interface{}{

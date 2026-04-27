@@ -11,6 +11,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
+//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package cmd
 
 import (
@@ -28,7 +30,7 @@ func newCmdAuth0Importer(options ImportOptions) *cobra.Command {
 		Use:   "auth0",
 		Short: "Import current state to Terraform configuration from Auth0",
 		Long:  "Import current state to Terraform configuration from Auth0",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			domain := os.Getenv("AUTH0_DOMAIN")
 			if len(domain) == 0 {
 				return errors.New("Domain for Auth0 must be set through `AUTH0_DOMAIN` env var")

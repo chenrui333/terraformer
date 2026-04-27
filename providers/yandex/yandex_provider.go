@@ -58,7 +58,7 @@ func (p *YandexProvider) GetName() string {
 	return "yandex"
 }
 
-func (p *YandexProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *YandexProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{}
 }
 

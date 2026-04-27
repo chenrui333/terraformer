@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:gosec // lint triage: legacy provider/API/security baseline is tracked in #175.
 package okta
 
 import (
@@ -34,18 +35,15 @@ func normalizeResourceName(s string) string {
 	return strings.ToLower(s)
 }
 
-func normalizeResourceNameWithRandom(s string, rand bool) string {
+func normalizeResourceNameWithRandom(s string) string {
 	specialChars := `-<>()*#{}[]|@_ .%'",&`
 	for _, c := range specialChars {
 		s = strings.ReplaceAll(s, string(c), "_")
 	}
 	s = regexp.MustCompile(`^[^a-zA-Z_]+`).ReplaceAllLiteralString(s, "")
 	s = strings.TrimSuffix(s, "`_")
-	if rand {
-		randString := RandStringBytes(4)
-		return fmt.Sprintf("%s_%s", strings.ToLower(s), randString)
-	}
-	return strings.ToLower(s)
+	randString := RandStringBytes(4)
+	return fmt.Sprintf("%s_%s", strings.ToLower(s), randString)
 }
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyz0123456789"

@@ -36,7 +36,7 @@ func (p *PanosProvider) GetName() string {
 	return "panos"
 }
 
-func (p *PanosProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *PanosProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{}
 }
 

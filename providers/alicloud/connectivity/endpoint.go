@@ -1,3 +1,4 @@
+//nolint:gosec,revive // lint triage: legacy provider/API/security baseline is tracked in #175.
 package connectivity
 
 import (

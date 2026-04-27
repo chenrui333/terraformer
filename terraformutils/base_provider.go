@@ -41,7 +41,7 @@ type Provider struct {
 	Config  cty.Value
 }
 
-func (p *Provider) Init(args []string) error {
+func (p *Provider) Init(_ []string) error {
 	panic("implement me")
 }
 
@@ -53,7 +53,7 @@ func (p *Provider) GetName() string {
 	panic("implement me")
 }
 
-func (p *Provider) InitService(serviceName string) error {
+func (p *Provider) InitService(_ string) error {
 	panic("implement me")
 }
 

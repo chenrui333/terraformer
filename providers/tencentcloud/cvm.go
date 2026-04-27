@@ -15,8 +15,6 @@
 package tencentcloud
 
 import (
-	"fmt"
-
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common"
 	cvm "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cvm/v20170312"
@@ -85,39 +83,6 @@ func (g *CvmGenerator) InitResources() error {
 	}
 
 	return nil
-}
-
-func (g *CvmGenerator) loadKeyPairs(client *cvm.Client, keyIds []*string) (resourceName string, errRet error) {
-	request := cvm.NewDescribeKeyPairsRequest()
-	request.KeyIds = keyIds
-	response, err := client.DescribeKeyPairs(request)
-	if err != nil {
-		errRet = err
-		return
-	}
-	if len(response.Response.KeyPairSet) < 1 {
-		errRet = fmt.Errorf("no key pair")
-		return
-	}
-
-	instance := response.Response.KeyPairSet[0]
-	resourceName = *instance.KeyName + "_" + *instance.KeyId
-	for _, r := range g.Resources {
-		if r.InstanceInfo.Type == "tencentcloud_key_pair" && r.ResourceName == resourceName {
-			return
-		}
-	}
-	resource := terraformutils.NewResource(
-		*instance.KeyId,
-		resourceName,
-		"tencentcloud_key_pair",
-		"tencentcloud",
-		map[string]string{},
-		[]string{},
-		map[string]interface{}{},
-	)
-	g.Resources = append(g.Resources, resource)
-	return
 }
 
 /*

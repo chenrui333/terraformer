@@ -177,10 +177,9 @@ func (p *ProviderWrapper) Refresh(info *tfcompat.InstanceInfo, state *tfcompat.I
 			log.Printf("WARN: Fail read resource from provider, wait %dms before retry\n", p.retrySleepMs)
 			time.Sleep(time.Duration(p.retrySleepMs) * time.Millisecond)
 			continue
-		} else {
-			successReadResource = true
-			break
 		}
+		successReadResource = true
+		break
 	}
 
 	if !successReadResource {

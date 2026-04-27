@@ -28,7 +28,7 @@ func newCmdNewRelicImporter(options ImportOptions) *cobra.Command {
 		Use:   "newrelic",
 		Short: "Import current state to Terraform configuration from New Relic",
 		Long:  "Import current state to Terraform configuration from New Relic",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			provider := newNewRelicProvider()
 			err := Import(provider, options, []string{apiKey, accountID, region})
 			if err != nil {

@@ -27,7 +27,10 @@ type MonitoringJobGenerator struct {
 }
 
 func (g *MonitoringJobGenerator) createMonitoringJobResources(client *ns1.Client) error {
-	jobs, _, err := client.Jobs.List()
+	jobs, resp, err := client.Jobs.List()
+	if resp != nil && resp.Body != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		return err
 	}

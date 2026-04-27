@@ -98,7 +98,7 @@ func (SecurityGenerator) createResources(securityGroups []types.SecurityGroup) [
 }
 
 func processRule(rule types.IpPermission, ruleType string, sg types.SecurityGroup, resources []terraformutils.Resource) []terraformutils.Resource {
-	if rule.UserIdGroupPairs != nil && len(rule.UserIdGroupPairs) > 0 {
+	if len(rule.UserIdGroupPairs) > 0 {
 		if len(rule.IpRanges) > 0 { // we must unwind coupled CIDR IPv4 range + security group rules
 			attributes := baseRuleAttributes(ruleType, rule, sg)
 			resources = append(resources, terraformutils.NewResource(

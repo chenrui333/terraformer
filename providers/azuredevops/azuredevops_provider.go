@@ -41,7 +41,7 @@ func (p *AzureDevOpsProvider) setEnvConfig() error {
 	return nil
 }
 
-func (p *AzureDevOpsProvider) Init(args []string) error {
+func (p *AzureDevOpsProvider) Init(_ []string) error {
 	err := p.setEnvConfig()
 	if err != nil {
 		return err
@@ -53,7 +53,7 @@ func (p *AzureDevOpsProvider) GetName() string {
 	return "azuredevops"
 }
 
-func (p *AzureDevOpsProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *AzureDevOpsProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{}
 }
 

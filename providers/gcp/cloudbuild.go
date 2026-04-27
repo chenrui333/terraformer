@@ -1,3 +1,4 @@
+//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package gcp
 
 import (

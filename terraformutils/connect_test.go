@@ -158,6 +158,6 @@ type MockedFlatmapParser struct {
 	attributesParsed map[string]interface{}
 }
 
-func (p *MockedFlatmapParser) Parse(ty cty.Type) (map[string]interface{}, error) {
+func (p *MockedFlatmapParser) Parse(_ cty.Type) (map[string]interface{}, error) {
 	return p.attributesParsed, nil
 }

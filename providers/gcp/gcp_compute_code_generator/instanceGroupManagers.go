@@ -18,11 +18,11 @@ type instanceGroupManagers struct {
 	basicGCPResource
 }
 
-func (b instanceGroupManagers) ifNeedZone(zoneInParameters bool) bool {
+func (b instanceGroupManagers) ifNeedZone(_ bool) bool {
 	return true
 }
 
-func (b instanceGroupManagers) ifIDWithZone(zoneInParameters bool) bool {
+func (b instanceGroupManagers) ifIDWithZone(_ bool) bool {
 	return false
 }
 func (b instanceGroupManagers) ifNeedRegion() bool {

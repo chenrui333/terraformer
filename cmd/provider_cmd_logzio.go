@@ -31,7 +31,7 @@ func newCmdLogzioImporter(options ImportOptions) *cobra.Command {
 		Use:   "logzio",
 		Short: "Import current state to Terraform configuration from Logz.io",
 		Long:  "Import current state to Terraform configuration from Logz.io",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			token := os.Getenv("LOGZIO_API_TOKEN")
 			if len(token) == 0 {
 				return errors.New("API Token for Logz.io must be set through `LOGZIO_API_TOKEN` env var")

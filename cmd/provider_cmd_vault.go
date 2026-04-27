@@ -26,7 +26,7 @@ func newCmdVaultImporter(options ImportOptions) *cobra.Command {
 		Use:   "vault",
 		Short: "Import current state to Terraform configuration from Vault",
 		Long:  "Import current state to Terraform configuration from Vault",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			provider := newVaultProvider()
 			err := Import(provider, options, []string{address, token})
 			if err != nil {

@@ -25,7 +25,7 @@ func newCmdFastlyImporter(options ImportOptions) *cobra.Command {
 		Use:   "fastly",
 		Short: "Import current state to Terraform configuration from Fastly",
 		Long:  "Import current state to Terraform configuration from Fastly",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			provider := newFastlyProvider()
 			err := Import(provider, options, []string{})
 			if err != nil {

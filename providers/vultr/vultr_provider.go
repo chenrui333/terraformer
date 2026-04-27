@@ -26,7 +26,7 @@ type VultrProvider struct { //nolint
 	apiKey string
 }
 
-func (p *VultrProvider) Init(args []string) error {
+func (p *VultrProvider) Init(_ []string) error {
 	if os.Getenv("VULTR_API_KEY") == "" {
 		return errors.New("set VULTR_API_KEY env var")
 	}
@@ -39,7 +39,7 @@ func (p *VultrProvider) GetName() string {
 	return "vultr"
 }
 
-func (p *VultrProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *VultrProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{}
 }
 

@@ -28,7 +28,7 @@ func newCmdGoogleImporter(options ImportOptions) *cobra.Command {
 		Use:   "google",
 		Short: "Import current state to Terraform configuration from Google Cloud",
 		Long:  "Import current state to Terraform configuration from Google Cloud",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			originalPathPattern := options.PathPattern
 			for _, project := range options.Projects {
 				for _, region := range options.Regions {

@@ -39,7 +39,7 @@ func (p LogzioProvider) GetResourceConnections() map[string]map[string][]string 
 	}
 }
 
-func (p LogzioProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p LogzioProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{}
 }
 

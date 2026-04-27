@@ -30,7 +30,7 @@ type OktaProvider struct { //nolint
 	apiToken string
 }
 
-func (p *OktaProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *OktaProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{
 		"provider": map[string]interface{}{
 			"okta": map[string]interface{}{
@@ -46,7 +46,7 @@ func (p *OktaProvider) GetResourceConnections() map[string]map[string][]string {
 	}
 }
 
-func (p *OktaProvider) Init(args []string) error {
+func (p *OktaProvider) Init(_ []string) error {
 	orgName := os.Getenv("OKTA_ORG_NAME")
 	if orgName == "" {
 		return errors.New("set OKTA_ORG_NAME env var")

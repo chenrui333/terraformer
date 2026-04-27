@@ -27,7 +27,7 @@ type EquinixMetalProvider struct { //nolint
 	projectID string
 }
 
-func (p *EquinixMetalProvider) Init(args []string) error {
+func (p *EquinixMetalProvider) Init(_ []string) error {
 	if os.Getenv("PACKET_AUTH_TOKEN") == "" {
 		return errors.New("set PACKET_AUTH_TOKEN env var")
 	}
@@ -45,7 +45,7 @@ func (p *EquinixMetalProvider) GetName() string {
 	return "metal"
 }
 
-func (p *EquinixMetalProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *EquinixMetalProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{}
 }
 

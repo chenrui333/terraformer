@@ -30,7 +30,7 @@ func newCmdPanosImporter(options ImportOptions) *cobra.Command {
 		Use:   "panos",
 		Short: "Import current state to Terraform configuration from a PAN-OS",
 		Long:  "Import current state to Terraform configuration from a PAN-OS",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			var t interface{}
 
 			if len(vsys) == 0 {

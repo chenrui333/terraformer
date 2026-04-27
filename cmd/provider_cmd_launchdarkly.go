@@ -25,7 +25,7 @@ func newCmdLaunchDarklyImporter(options ImportOptions) *cobra.Command {
 		Use:   "launchdarkly",
 		Short: "Import current state to Terraform configuration from LaunchDarkly",
 		Long:  "Import current state to Terraform configuration from LaunchDarkly",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			provider := newLaunchDarklyProvider()
 			err := Import(provider, options, []string{})
 			if err != nil {

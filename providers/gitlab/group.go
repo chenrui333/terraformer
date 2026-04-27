@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -52,7 +51,7 @@ func createGroups(ctx context.Context, client *gitlab.Client, groupID string) []
 	}
 
 	resource := terraformutils.NewSimpleResource(
-		strconv.FormatInt(int64(group.ID), 10),
+		fmt.Sprintf("%d", group.ID),
 		getGroupResourceName(group),
 		"gitlab_group",
 		"gitlab",

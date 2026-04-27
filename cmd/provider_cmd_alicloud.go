@@ -26,7 +26,7 @@ func newCmdAliCloudImporter(options ImportOptions) *cobra.Command {
 		Use:   "alicloud",
 		Short: "Import current State to terraform configuration from alicloud",
 		Long:  "Import current State to terraform configuration from alicloud",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			originalPathPattern := options.PathPattern
 			for _, region := range options.Regions {
 				provider := newAliCloudProvider()

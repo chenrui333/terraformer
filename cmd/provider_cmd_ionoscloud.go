@@ -25,7 +25,7 @@ func newCmdIonosCloudImporter(options ImportOptions) *cobra.Command {
 		Use:   "ionoscloud",
 		Short: "Import current state to Terraform configuration from IONOS Cloud",
 		Long:  "Import current state to Terraform configuration from IONOS Cloud",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			provider := newIonosCloudProvider()
 			err := Import(provider, options, []string{})
 			if err != nil {

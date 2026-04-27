@@ -26,7 +26,7 @@ type DigitalOceanProvider struct { //nolint
 	token string
 }
 
-func (p *DigitalOceanProvider) Init(args []string) error {
+func (p *DigitalOceanProvider) Init(_ []string) error {
 	if os.Getenv("DIGITALOCEAN_TOKEN") == "" {
 		return errors.New("set DIGITALOCEAN_TOKEN env var")
 	}
@@ -39,7 +39,7 @@ func (p *DigitalOceanProvider) GetName() string {
 	return "digitalocean"
 }
 
-func (p *DigitalOceanProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *DigitalOceanProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{}
 }
 

@@ -25,7 +25,7 @@ func newCmdHoneycombioImporter(options ImportOptions) *cobra.Command {
 		Use:   "honeycombio",
 		Short: "Import current state to Terraform configuration from Honeycomb.io",
 		Long:  "Import current state to Terraform configuration from Honeycomb.io",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			provider := newHoneycombioProvider()
 			err := Import(provider, options, options.Projects)
 			if err != nil {

@@ -24,7 +24,7 @@ func newCmdXenorchestraImporter(options ImportOptions) *cobra.Command {
 		Use:   "xenorchestra",
 		Short: "Import current state to Terraform configuration from Xen Orchestra",
 		Long:  "Import current state to Terraform configuration from Xen Orchestra",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			provider := newXenorchestraProvider()
 			err := Import(provider, options, []string{})
 			if err != nil {

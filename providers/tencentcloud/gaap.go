@@ -121,10 +121,6 @@ func (g *GaapGenerator) loadProxy(client *gaap.Client) error {
 	return nil
 }
 
-func (g *GaapGenerator) matchFilter(resource *terraformutils.Resource) bool {
-	return false
-}
-
 func (g *GaapGenerator) loadRealServer(client *gaap.Client) error {
 	request := gaap.NewDescribeRealServersRequest()
 	var projectID int64 = -1

@@ -81,7 +81,7 @@ func (s *Service) ParseFilter(rawFilter string) []ResourceFilter {
 		})
 	} else {
 		parts := strings.Split(rawFilter, ";")
-		if !((len(parts) == 1 && strings.HasPrefix(rawFilter, "Name=")) || len(parts) == 2 || len(parts) == 3) {
+		if (len(parts) != 1 || !strings.HasPrefix(rawFilter, "Name=")) && len(parts) != 2 && len(parts) != 3 {
 			log.Print("Invalid filter: " + rawFilter)
 			return filters
 		}

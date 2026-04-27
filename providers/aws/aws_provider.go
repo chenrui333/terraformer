@@ -149,7 +149,7 @@ func (p AWSProvider) GetResourceConnections() map[string]map[string][]string {
 	}
 }
 
-func (p AWSProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p AWSProvider) GetProviderData(_ ...string) map[string]interface{} {
 	awsConfig := map[string]interface{}{}
 
 	if p.region == GlobalRegion {

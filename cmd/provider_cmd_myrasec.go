@@ -12,7 +12,7 @@ func newCmdMyrasecImporter(options ImportOptions) *cobra.Command {
 		Use:   "myrasec",
 		Short: "Import current state to Terraform configuration from Myra Security",
 		Long:  "Import current state to Terraform configuration from Myra Security",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			provider := newMyrasecProvider()
 			err := Import(provider, options, []string{})
 			if err != nil {

@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -60,7 +59,7 @@ func createProjects(ctx context.Context, client *gitlab.Client, group string) []
 
 		for _, project := range projects {
 			resource := terraformutils.NewSimpleResource(
-				strconv.FormatInt(int64(project.ID), 10),
+				fmt.Sprintf("%d", project.ID),
 				getProjectResourceName(project),
 				"gitlab_project",
 				"gitlab",

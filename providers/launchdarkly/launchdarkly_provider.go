@@ -37,7 +37,7 @@ const (
 	APIVersion = "20191212"
 )
 
-func (p *LaunchDarklyProvider) Init(args []string) error {
+func (p *LaunchDarklyProvider) Init(_ []string) error {
 	if os.Getenv("LAUNCHDARKLY_ACCESS_TOKEN") == "" {
 		return errors.New("set LAUNCHDARKLY_ACCESS_TOKEN env var")
 	}
@@ -62,7 +62,7 @@ func (p *LaunchDarklyProvider) GetName() string {
 	return "launchdarkly"
 }
 
-func (p *LaunchDarklyProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *LaunchDarklyProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{
 		"provider": map[string]interface{}{
 			"launchdarkly": map[string]interface{}{

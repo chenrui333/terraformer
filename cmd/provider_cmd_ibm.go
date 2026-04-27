@@ -29,7 +29,7 @@ func newCmdIbmImporter(options ImportOptions) *cobra.Command {
 		Use:   "ibm",
 		Short: "Import current state to Terraform configuration from ibm",
 		Long:  "Import current state to Terraform configuration from ibm",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			provider := newIbmProvider()
 			err := Import(provider, options, []string{resourceGroup, region, cis, vpc})
 			if err != nil {

@@ -38,7 +38,7 @@ func (p GithubProvider) GetResourceConnections() map[string]map[string][]string 
 	return map[string]map[string][]string{}
 }
 
-func (p GithubProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p GithubProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{
 		"provider": map[string]interface{}{
 			"github": map[string]interface{}{
