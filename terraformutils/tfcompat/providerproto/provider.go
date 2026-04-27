@@ -22,6 +22,10 @@ import (
 
 const ProviderPluginName = "provider"
 
+// Some providers generate schemas larger than gRPC's default 4 MiB response
+// limit. Terraform's upstream provider client raises this call to 64 MiB.
+const maxSchemaRecvSize = 64 << 20
+
 var Handshake = plugin.HandshakeConfig{
 	ProtocolVersion:  4,
 	MagicCookieKey:   "TF_PLUGIN_MAGIC_COOKIE",
@@ -154,7 +158,11 @@ func (p *GRPCProvider) GetProviderSchema() GetProviderSchemaResponse {
 		return *p.schema
 	}
 
-	protoResp, err := p.client.GetSchema(p.ctx, &tfplugin5.GetProviderSchema_Request{})
+	protoResp, err := p.client.GetSchema(
+		p.ctx,
+		&tfplugin5.GetProviderSchema_Request{},
+		grpc.MaxCallRecvMsgSize(maxSchemaRecvSize),
+	)
 	if err != nil {
 		return GetProviderSchemaResponse{
 			Provider:      emptySchema(),
@@ -217,7 +225,7 @@ func (p *GRPCProvider) ReadResource(r ReadResourceRequest) ReadResourceResponse 
 		CurrentState: &tfplugin5.DynamicValue{Msgpack: mp},
 		Private:      r.Private,
 	}
-	if r.ProviderMeta.IsWhollyKnown() && !r.ProviderMeta.IsNull() && schema.ProviderMeta.Block != nil {
+	if shouldSendProviderMeta(r.ProviderMeta, schema.ProviderMeta) {
 		metaMP, err := msgpack.Marshal(r.ProviderMeta, schema.ProviderMeta.Block.ImpliedType())
 		if err != nil {
 			return ReadResourceResponse{Diagnostics: diagnosticsFromError(err)}
@@ -268,6 +276,13 @@ func (p *GRPCProvider) ImportResourceState(r ImportResourceStateRequest) ImportR
 		})
 	}
 	return resp
+}
+
+func shouldSendProviderMeta(providerMeta cty.Value, schema configschema.Schema) bool {
+	if schema.Block == nil || providerMeta == cty.NilVal {
+		return false
+	}
+	return providerMeta.IsWhollyKnown() && !providerMeta.IsNull()
 }
 
 func decodeDynamicValue(v *tfplugin5.DynamicValue, ty cty.Type) (cty.Value, error) {
