@@ -11,7 +11,6 @@ import (
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/hashicorp/go-azure-helpers/authentication"
 )
 
 const (
@@ -24,8 +23,8 @@ type StorageBlobGenerator struct {
 }
 
 func (g StorageBlobGenerator) getAccountPrimaryKey(ctx context.Context, accountName, accountGroupName string) string {
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	storageAccountsClient := storage.NewAccountsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 	storageAccountsClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
 
@@ -80,8 +79,8 @@ func (g StorageBlobGenerator) listStorageBlobs() ([]terraformutils.Resource, err
 	var storageBlobsResources []terraformutils.Resource
 	ctx := context.Background()
 
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	authorizer := g.Args["authorizer"].(autorest.Authorizer)
 	resourceGroup := g.Args["resource_group"].(string)
 	blobContainerGenerator := NewStorageContainerGenerator(resourceManagerEndpoint, subscriptionID, authorizer, resourceGroup)

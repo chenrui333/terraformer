@@ -20,8 +20,8 @@ import (
 	"log"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/manicminer/hamilton/auth"
-	"github.com/manicminer/hamilton/environments"
+	"github.com/hashicorp/go-azure-sdk/sdk/auth"
+	"github.com/hashicorp/go-azure-sdk/sdk/environments"
 	"github.com/manicminer/hamilton/msgraph"
 )
 
@@ -35,20 +35,20 @@ type ServiceGenerator interface {
 }
 
 func (az *AzureADService) getAuthorizer() (auth.Authorizer, error) {
-	environment := environments.Global
+	environment := environments.AzurePublic()
 	ctx := context.Background()
 	tenantID := az.Args["tenant_id"].(string)
 	clientID := az.Args["client_id"].(string)
 	clientSecret := az.Args["client_secret"].(string)
 
-	config := &auth.Config{
-		Environment:            environment,
-		TenantID:               tenantID,
-		ClientID:               clientID,
-		ClientSecret:           clientSecret,
-		EnableClientSecretAuth: true,
+	credentials := auth.Credentials{
+		Environment:                           *environment,
+		TenantID:                              tenantID,
+		ClientID:                              clientID,
+		ClientSecret:                          clientSecret,
+		EnableAuthenticatingUsingClientSecret: true,
 	}
-	authorizer, err := config.NewAuthorizer(ctx, config.Environment.MsGraph)
+	authorizer, err := auth.NewAuthorizerFromCredentials(ctx, credentials, environment.MicrosoftGraph)
 	if err != nil {
 		fmt.Println(err.Error())
 		log.Println(err.Error())
@@ -65,8 +65,7 @@ func (az *AzureADService) getUserClient() (*msgraph.UsersClient, error) {
 		return nil, err
 	}
 
-	tenantID := az.Args["tenant_id"].(string)
-	client := msgraph.NewUsersClient(tenantID)
+	client := msgraph.NewUsersClient()
 	client.BaseClient.Authorizer = authorizer
 
 	return client, nil
@@ -80,8 +79,7 @@ func (az *AzureADService) getApplicationsClient() (*msgraph.ApplicationsClient, 
 		return nil, err
 	}
 
-	tenantID := az.Args["tenant_id"].(string)
-	client := msgraph.NewApplicationsClient(tenantID)
+	client := msgraph.NewApplicationsClient()
 	client.BaseClient.Authorizer = authorizer
 
 	return client, nil
@@ -95,8 +93,7 @@ func (az *AzureADService) getGroupsClient() (*msgraph.GroupsClient, error) {
 		return nil, err
 	}
 
-	tenantID := az.Args["tenant_id"].(string)
-	client := msgraph.NewGroupsClient(tenantID)
+	client := msgraph.NewGroupsClient()
 	client.BaseClient.Authorizer = authorizer
 
 	return client, nil
@@ -110,8 +107,7 @@ func (az *AzureADService) getServicePrincipalsClient() (*msgraph.ServicePrincipa
 		return nil, err
 	}
 
-	tenantID := az.Args["tenant_id"].(string)
-	client := msgraph.NewServicePrincipalsClient(tenantID)
+	client := msgraph.NewServicePrincipalsClient()
 	client.BaseClient.Authorizer = authorizer
 
 	return client, nil
@@ -125,8 +121,7 @@ func (az *AzureADService) getAppRoleAssignmentsClient() (*msgraph.AppRoleAssigne
 		return nil, err
 	}
 
-	tenantID := az.Args["tenant_id"].(string)
-	client := msgraph.NewAppRoleAssignedToClient(tenantID)
+	client := msgraph.NewAppRoleAssignedToClient()
 	client.BaseClient.Authorizer = authorizer
 
 	return client, nil

@@ -21,7 +21,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/cosmos-db/mgmt/2021-06-15/documentdb"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/hashicorp/go-azure-helpers/authentication"
 )
 
 type CosmosDBGenerator struct {
@@ -32,8 +31,8 @@ func (g *CosmosDBGenerator) listSQLDatabasesAndContainersBehind(resourceGroupNam
 	var resourcesDatabase []terraformutils.Resource
 	var resourcesContainer []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	SQLResourcesClient := documentdb.NewSQLResourcesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 	SQLResourcesClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
 
@@ -81,8 +80,8 @@ func (g *CosmosDBGenerator) listSQLDatabasesAndContainersBehind(resourceGroupNam
 func (g *CosmosDBGenerator) listTables(resourceGroupName string, accountName string) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	TableResourcesClient := documentdb.NewTableResourcesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 	TableResourcesClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
 
@@ -105,8 +104,8 @@ func (g *CosmosDBGenerator) listTables(resourceGroupName string, accountName str
 func (g *CosmosDBGenerator) listAndAddForDatabaseAccounts() ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	DatabaseAccountsClient := documentdb.NewDatabaseAccountsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 	DatabaseAccountsClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
 

@@ -22,7 +22,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/hashicorp/go-azure-helpers/authentication"
 )
 
 type PrivateDNSGenerator struct {
@@ -32,8 +31,8 @@ type PrivateDNSGenerator struct {
 func (g *PrivateDNSGenerator) listRecordSets(resourceGroupName string, privateZoneName string, top *int32) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	RecordSetsClient := privatedns.NewRecordSetsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 	RecordSetsClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
 
@@ -77,8 +76,8 @@ func (g *PrivateDNSGenerator) listRecordSets(resourceGroupName string, privateZo
 func (g *PrivateDNSGenerator) listVirtualNetworkLinks(resourceGroupName string, privateZoneName string, pageSize *int32) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	VirtualNetworkLinksClient := privatedns.NewVirtualNetworkLinksClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 	VirtualNetworkLinksClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
 
@@ -108,8 +107,8 @@ func (g *PrivateDNSGenerator) listVirtualNetworkLinks(resourceGroupName string, 
 func (g *PrivateDNSGenerator) listAndAddForPrivateDNSZone() ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	PrivateDNSZonesClient := privatedns.NewPrivateZonesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 	PrivateDNSZonesClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
 

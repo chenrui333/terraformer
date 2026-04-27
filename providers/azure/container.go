@@ -22,7 +22,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/containerregistry/mgmt/2019-05-01/containerregistry"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/hashicorp/go-azure-helpers/authentication"
 )
 
 type ContainerGenerator struct {
@@ -32,8 +31,8 @@ type ContainerGenerator struct {
 func (g *ContainerGenerator) listAndAddForContainerGroup() ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	ContainerGroupsClient := containerinstance.NewContainerGroupsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 	ContainerGroupsClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
 
@@ -71,8 +70,8 @@ func (g *ContainerGenerator) listAndAddForContainerGroup() ([]terraformutils.Res
 func (g *ContainerGenerator) listRegistryWebhooks(resourceGroupName string, registryName string) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	WebhooksClient := containerregistry.NewWebhooksClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 	WebhooksClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
 
@@ -100,8 +99,8 @@ func (g *ContainerGenerator) listRegistryWebhooks(resourceGroupName string, regi
 func (g *ContainerGenerator) listAndAddForContainerRegistry() ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	ContainerRegistriesClient := containerregistry.NewRegistriesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 	ContainerRegistriesClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
 

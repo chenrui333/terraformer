@@ -22,7 +22,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2018-05-01/dns"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/hashicorp/go-azure-helpers/authentication"
 )
 
 type DNSGenerator struct {
@@ -32,8 +31,8 @@ type DNSGenerator struct {
 func (g *DNSGenerator) listRecordSets(resourceGroupName string, zoneName string, top *int32) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	RecordSetsClient := dns.NewRecordSetsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 	RecordSetsClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
 
@@ -79,8 +78,8 @@ func (g *DNSGenerator) listRecordSets(resourceGroupName string, zoneName string,
 func (g *DNSGenerator) listAndAddForDNSZone() ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	DNSZonesClient := dns.NewZonesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 	DNSZonesClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
 

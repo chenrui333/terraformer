@@ -21,7 +21,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/analysisservices/mgmt/2017-08-01/analysisservices"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/hashicorp/go-azure-helpers/authentication"
 )
 
 type AnalysisGenerator struct {
@@ -32,8 +31,8 @@ func (g *AnalysisGenerator) listServiceServers() ([]terraformutils.Resource, err
 	log.Println("\tImporting Service Servers")
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	AnalysisClient := analysisservices.NewServersClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 	AnalysisClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
 

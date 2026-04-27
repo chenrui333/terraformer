@@ -7,7 +7,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2019-04-01/storage"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/hashicorp/go-azure-helpers/authentication"
 )
 
 const (
@@ -21,7 +20,7 @@ type StorageContainerGenerator struct {
 func NewStorageContainerGenerator(resourceManagerEndpoint string, subscriptionID string, authorizer autorest.Authorizer, rg string) *StorageContainerGenerator {
 	storageContainerGenerator := new(StorageContainerGenerator)
 	storageContainerGenerator.Args = map[string]interface{}{}
-	storageContainerGenerator.Args["config"] = authentication.Config{CustomResourceManagerEndpoint: resourceManagerEndpoint, SubscriptionID: subscriptionID}
+	storageContainerGenerator.Args["config"] = providerConfig{CustomResourceManagerEndpoint: resourceManagerEndpoint, SubscriptionID: subscriptionID}
 	storageContainerGenerator.Args["authorizer"] = authorizer
 	storageContainerGenerator.Args["resource_group"] = rg
 
@@ -30,8 +29,8 @@ func NewStorageContainerGenerator(resourceManagerEndpoint string, subscriptionID
 
 func (g StorageContainerGenerator) ListBlobContainers() ([]terraformutils.Resource, error) {
 	var containerResources []terraformutils.Resource
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	blobContainersClient := storage.NewBlobContainersClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 	blobContainersClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
 	ctx := context.Background()
@@ -77,8 +76,8 @@ func (g StorageContainerGenerator) ListBlobContainers() ([]terraformutils.Resour
 
 func (g *StorageContainerGenerator) getStorageAccounts() ([]storage.Account, error) {
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	accountsClient := storage.NewAccountsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 
 	accountsClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
