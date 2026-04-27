@@ -14,6 +14,33 @@ import (
 
 var mskAllowEmptyValues = []string{"tags."}
 
+// mskVpcConnectionName extracts a resource name from a VPC connection ARN.
+// ARN format: arn:aws:kafka:region:account:vpc-connection/account/name/uuid
+func mskVpcConnectionName(arn string) string {
+	if parts := strings.Split(arn, "/"); len(parts) >= 3 {
+		return parts[len(parts)-2] + "-" + parts[len(parts)-1]
+	}
+	return arn
+}
+
+// mskClusterPolicyName extracts a resource name from a cluster ARN for policy resources.
+// ARN format: arn:aws:kafka:region:account:cluster/name/uuid
+func mskClusterPolicyName(clusterArn string) string {
+	if parts := strings.Split(clusterArn, "/"); len(parts) >= 2 {
+		return parts[1] + "-policy"
+	}
+	return clusterArn
+}
+
+// mskSecretName extracts the secret name from a Secrets Manager ARN.
+// ARN format: arn:aws:secretsmanager:region:account:secret:name-suffix
+func mskSecretName(secretArn string) string {
+	if parts := strings.Split(secretArn, ":"); len(parts) >= 7 {
+		return parts[6]
+	}
+	return secretArn
+}
+
 type MskGenerator struct {
 	AWSService
 }
@@ -86,14 +113,9 @@ func (g *MskGenerator) loadMskVpcConnections(svc *kafka.Client) error {
 			return err
 		}
 		for _, vpcConn := range page.VpcConnections {
-			// ARN format: arn:aws:kafka:region:account:vpc-connection/account/name/uuid
-			resourceName := StringValue(vpcConn.VpcConnectionArn)
-			if parts := strings.Split(resourceName, "/"); len(parts) >= 3 {
-				resourceName = parts[len(parts)-2] + "-" + parts[len(parts)-1]
-			}
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
 				StringValue(vpcConn.VpcConnectionArn),
-				resourceName,
+				mskVpcConnectionName(StringValue(vpcConn.VpcConnectionArn)),
 				"aws_msk_vpc_connection",
 				"aws",
 				mskAllowEmptyValues,
@@ -164,15 +186,9 @@ func (g *MskGenerator) loadMskClusterPolicies(svc *kafka.Client) error {
 			continue
 		}
 
-		// ARN format: arn:aws:kafka:region:account:cluster/name/uuid
-		resourceName := clusterArn
-		if parts := strings.Split(clusterArn, "/"); len(parts) >= 2 {
-			resourceName = parts[1] + "-policy"
-		}
-
 		g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
 			clusterArn,
-			resourceName,
+			mskClusterPolicyName(clusterArn),
 			"aws_msk_cluster_policy",
 			"aws",
 			mskAllowEmptyValues,
@@ -222,15 +238,9 @@ func (g *MskGenerator) loadMskScramSecretAssociations(svc *kafka.Client) error {
 			for _, secretArn := range secretArns {
 				importID := clusterArn + "," + secretArn
 
-				// ARN format: arn:aws:secretsmanager:region:account:secret:name-suffix
-				secretName := secretArn
-				if parts := strings.Split(secretArn, ":"); len(parts) >= 7 {
-					secretName = parts[6]
-				}
-
 				g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
 					importID,
-					clusterName+"-"+secretName,
+					clusterName+"-"+mskSecretName(secretArn),
 					"aws_msk_single_scram_secret_association",
 					"aws",
 					mskAllowEmptyValues,

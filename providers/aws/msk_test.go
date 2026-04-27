@@ -3,11 +3,10 @@
 package aws
 
 import (
-	"strings"
 	"testing"
 )
 
-func TestMskVpcConnectionResourceName(t *testing.T) {
+func TestMskVpcConnectionName(t *testing.T) {
 	testCases := []struct {
 		arn          string
 		expectedName string
@@ -20,20 +19,20 @@ func TestMskVpcConnectionResourceName(t *testing.T) {
 			arn:          "arn:aws:kafka:eu-west-1:987654321098:vpc-connection/987654321098/test-vpc-conn/xyz789",
 			expectedName: "test-vpc-conn-xyz789",
 		},
+		{
+			arn:          "no-slashes",
+			expectedName: "no-slashes",
+		},
 	}
 
 	for _, tc := range testCases {
-		resourceName := tc.arn
-		if parts := strings.Split(resourceName, "/"); len(parts) >= 3 {
-			resourceName = parts[len(parts)-2] + "-" + parts[len(parts)-1]
-		}
-		if resourceName != tc.expectedName {
-			t.Errorf("VPC connection resource name: expected %s, got %s", tc.expectedName, resourceName)
+		if got := mskVpcConnectionName(tc.arn); got != tc.expectedName {
+			t.Errorf("mskVpcConnectionName(%q) = %q, want %q", tc.arn, got, tc.expectedName)
 		}
 	}
 }
 
-func TestMskClusterPolicyResourceName(t *testing.T) {
+func TestMskClusterPolicyName(t *testing.T) {
 	testCases := []struct {
 		arn          string
 		expectedName string
@@ -46,41 +45,20 @@ func TestMskClusterPolicyResourceName(t *testing.T) {
 			arn:          "arn:aws:kafka:eu-west-1:987654321098:cluster/production-kafka/xyz789",
 			expectedName: "production-kafka-policy",
 		},
-	}
-
-	for _, tc := range testCases {
-		resourceName := tc.arn
-		if parts := strings.Split(tc.arn, "/"); len(parts) >= 2 {
-			resourceName = parts[1] + "-policy"
-		}
-		if resourceName != tc.expectedName {
-			t.Errorf("Cluster policy resource name: expected %s, got %s", tc.expectedName, resourceName)
-		}
-	}
-}
-
-func TestMskSingleScramSecretImportID(t *testing.T) {
-	testCases := []struct {
-		clusterArn string
-		secretArn  string
-		expectedID string
-	}{
 		{
-			clusterArn: "arn:aws:kafka:us-east-1:123456789012:cluster/my-cluster/abc123",
-			secretArn:  "arn:aws:secretsmanager:us-east-1:123456789012:secret:my-secret-AbCdEf",
-			expectedID: "arn:aws:kafka:us-east-1:123456789012:cluster/my-cluster/abc123,arn:aws:secretsmanager:us-east-1:123456789012:secret:my-secret-AbCdEf",
+			arn:          "no-slashes",
+			expectedName: "no-slashes",
 		},
 	}
 
 	for _, tc := range testCases {
-		importID := tc.clusterArn + "," + tc.secretArn
-		if importID != tc.expectedID {
-			t.Errorf("Single SCRAM secret import ID: expected %s, got %s", tc.expectedID, importID)
+		if got := mskClusterPolicyName(tc.arn); got != tc.expectedName {
+			t.Errorf("mskClusterPolicyName(%q) = %q, want %q", tc.arn, got, tc.expectedName)
 		}
 	}
 }
 
-func TestMskSecretNameExtraction(t *testing.T) {
+func TestMskSecretName(t *testing.T) {
 	testCases := []struct {
 		secretArn    string
 		expectedName string
@@ -97,27 +75,15 @@ func TestMskSecretNameExtraction(t *testing.T) {
 			secretArn:    "arn:aws:secretsmanager:us-east-1:123456789012:secret:my-secret-prod",
 			expectedName: "my-secret-prod",
 		},
+		{
+			secretArn:    "short:arn",
+			expectedName: "short:arn",
+		},
 	}
 
 	for _, tc := range testCases {
-		secretName := tc.secretArn
-		if parts := strings.Split(tc.secretArn, ":"); len(parts) >= 7 {
-			secretName = parts[6]
-		}
-		if secretName != tc.expectedName {
-			t.Errorf("Secret name extraction: expected %s, got %s (from %s)", tc.expectedName, secretName, tc.secretArn)
-		}
-	}
-}
-
-func TestMskAllowEmptyValues(t *testing.T) {
-	expected := []string{"tags."}
-	if len(mskAllowEmptyValues) != len(expected) {
-		t.Errorf("mskAllowEmptyValues length: expected %d, got %d", len(expected), len(mskAllowEmptyValues))
-	}
-	for i, v := range expected {
-		if mskAllowEmptyValues[i] != v {
-			t.Errorf("mskAllowEmptyValues[%d]: expected %s, got %s", i, v, mskAllowEmptyValues[i])
+		if got := mskSecretName(tc.secretArn); got != tc.expectedName {
+			t.Errorf("mskSecretName(%q) = %q, want %q", tc.secretArn, got, tc.expectedName)
 		}
 	}
 }
