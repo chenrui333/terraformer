@@ -1,3 +1,6 @@
+// Copyright 2026 The Terraformer Authors.
+// SPDX-License-Identifier: Apache-2.0
+
 package providerproto
 
 import (
