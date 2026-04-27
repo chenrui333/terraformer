@@ -23,7 +23,7 @@ type MFAPolicyRuleGenerator struct {
 	OktaService
 }
 
-func (g MFAPolicyRuleGenerator) createResources(mfaPolicyRuleList []sdk.PolicyRule, policyID string, policyName string) []terraformutils.Resource {
+func (g MFAPolicyRuleGenerator) createResources(mfaPolicyRuleList []sdk.SdkPolicyRule, policyID string, policyName string) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 
 	for _, policyRule := range mfaPolicyRuleList {
@@ -69,7 +69,7 @@ func (g *MFAPolicyRuleGenerator) InitResources() error {
 	return nil
 }
 
-func getMFAPolicyRules(g *MFAPolicyRuleGenerator, policyID string) ([]sdk.PolicyRule, error) {
+func getMFAPolicyRules(g *MFAPolicyRuleGenerator, policyID string) ([]sdk.SdkPolicyRule, error) {
 	ctx, client, e := g.APISupplementClient()
 	if e != nil {
 		return nil, e
@@ -77,11 +77,11 @@ func getMFAPolicyRules(g *MFAPolicyRuleGenerator, policyID string) ([]sdk.Policy
 
 	output, resp, err := client.ListPolicyRules(ctx, policyID)
 	if err != nil {
-		return nil, e
+		return nil, err
 	}
 
 	for resp.HasNextPage() {
-		var nextPolicySet []sdk.PolicyRule
+		var nextPolicySet []sdk.SdkPolicyRule
 		resp, _ = resp.Next(ctx, &nextPolicySet)
 		output = append(output, nextPolicySet...)
 	}

@@ -73,10 +73,10 @@ func (s *OktaService) APISupplementClient() (context.Context, *sdk.APISupplement
 
 	orgURL := fmt.Sprintf("https://%v.%v", orgName, baseURL)
 
-	ctx, client, err := oktaV2.NewClient(
+	ctx, client, err := sdk.NewClient(
 		context.Background(),
-		oktaV2.WithOrgUrl(orgURL),
-		oktaV2.WithToken(apiToken),
+		sdk.WithOrgUrl(orgURL),
+		sdk.WithToken(apiToken),
 	)
 	if err != nil {
 		return ctx, nil, err

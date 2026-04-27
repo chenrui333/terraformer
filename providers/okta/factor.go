@@ -90,7 +90,7 @@ func (g *FactorGenerator) InitResources() error {
 	return nil
 }
 
-func getListFactors(ctx context.Context, m *sdk.APISupplement) ([]*okta.UserFactor, *okta.Response, error) {
+func getListFactors(ctx context.Context, m *sdk.APISupplement) ([]*okta.UserFactor, *sdk.Response, error) {
 	//NOTE: Okta SDK does not support general ListFactors method so we got to manually implement the REST calls.
 	url := "/api/v1/org/factors"
 	req, err := m.RequestExecutor.NewRequest("GET", url, nil)
@@ -105,7 +105,7 @@ func getListFactors(ctx context.Context, m *sdk.APISupplement) ([]*okta.UserFact
 	return factors, resp, nil
 }
 
-func getHotpFactorProfiles(ctx context.Context, m *sdk.APISupplement) ([]*sdk.HotpFactorProfile, *okta.Response, error) {
+func getHotpFactorProfiles(ctx context.Context, m *sdk.APISupplement) ([]*sdk.HotpFactorProfile, *sdk.Response, error) {
 	url := "/api/v1/org/factors/hotp/profiles"
 	req, err := m.RequestExecutor.NewRequest("GET", url, nil)
 	if err != nil {

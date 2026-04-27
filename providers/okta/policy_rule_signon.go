@@ -23,7 +23,7 @@ type SignOnPolicyRuleGenerator struct {
 	OktaService
 }
 
-func (g SignOnPolicyRuleGenerator) createResources(signOnPolicyRuleList []sdk.PolicyRule, policyID string, policyName string) []terraformutils.Resource {
+func (g SignOnPolicyRuleGenerator) createResources(signOnPolicyRuleList []sdk.SdkPolicyRule, policyID string, policyName string) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 
 	for _, policyRule := range signOnPolicyRuleList {
@@ -69,7 +69,7 @@ func (g *SignOnPolicyRuleGenerator) InitResources() error {
 	return nil
 }
 
-func getSignOnPolicyRules(g *SignOnPolicyRuleGenerator, policyID string) ([]sdk.PolicyRule, error) {
+func getSignOnPolicyRules(g *SignOnPolicyRuleGenerator, policyID string) ([]sdk.SdkPolicyRule, error) {
 	ctx, client, e := g.APISupplementClient()
 	if e != nil {
 		return nil, e
@@ -77,11 +77,11 @@ func getSignOnPolicyRules(g *SignOnPolicyRuleGenerator, policyID string) ([]sdk.
 
 	output, resp, err := client.ListPolicyRules(ctx, policyID)
 	if err != nil {
-		return nil, e
+		return nil, err
 	}
 
 	for resp.HasNextPage() {
-		var nextPolicySet []sdk.PolicyRule
+		var nextPolicySet []sdk.SdkPolicyRule
 		resp, _ = resp.Next(ctx, &nextPolicySet)
 		output = append(output, nextPolicySet...)
 	}
