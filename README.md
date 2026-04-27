@@ -372,3 +372,9 @@ Terraforming lacks full coverage for resources - as an example you can see that 
 
 * terraforming - https://github.com/dtan4/terraforming/blob/master/lib/terraforming/template/tf/s3.erb
 * official S3 support - https://www.terraform.io/docs/providers/aws/r/s3_bucket
+
+## License
+
+SPDX-License-Identifier: Apache-2.0
+
+See [LICENSE](LICENSE) for the full text.
