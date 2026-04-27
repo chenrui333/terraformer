@@ -23,7 +23,7 @@ type PasswordPolicyRuleGenerator struct {
 	OktaService
 }
 
-func (g PasswordPolicyRuleGenerator) createResources(passwordPolicyRuleList []sdk.PolicyRule, policyID string, policyName string) []terraformutils.Resource {
+func (g PasswordPolicyRuleGenerator) createResources(passwordPolicyRuleList []sdk.SdkPolicyRule, policyID string, policyName string) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 
 	for _, policyRule := range passwordPolicyRuleList {
@@ -69,7 +69,7 @@ func (g *PasswordPolicyRuleGenerator) InitResources() error {
 	return nil
 }
 
-func getPasswordPolicyRules(g *PasswordPolicyRuleGenerator, policyID string) ([]sdk.PolicyRule, error) {
+func getPasswordPolicyRules(g *PasswordPolicyRuleGenerator, policyID string) ([]sdk.SdkPolicyRule, error) {
 	ctx, client, e := g.APISupplementClient()
 	if e != nil {
 		return nil, e
@@ -77,11 +77,11 @@ func getPasswordPolicyRules(g *PasswordPolicyRuleGenerator, policyID string) ([]
 
 	output, resp, err := client.ListPolicyRules(ctx, policyID)
 	if err != nil {
-		return nil, e
+		return nil, err
 	}
 
 	for resp.HasNextPage() {
-		var nextPolicySet []sdk.PolicyRule
+		var nextPolicySet []sdk.SdkPolicyRule
 		resp, _ = resp.Next(ctx, &nextPolicySet)
 		output = append(output, nextPolicySet...)
 	}
