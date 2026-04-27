@@ -5,20 +5,16 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	mgo "github.com/Myra-Security-GmbH/myrasec-go/v2"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
-//
 // DNSGenerator
-//
 type DNSGenerator struct {
 	MyrasecService
 }
 
-//
 // createDnsResources
-//
 func (g *DNSGenerator) createDnsResources(api *mgo.API, domain mgo.Domain, wg *sync.WaitGroup) error {
 	defer wg.Done()
 
@@ -62,9 +58,7 @@ func (g *DNSGenerator) createDnsResources(api *mgo.API, domain mgo.Domain, wg *s
 	return nil
 }
 
-//
 // InitResources
-//
 func (g *DNSGenerator) InitResources() error {
 	wg := sync.WaitGroup{}
 

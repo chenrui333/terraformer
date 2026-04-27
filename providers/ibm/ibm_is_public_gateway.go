@@ -19,9 +19,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/IBM/go-sdk-core/v4/core"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 // PublicGatewayGenerator ...
@@ -70,13 +70,13 @@ func (g *PublicGatewayGenerator) InitResources() error {
 		if rg := g.Args["resource_group"].(string); rg != "" {
 			rg, err = GetResourceGroupID(apiKey, rg, region)
 			if err != nil {
-				return fmt.Errorf("Error Fetching Resource Group Id %s", err)
+				return fmt.Errorf("error fetching Resource Group Id %w", err)
 			}
 			options.ResourceGroupID = &rg
 		}
 		pgs, response, err := vpcclient.ListPublicGateways(options)
 		if err != nil {
-			return fmt.Errorf("Error Fetching Public Gateways %s\n%s", err, response)
+			return fmt.Errorf("error fetching Public Gateways %w\n%s", err, response)
 		}
 		start = GetNext(pgs.Next)
 		allrecs = append(allrecs, pgs.PublicGateways...)

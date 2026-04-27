@@ -28,7 +28,6 @@ type AzureDevOpsProvider struct { //nolint
 }
 
 func (p *AzureDevOpsProvider) setEnvConfig() error {
-
 	organizationURL := os.Getenv("AZDO_ORG_SERVICE_URL")
 	if organizationURL == "" {
 		return errors.New("environment variable AZDO_ORG_SERVICE_URL missing")

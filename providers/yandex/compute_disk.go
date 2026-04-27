@@ -45,10 +45,8 @@ func (g *DiskGenerator) loadDisks(sdk *ycsdk.SDK, folderID string) ([]*compute.D
 		if resp.GetNextPageToken() == "" {
 			break
 		}
-
 	}
 	return disks, nil
-
 }
 
 func (g *DiskGenerator) InitResources() error {

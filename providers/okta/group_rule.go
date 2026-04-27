@@ -26,7 +26,6 @@ type GroupRuleGenerator struct {
 func (g GroupRuleGenerator) createResources(groupRuleList []*okta.GroupRule) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 	for _, groupRule := range groupRuleList {
-
 		resources = append(resources, terraformutils.NewSimpleResource(
 			groupRule.Id,
 			"grouprule_"+groupRule.Name,

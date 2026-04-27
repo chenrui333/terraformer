@@ -92,7 +92,6 @@ func (az *PrivateEndpointGenerator) AppendEndpoint(link *network.PrivateEndpoint
 }
 
 func (az *PrivateEndpointGenerator) InitResources() error {
-
 	services, err := az.listServices()
 	if err != nil {
 		return err

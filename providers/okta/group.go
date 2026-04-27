@@ -27,7 +27,6 @@ type GroupGenerator struct {
 func (g GroupGenerator) createResources(groupList []*okta.Group) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 	for _, group := range groupList {
-
 		resources = append(resources, terraformutils.NewSimpleResource(
 			group.Id,
 			"group_"+group.Profile.Name,

@@ -18,8 +18,8 @@ import (
 	"context"
 	"log"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aws/aws-sdk-go-v2/service/medialive"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 var medialiveAllowEmptyValues = []string{"tags."}

@@ -17,10 +17,10 @@ package alicloud
 import (
 	"fmt"
 
-	"github.com/chenrui333/terraformer/providers/alicloud/connectivity"
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
+	"github.com/chenrui333/terraformer/providers/alicloud/connectivity"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 // SlbGenerator Struct for generating AliCloud Elastic Compute Service

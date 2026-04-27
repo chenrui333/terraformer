@@ -15,9 +15,9 @@
 package alicloud
 
 import (
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 // NatGatewayGenerator Struct for generating AliCloud Elastic Compute Service

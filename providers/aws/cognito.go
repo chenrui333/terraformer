@@ -3,10 +3,10 @@ package aws
 import (
 	"context"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentity"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 var CognitoAllowEmptyValues = []string{"tags."}

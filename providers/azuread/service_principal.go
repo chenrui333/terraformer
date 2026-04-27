@@ -29,9 +29,7 @@ func (az *ServicePrincipalServiceGenerator) listResources() ([]msgraph.ServicePr
 		return nil, err
 	}
 
-	for _, sp := range *servicePrincipal {
-		resources = append(resources, sp)
-	}
+	resources = append(resources, *servicePrincipal...)
 
 	return resources, nil
 }
@@ -42,7 +40,6 @@ func (az *ServicePrincipalServiceGenerator) appendResource(resource *msgraph.Ser
 }
 
 func (az *ServicePrincipalServiceGenerator) InitResources() error {
-
 	resources, err := az.listResources()
 	if err != nil {
 		return err
@@ -55,7 +52,6 @@ func (az *ServicePrincipalServiceGenerator) InitResources() error {
 }
 
 func (az *ServicePrincipalServiceGenerator) GetResourceConnections() map[string][]string {
-
 	return map[string][]string{
 		"servicePrincipal": {"id"},
 	}

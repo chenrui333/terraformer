@@ -266,7 +266,6 @@ func (g AppGenerator) createAddonAttachmentResources(ctx context.Context, svc *h
 }
 
 func (g AppGenerator) createAppWebhookResources(ctx context.Context, svc *heroku.Service, app heroku.App) ([]terraformutils.Resource, error) {
-
 	appWebhooks, err := svc.AppWebhookList(ctx, app.ID, &heroku.ListRange{Field: "id", Max: 1000})
 	if err != nil {
 		return []terraformutils.Resource{}, fmt.Errorf("Error listing webhooks for app '%s': %w", app.ID, err)

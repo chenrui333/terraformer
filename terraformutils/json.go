@@ -15,7 +15,7 @@ func jsonPrint(data interface{}) ([]byte, error) {
 	dataJSONBytes, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		log.Println(string(dataJSONBytes))
-		return []byte{}, fmt.Errorf("error marshalling terraform data to json: %v", err)
+		return []byte{}, fmt.Errorf("error marshalling terraform data to json: %w", err)
 	}
 	// We don't need to escape > or <
 	s := strings.ReplaceAll(string(dataJSONBytes), "\\u003c", "<")

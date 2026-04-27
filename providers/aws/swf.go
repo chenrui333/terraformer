@@ -3,9 +3,9 @@ package aws
 import (
 	"context"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aws/aws-sdk-go-v2/service/swf"
 	"github.com/aws/aws-sdk-go-v2/service/swf/types"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 type SWFGenerator struct {

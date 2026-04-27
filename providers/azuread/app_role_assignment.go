@@ -66,7 +66,6 @@ func (az *AppRoleAssignmentServiceGenerator) appendResource(resource *msgraph.Ap
 }
 
 func (az *AppRoleAssignmentServiceGenerator) InitResources() error {
-
 	resources, err := az.listResources()
 	if err != nil {
 		return err
@@ -79,7 +78,6 @@ func (az *AppRoleAssignmentServiceGenerator) InitResources() error {
 }
 
 func (az *AppRoleAssignmentServiceGenerator) GetResourceConnections() map[string][]string {
-
 	return map[string][]string{
 		"app_role_assignment": {"id"},
 	}

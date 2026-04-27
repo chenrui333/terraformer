@@ -140,7 +140,7 @@ func (g *ToolchainGenerator) HandleTool(t cdtoolchainv2.ToolModel, toolType stri
 
 	apiKey := os.Getenv("IC_API_KEY")
 
-	// typical case. handle exceptional cases seperately
+	// typical case. handle exceptional cases separately
 	// maps tool_type_id to the terraform resource type
 	supportedTools := map[string]string{
 		"appconfig":           "ibm_cd_toolchain_tool_appconfig",
@@ -301,7 +301,7 @@ func getS2SPolicies(sess *session.Session, targetTcID string) (map[string][]iamp
 
 	authPolicyList, _, err := iamPolicyClient.ListPolicies(&listAuthPolicyOptions)
 	if err != nil {
-		return emptyPolicies, fmt.Errorf("error retrieving authorization policy: %s", err)
+		return emptyPolicies, fmt.Errorf("error retrieving authorization policy: %w", err)
 	}
 	authPolicies := authPolicyList.Policies
 
@@ -680,10 +680,11 @@ func (g *ToolchainGenerator) GitRepositoryPostProcess(i int, res terraformutils.
 	initMap["private_repo"] = paramsMap["private_repo"]
 
 	// additional parameters
-	if res.InstanceInfo.Type == "ibm_cd_toolchain_tool_githubconsolidated" {
+	switch res.InstanceInfo.Type {
+	case "ibm_cd_toolchain_tool_githubconsolidated":
 		initMap["blind_connection"] = paramsMap["blind_connection"]
 		initMap["auto_init"] = paramsMap["auto_init"]
-	} else if res.InstanceInfo.Type == "ibm_cd_toolchain_tool_gitlab" {
+	case "ibm_cd_toolchain_tool_gitlab":
 		initMap["blind_connection"] = paramsMap["blind_connection"]
 	}
 

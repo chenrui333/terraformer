@@ -19,9 +19,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/IBM/go-sdk-core/v4/core"
 	tg "github.com/IBM/networking-go-sdk/transitgatewayapisv1"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 // TGGenerator ...
@@ -102,7 +102,7 @@ func (g *TGGenerator) InitResources() error {
 
 		gateways, resp, err := tgclient.ListTransitGateways(listTransitGatewaysOptions)
 		if err != nil {
-			return fmt.Errorf("Error Listing Transit Gateways %s\n%s", err, resp)
+			return fmt.Errorf("error listing Transit Gateways %w\n%s", err, resp)
 		}
 		start = GetNext(gateways.Next)
 		allrecs = append(allrecs, gateways.TransitGateways...)
@@ -121,7 +121,7 @@ func (g *TGGenerator) InitResources() error {
 		}
 		connections, response, err := tgclient.ListTransitGatewayConnections(listTransitGatewayConnectionsOptions)
 		if err != nil {
-			return fmt.Errorf("Error Listing Transit Gateway connections %s\n%s", err, response)
+			return fmt.Errorf("error listing Transit Gateway connections %w\n%s", err, response)
 		}
 		for _, connection := range connections.Connections {
 			g.Resources = append(g.Resources, g.createTransitGatewayConnectionResources(*gateway.ID, *connection.ID, *connection.Name, dependsOn))
@@ -132,7 +132,7 @@ func (g *TGGenerator) InitResources() error {
 		}
 		routeReports, response, err := tgclient.ListTransitGatewayRouteReports(listTransitGatewayRouteReportOptions)
 		if err != nil {
-			return fmt.Errorf("Error Listing Transit Gateway route reports %s\n%s", err, response)
+			return fmt.Errorf("error listing Transit Gateway route reports %w\n%s", err, response)
 		}
 		for _, routeReport := range routeReports.RouteReports {
 			g.Resources = append(g.Resources, g.loadTransitGatewayRouterResource(*gateway.ID, *routeReport.ID, dependsOn))

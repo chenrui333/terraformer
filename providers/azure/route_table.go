@@ -112,7 +112,6 @@ func (az *RouteTableGenerator) appendRouteFilters(resource *network.RouteFilter)
 }
 
 func (az *RouteTableGenerator) InitResources() error {
-
 	resources, err := az.listResources()
 	if err != nil {
 		return err

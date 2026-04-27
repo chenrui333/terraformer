@@ -5,20 +5,16 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	mgo "github.com/Myra-Security-GmbH/myrasec-go/v2"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
-//
 // RedirectGenerator
-//
 type RedirectGenerator struct {
 	MyrasecService
 }
 
-//
 // createRedirectResources
-//
 func (g *RedirectGenerator) createRedirectResources(api *mgo.API, domainId int, vhost mgo.VHost, wg *sync.WaitGroup) error {
 	defer wg.Done()
 
@@ -59,9 +55,7 @@ func (g *RedirectGenerator) createRedirectResources(api *mgo.API, domainId int, 
 	return nil
 }
 
-//
 // InitResources
-//
 func (g *RedirectGenerator) InitResources() error {
 	wg := sync.WaitGroup{}
 

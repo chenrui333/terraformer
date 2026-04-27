@@ -30,7 +30,6 @@ type AzureADProvider struct { //nolint
 }
 
 func (p *AzureADProvider) setEnvConfig() error {
-
 	tenantID := os.Getenv("ARM_TENANT_ID")
 	if tenantID == "" {
 		return errors.New("please set ARM_TENANT_ID in your environment")

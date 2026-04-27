@@ -5,20 +5,16 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	mgo "github.com/Myra-Security-GmbH/myrasec-go/v2"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
-//
 // WafRuleGenerator
-//
 type WafRuleGenerator struct {
 	MyrasecService
 }
 
-//
 // createWafRuleResources
-//
 func (g *WafRuleGenerator) createWafRuleResources(api *mgo.API, domainId int, vhost mgo.VHost, wg *sync.WaitGroup) error {
 	defer wg.Done()
 
@@ -64,9 +60,7 @@ func (g *WafRuleGenerator) createWafRuleResources(api *mgo.API, domainId int, vh
 	return nil
 }
 
-//
 // InitResources
-//
 func (g *WafRuleGenerator) InitResources() error {
 	wg := sync.WaitGroup{}
 

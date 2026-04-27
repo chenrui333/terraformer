@@ -70,7 +70,6 @@ func (g *DNSGenerator) listRecordSets(resourceGroupName string, zoneName string,
 			log.Println(err)
 			return resources, err
 		}
-
 	}
 	return resources, nil
 }

@@ -91,7 +91,6 @@ func (g *ContainerGenerator) listRegistryWebhooks(resourceGroupName string, regi
 			log.Println(err)
 			break
 		}
-
 	}
 	return resources, nil
 }

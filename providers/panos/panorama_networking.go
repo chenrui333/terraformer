@@ -17,13 +17,13 @@ package panos
 import (
 	"fmt"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/PaloAltoNetworks/pango"
 	"github.com/PaloAltoNetworks/pango/netw/interface/eth"
 	"github.com/PaloAltoNetworks/pango/netw/interface/subinterface/layer2"
 	"github.com/PaloAltoNetworks/pango/netw/interface/subinterface/layer3"
 	"github.com/PaloAltoNetworks/pango/util"
 	"github.com/PaloAltoNetworks/pango/vsys"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 type PanoramaNetworkingGenerator struct {

@@ -29,9 +29,7 @@ func (az *GroupServiceGenerator) listResources() ([]msgraph.Group, error) {
 		return nil, err
 	}
 
-	for _, group := range *groups {
-		resources = append(resources, group)
-	}
+	resources = append(resources, *groups...)
 
 	return resources, nil
 }
@@ -42,7 +40,6 @@ func (az *GroupServiceGenerator) appendResource(resource *msgraph.Group) {
 }
 
 func (az *GroupServiceGenerator) InitResources() error {
-
 	resources, err := az.listResources()
 	if err != nil {
 		return err
@@ -55,7 +52,6 @@ func (az *GroupServiceGenerator) InitResources() error {
 }
 
 func (az *GroupServiceGenerator) GetResourceConnections() map[string][]string {
-
 	return map[string][]string{
 		"group": {"id"},
 	}

@@ -18,10 +18,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/IBM-Cloud/bluemix-go"
 	"github.com/IBM-Cloud/bluemix-go/api/container/containerv2"
 	"github.com/IBM-Cloud/bluemix-go/session"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 type VPCClusterGenerator struct {
@@ -83,7 +83,6 @@ func (g *VPCClusterGenerator) InitResources() error {
 				}
 			}
 		}
-
 	}
 
 	return nil

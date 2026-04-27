@@ -86,7 +86,6 @@ func newImportCmd() *cobra.Command {
 }
 
 func Import(provider terraformutils.ProviderGenerator, options ImportOptions, args []string) error {
-
 	providerWrapper, options, err := initOptionsAndWrapper(provider, options, args)
 	if err != nil {
 		return err

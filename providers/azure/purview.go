@@ -59,7 +59,6 @@ func (az *PurviewGenerator) AppendAccount(account *purview.Account) {
 }
 
 func (az *PurviewGenerator) InitResources() error {
-
 	accounts, err := az.listAccounts()
 	if err != nil {
 		return err

@@ -18,8 +18,8 @@ import (
 	"context"
 	"log"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aws/aws-sdk-go-v2/service/docdb"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 var docDBAllowEmptyValues = []string{"tags."}
@@ -59,7 +59,6 @@ func (g *DocDBGenerator) getClusters(svc *docdb.Client) error {
 		}
 
 		for _, cluster := range page.DBClusters {
-
 			resourceName := StringValue(cluster.DBClusterIdentifier)
 
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
@@ -78,7 +77,6 @@ func (g *DocDBGenerator) getClusters(svc *docdb.Client) error {
 					"aws",
 					docDBAllowEmptyValues))
 			}
-
 		}
 	}
 
@@ -103,7 +101,6 @@ func (g *DocDBGenerator) getSubnetGroups(svc *docdb.Client) error {
 				"aws_docdb_subnet_group",
 				"aws",
 				docDBAllowEmptyValues))
-
 		}
 	}
 
@@ -128,7 +125,6 @@ func (g *DocDBGenerator) getParameterGroups(svc *docdb.Client) error {
 				"aws_docdb_cluster_parameter_group",
 				"aws",
 				docDBAllowEmptyValues))
-
 		}
 	}
 

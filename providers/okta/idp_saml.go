@@ -35,7 +35,6 @@ func (g IdpSAMLGenerator) createResources(idpSAMLList []*okta.IdentityProvider) 
 			"okta_idp_saml",
 			"okta",
 			[]string{}))
-
 	}
 	return resources
 }

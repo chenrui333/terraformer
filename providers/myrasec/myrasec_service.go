@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	mgo "github.com/Myra-Security-GmbH/myrasec-go/v2"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 // MyrasecService ...

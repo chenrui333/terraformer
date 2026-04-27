@@ -17,11 +17,11 @@ package ibm
 import (
 	"os"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	bluemix "github.com/IBM-Cloud/bluemix-go"
 	"github.com/IBM-Cloud/bluemix-go/api/resource/resourcev1/catalog"
 	"github.com/IBM-Cloud/bluemix-go/api/resource/resourcev2/controllerv2"
 	"github.com/IBM-Cloud/bluemix-go/session"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 // DatabaseElasticSearchGenerator ...
@@ -53,7 +53,6 @@ func (g DatabaseElasticSearchGenerator) loadElasticSearchDB(dbID string, dbName 
 
 // InitResources ...
 func (g *DatabaseElasticSearchGenerator) InitResources() error {
-
 	region := g.Args["region"].(string)
 	bmxConfig := &bluemix.Config{
 		BluemixAPIKey: os.Getenv("IC_API_KEY"),

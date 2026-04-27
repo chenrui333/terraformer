@@ -97,7 +97,6 @@ func createProjectVariables(ctx context.Context, client *gitlab.Client, project 
 		}
 
 		for _, projectVariable := range projectVariables {
-
 			resource := terraformutils.NewSimpleResource(
 				fmt.Sprintf("%d:%s:%s", project.ID, projectVariable.Key, projectVariable.EnvironmentScope),
 				fmt.Sprintf("%s___%s___%s", getProjectResourceName(project), projectVariable.Key, projectVariable.EnvironmentScope),
@@ -129,7 +128,6 @@ func createBranchProtections(ctx context.Context, client *gitlab.Client, project
 		}
 
 		for _, protectedBranch := range protectedBranches {
-
 			resource := terraformutils.NewSimpleResource(
 				fmt.Sprintf("%d:%s", project.ID, protectedBranch.Name),
 				fmt.Sprintf("%s___%s", getProjectResourceName(project), protectedBranch.Name),
@@ -161,7 +159,6 @@ func createTagProtections(ctx context.Context, client *gitlab.Client, project *g
 		}
 
 		for _, protectedTag := range protectedTags {
-
 			resource := terraformutils.NewSimpleResource(
 				fmt.Sprintf("%d:%s", project.ID, protectedTag.Name),
 				fmt.Sprintf("%s___%s", getProjectResourceName(project), protectedTag.Name),
@@ -193,7 +190,6 @@ func createProjectMembership(ctx context.Context, client *gitlab.Client, project
 		}
 
 		for _, projectMember := range projectMembers {
-
 			resource := terraformutils.NewSimpleResource(
 				fmt.Sprintf("%d:%d", project.ID, projectMember.ID),
 				fmt.Sprintf("%s___%s", getProjectResourceName(project), projectMember.Username),

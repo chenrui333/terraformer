@@ -17,9 +17,9 @@ package aws
 import (
 	"context"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchevents"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 var cloudwatchAllowEmptyValues = []string{"tags."}

@@ -12,7 +12,7 @@ import (
 	vault "github.com/hashicorp/vault/api"
 )
 
-type ServiceGenerator struct { //nolint
+type ServiceGenerator struct {
 	terraformutils.Service
 	client    *vault.Client
 	mountType string

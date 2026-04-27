@@ -41,7 +41,7 @@ type ResourceID struct {
 func ParseAzureResourceID(id string) (*ResourceID, error) {
 	idURL, err := url.ParseRequestURI(id)
 	if err != nil {
-		return nil, fmt.Errorf("Cannot parse Azure ID: %s", err)
+		return nil, fmt.Errorf("cannot parse Azure ID: %w", err)
 	}
 
 	path := idURL.Path

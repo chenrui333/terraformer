@@ -19,10 +19,10 @@ import (
 	"log"
 	"strings"
 
-	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/chenrui333/terraformer/terraformutils/terraformerstring"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway/types"
+	"github.com/chenrui333/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils/terraformerstring"
 )
 
 var apiGatewayAllowEmptyValues = []string{"tags.", "parent_id", "path_part"}

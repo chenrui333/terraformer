@@ -14,7 +14,7 @@ func (g *DatasetGenerator) InitResources() error {
 	// client is not used but initializing the client populates `g.datasets`
 	_, err := g.newClient()
 	if err != nil {
-		return fmt.Errorf("unable to initialize Honeycomb client: %v", err)
+		return fmt.Errorf("unable to initialize Honeycomb client: %w", err)
 	}
 
 	for _, dataset := range g.datasets {

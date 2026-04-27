@@ -22,8 +22,9 @@ import (
 	"github.com/okta/okta-sdk-golang/v2/okta/query"
 )
 
-//NOTE: Okta SDK v2.6.1 ListApplications() method does not support applications by type at this time. So
-//		we have to create the application filter by our self.
+// NOTE: Okta SDK v2.6.1 ListApplications() method does not support applications by type at this time. So
+//
+//	we have to create the application filter by our self.
 func getApplications(ctx context.Context, client *okta.Client, signOnMode string) ([]*okta.Application, error) {
 	supportedApps, err := getAllApplications(ctx, client)
 	if err != nil {

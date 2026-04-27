@@ -14,7 +14,7 @@ type QueryAnnotationGenerator struct {
 func (g *QueryAnnotationGenerator) InitResources() error {
 	client, err := g.newClient()
 	if err != nil {
-		return fmt.Errorf("unable to initialize Honeycomb client: %v", err)
+		return fmt.Errorf("unable to initialize Honeycomb client: %w", err)
 	}
 
 	boards, err := client.Boards.List(context.TODO())

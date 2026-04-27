@@ -21,8 +21,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	bluemix "github.com/IBM-Cloud/bluemix-go"
+	"github.com/chenrui333/terraformer/terraformutils"
 
 	ns "github.com/IBM-Cloud/bluemix-go/api/functions"
 	"github.com/IBM-Cloud/bluemix-go/session"
@@ -95,8 +95,8 @@ func setupOpenWhiskClientConfigIAM(response ns.NamespaceResponse, c *bluemix.Con
 		additionalHeaders.Add("Authorization", c.IAMAccessToken)
 		additionalHeaders.Add("X-Namespace-Id", response.GetID())
 
-		wskClient.Config.Namespace = response.GetID()
-		wskClient.Config.AdditionalHeaders = additionalHeaders
+		wskClient.Namespace = response.GetID()
+		wskClient.AdditionalHeaders = additionalHeaders
 		return wskClient, nil
 	}
 
@@ -157,7 +157,7 @@ func (g *CloudFunctionGenerator) InitResources() error {
 		}
 		pkgs, _, err := packageService.List(pkgOptions)
 		if err != nil {
-			return fmt.Errorf("Error retrieving IBM Cloud Function package: %s", err)
+			return fmt.Errorf("error retrieving IBM Cloud Function package: %w", err)
 		}
 
 		for _, p := range pkgs {
@@ -172,7 +172,7 @@ func (g *CloudFunctionGenerator) InitResources() error {
 		}
 		actions, _, err := actionService.List("", actionOptions)
 		if err != nil {
-			return fmt.Errorf("Error retrieving IBM Cloud Function action: %s", err)
+			return fmt.Errorf("error retrieving IBM Cloud Function action: %w", err)
 		}
 
 		for _, a := range actions {
@@ -213,7 +213,7 @@ func (g *CloudFunctionGenerator) InitResources() error {
 		}
 		rules, _, err := ruleService.List(ruleOptions)
 		if err != nil {
-			return fmt.Errorf("Error retrieving IBM Cloud Function rule: %s", err)
+			return fmt.Errorf("error retrieving IBM Cloud Function rule: %w", err)
 		}
 
 		for _, r := range rules {
@@ -228,7 +228,7 @@ func (g *CloudFunctionGenerator) InitResources() error {
 		}
 		triggers, _, err := triggerService.List(triggerOptions)
 		if err != nil {
-			return fmt.Errorf("Error retrieving IBM Cloud Function trigger: %s", err)
+			return fmt.Errorf("error retrieving IBM Cloud Function trigger: %w", err)
 		}
 
 		for _, t := range triggers {

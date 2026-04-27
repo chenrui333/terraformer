@@ -26,7 +26,6 @@ type UserTypeGenerator struct {
 func (g UserTypeGenerator) createResources(userTypeList []*okta.UserType) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 	for _, userType := range userTypeList {
-
 		resources = append(resources, terraformutils.NewSimpleResource(
 			userType.Id,
 			"usertype_"+userType.Name,

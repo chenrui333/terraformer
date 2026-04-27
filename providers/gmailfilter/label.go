@@ -58,5 +58,4 @@ func (g *LabelGenerator) InitResources() error {
 	g.Resources = append(g.Resources, g.createResources(labels.Labels)...)
 
 	return nil
-
 }

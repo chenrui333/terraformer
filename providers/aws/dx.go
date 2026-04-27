@@ -89,11 +89,12 @@ func (g *DirectConnectGenerator) getDirectConnectVritualInterfaces(svc *directco
 	for _, vif := range output.VirtualInterfaces {
 		var resourceType string
 
-		if *vif.VirtualInterfaceType == "private" {
+		switch *vif.VirtualInterfaceType {
+		case "private":
 			resourceType = "aws_dx_private_virtual_interface"
-		} else if *vif.VirtualInterfaceType == "public" {
+		case "public":
 			resourceType = "aws_dx_public_virtual_interface"
-		} else {
+		default:
 			log.Printf("Unknown Virtual Interface Type: %s for ID: %s", *vif.VirtualInterfaceType, *vif.VirtualInterfaceId)
 			continue
 		}
@@ -108,7 +109,6 @@ func (g *DirectConnectGenerator) getDirectConnectVritualInterfaces(svc *directco
 	}
 
 	return nil
-
 }
 
 func (g *DirectConnectGenerator) InitResources() error {

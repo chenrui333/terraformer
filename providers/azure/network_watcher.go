@@ -85,7 +85,6 @@ func (az *NetworkWatcherGenerator) appendPacketCaptures(parent *network.Watcher,
 }
 
 func (az *NetworkWatcherGenerator) InitResources() error {
-
 	resources, err := az.listResources()
 	if err != nil {
 		return err

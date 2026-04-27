@@ -17,10 +17,10 @@ package alicloud
 import (
 	"strconv"
 
-	"github.com/chenrui333/terraformer/providers/alicloud/connectivity"
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
+	"github.com/chenrui333/terraformer/providers/alicloud/connectivity"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 // PvtzGenerator Struct for generating AliCloud private zone

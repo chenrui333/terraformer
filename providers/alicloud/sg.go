@@ -17,10 +17,10 @@ package alicloud
 import (
 	"strings"
 
-	"github.com/chenrui333/terraformer/providers/alicloud/connectivity"
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/chenrui333/terraformer/providers/alicloud/connectivity"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 // SgGenerator Struct for generating AliCloud Security group

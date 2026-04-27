@@ -68,7 +68,6 @@ func (g *PrivateDNSGenerator) listRecordSets(resourceGroupName string, privateZo
 			log.Println(err)
 			break
 		}
-
 	}
 	return resources, nil
 }
@@ -98,7 +97,6 @@ func (g *PrivateDNSGenerator) listVirtualNetworkLinks(resourceGroupName string, 
 			log.Println(err)
 			break
 		}
-
 	}
 
 	return resources, nil

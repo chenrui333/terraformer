@@ -77,6 +77,5 @@ func newCmdPanosImporter(options ImportOptions) *cobra.Command {
 }
 
 func newPanosProvider() terraformutils.ProviderGenerator {
-
 	return &panos_terraforming.PanosProvider{}
 }

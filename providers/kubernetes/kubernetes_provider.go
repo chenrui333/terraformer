@@ -169,16 +169,16 @@ func initClientAndConfig() (*restclient.Config, clientcmd.ClientConfig, error) {
 
 	config, err := configFromPath(kubeconfig)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error obtaining kubectl config: %v", err)
+		return nil, nil, fmt.Errorf("error obtaining kubectl config: %w", err)
 	}
 	client, err := config.ClientConfig()
 	if err != nil {
-		return nil, nil, fmt.Errorf("the provided credentials %q could not be used: %v", kubeconfig, err)
+		return nil, nil, fmt.Errorf("the provided credentials %q could not be used: %w", kubeconfig, err)
 	}
 
 	err = applyGlobalOptionsToConfig(client)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error processing global plugin options: %v", err)
+		return nil, nil, fmt.Errorf("error processing global plugin options: %w", err)
 	}
 
 	return client, config, nil
@@ -188,7 +188,7 @@ func configFromPath(path string) (clientcmd.ClientConfig, error) {
 	rules := &clientcmd.ClientConfigLoadingRules{ExplicitPath: path}
 	credentials, err := rules.Load()
 	if err != nil {
-		return nil, fmt.Errorf("the provided credentials %q could not be loaded: %v", path, err)
+		return nil, fmt.Errorf("the provided credentials %q could not be loaded: %w", path, err)
 	}
 
 	overrides := &clientcmd.ConfigOverrides{
@@ -231,17 +231,17 @@ func applyGlobalOptionsToConfig(config *restclient.Config) error {
 	// tls config
 	caFile := os.Getenv("KUBECTL_PLUGINS_GLOBAL_FLAG_CERTIFICATE_AUTHORITY")
 	if len(caFile) > 0 {
-		config.TLSClientConfig.CAFile = caFile
+		config.CAFile = caFile
 	}
 
 	clientCertFile := os.Getenv("KUBECTL_PLUGINS_GLOBAL_FLAG_CLIENT_CERTIFICATE")
 	if len(clientCertFile) > 0 {
-		config.TLSClientConfig.CertFile = clientCertFile
+		config.CertFile = clientCertFile
 	}
 
 	clientKey := os.Getenv("KUBECTL_PLUGINS_GLOBAL_FLAG_CLIENT_KEY")
 	if len(clientKey) > 0 {
-		config.TLSClientConfig.KeyFile = clientKey
+		config.KeyFile = clientKey
 	}
 
 	// user / misc request config

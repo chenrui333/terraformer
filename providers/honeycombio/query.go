@@ -14,7 +14,7 @@ type QueryGenerator struct {
 func (g *QueryGenerator) InitResources() error {
 	client, err := g.newClient()
 	if err != nil {
-		return fmt.Errorf("unable to initialize Honeycomb client: %v", err)
+		return fmt.Errorf("unable to initialize Honeycomb client: %w", err)
 	}
 
 	for _, dataset := range g.datasets {
@@ -24,7 +24,7 @@ func (g *QueryGenerator) InitResources() error {
 		}
 		triggers, err := client.Triggers.List(context.TODO(), dataset.Slug)
 		if err != nil {
-			return fmt.Errorf("unable to list Honeycomb triggers for dataset %s: %v", dataset.Slug, err)
+			return fmt.Errorf("unable to list Honeycomb triggers for dataset %s: %w", dataset.Slug, err)
 		}
 
 		for _, trigger := range triggers {
@@ -44,7 +44,7 @@ func (g *QueryGenerator) InitResources() error {
 
 	boards, err := client.Boards.List(context.TODO())
 	if err != nil {
-		return fmt.Errorf("unable to list Honeycomb boards: %v", err)
+		return fmt.Errorf("unable to list Honeycomb boards: %w", err)
 	}
 
 	for _, board := range boards {

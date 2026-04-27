@@ -14,7 +14,7 @@ type SLOGenerator struct {
 func (g *SLOGenerator) InitResources() error {
 	client, err := g.newClient()
 	if err != nil {
-		return fmt.Errorf("unable to initialize Honeycomb client: %v", err)
+		return fmt.Errorf("unable to initialize Honeycomb client: %w", err)
 	}
 
 	ctx := context.TODO()
@@ -26,7 +26,7 @@ func (g *SLOGenerator) InitResources() error {
 		}
 		slos, err := client.SLOs.List(ctx, dataset.Slug)
 		if err != nil {
-			return fmt.Errorf("unable to list Honeycomb SLOs for dataset %s: %v", dataset.Slug, err)
+			return fmt.Errorf("unable to list Honeycomb SLOs for dataset %s: %w", dataset.Slug, err)
 		}
 
 		for _, slo := range slos {

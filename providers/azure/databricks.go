@@ -59,7 +59,6 @@ func (az *DatabricksGenerator) AppendWorkspace(workspace *databricks.Workspace) 
 }
 
 func (az *DatabricksGenerator) InitResources() error {
-
 	workspaces, err := az.listWorkspaces()
 	if err != nil {
 		return err

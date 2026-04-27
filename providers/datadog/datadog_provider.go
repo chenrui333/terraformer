@@ -40,17 +40,16 @@ type DatadogProvider struct { //nolint
 
 // Init check env params and initialize API Client
 func (p *DatadogProvider) Init(args []string) error {
-
 	if args[3] != "" {
 		validate, validateErr := strconv.ParseBool(args[3])
 		if validateErr != nil {
-			return fmt.Errorf(`invalid validate arg : %v`, validateErr)
+			return fmt.Errorf(`invalid validate arg : %w`, validateErr)
 		}
 		p.validate = validate
 	} else if os.Getenv("DATADOG_VALIDATE") != "" {
 		validate, validateErr := strconv.ParseBool(os.Getenv("DATADOG_VALIDATE"))
 		if validateErr != nil {
-			return fmt.Errorf(`invalid DATADOG_VALIDATE env var : %v`, validateErr)
+			return fmt.Errorf(`invalid DATADOG_VALIDATE env var : %w`, validateErr)
 		}
 		p.validate = validate
 	} else {
@@ -99,7 +98,7 @@ func (p *DatadogProvider) Init(args []string) error {
 	if p.apiURL != "" {
 		parsedAPIURL, parseErr := url.Parse(p.apiURL)
 		if parseErr != nil {
-			return fmt.Errorf(`invalid API Url : %v`, parseErr)
+			return fmt.Errorf(`invalid API Url : %w`, parseErr)
 		}
 		if parsedAPIURL.Host == "" || parsedAPIURL.Scheme == "" {
 			return fmt.Errorf(`missing protocol or host : %v`, p.apiURL)

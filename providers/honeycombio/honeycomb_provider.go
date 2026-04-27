@@ -25,7 +25,7 @@ import (
 const honeycombDefaultURL = "https://api.honeycomb.io"
 const honeycombTerraformerProviderVersion = "0.0.2"
 
-type HoneycombProvider struct { //nolint
+type HoneycombProvider struct {
 	terraformutils.Provider
 	apiKey   string
 	apiURL   string

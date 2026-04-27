@@ -19,9 +19,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/IBM/go-sdk-core/v4/core"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 // IkeGenerator ...
@@ -69,7 +69,7 @@ func (g *IkeGenerator) InitResources() error {
 		}
 		policies, response, err := vpcclient.ListIkePolicies(options)
 		if err != nil {
-			return fmt.Errorf("Error Fetching IKE Policies %s\n%s", err, response)
+			return fmt.Errorf("error fetching IKE Policies %w\n%s", err, response)
 		}
 		start = GetNext(policies.Next)
 		allrecs = append(allrecs, policies.IkePolicies...)

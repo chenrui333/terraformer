@@ -308,7 +308,7 @@ func (g *SecurityGenerator) sortIfExist(attribute string, ruleMap map[string]int
 
 func permissionID(sgID, ruleType, groupID string, ip types.IpPermission) string {
 	var buf bytes.Buffer
-	buf.WriteString(fmt.Sprintf("%s_%s_%s_%d_%d_", sgID, ruleType, *ip.IpProtocol, fromPort(ip), toPort(ip)))
+	fmt.Fprintf(&buf, "%s_%s_%s_%d_%d_", sgID, ruleType, *ip.IpProtocol, fromPort(ip), toPort(ip))
 
 	if len(ip.IpRanges) > 0 {
 		s := make([]string, len(ip.IpRanges))
@@ -318,7 +318,7 @@ func permissionID(sgID, ruleType, groupID string, ip types.IpPermission) string 
 		sort.Strings(s)
 
 		for _, v := range s {
-			buf.WriteString(fmt.Sprintf("%s_", v))
+			fmt.Fprintf(&buf, "%s_", v)
 		}
 	}
 
@@ -330,7 +330,7 @@ func permissionID(sgID, ruleType, groupID string, ip types.IpPermission) string 
 		sort.Strings(s)
 
 		for _, v := range s {
-			buf.WriteString(fmt.Sprintf("%s_", v))
+			fmt.Fprintf(&buf, "%s_", v)
 		}
 	}
 
@@ -342,12 +342,12 @@ func permissionID(sgID, ruleType, groupID string, ip types.IpPermission) string 
 		sort.Strings(s)
 
 		for _, v := range s {
-			buf.WriteString(fmt.Sprintf("%s_", v))
+			fmt.Fprintf(&buf, "%s_", v)
 		}
 	}
 
 	if groupID != "" {
-		buf.WriteString(fmt.Sprintf("%s_", groupID))
+		fmt.Fprintf(&buf, "%s_", groupID)
 	}
 
 	idPreformatted := buf.String()

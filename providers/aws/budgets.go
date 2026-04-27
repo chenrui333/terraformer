@@ -18,9 +18,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aws/aws-sdk-go-v2/service/budgets"
 	"github.com/aws/aws-sdk-go-v2/service/budgets/types"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 type BudgetsGenerator struct {

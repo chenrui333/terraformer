@@ -81,7 +81,6 @@ func createGroupVariables(ctx context.Context, client *gitlab.Client, group *git
 		}
 
 		for _, groupVariable := range groupVariables {
-
 			resource := terraformutils.NewSimpleResource(
 				fmt.Sprintf("%d:%s:%s", group.ID, groupVariable.Key, groupVariable.EnvironmentScope),
 				fmt.Sprintf("%s___%s___%s", getGroupResourceName(group), groupVariable.Key, groupVariable.EnvironmentScope),
@@ -113,7 +112,6 @@ func createGroupMembership(ctx context.Context, client *gitlab.Client, group *gi
 		}
 
 		for _, groupMember := range groupMembers {
-
 			resource := terraformutils.NewSimpleResource(
 				fmt.Sprintf("%d:%d", group.ID, groupMember.ID),
 				fmt.Sprintf("%s___%s", getGroupResourceName(group), groupMember.Username),

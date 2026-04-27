@@ -5,20 +5,16 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	mgo "github.com/Myra-Security-GmbH/myrasec-go/v2"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
-//
 // SettingGenerator
-//
 type SettingsGenerator struct {
 	MyrasecService
 }
 
-//
 // createSettingResources
-//
 func (g *SettingsGenerator) createSettingResources(api *mgo.API, domainId int, vhost mgo.VHost, wg *sync.WaitGroup) error {
 	defer wg.Done()
 
@@ -45,9 +41,7 @@ func (g *SettingsGenerator) createSettingResources(api *mgo.API, domainId int, v
 	return nil
 }
 
-//
 // InitResources
-//
 func (g *SettingsGenerator) InitResources() error {
 	wg := sync.WaitGroup{}
 

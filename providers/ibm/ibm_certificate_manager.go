@@ -17,12 +17,12 @@ package ibm
 import (
 	"os"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	bluemix "github.com/IBM-Cloud/bluemix-go"
 	"github.com/IBM-Cloud/bluemix-go/api/certificatemanager"
 	"github.com/IBM-Cloud/bluemix-go/api/resource/resourcev1/catalog"
 	"github.com/IBM-Cloud/bluemix-go/api/resource/resourcev2/controllerv2"
 	"github.com/IBM-Cloud/bluemix-go/session"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 type CMGenerator struct {
@@ -72,7 +72,6 @@ func (g CMGenerator) loadOrderedCM(cmID, certificateID, cisInstance string, depe
 }
 
 func (g *CMGenerator) InitResources() error {
-
 	bmxConfig := &bluemix.Config{
 		BluemixAPIKey: os.Getenv("IC_API_KEY"),
 	}
@@ -142,7 +141,6 @@ func (g *CMGenerator) InitResources() error {
 
 	// Get all certificates associated with a certificate manager instance
 	for _, cmInstance := range cmInstances {
-
 		g.Resources = append(g.Resources, g.loadCM(cmInstance.ID, cmInstance.Guid))
 
 		// For each instance get associated certificates

@@ -15,9 +15,11 @@
 package tencentcloud
 
 import (
+	stderrors "errors"
+
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common"
-	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/errors"
+	sdkerrors "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/errors"
 	tcaplus "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tcaplusdb/v20190823"
 )
 
@@ -46,7 +48,8 @@ func (g *TcaplusGenerator) InitResources() error {
 		request.Limit = &pageSize
 		response, err := client.DescribeClusters(request)
 		if err != nil {
-			sdkErr, ok := err.(*errors.TencentCloudSDKError)
+			sdkErr := &sdkerrors.TencentCloudSDKError{}
+			ok := stderrors.As(err, &sdkErr)
 			if ok && sdkErr.Code == "UnsupportedRegion" {
 				return nil
 			}

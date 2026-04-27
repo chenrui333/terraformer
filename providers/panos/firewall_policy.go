@@ -18,9 +18,9 @@ import (
 	"encoding/base64"
 	"strconv"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/PaloAltoNetworks/pango"
 	"github.com/PaloAltoNetworks/pango/util"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 type FirewallPolicyGenerator struct {

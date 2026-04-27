@@ -45,10 +45,8 @@ func (g *NetworkGenerator) loadNetworks(sdk *ycsdk.SDK, folderID string) ([]*vpc
 		if resp.GetNextPageToken() == "" {
 			break
 		}
-
 	}
 	return networks, nil
-
 }
 
 func (g *NetworkGenerator) InitResources() error {

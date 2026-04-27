@@ -218,7 +218,6 @@ func (g *FirewallGenerator) InitResources() error {
 			return err
 		}
 		g.Resources = append(g.Resources, resources...)
-
 	}
 
 	zones, err := api.ListZones(context.Background())

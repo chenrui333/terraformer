@@ -15,9 +15,9 @@
 package alicloud
 
 import (
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 // KeyPairGenerator Struct for generating AliCloud Key pair
@@ -27,8 +27,8 @@ type KeyPairGenerator struct {
 
 func resourceFromKeyPair(keyPair ecs.KeyPair) terraformutils.Resource {
 	return terraformutils.NewResource(
-		keyPair.KeyPairName, // nolint
-		keyPair.KeyPairName+"__"+keyPair.KeyPairName, // nolint
+		keyPair.KeyPairName,
+		keyPair.KeyPairName+"__"+keyPair.KeyPairName,
 		"alicloud_key_pair",
 		"alicloud",
 		map[string]string{},

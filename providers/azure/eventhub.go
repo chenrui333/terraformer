@@ -125,7 +125,6 @@ func (az *EventHubGenerator) appendAuthorizationRules(namespace *eventhub.EHName
 }
 
 func (az *EventHubGenerator) InitResources() error {
-
 	namespaces, err := az.listNamespaces()
 	if err != nil {
 		return err

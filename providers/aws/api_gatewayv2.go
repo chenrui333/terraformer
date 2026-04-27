@@ -18,9 +18,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aws/aws-sdk-go-v2/service/apigatewayv2"
 	"github.com/aws/aws-sdk-go-v2/service/apigatewayv2/types"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 var apiGatewayV2AllowEmptyValues = []string{"tags.", "parent_id", "path_part"}
@@ -30,7 +30,6 @@ type APIGatewayV2Generator struct {
 }
 
 func (g *APIGatewayV2Generator) InitResources() error {
-
 	config, err := g.generateConfig()
 	if err != nil {
 		return err
@@ -98,13 +97,11 @@ func (g *APIGatewayV2Generator) processRestApis(svc *apigatewayv2.Client, output
 		if err := g.loadAuthorizers(svc, restAPI.ApiId); err != nil {
 			return err
 		}
-
 	}
 	return nil
 }
 
 func (g *APIGatewayV2Generator) loadStages(svc *apigatewayv2.Client, restAPIID *string) error {
-
 	output, err := svc.GetStages(context.TODO(), &apigatewayv2.GetStagesInput{
 		ApiId: restAPIID,
 	})
@@ -153,7 +150,6 @@ func (g *APIGatewayV2Generator) processStages(output []types.Stage, restAPIID *s
 }
 
 func (g *APIGatewayV2Generator) loadModels(svc *apigatewayv2.Client, restAPIID *string) error {
-
 	output, err := svc.GetModels(context.TODO(),
 		&apigatewayv2.GetModelsInput{
 			ApiId: restAPIID,
@@ -186,7 +182,6 @@ func (g *APIGatewayV2Generator) loadModels(svc *apigatewayv2.Client, restAPIID *
 
 func (g *APIGatewayV2Generator) processModels(output []types.Model, restAPIID *string) error {
 	for _, model := range output {
-
 		g.Resources = append(g.Resources, terraformutils.NewResource(
 			*model.ModelId,
 			*model.ModelId,
@@ -206,7 +201,6 @@ func (g *APIGatewayV2Generator) processModels(output []types.Model, restAPIID *s
 }
 
 func (g *APIGatewayV2Generator) loadRoutes(svc *apigatewayv2.Client, restAPIID *string) error {
-
 	output, err := svc.GetRoutes(context.TODO(),
 		&apigatewayv2.GetRoutesInput{
 			ApiId: restAPIID,
@@ -241,7 +235,6 @@ func (g *APIGatewayV2Generator) loadRoutes(svc *apigatewayv2.Client, restAPIID *
 
 func (g *APIGatewayV2Generator) processRoutes(svc *apigatewayv2.Client, output []types.Route, restAPIID *string) error {
 	for _, route := range output {
-
 		g.Resources = append(g.Resources, terraformutils.NewResource(
 			*route.RouteId,
 			*route.RouteId,
@@ -262,7 +255,6 @@ func (g *APIGatewayV2Generator) processRoutes(svc *apigatewayv2.Client, output [
 }
 
 func (g *APIGatewayV2Generator) loadResponses(svc *apigatewayv2.Client, restAPIID *string, routeID *string) error {
-
 	output, err := svc.GetRouteResponses(context.TODO(),
 		&apigatewayv2.GetRouteResponsesInput{
 			ApiId:   restAPIID,
@@ -298,7 +290,6 @@ func (g *APIGatewayV2Generator) loadResponses(svc *apigatewayv2.Client, restAPII
 }
 func (g *APIGatewayV2Generator) processResponses(output []types.RouteResponse, restAPIID *string, routeID *string) error {
 	for _, response := range output {
-
 		g.Resources = append(g.Resources, terraformutils.NewResource(
 			*response.RouteResponseId,
 			*response.RouteResponseId,
@@ -312,13 +303,11 @@ func (g *APIGatewayV2Generator) processResponses(output []types.RouteResponse, r
 			apiGatewayAllowEmptyValues,
 			map[string]interface{}{},
 		))
-
 	}
 	return nil
 }
 
 func (g *APIGatewayV2Generator) loadAuthorizers(svc *apigatewayv2.Client, restAPIID *string) error {
-
 	output, err := svc.GetAuthorizers(context.TODO(),
 		&apigatewayv2.GetAuthorizersInput{
 			ApiId: restAPIID,
@@ -345,7 +334,6 @@ func (g *APIGatewayV2Generator) loadAuthorizers(svc *apigatewayv2.Client, restAP
 
 func (g *APIGatewayV2Generator) processAuthorizers(output []types.Authorizer, restAPIID *string) {
 	for _, authoriser := range output {
-
 		g.Resources = append(g.Resources, terraformutils.NewResource(
 			*authoriser.AuthorizerId,
 			*authoriser.AuthorizerId,
@@ -359,12 +347,10 @@ func (g *APIGatewayV2Generator) processAuthorizers(output []types.Authorizer, re
 			apiGatewayAllowEmptyValues,
 			map[string]interface{}{},
 		))
-
 	}
 }
 
 func (g *APIGatewayV2Generator) loadVpcLinks(svc *apigatewayv2.Client) error {
-
 	output, err := svc.GetVpcLinks(context.TODO(),
 		&apigatewayv2.GetVpcLinksInput{})
 	if err != nil {
@@ -388,7 +374,6 @@ func (g *APIGatewayV2Generator) loadVpcLinks(svc *apigatewayv2.Client) error {
 
 func (g *APIGatewayV2Generator) processVpcLinks(output []types.VpcLink) {
 	for _, vpcLink := range output {
-
 		g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
 			*vpcLink.VpcLinkId,
 			*vpcLink.VpcLinkId,

@@ -110,7 +110,6 @@ func (g *RealmGenerator) InitResources() error {
 			parentFlowAlias := topLevelAuthenticationFlow.Alias
 
 			for _, authenticationSubFlowOrExecution := range authenticationSubFlowOrExecutions {
-
 				// Find the parent flow alias
 				if len(stack) > 0 {
 					previous := stack[len(stack)-1]
@@ -122,7 +121,6 @@ func (g *RealmGenerator) InitResources() error {
 					if authenticationSubFlowOrExecution.Level == previous.Level {
 						// Same level sub flow/execution, it means that the sub flow/execution has same parent flow of the last sub flow/execution
 						parentFlowAlias = previous.ParentFlowAlias
-
 					} else if authenticationSubFlowOrExecution.Level > previous.Level {
 						// Deep level sub flow/execution, it means that the parent flow is the last sub flow/execution
 						if previous.AuthenticationFlow {

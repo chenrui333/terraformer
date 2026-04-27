@@ -16,6 +16,7 @@ package gcp
 
 import (
 	"context"
+	"errors"
 	"log"
 	"regexp"
 
@@ -40,7 +41,7 @@ func (g IamGenerator) createServiceAccountResources(serviceAccountsIterator *adm
 	re := regexp.MustCompile(`^[a-z]`)
 	for {
 		serviceAccount, err := serviceAccountsIterator.Next()
-		if err == iterator.Done {
+		if errors.Is(err, iterator.Done) {
 			break
 		}
 		if err != nil {

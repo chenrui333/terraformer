@@ -17,9 +17,9 @@ package aws
 import (
 	"context"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aws/aws-sdk-go-v2/service/cloud9"
 	"github.com/aws/aws-sdk-go-v2/service/cloud9/types"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 var cloud9AllowEmptyValues = []string{"tags."}

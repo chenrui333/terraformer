@@ -1,4 +1,4 @@
-package providerwrapper //nolint
+package providerwrapper
 
 import (
 	"regexp"

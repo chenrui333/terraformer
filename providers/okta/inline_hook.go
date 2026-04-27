@@ -26,7 +26,6 @@ type InlineHookGenerator struct {
 func (g InlineHookGenerator) createResources(inlineHookList []*okta.InlineHook) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 	for _, inlineHook := range inlineHookList {
-
 		resources = append(resources, terraformutils.NewSimpleResource(
 			inlineHook.Id,
 			"inline_hook_"+inlineHook.Name,

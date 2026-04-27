@@ -17,8 +17,8 @@ package aws
 import (
 	"context"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/chenrui333/terraformer/terraformutils"
 
 	"github.com/aws/aws-sdk-go-v2/service/identitystore"
 	"github.com/aws/aws-sdk-go-v2/service/identitystore/types"
@@ -46,7 +46,6 @@ func (g *IdentityStoreGenerator) GetIdentityStoreId() (*string, error) {
 	}
 	identityStoreId := StringValue(instances.Instances[0].IdentityStoreId)
 	return &identityStoreId, nil
-
 }
 
 func (g *IdentityStoreGenerator) InitGroupResources(identityStoreId string) error {

@@ -37,7 +37,7 @@ func (y *YandexService) InitSDK() (*ycsdk.SDK, error) {
 	if saKeyOrContent := y.Args[KeySaKeyFileOrContent].(string); saKeyOrContent != "" {
 		contents, _, err := pathOrContents(saKeyOrContent)
 		if err != nil {
-			return nil, fmt.Errorf("Error loading credentials: %s", err)
+			return nil, fmt.Errorf("error loading credentials: %w", err)
 		}
 
 		key, err := iamKeyFromJSONContent(contents)
@@ -99,7 +99,7 @@ func iamKeyFromJSONContent(content string) (*iamkey.Key, error) {
 	key := &iamkey.Key{}
 	err := json.Unmarshal([]byte(content), key)
 	if err != nil {
-		return nil, fmt.Errorf("service account JSON key unmarshal fail: %s", err)
+		return nil, fmt.Errorf("service account JSON key unmarshal fail: %w", err)
 	}
 	return key, nil
 }

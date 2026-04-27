@@ -19,9 +19,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/IBM/go-sdk-core/v4/core"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 // ImageGenerator ...
@@ -70,13 +70,13 @@ func (g *ImageGenerator) InitResources() error {
 		if rg := g.Args["resource_group"].(string); rg != "" {
 			rg, err = GetResourceGroupID(apiKey, rg, region)
 			if err != nil {
-				return fmt.Errorf("Error Fetching Resource Group Id %s", err)
+				return fmt.Errorf("error fetching Resource Group Id %w", err)
 			}
 			options.ResourceGroupID = &rg
 		}
 		images, response, err := vpcclient.ListImages(options)
 		if err != nil {
-			return fmt.Errorf("Error Fetching Images %s\n%s", err, response)
+			return fmt.Errorf("error fetching Images %w\n%s", err, response)
 		}
 		start = GetNext(images.Next)
 		allrecs = append(allrecs, images.Images...)

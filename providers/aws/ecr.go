@@ -83,14 +83,15 @@ func (g *EcrGenerator) InitResources() error {
 
 func (g *EcrGenerator) PostConvertHook() error {
 	for i, resource := range g.Resources {
-		if resource.InstanceInfo.Type == "aws_ecr_repository_policy" {
+		switch resource.InstanceInfo.Type {
+		case "aws_ecr_repository_policy":
 			if val, ok := g.Resources[i].Item["policy"]; ok {
 				policy := g.escapeAwsInterpolation(val.(string))
 				g.Resources[i].Item["policy"] = fmt.Sprintf(`<<POLICY
 %s
 POLICY`, policy)
 			}
-		} else if resource.InstanceInfo.Type == "aws_ecr_lifecycle_policy" {
+		case "aws_ecr_lifecycle_policy":
 			if val, ok := g.Resources[i].Item["policy"]; ok {
 				policy := g.escapeAwsInterpolation(val.(string))
 				g.Resources[i].Item["policy"] = fmt.Sprintf(`<<POLICY

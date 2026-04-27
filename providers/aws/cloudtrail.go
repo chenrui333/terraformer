@@ -17,9 +17,9 @@ package aws
 import (
 	"context"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aws/aws-sdk-go-v2/service/cloudtrail"
 	"github.com/aws/aws-sdk-go-v2/service/cloudtrail/types"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 var cloudtrailAllowEmptyValues = []string{"tags."}

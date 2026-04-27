@@ -20,9 +20,9 @@ import (
 	"os"
 	"sync"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/IBM/go-sdk-core/v4/core"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 // InstanceGroupGenerator ...
@@ -85,7 +85,7 @@ func (g *InstanceGroupGenerator) handlePolicies(sess *vpcv1.VpcV1, instanceGroup
 		}
 		data, response, err := sess.GetInstanceGroupManagerPolicy(&getInstanceGroupManagerPolicyOptions)
 		if err != nil {
-			g.fatalErrors <- fmt.Errorf("Error Getting InstanceGroup Manager Policy: %s\n%s", err, response)
+			g.fatalErrors <- fmt.Errorf("error getting InstanceGroup Manager Policy: %w\n%s", err, response)
 		}
 		instanceGroupManagerPolicy := data.(*vpcv1.InstanceGroupManagerPolicy)
 		resourceMutex.Lock()
@@ -108,7 +108,7 @@ func (g *InstanceGroupGenerator) handleManagers(sess *vpcv1.VpcV1, instanceGroup
 		}
 		instanceGroupManagerIntf, response, err := sess.GetInstanceGroupManager(&getInstanceGroupManagerOptions)
 		if err != nil {
-			g.fatalErrors <- fmt.Errorf("Error Getting InstanceGroup Manager: %s\n%s", err, response)
+			g.fatalErrors <- fmt.Errorf("error getting InstanceGroup Manager: %w\n%s", err, response)
 		}
 		instanceGroupManager := instanceGroupManagerIntf.(*vpcv1.InstanceGroupManager)
 		resourceMutex.Lock()
@@ -140,7 +140,7 @@ func (g *InstanceGroupGenerator) handleInstanceGroups(sess *vpcv1.VpcV1, waitGro
 		}
 		instanceGroupsCollection, response, err := sess.ListInstanceGroups(&listInstanceGroupOptions)
 		if err != nil {
-			g.fatalErrors <- fmt.Errorf("Error Fetching InstanceGroups %s\n%s", err, response)
+			g.fatalErrors <- fmt.Errorf("error fetching InstanceGroups %w\n%s", err, response)
 		}
 		start = GetNext(instanceGroupsCollection.Next)
 		allrecs = append(allrecs, instanceGroupsCollection.InstanceGroups...)
@@ -190,6 +190,6 @@ func (g *InstanceGroupGenerator) InitResources() error {
 	instanceGroupWG.Add(1)
 	go g.handleInstanceGroups(sess, &instanceGroupWG)
 
-	instanceGroupWG.Wait() //nolint:govet
+	instanceGroupWG.Wait()
 	return nil
 }

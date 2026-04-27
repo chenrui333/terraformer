@@ -166,7 +166,6 @@ func (p *ProvidersMapping) ConvertTFStates(providerWrapper *providerwrapper.Prov
 	for provider := range p.Providers {
 		provider.GetService().SetResources(resourcesGroupsByProviders[provider])
 	}
-
 }
 
 func (p *ProvidersMapping) CleanupProviders() {

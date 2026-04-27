@@ -15,11 +15,12 @@
 package ns1
 
 import (
+	"net/http"
+	"time"
+
 	"github.com/chenrui333/terraformer/terraformutils"
 	ns1 "gopkg.in/ns1/ns1-go.v2/rest"
 	"gopkg.in/ns1/ns1-go.v2/rest/model/dns"
-	"net/http"
-	"time"
 )
 
 type ZoneGenerator struct {
@@ -27,7 +28,6 @@ type ZoneGenerator struct {
 }
 
 func (g *ZoneGenerator) createZoneRecordResources(client *ns1.Client, zone_name string) error {
-
 	zone, resp, err := client.Zones.Get(zone_name, true)
 	if resp != nil && resp.Body != nil {
 		defer resp.Body.Close()
@@ -51,14 +51,12 @@ func (g *ZoneGenerator) createZoneRecordResources(client *ns1.Client, zone_name 
 			[]string{},
 			map[string]interface{}{},
 		))
-
 	}
 
 	return nil
 }
 
 func (g *ZoneGenerator) createZoneResources(client *ns1.Client, includeZones []string) error {
-
 	var zones []*dns.Zone
 
 	if len(includeZones) > 0 {

@@ -343,7 +343,6 @@ func (az *DataFactoryGenerator) createPipelineDatasetResources(dataFactories []d
 }
 
 func (az *DataFactoryGenerator) InitResources() error {
-
 	dataFactories, err := az.listFactories()
 	if err != nil {
 		return err

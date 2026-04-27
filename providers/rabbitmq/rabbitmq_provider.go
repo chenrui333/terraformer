@@ -21,7 +21,7 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-type RBTProvider struct { //nolint
+type RBTProvider struct {
 	terraformutils.Provider
 	endpoint string
 	username string

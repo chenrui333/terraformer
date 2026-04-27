@@ -14,12 +14,12 @@ type OnCallScheduleGenerator struct {
 func (g *OnCallScheduleGenerator) InitResources() error {
 	client, err := g.newClient()
 	if err != nil {
-		return fmt.Errorf("unable to list opal on call schedules: %v", err)
+		return fmt.Errorf("unable to list opal on call schedules: %w", err)
 	}
 
 	onCallSchedules, _, err := client.OnCallSchedulesAPI.GetOnCallSchedules(context.TODO()).Execute()
 	if err != nil {
-		return fmt.Errorf("unable to list opal on call schedules: %v", err)
+		return fmt.Errorf("unable to list opal on call schedules: %w", err)
 	}
 
 	countByName := make(map[string]int)

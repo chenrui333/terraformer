@@ -16,13 +16,14 @@ package gcp
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
 	"google.golang.org/api/iterator"
 
-	monitoring "cloud.google.com/go/monitoring/apiv3" // nolint
+	monitoring "cloud.google.com/go/monitoring/apiv3" //nolint
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 )
 
@@ -48,7 +49,7 @@ func (g *MonitoringGenerator) loadAlerts(ctx context.Context, project string) er
 
 	for {
 		alert, err := alertIterator.Next()
-		if err == iterator.Done {
+		if errors.Is(err, iterator.Done) {
 			break
 		}
 		if err != nil {
@@ -84,7 +85,7 @@ func (g *MonitoringGenerator) loadGroups(ctx context.Context, project string) er
 	groupsIterator := client.ListGroups(ctx, req)
 	for {
 		group, err := groupsIterator.Next()
-		if err == iterator.Done {
+		if errors.Is(err, iterator.Done) {
 			break
 		}
 		if err != nil {
@@ -120,7 +121,7 @@ func (g *MonitoringGenerator) loadNotificationChannel(ctx context.Context, proje
 	notificationChannelIterator := client.ListNotificationChannels(ctx, req)
 	for {
 		notificationChannel, err := notificationChannelIterator.Next()
-		if err == iterator.Done {
+		if errors.Is(err, iterator.Done) {
 			break
 		}
 		if err != nil {
@@ -155,7 +156,7 @@ func (g *MonitoringGenerator) loadUptimeCheck(ctx context.Context, project strin
 	uptimeCheckConfigsIterator := client.ListUptimeCheckConfigs(ctx, req)
 	for {
 		uptimeCheckConfigs, err := uptimeCheckConfigsIterator.Next()
-		if err == iterator.Done {
+		if errors.Is(err, iterator.Done) {
 			break
 		}
 		if err != nil {

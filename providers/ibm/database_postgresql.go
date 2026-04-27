@@ -17,11 +17,11 @@ package ibm
 import (
 	"os"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/IBM-Cloud/bluemix-go"
 	"github.com/IBM-Cloud/bluemix-go/api/resource/resourcev1/catalog"
 	"github.com/IBM-Cloud/bluemix-go/api/resource/resourcev2/controllerv2"
 	"github.com/IBM-Cloud/bluemix-go/session"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 // DatabasePostgresqlGenerator ...
@@ -88,7 +88,6 @@ func (g *DatabasePostgresqlGenerator) InitResources() error {
 		if db.RegionID == region {
 			g.Resources = append(g.Resources, g.loadPostgresqlDB(db.ID, db.Name))
 		}
-
 	}
 
 	return nil

@@ -59,7 +59,6 @@ func (az *SSHPublicKeyGenerator) appendResource(resource *compute.SSHPublicKeyRe
 }
 
 func (az *SSHPublicKeyGenerator) InitResources() error {
-
 	resources, err := az.listResources()
 	if err != nil {
 		return err

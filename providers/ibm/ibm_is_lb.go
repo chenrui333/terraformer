@@ -19,9 +19,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 // LBGenerator ...
@@ -139,7 +139,7 @@ func (g *LBGenerator) InitResources() error {
 	listLoadBalancersOptions := &vpcv1.ListLoadBalancersOptions{}
 	lbs, response, err := vpcclient.ListLoadBalancers(listLoadBalancersOptions)
 	if err != nil {
-		return fmt.Errorf("Error Fetching load balancers %s\n%s", err, response)
+		return fmt.Errorf("error fetching load balancers %w\n%s", err, response)
 	}
 	filters := make([]string, 0)
 	for _, filter := range g.Filter {
@@ -167,7 +167,7 @@ func (g *LBGenerator) InitResources() error {
 		}
 		lbPools, response, err := vpcclient.ListLoadBalancerPools(listLoadBalancerPoolsOptions)
 		if err != nil {
-			return fmt.Errorf("Error Fetching Load Balancer Pools %s\n%s", err, response)
+			return fmt.Errorf("error fetching Load Balancer Pools %w\n%s", err, response)
 		}
 		for _, lbPool := range lbPools.Pools {
 			g.Resources = append(g.Resources, g.createLBPoolResources(*lb.ID, *lbPool.ID, *lbPool.Name))
@@ -177,7 +177,7 @@ func (g *LBGenerator) InitResources() error {
 			}
 			lbPoolMembers, response, err := vpcclient.ListLoadBalancerPoolMembers(listLoadBalancerPoolMembersOptions)
 			if err != nil {
-				return fmt.Errorf("Error Fetching Load Balancer Pool Members %s\n%s", err, response)
+				return fmt.Errorf("error fetching Load Balancer Pool Members %w\n%s", err, response)
 			}
 			for _, lbPoolMember := range lbPoolMembers.Members {
 				g.Resources = append(g.Resources, g.createLBPoolMemberResources(*lb.ID, *lbPool.ID, *lbPoolMember.ID, *lbPool.Name))
@@ -189,7 +189,7 @@ func (g *LBGenerator) InitResources() error {
 		}
 		lbListeners, response, err := vpcclient.ListLoadBalancerListeners(listLoadBalancerListenersOptions)
 		if err != nil {
-			return fmt.Errorf("Error Fetching Load Balancer Listeners %s\n%s", err, response)
+			return fmt.Errorf("error fetching Load Balancer Listeners %w\n%s", err, response)
 		}
 		for _, lbListener := range lbListeners.Listeners {
 			g.Resources = append(g.Resources, g.createLBListenerResources(*lb.ID, *lbListener.ID, *lbListener.ID))
@@ -199,7 +199,7 @@ func (g *LBGenerator) InitResources() error {
 			}
 			lbListenerPolicies, response, err := vpcclient.ListLoadBalancerListenerPolicies(listLoadBalancerListenerPoliciesOptions)
 			if err != nil {
-				return fmt.Errorf("Error Fetching Load Balancer Listener Policies %s\n%s", err, response)
+				return fmt.Errorf("error fetching Load Balancer Listener Policies %w\n%s", err, response)
 			}
 			for _, lbListenerPolicy := range lbListenerPolicies.Policies {
 				g.Resources = append(g.Resources, g.createLBListenerPolicyResources(*lb.ID, *lbListener.ID, *lbListenerPolicy.ID, *lbListenerPolicy.Name))
@@ -210,11 +210,10 @@ func (g *LBGenerator) InitResources() error {
 				}
 				lbListenerPolicyRules, response, err := vpcclient.ListLoadBalancerListenerPolicyRules(listLoadBalancerListenerPolicyRulesOptions)
 				if err != nil {
-					return fmt.Errorf("Error Fetching Load Balancer Listener Policy Rules %s\n%s", err, response)
+					return fmt.Errorf("error fetching Load Balancer Listener Policy Rules %w\n%s", err, response)
 				}
 				for _, lbListenerPolicyRule := range lbListenerPolicyRules.Rules {
 					g.Resources = append(g.Resources, g.createLBListenerPolicyRuleResources(*lb.ID, *lbListener.ID, *lbListenerPolicy.ID, *lbListenerPolicyRule.ID, *lbListenerPolicyRule.ID))
-
 				}
 			}
 		}
@@ -291,7 +290,6 @@ func (g *LBGenerator) PostConvertHook() error {
 				g.Resources[i].Item["lb"] = "${ibm_is_lb." + r.ResourceName + ".id}"
 			}
 		}
-
 	}
 
 	return nil

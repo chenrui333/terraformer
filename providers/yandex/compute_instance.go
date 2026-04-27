@@ -45,10 +45,8 @@ func (g *InstanceGenerator) loadInstances(sdk *ycsdk.SDK, folderID string) ([]*c
 		if resp.GetNextPageToken() == "" {
 			break
 		}
-
 	}
 	return instances, nil
-
 }
 
 func (g *InstanceGenerator) InitResources() error {

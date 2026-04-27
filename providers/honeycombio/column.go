@@ -14,7 +14,7 @@ type ColumnGenerator struct {
 func (g *ColumnGenerator) InitResources() error {
 	client, err := g.newClient()
 	if err != nil {
-		return fmt.Errorf("unable to initialize Honeycomb client: %v", err)
+		return fmt.Errorf("unable to initialize Honeycomb client: %w", err)
 	}
 
 	for _, dataset := range g.datasets {
@@ -23,7 +23,7 @@ func (g *ColumnGenerator) InitResources() error {
 		}
 		columns, err := client.Columns.List(context.TODO(), dataset.Slug)
 		if err != nil {
-			return fmt.Errorf("unable to list Honeycomb columns for dataset %s: %v", dataset.Slug, err)
+			return fmt.Errorf("unable to list Honeycomb columns for dataset %s: %w", dataset.Slug, err)
 		}
 
 		for _, column := range columns {

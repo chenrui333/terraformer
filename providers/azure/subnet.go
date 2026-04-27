@@ -148,7 +148,6 @@ func (az *SubnetGenerator) appendServiceEndpointPolicies() error {
 }
 
 func (az *SubnetGenerator) InitResources() error {
-
 	subnets, err := az.lisSubnets()
 	if err != nil {
 		return err

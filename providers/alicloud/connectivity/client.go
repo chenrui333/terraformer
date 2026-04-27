@@ -104,7 +104,7 @@ func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, err
 		ecsconn, err := ecs.NewClientWithOptions(client.config.RegionID, client.getSdkConfig().WithTimeout(time.Duration(60)*time.Second), client.config.getAuthCredential())
 
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the ECS client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the ECS client: %#w", err)
 		}
 
 		if _, err := ecsconn.DescribeRegions(ecs.CreateDescribeRegionsRequest()); err != nil {
@@ -139,7 +139,7 @@ func (client *AliyunClient) WithRdsClient(do func(*rds.Client) (interface{}, err
 		}
 		rdsconn, err := rds.NewClientWithOptions(client.config.RegionID, client.getSdkConfig(), client.config.getAuthCredential())
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the RDS client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the RDS client: %#w", err)
 		}
 
 		rdsconn.AppendUserAgent(Terraform, terraformVersion)
@@ -171,7 +171,7 @@ func (client *AliyunClient) WithSlbClient(do func(*slb.Client) (interface{}, err
 		}
 		slbconn, err := slb.NewClientWithOptions(client.config.RegionID, client.getSdkConfig(), client.config.getAuthCredential())
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the SLB client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the SLB client: %#w", err)
 		}
 
 		slbconn.AppendUserAgent(Terraform, terraformVersion)
@@ -203,7 +203,7 @@ func (client *AliyunClient) WithVpcClient(do func(*vpc.Client) (interface{}, err
 		}
 		vpcconn, err := vpc.NewClientWithOptions(client.config.RegionID, client.getSdkConfig(), client.config.getAuthCredential())
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the VPC client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the VPC client: %#w", err)
 		}
 
 		vpcconn.AppendUserAgent(Terraform, terraformVersion)
@@ -236,7 +236,7 @@ func (client *AliyunClient) WithDNSClient(do func(*alidns.Client) (interface{}, 
 
 		dnsconn, err := alidns.NewClientWithOptions(client.config.RegionID, client.getSdkConfig(), client.config.getAuthCredential())
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the DNS client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the DNS client: %#w", err)
 		}
 		dnsconn.AppendUserAgent(Terraform, terraformVersion)
 		dnsconn.AppendUserAgent(Provider, providerVersion)
@@ -271,7 +271,7 @@ func (client *AliyunClient) WithRAMClient(do func(*ram.Client) (interface{}, err
 
 		ramconn, err := ram.NewClientWithOptions(client.config.RegionID, client.getSdkConfig(), client.config.getAuthCredential())
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the RAM client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the RAM client: %#w", err)
 		}
 		ramconn.AppendUserAgent(Terraform, terraformVersion)
 		ramconn.AppendUserAgent(Provider, providerVersion)
@@ -307,7 +307,7 @@ func (client *AliyunClient) WithPvtzClient(do func(*pvtz.Client) (interface{}, e
 		}
 		pvtzconn, err := pvtz.NewClientWithOptions(client.config.RegionID, client.getSdkConfig(), client.config.getAuthCredential())
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the PVTZ client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the PVTZ client: %#w", err)
 		}
 
 		pvtzconn.AppendUserAgent(Terraform, terraformVersion)

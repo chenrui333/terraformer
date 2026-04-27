@@ -171,7 +171,7 @@ func (p *FlatmapParser) fromFlatmapTuple(prefix string, tys []cty.Type) ([]inter
 
 	count, err := strconv.Atoi(countStr)
 	if err != nil {
-		return nil, fmt.Errorf("invalid count value for %q in state: %s", prefix, err)
+		return nil, fmt.Errorf("invalid count value for %q in state: %w", prefix, err)
 	}
 	if count != len(tys) {
 		return nil, fmt.Errorf("wrong number of values for %q in state: got %d, but need %d", prefix, count, len(tys))
@@ -262,7 +262,7 @@ func (p *FlatmapParser) fromFlatmapList(prefix string, ty cty.Type) ([]interface
 
 	count, err := strconv.Atoi(countStr)
 	if err != nil {
-		return nil, fmt.Errorf("invalid count value for %q in state: %s", prefix, err)
+		return nil, fmt.Errorf("invalid count value for %q in state: %w", prefix, err)
 	}
 
 	if count == 0 {

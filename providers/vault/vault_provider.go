@@ -16,7 +16,6 @@ type Provider struct {
 }
 
 func (p *Provider) Init(args []string) error {
-
 	if address := os.Getenv("VAULT_ADDR"); address != "" {
 		p.address = os.Getenv("VAULT_ADDR")
 	}

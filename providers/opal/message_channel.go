@@ -14,12 +14,12 @@ type MessageChannelGenerator struct {
 func (g *MessageChannelGenerator) InitResources() error {
 	client, err := g.newClient()
 	if err != nil {
-		return fmt.Errorf("unable to list opal message channels: %v", err)
+		return fmt.Errorf("unable to list opal message channels: %w", err)
 	}
 
 	messageChannels, _, err := client.MessageChannelsAPI.GetMessageChannels(context.TODO()).Execute()
 	if err != nil {
-		return fmt.Errorf("unable to list opal message channels: %v", err)
+		return fmt.Errorf("unable to list opal message channels: %w", err)
 	}
 
 	countByName := make(map[string]int)

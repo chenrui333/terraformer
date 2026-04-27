@@ -79,7 +79,6 @@ func (az *NetworkSecurityGroupGenerator) appendRules(parent *network.SecurityGro
 }
 
 func (az *NetworkSecurityGroupGenerator) InitResources() error {
-
 	resources, err := az.listResources()
 	if err != nil {
 		return err

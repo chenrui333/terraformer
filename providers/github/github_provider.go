@@ -87,7 +87,7 @@ func (p *GithubProvider) Init(args []string) error {
 		p.installationID = installationID
 	}
 	if pem, ok := os.LookupEnv("GITHUB_APP_PEM_FILE"); ok {
-		p.pem = strings.Replace(pem, `\n`, "\n", -1)
+		p.pem = strings.ReplaceAll(pem, `\n`, "\n")
 	}
 
 	p.owner = args[0]

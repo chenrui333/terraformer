@@ -45,10 +45,8 @@ func (g *SubnetGenerator) loadSubnets(sdk *ycsdk.SDK, folderID string) ([]*vpc.S
 		if resp.GetNextPageToken() == "" {
 			break
 		}
-
 	}
 	return subnets, nil
-
 }
 
 func (g *SubnetGenerator) InitResources() error {

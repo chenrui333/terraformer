@@ -39,7 +39,6 @@ func (az *ProjectGenerator) appendResource(resource *core.TeamProjectReference) 
 }
 
 func (az *ProjectGenerator) InitResources() error {
-
 	resources, err := az.listResources()
 	if err != nil {
 		return err

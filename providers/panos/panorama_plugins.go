@@ -15,8 +15,8 @@
 package panos
 
 import (
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/PaloAltoNetworks/pango"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 type PanoramaPluginsGenerator struct {
