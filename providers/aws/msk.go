@@ -219,12 +219,17 @@ func (g *MskGenerator) loadMskScramSecretAssociations(svc *kafka.Client) error {
 			sp := kafka.NewListScramSecretsPaginator(svc, &kafka.ListScramSecretsInput{
 				ClusterArn: &clusterArn,
 			})
+			var scramErr error
 			for sp.HasMorePages() {
 				secretPage, err := sp.NextPage(context.TODO())
 				if err != nil {
-					return err
+					scramErr = err
+					break
 				}
 				secretArns = append(secretArns, secretPage.SecretArnList...)
+			}
+			if scramErr != nil {
+				continue
 			}
 
 			if len(secretArns) == 0 {
