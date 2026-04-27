@@ -216,6 +216,13 @@ terraformer import aws --resources=sg --regions=us-east-1
     * `aws_mq_broker`
 *   `msk`
     * `aws_msk_cluster`
+    * `aws_msk_cluster_policy`
+    * `aws_msk_configuration`
+    * `aws_msk_replicator`
+    * `aws_msk_scram_secret_association`
+    * `aws_msk_serverless_cluster`
+    * `aws_msk_single_scram_secret_association`
+    * `aws_msk_vpc_connection`
 *   `nacl`
     * `aws_network_acl`
 *   `nat`
