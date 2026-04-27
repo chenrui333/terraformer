@@ -190,10 +190,8 @@ func hclPrint(data interface{}, mapsObjects map[string]struct{}, sort bool) ([]b
 	if err != nil {
 		return nil, err
 	}
-	// hack for support terraform 0.12
-	formatted = terraform12Adjustments(formatted, mapsObjects)
-	// hack for support terraform 0.13
-	formatted = terraform13Adjustments(formatted)
+	formatted = blockSyntaxAdjustments(formatted, mapsObjects)
+	formatted = requiredProvidersObjectAdjustments(formatted)
 	if err != nil {
 		log.Println("Invalid HCL follows:")
 		for i, line := range strings.Split(s, "\n") {
@@ -205,7 +203,7 @@ func hclPrint(data interface{}, mapsObjects map[string]struct{}, sort bool) ([]b
 	return formatted, nil
 }
 
-func terraform12Adjustments(formatted []byte, mapsObjects map[string]struct{}) []byte {
+func blockSyntaxAdjustments(formatted []byte, mapsObjects map[string]struct{}) []byte {
 	singletonListFix := regexp.MustCompile(`^\s*\w+ = {`)
 	singletonListFixEnd := regexp.MustCompile(`^\s*}`)
 
@@ -233,7 +231,7 @@ func terraform12Adjustments(formatted []byte, mapsObjects map[string]struct{}) [
 	return []byte(s)
 }
 
-func terraform13Adjustments(formatted []byte) []byte {
+func requiredProvidersObjectAdjustments(formatted []byte) []byte {
 	s := string(formatted)
 	requiredProvidersRe := regexp.MustCompile("required_providers \".*\" {")
 	endBraceRe := regexp.MustCompile(`^\s*}`)

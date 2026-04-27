@@ -14,13 +14,12 @@ import (
 )
 
 var (
-	commandTerraformInit       = "terraform init"
-	commandTerraformPlan       = "terraform plan -detailed-exitcode"
-	commandTerraformDestroy    = "terraform destroy -auto-approve"
-	commandTerraformApply      = "terraform apply -auto-approve"
-	commandTerraformOutput     = "terraform output"
-	commandTerraformV13Upgrade = "terraform 0.13upgrade -yes ."
-	datadogResourcesPath       = "tests/datadog/resources/"
+	commandTerraformInit    = "terraform init"
+	commandTerraformPlan    = "terraform plan -detailed-exitcode"
+	commandTerraformDestroy = "terraform destroy -auto-approve"
+	commandTerraformApply   = "terraform apply -auto-approve"
+	commandTerraformOutput  = "terraform output"
+	datadogResourcesPath    = "tests/datadog/resources/"
 )
 
 type DatadogConfig struct {
@@ -38,7 +37,6 @@ type Config struct {
 	Terraform    TerraformConfig
 	logCMDOutput bool
 	rootPath     string
-	tfVersion    string
 }
 
 func getConfig() (*Config, error) {
@@ -63,7 +61,6 @@ func getConfig() (*Config, error) {
 		},
 		logCMDOutput: logCMDOutput,
 		rootPath:     rootPath,
-		tfVersion:    os.Getenv("DATADOG_TF_VERSION"),
 	}, nil
 }
 

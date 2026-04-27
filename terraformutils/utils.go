@@ -16,7 +16,7 @@ type BaseResource struct {
 	Tags map[string]string `json:"tags,omitempty"`
 }
 
-const tfStateTerraformVersion = "0.15.0"
+const tfStateTerraformVersion = "1.9.0"
 
 type TfStateV4 struct {
 	Version          int                   `json:"version"`
