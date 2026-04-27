@@ -166,10 +166,16 @@ func (b *NestedBlock) impliedType() cty.Type {
 	case NestingSingle, NestingGroup:
 		return blockType
 	case NestingList:
+		if blockType.HasDynamicTypes() {
+			return cty.DynamicPseudoType
+		}
 		return cty.List(blockType)
 	case NestingSet:
 		return cty.Set(blockType)
 	case NestingMap:
+		if blockType.HasDynamicTypes() {
+			return cty.DynamicPseudoType
+		}
 		return cty.Map(blockType)
 	default:
 		return cty.DynamicPseudoType
@@ -213,9 +219,17 @@ func (b *NestedBlock) EmptyValue() cty.Value {
 	case NestingGroup:
 		return b.Block.EmptyValue()
 	case NestingList:
-		return cty.ListValEmpty(b.ImpliedType())
+		blockType := b.ImpliedType()
+		if blockType.HasDynamicTypes() {
+			return cty.EmptyTupleVal
+		}
+		return cty.ListValEmpty(blockType)
 	case NestingMap:
-		return cty.MapValEmpty(b.ImpliedType())
+		blockType := b.ImpliedType()
+		if blockType.HasDynamicTypes() {
+			return cty.EmptyObjectVal
+		}
+		return cty.MapValEmpty(blockType)
 	case NestingSet:
 		return cty.SetValEmpty(b.ImpliedType())
 	default:
@@ -330,14 +344,22 @@ func (b *NestedBlock) coerceValue(in cty.Value, ty cty.Type, typeName string, pa
 
 func (b *NestedBlock) coerceList(coll cty.Value, path cty.Path) (cty.Value, error) {
 	blockType := b.ImpliedType()
+	resultType := cty.List(blockType)
+	useTuple := blockType.HasDynamicTypes()
+	if useTuple {
+		resultType = cty.DynamicPseudoType
+	}
 	switch {
 	case coll.IsNull():
-		return cty.NullVal(cty.List(blockType)), nil
+		return cty.NullVal(resultType), nil
 	case !coll.IsKnown():
-		return cty.UnknownVal(cty.List(blockType)), nil
+		return cty.UnknownVal(resultType), nil
 	case !coll.CanIterateElements():
-		return cty.UnknownVal(cty.List(blockType)), path.NewErrorf("must be a list")
+		return cty.UnknownVal(resultType), path.NewErrorf("must be a list")
 	case coll.LengthInt() == 0:
+		if useTuple {
+			return cty.EmptyTupleVal, nil
+		}
 		return cty.ListValEmpty(blockType), nil
 	}
 	elems := make([]cty.Value, 0, coll.LengthInt())
@@ -345,9 +367,12 @@ func (b *NestedBlock) coerceList(coll cty.Value, path cty.Path) (cty.Value, erro
 		idx, val := it.Element()
 		coerced, err := b.Block.coerceValue(val, append(path, cty.IndexStep{Key: idx}))
 		if err != nil {
-			return cty.UnknownVal(cty.List(blockType)), err
+			return cty.UnknownVal(resultType), err
 		}
 		elems = append(elems, coerced)
+	}
+	if useTuple || coll.Type().IsTupleType() {
+		return cty.TupleVal(elems), nil
 	}
 	return cty.ListVal(elems), nil
 }
@@ -378,27 +403,50 @@ func (b *NestedBlock) coerceSet(coll cty.Value, path cty.Path) (cty.Value, error
 
 func (b *NestedBlock) coerceMap(coll cty.Value, path cty.Path) (cty.Value, error) {
 	blockType := b.ImpliedType()
+	resultType := cty.Map(blockType)
+	useObject := blockType.HasDynamicTypes()
+	if useObject {
+		resultType = cty.DynamicPseudoType
+	}
 	switch {
 	case coll.IsNull():
-		return cty.NullVal(cty.Map(blockType)), nil
+		return cty.NullVal(resultType), nil
 	case !coll.IsKnown():
-		return cty.UnknownVal(cty.Map(blockType)), nil
+		return cty.UnknownVal(resultType), nil
 	case !coll.CanIterateElements():
-		return cty.UnknownVal(cty.Map(blockType)), path.NewErrorf("must be a map")
+		return cty.UnknownVal(resultType), path.NewErrorf("must be a map")
 	case coll.LengthInt() == 0:
+		if useObject {
+			return cty.EmptyObjectVal, nil
+		}
 		return cty.MapValEmpty(blockType), nil
 	}
 	elems := make(map[string]cty.Value, coll.LengthInt())
 	for it := coll.ElementIterator(); it.Next(); {
 		key, val := it.Element()
 		if key.Type() != cty.String || key.IsNull() || !key.IsKnown() {
-			return cty.UnknownVal(cty.Map(blockType)), path.NewErrorf("must be a map")
+			return cty.UnknownVal(resultType), path.NewErrorf("must be a map")
 		}
 		coerced, err := b.Block.coerceValue(val, append(path, cty.IndexStep{Key: key}))
 		if err != nil {
-			return cty.UnknownVal(cty.Map(blockType)), err
+			return cty.UnknownVal(resultType), err
 		}
 		elems[key.AsString()] = coerced
+	}
+	if coll.Type().IsObjectType() {
+		useObject = true
+	}
+	if !useObject {
+		ety := coll.Type().ElementType()
+		for _, val := range elems {
+			if !val.Type().Equals(ety) {
+				useObject = true
+				break
+			}
+		}
+	}
+	if useObject {
+		return cty.ObjectVal(elems), nil
 	}
 	return cty.MapVal(elems), nil
 }
