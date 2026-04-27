@@ -34,7 +34,7 @@ jobs:
     - name: Check go.mod and go.sum
       run: git diff --exit-code -- go.mod go.sum
     - name: Test core packages
-      run: go test . ./build/... ./cmd ./terraformutils/... ./version -count=1
+      run: go test ./build/... ./terraformutils/... ./version -count=1
 
   full:
     name: full test (${{ matrix.platform }})
