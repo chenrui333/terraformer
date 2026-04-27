@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/hashicorp/terraform/helper/pathorcontents"
 	"golang.org/x/oauth2"
 	googleoauth "golang.org/x/oauth2/google"
 	"golang.org/x/oauth2/jwt"
@@ -76,7 +75,7 @@ func (s *GmailfilterService) getTokenSource(creds string, impersonatedEmailAddr 
 		if err := s.validateCredentials(creds); err != nil {
 			return nil, err
 		}
-		contents, _, err := pathorcontents.Read(creds)
+		contents, _, err := terraformutils.ReadPathOrContents(creds)
 		if err != nil {
 			return nil, fmt.Errorf("Error loading credentials: %s", err)
 		}

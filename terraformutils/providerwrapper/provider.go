@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/chenrui333/terraformer/terraformutils/terraformerstring"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 
 	"github.com/zclconf/go-cty/cty"
 
@@ -33,7 +34,6 @@ import (
 	"github.com/hashicorp/terraform/configs/configschema"
 	tfplugin "github.com/hashicorp/terraform/plugin"
 	"github.com/hashicorp/terraform/providers"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/hashicorp/terraform/version"
 )
 
@@ -54,7 +54,7 @@ type ProviderWrapper struct {
 	rpcClient    plugin.ClientProtocol
 	providerName string
 	config       cty.Value
-	schema       *providers.GetSchemaResponse
+	schema       *providers.GetProviderSchemaResponse
 	retryCount   int
 	retrySleepMs int
 }
@@ -84,9 +84,9 @@ func (p *ProviderWrapper) Kill() {
 	p.client.Kill()
 }
 
-func (p *ProviderWrapper) GetSchema() *providers.GetSchemaResponse {
+func (p *ProviderWrapper) GetSchema() *providers.GetProviderSchemaResponse {
 	if p.schema == nil {
-		r := p.Provider.GetSchema()
+		r := p.Provider.GetProviderSchema()
 		p.schema = &r
 	}
 	return p.schema
@@ -157,7 +157,7 @@ func (p *ProviderWrapper) readObjBlocks(block map[string]*configschema.NestedBlo
 	return readOnlyAttributes
 }
 
-func (p *ProviderWrapper) Refresh(info *terraform.InstanceInfo, state *terraform.InstanceState) (*terraform.InstanceState, error) {
+func (p *ProviderWrapper) Refresh(info *tfcompat.InstanceInfo, state *tfcompat.InstanceState) (*tfcompat.InstanceState, error) {
 	schema := p.GetSchema()
 	impliedType := schema.ResourceTypes[info.Type].Block.ImpliedType()
 	priorState, err := state.AttrsAsObjectValue(impliedType)
@@ -196,7 +196,7 @@ func (p *ProviderWrapper) Refresh(info *terraform.InstanceInfo, state *terraform
 		if len(importResponse.ImportedResources) == 0 {
 			return nil, errors.New("not able to import resource for a given ID")
 		}
-		return terraform.NewInstanceStateShimmedFromValue(importResponse.ImportedResources[0].State, int(schema.ResourceTypes[info.Type].Version)), nil
+		return tfcompat.NewInstanceStateShimmedFromValue(importResponse.ImportedResources[0].State, int(schema.ResourceTypes[info.Type].Version)), nil
 	}
 
 	if resp.NewState.IsNull() {
@@ -204,7 +204,7 @@ func (p *ProviderWrapper) Refresh(info *terraform.InstanceInfo, state *terraform
 		return nil, errors.New(msg)
 	}
 
-	return terraform.NewInstanceStateShimmedFromValue(resp.NewState, int(schema.ResourceTypes[info.Type].Version)), nil
+	return tfcompat.NewInstanceStateShimmedFromValue(resp.NewState, int(schema.ResourceTypes[info.Type].Version)), nil
 }
 
 func (p *ProviderWrapper) initProvider(verbose bool) error {
@@ -246,7 +246,7 @@ func (p *ProviderWrapper) initProvider(verbose bool) error {
 	if err != nil {
 		return err
 	}
-	p.Provider.Configure(providers.ConfigureRequest{
+	p.Provider.ConfigureProvider(providers.ConfigureProviderRequest{
 		TerraformVersion: version.Version,
 		Config:           config,
 	})

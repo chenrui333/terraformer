@@ -16,53 +16,145 @@ package terraformutils
 
 import (
 	"bytes"
+	"encoding/json"
 	"log"
+	"sort"
 	"sync"
 
 	"github.com/chenrui333/terraformer/terraformutils/providerwrapper"
-
-	"github.com/hashicorp/terraform/terraform"
 )
 
 type BaseResource struct {
 	Tags map[string]string `json:"tags,omitempty"`
 }
 
-func NewTfState(resources []Resource) *terraform.State {
-	tfstate := &terraform.State{
-		Version:   terraform.StateVersion,
-		TFVersion: terraform.VersionString(), //nolint
-		Serial:    1,
+const tfStateTerraformVersion = "0.15.0"
+
+type TfStateV4 struct {
+	Version          int                   `json:"version"`
+	TerraformVersion string                `json:"terraform_version"`
+	Serial           int                   `json:"serial"`
+	Lineage          string                `json:"lineage"`
+	Outputs          map[string]TfOutputV4 `json:"outputs"`
+	Resources        []TfResourceV4        `json:"resources"`
+}
+
+type TfOutputV4 struct {
+	Value     interface{} `json:"value"`
+	Type      interface{} `json:"type"`
+	Sensitive bool        `json:"sensitive,omitempty"`
+}
+
+type TfResourceV4 struct {
+	Mode      string         `json:"mode"`
+	Type      string         `json:"type"`
+	Name      string         `json:"name"`
+	Provider  string         `json:"provider"`
+	Instances []TfInstanceV4 `json:"instances"`
+}
+
+type TfInstanceV4 struct {
+	SchemaVersion uint64            `json:"schema_version"`
+	Attributes    map[string]string `json:"attributes_flat"`
+}
+
+func NewTfState(resources []Resource) *TfStateV4 {
+	tfstate := &TfStateV4{
+		Version:          4,
+		TerraformVersion: tfStateTerraformVersion,
+		Serial:           1,
+		Lineage:          "",
+		Outputs:          map[string]TfOutputV4{},
+		Resources:        []TfResourceV4{},
 	}
-	outputs := map[string]*terraform.OutputState{}
 	for _, r := range resources {
 		for k, v := range r.Outputs {
-			outputs[k] = v
+			tfstate.Outputs[k] = TfOutputV4{
+				Value:     v.Value,
+				Type:      outputType(v.Type, v.Value),
+				Sensitive: v.Sensitive,
+			}
 		}
-	}
-	tfstate.Modules = []*terraform.ModuleState{
-		{
-			Path:      []string{"root"},
-			Resources: map[string]*terraform.ResourceState{},
-			Outputs:   outputs,
-		},
 	}
 	for _, resource := range resources {
-		resourceState := &terraform.ResourceState{
-			Type:     resource.InstanceInfo.Type,
-			Primary:  resource.InstanceState,
-			Provider: "provider." + resource.Provider,
+		attributes := map[string]string{}
+		for k, v := range resource.InstanceState.Attributes {
+			attributes[k] = v
 		}
-		tfstate.Modules[0].Resources[resource.InstanceInfo.Type+"."+resource.ResourceName] = resourceState
+		if _, ok := attributes["id"]; !ok && resource.InstanceState.ID != "" {
+			attributes["id"] = resource.InstanceState.ID
+		}
+
+		tfstate.Resources = append(tfstate.Resources, TfResourceV4{
+			Mode:     "managed",
+			Type:     resource.InstanceInfo.Type,
+			Name:     resource.ResourceName,
+			Provider: ProviderConfigAddress(resource.Provider),
+			Instances: []TfInstanceV4{{
+				SchemaVersion: schemaVersion(resource.InstanceState.Meta),
+				Attributes:    attributes,
+			}},
+		})
 	}
+	sort.Slice(tfstate.Resources, func(i, j int) bool {
+		left := tfstate.Resources[i].Type + "." + tfstate.Resources[i].Name
+		right := tfstate.Resources[j].Type + "." + tfstate.Resources[j].Name
+		return left < right
+	})
 	return tfstate
 }
 
 func PrintTfState(resources []Resource) ([]byte, error) {
 	state := NewTfState(resources)
 	var buf bytes.Buffer
-	err := terraform.WriteState(state, &buf)
-	return buf.Bytes(), err
+	encoder := json.NewEncoder(&buf)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(state); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func outputType(typeName string, value interface{}) interface{} {
+	if typeName != "" {
+		return typeName
+	}
+	switch value.(type) {
+	case bool:
+		return "bool"
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
+		return "number"
+	default:
+		return "string"
+	}
+}
+
+func schemaVersion(meta map[string]interface{}) uint64 {
+	version, ok := meta["schema_version"]
+	if !ok {
+		return 0
+	}
+	switch v := version.(type) {
+	case int:
+		if v < 0 {
+			return 0
+		}
+		return uint64(v)
+	case int64:
+		if v < 0 {
+			return 0
+		}
+		return uint64(v)
+	case uint64:
+		return v
+	case float64:
+		if v < 0 {
+			return 0
+		}
+		return uint64(v)
+	default:
+		return 0
+	}
 }
 
 func RefreshResources(resources []*Resource, provider *providerwrapper.ProviderWrapper, slowProcessingResources [][]*Resource) ([]*Resource, error) {

@@ -20,8 +20,7 @@ import (
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/chenrui333/terraformer/terraformutils/providerwrapper"
-
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 )
 
 func OutputHclFiles(resources []terraformutils.Resource, provider terraformutils.ProviderGenerator, path string, serviceName string, isCompact bool, output string, sort bool) error {
@@ -31,6 +30,7 @@ func OutputHclFiles(resources []terraformutils.Resource, provider terraformutils
 
 	providerConfig := map[string]interface{}{
 		"version": providerwrapper.GetProviderVersion(provider.GetName()),
+		"source":  terraformutils.ProviderSource(provider.GetName()),
 	}
 
 	if providerWithSource, ok := provider.(terraformutils.ProviderWithSource); ok {
@@ -56,11 +56,11 @@ func OutputHclFiles(resources []terraformutils.Resource, provider terraformutils
 	outputsByResource := map[string]map[string]interface{}{}
 
 	for i, r := range resources {
-		outputState := map[string]*terraform.OutputState{}
+		outputState := map[string]*tfcompat.OutputState{}
 		outputsByResource[r.InstanceInfo.Type+"_"+r.ResourceName+"_"+r.GetIDKey()] = map[string]interface{}{
 			"value": "${" + r.InstanceInfo.Type + "." + r.ResourceName + "." + r.GetIDKey() + "}",
 		}
-		outputState[r.InstanceInfo.Type+"_"+r.ResourceName+"_"+r.GetIDKey()] = &terraform.OutputState{
+		outputState[r.InstanceInfo.Type+"_"+r.ResourceName+"_"+r.GetIDKey()] = &tfcompat.OutputState{
 			Type:  "string",
 			Value: r.InstanceState.Attributes[r.GetIDKey()],
 		}
@@ -76,7 +76,7 @@ func OutputHclFiles(resources []terraformutils.Resource, provider terraformutils
 						outputsByResource[linkKey] = map[string]interface{}{
 							"value": "${" + r.InstanceInfo.Type + "." + r.ResourceName + "." + key + "}",
 						}
-						outputState[linkKey] = &terraform.OutputState{
+						outputState[linkKey] = &tfcompat.OutputState{
 							Type:  "string",
 							Value: r.InstanceState.Attributes[ids[1]],
 						}
