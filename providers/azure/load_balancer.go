@@ -22,7 +22,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-03-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/hashicorp/go-azure-helpers/authentication"
 )
 
 type LoadBalancerGenerator struct {
@@ -32,8 +31,8 @@ type LoadBalancerGenerator struct {
 func (g *LoadBalancerGenerator) listLoadBalancerProbes(resourceGroupName string, loadBalancerName string) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 
 	LoadBalancerProbesClient := network.NewLoadBalancerProbesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 	LoadBalancerProbesClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
@@ -77,8 +76,8 @@ func (g *LoadBalancerGenerator) listLoadBalancerProbes(resourceGroupName string,
 func (g *LoadBalancerGenerator) listInboundNatRules(resourceGroupName string, loadBalancerName string) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 
 	InboundNatRulesClient := network.NewInboundNatRulesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 	InboundNatRulesClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
@@ -117,8 +116,8 @@ func (g *LoadBalancerGenerator) listInboundNatRules(resourceGroupName string, lo
 func (g *LoadBalancerGenerator) listLoadBalancerBackendAddressPools(resourceGroupName string, loadBalancerName string) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 
 	LoadBalancerBackendAddressPoolsClient := network.NewLoadBalancerBackendAddressPoolsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 	LoadBalancerBackendAddressPoolsClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
@@ -156,8 +155,8 @@ func (g *LoadBalancerGenerator) listLoadBalancerBackendAddressPools(resourceGrou
 func (g *LoadBalancerGenerator) listAndAddForLoadBalancers() ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 
 	LoadBalancersClient := network.NewLoadBalancersClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 	LoadBalancersClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)

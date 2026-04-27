@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/hashicorp/go-azure-helpers/authentication"
 
 	"github.com/Azure/azure-sdk-for-go/services/web/mgmt/2019-08-01/web"
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -19,8 +18,8 @@ func (g AppServiceGenerator) listApps() ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
 
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	appServiceClient := web.NewAppsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 	appServiceClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
 	var (

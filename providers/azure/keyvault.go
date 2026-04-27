@@ -21,7 +21,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2018-02-14/keyvault"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/hashicorp/go-azure-helpers/authentication"
 )
 
 type KeyVaultGenerator struct {
@@ -74,8 +73,8 @@ func (g KeyVaultGenerator) createResourcesByResourceGroup(ctx context.Context, r
 
 func (g *KeyVaultGenerator) InitResources() error {
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	vaultsClient := keyvault.NewVaultsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 
 	vaultsClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)

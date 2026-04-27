@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/hashicorp/go-azure-sdk/sdk/odata"
 	"github.com/manicminer/hamilton/msgraph"
-	"github.com/manicminer/hamilton/odata"
 )
 
 type AppRoleAssignmentServiceGenerator struct {
@@ -35,7 +35,11 @@ func (az *AppRoleAssignmentServiceGenerator) listResources() ([]msgraph.AppRoleA
 	}
 
 	for _, sp := range *servicePrincipals {
-		appRoleAssignments, _, araErr := client.List(ctx, *sp.ID, odata.Query{})
+		spID := sp.ID()
+		if spID == nil {
+			continue
+		}
+		appRoleAssignments, _, araErr := client.List(ctx, *spID, odata.Query{})
 		if araErr != nil {
 			return nil, araErr
 		}

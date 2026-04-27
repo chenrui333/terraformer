@@ -20,7 +20,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/redis/mgmt/2018-03-01/redis"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/hashicorp/go-azure-helpers/authentication"
 )
 
 type RedisGenerator struct {
@@ -30,8 +29,8 @@ type RedisGenerator struct {
 func (g *RedisGenerator) listRedisServers() ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	RedisClient := redis.NewClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 
 	redisServersIterator, err := RedisClient.ListComplete(ctx)

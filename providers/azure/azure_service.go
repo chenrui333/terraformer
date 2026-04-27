@@ -19,7 +19,6 @@ import (
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/hashicorp/go-azure-helpers/authentication"
 )
 
 type AzureService struct { //nolint
@@ -27,10 +26,10 @@ type AzureService struct { //nolint
 }
 
 func (az *AzureService) getClientArgs() (subscriptionID string, resourceGroup string, authorizer autorest.Authorizer, resourceManagerEndpoint string) {
-	subs := az.Args["config"].(authentication.Config).SubscriptionID
+	subs := az.Args["config"].(providerConfig).SubscriptionID
 	auth := az.Args["authorizer"].(autorest.Authorizer)
 	resg := az.Args["resource_group"].(string)
-	rEndpoint := az.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	rEndpoint := az.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	return subs, resg, auth, rEndpoint
 }
 

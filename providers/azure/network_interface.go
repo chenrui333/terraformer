@@ -21,7 +21,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-08-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/hashicorp/go-azure-helpers/authentication"
 )
 
 type NetworkInterfaceGenerator struct {
@@ -48,8 +47,8 @@ func (g NetworkInterfaceGenerator) createResources(interfaceListResult network.I
 
 func (g *NetworkInterfaceGenerator) InitResources() error {
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	interfacesClient := network.NewInterfacesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 
 	interfacesClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)

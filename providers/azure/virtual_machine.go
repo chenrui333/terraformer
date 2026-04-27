@@ -21,7 +21,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-03-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/hashicorp/go-azure-helpers/authentication"
 )
 
 type VirtualMachineGenerator struct {
@@ -78,8 +77,8 @@ func (g VirtualMachineGenerator) createResources(virtualMachineListResultIterato
 
 func (g *VirtualMachineGenerator) InitResources() error {
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	vmClient := compute.NewVirtualMachinesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 
 	vmClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)

@@ -21,7 +21,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-12-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/hashicorp/go-azure-helpers/authentication"
 )
 
 type ScaleSetGenerator struct {
@@ -76,8 +75,8 @@ func (g ScaleSetGenerator) createResources(ctx context.Context, client compute.V
 
 func (g *ScaleSetGenerator) InitResources() error {
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	ScaleSetClient := compute.NewVirtualMachineScaleSetsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 
 	ScaleSetClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)

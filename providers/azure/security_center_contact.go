@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/hashicorp/go-azure-helpers/authentication"
 
 	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v3.0/security"
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -17,8 +16,8 @@ type SecurityCenterContactGenerator struct {
 func (g SecurityCenterContactGenerator) listContacts() ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 
 	securityCenterContactClient := security.NewContactsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 	securityCenterContactClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)

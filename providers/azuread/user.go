@@ -5,8 +5,8 @@ import (
 	"context"
 	"log"
 
+	"github.com/hashicorp/go-azure-sdk/sdk/odata"
 	"github.com/manicminer/hamilton/msgraph"
-	"github.com/manicminer/hamilton/odata"
 )
 
 type UserServiceGenerator struct {
@@ -37,7 +37,7 @@ func (az *UserServiceGenerator) listResources() ([]msgraph.User, error) {
 }
 
 func (az *UserServiceGenerator) appendResource(resource *msgraph.User) {
-	id := resource.ID
+	id := resource.ID()
 	az.appendSimpleResource(*id, *resource.DisplayName, "azuread_user")
 }
 

@@ -25,7 +25,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/preview/sql/mgmt/2017-03-01-preview/sql"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/hashicorp/go-azure-helpers/authentication"
 )
 
 type DatabasesGenerator struct {
@@ -34,8 +33,8 @@ type DatabasesGenerator struct {
 
 func (g *DatabasesGenerator) getMariaDBServers() ([]mariadb.Server, error) {
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	Authorizer := g.Args["authorizer"].(autorest.Authorizer)
 
 	Client := mariadb.NewServersClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
@@ -79,8 +78,8 @@ func (g *DatabasesGenerator) createMariaDBServerResources(servers []mariadb.Serv
 func (g *DatabasesGenerator) createMariaDBConfigurationResources(servers []mariadb.Server) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	Authorizer := g.Args["authorizer"].(autorest.Authorizer)
 
 	Client := mariadb.NewConfigurationsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
@@ -112,8 +111,8 @@ func (g *DatabasesGenerator) createMariaDBConfigurationResources(servers []maria
 func (g *DatabasesGenerator) createMariaDBDatabaseResources(servers []mariadb.Server) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	Authorizer := g.Args["authorizer"].(autorest.Authorizer)
 
 	Client := mariadb.NewDatabasesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
@@ -145,8 +144,8 @@ func (g *DatabasesGenerator) createMariaDBDatabaseResources(servers []mariadb.Se
 func (g *DatabasesGenerator) createMariaDBFirewallRuleResources(servers []mariadb.Server) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	Authorizer := g.Args["authorizer"].(autorest.Authorizer)
 
 	Client := mariadb.NewFirewallRulesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
@@ -177,8 +176,8 @@ func (g *DatabasesGenerator) createMariaDBFirewallRuleResources(servers []mariad
 func (g *DatabasesGenerator) createMariaDBVirtualNetworkRuleResources(servers []mariadb.Server) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	Authorizer := g.Args["authorizer"].(autorest.Authorizer)
 
 	Client := mariadb.NewVirtualNetworkRulesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
@@ -212,8 +211,8 @@ func (g *DatabasesGenerator) createMariaDBVirtualNetworkRuleResources(servers []
 
 func (g *DatabasesGenerator) getMySQLServers() ([]mysql.Server, error) {
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	Authorizer := g.Args["authorizer"].(autorest.Authorizer)
 
 	Client := mysql.NewServersClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
@@ -258,8 +257,8 @@ func (g *DatabasesGenerator) createMySQLServerResources(servers []mysql.Server) 
 func (g *DatabasesGenerator) createMySQLConfigurationResources(servers []mysql.Server) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	Authorizer := g.Args["authorizer"].(autorest.Authorizer)
 
 	Client := mysql.NewConfigurationsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
@@ -291,8 +290,8 @@ func (g *DatabasesGenerator) createMySQLConfigurationResources(servers []mysql.S
 func (g *DatabasesGenerator) createMySQLDatabaseResources(servers []mysql.Server) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	Authorizer := g.Args["authorizer"].(autorest.Authorizer)
 
 	Client := mysql.NewDatabasesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
@@ -323,8 +322,8 @@ func (g *DatabasesGenerator) createMySQLDatabaseResources(servers []mysql.Server
 func (g *DatabasesGenerator) createMySQLFirewallRuleResources(servers []mysql.Server) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	Authorizer := g.Args["authorizer"].(autorest.Authorizer)
 
 	Client := mysql.NewFirewallRulesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
@@ -356,8 +355,8 @@ func (g *DatabasesGenerator) createMySQLFirewallRuleResources(servers []mysql.Se
 func (g *DatabasesGenerator) createMySQLVirtualNetworkRuleResources(servers []mysql.Server) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	Authorizer := g.Args["authorizer"].(autorest.Authorizer)
 
 	Client := mysql.NewVirtualNetworkRulesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
@@ -394,8 +393,8 @@ func (g *DatabasesGenerator) createMySQLVirtualNetworkRuleResources(servers []my
 
 func (g *DatabasesGenerator) getPostgreSQLServers() ([]postgresql.Server, error) {
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	Authorizer := g.Args["authorizer"].(autorest.Authorizer)
 
 	Client := postgresql.NewServersClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
@@ -441,8 +440,8 @@ func (g *DatabasesGenerator) createPostgreSQLServerResources(servers []postgresq
 func (g *DatabasesGenerator) createPostgreSQLDatabaseResources(servers []postgresql.Server) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	Authorizer := g.Args["authorizer"].(autorest.Authorizer)
 
 	Client := postgresql.NewDatabasesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
@@ -473,8 +472,8 @@ func (g *DatabasesGenerator) createPostgreSQLDatabaseResources(servers []postgre
 func (g *DatabasesGenerator) createPostgreSQLConfigurationResources(servers []postgresql.Server) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	Authorizer := g.Args["authorizer"].(autorest.Authorizer)
 	Client := postgresql.NewConfigurationsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 	Client.Authorizer = Authorizer
@@ -504,8 +503,8 @@ func (g *DatabasesGenerator) createPostgreSQLConfigurationResources(servers []po
 func (g *DatabasesGenerator) createPostgreSQLFirewallRuleResources(servers []postgresql.Server) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	Authorizer := g.Args["authorizer"].(autorest.Authorizer)
 
 	Client := postgresql.NewFirewallRulesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
@@ -536,8 +535,8 @@ func (g *DatabasesGenerator) createPostgreSQLFirewallRuleResources(servers []pos
 func (g *DatabasesGenerator) createPostgreSQLVirtualNetworkRuleResources(servers []postgresql.Server) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	Authorizer := g.Args["authorizer"].(autorest.Authorizer)
 
 	Client := postgresql.NewVirtualNetworkRulesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
@@ -573,8 +572,8 @@ func (g *DatabasesGenerator) createPostgreSQLVirtualNetworkRuleResources(servers
 func (g *DatabasesGenerator) getSQLServers() ([]sql.Server, error) {
 	var servers []sql.Server
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	Authorizer := g.Args["authorizer"].(autorest.Authorizer)
 
 	Client := sql.NewServersClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
@@ -625,8 +624,8 @@ func (g *DatabasesGenerator) createSQLServerResources(servers []sql.Server) ([]t
 func (g *DatabasesGenerator) createSQLDatabaseResources(servers []sql.Server) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	Authorizer := g.Args["authorizer"].(autorest.Authorizer)
 
 	Client := sql.NewDatabasesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
@@ -657,8 +656,8 @@ func (g *DatabasesGenerator) createSQLDatabaseResources(servers []sql.Server) ([
 func (g *DatabasesGenerator) createSQLFirewallRuleResources(servers []sql.Server) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	Authorizer := g.Args["authorizer"].(autorest.Authorizer)
 
 	Client := sql.NewFirewallRulesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
@@ -689,8 +688,8 @@ func (g *DatabasesGenerator) createSQLFirewallRuleResources(servers []sql.Server
 func (g *DatabasesGenerator) createSQLVirtualNetworkRuleResources(servers []sql.Server) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	Authorizer := g.Args["authorizer"].(autorest.Authorizer)
 
 	Client := sql.NewVirtualNetworkRulesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
@@ -726,8 +725,8 @@ func (g *DatabasesGenerator) createSQLVirtualNetworkRuleResources(servers []sql.
 func (g *DatabasesGenerator) createSQLElasticPoolResources(servers []sql.Server) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	Authorizer := g.Args["authorizer"].(autorest.Authorizer)
 
 	Client := sql.NewElasticPoolsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
@@ -758,8 +757,8 @@ func (g *DatabasesGenerator) createSQLElasticPoolResources(servers []sql.Server)
 func (g *DatabasesGenerator) createSQLFailoverResources(servers []sql.Server) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	Authorizer := g.Args["authorizer"].(autorest.Authorizer)
 
 	Client := sql.NewFailoverGroupsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
@@ -797,8 +796,8 @@ func (g *DatabasesGenerator) createSQLFailoverResources(servers []sql.Server) ([
 func (g *DatabasesGenerator) createSQLADAdministratorResources(servers []sql.Server) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	Authorizer := g.Args["authorizer"].(autorest.Authorizer)
 
 	Client := sql.NewServerAzureADAdministratorsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)

@@ -21,7 +21,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/hashicorp/go-azure-helpers/authentication"
 )
 
 type ApplicationGatewayGenerator struct {
@@ -48,8 +47,8 @@ func (g ApplicationGatewayGenerator) createResources(ctx context.Context, iterat
 
 func (g *ApplicationGatewayGenerator) InitResources() error {
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	applicationGatewaysClient := network.NewApplicationGatewaysClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 
 	applicationGatewaysClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)

@@ -21,7 +21,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-03-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/hashicorp/go-azure-helpers/authentication"
 )
 
 type PublicIPGenerator struct {
@@ -31,8 +30,8 @@ type PublicIPGenerator struct {
 func (g *PublicIPGenerator) listAndAddForPublicIPAddress() ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	PublicIPAddressesClient := network.NewPublicIPAddressesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 	PublicIPAddressesClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
 
@@ -69,8 +68,8 @@ func (g *PublicIPGenerator) listAndAddForPublicIPAddress() ([]terraformutils.Res
 func (g *PublicIPGenerator) listAndAddForPublicIPPrefix() ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
-	subscriptionID := g.Args["config"].(authentication.Config).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(authentication.Config).CustomResourceManagerEndpoint
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
 	PublicIPPrefixesClient := network.NewPublicIPPrefixesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
 	PublicIPPrefixesClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
 
