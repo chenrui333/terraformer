@@ -5,8 +5,12 @@ package tfcompat
 import (
 	"strings"
 
-	"github.com/hashicorp/terraform/configs/hcl2shim"
 	"github.com/zclconf/go-cty/cty"
+)
+
+const (
+	TerraformVersion     = "0.15.0"
+	UnknownVariableValue = "74D93920-ED26-11E3-AC10-0800200C9A66"
 )
 
 type InstanceInfo struct {
@@ -50,7 +54,7 @@ type OutputState struct {
 }
 
 func NewInstanceStateShimmedFromValue(state cty.Value, schemaVersion int) *InstanceState {
-	attributes := hcl2shim.FlatmapValueFromHCL2(state)
+	attributes := FlatmapValueFromHCL2(state)
 	return &InstanceState{
 		ID:         attributes["id"],
 		Attributes: attributes,
@@ -70,5 +74,5 @@ func (s *InstanceState) AttrsAsObjectValue(ty cty.Type) (cty.Value, error) {
 	if s.ID != "" {
 		s.Attributes["id"] = s.ID
 	}
-	return hcl2shim.HCL2ValueFromFlatmap(s.Attributes, ty)
+	return HCL2ValueFromFlatmap(s.Attributes, ty)
 }

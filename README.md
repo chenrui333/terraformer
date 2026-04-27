@@ -318,6 +318,13 @@ If you have improvements or fixes, we would love to have your contributions.
 Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for more information on the process we would like
 contributors to follow.
 
+## License
+
+Terraformer is primarily licensed under the Apache License 2.0 in [LICENSE](LICENSE).
+The Terraform compatibility code under `terraformutils/tfcompat` includes files
+licensed under MPL-2.0; see [LICENSE-MPL-2.0](LICENSE-MPL-2.0) and the per-file
+SPDX headers.
+
 ## Developing
 
 Terraformer was built so you can easily add new providers of any kind.
