@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:revive // lint triage: legacy provider/API/security baseline is tracked in #175.
 package aws
 
 import (
 	"context"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aws/aws-sdk-go-v2/service/glue"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 type GlueGenerator struct {

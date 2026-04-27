@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package heroku
 
 import (
@@ -266,7 +267,6 @@ func (g AppGenerator) createAddonAttachmentResources(ctx context.Context, svc *h
 }
 
 func (g AppGenerator) createAppWebhookResources(ctx context.Context, svc *heroku.Service, app heroku.App) ([]terraformutils.Resource, error) {
-
 	appWebhooks, err := svc.AppWebhookList(ctx, app.ID, &heroku.ListRange{Field: "id", Max: 1000})
 	if err != nil {
 		return []terraformutils.Resource{}, fmt.Errorf("Error listing webhooks for app '%s': %w", app.ID, err)

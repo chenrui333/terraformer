@@ -29,9 +29,7 @@ func (az *UserServiceGenerator) listResources() ([]msgraph.User, error) {
 		return nil, err
 	}
 
-	for _, user := range *users {
-		resources = append(resources, user)
-	}
+	resources = append(resources, *users...)
 
 	return resources, nil
 }
@@ -42,7 +40,6 @@ func (az *UserServiceGenerator) appendResource(resource *msgraph.User) {
 }
 
 func (az *UserServiceGenerator) InitResources() error {
-
 	resources, err := az.listResources()
 	if err != nil {
 		return err
@@ -55,7 +52,6 @@ func (az *UserServiceGenerator) InitResources() error {
 }
 
 func (az *UserServiceGenerator) GetResourceConnections() map[string][]string {
-
 	return map[string][]string{
 		"user": {"id"},
 	}

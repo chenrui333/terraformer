@@ -15,9 +15,9 @@
 package alicloud
 
 import (
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 // VSwitchGenerator Struct for generating AliCloud Elastic Compute Service
@@ -27,8 +27,8 @@ type VSwitchGenerator struct {
 
 func resourceFromVSwitchResponse(vswitch vpc.VSwitch) terraformutils.Resource {
 	return terraformutils.NewResource(
-		vswitch.VSwitchId, // nolint
-		vswitch.VSwitchId+"__"+vswitch.VSwitchName, // nolint
+		vswitch.VSwitchId,
+		vswitch.VSwitchId+"__"+vswitch.VSwitchName,
 		"alicloud_vswitch",
 		"alicloud",
 		map[string]string{},

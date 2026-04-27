@@ -11,7 +11,6 @@ type GroupGenerator struct {
 }
 
 func (az *GroupGenerator) listResources() ([]graph.GraphGroup, error) {
-
 	client, fail := az.getGraphClient()
 	if fail != nil {
 		return nil, fail
@@ -33,13 +32,11 @@ func (az *GroupGenerator) listResources() ([]graph.GraphGroup, error) {
 }
 
 func (az *GroupGenerator) appendResource(resource *graph.GraphGroup) {
-
 	resourceName := firstNonEmpty(resource.DisplayName, resource.MailAddress, resource.OriginId)
 	az.appendSimpleResource(*resource.Descriptor, *resourceName, "azuredevops_group")
 }
 
 func (az *GroupGenerator) InitResources() error {
-
 	resources, err := az.listResources()
 	if err != nil {
 		return err
@@ -51,7 +48,6 @@ func (az *GroupGenerator) InitResources() error {
 }
 
 func (az *GroupGenerator) GetResourceConnections() map[string][]string {
-
 	return map[string][]string{
 		"project": {"scope", "id"},
 	}

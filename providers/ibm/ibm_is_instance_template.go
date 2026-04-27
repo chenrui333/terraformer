@@ -18,9 +18,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/IBM/go-sdk-core/v4/core"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 // InstanceTemplateGenerator ...
@@ -62,7 +62,7 @@ func (g *InstanceTemplateGenerator) InitResources() error {
 	options := &vpcv1.ListInstanceTemplatesOptions{}
 	templates, response, err := vpcclient.ListInstanceTemplates(options)
 	if err != nil {
-		return fmt.Errorf("Error Fetching Instance Templates %s\n%s", err, response)
+		return fmt.Errorf("error fetching Instance Templates %w\n%s", err, response)
 	}
 
 	for _, template := range templates.Templates {

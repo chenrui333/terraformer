@@ -32,7 +32,7 @@ func newCmdRabbitMQImporter(options ImportOptions) *cobra.Command {
 		Use:   "rabbitmq",
 		Short: "Import current state to Terraform configuration from RabbitMQ",
 		Long:  "Import current state to Terraform configuration from RabbitMQ",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			endpoint := os.Getenv("RABBITMQ_SERVER_URL")
 			if len(endpoint) == 0 {
 				endpoint = defaultRabbitMQEndpoint

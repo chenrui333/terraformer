@@ -60,15 +60,14 @@ func (g *TransitGatewayGenerator) getTransitGatewayRouteTables(svc *ec2.Client) 
 			// Default route table are automatically created on the tgw creation
 			if *tgwrt.DefaultAssociationRouteTable {
 				continue
-			} else {
-				g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-					StringValue(tgwrt.TransitGatewayRouteTableId),
-					StringValue(tgwrt.TransitGatewayRouteTableId),
-					"aws_ec2_transit_gateway_route_table",
-					"aws",
-					tgwAllowEmptyValues,
-				))
 			}
+			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
+				StringValue(tgwrt.TransitGatewayRouteTableId),
+				StringValue(tgwrt.TransitGatewayRouteTableId),
+				"aws_ec2_transit_gateway_route_table",
+				"aws",
+				tgwAllowEmptyValues,
+			))
 		}
 	}
 	return nil

@@ -58,7 +58,7 @@ func newCmdPlanImporter(options ImportOptions) *cobra.Command {
 		Short: "Import planned state to Terraform configuration",
 		Long:  "Import planned state to Terraform configuration",
 		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			plan, err := LoadPlanfile(args[0])
 			if err != nil {
 				return err

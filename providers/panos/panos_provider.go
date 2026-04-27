@@ -36,7 +36,7 @@ func (p *PanosProvider) GetName() string {
 	return "panos"
 }
 
-func (p *PanosProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *PanosProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{}
 }
 
@@ -66,7 +66,6 @@ func (p *PanosProvider) InitService(serviceName string, verbose bool) error {
 }
 
 func (p *PanosProvider) GetSupportedService() map[string]terraformutils.ServiceGenerator {
-
 	return map[string]terraformutils.ServiceGenerator{
 		"firewall_device_config": &FirewallDeviceConfigGenerator{},
 		"firewall_networking":    &FirewallNetworkingGenerator{},
@@ -81,6 +80,5 @@ func (p *PanosProvider) GetSupportedService() map[string]terraformutils.ServiceG
 }
 
 func (PanosProvider) GetResourceConnections() map[string]map[string][]string {
-
 	return map[string]map[string][]string{}
 }

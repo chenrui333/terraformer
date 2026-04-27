@@ -27,7 +27,7 @@ type FastlyProvider struct { //nolint
 	apiKey     string
 }
 
-func (p *FastlyProvider) Init(args []string) error {
+func (p *FastlyProvider) Init(_ []string) error {
 	if os.Getenv("FASTLY_API_KEY") == "" {
 		return errors.New("set FASTLY_API_KEY env var")
 	}
@@ -45,7 +45,7 @@ func (p *FastlyProvider) GetName() string {
 	return "fastly"
 }
 
-func (p *FastlyProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *FastlyProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{
 		"provider": map[string]interface{}{
 			"fastly": map[string]interface{}{

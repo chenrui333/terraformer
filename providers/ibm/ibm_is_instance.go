@@ -12,15 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package ibm
 
 import (
 	"fmt"
 	"os"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/IBM/go-sdk-core/v4/core"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 // InstanceGenerator ...
@@ -119,13 +120,13 @@ func (g *InstanceGenerator) InitResources() error {
 		if rg := g.Args["resource_group"].(string); rg != "" {
 			rg, err = GetResourceGroupID(apiKey, rg, region)
 			if err != nil {
-				return fmt.Errorf("Error Fetching Resource Group Id %s", err)
+				return fmt.Errorf("error fetching Resource Group Id %w", err)
 			}
 			options.ResourceGroupID = &rg
 		}
 		instances, response, err := vpcclient.ListInstances(options)
 		if err != nil {
-			return fmt.Errorf("Error Fetching Instances %s\n%s", err, response)
+			return fmt.Errorf("error fetching Instances %w\n%s", err, response)
 		}
 		start = GetNext(instances.Next)
 		allrecs = append(allrecs, instances.Instances...)
@@ -143,7 +144,7 @@ func (g *InstanceGenerator) InitResources() error {
 
 		volumeAtts, response, err := vpcclient.ListInstanceVolumeAttachments(listVPCInsVolOptions)
 		if err != nil {
-			return fmt.Errorf("fetching vpc Instance volume Attachments %s\n%s", err, response)
+			return fmt.Errorf("fetching vpc Instance volume Attachments %w\n%s", err, response)
 		}
 		allrecs := []vpcv1.VolumeAttachment{}
 		allrecs = append(allrecs, volumeAtts.VolumeAttachments...)

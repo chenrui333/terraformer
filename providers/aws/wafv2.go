@@ -17,9 +17,9 @@ package aws
 import (
 	"context"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aws/aws-sdk-go-v2/service/wafv2"
 	"github.com/aws/aws-sdk-go-v2/service/wafv2/types"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 var wafv2AllowEmptyValues = []string{"tags."}

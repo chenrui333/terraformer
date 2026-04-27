@@ -28,7 +28,7 @@ type XenorchestraProvider struct { //nolint
 	password string
 }
 
-func (p *XenorchestraProvider) Init(args []string) error {
+func (p *XenorchestraProvider) Init(_ []string) error {
 	if os.Getenv("XOA_URL") == "" {
 		return errors.New("set XOA_URL env var")
 	}
@@ -51,7 +51,7 @@ func (p *XenorchestraProvider) GetName() string {
 	return "xenorchestra"
 }
 
-func (p *XenorchestraProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *XenorchestraProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{
 		"provider": map[string]interface{}{
 			"xenorchestra": map[string]interface{}{

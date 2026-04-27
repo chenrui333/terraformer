@@ -24,7 +24,7 @@ type CloudflareProvider struct { //nolint
 	terraformutils.Provider
 }
 
-func (p *CloudflareProvider) Init(args []string) error {
+func (p *CloudflareProvider) Init(_ []string) error {
 	return nil
 }
 
@@ -32,7 +32,7 @@ func (p *CloudflareProvider) GetName() string {
 	return "cloudflare"
 }
 
-func (p *CloudflareProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *CloudflareProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{}
 }
 

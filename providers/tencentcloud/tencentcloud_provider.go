@@ -199,7 +199,7 @@ func (p *TencentCloudProvider) GetResourceConnections() map[string]map[string][]
 	}
 }
 
-func (p *TencentCloudProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *TencentCloudProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{
 		"provider": map[string]interface{}{
 			p.GetName(): map[string]interface{}{

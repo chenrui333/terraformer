@@ -90,7 +90,6 @@ func (g *RouteTableGenerator) createRouteTablesResources(svc *ec2.Client) []terr
 						rtbAllowEmptyValues,
 						map[string]interface{}{},
 					))
-
 				}
 			}
 		}

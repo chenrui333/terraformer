@@ -15,9 +15,9 @@
 package alicloud
 
 import (
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 // RdsGenerator Struct for generating AliCloud Elastic Compute Service
@@ -27,8 +27,8 @@ type RdsGenerator struct {
 
 func resourceFromrdsResponse(rds rds.DBInstance) terraformutils.Resource {
 	return terraformutils.NewResource(
-		rds.DBInstanceId, // nolint
-		rds.DBInstanceId+"__"+rds.DBInstanceDescription, // nolint
+		rds.DBInstanceId,
+		rds.DBInstanceId+"__"+rds.DBInstanceDescription,
 		"alicloud_db_instance",
 		"alicloud",
 		map[string]string{},

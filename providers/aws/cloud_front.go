@@ -17,8 +17,8 @@ package aws
 import (
 	"context"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aws/aws-sdk-go-v2/service/cloudfront"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 var cloudFrontAllowEmptyValues = []string{"tags."}
@@ -66,7 +66,6 @@ func (g *CloudFrontGenerator) loadDistribution(svc *cloudfront.Client) error {
 			)
 			r.IgnoreKeys = append(r.IgnoreKeys, "^active_trusted_signers.(.*)")
 			g.Resources = append(g.Resources, r)
-
 		}
 	}
 	return nil
@@ -123,7 +122,6 @@ func (g *CloudFrontGenerator) PostConvertHook() error {
 				}
 			}
 		}
-
 	}
 	return nil
 }

@@ -56,7 +56,7 @@ func (p *IBMProvider) GetName() string {
 	return "ibm"
 }
 
-func (p *IBMProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *IBMProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{
 		"provider": map[string]interface{}{
 			"ibm": map[string]interface{}{

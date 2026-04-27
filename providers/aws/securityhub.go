@@ -18,8 +18,8 @@ import (
 	"context"
 	"strings"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aws/aws-sdk-go-v2/service/securityhub"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 var securityhubAllowEmptyValues = []string{"tags."}

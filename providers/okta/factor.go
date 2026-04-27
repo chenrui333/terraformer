@@ -32,7 +32,7 @@ func (g FactorGenerator) createResources(ctx context.Context, factorList []*okta
 		if factor.Status == "ACTIVE" {
 			resources = append(resources, terraformutils.NewResource(
 				factor.Id,
-				"factor_"+normalizeResourceNameWithRandom(factor.Id, true),
+				"factor_"+normalizeResourceNameWithRandom(factor.Id),
 				"okta_factor",
 				"okta",
 				map[string]string{
@@ -49,7 +49,7 @@ func (g FactorGenerator) createResources(ctx context.Context, factorList []*okta
 					if factorProfile != nil {
 						resources = append(resources, terraformutils.NewResource(
 							factorProfile.ID,
-							"factor_totp_"+normalizeResourceNameWithRandom(factorProfile.Name, true),
+							"factor_totp_"+normalizeResourceNameWithRandom(factorProfile.Name),
 							"okta_factor_totp",
 							"okta",
 							map[string]string{},

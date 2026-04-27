@@ -40,20 +40,20 @@ type DatadogProvider struct { //nolint
 
 // Init check env params and initialize API Client
 func (p *DatadogProvider) Init(args []string) error {
-
-	if args[3] != "" {
+	switch {
+	case args[3] != "":
 		validate, validateErr := strconv.ParseBool(args[3])
 		if validateErr != nil {
-			return fmt.Errorf(`invalid validate arg : %v`, validateErr)
+			return fmt.Errorf(`invalid validate arg : %w`, validateErr)
 		}
 		p.validate = validate
-	} else if os.Getenv("DATADOG_VALIDATE") != "" {
+	case os.Getenv("DATADOG_VALIDATE") != "":
 		validate, validateErr := strconv.ParseBool(os.Getenv("DATADOG_VALIDATE"))
 		if validateErr != nil {
-			return fmt.Errorf(`invalid DATADOG_VALIDATE env var : %v`, validateErr)
+			return fmt.Errorf(`invalid DATADOG_VALIDATE env var : %w`, validateErr)
 		}
 		p.validate = validate
-	} else {
+	default:
 		p.validate = true
 	}
 
@@ -99,7 +99,7 @@ func (p *DatadogProvider) Init(args []string) error {
 	if p.apiURL != "" {
 		parsedAPIURL, parseErr := url.Parse(p.apiURL)
 		if parseErr != nil {
-			return fmt.Errorf(`invalid API Url : %v`, parseErr)
+			return fmt.Errorf(`invalid API Url : %w`, parseErr)
 		}
 		if parsedAPIURL.Host == "" || parsedAPIURL.Scheme == "" {
 			return fmt.Errorf(`missing protocol or host : %v`, p.apiURL)
@@ -294,6 +294,6 @@ func (p DatadogProvider) GetResourceConnections() map[string]map[string][]string
 }
 
 // GetProviderData return map of provider data for Datadog
-func (p DatadogProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p DatadogProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{}
 }

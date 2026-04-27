@@ -30,7 +30,6 @@ type AzureADProvider struct { //nolint
 }
 
 func (p *AzureADProvider) setEnvConfig() error {
-
 	tenantID := os.Getenv("ARM_TENANT_ID")
 	if tenantID == "" {
 		return errors.New("please set ARM_TENANT_ID in your environment")
@@ -49,7 +48,7 @@ func (p *AzureADProvider) setEnvConfig() error {
 	return nil
 }
 
-func (p *AzureADProvider) Init(args []string) error {
+func (p *AzureADProvider) Init(_ []string) error {
 	err := p.setEnvConfig()
 	if err != nil {
 		log.Println(err.Error())
@@ -63,7 +62,7 @@ func (p *AzureADProvider) GetName() string {
 	return "azuread"
 }
 
-func (p *AzureADProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *AzureADProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{}
 }
 

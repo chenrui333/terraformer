@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package ibm
 
 import (
@@ -64,7 +65,7 @@ func fetchUserDetails(sess *session.Session, generation int) (*UserConfig, error
 		bluemixToken = config.IAMAccessToken
 	}
 
-	token, err := jwt.Parse(bluemixToken, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.Parse(bluemixToken, func(_ *jwt.Token) (interface{}, error) {
 		return "", nil
 	})
 	// TODO validate with key

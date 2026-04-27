@@ -18,9 +18,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/IBM/go-sdk-core/v4/core"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 // VPCGenerator ...
@@ -92,13 +92,13 @@ func (g *VPCRoutingTableGenerator) InitResources() error {
 		if rg := g.Args["resource_group"].(string); rg != "" {
 			rg, err = GetResourceGroupID(apiKey, rg, region)
 			if err != nil {
-				return fmt.Errorf("Error Fetching Resource Group Id %s", err)
+				return fmt.Errorf("error fetching Resource Group Id %w", err)
 			}
 			listVpcsOptions.ResourceGroupID = &rg
 		}
 		vpcs, response, err := vpcclient.ListVpcs(listVpcsOptions)
 		if err != nil {
-			return fmt.Errorf("Error Fetching vpcs %s\n%s", err, response)
+			return fmt.Errorf("error fetching vpcs %w\n%s", err, response)
 		}
 		start = GetNext(vpcs.Next)
 		allrecs = append(allrecs, vpcs.Vpcs...)
@@ -108,14 +108,13 @@ func (g *VPCRoutingTableGenerator) InitResources() error {
 	}
 
 	for _, vpc := range allrecs {
-
 		// routing table
 		listVPCRoutingTablesOptions := &vpcv1.ListVPCRoutingTablesOptions{
 			VPCID: vpc.ID,
 		}
 		tables, response, err := vpcclient.ListVPCRoutingTables(listVPCRoutingTablesOptions)
 		if err != nil {
-			return fmt.Errorf("Error Fetching vpc routing tables %s\n%s", err, response)
+			return fmt.Errorf("error fetching vpc routing tables %w\n%s", err, response)
 		}
 		for _, table := range tables.RoutingTables {
 			g.Resources = append(g.Resources, g.loadVPCRouteTableResources(*vpc.ID, *table.ID, *table.Name))
@@ -125,7 +124,7 @@ func (g *VPCRoutingTableGenerator) InitResources() error {
 			}
 			tableroutes, response, err := vpcclient.ListVPCRoutingTableRoutes(listVPCRoutingTableRoutesOptions)
 			if err != nil {
-				return fmt.Errorf("Error Fetching vpc route table routes %s\n%s", err, response)
+				return fmt.Errorf("error fetching vpc route table routes %w\n%s", err, response)
 			}
 			for _, tableroute := range tableroutes.Routes {
 				g.Resources = append(g.Resources, g.loadVPCRouteTableRouteResources(*vpc.ID, *table.ID, *tableroute.ID, *tableroute.Name))

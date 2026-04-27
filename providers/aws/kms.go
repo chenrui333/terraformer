@@ -18,9 +18,9 @@ import (
 	"context"
 	"log"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/kms/types"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 var kmsAllowEmptyValues = []string{"tags."}

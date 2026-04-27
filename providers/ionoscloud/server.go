@@ -69,7 +69,6 @@ func (g *ServerGenerator) InitResources() error {
 
 // isServerValid skips servers that would not create a valid tf plan.
 func isServerValid(server ionoscloud.Server, datacenterID string) bool {
-
 	if server.Properties == nil || server.Properties.Name == nil {
 		log.Printf(
 			"[WARNING] 'nil' values in the response for server with ID %v, datacenter ID: %v, skipping this resource.\n",

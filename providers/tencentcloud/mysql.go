@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:gosec // lint triage: legacy provider/API/security baseline is tracked in #175.
 package tencentcloud
 
 import (
@@ -67,7 +68,8 @@ func (g *MysqlGenerator) InitResources() error {
 	}
 
 	for _, instance := range allInstances {
-		if *instance.InstanceType == 1 {
+		switch *instance.InstanceType {
+		case 1:
 			resource := terraformutils.NewResource(
 				*instance.InstanceId,
 				*instance.InstanceName+"_"+*instance.InstanceId,
@@ -81,7 +83,7 @@ func (g *MysqlGenerator) InitResources() error {
 				map[string]interface{}{},
 			)
 			g.Resources = append(g.Resources, resource)
-		} else if *instance.InstanceType == 3 {
+		case 3:
 			resource := terraformutils.NewResource(
 				*instance.InstanceId,
 				*instance.InstanceName+"_"+*instance.InstanceId,

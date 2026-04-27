@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package azure
 
 import (
@@ -85,7 +86,6 @@ func (az *NetworkWatcherGenerator) appendPacketCaptures(parent *network.Watcher,
 }
 
 func (az *NetworkWatcherGenerator) InitResources() error {
-
 	resources, err := az.listResources()
 	if err != nil {
 		return err

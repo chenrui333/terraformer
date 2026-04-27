@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,7 +28,7 @@ func newCmdGoogleImporter(options ImportOptions) *cobra.Command {
 		Use:   "google",
 		Short: "Import current state to Terraform configuration from Google Cloud",
 		Long:  "Import current state to Terraform configuration from Google Cloud",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			originalPathPattern := options.PathPattern
 			for _, project := range options.Projects {
 				for _, region := range options.Regions {

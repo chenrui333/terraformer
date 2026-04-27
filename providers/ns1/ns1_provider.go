@@ -26,7 +26,7 @@ type Ns1Provider struct { //nolint
 	apiKey string
 }
 
-func (p *Ns1Provider) Init(args []string) error {
+func (p *Ns1Provider) Init(_ []string) error {
 	if os.Getenv("NS1_APIKEY") == "" {
 		return errors.New("set NS1_APIKEY env var")
 	}
@@ -39,7 +39,7 @@ func (p *Ns1Provider) GetName() string {
 	return "ns1"
 }
 
-func (p *Ns1Provider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *Ns1Provider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{}
 }
 

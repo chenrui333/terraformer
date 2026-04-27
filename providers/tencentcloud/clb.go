@@ -151,7 +151,6 @@ func (g *ClbGenerator) loadListener(client *clb.Client, loadBalancerID, resource
 				g.Resources = append(g.Resources, attachmentResource)
 			}
 		}
-
 	}
 
 	return nil

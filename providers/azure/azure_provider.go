@@ -171,7 +171,7 @@ func (p *AzureProvider) GetName() string {
 	return "azurerm"
 }
 
-func (p *AzureProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *AzureProvider) GetProviderData(_ ...string) map[string]interface{} {
 	version := providerwrapper.GetProviderVersion(p.GetName())
 	if strings.Contains(version, "v2.") {
 		return map[string]interface{}{

@@ -1,3 +1,4 @@
+//nolint:revive // lint triage: legacy provider/API/security baseline is tracked in #175.
 package myrasec
 
 import (
@@ -5,8 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	mgo "github.com/Myra-Security-GmbH/myrasec-go/v2"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 // MyrasecService ...

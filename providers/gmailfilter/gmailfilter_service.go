@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:gosec,staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package gmailfilter
 
 import (
@@ -65,7 +66,7 @@ func (s *GmailfilterService) validateCredentials(creds string) error {
 		return nil
 	}
 	if _, err := googleoauth.CredentialsFromJSON(context.Background(), []byte(creds)); err != nil {
-		return fmt.Errorf("JSON credentials in %q are not valid: %s", creds, err)
+		return fmt.Errorf("JSON credentials in %q are not valid: %w", creds, err)
 	}
 	return nil
 }
@@ -77,12 +78,12 @@ func (s *GmailfilterService) getTokenSource(creds string, impersonatedEmailAddr 
 		}
 		contents, _, err := terraformutils.ReadPathOrContents(creds)
 		if err != nil {
-			return nil, fmt.Errorf("Error loading credentials: %s", err)
+			return nil, fmt.Errorf("error loading credentials: %w", err)
 		}
 
 		var serviceAccount serviceAccountFile
 		if err := parseJSON(&serviceAccount, contents); err != nil {
-			return nil, fmt.Errorf("error parsing credentials %q: %s", contents, err)
+			return nil, fmt.Errorf("error parsing credentials %q: %w", contents, err)
 		}
 
 		conf := jwt.Config{

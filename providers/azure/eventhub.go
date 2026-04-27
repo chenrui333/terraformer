@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package azure
 
 import (
@@ -125,7 +126,6 @@ func (az *EventHubGenerator) appendAuthorizationRules(namespace *eventhub.EHName
 }
 
 func (az *EventHubGenerator) InitResources() error {
-
 	namespaces, err := az.listNamespaces()
 	if err != nil {
 		return err

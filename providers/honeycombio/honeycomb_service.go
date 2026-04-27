@@ -24,7 +24,7 @@ import (
 	hnyclient "github.com/honeycombio/terraform-provider-honeycombio/client"
 )
 
-type HoneycombService struct { //nolint
+type HoneycombService struct {
 	terraformutils.Service
 	datasets map[string]hnyclient.Dataset
 }
@@ -39,7 +39,7 @@ func (s *HoneycombService) newClient() (*hnyclient.Client, error) {
 		Debug:     enableDebug,
 	})
 	if err != nil {
-		return client, fmt.Errorf("unable to initialize Honeycomb client: %v", err)
+		return client, fmt.Errorf("unable to initialize Honeycomb client: %w", err)
 	}
 
 	ctx := context.TODO()
@@ -49,7 +49,7 @@ func (s *HoneycombService) newClient() (*hnyclient.Client, error) {
 		// assume all datasets
 		datasets, err := client.Datasets.List(ctx)
 		if err != nil {
-			return client, fmt.Errorf("unable to list Honeycomb datasets: %v", err)
+			return client, fmt.Errorf("unable to list Honeycomb datasets: %w", err)
 		}
 		for _, d := range datasets {
 			s.datasets[d.Name] = d
@@ -69,7 +69,7 @@ func (s *HoneycombService) newClient() (*hnyclient.Client, error) {
 			}
 			ds, err := client.Datasets.Get(ctx, d)
 			if err != nil {
-				return client, fmt.Errorf("unable to get Honeycomb dataset %q: %v", d, err)
+				return client, fmt.Errorf("unable to get Honeycomb dataset %q: %w", d, err)
 			}
 			s.datasets[ds.Name] = *ds
 		}

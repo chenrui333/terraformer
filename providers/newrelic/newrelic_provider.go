@@ -38,7 +38,6 @@ func (p *NewRelicProvider) Init(args []string) error {
 		accountID, err := strconv.Atoi(accountIDs)
 		if err != nil {
 			return err
-
 		}
 		p.accountID = accountID
 	}
@@ -73,7 +72,7 @@ func (p *NewRelicProvider) GetConfig() cty.Value {
 	})
 }
 
-func (p *NewRelicProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *NewRelicProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{}
 }
 
@@ -83,8 +82,8 @@ func (NewRelicProvider) GetResourceConnections() map[string]map[string][]string 
 
 func (p *NewRelicProvider) GetSupportedService() map[string]terraformutils.ServiceGenerator {
 	return map[string]terraformutils.ServiceGenerator{
-		"alert":      &AlertGenerator{},
-		"alert_channel": &AlertChannelGenerator{},
+		"alert":           &AlertGenerator{},
+		"alert_channel":   &AlertChannelGenerator{},
 		"alert_condition": &AlertConditionGenerator{},
 		"alert_policy":    &AlertPolicyGenerator{},
 		"infra":           &InfraGenerator{},

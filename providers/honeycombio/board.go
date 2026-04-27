@@ -15,12 +15,12 @@ type BoardGenerator struct {
 func (g *BoardGenerator) InitResources() error {
 	client, err := g.newClient()
 	if err != nil {
-		return fmt.Errorf("unable to initialize Honeycomb client: %v", err)
+		return fmt.Errorf("unable to initialize Honeycomb client: %w", err)
 	}
 
 	boards, err := client.Boards.List(context.TODO())
 	if err != nil {
-		return fmt.Errorf("unable to list Honeycomb boards: %v", err)
+		return fmt.Errorf("unable to list Honeycomb boards: %w", err)
 	}
 
 	for _, board := range boards {

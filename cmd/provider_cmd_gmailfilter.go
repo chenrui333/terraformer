@@ -26,7 +26,7 @@ func newCmdGmailfilterImporter(options ImportOptions) *cobra.Command {
 		Use:   "gmailfilter",
 		Short: "Import current state to Terraform configuration from Gmail",
 		Long:  "Import current state to Terraform configuration from Gmail",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			provider := newGmailfilterProvider()
 			err := Import(provider, options, []string{
 				creds,

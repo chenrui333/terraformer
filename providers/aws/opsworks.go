@@ -12,13 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package aws
 
 import (
 	"context"
+	"log"
+
 	"github.com/aws/aws-sdk-go-v2/service/opsworks"
 	"github.com/aws/aws-sdk-go-v2/service/opsworks/types"
-	"log"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 )

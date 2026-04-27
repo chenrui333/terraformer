@@ -1,3 +1,4 @@
+//nolint:revive // lint triage: legacy provider/API/security baseline is tracked in #175.
 package myrasec
 
 import (
@@ -5,20 +6,16 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	mgo "github.com/Myra-Security-GmbH/myrasec-go/v2"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
-//
 // SettingGenerator
-//
 type SettingsGenerator struct {
 	MyrasecService
 }
 
-//
 // createSettingResources
-//
 func (g *SettingsGenerator) createSettingResources(api *mgo.API, domainId int, vhost mgo.VHost, wg *sync.WaitGroup) error {
 	defer wg.Done()
 
@@ -45,15 +42,13 @@ func (g *SettingsGenerator) createSettingResources(api *mgo.API, domainId int, v
 	return nil
 }
 
-//
 // InitResources
-//
 func (g *SettingsGenerator) InitResources() error {
 	wg := sync.WaitGroup{}
 
 	api, err := g.initializeAPI()
 	if err != nil {
-		return nil
+		return err
 	}
 
 	funcs := []func(*mgo.API, int, mgo.VHost, *sync.WaitGroup) error{
@@ -62,7 +57,7 @@ func (g *SettingsGenerator) InitResources() error {
 
 	err = createResourcesPerSubDomain(api, funcs, &wg, true)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	wg.Wait()

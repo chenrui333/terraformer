@@ -41,7 +41,7 @@ func newCmdKeycloakImporter(options ImportOptions) *cobra.Command {
 		Use:   "keycloak",
 		Short: "Import current state to Terraform configuration from Keycloak",
 		Long:  "Import current state to Terraform configuration from Keycloak",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			url := os.Getenv("KEYCLOAK_URL")
 			if len(url) == 0 {
 				url = defaultKeycloakEndpoint

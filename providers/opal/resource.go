@@ -15,12 +15,12 @@ type ResourceGenerator struct {
 func (g *ResourceGenerator) InitResources() error {
 	client, err := g.newClient()
 	if err != nil {
-		return fmt.Errorf("unable to list opal resources: %v", err)
+		return fmt.Errorf("unable to list opal resources: %w", err)
 	}
 
 	resources, _, err := client.ResourcesAPI.GetResources(context.TODO()).Execute()
 	if err != nil {
-		return fmt.Errorf("unable to list opal resources: %v", err)
+		return fmt.Errorf("unable to list opal resources: %w", err)
 	}
 
 	var opalResources []*opal.Resource
@@ -36,7 +36,7 @@ func (g *ResourceGenerator) InitResources() error {
 
 		resources, _, err = client.ResourcesAPI.GetResources(context.TODO()).Cursor(*resources.Next).Execute()
 		if err != nil {
-			return fmt.Errorf("unable to list opal resources: %v", err)
+			return fmt.Errorf("unable to list opal resources: %w", err)
 		}
 	}
 

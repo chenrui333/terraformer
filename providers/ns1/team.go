@@ -15,10 +15,11 @@
 package ns1
 
 import (
-	"github.com/chenrui333/terraformer/terraformutils"
-	ns1 "gopkg.in/ns1/ns1-go.v2/rest"
 	"net/http"
 	"time"
+
+	"github.com/chenrui333/terraformer/terraformutils"
+	ns1 "gopkg.in/ns1/ns1-go.v2/rest"
 )
 
 type TeamGenerator struct {
@@ -26,7 +27,10 @@ type TeamGenerator struct {
 }
 
 func (g *TeamGenerator) createTeamResources(client *ns1.Client) error {
-	teams, _, err := client.Teams.List()
+	teams, resp, err := client.Teams.List()
+	if resp != nil && resp.Body != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		return err
 	}

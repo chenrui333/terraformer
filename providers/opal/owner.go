@@ -14,12 +14,12 @@ type OwnerGenerator struct {
 func (g *OwnerGenerator) InitResources() error {
 	client, err := g.newClient()
 	if err != nil {
-		return fmt.Errorf("unable to list opal owners: %v", err)
+		return fmt.Errorf("unable to list opal owners: %w", err)
 	}
 
 	owners, _, err := client.OwnersAPI.GetOwners(context.TODO()).Execute()
 	if err != nil {
-		return fmt.Errorf("unable to list opal owners: %v", err)
+		return fmt.Errorf("unable to list opal owners: %w", err)
 	}
 
 	countByName := make(map[string]int)
@@ -49,7 +49,7 @@ func (g *OwnerGenerator) InitResources() error {
 
 		owners, _, err = client.OwnersAPI.GetOwners(context.TODO()).Cursor(*owners.Next).Execute()
 		if err != nil {
-			return fmt.Errorf("unable to list opal owners: %v", err)
+			return fmt.Errorf("unable to list opal owners: %w", err)
 		}
 	}
 

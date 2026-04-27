@@ -14,7 +14,7 @@ type FolderGenerator struct {
 func (g *FolderGenerator) InitResources() error {
 	client, err := g.buildClient()
 	if err != nil {
-		return fmt.Errorf("unable to build grafana client: %v", err)
+		return fmt.Errorf("unable to build grafana client: %w", err)
 	}
 
 	err = g.createFolderResources(client)
@@ -28,7 +28,7 @@ func (g *FolderGenerator) InitResources() error {
 func (g *FolderGenerator) createFolderResources(client *gapi.Client) error {
 	folders, err := client.Folders()
 	if err != nil {
-		return fmt.Errorf("unable to list grafana folders: %v", err)
+		return fmt.Errorf("unable to list grafana folders: %w", err)
 	}
 
 	for _, folder := range folders {

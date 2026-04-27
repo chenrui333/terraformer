@@ -1,3 +1,4 @@
+//nolint:gosec,staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package connectivity
 
 import (
@@ -133,6 +134,7 @@ func (c *Config) getAuthCredentialByEcsRoleName() (accessKey, secretKey, token s
 		err = fmt.Errorf("get Ecs sts token err : %s", err.Error())
 		return
 	}
+	defer httpResponse.Body.Close()
 
 	response := responses.NewCommonResponse()
 	err = responses.Unmarshal(response, httpResponse, "")

@@ -16,10 +16,11 @@ package aws
 
 import (
 	"context"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aws/aws-sdk-go-v2/service/firehose"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 type FirehoseGenerator struct {

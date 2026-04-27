@@ -17,8 +17,8 @@ package aws
 import (
 	"context"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aws/aws-sdk-go-v2/service/mediapackage"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 var mediapackageAllowEmptyValues = []string{"tags."}

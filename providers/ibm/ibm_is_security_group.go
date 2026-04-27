@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package ibm
 
 import (
@@ -85,14 +86,14 @@ func (g *SecurityGroupGenerator) InitResources() error {
 		if rg := g.Args["resource_group"].(string); rg != "" {
 			rg, err = GetResourceGroupID(apiKey, rg, region)
 			if err != nil {
-				return fmt.Errorf("Error Fetching Resource Group Id %s", err)
+				return fmt.Errorf("error fetching Resource Group Id %w", err)
 			}
 			options.ResourceGroupID = &rg
 		}
 
 		sgs, response, err := vpcclient.ListSecurityGroups(options)
 		if err != nil {
-			return fmt.Errorf("Error Fetching security Groups %s\n%s", err, response)
+			return fmt.Errorf("error fetching security Groups %w\n%s", err, response)
 		}
 		start = GetNext(sgs.Next)
 		allrecs = append(allrecs, sgs.SecurityGroups...)
@@ -108,7 +109,7 @@ func (g *SecurityGroupGenerator) InitResources() error {
 		}
 		rules, response, err := vpcclient.ListSecurityGroupRules(listSecurityGroupRulesOptions)
 		if err != nil {
-			return fmt.Errorf("Error Fetching security group rules %s\n%s", err, response)
+			return fmt.Errorf("error fetching security group rules %w\n%s", err, response)
 		}
 		for _, sgrule := range rules.Rules {
 			switch reflect.TypeOf(sgrule).String() {

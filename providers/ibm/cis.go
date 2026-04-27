@@ -20,7 +20,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	bluemix "github.com/IBM-Cloud/bluemix-go"
 	"github.com/IBM-Cloud/bluemix-go/api/resource/resourcev1/catalog"
 	"github.com/IBM-Cloud/bluemix-go/api/resource/resourcev2/controllerv2"
@@ -44,6 +43,7 @@ import (
 	"github.com/IBM/networking-go-sdk/zonelockdownv1"
 	"github.com/IBM/networking-go-sdk/zoneratelimitsv1"
 	"github.com/IBM/networking-go-sdk/zonesv1"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 // CISGenerator ..

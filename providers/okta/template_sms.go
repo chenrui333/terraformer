@@ -26,7 +26,6 @@ type SMSTemplateGenerator struct {
 func (g SMSTemplateGenerator) createResources(smsTemplateList []*okta.SmsTemplate) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 	for _, smsTemplate := range smsTemplateList {
-
 		resources = append(resources, terraformutils.NewSimpleResource(
 			smsTemplate.Id,
 			"template_sms_"+smsTemplate.Name,

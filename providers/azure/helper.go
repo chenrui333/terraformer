@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:gosec,staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package azure
 
 import (
@@ -41,7 +42,7 @@ type ResourceID struct {
 func ParseAzureResourceID(id string) (*ResourceID, error) {
 	idURL, err := url.ParseRequestURI(id)
 	if err != nil {
-		return nil, fmt.Errorf("Cannot parse Azure ID: %s", err)
+		return nil, fmt.Errorf("cannot parse Azure ID: %w", err)
 	}
 
 	path := idURL.Path

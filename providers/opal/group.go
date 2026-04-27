@@ -14,12 +14,12 @@ type GroupGenerator struct {
 func (g *GroupGenerator) InitResources() error {
 	client, err := g.newClient()
 	if err != nil {
-		return fmt.Errorf("unable to list opal groups: %v", err)
+		return fmt.Errorf("unable to list opal groups: %w", err)
 	}
 
 	groups, _, err := client.GroupsAPI.GetGroups(context.TODO()).Execute()
 	if err != nil {
-		return fmt.Errorf("unable to list opal groups: %v", err)
+		return fmt.Errorf("unable to list opal groups: %w", err)
 	}
 
 	countByName := make(map[string]int)
@@ -49,7 +49,7 @@ func (g *GroupGenerator) InitResources() error {
 
 		groups, _, err = client.GroupsAPI.GetGroups(context.TODO()).Cursor(*groups.Next).Execute()
 		if err != nil {
-			return fmt.Errorf("unable to list opal groups: %v", err)
+			return fmt.Errorf("unable to list opal groups: %w", err)
 		}
 	}
 

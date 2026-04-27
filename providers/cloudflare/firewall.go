@@ -187,7 +187,7 @@ func (*FirewallGenerator) createFirewallRuleResources(api *cf.API, zoneID, zoneN
 	return resources, nil
 }
 
-func (g *FirewallGenerator) createRateLimitResources(api *cf.API, zoneID, zoneName string) ([]terraformutils.Resource, error) {
+func (g *FirewallGenerator) createRateLimitResources(api *cf.API, zoneID, _ string) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 
 	rateLimits, err := api.ListAllRateLimits(context.Background(), zoneID)
@@ -218,7 +218,6 @@ func (g *FirewallGenerator) InitResources() error {
 			return err
 		}
 		g.Resources = append(g.Resources, resources...)
-
 	}
 
 	zones, err := api.ListZones(context.Background())

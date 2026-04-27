@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package gcp
 
 import (
 	"context"
+	"errors"
 	"log"
 	"regexp"
 
@@ -40,7 +42,7 @@ func (g IamGenerator) createServiceAccountResources(serviceAccountsIterator *adm
 	re := regexp.MustCompile(`^[a-z]`)
 	for {
 		serviceAccount, err := serviceAccountsIterator.Next()
-		if err == iterator.Done {
+		if errors.Is(err, iterator.Done) {
 			break
 		}
 		if err != nil {

@@ -19,10 +19,10 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 var AlbAllowEmptyValues = []string{"tags.", "^condition."}

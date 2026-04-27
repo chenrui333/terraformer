@@ -12,15 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package ibm
 
 import (
 	"fmt"
 	"os"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/IBM/go-sdk-core/v4/core"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 // VPEGenerator ...
@@ -82,13 +83,13 @@ func (g *VPEGenerator) InitResources() error {
 		if rg := g.Args["resource_group"].(string); rg != "" {
 			rg, err = GetResourceGroupID(apiKey, rg, region)
 			if err != nil {
-				return fmt.Errorf("Error Fetching Resource Group Id %s", err)
+				return fmt.Errorf("error fetching Resource Group Id %w", err)
 			}
 			listEndpointGatewaysOptions.ResourceGroupID = &rg
 		}
 		gateways, response, err := vpcclient.ListEndpointGateways(listEndpointGatewaysOptions)
 		if err != nil {
-			return fmt.Errorf("Error Fetching endpoint gateways %s\n%s", err, response)
+			return fmt.Errorf("error fetching endpoint gateways %w\n%s", err, response)
 		}
 		start = GetNext(gateways.Next)
 		allrecs = append(allrecs, gateways.EndpointGateways...)
@@ -109,7 +110,7 @@ func (g *VPEGenerator) InitResources() error {
 		}
 		ips, response, err := vpcclient.ListEndpointGatewayIps(listEndpointGatewayIpsOptions)
 		if err != nil {
-			return fmt.Errorf("Error Fetching endpoint gateway ips %s\n%s", err, response)
+			return fmt.Errorf("error fetching endpoint gateway ips %w\n%s", err, response)
 		}
 		start = GetNext(ips.Next)
 		allrecs = append(allrecs, ips.Ips...)

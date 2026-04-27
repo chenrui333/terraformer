@@ -11,6 +11,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
+//nolint:gosec // lint triage: legacy provider/API/security baseline is tracked in #175.
 package cmd
 
 import (
@@ -86,7 +88,6 @@ func newImportCmd() *cobra.Command {
 }
 
 func Import(provider terraformutils.ProviderGenerator, options ImportOptions, args []string) error {
-
 	providerWrapper, options, err := initOptionsAndWrapper(provider, options, args)
 	if err != nil {
 		return err
@@ -371,7 +372,7 @@ func listCmd(provider terraformutils.ProviderGenerator) *cobra.Command {
 		Use:   "list",
 		Short: "List supported resources for " + provider.GetName() + " provider",
 		Long:  "List supported resources for " + provider.GetName() + " provider",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			services := providerServices(provider)
 			for _, k := range services {
 				fmt.Println(k)

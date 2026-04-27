@@ -15,20 +15,20 @@
 package ns1
 
 import (
+	"net/http"
+	"time"
+
 	"github.com/chenrui333/terraformer/terraformutils"
 	ns1 "gopkg.in/ns1/ns1-go.v2/rest"
 	"gopkg.in/ns1/ns1-go.v2/rest/model/dns"
-	"net/http"
-	"time"
 )
 
 type ZoneGenerator struct {
 	Ns1Service
 }
 
-func (g *ZoneGenerator) createZoneRecordResources(client *ns1.Client, zone_name string) error {
-
-	zone, resp, err := client.Zones.Get(zone_name, true)
+func (g *ZoneGenerator) createZoneRecordResources(client *ns1.Client, zoneName string) error {
+	zone, resp, err := client.Zones.Get(zoneName, true)
 	if resp != nil && resp.Body != nil {
 		defer resp.Body.Close()
 	}
@@ -37,7 +37,10 @@ func (g *ZoneGenerator) createZoneRecordResources(client *ns1.Client, zone_name 
 	}
 
 	for _, record := range zone.Records {
-		r, _, err := client.Records.Get(zone_name, record.Domain, record.Type)
+		r, recordResp, err := client.Records.Get(zoneName, record.Domain, record.Type)
+		if recordResp != nil && recordResp.Body != nil {
+			defer recordResp.Body.Close()
+		}
 		if err != nil {
 			return err
 		}
@@ -51,14 +54,12 @@ func (g *ZoneGenerator) createZoneRecordResources(client *ns1.Client, zone_name 
 			[]string{},
 			map[string]interface{}{},
 		))
-
 	}
 
 	return nil
 }
 
 func (g *ZoneGenerator) createZoneResources(client *ns1.Client, includeZones []string) error {
-
 	var zones []*dns.Zone
 
 	if len(includeZones) > 0 {
@@ -75,7 +76,11 @@ func (g *ZoneGenerator) createZoneResources(client *ns1.Client, includeZones []s
 		}
 	} else {
 		var err error
-		zones, _, err = client.Zones.List()
+		var resp *http.Response
+		zones, resp, err = client.Zones.List()
+		if resp != nil && resp.Body != nil {
+			defer resp.Body.Close()
+		}
 		if err != nil {
 			return err
 		}
@@ -92,7 +97,9 @@ func (g *ZoneGenerator) createZoneResources(client *ns1.Client, includeZones []s
 			map[string]interface{}{},
 		))
 
-		g.createZoneRecordResources(client, zone.Zone)
+		if err := g.createZoneRecordResources(client, zone.Zone); err != nil {
+			return err
+		}
 	}
 
 	return nil

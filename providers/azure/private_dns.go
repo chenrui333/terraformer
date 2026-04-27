@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package azure
 
 import (
@@ -68,7 +69,6 @@ func (g *PrivateDNSGenerator) listRecordSets(resourceGroupName string, privateZo
 			log.Println(err)
 			break
 		}
-
 	}
 	return resources, nil
 }
@@ -98,7 +98,6 @@ func (g *PrivateDNSGenerator) listVirtualNetworkLinks(resourceGroupName string, 
 			log.Println(err)
 			break
 		}
-
 	}
 
 	return resources, nil

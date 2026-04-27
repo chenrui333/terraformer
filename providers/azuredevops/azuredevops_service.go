@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:revive // lint triage: legacy provider/API/security baseline is tracked in #175.
 package azuredevops
 
 import (
@@ -40,7 +41,6 @@ func (az *AzureDevOpsService) GetResourceConnections() map[string][]string {
 }
 
 func (az *AzureDevOpsService) getConnection() *azuredevops.Connection {
-
 	organizationURL := az.Args["organizationURL"].(string)
 	personalAccessToken := az.Args["personalAccessToken"].(string)
 	return azuredevops.NewPatConnection(organizationURL, personalAccessToken)

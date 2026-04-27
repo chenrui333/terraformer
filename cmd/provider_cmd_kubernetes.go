@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,7 +26,7 @@ func newCmdKubernetesImporter(options ImportOptions) *cobra.Command {
 		Use:   "kubernetes",
 		Short: "Import current state to Terraform configuration from Kubernetes",
 		Long:  "Import current state to Terraform configuration from Kubernetes",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			provider := newKubernetesProvider()
 			err := Import(provider, options, []string{strconv.FormatBool(options.Verbose)})
 			if err != nil {

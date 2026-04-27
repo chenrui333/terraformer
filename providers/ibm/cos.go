@@ -20,12 +20,12 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	bluemix "github.com/IBM-Cloud/bluemix-go"
 	"github.com/IBM-Cloud/bluemix-go/api/resource/resourcev1/catalog"
 	"github.com/IBM-Cloud/bluemix-go/api/resource/resourcev2/controllerv2"
 	"github.com/IBM-Cloud/bluemix-go/session"
 	"github.com/IBM/ibm-cos-sdk-go/aws/credentials/ibmiam"
+	"github.com/chenrui333/terraformer/terraformutils"
 
 	ibmaws "github.com/IBM/ibm-cos-sdk-go/aws"
 	cossession "github.com/IBM/ibm-cos-sdk-go/aws/session"
@@ -119,7 +119,6 @@ func (g *COSGenerator) InitResources() error {
 			}
 			bucketID := fmt.Sprintf("%s:%s:%s:meta:%s:%s", strings.ReplaceAll(cs.ID, "::", ""), "bucket", *b.Name, apiType, location)
 			g.Resources = append(g.Resources, g.loadCOSBuckets(bucketID, *b.Name))
-
 		}
 	}
 

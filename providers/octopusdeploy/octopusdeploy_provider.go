@@ -42,7 +42,7 @@ func (p *OctopusDeployProvider) GetName() string {
 	return "octopusdeploy"
 }
 
-func (p *OctopusDeployProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *OctopusDeployProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{
 		"provider": map[string]interface{}{
 			"octopusdeploy": map[string]interface{}{

@@ -20,8 +20,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 var snsAllowEmptyValues = []string{"tags."}

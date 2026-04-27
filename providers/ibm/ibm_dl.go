@@ -85,7 +85,7 @@ func (g *DLGenerator) InitResources() error {
 	listGatewaysOptions := &dl.ListGatewaysOptions{}
 	gateways, response, err := dlclient.ListGateways(listGatewaysOptions)
 	if err != nil {
-		return fmt.Errorf("Error Fetching Direct Link Gateways %s\n%s", err, response)
+		return fmt.Errorf("error fetching Direct Link Gateways %w\n%s", err, response)
 	}
 	if gateways.Gateways != nil {
 		for _, gateway := range gateways.Gateways {
@@ -103,7 +103,7 @@ func (g *DLGenerator) InitResources() error {
 			}
 			connections, response, err := dlclient.ListGatewayVirtualConnections(listGatewayVirtualConnectionsOptions)
 			if err != nil {
-				return fmt.Errorf("Error Fetching Direct Link Virtual connections %s\n%s", err, response)
+				return fmt.Errorf("error fetching Direct Link Virtual connections %w\n%s", err, response)
 			}
 			for _, connection := range connections.VirtualConnections {
 				g.Resources = append(g.Resources, g.createDirectLinkVirtualConnectionResources(*gatewayID, *connection.ID, *connection.Name, dependsOn))
@@ -133,7 +133,7 @@ func (g *DLGenerator) InitResources() error {
 
 		providerGateways, resp, err := dlproviderclient.ListProviderGateways(listProviderGatewaysOptions)
 		if err != nil {
-			return fmt.Errorf("Error Listing Direct Link Provider Gateways %s\n%s", err, resp)
+			return fmt.Errorf("error listing Direct Link Provider Gateways %w\n%s", err, resp)
 		}
 		start = GetNext(providerGateways.Next)
 		allrecs = append(allrecs, providerGateways.Gateways...)

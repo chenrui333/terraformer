@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package azure
 
 import (
@@ -92,7 +93,6 @@ func (az *PrivateEndpointGenerator) AppendEndpoint(link *network.PrivateEndpoint
 }
 
 func (az *PrivateEndpointGenerator) InitResources() error {
-
 	services, err := az.listServices()
 	if err != nil {
 		return err

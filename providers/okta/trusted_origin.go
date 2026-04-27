@@ -26,7 +26,6 @@ type TrustedOriginGenerator struct {
 func (g TrustedOriginGenerator) createResources(trustedOriginList []*okta.TrustedOrigin) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 	for _, trustedOrigin := range trustedOriginList {
-
 		resources = append(resources, terraformutils.NewSimpleResource(
 			trustedOrigin.Id,
 			"trusted_origin_"+trustedOrigin.Id,

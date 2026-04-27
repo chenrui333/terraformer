@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package azure
 
 import (
@@ -148,7 +149,6 @@ func (az *SubnetGenerator) appendServiceEndpointPolicies() error {
 }
 
 func (az *SubnetGenerator) InitResources() error {
-
 	subnets, err := az.lisSubnets()
 	if err != nil {
 		return err

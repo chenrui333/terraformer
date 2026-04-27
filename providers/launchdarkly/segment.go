@@ -60,7 +60,6 @@ func (g *SegmentGenerator) InitResources() error {
 				return err
 			}
 		}
-
 	}
 
 	return nil

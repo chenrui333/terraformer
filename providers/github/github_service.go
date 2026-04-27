@@ -18,8 +18,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/bradleyfalzon/ghinstallation/v2"
+	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/google/go-github/v35/github"
 	"golang.org/x/oauth2"
 )

@@ -35,22 +35,22 @@ func (g AuthenticatorGenerator) createResources(authenticators []okta.ListAuthen
 		switch inst := instance.(type) {
 		case *okta.AuthenticatorKeyPassword:
 			resourceID = inst.GetId()
-			resourceName = normalizeResourceNameWithRandom(inst.GetName(), true)
+			resourceName = normalizeResourceNameWithRandom(inst.GetName())
 		case *okta.AuthenticatorKeyEmail:
 			resourceID = inst.GetId()
-			resourceName = normalizeResourceNameWithRandom(inst.GetName(), true)
+			resourceName = normalizeResourceNameWithRandom(inst.GetName())
 		case *okta.AuthenticatorKeyPhone:
 			resourceID = inst.GetId()
-			resourceName = normalizeResourceNameWithRandom(inst.GetName(), true)
+			resourceName = normalizeResourceNameWithRandom(inst.GetName())
 		case *okta.AuthenticatorKeyGoogleOtp:
 			resourceID = inst.GetId()
-			resourceName = normalizeResourceNameWithRandom(inst.GetName(), true)
+			resourceName = normalizeResourceNameWithRandom(inst.GetName())
 		case *okta.AuthenticatorKeyOktaVerify:
 			resourceID = inst.GetId()
-			resourceName = normalizeResourceNameWithRandom(inst.GetName(), true)
+			resourceName = normalizeResourceNameWithRandom(inst.GetName())
 		case *okta.AuthenticatorKeyWebauthn:
 			resourceID = inst.GetId()
-			resourceName = normalizeResourceNameWithRandom(inst.GetName(), true)
+			resourceName = normalizeResourceNameWithRandom(inst.GetName())
 		default:
 			continue
 		}

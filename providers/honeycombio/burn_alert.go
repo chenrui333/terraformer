@@ -14,7 +14,7 @@ type BurnAlertGenerator struct {
 func (g *BurnAlertGenerator) InitResources() error {
 	client, err := g.newClient()
 	if err != nil {
-		return fmt.Errorf("unable to initialize Honeycomb client: %v", err)
+		return fmt.Errorf("unable to initialize Honeycomb client: %w", err)
 	}
 
 	for _, dataset := range g.datasets {
@@ -24,7 +24,7 @@ func (g *BurnAlertGenerator) InitResources() error {
 		}
 		slos, err := client.SLOs.List(context.TODO(), dataset.Slug)
 		if err != nil {
-			return fmt.Errorf("unable to list Honeycomb SLOs for dataset %q: %v", dataset.Slug, err)
+			return fmt.Errorf("unable to list Honeycomb SLOs for dataset %q: %w", dataset.Slug, err)
 		}
 
 		for _, slo := range slos {

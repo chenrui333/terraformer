@@ -16,6 +16,7 @@ package gcp
 
 import (
 	"context"
+	"errors"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	"google.golang.org/api/iterator"
@@ -37,7 +38,7 @@ func (g *LoggingGenerator) loadLoggingMetrics(ctx context.Context, client *logad
 	for {
 		metric, err := metricIterator.Next()
 
-		if err == iterator.Done {
+		if errors.Is(err, iterator.Done) {
 			break
 		}
 		if err != nil {

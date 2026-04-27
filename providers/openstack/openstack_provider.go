@@ -30,7 +30,7 @@ func (p OpenStackProvider) GetResourceConnections() map[string]map[string][]stri
 	return map[string]map[string][]string{}
 }
 
-func (p OpenStackProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p OpenStackProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{
 		"provider": map[string]interface{}{
 			"openstack": map[string]interface{}{

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package azure
 
 import (
@@ -343,7 +344,6 @@ func (az *DataFactoryGenerator) createPipelineDatasetResources(dataFactories []d
 }
 
 func (az *DataFactoryGenerator) InitResources() error {
-
 	dataFactories, err := az.listFactories()
 	if err != nil {
 		return err

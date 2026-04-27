@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package azure
 
 import (
@@ -121,11 +122,10 @@ func (az *SynapseGenerator) appendFirewallRule(workspace *synapse.Workspace, wor
 }
 
 func (az *SynapseGenerator) appendManagedPrivateEndpoint(workspace *synapse.Workspace) error {
-
-	if workspace.WorkspaceProperties == nil || workspace.WorkspaceProperties.ManagedVirtualNetwork == nil {
+	if workspace.WorkspaceProperties == nil || workspace.ManagedVirtualNetwork == nil {
 		return nil
 	}
-	virtualNetworkName := *workspace.WorkspaceProperties.ManagedVirtualNetwork
+	virtualNetworkName := *workspace.ManagedVirtualNetwork
 	if virtualNetworkName == "" || virtualNetworkName == "default" {
 		return nil
 	}
@@ -183,7 +183,6 @@ func (az *SynapseGenerator) appendtPrivateLinkHubs(workspace *synapse.PrivateLin
 }
 
 func (az *SynapseGenerator) InitResources() error {
-
 	workspaces, err := az.listWorkspaces()
 	if err != nil {
 		return err

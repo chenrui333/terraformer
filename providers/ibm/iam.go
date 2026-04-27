@@ -19,7 +19,6 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	bluemix "github.com/IBM-Cloud/bluemix-go"
 	"github.com/IBM-Cloud/bluemix-go/api/iampap/iampapv1"
 	"github.com/IBM-Cloud/bluemix-go/api/iamuum/iamuumv2"
@@ -28,6 +27,7 @@ import (
 	"github.com/IBM/go-sdk-core/core"
 	"github.com/IBM/platform-services-go-sdk/iamidentityv1"
 	"github.com/IBM/platform-services-go-sdk/iampolicymanagementv1"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 type IAMGenerator struct {
@@ -253,7 +253,7 @@ func (g *IAMGenerator) InitResources() error {
 			Type:          iampapv1.AccessPolicyType,
 		})
 		if err != nil {
-			return fmt.Errorf("error retrieving access group policy: %s", err)
+			return fmt.Errorf("error retrieving access group policy: %w", err)
 		}
 		for _, p := range policies {
 			g.Resources = append(g.Resources, g.loadAccessGroupPolicies(group.ID, p.ID, dependsOn))
@@ -315,7 +315,7 @@ func (g *IAMGenerator) InitResources() error {
 
 		serviceIDs, resp, err := iamIDClient.ListServiceIds(&listServiceIDOptions)
 		if err != nil {
-			return fmt.Errorf("[ERROR] Error listing Service Ids %s %s", err, resp)
+			return fmt.Errorf("[ERROR] Error listing Service Ids %w %s", err, resp)
 		}
 		start = GetNextIAM(serviceIDs.Next)
 		allrecs = append(allrecs, serviceIDs.Serviceids...)
@@ -342,7 +342,7 @@ func (g *IAMGenerator) InitResources() error {
 		policies := policyList.Policies
 
 		if err != nil {
-			return fmt.Errorf("error retrieving service policy: %s", err)
+			return fmt.Errorf("error retrieving service policy: %w", err)
 		}
 
 		for _, p := range policies {
@@ -360,7 +360,7 @@ func (g *IAMGenerator) InitResources() error {
 	authPolicies := authPolicyList.Policies
 
 	if err != nil {
-		return fmt.Errorf("error retrieving authorization policy: %s", err)
+		return fmt.Errorf("error retrieving authorization policy: %w", err)
 	}
 
 	for _, ap := range authPolicies {
@@ -376,7 +376,7 @@ func (g *IAMGenerator) InitResources() error {
 	customRoles := rolesList.CustomRoles
 
 	if err != nil {
-		return fmt.Errorf("error retrieving custom roles: %s", err)
+		return fmt.Errorf("error retrieving custom roles: %w", err)
 	}
 	rolefnObjt := g.loadCustomRoles()
 	for _, r := range customRoles {

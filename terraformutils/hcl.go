@@ -69,10 +69,7 @@ func (v *astSanitizer) visit(n interface{}) {
 		if v.sort {
 			sortHclTree(t.Items)
 		}
-		for {
-			if index == len(t.Items) {
-				break
-			}
+		for index != len(t.Items) {
 			v.visit(t.Items[index])
 			index++
 		}
@@ -181,7 +178,7 @@ func hclPrint(data interface{}, mapsObjects map[string]struct{}, sort bool) ([]b
 	nodes, err := hclParser.Parse([]byte(dataJSON))
 	if err != nil {
 		log.Println(dataJSON)
-		return []byte{}, fmt.Errorf("error parsing terraform json: %v", err)
+		return []byte{}, fmt.Errorf("error parsing terraform json: %w", err)
 	}
 	var sanitizer astSanitizer
 	sanitizer.sort = sort
@@ -190,7 +187,7 @@ func hclPrint(data interface{}, mapsObjects map[string]struct{}, sort bool) ([]b
 	var b bytes.Buffer
 	err = hclPrinter.Fprint(&b, nodes)
 	if err != nil {
-		return nil, fmt.Errorf("error writing HCL: %v", err)
+		return nil, fmt.Errorf("error writing HCL: %w", err)
 	}
 	s := b.String()
 
@@ -214,7 +211,7 @@ func hclPrint(data interface{}, mapsObjects map[string]struct{}, sort bool) ([]b
 		for i, line := range strings.Split(s, "\n") {
 			fmt.Printf("%4d|\t%s\n", i+1, line)
 		}
-		return nil, fmt.Errorf("error formatting HCL: %v", err)
+		return nil, fmt.Errorf("error formatting HCL: %w", err)
 	}
 
 	return formatted, nil

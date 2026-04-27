@@ -83,6 +83,6 @@ func (p *GmailfilterProvider) GetResourceConnections() map[string]map[string][]s
 	}
 }
 
-func (p *GmailfilterProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *GmailfilterProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{}
 }

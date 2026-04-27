@@ -27,7 +27,7 @@ func newCmdTencentCloudImporter(options ImportOptions) *cobra.Command {
 		Use:   "tencentcloud",
 		Short: "Import current state to Terraform configuration from Tencent Cloud",
 		Long:  "Import current state to Terraform configuration from Tencent Cloud",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			originalPathPattern := options.PathPattern
 			for _, region := range options.Regions {
 				provider := newTencentCloudProvider()

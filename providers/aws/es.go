@@ -17,8 +17,8 @@ package aws
 import (
 	"context"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	es "github.com/aws/aws-sdk-go-v2/service/elasticsearchservice"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 var esAllowEmptyValues = []string{"tags."}

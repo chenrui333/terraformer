@@ -26,7 +26,6 @@ type EventHookGenerator struct {
 func (g EventHookGenerator) createResources(eventHookList []*okta.EventHook) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 	for _, eventHook := range eventHookList {
-
 		resources = append(resources, terraformutils.NewSimpleResource(
 			eventHook.Id,
 			"event_hook_"+eventHook.Name,

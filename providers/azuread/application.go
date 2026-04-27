@@ -29,9 +29,7 @@ func (az *ApplicationServiceGenerator) listResources() ([]msgraph.Application, e
 		return nil, err
 	}
 
-	for _, application := range *applications {
-		resources = append(resources, application)
-	}
+	resources = append(resources, *applications...)
 
 	return resources, nil
 }
@@ -42,7 +40,6 @@ func (az *ApplicationServiceGenerator) appendResource(resource *msgraph.Applicat
 }
 
 func (az *ApplicationServiceGenerator) InitResources() error {
-
 	resources, err := az.listResources()
 	if err != nil {
 		return err
@@ -55,7 +52,6 @@ func (az *ApplicationServiceGenerator) InitResources() error {
 }
 
 func (az *ApplicationServiceGenerator) GetResourceConnections() map[string][]string {
-
 	return map[string][]string{
 		"application": {"id"},
 	}

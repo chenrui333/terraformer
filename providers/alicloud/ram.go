@@ -17,9 +17,9 @@ package alicloud
 import (
 	"strings"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/chenrui333/terraformer/providers/alicloud/connectivity"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 )
 
 // RAMGenerator Struct for generating AliCloud Elastic Compute Service

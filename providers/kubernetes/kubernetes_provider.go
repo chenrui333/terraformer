@@ -47,7 +47,7 @@ func (p KubernetesProvider) GetResourceConnections() map[string]map[string][]str
 	return map[string]map[string][]string{}
 }
 
-func (p KubernetesProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p KubernetesProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{}
 }
 
@@ -169,16 +169,16 @@ func initClientAndConfig() (*restclient.Config, clientcmd.ClientConfig, error) {
 
 	config, err := configFromPath(kubeconfig)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error obtaining kubectl config: %v", err)
+		return nil, nil, fmt.Errorf("error obtaining kubectl config: %w", err)
 	}
 	client, err := config.ClientConfig()
 	if err != nil {
-		return nil, nil, fmt.Errorf("the provided credentials %q could not be used: %v", kubeconfig, err)
+		return nil, nil, fmt.Errorf("the provided credentials %q could not be used: %w", kubeconfig, err)
 	}
 
 	err = applyGlobalOptionsToConfig(client)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error processing global plugin options: %v", err)
+		return nil, nil, fmt.Errorf("error processing global plugin options: %w", err)
 	}
 
 	return client, config, nil
@@ -188,7 +188,7 @@ func configFromPath(path string) (clientcmd.ClientConfig, error) {
 	rules := &clientcmd.ClientConfigLoadingRules{ExplicitPath: path}
 	credentials, err := rules.Load()
 	if err != nil {
-		return nil, fmt.Errorf("the provided credentials %q could not be loaded: %v", path, err)
+		return nil, fmt.Errorf("the provided credentials %q could not be loaded: %w", path, err)
 	}
 
 	overrides := &clientcmd.ConfigOverrides{
@@ -221,7 +221,7 @@ func applyGlobalOptionsToConfig(config *restclient.Config) error {
 		impersonateGroupJSON := []string{}
 		err := json.Unmarshal([]byte(impersonateGroup), &impersonateGroupJSON)
 		if err != nil {
-			return errors.New(fmt.Sprintf("error parsing global option %q: %v", "--as-group", err))
+			return fmt.Errorf("error parsing global option %q: %w", "--as-group", err)
 		}
 		if len(impersonateGroupJSON) > 0 {
 			config.Impersonate.Groups = impersonateGroupJSON
@@ -231,17 +231,17 @@ func applyGlobalOptionsToConfig(config *restclient.Config) error {
 	// tls config
 	caFile := os.Getenv("KUBECTL_PLUGINS_GLOBAL_FLAG_CERTIFICATE_AUTHORITY")
 	if len(caFile) > 0 {
-		config.TLSClientConfig.CAFile = caFile
+		config.CAFile = caFile
 	}
 
 	clientCertFile := os.Getenv("KUBECTL_PLUGINS_GLOBAL_FLAG_CLIENT_CERTIFICATE")
 	if len(clientCertFile) > 0 {
-		config.TLSClientConfig.CertFile = clientCertFile
+		config.CertFile = clientCertFile
 	}
 
 	clientKey := os.Getenv("KUBECTL_PLUGINS_GLOBAL_FLAG_CLIENT_KEY")
 	if len(clientKey) > 0 {
-		config.TLSClientConfig.KeyFile = clientKey
+		config.KeyFile = clientKey
 	}
 
 	// user / misc request config
@@ -249,7 +249,7 @@ func applyGlobalOptionsToConfig(config *restclient.Config) error {
 	if len(requestTimeout) > 0 {
 		t, err := time.ParseDuration(requestTimeout)
 		if err != nil {
-			return errors.New(fmt.Sprintf("%v", err))
+			return fmt.Errorf("%w", err)
 		}
 		config.Timeout = t
 	}

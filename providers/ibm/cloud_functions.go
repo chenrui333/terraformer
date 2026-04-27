@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package ibm
 
 import (
@@ -21,8 +22,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	bluemix "github.com/IBM-Cloud/bluemix-go"
+	"github.com/chenrui333/terraformer/terraformutils"
 
 	ns "github.com/IBM-Cloud/bluemix-go/api/functions"
 	"github.com/IBM-Cloud/bluemix-go/session"
@@ -95,8 +96,8 @@ func setupOpenWhiskClientConfigIAM(response ns.NamespaceResponse, c *bluemix.Con
 		additionalHeaders.Add("Authorization", c.IAMAccessToken)
 		additionalHeaders.Add("X-Namespace-Id", response.GetID())
 
-		wskClient.Config.Namespace = response.GetID()
-		wskClient.Config.AdditionalHeaders = additionalHeaders
+		wskClient.Namespace = response.GetID()
+		wskClient.AdditionalHeaders = additionalHeaders
 		return wskClient, nil
 	}
 
@@ -134,7 +135,7 @@ func (g *CloudFunctionGenerator) InitResources() error {
 
 	nsList, err := nsClient.Namespaces().GetNamespaces()
 	if err != nil {
-		return nil
+		return err
 	}
 
 	for _, n := range nsList.Namespaces {
@@ -155,9 +156,12 @@ func (g *CloudFunctionGenerator) InitResources() error {
 			Limit: 100,
 			Skip:  0,
 		}
-		pkgs, _, err := packageService.List(pkgOptions)
+		pkgs, pkgResp, err := packageService.List(pkgOptions)
+		if pkgResp != nil && pkgResp.Body != nil {
+			defer pkgResp.Body.Close()
+		}
 		if err != nil {
-			return fmt.Errorf("Error retrieving IBM Cloud Function package: %s", err)
+			return fmt.Errorf("error retrieving IBM Cloud Function package: %w", err)
 		}
 
 		for _, p := range pkgs {
@@ -170,9 +174,12 @@ func (g *CloudFunctionGenerator) InitResources() error {
 			Limit: 100,
 			Skip:  0,
 		}
-		actions, _, err := actionService.List("", actionOptions)
+		actions, actionResp, err := actionService.List("", actionOptions)
+		if actionResp != nil && actionResp.Body != nil {
+			defer actionResp.Body.Close()
+		}
 		if err != nil {
-			return fmt.Errorf("Error retrieving IBM Cloud Function action: %s", err)
+			return fmt.Errorf("error retrieving IBM Cloud Function action: %w", err)
 		}
 
 		for _, a := range actions {
@@ -211,9 +218,12 @@ func (g *CloudFunctionGenerator) InitResources() error {
 			Limit: 100,
 			Skip:  0,
 		}
-		rules, _, err := ruleService.List(ruleOptions)
+		rules, ruleResp, err := ruleService.List(ruleOptions)
+		if ruleResp != nil && ruleResp.Body != nil {
+			defer ruleResp.Body.Close()
+		}
 		if err != nil {
-			return fmt.Errorf("Error retrieving IBM Cloud Function rule: %s", err)
+			return fmt.Errorf("error retrieving IBM Cloud Function rule: %w", err)
 		}
 
 		for _, r := range rules {
@@ -226,9 +236,12 @@ func (g *CloudFunctionGenerator) InitResources() error {
 			Limit: 100,
 			Skip:  0,
 		}
-		triggers, _, err := triggerService.List(triggerOptions)
+		triggers, triggerResp, err := triggerService.List(triggerOptions)
+		if triggerResp != nil && triggerResp.Body != nil {
+			defer triggerResp.Body.Close()
+		}
 		if err != nil {
-			return fmt.Errorf("Error retrieving IBM Cloud Function trigger: %s", err)
+			return fmt.Errorf("error retrieving IBM Cloud Function trigger: %w", err)
 		}
 
 		for _, t := range triggers {

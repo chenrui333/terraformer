@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package azure
 
 import (
@@ -32,8 +33,8 @@ func (g VirtualMachineGenerator) createResources(virtualMachineListResultIterato
 	for virtualMachineListResultIterator.NotDone() {
 		vm := virtualMachineListResultIterator.Value()
 		var newResource terraformutils.Resource
-		if vm.VirtualMachineProperties.OsProfile == nil {
-			if vm.VirtualMachineProperties.StorageProfile.OsDisk.OsType == "Windows" {
+		if vm.OsProfile == nil {
+			if vm.StorageProfile.OsDisk.OsType == "Windows" {
 				newResource = terraformutils.NewSimpleResource(
 					*vm.ID,
 					*vm.Name,
@@ -49,7 +50,7 @@ func (g VirtualMachineGenerator) createResources(virtualMachineListResultIterato
 					[]string{})
 			}
 		} else {
-			if vm.VirtualMachineProperties.OsProfile.WindowsConfiguration != nil {
+			if vm.OsProfile.WindowsConfiguration != nil {
 				newResource = terraformutils.NewSimpleResource(
 					*vm.ID,
 					*vm.Name,

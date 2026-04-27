@@ -17,8 +17,8 @@ package aws
 import (
 	"context"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/aws/aws-sdk-go-v2/service/servicecatalog"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 var servicecatalogAllowEmptyValues = []string{"tags."}

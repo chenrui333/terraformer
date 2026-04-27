@@ -25,7 +25,7 @@ func newCmdOpalImporter(options ImportOptions) *cobra.Command {
 		Use:   "opal",
 		Short: "Import current state to Terraform configuration from opal.dev",
 		Long:  "Import current state to Terraform configuration from opal.dev",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			provider := newOpalProvider()
 			err := Import(provider, options, options.Projects)
 			if err != nil {

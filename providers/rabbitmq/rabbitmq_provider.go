@@ -21,7 +21,7 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-type RBTProvider struct { //nolint
+type RBTProvider struct {
 	terraformutils.Provider
 	endpoint string
 	username string
@@ -39,7 +39,7 @@ func (p *RBTProvider) GetName() string {
 	return "rabbitmq"
 }
 
-func (p *RBTProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *RBTProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{}
 }
 

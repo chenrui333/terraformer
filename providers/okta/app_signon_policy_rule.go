@@ -33,7 +33,7 @@ func (g AppSignOnPolicyRuleGenerator) createResources(signOnPolicyRuleList []okt
 			continue
 		}
 
-		resourceName := normalizeResourceNameWithRandom(policyRule.AccessPolicyRule.GetName(), true)
+		resourceName := normalizeResourceNameWithRandom(policyRule.AccessPolicyRule.GetName())
 
 		resources = append(resources, terraformutils.NewResource(
 			policyRule.AccessPolicyRule.GetId(),

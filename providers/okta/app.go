@@ -19,11 +19,11 @@ import (
 	"log"
 
 	"github.com/okta/okta-sdk-golang/v2/okta"
-	"github.com/okta/okta-sdk-golang/v2/okta/query"
 )
 
-//NOTE: Okta SDK v2.6.1 ListApplications() method does not support applications by type at this time. So
-//		we have to create the application filter by our self.
+// NOTE: Okta SDK v2.6.1 ListApplications() method does not support applications by type at this time. So
+//
+//	we have to create the application filter by our self.
 func getApplications(ctx context.Context, client *okta.Client, signOnMode string) ([]*okta.Application, error) {
 	supportedApps, err := getAllApplications(ctx, client)
 	if err != nil {
@@ -73,27 +73,4 @@ func getAllApplications(ctx context.Context, client *okta.Client) ([]*okta.Appli
 	}
 
 	return supportedApps, nil
-}
-
-func listApplicationGroupsIDs(ctx context.Context, client *okta.Client, id string) ([]string, error) {
-	var groupIDs []string
-	groups, resp, err := client.Application.ListApplicationGroupAssignments(ctx, id, &query.Params{})
-	if err != nil {
-		return nil, err
-	}
-	for {
-		for _, groupID := range groups {
-			groupIDs = append(groupIDs, groupID.Id)
-		}
-		if resp.HasNextPage() {
-			resp, err = resp.Next(ctx, &groups)
-			if err != nil {
-				return nil, err
-			}
-			continue
-		} else {
-			break
-		}
-	}
-	return groupIDs, nil
 }

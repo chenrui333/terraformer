@@ -33,7 +33,7 @@ func (p CommercetoolsProvider) GetResourceConnections() map[string]map[string][]
 	return map[string]map[string][]string{}
 }
 
-func (p CommercetoolsProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p CommercetoolsProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{}
 }
 

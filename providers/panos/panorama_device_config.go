@@ -17,9 +17,9 @@ package panos
 import (
 	"fmt"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/PaloAltoNetworks/pango"
 	"github.com/PaloAltoNetworks/pango/util"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 type PanoramaDeviceConfigGenerator struct {

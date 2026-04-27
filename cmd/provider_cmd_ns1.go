@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,7 +25,7 @@ func newCmdNs1Importer(options ImportOptions) *cobra.Command {
 		Use:   "ns1",
 		Short: "Import current state to Terraform configuration from NS1",
 		Long:  "Import current state to Terraform configuration from NS1",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			provider := newNs1Provider()
 			err := Import(provider, options, []string{})
 			if err != nil {

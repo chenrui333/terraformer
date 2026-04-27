@@ -35,7 +35,6 @@ func (g IdpSocialGenerator) createResources(idpSocialList []*okta.IdentityProvid
 			"okta_idp_social",
 			"okta",
 			[]string{}))
-
 	}
 	return resources
 }

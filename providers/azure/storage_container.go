@@ -1,3 +1,4 @@
+//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package azure
 
 import (
@@ -43,7 +44,7 @@ func (g StorageContainerGenerator) ListBlobContainers() ([]terraformutils.Resour
 	for _, storageAccount := range accounts {
 		parsedStorageAccountResourceID, err := ParseAzureResourceID(*storageAccount.ID)
 		if err != nil {
-			break
+			return containerResources, err
 		}
 		containerItemsIterator, err := blobContainersClient.ListComplete(ctx, parsedStorageAccountResourceID.ResourceGroup, *storageAccount.Name, "", "", "")
 		if err != nil {

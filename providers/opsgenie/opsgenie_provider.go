@@ -50,7 +50,7 @@ func (p *OpsgenieProvider) GetConfig() cty.Value {
 	})
 }
 
-func (p *OpsgenieProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p *OpsgenieProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{}
 }
 

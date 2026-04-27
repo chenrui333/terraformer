@@ -121,11 +121,6 @@ func (g *GaapGenerator) loadProxy(client *gaap.Client) error {
 	return nil
 }
 
-func (g *GaapGenerator) matchFilter(resource *terraformutils.Resource) bool {
-
-	return false
-}
-
 func (g *GaapGenerator) loadRealServer(client *gaap.Client) error {
 	request := gaap.NewDescribeRealServersRequest()
 	var projectID int64 = -1
@@ -404,12 +399,13 @@ func (g *GaapGenerator) loadCertificate(client *gaap.Client) error {
 
 func (g *GaapGenerator) PostConvertHook() error {
 	for _, resource := range g.Resources {
-		if resource.InstanceInfo.Type == "tencentcloud_gaap_http_domain" {
+		switch resource.InstanceInfo.Type {
+		case "tencentcloud_gaap_http_domain":
 			delete(resource.Item, "client_certificate_id")
 			delete(resource.Item, "realserver_certificate_id")
-		} else if resource.InstanceInfo.Type == "tencentcloud_gaap_layer7_listener" {
+		case "tencentcloud_gaap_layer7_listener":
 			delete(resource.Item, "client_certificate_id")
-		} else if resource.InstanceInfo.Type == "tencentcloud_gaap_certificate" {
+		case "tencentcloud_gaap_certificate":
 			resource.Item["content"] = ""
 		}
 	}

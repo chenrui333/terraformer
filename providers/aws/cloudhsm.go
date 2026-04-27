@@ -62,7 +62,6 @@ func (g *CloudHsmGenerator) InitResources() error {
 					cloudHsmAllowEmptyValues,
 					map[string]interface{}{},
 				))
-
 			}
 		}
 	}

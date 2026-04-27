@@ -33,7 +33,7 @@ func (p GitLabProvider) GetResourceConnections() map[string]map[string][]string 
 	return map[string]map[string][]string{}
 }
 
-func (p GitLabProvider) GetProviderData(arg ...string) map[string]interface{} {
+func (p GitLabProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{
 		"provider": map[string]interface{}{
 			"gitlab": map[string]interface{}{

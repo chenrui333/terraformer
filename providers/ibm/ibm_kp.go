@@ -19,12 +19,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/IBM-Cloud/bluemix-go"
 	"github.com/IBM-Cloud/bluemix-go/api/resource/resourcev1/catalog"
 	"github.com/IBM-Cloud/bluemix-go/api/resource/resourcev2/controllerv2"
 	"github.com/IBM-Cloud/bluemix-go/session"
 	kp "github.com/IBM/keyprotect-go-client"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 type KPGenerator struct {

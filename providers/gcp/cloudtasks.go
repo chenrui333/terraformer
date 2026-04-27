@@ -1,7 +1,9 @@
+//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package gcp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -32,7 +34,7 @@ func (g *CloudTaskGenerator) loadCloudTaskQueues(ctx context.Context, client *cl
 	queueIterator := client.ListQueues(ctx, req)
 	for {
 		resp, err := queueIterator.Next()
-		if err == iterator.Done {
+		if errors.Is(err, iterator.Done) {
 			break
 		}
 		if err != nil {

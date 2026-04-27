@@ -2,25 +2,22 @@ package myrasec
 
 import (
 	"fmt"
+	"log"
 	"runtime"
 	"strconv"
 	"sync"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	mgo "github.com/Myra-Security-GmbH/myrasec-go/v2"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
-//
 // DomainGenerator
-//
 type DomainGenerator struct {
 	MyrasecService
 }
 
-//
 // createDomainResource
-//
-func (g *DomainGenerator) createDomainResource(api *mgo.API, domain mgo.Domain, wg *sync.WaitGroup) error {
+func (g *DomainGenerator) createDomainResource(_ *mgo.API, domain mgo.Domain, wg *sync.WaitGroup) error {
 	defer wg.Done()
 
 	d := terraformutils.NewResource(
@@ -39,9 +36,7 @@ func (g *DomainGenerator) createDomainResource(api *mgo.API, domain mgo.Domain, 
 	return nil
 }
 
-//
 // InitResources
-//
 func (g *DomainGenerator) InitResources() error {
 	var wg = sync.WaitGroup{}
 
@@ -63,11 +58,8 @@ func (g *DomainGenerator) InitResources() error {
 	return nil
 }
 
-//
 // createResourcesPerDomain
-//
 func createResourcesPerDomain(api *mgo.API, funcs []func(*mgo.API, mgo.Domain, *sync.WaitGroup) error, wg *sync.WaitGroup) error {
-
 	page := 1
 	pageSize := 250
 	params := map[string]string{
@@ -86,7 +78,9 @@ func createResourcesPerDomain(api *mgo.API, funcs []func(*mgo.API, mgo.Domain, *
 		wg.Add(len(domains) * len(funcs))
 		for _, d := range domains {
 			for _, f := range funcs {
-				f(api, d, wg)
+				if err := f(api, d, wg); err != nil {
+					return err
+				}
 			}
 		}
 		if len(domains) < pageSize {
@@ -101,9 +95,7 @@ func getWaitChannel() chan struct{} {
 	return make(chan struct{}, runtime.NumCPU()/2)
 }
 
-//
 // createResourcesPerSubDomain
-//
 func createResourcesPerSubDomain(api *mgo.API, funcs []func(*mgo.API, int, mgo.VHost, *sync.WaitGroup) error, wg *sync.WaitGroup, onDomainLevel bool) error {
 	page := 1
 	pageSize := 250
@@ -113,8 +105,6 @@ func createResourcesPerSubDomain(api *mgo.API, funcs []func(*mgo.API, int, mgo.V
 	}
 
 	waitChan := getWaitChannel()
-	count := 0
-
 	for {
 		params["page"] = strconv.Itoa(page)
 
@@ -129,18 +119,20 @@ func createResourcesPerSubDomain(api *mgo.API, funcs []func(*mgo.API, int, mgo.V
 			if onDomainLevel {
 				wg.Add(len(funcs))
 				for _, f := range funcs {
-					go f(api, d.ID, mgo.VHost{
-						Label: fmt.Sprintf("ALL-%d.", d.ID),
-					}, wg)
+					go func(f func(*mgo.API, int, mgo.VHost, *sync.WaitGroup) error) {
+						if err := f(api, d.ID, mgo.VHost{Label: fmt.Sprintf("ALL-%d.", d.ID)}, wg); err != nil {
+							log.Print(err)
+						}
+					}(f)
 				}
-
 			}
 			waitChan <- struct{}{}
-			count++
-			go func(count int, d mgo.Domain) {
-				createResourcesPerVHost(api, d, funcs, wg)
+			go func(d mgo.Domain) {
+				if err := createResourcesPerVHost(api, d, funcs, wg); err != nil {
+					log.Print(err)
+				}
 				<-waitChan
-			}(count, d)
+			}(d)
 		}
 		if len(domains) < pageSize {
 			break
@@ -150,9 +142,7 @@ func createResourcesPerSubDomain(api *mgo.API, funcs []func(*mgo.API, int, mgo.V
 	return nil
 }
 
-//
 // createResourcesPerVHost
-//
 func createResourcesPerVHost(api *mgo.API, domain mgo.Domain, funcs []func(*mgo.API, int, mgo.VHost, *sync.WaitGroup) error, wg *sync.WaitGroup) error {
 	defer wg.Done()
 
@@ -164,8 +154,6 @@ func createResourcesPerVHost(api *mgo.API, domain mgo.Domain, funcs []func(*mgo.
 	}
 
 	waitChan := getWaitChannel()
-	count := 0
-
 	for {
 		params["page"] = strconv.Itoa(page)
 
@@ -178,11 +166,12 @@ func createResourcesPerVHost(api *mgo.API, domain mgo.Domain, funcs []func(*mgo.
 		for _, v := range vhosts {
 			for _, f := range funcs {
 				waitChan <- struct{}{}
-				count++
-				go func(count int, v mgo.VHost, f func(*mgo.API, int, mgo.VHost, *sync.WaitGroup) error) {
-					f(api, domain.ID, v, wg)
+				go func(v mgo.VHost, f func(*mgo.API, int, mgo.VHost, *sync.WaitGroup) error) {
+					if err := f(api, domain.ID, v, wg); err != nil {
+						log.Print(err)
+					}
 					<-waitChan
-				}(count, v, f)
+				}(v, f)
 			}
 		}
 		if len(vhosts) < pageSize {

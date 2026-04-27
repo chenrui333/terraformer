@@ -21,7 +21,7 @@ import (
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
-type RBTService struct { //nolint
+type RBTService struct {
 	terraformutils.Service
 }
 

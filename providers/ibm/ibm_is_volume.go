@@ -19,9 +19,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/IBM/go-sdk-core/v4/core"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 // VolumeGenerator ...
@@ -69,7 +69,7 @@ func (g *VolumeGenerator) InitResources() error {
 		}
 		volumes, response, err := vpcclient.ListVolumes(options)
 		if err != nil {
-			return fmt.Errorf("Error Fetching Volumes %s\n%s", err, response)
+			return fmt.Errorf("error fetching Volumes %w\n%s", err, response)
 		}
 		start = GetNext(volumes.Next)
 		allrecs = append(allrecs, volumes.Volumes...)

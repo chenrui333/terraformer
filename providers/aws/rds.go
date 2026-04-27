@@ -90,7 +90,6 @@ func (g *RDSGenerator) loadDBProxies(svc *rds.Client) error {
 		}
 	}
 	return nil
-
 }
 func (g *RDSGenerator) loadDBInstances(svc *rds.Client) error {
 	p := rds.NewDescribeDBInstancesPaginator(svc, &rds.DescribeDBInstancesInput{})
