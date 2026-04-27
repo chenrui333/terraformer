@@ -50,7 +50,8 @@ for minor in $minors; do
   mkdir -p "$terraform_dir"
   curl -fsSL --retry 3 "$terraform_url" -o "$terraform_zip"
   unzip -q "$terraform_zip" -d "$terraform_dir"
-  "$terraform_dir/terraform" version | head -n 1
+  terraform_version_output=$("$terraform_dir/terraform" version)
+  printf '%s\n' "${terraform_version_output%%$'\n'*}"
 
   PATH="$terraform_dir:$PATH" GOWORK=off go test ./terraformutils \
     -run 'TestPrintTfState(WritesV4ProviderSourceState|CanBeListedByTerraformCLI)$' \
