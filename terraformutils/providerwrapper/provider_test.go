@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/hashicorp/terraform/configs/configschema"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat/configschema"
 	"github.com/zclconf/go-cty/cty"
 )
 

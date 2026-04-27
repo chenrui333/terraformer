@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hashicorp/terraform/configs/hcl2shim"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -145,7 +145,7 @@ func (p *FlatmapParser) fromFlatmapObject(prefix string, tys map[string]cty.Type
 func (p *FlatmapParser) fromFlatmapTuple(prefix string, tys []cty.Type) ([]interface{}, error) {
 	// if the container is unknown, there is no count string
 	listName := strings.TrimRight(prefix, ".")
-	if p.attributes[listName] == hcl2shim.UnknownVariableValue {
+	if p.attributes[listName] == tfcompat.UnknownVariableValue {
 		return nil, nil
 	}
 
@@ -153,7 +153,7 @@ func (p *FlatmapParser) fromFlatmapTuple(prefix string, tys []cty.Type) ([]inter
 	if !exists {
 		return nil, nil
 	}
-	if countStr == hcl2shim.UnknownVariableValue {
+	if countStr == tfcompat.UnknownVariableValue {
 		return nil, nil
 	}
 
@@ -185,7 +185,7 @@ func (p *FlatmapParser) fromFlatmapTuple(prefix string, tys []cty.Type) ([]inter
 func (p *FlatmapParser) fromFlatmapMap(prefix string, ty cty.Type) (map[string]interface{}, error) {
 	// if the container is unknown, there is no count string
 	listName := strings.TrimRight(prefix, ".")
-	if p.attributes[listName] == hcl2shim.UnknownVariableValue {
+	if p.attributes[listName] == tfcompat.UnknownVariableValue {
 		return nil, nil
 	}
 
@@ -196,7 +196,7 @@ func (p *FlatmapParser) fromFlatmapMap(prefix string, ty cty.Type) (map[string]i
 	if !exists {
 		return nil, nil
 	}
-	if strCount == hcl2shim.UnknownVariableValue {
+	if strCount == tfcompat.UnknownVariableValue {
 		return nil, nil
 	}
 
@@ -236,7 +236,7 @@ func (p *FlatmapParser) fromFlatmapMap(prefix string, ty cty.Type) (map[string]i
 func (p *FlatmapParser) fromFlatmapList(prefix string, ty cty.Type) ([]interface{}, error) {
 	// if the container is unknown, there is no count string
 	listName := strings.TrimRight(prefix, ".")
-	if p.attributes[listName] == hcl2shim.UnknownVariableValue {
+	if p.attributes[listName] == tfcompat.UnknownVariableValue {
 		return nil, nil
 	}
 
@@ -244,7 +244,7 @@ func (p *FlatmapParser) fromFlatmapList(prefix string, ty cty.Type) ([]interface
 	if !exists {
 		return nil, nil
 	}
-	if countStr == hcl2shim.UnknownVariableValue {
+	if countStr == tfcompat.UnknownVariableValue {
 		return nil, nil
 	}
 
@@ -279,7 +279,7 @@ func (p *FlatmapParser) fromFlatmapList(prefix string, ty cty.Type) ([]interface
 func (p *FlatmapParser) fromFlatmapSet(prefix string, ty cty.Type) ([]interface{}, error) {
 	// if the container is unknown, there is no count string
 	listName := strings.TrimRight(prefix, ".")
-	if p.attributes[listName] == hcl2shim.UnknownVariableValue {
+	if p.attributes[listName] == tfcompat.UnknownVariableValue {
 		return nil, nil
 	}
 
@@ -287,7 +287,7 @@ func (p *FlatmapParser) fromFlatmapSet(prefix string, ty cty.Type) ([]interface{
 	if !exists {
 		return nil, nil
 	}
-	if strCount == hcl2shim.UnknownVariableValue {
+	if strCount == tfcompat.UnknownVariableValue {
 		return nil, nil
 	}
 

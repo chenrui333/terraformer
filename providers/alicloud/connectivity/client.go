@@ -21,8 +21,8 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 	"github.com/denverdino/aliyungo/cs"
-	"github.com/hashicorp/terraform/version"
 )
 
 // AliyunClient of aliyun
@@ -56,7 +56,7 @@ const Module = "Terraform-Module"
 var goSdkMutex = sync.RWMutex{} // The Go SDK is not thread-safe
 // The main version number that is being run at the moment.
 var providerVersion = "1.57.1"
-var terraformVersion = strings.TrimSuffix(version.String(), "-dev")
+var terraformVersion = strings.TrimSuffix(tfcompat.TerraformVersion, "-dev")
 
 // Client for AliyunClient
 func (c *Config) Client() (*AliyunClient, error) {

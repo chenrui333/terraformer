@@ -14,15 +14,13 @@ import (
 
 	"github.com/chenrui333/terraformer/terraformutils/terraformerstring"
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat/configschema"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat/providerproto"
 
 	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	"github.com/hashicorp/terraform/configs/configschema"
-	tfplugin "github.com/hashicorp/terraform/plugin"
-	"github.com/hashicorp/terraform/providers"
-	"github.com/hashicorp/terraform/version"
 )
 
 // DefaultDataDir is the default directory for storing local data.
@@ -37,12 +35,12 @@ const DefaultPluginVendorDirV12 = "terraform.d/plugins/" + pluginMachineName
 const pluginMachineName = runtime.GOOS + "_" + runtime.GOARCH
 
 type ProviderWrapper struct {
-	Provider     *tfplugin.GRPCProvider
+	Provider     *providerproto.GRPCProvider
 	client       *plugin.Client
 	rpcClient    plugin.ClientProtocol
 	providerName string
 	config       cty.Value
-	schema       *providers.GetProviderSchemaResponse
+	schema       *providerproto.GetProviderSchemaResponse
 	retryCount   int
 	retrySleepMs int
 }
@@ -72,7 +70,7 @@ func (p *ProviderWrapper) Kill() {
 	p.client.Kill()
 }
 
-func (p *ProviderWrapper) GetSchema() *providers.GetProviderSchemaResponse {
+func (p *ProviderWrapper) GetSchema() *providerproto.GetProviderSchemaResponse {
 	if p.schema == nil {
 		r := p.Provider.GetProviderSchema()
 		p.schema = &r
@@ -153,9 +151,9 @@ func (p *ProviderWrapper) Refresh(info *tfcompat.InstanceInfo, state *tfcompat.I
 		return nil, err
 	}
 	successReadResource := false
-	resp := providers.ReadResourceResponse{}
+	resp := providerproto.ReadResourceResponse{}
 	for i := 0; i < p.retryCount; i++ {
-		resp = p.Provider.ReadResource(providers.ReadResourceRequest{
+		resp = p.Provider.ReadResource(providerproto.ReadResourceRequest{
 			TypeName:   info.Type,
 			PriorState: priorState,
 			Private:    []byte{},
@@ -173,7 +171,7 @@ func (p *ProviderWrapper) Refresh(info *tfcompat.InstanceInfo, state *tfcompat.I
 	if !successReadResource {
 		log.Println("Fail read resource from provider, trying import command")
 		// retry with regular import command - without resource attributes
-		importResponse := p.Provider.ImportResourceState(providers.ImportResourceStateRequest{
+		importResponse := p.Provider.ImportResourceState(providerproto.ImportResourceStateRequest{
 			TypeName: info.Type,
 			ID:       state.ID,
 		})
@@ -211,8 +209,8 @@ func (p *ProviderWrapper) initProvider(verbose bool) error {
 	p.client = plugin.NewClient(
 		&plugin.ClientConfig{
 			Cmd:              exec.Command(providerFilePath),
-			HandshakeConfig:  tfplugin.Handshake,
-			VersionedPlugins: tfplugin.VersionedPlugins,
+			HandshakeConfig:  providerproto.Handshake,
+			VersionedPlugins: providerproto.VersionedPlugins,
 			Managed:          true,
 			Logger:           logger,
 			AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
@@ -222,21 +220,24 @@ func (p *ProviderWrapper) initProvider(verbose bool) error {
 	if err != nil {
 		return err
 	}
-	raw, err := p.rpcClient.Dispense(tfplugin.ProviderPluginName)
+	raw, err := p.rpcClient.Dispense(providerproto.ProviderPluginName)
 	if err != nil {
 		return err
 	}
 
-	p.Provider = raw.(*tfplugin.GRPCProvider)
+	p.Provider = raw.(*providerproto.GRPCProvider)
 
 	config, err := p.GetSchema().Provider.Block.CoerceValue(p.config)
 	if err != nil {
 		return err
 	}
-	p.Provider.ConfigureProvider(providers.ConfigureProviderRequest{
-		TerraformVersion: version.Version,
+	configureResp := p.Provider.ConfigureProvider(providerproto.ConfigureProviderRequest{
+		TerraformVersion: tfcompat.TerraformVersion,
 		Config:           config,
 	})
+	if configureResp.Diagnostics.HasErrors() {
+		return configureResp.Diagnostics.Err()
+	}
 
 	return nil
 }

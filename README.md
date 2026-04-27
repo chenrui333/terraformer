@@ -375,6 +375,9 @@ Terraforming lacks full coverage for resources - as an example you can see that 
 
 ## License
 
-SPDX-License-Identifier: Apache-2.0
+Terraformer is primarily licensed under Apache-2.0.
+The Terraform compatibility code under `terraformutils/tfcompat` includes files
+licensed under MPL-2.0; see [LICENSE-MPL-2.0](LICENSE-MPL-2.0) and the per-file
+SPDX headers.
 
 See [LICENSE](LICENSE) for the full text.
