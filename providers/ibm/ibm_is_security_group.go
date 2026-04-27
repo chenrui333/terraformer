@@ -19,9 +19,9 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/IBM/go-sdk-core/v4/core"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 // SecurityGroupGenerator ...
@@ -118,9 +118,9 @@ func (g *SecurityGroupGenerator) InitResources() error {
 					g.Resources = append(g.Resources, g.createSecurityGroupRuleResources(*group.ID, *rule.ID))
 				}
 
-			case "*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll":
+			case "*vpcv1.SecurityGroupRuleProtocolAny":
 				{
-					rule := sgrule.(*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll)
+					rule := sgrule.(*vpcv1.SecurityGroupRuleProtocolAny)
 					g.Resources = append(g.Resources, g.createSecurityGroupRuleResources(*group.ID, *rule.ID))
 				}
 
