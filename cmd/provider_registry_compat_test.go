@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -14,6 +15,12 @@ import (
 	"time"
 
 	"github.com/chenrui333/terraformer/terraformutils"
+)
+
+const (
+	registryCompatibilityMaxAttempts = 3
+	registryCompatibilityMaxParallel = 8
+	registryCompatibilityUserAgent   = "terraformer-provider-compat-test/1.0"
 )
 
 type registryVersionsResponse struct {
@@ -44,9 +51,14 @@ func TestProviderRegistryCompatibility(t *testing.T) {
 		names = append(names, name)
 	}
 	sort.Strings(names)
+	semaphore := make(chan struct{}, registryCompatibilityMaxParallel)
 
 	for _, name := range names {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			semaphore <- struct{}{}
+			defer func() { <-semaphore }()
+
 			source := providers[name]
 			version, err := fetchLatestStableRegistryProviderVersion(client, source)
 			if err != nil {
@@ -64,6 +76,9 @@ func TestProviderRegistryCompatibility(t *testing.T) {
 	}
 }
 
+// Keep this constructor list in sync with providerImporterSubcommands. The
+// audit intentionally uses real provider constructors so it validates the same
+// provider GetName values that Terraformer uses during imports.
 func registryAuditProviderSources() map[string]string {
 	providers := map[string]string{}
 	for _, providerGen := range []func() terraformutils.ProviderGenerator{
@@ -119,14 +134,38 @@ func registryAuditProviderSources() map[string]string {
 }
 
 func fetchLatestStableRegistryProviderVersion(client *http.Client, source string) (registryProviderVersion, error) {
+	var lastErr error
+	for attempt := 1; attempt <= registryCompatibilityMaxAttempts; attempt++ {
+		version, err := fetchLatestStableRegistryProviderVersionOnce(client, source)
+		if err == nil {
+			return version, nil
+		}
+		lastErr = err
+
+		var httpErr registryHTTPError
+		if !errors.As(err, &httpErr) || !httpErr.retryable() {
+			return registryProviderVersion{}, err
+		}
+		time.Sleep(time.Duration(attempt) * time.Second)
+	}
+	return registryProviderVersion{}, fmt.Errorf("failed to fetch registry.terraform.io/%s after %d attempts: %w", source, registryCompatibilityMaxAttempts, lastErr)
+}
+
+func fetchLatestStableRegistryProviderVersionOnce(client *http.Client, source string) (registryProviderVersion, error) {
 	url := fmt.Sprintf("https://registry.terraform.io/v1/providers/%s/versions", source)
-	resp, err := client.Get(url)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return registryProviderVersion{}, err
+	}
+	req.Header.Set("User-Agent", registryCompatibilityUserAgent)
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return registryProviderVersion{}, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return registryProviderVersion{}, fmt.Errorf("%s returned %s", url, resp.Status)
+		return registryProviderVersion{}, registryHTTPError{url: url, statusCode: resp.StatusCode, status: resp.Status}
 	}
 
 	var payload registryVersionsResponse
@@ -138,6 +177,20 @@ func fetchLatestStableRegistryProviderVersion(client *http.Client, source string
 		return registryProviderVersion{}, fmt.Errorf("registry.terraform.io/%s has no stable semver versions", source)
 	}
 	return version, nil
+}
+
+type registryHTTPError struct {
+	url        string
+	statusCode int
+	status     string
+}
+
+func (e registryHTTPError) Error() string {
+	return fmt.Sprintf("%s returned %s", e.url, e.status)
+}
+
+func (e registryHTTPError) retryable() bool {
+	return e.statusCode == http.StatusTooManyRequests || e.statusCode >= http.StatusInternalServerError
 }
 
 func latestStableRegistryProviderVersion(versions []registryProviderVersion) (registryProviderVersion, bool) {
