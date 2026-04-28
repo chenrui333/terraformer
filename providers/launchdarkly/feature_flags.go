@@ -38,11 +38,21 @@ func (g *FeatureFlagsGenerator) loadFeatureFlagEnv(ctx context.Context, client *
 }
 
 func (g *FeatureFlagsGenerator) loadFeatureFlags(ctx context.Context, client *ldapi.APIClient, project string) error {
-	featureFlags, _, err := client.FeatureFlagsApi.GetFeatureFlags(ctx, project).Execute()
-	if err != nil {
-		return err
+	var allFlags []ldapi.FeatureFlag
+	for offset := int64(0); ; offset += pageSize {
+		featureFlags, _, err := client.FeatureFlagsApi.GetFeatureFlags(ctx, project).
+			Limit(pageSize).
+			Offset(offset).
+			Execute()
+		if err != nil {
+			return err
+		}
+		allFlags = append(allFlags, featureFlags.Items...)
+		if featureFlags.TotalCount == nil || int64(len(allFlags)) >= int64(*featureFlags.TotalCount) {
+			break
+		}
 	}
-	for _, featureFlag := range featureFlags.Items {
+	for _, featureFlag := range allFlags {
 		resource := terraformutils.NewResource(
 			featureFlag.Key,
 			project+"-"+featureFlag.Name,
@@ -55,7 +65,7 @@ func (g *FeatureFlagsGenerator) loadFeatureFlags(ctx context.Context, client *ld
 			featureFlagsAllowEmptyValues,
 			map[string]interface{}{})
 		resource.IgnoreKeys = append(resource.IgnoreKeys, "include_in_snippet")
-		err = g.loadFeatureFlagEnv(ctx, client, project, featureFlag.Key)
+		err := g.loadFeatureFlagEnv(ctx, client, project, featureFlag.Key)
 		if err != nil {
 			return err
 		}
@@ -69,7 +79,7 @@ func (g *FeatureFlagsGenerator) InitResources() error {
 	if err != nil {
 		return err
 	}
-	for _, project := range projects.Items {
+	for _, project := range projects {
 		if err := g.loadFeatureFlags(g.GetArgs()["ctx"].(context.Context), g.GetArgs()["client"].(*ldapi.APIClient), project.Key); err != nil {
 			return err
 		}

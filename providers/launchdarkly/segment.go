@@ -14,11 +14,21 @@ type SegmentGenerator struct {
 }
 
 func (g *SegmentGenerator) loadSegment(ctx context.Context, client *ldapi.APIClient, project, envKey string) error {
-	segments, _, err := client.SegmentsApi.GetSegments(ctx, project, envKey).Execute()
-	if err != nil {
-		return err
+	var allSegments []ldapi.UserSegment
+	for offset := int64(0); ; offset += pageSize {
+		segments, _, err := client.SegmentsApi.GetSegments(ctx, project, envKey).
+			Limit(pageSize).
+			Offset(offset).
+			Execute()
+		if err != nil {
+			return err
+		}
+		allSegments = append(allSegments, segments.Items...)
+		if int64(len(allSegments)) >= int64(segments.TotalCount) {
+			break
+		}
 	}
-	for _, segment := range segments.Items {
+	for _, segment := range allSegments {
 		resource := terraformutils.NewResource(
 			segment.Key,
 			project+"-"+envKey+"-"+segment.Name,
@@ -42,7 +52,7 @@ func (g *SegmentGenerator) InitResources() error {
 	if err != nil {
 		return err
 	}
-	for _, project := range projects.Items {
+	for _, project := range projects {
 		if project.Environments == nil {
 			continue
 		}
