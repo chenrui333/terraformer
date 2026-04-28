@@ -153,6 +153,39 @@ func TestGetProviderFileNameReturnsAllRegistryDirErrors(t *testing.T) {
 	}
 }
 
+func TestGetProviderFileNameReturnsErrorWhenProviderMissing(t *testing.T) {
+	homeDir := t.TempDir()
+	dataDir := filepath.Join(t.TempDir(), ".terraform")
+	t.Setenv("HOME", homeDir)
+	t.Setenv("TF_DATA_DIR", dataDir)
+
+	registryDirs := []string{
+		filepath.Join(dataDir, "providers", "registry.terraform.io"),
+		filepath.Join(homeDir, ".terraform.d", "plugins", "registry.terraform.io"),
+	}
+	for _, registryDir := range registryDirs {
+		if err := os.MkdirAll(registryDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	got, err := getProviderFileName("aws")
+	if err == nil {
+		t.Fatal("getProviderFileName returned nil error")
+	}
+	if got != "" {
+		t.Fatalf("getProviderFileName = %q, want empty path", got)
+	}
+	if !strings.Contains(err.Error(), `provider "aws" not found`) {
+		t.Fatalf("error %q does not include missing provider context", err)
+	}
+	for _, registryDir := range registryDirs {
+		if !strings.Contains(err.Error(), registryDir) {
+			t.Fatalf("error %q does not include registry dir %q", err, registryDir)
+		}
+	}
+}
+
 func writeProviderBinary(t *testing.T, dir, name string) string {
 	t.Helper()
 	if err := os.MkdirAll(dir, 0o755); err != nil {

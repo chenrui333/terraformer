@@ -256,7 +256,7 @@ func getProviderFileName(providerName string) (string, error) {
 			return providerFilePath, nil
 		}
 	}
-	return "", lastErr
+	return "", errors.Join(lastErr, fmt.Errorf("provider %q not found in Terraform registry dirs: %s", providerName, strings.Join(registryDirs, ", ")))
 }
 
 func getProviderFileNameFromRegistryDir(registryDir, providerName string) (string, error) {
