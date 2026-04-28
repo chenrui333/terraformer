@@ -95,12 +95,14 @@ func providerGenerators() map[string]func() terraformutils.ProviderGenerator {
 		newEquinixMetalProvider,
 		newFastlyProvider,
 		newHerokuProvider,
+		newIonosCloudProvider,
 		newLaunchDarklyProvider,
 		newLinodeProvider,
 		newNs1Provider,
 		newOpenStackProvider,
 		newTencentCloudProvider,
 		newVultrProvider,
+		newYandexProvider,
 		// Infrastructure Software
 		newKubernetesProvider,
 		newOctopusDeployProvider,
@@ -108,6 +110,7 @@ func providerGenerators() map[string]func() terraformutils.ProviderGenerator {
 		// Network
 		newMyrasecProvider,
 		newCloudflareProvider,
+		newPanosProvider,
 		// VCS
 		newAzureDevOpsProvider,
 		newAzureADProvider,
@@ -115,7 +118,10 @@ func providerGenerators() map[string]func() terraformutils.ProviderGenerator {
 		newGitLabProvider,
 		// Monitoring & System Management
 		newDataDogProvider,
+		newGrafanaProvider,
 		newNewRelicProvider,
+		newMackerelProvider,
+		newOpsgenieProvider,
 		newPagerDutyProvider,
 		newHoneycombioProvider,
 		newOpalProvider,
