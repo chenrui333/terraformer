@@ -6,19 +6,19 @@ import (
 	"context"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	launchdarkly "github.com/launchdarkly/api-client-go"
+	ldapi "github.com/launchdarkly/api-client-go/v16"
 )
 
 type ProjectGenerator struct {
 	LaunchDarklyService
 }
 
-func getProjects(ctx context.Context, client *launchdarkly.APIClient) (launchdarkly.Projects, error) {
-	projects, _, err := client.ProjectsApi.GetProjects(ctx)
+func getProjects(ctx context.Context, client *ldapi.APIClient) (*ldapi.Projects, error) {
+	projects, _, err := client.ProjectsApi.GetProjects(ctx).Execute()
 	return projects, err
 }
 
-func (g *ProjectGenerator) loadProjects(ctx context.Context, client *launchdarkly.APIClient) error {
+func (g *ProjectGenerator) loadProjects(ctx context.Context, client *ldapi.APIClient) error {
 	projects, err := getProjects(ctx, client)
 	if err != nil {
 		return err
@@ -41,7 +41,7 @@ func (g *ProjectGenerator) loadProjects(ctx context.Context, client *launchdarkl
 }
 
 func (g *ProjectGenerator) InitResources() error {
-	if err := g.loadProjects(g.GetArgs()["ctx"].(context.Context), g.GetArgs()["client"].(*launchdarkly.APIClient)); err != nil {
+	if err := g.loadProjects(g.GetArgs()["ctx"].(context.Context), g.GetArgs()["client"].(*ldapi.APIClient)); err != nil {
 		return err
 	}
 

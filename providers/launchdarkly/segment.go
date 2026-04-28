@@ -6,15 +6,15 @@ import (
 	"context"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	launchdarkly "github.com/launchdarkly/api-client-go"
+	ldapi "github.com/launchdarkly/api-client-go/v16"
 )
 
 type SegmentGenerator struct {
 	LaunchDarklyService
 }
 
-func (g *SegmentGenerator) loadSegment(ctx context.Context, client *launchdarkly.APIClient, project, envKey string) error {
-	segments, _, err := client.UserSegmentsApi.GetUserSegments(ctx, project, envKey, &launchdarkly.UserSegmentsApiGetUserSegmentsOpts{})
+func (g *SegmentGenerator) loadSegment(ctx context.Context, client *ldapi.APIClient, project, envKey string) error {
+	segments, _, err := client.SegmentsApi.GetSegments(ctx, project, envKey).Execute()
 	if err != nil {
 		return err
 	}
@@ -38,13 +38,16 @@ func (g *SegmentGenerator) loadSegment(ctx context.Context, client *launchdarkly
 }
 
 func (g *SegmentGenerator) InitResources() error {
-	projects, err := getProjects(g.GetArgs()["ctx"].(context.Context), g.GetArgs()["client"].(*launchdarkly.APIClient))
+	projects, err := getProjects(g.GetArgs()["ctx"].(context.Context), g.GetArgs()["client"].(*ldapi.APIClient))
 	if err != nil {
 		return err
 	}
 	for _, project := range projects.Items {
-		for _, env := range project.Environments {
-			if err := g.loadSegment(g.GetArgs()["ctx"].(context.Context), g.GetArgs()["client"].(*launchdarkly.APIClient), project.Key, env.Key); err != nil {
+		if project.Environments == nil {
+			continue
+		}
+		for _, env := range project.Environments.Items {
+			if err := g.loadSegment(g.GetArgs()["ctx"].(context.Context), g.GetArgs()["client"].(*ldapi.APIClient), project.Key, env.Key); err != nil {
 				return err
 			}
 		}
