@@ -54,6 +54,35 @@ func TestEcrOptionalErrorHelpers(t *testing.T) {
 	if ecrInvalidParameter(genericErr) {
 		t.Fatal("ecrInvalidParameter() = true for generic error, want false")
 	}
+	if ecrRegistryPolicyNotFound(nil) {
+		t.Fatal("ecrRegistryPolicyNotFound() = true for nil error, want false")
+	}
+	if ecrPullThroughCacheRuleNotFound(nil) {
+		t.Fatal("ecrPullThroughCacheRuleNotFound() = true for nil error, want false")
+	}
+	if ecrTemplateNotFound(nil) {
+		t.Fatal("ecrTemplateNotFound() = true for nil error, want false")
+	}
+	if ecrInvalidParameter(nil) {
+		t.Fatal("ecrInvalidParameter() = true for nil error, want false")
+	}
+}
+
+func TestEcrOptionalRegistryResourcesContinueAfterError(t *testing.T) {
+	g := EcrGenerator{}
+	calledSecondLoader := false
+
+	g.getOptionalRegistryResources(
+		ecrOptionalResourceLoader{name: "denied", load: func() error { return errors.New("access denied") }},
+		ecrOptionalResourceLoader{name: "next", load: func() error {
+			calledSecondLoader = true
+			return nil
+		}},
+	)
+
+	if !calledSecondLoader {
+		t.Fatal("getOptionalRegistryResources() stopped after optional loader error")
+	}
 }
 
 func TestEcrPostConvertHookWrapsPolicyFields(t *testing.T) {
@@ -93,8 +122,14 @@ func TestEcrPublicRepositoryPolicyHelpers(t *testing.T) {
 	if !ecrPublicRepositoryPolicyNotFound(&publictypes.RepositoryPolicyNotFoundException{}) {
 		t.Fatal("ecrPublicRepositoryPolicyNotFound() = false, want true")
 	}
+	if !ecrPublicRepositoryPolicyNotFound(&publictypes.RepositoryNotFoundException{}) {
+		t.Fatal("ecrPublicRepositoryPolicyNotFound() = false for missing repository, want true")
+	}
 	if ecrPublicRepositoryPolicyNotFound(errors.New("boom")) {
 		t.Fatal("ecrPublicRepositoryPolicyNotFound() = true for generic error, want false")
+	}
+	if ecrPublicRepositoryPolicyNotFound(nil) {
+		t.Fatal("ecrPublicRepositoryPolicyNotFound() = true for nil error, want false")
 	}
 }
 

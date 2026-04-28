@@ -83,6 +83,7 @@ func (g *EcrPublicGenerator) PostConvertHook() error {
 }
 
 func ecrPublicRepositoryPolicyNotFound(err error) bool {
-	var notFound *types.RepositoryPolicyNotFoundException
-	return errors.As(err, &notFound)
+	var policyNotFound *types.RepositoryPolicyNotFoundException
+	var repositoryNotFound *types.RepositoryNotFoundException
+	return errors.As(err, &policyNotFound) || errors.As(err, &repositoryNotFound)
 }

@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/aws/aws-sdk-go-v2/service/ecr/types"
@@ -20,6 +21,11 @@ var ecrAccountSettingNames = []string{
 	"REGISTRY_POLICY_SCOPE",
 }
 
+type ecrOptionalResourceLoader struct {
+	name string
+	load func() error
+}
+
 type EcrGenerator struct {
 	AWSService
 }
@@ -32,24 +38,15 @@ func (g *EcrGenerator) InitResources() error {
 
 	svc := ecr.NewFromConfig(config)
 
-	if err := g.getAccountSettings(svc); err != nil {
-		return err
-	}
-	if err := g.getRegistryPolicy(svc); err != nil {
-		return err
-	}
-	if err := g.getRegistryScanningConfiguration(svc); err != nil {
-		return err
-	}
-	if err := g.getReplicationConfiguration(svc); err != nil {
-		return err
-	}
-	if err := g.getPullThroughCacheRules(svc); err != nil {
-		return err
-	}
-	if err := g.getRepositoryCreationTemplates(svc); err != nil {
-		return err
-	}
+	// Registry-level resources use separate IAM actions; keep repository import best-effort when those are denied.
+	g.getOptionalRegistryResources(
+		ecrOptionalResourceLoader{name: "account settings", load: func() error { return g.getAccountSettings(svc) }},
+		ecrOptionalResourceLoader{name: "registry policy", load: func() error { return g.getRegistryPolicy(svc) }},
+		ecrOptionalResourceLoader{name: "registry scanning configuration", load: func() error { return g.getRegistryScanningConfiguration(svc) }},
+		ecrOptionalResourceLoader{name: "replication configuration", load: func() error { return g.getReplicationConfiguration(svc) }},
+		ecrOptionalResourceLoader{name: "pull-through cache rules", load: func() error { return g.getPullThroughCacheRules(svc) }},
+		ecrOptionalResourceLoader{name: "repository creation templates", load: func() error { return g.getRepositoryCreationTemplates(svc) }},
+	)
 
 	p := ecr.NewDescribeRepositoriesPaginator(svc, &ecr.DescribeRepositoriesInput{})
 	for p.HasMorePages() {
@@ -93,6 +90,14 @@ func (g *EcrGenerator) InitResources() error {
 		}
 	}
 	return nil
+}
+
+func (g *EcrGenerator) getOptionalRegistryResources(loaders ...ecrOptionalResourceLoader) {
+	for _, loader := range loaders {
+		if err := loader.load(); err != nil {
+			log.Printf("failed to discover optional ECR %s: %s", loader.name, err)
+		}
+	}
 }
 
 func (g *EcrGenerator) getAccountSettings(svc *ecr.Client) error {
