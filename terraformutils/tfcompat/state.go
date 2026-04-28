@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	TerraformVersion     = "0.15.0"
+	TerraformVersion     = "1.9.0"
 	UnknownVariableValue = "74D93920-ED26-11E3-AC10-0800200C9A66"
 )
 

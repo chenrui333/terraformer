@@ -7,7 +7,7 @@ import "testing"
 func TestProviderSource(t *testing.T) {
 	t.Parallel()
 
-	// Keep this table in sync with provider GetName values so Terraform 0.13+
+	// Keep this table in sync with provider GetName values so Terraform 1.x
 	// generated configs and states do not silently fall back to the wrong namespace.
 	testCases := map[string]string{
 		"alicloud":                    "aliyun/alicloud",

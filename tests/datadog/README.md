@@ -1,56 +1,45 @@
-# Testing the Datadog provider 
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 
-The CLI script provided is used to test importing Datadog resources with terraformer. The tool will create resources using Terraform CLI and import them using terraformer. The imported resources will be stored in the `generated/` directory.
+# Testing the Datadog provider
 
-_Note_: The script will create and destroy real resources. Never run this on a production Datadog organization.
+The CLI script creates Datadog resources with Terraform CLI, imports them with
+Terraformer, stores generated resources in `generated/`, and verifies the result.
 
-### Requirements 
-* terraform version >= 0.12.x
+_Note_: The script creates and destroys real resources. Never run this on a
+production Datadog organization.
 
-### Script usage
+## Requirements
 
-**Terraform 0.12.x**
+- Terraform CLI 1.9 through 1.14
+- Datadog API and application keys for a non-production organization
 
-Run the script from the projects root directory:
+## Script Usage
 
-```
+Run the script from the project root:
+
+```bash
 go run ./tests/datadog/
-``` 
-
-- Test should run successfully without exiting
-
-**Terraform 0.13.x**
-
-Run the script from the projects root directory and pass the terraform version using DATADOG_TF_VERSION env var:
-
-```
-DATADOG_TF_VERSION=0.13.x LOG_CMD_OUTPUT=true go run ./tests/datadog/
-```
-- Terraformer currently generates resources using terraform version 0.12.29 and HCLv1 standards. When using terraform version 0.13.x, the script will fail due to `outputs` diffs when running `terraform plan` on the generated resources. This is due to differences in how outputs are references in state files.
-
-- Manually ensure that generated diffs are regarding outputs only. E.g:
-
-```
-Plan: 0 to add, 0 to change, 0 to destroy.
-
-Changes to Outputs:
-    ~ datadog_dashboard_tfer--dashboard_gwh-002D-a7r-002D-cfs_id = "<resource-ID>" -> "datadog_dashboard.tfer--dashboard_gwh-002D-a7r-002D-cfs.id"
 ```
 
-##### Available configuration options
+The script should finish without exiting early and should produce no Terraform
+plan diff for the generated resources.
 
-| Configuration Options     | Description        |
-| -------------             |:-------------      |
-| **DD_TEST_CLIENT_API_KEY**    | Datadog api key      |
-| **DD_TEST_CLIENT_APP_KEY**    | Datadog APP key      |
-| **DATADOG_HOST**              | The API Url. if you're working with "EU" version of Datadog, use `https://api.datadoghq.eu/`. Default: `https://api.datadoghq.com/`      |
-| **DATADOG_TF_VERSION**        | Terraform version installed. Pass the terraform version number if using Terraform version >= 0.13.x      |
-| **DATADOG_TERRAFORM_TARGET**    | Colon separated list of resource addresses to [target](https://www.terraform.io/docs/commands/plan.html#resource-targeting). Example: `DATADOG_TERRAFORM_TARGET="datadog_dashboard.free_dashboard_example:datadog_monitor.monitor_example"`      |
-| **LOG_CMD_OUTPUT**    | Print outputs to stderr and stdout when running `terraform` commands. Default `false`      |
+## Configuration
 
-**Frequently Asked Questions**
+| Configuration option | Description |
+| --- | --- |
+| `DD_TEST_CLIENT_API_KEY` | Datadog API key. |
+| `DD_TEST_CLIENT_APP_KEY` | Datadog application key. |
+| `DATADOG_HOST` | Datadog API URL. Use `https://api.datadoghq.eu/` for EU sites. Default: `https://api.datadoghq.com/`. |
+| `DATADOG_TERRAFORM_TARGET` | Colon-separated resource addresses to target, such as `datadog_dashboard.free_dashboard_example:datadog_monitor.monitor_example`. |
+| `LOG_CMD_OUTPUT` | Print Terraform command output to stderr/stdout. Default: `false`. |
 
+## Frequently Asked Questions
+
+```text
+Message: Error while importing resources. Error: fork/exec : no such file or directory
 ```
-2020/10/26 15:08:34 Message: Error while importing resources. Error: fork/exec : no such file or directory
-```
-- Above error indicates that Terraformer is unable to locate the datadog provider executable. Manually pass the dir of the plugin's directory using env var `TF_PLUGIN_DIR`. E.g. `TF_PLUGIN_DIR=~/.terraform.d/`
+
+This means Terraformer could not locate the Datadog provider executable. Run
+`terraform init` for the test resources first, or point `TF_DATA_DIR` at a
+Terraform 1.x plugin cache containing the Datadog provider.
