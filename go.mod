@@ -166,8 +166,6 @@ require (
 	github.com/launchdarkly/api-client-go v5.3.0+incompatible
 )
 
-require github.com/newrelic/newrelic-client-go v1.1.0
-
 require (
 	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
@@ -387,6 +385,7 @@ require (
 	github.com/ionos-cloud/sdk-go-logging v1.3.0
 	github.com/keycloak/terraform-provider-keycloak v0.0.0-20260424143515-c4c53ecc9c95
 	github.com/logzio/logzio_terraform_client v1.30.2
+	github.com/newrelic/newrelic-client-go v1.1.0
 	github.com/okta/okta-sdk-golang/v5 v5.0.6
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/as v1.3.53
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cbs v1.3.40
@@ -410,8 +409,6 @@ require (
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc v1.3.83
 	gitlab.com/gitlab-org/api/client-go v1.46.0
 )
-
-replace gopkg.in/jarcoal/httpmock.v1 => github.com/jarcoal/httpmock v1.0.5
 
 replace gopkg.in/ns1/ns1-go.v2 => github.com/ns1/ns1-go/v2 v2.17.2
 
