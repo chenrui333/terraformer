@@ -6,19 +6,47 @@ import (
 	"context"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	launchdarkly "github.com/launchdarkly/api-client-go"
+	ldapi "github.com/launchdarkly/api-client-go/v16"
 )
 
 type SegmentGenerator struct {
 	LaunchDarklyService
 }
 
-func (g *SegmentGenerator) loadSegment(ctx context.Context, client *launchdarkly.APIClient, project, envKey string) error {
-	segments, _, err := client.UserSegmentsApi.GetUserSegments(ctx, project, envKey, &launchdarkly.UserSegmentsApiGetUserSegmentsOpts{})
-	if err != nil {
-		return err
+func getEnvironments(ctx context.Context, client *ldapi.APIClient, projectKey string) ([]ldapi.Environment, error) {
+	var allEnvs []ldapi.Environment
+	for offset := int64(0); ; offset += pageSize {
+		envs, _, err := client.EnvironmentsApi.GetEnvironmentsByProject(ctx, projectKey).
+			Limit(pageSize).
+			Offset(offset).
+			Execute()
+		if err != nil {
+			return nil, err
+		}
+		allEnvs = append(allEnvs, envs.Items...)
+		if envs.TotalCount == nil || int64(len(allEnvs)) >= int64(*envs.TotalCount) {
+			break
+		}
 	}
-	for _, segment := range segments.Items {
+	return allEnvs, nil
+}
+
+func (g *SegmentGenerator) loadSegment(ctx context.Context, client *ldapi.APIClient, project, envKey string) error {
+	var allSegments []ldapi.UserSegment
+	for offset := int64(0); ; offset += pageSize {
+		segments, _, err := client.SegmentsApi.GetSegments(ctx, project, envKey).
+			Limit(pageSize).
+			Offset(offset).
+			Execute()
+		if err != nil {
+			return err
+		}
+		allSegments = append(allSegments, segments.Items...)
+		if int64(len(allSegments)) >= int64(segments.TotalCount) {
+			break
+		}
+	}
+	for _, segment := range allSegments {
 		resource := terraformutils.NewResource(
 			segment.Key,
 			project+"-"+envKey+"-"+segment.Name,
@@ -38,13 +66,20 @@ func (g *SegmentGenerator) loadSegment(ctx context.Context, client *launchdarkly
 }
 
 func (g *SegmentGenerator) InitResources() error {
-	projects, err := getProjects(g.GetArgs()["ctx"].(context.Context), g.GetArgs()["client"].(*launchdarkly.APIClient))
+	ctx := g.GetArgs()["ctx"].(context.Context)
+	client := g.GetArgs()["client"].(*ldapi.APIClient)
+
+	projects, err := getProjects(ctx, client)
 	if err != nil {
 		return err
 	}
-	for _, project := range projects.Items {
-		for _, env := range project.Environments {
-			if err := g.loadSegment(g.GetArgs()["ctx"].(context.Context), g.GetArgs()["client"].(*launchdarkly.APIClient), project.Key, env.Key); err != nil {
+	for _, project := range projects {
+		envs, err := getEnvironments(ctx, client, project.Key)
+		if err != nil {
+			return err
+		}
+		for _, env := range envs {
+			if err := g.loadSegment(ctx, client, project.Key, env.Key); err != nil {
 				return err
 			}
 		}

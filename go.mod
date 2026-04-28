@@ -160,11 +160,7 @@ require (
 	github.com/okta/terraform-provider-okta v0.0.0-20260428063648-33f61ad39f19
 )
 
-require (
-	github.com/antihax/optional v1.0.0 // indirect
-	github.com/gofrs/uuid v3.3.0+incompatible // indirect
-	github.com/launchdarkly/api-client-go v5.3.0+incompatible
-)
+require github.com/gofrs/uuid v3.3.0+incompatible // indirect
 
 require (
 	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
@@ -384,6 +380,7 @@ require (
 	github.com/ionos-cloud/sdk-go-dns v1.4.0
 	github.com/ionos-cloud/sdk-go-logging v1.3.0
 	github.com/keycloak/terraform-provider-keycloak v0.0.0-20260427092706-7d5f3cbff050
+	github.com/launchdarkly/api-client-go/v16 v16.1.1
 	github.com/logzio/logzio_terraform_client v1.30.2
 	github.com/newrelic/newrelic-client-go v1.1.0
 	github.com/okta/okta-sdk-golang/v5 v5.0.6

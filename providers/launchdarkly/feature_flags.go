@@ -6,7 +6,7 @@ import (
 	"context"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	launchdarkly "github.com/launchdarkly/api-client-go"
+	ldapi "github.com/launchdarkly/api-client-go/v16"
 )
 
 var featureFlagsAllowEmptyValues = []string{"variations.*.value"}
@@ -15,8 +15,8 @@ type FeatureFlagsGenerator struct {
 	LaunchDarklyService
 }
 
-func (g *FeatureFlagsGenerator) loadFeatureFlagEnv(ctx context.Context, client *launchdarkly.APIClient, projectKey, flagKey string) error {
-	ff, _, err := client.FeatureFlagsApi.GetFeatureFlag(ctx, projectKey, flagKey, &launchdarkly.FeatureFlagsApiGetFeatureFlagOpts{})
+func (g *FeatureFlagsGenerator) loadFeatureFlagEnv(ctx context.Context, client *ldapi.APIClient, projectKey, flagKey string) error {
+	ff, _, err := client.FeatureFlagsApi.GetFeatureFlag(ctx, projectKey, flagKey).Execute()
 	if err != nil {
 		return err
 	}
@@ -37,12 +37,22 @@ func (g *FeatureFlagsGenerator) loadFeatureFlagEnv(ctx context.Context, client *
 	return nil
 }
 
-func (g *FeatureFlagsGenerator) loadFeatureFlags(ctx context.Context, client *launchdarkly.APIClient, project string) error {
-	featureFlags, _, err := client.FeatureFlagsApi.GetFeatureFlags(ctx, project, &launchdarkly.FeatureFlagsApiGetFeatureFlagsOpts{})
-	if err != nil {
-		return err
+func (g *FeatureFlagsGenerator) loadFeatureFlags(ctx context.Context, client *ldapi.APIClient, project string) error {
+	var allFlags []ldapi.FeatureFlag
+	for offset := int64(0); ; offset += pageSize {
+		featureFlags, _, err := client.FeatureFlagsApi.GetFeatureFlags(ctx, project).
+			Limit(pageSize).
+			Offset(offset).
+			Execute()
+		if err != nil {
+			return err
+		}
+		allFlags = append(allFlags, featureFlags.Items...)
+		if featureFlags.TotalCount == nil || int64(len(allFlags)) >= int64(*featureFlags.TotalCount) {
+			break
+		}
 	}
-	for _, featureFlag := range featureFlags.Items {
+	for _, featureFlag := range allFlags {
 		resource := terraformutils.NewResource(
 			featureFlag.Key,
 			project+"-"+featureFlag.Name,
@@ -55,7 +65,7 @@ func (g *FeatureFlagsGenerator) loadFeatureFlags(ctx context.Context, client *la
 			featureFlagsAllowEmptyValues,
 			map[string]interface{}{})
 		resource.IgnoreKeys = append(resource.IgnoreKeys, "include_in_snippet")
-		err = g.loadFeatureFlagEnv(ctx, client, project, featureFlag.Key)
+		err := g.loadFeatureFlagEnv(ctx, client, project, featureFlag.Key)
 		if err != nil {
 			return err
 		}
@@ -65,12 +75,12 @@ func (g *FeatureFlagsGenerator) loadFeatureFlags(ctx context.Context, client *la
 }
 
 func (g *FeatureFlagsGenerator) InitResources() error {
-	projects, err := getProjects(g.GetArgs()["ctx"].(context.Context), g.GetArgs()["client"].(*launchdarkly.APIClient))
+	projects, err := getProjects(g.GetArgs()["ctx"].(context.Context), g.GetArgs()["client"].(*ldapi.APIClient))
 	if err != nil {
 		return err
 	}
-	for _, project := range projects.Items {
-		if err := g.loadFeatureFlags(g.GetArgs()["ctx"].(context.Context), g.GetArgs()["client"].(*launchdarkly.APIClient), project.Key); err != nil {
+	for _, project := range projects {
+		if err := g.loadFeatureFlags(g.GetArgs()["ctx"].(context.Context), g.GetArgs()["client"].(*ldapi.APIClient), project.Key); err != nil {
 			return err
 		}
 	}

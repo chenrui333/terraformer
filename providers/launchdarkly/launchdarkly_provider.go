@@ -5,25 +5,20 @@ package launchdarkly
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	launchdarkly "github.com/launchdarkly/api-client-go"
+	ldapi "github.com/launchdarkly/api-client-go/v16"
 )
 
 type LaunchDarklyProvider struct { //nolint
 	terraformutils.Provider
 	apiKey string
-	client *launchdarkly.APIClient
+	client *ldapi.APIClient
 	ctx    context.Context
 }
 
-const (
-	basePath   = "https://app.launchdarkly.com/api/v2"
-	version    = "0.0.1"
-	APIVersion = "20191212"
-)
+const APIVersion = "20240415"
 
 func (p *LaunchDarklyProvider) Init(_ []string) error {
 	if os.Getenv("LAUNCHDARKLY_ACCESS_TOKEN") == "" {
@@ -31,17 +26,13 @@ func (p *LaunchDarklyProvider) Init(_ []string) error {
 	}
 	p.apiKey = os.Getenv("LAUNCHDARKLY_ACCESS_TOKEN")
 
-	cfg := &launchdarkly.Configuration{
-		BasePath:      basePath,
-		DefaultHeader: make(map[string]string),
-		UserAgent:     fmt.Sprintf("launchdarkly-terraformer/%s", version),
-	}
+	cfg := ldapi.NewConfiguration()
 	cfg.AddDefaultHeader("LD-API-Version", APIVersion)
 
-	p.client = launchdarkly.NewAPIClient(cfg)
+	p.client = ldapi.NewAPIClient(cfg)
 
-	p.ctx = context.WithValue(context.Background(), launchdarkly.ContextAPIKey, launchdarkly.APIKey{
-		Key: p.apiKey,
+	p.ctx = context.WithValue(context.Background(), ldapi.ContextAPIKeys, map[string]ldapi.APIKey{
+		"ApiKey": {Key: p.apiKey},
 	})
 	return nil
 }
