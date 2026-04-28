@@ -10,11 +10,6 @@ Use this checklist when cutting a new Terraformer release.
   user-visible or maintainer-relevant changes.
 - Make sure `main` is current and the worktree is clean before publishing.
 
-For `0.10.0`, treat the release as a minor release because it contains broad
-provider dependency modernization after `0.9.0`. Use issue #155 for follow-up
-tracking of the larger provider SDK and Terraform-core migrations that should
-not block this release once validation is green.
-
 ## Checklist
 
 1. Update [CHANGELOG.md](CHANGELOG.md) with the new version entry.
@@ -24,8 +19,9 @@ not block this release once validation is green.
    - Keep the compare link at the end of the entry.
 2. Preview GitHub-generated notes for comparison:
    ```sh
-   VERSION=0.10.0
-   PREVIOUS_VERSION=0.9.0
+   VERSION=v0.11.0
+   # Use the actual previous tag name (0.10.0 has no v prefix).
+   PREVIOUS_VERSION=0.10.0
    gh api repos/chenrui333/terraformer/releases/generate-notes \
      -f tag_name="$VERSION" \
      -f target_commitish=main \
@@ -50,7 +46,7 @@ not block this release once validation is green.
 5. Confirm the GitHub release body, tag, and artifact list are final.
 6. Create and push the release tag from the intended `main` commit:
    ```sh
-   VERSION=0.10.0
+   VERSION=v0.11.0
    git fetch origin main --tags
    git checkout main
    git pull --ff-only origin main
@@ -79,7 +75,8 @@ and assets as final before publishing.
 
 ## Notes
 
-- Terraformer version tags use plain version tags such as `0.9.0`.
+- Terraformer version tags use the `v` prefix (e.g. `v0.11.0`) for Go module
+  compatibility. Releases before `v0.11.0` used plain tags (`0.9.0`, `0.10.0`).
 - GoReleaser creates draft releases for manual review before publication.
 - The GoReleaser config preserves the existing binary asset names used by README
   install snippets and downstream packaging.
