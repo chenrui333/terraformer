@@ -32,8 +32,7 @@ func (g *EcsGenerator) InitResources() error {
 			return e
 		}
 		for _, clusterArn := range page.ClusterArns {
-			arnParts := strings.Split(clusterArn, "/")
-			clusterName := arnParts[len(arnParts)-1]
+			clusterName := arnLastSegment(clusterArn, "/")
 
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
 				clusterArn,
@@ -53,8 +52,7 @@ func (g *EcsGenerator) InitResources() error {
 					continue
 				}
 				for _, serviceArn := range serviceNextPage.ServiceArns {
-					arnParts := strings.Split(serviceArn, "/")
-					serviceName := arnParts[len(arnParts)-1]
+					serviceName := arnLastSegment(serviceArn, "/")
 
 					serResp, err := svc.DescribeServices(context.TODO(), &ecs.DescribeServicesInput{
 						Services: []string{

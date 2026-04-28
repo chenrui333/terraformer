@@ -6,6 +6,7 @@ import (
 	"context"
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 
@@ -75,6 +76,13 @@ func (s *AWSService) buildBaseConfig() (aws.Config, error) {
 // for CF interpolation and IAM Policy variables
 func (*AWSService) escapeAwsInterpolation(str string) string {
 	return awsVariable.ReplaceAllString(str, "$$$1")
+}
+
+// arnLastSegment returns the substring after the last occurrence of sep in s.
+// Used to extract resource names from ARNs and URLs.
+func arnLastSegment(s, sep string) string {
+	parts := strings.Split(s, sep)
+	return parts[len(parts)-1]
 }
 
 func (s *AWSService) getAccountNumber(config aws.Config) (*string, error) {
