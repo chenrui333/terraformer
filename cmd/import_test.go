@@ -161,11 +161,24 @@ func TestPlanReplayCoversAllImportProviders(t *testing.T) {
 	}
 
 	for name, genFn := range generators {
-		t.Run(name, func(t *testing.T) {
+		t.Run("generator/"+name, func(t *testing.T) {
 			prov := genFn()
 			if got := prov.GetName(); got != name {
 				t.Errorf("generator map key %q does not match GetName() %q", name, got)
 			}
+		})
+	}
+
+	seen := map[string]bool{}
+	for _, fn := range importers {
+		options := ImportOptions{}
+		cmd := fn(options)
+		name := cmd.Use
+		t.Run("importer/"+name, func(t *testing.T) {
+			if seen[name] {
+				t.Errorf("duplicate import subcommand %q", name)
+			}
+			seen[name] = true
 		})
 	}
 }
