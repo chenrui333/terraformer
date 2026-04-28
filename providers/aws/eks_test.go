@@ -3,8 +3,10 @@
 package aws
 
 import (
+	"errors"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/service/eks/types"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -94,5 +96,16 @@ func TestEksPostConvertHookLinksClusterScopedResources(t *testing.T) {
 	want := "${aws_eks_cluster.tfer--prod.name}"
 	if got := g.Resources[1].Item["cluster_name"]; got != want {
 		t.Fatalf("cluster_name = %q, want %q", got, want)
+	}
+}
+
+func TestEksAccessEntriesUnsupported(t *testing.T) {
+	err := &types.InvalidRequestException{}
+	if !eksAccessEntriesUnsupported(err) {
+		t.Fatal("eksAccessEntriesUnsupported() = false, want true")
+	}
+
+	if eksAccessEntriesUnsupported(errors.New("boom")) {
+		t.Fatal("eksAccessEntriesUnsupported() = true for generic error, want false")
 	}
 }

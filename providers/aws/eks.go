@@ -4,10 +4,12 @@ package aws
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/eks"
+	"github.com/aws/aws-sdk-go-v2/service/eks/types"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -44,6 +46,11 @@ func eksArnName(arn string) string {
 		return arnLastSegment(name, ":")
 	}
 	return eksResourceName(parts[4], strings.ReplaceAll(parts[5], "/", "-"))
+}
+
+func eksAccessEntriesUnsupported(err error) bool {
+	var invalidRequest *types.InvalidRequestException
+	return errors.As(err, &invalidRequest)
 }
 
 func (g *EksGenerator) getNodeGroups(clusterName string, svc *eks.Client) error {
@@ -171,6 +178,11 @@ func (g *EksGenerator) getAccessEntries(clusterName string, svc *eks.Client) err
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
 		if err != nil {
+			// CONFIG_MAP authentication clusters reject this API but can still import
+			// clusters, node groups, add-ons, and other EKS resources.
+			if eksAccessEntriesUnsupported(err) {
+				return nil
+			}
 			return err
 		}
 		for _, principalArn := range page.AccessEntries {
