@@ -18,7 +18,7 @@ var providerSources = map[string]string{
 	"fastly":        "fastly/fastly",
 	"github":        "integrations/github",
 	"gitlab":        "gitlabhq/gitlab",
-	"gmailfilter":   "yamamoto-febc/terraform-provider-gmailfilter",
+	"gmailfilter":   "yamamoto-febc/gmailfilter",
 	"grafana":       "grafana/grafana",
 	"heroku":        "heroku/heroku",
 	"honeycombio":   "honeycombio/honeycombio",

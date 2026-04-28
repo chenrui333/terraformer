@@ -23,7 +23,7 @@ func TestProviderSource(t *testing.T) {
 		"fastly":                      "fastly/fastly",
 		"github":                      "integrations/github",
 		"gitlab":                      "gitlabhq/gitlab",
-		"gmailfilter":                 "yamamoto-febc/terraform-provider-gmailfilter",
+		"gmailfilter":                 "yamamoto-febc/gmailfilter",
 		"google":                      "hashicorp/google",
 		"google-beta":                 "hashicorp/google-beta",
 		"grafana":                     "grafana/grafana",

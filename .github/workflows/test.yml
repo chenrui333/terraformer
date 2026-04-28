@@ -77,3 +77,18 @@ jobs:
         cache-dependency-path: go.sum
     - name: Test Terraform state compatibility
       run: bash .github/scripts/terraform-state-compat.sh
+
+  terraform-provider-compat:
+    name: terraform provider compatibility
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - name: Install Go
+      uses: actions/setup-go@v6
+      with:
+        go-version-file: go.mod
+        cache: true
+        cache-dependency-path: go.sum
+    - name: Test Terraform provider compatibility
+      run: bash .github/scripts/terraform-provider-compat.sh
