@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat/configschema"
@@ -127,6 +128,28 @@ func TestGetProviderFileNameIgnoresLegacyPluginDirectory(t *testing.T) {
 	got, _ := getProviderFileName("aws")
 	if got != "" {
 		t.Fatalf("getProviderFileName found legacy pre-1.9 plugin path %q", got)
+	}
+}
+
+func TestGetProviderFileNameReturnsAllRegistryDirErrors(t *testing.T) {
+	homeDir := t.TempDir()
+	dataDir := filepath.Join(t.TempDir(), ".terraform")
+	t.Setenv("HOME", homeDir)
+	t.Setenv("TF_DATA_DIR", dataDir)
+
+	_, err := getProviderFileName("aws")
+	if err == nil {
+		t.Fatal("getProviderFileName returned nil error")
+	}
+
+	wantParts := []string{
+		filepath.Join(dataDir, "providers", "registry.terraform.io"),
+		filepath.Join(homeDir, ".terraform.d", "plugins", "registry.terraform.io"),
+	}
+	for _, want := range wantParts {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("error %q does not include registry dir %q", err, want)
+		}
 	}
 }
 

@@ -249,7 +249,7 @@ func getProviderFileName(providerName string) (string, error) {
 	for _, registryDir := range registryDirs {
 		providerFilePath, err := getProviderFileNameFromRegistryDir(registryDir, providerName)
 		if err != nil {
-			lastErr = err
+			lastErr = errors.Join(lastErr, fmt.Errorf("search provider registry dir %q: %w", registryDir, err))
 			continue
 		}
 		if providerFilePath != "" {
