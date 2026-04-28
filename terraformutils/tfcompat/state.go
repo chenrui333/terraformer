@@ -3,9 +3,11 @@
 package tfcompat
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/zclconf/go-cty/cty"
+	ctyjson "github.com/zclconf/go-cty/cty/json"
 )
 
 const (
@@ -42,9 +44,10 @@ func (r *ResourceAddress) String() string {
 }
 
 type InstanceState struct {
-	ID         string
-	Attributes map[string]string
-	Meta       map[string]interface{}
+	ID              string
+	Attributes      map[string]string
+	TypedAttributes json.RawMessage `json:"typed_attributes,omitempty"`
+	Meta            map[string]interface{}
 }
 
 type OutputState struct {
@@ -56,12 +59,33 @@ type OutputState struct {
 func NewInstanceStateShimmedFromValue(state cty.Value, schemaVersion int) *InstanceState {
 	attributes := FlatmapValueFromHCL2(state)
 	return &InstanceState{
-		ID:         attributes["id"],
-		Attributes: attributes,
+		ID:              attributes["id"],
+		Attributes:      attributes,
+		TypedAttributes: TypedAttributesFromValue(state),
 		Meta: map[string]interface{}{
 			"schema_version": schemaVersion,
 		},
 	}
+}
+
+func TypedAttributesFromValue(state cty.Value) json.RawMessage {
+	raw, err := MarshalTypedAttributesFromValue(state)
+	if err != nil {
+		return nil
+	}
+	return raw
+}
+
+func MarshalTypedAttributesFromValue(state cty.Value) (json.RawMessage, error) {
+	if state == cty.NilVal || state.IsNull() {
+		return nil, nil
+	}
+	unmarked, _ := state.UnmarkDeep()
+	raw, err := ctyjson.Marshal(unmarked, unmarked.Type())
+	if err != nil {
+		return nil, err
+	}
+	return raw, nil
 }
 
 func (s *InstanceState) AttrsAsObjectValue(ty cty.Type) (cty.Value, error) {

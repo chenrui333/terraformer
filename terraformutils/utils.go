@@ -42,8 +42,10 @@ type TfResourceV4 struct {
 }
 
 type TfInstanceV4 struct {
-	SchemaVersion uint64            `json:"schema_version"`
-	Attributes    map[string]string `json:"attributes_flat"`
+	SchemaVersion       uint64            `json:"schema_version"`
+	Attributes          json.RawMessage   `json:"attributes,omitempty"`
+	AttributesFlat      map[string]string `json:"attributes_flat,omitempty"`
+	SensitiveAttributes *[]interface{}    `json:"sensitive_attributes,omitempty"`
 }
 
 func NewTfState(resources []Resource) *TfStateV4 {
@@ -65,23 +67,14 @@ func NewTfState(resources []Resource) *TfStateV4 {
 		}
 	}
 	for _, resource := range resources {
-		attributes := map[string]string{}
-		for k, v := range resource.InstanceState.Attributes {
-			attributes[k] = v
-		}
-		if _, ok := attributes["id"]; !ok && resource.InstanceState.ID != "" {
-			attributes["id"] = resource.InstanceState.ID
-		}
+		instance := newTfInstance(resource)
 
 		tfstate.Resources = append(tfstate.Resources, TfResourceV4{
-			Mode:     "managed",
-			Type:     resource.InstanceInfo.Type,
-			Name:     resource.ResourceName,
-			Provider: ProviderConfigAddress(resource.Provider),
-			Instances: []TfInstanceV4{{
-				SchemaVersion: schemaVersion(resource.InstanceState.Meta),
-				Attributes:    attributes,
-			}},
+			Mode:      "managed",
+			Type:      resource.InstanceInfo.Type,
+			Name:      resource.ResourceName,
+			Provider:  ProviderConfigAddress(resource.Provider),
+			Instances: []TfInstanceV4{instance},
 		})
 	}
 	sort.Slice(tfstate.Resources, func(i, j int) bool {
@@ -90,6 +83,28 @@ func NewTfState(resources []Resource) *TfStateV4 {
 		return left < right
 	})
 	return tfstate
+}
+
+func newTfInstance(resource Resource) TfInstanceV4 {
+	instance := TfInstanceV4{
+		SchemaVersion: schemaVersion(resource.InstanceState.Meta),
+	}
+	if len(resource.InstanceState.TypedAttributes) > 0 {
+		emptySensitiveAttributes := []interface{}{}
+		instance.Attributes = resource.InstanceState.TypedAttributes
+		instance.SensitiveAttributes = &emptySensitiveAttributes
+		return instance
+	}
+
+	attributes := map[string]string{}
+	for k, v := range resource.InstanceState.Attributes {
+		attributes[k] = v
+	}
+	if _, ok := attributes["id"]; !ok && resource.InstanceState.ID != "" {
+		attributes["id"] = resource.InstanceState.ID
+	}
+	instance.AttributesFlat = attributes
+	return instance
 }
 
 func PrintTfState(resources []Resource) ([]byte, error) {
