@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -36,8 +35,7 @@ func (g *SnsGenerator) InitResources() error {
 			return err
 		}
 		for _, topic := range page.Topics {
-			arnParts := strings.Split(StringValue(topic.TopicArn), ":")
-			topicName := arnParts[len(arnParts)-1]
+			topicName := arnLastSegment(StringValue(topic.TopicArn), ":")
 
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
 				StringValue(topic.TopicArn),
@@ -57,8 +55,7 @@ func (g *SnsGenerator) InitResources() error {
 					continue
 				}
 				for _, subscription := range topicSubsNextPage.Subscriptions {
-					subscriptionArnParts := strings.Split(StringValue(subscription.SubscriptionArn), ":")
-					subscriptionID := subscriptionArnParts[len(subscriptionArnParts)-1]
+					subscriptionID := arnLastSegment(StringValue(subscription.SubscriptionArn), ":")
 
 					if g.isSupportedSubscription(StringValue(subscription.Protocol), subscriptionID) {
 						g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
