@@ -15,7 +15,7 @@ require (
 	github.com/IBM/go-sdk-core/v5 v5.21.2
 	github.com/IBM/ibm-cos-sdk-go v1.14.0
 	github.com/IBM/keyprotect-go-client v0.15.1
-	github.com/IBM/networking-go-sdk v0.53.1
+	github.com/IBM/networking-go-sdk v0.53.2
 	github.com/IBM/platform-services-go-sdk v0.97.2
 	github.com/IBM/vpc-go-sdk v0.83.2
 	github.com/OctopusDeploy/go-octopusdeploy v1.8.6
@@ -40,7 +40,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/cloudtrail v1.55.10
 	github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.56.2
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchevents v1.32.24
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.70.0
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.71.0
 	github.com/aws/aws-sdk-go-v2/service/codebuild v1.68.14
 	github.com/aws/aws-sdk-go-v2/service/codecommit v1.33.13
 	github.com/aws/aws-sdk-go-v2/service/codedeploy v1.35.14
@@ -65,13 +65,13 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/elasticsearchservice v1.40.1
 	github.com/aws/aws-sdk-go-v2/service/emr v1.59.1
 	github.com/aws/aws-sdk-go-v2/service/firehose v1.42.14
-	github.com/aws/aws-sdk-go-v2/service/glue v1.139.3
+	github.com/aws/aws-sdk-go-v2/service/glue v1.140.0
 	github.com/aws/aws-sdk-go-v2/service/iam v1.53.8
 	github.com/aws/aws-sdk-go-v2/service/identitystore v1.36.6
 	github.com/aws/aws-sdk-go-v2/service/iot v1.72.7
 	github.com/aws/aws-sdk-go-v2/service/kafka v1.50.0
 	github.com/aws/aws-sdk-go-v2/service/kinesis v1.43.6
-	github.com/aws/aws-sdk-go-v2/service/kms v1.50.5
+	github.com/aws/aws-sdk-go-v2/service/kms v1.51.0
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.90.0
 	github.com/aws/aws-sdk-go-v2/service/medialive v1.95.1
 	github.com/aws/aws-sdk-go-v2/service/mediapackage v1.39.22
@@ -99,7 +99,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/waf v1.30.21
 	github.com/aws/aws-sdk-go-v2/service/wafregional v1.30.22
 	github.com/aws/aws-sdk-go-v2/service/wafv2 v1.71.4
-	github.com/aws/aws-sdk-go-v2/service/workspaces v1.67.3
+	github.com/aws/aws-sdk-go-v2/service/workspaces v1.68.0
 	github.com/aws/aws-sdk-go-v2/service/xray v1.36.22
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cloudflare/cloudflare-go v0.116.0
@@ -108,12 +108,12 @@ require (
 	github.com/ddelnano/terraform-provider-xenorchestra/client v0.0.0-20210401070256-0d721c6762ef
 	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
-	github.com/digitalocean/godo v1.187.0
+	github.com/digitalocean/godo v1.188.0
 	github.com/fastly/go-fastly/v7 v7.5.5
 	github.com/google/go-github/v35 v35.3.0
 	github.com/gophercloud/gophercloud v1.14.1
 	github.com/grafana/grafana-api-golang-client v0.27.0
-	github.com/hashicorp/go-azure-helpers v0.78.0
+	github.com/hashicorp/go-azure-helpers v0.79.0
 	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/go-plugin v1.7.0
@@ -140,7 +140,7 @@ require (
 	github.com/spf13/pflag v1.0.10
 	github.com/tencentyun/cos-go-sdk-v5 v0.7.73
 	github.com/vultr/govultr v1.1.1
-	github.com/yandex-cloud/go-genproto v0.74.0
+	github.com/yandex-cloud/go-genproto v0.75.0
 	github.com/yandex-cloud/go-sdk v0.31.0
 	github.com/zclconf/go-cty v1.18.1
 	github.com/zorkian/go-datadog-api v2.30.0+incompatible
@@ -148,7 +148,7 @@ require (
 	golang.org/x/text v0.36.0
 	gonum.org/v1/gonum v0.17.0
 	google.golang.org/api v0.276.0
-	google.golang.org/genproto v0.0.0-20260420184626-e10c466a9529
+	google.golang.org/genproto v0.0.0-20260427160629-7cedc36a6bc4
 	k8s.io/apimachinery v0.36.0
 	k8s.io/client-go v10.0.0+incompatible
 )
@@ -157,7 +157,7 @@ require (
 	github.com/IBM-Cloud/container-services-go-sdk v0.0.0-20250409011111-61af13302654
 	github.com/IBM/go-sdk-core v1.1.0
 	github.com/mackerelio/mackerel-client-go v0.41.0
-	github.com/okta/terraform-provider-okta v0.0.0-20260421134013-47933679fce1
+	github.com/okta/terraform-provider-okta v0.0.0-20260428063648-33f61ad39f19
 )
 
 require (
@@ -359,8 +359,8 @@ require (
 	go.opentelemetry.io/otel/trace v1.43.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20260414002931-afd174a4e478 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260414002931-afd174a4e478 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20260420184626-e10c466a9529 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260420184626-e10c466a9529 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/validator.v2 v2.0.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20260317180543-43fb72c5454a // indirect
@@ -383,28 +383,28 @@ require (
 	github.com/ionos-cloud/sdk-go-dataplatform v1.1.1
 	github.com/ionos-cloud/sdk-go-dns v1.4.0
 	github.com/ionos-cloud/sdk-go-logging v1.3.0
-	github.com/keycloak/terraform-provider-keycloak v0.0.0-20260424143515-c4c53ecc9c95
+	github.com/keycloak/terraform-provider-keycloak v0.0.0-20260427092706-7d5f3cbff050
 	github.com/logzio/logzio_terraform_client v1.30.2
 	github.com/newrelic/newrelic-client-go v1.1.0
 	github.com/okta/okta-sdk-golang/v5 v5.0.6
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/as v1.3.53
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/as v1.3.88
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cbs v1.3.40
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cdb v1.3.87
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cdn v1.3.61
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cfs v1.3.85
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/clb v1.3.83
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.87
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.88
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cvm v1.3.78
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.3.78
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/es v1.3.84
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/gaap v1.3.34
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/mongodb v1.3.80
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/mongodb v1.3.88
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/pts v1.3.29
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/redis v1.3.79
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/scf v1.3.29
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/ses v1.3.86
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/ssl v1.3.52
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tat v1.3.52
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tat v1.3.88
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tcaplusdb v1.3.17
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc v1.3.83
 	gitlab.com/gitlab-org/api/client-go v1.46.0
