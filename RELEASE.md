@@ -20,7 +20,8 @@ Use this checklist when cutting a new Terraformer release.
 2. Preview GitHub-generated notes for comparison:
    ```sh
    VERSION=v0.11.0
-   PREVIOUS_VERSION=v0.10.0
+   # Use the actual previous tag name (0.10.0 has no v prefix).
+   PREVIOUS_VERSION=0.10.0
    gh api repos/chenrui333/terraformer/releases/generate-notes \
      -f tag_name="$VERSION" \
      -f target_commitish=main \
