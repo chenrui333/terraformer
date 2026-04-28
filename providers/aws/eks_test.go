@@ -51,12 +51,12 @@ func TestEksArnName(t *testing.T) {
 		{
 			name: "role arn",
 			arn:  "arn:aws:iam::123456789012:role/Admin",
-			want: "123456789012-role-Admin",
+			want: "123456789012-role/Admin",
 		},
 		{
 			name: "path role arn",
 			arn:  "arn:aws:iam::123456789012:role/team/Admin",
-			want: "123456789012-role-team-Admin",
+			want: "123456789012-role/team/Admin",
 		},
 		{
 			name: "root arn",
@@ -66,7 +66,12 @@ func TestEksArnName(t *testing.T) {
 		{
 			name: "EKS cluster access policy arn",
 			arn:  "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy",
-			want: "aws-cluster-access-policy-AmazonEKSClusterAdminPolicy",
+			want: "aws-cluster-access-policy/AmazonEKSClusterAdminPolicy",
+		},
+		{
+			name: "non-arn value",
+			arn:  "role/team/Admin",
+			want: "role/team/Admin",
 		},
 	}
 
@@ -76,6 +81,21 @@ func TestEksArnName(t *testing.T) {
 				t.Fatalf("eksArnName(%q) = %q, want %q", tc.arn, got, tc.want)
 			}
 		})
+	}
+}
+
+func TestEksArnNamePreservesPathSeparators(t *testing.T) {
+	pathRoleName := eksArnName("arn:aws:iam::123456789012:role/team/admin")
+	hyphenRoleName := eksArnName("arn:aws:iam::123456789012:role/team-admin")
+
+	if pathRoleName == hyphenRoleName {
+		t.Fatalf("eksArnName() collapsed distinct role ARNs into %q", pathRoleName)
+	}
+
+	pathResource := terraformutils.NewSimpleResource("id-1", pathRoleName, "aws_eks_access_entry", "aws", eksAllowEmptyValues)
+	hyphenResource := terraformutils.NewSimpleResource("id-2", hyphenRoleName, "aws_eks_access_entry", "aws", eksAllowEmptyValues)
+	if pathResource.ResourceName == hyphenResource.ResourceName {
+		t.Fatalf("sanitized resource names collided: %q", pathResource.ResourceName)
 	}
 }
 

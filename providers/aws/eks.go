@@ -42,10 +42,9 @@ func eksResourceName(parts ...string) string {
 func eksArnName(arn string) string {
 	parts := strings.SplitN(arn, ":", 6)
 	if len(parts) != 6 {
-		name := arnLastSegment(arn, "/")
-		return arnLastSegment(name, ":")
+		return arn
 	}
-	return eksResourceName(parts[4], strings.ReplaceAll(parts[5], "/", "-"))
+	return eksResourceName(parts[4], parts[5])
 }
 
 func eksAccessEntriesUnsupported(err error) bool {
