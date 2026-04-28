@@ -48,8 +48,9 @@ type InstanceState struct {
 	Attributes map[string]string
 	// TypedAttributes is serialized only for Terraformer plan/import handoff.
 	// Final tfstate output writes this payload as TfInstanceV4.Attributes.
-	TypedAttributes json.RawMessage `json:"typed_attributes,omitempty"`
-	Meta            map[string]interface{}
+	TypedAttributes        json.RawMessage `json:"typed_attributes,omitempty"`
+	typedAttributesFlatmap map[string]string
+	Meta                   map[string]interface{}
 }
 
 type OutputState struct {
@@ -60,7 +61,7 @@ type OutputState struct {
 
 func NewInstanceStateShimmedFromValue(state cty.Value, schemaVersion int) *InstanceState {
 	attributes := FlatmapValueFromHCL2(state)
-	return &InstanceState{
+	instanceState := &InstanceState{
 		ID:              attributes["id"],
 		Attributes:      attributes,
 		TypedAttributes: TryTypedAttributesFromValue(state),
@@ -68,6 +69,8 @@ func NewInstanceStateShimmedFromValue(state cty.Value, schemaVersion int) *Insta
 			"schema_version": schemaVersion,
 		},
 	}
+	instanceState.trackTypedAttributesFlatmap()
+	return instanceState
 }
 
 func TryTypedAttributesFromValue(state cty.Value) json.RawMessage {
@@ -90,6 +93,28 @@ func MarshalTypedAttributesFromValue(state cty.Value) (json.RawMessage, error) {
 	return raw, nil
 }
 
+func (s *InstanceState) HasCurrentTypedAttributes() bool {
+	if s == nil || len(s.TypedAttributes) == 0 || s.typedAttributesFlatmap == nil {
+		return false
+	}
+	return stringMapsEqual(s.typedAttributesFlatmap, s.Attributes)
+}
+
+func (s *InstanceState) SetTypedAttributes(raw json.RawMessage) {
+	if s == nil {
+		return
+	}
+	s.TypedAttributes = append(json.RawMessage(nil), raw...)
+	s.trackTypedAttributesFlatmap()
+}
+
+func (s *InstanceState) trackTypedAttributesFlatmap() {
+	if s == nil || len(s.TypedAttributes) == 0 {
+		return
+	}
+	s.typedAttributesFlatmap = cloneStringMap(s.Attributes)
+}
+
 func (s *InstanceState) AttrsAsObjectValue(ty cty.Type) (cty.Value, error) {
 	if s == nil {
 		s = &InstanceState{}
@@ -101,4 +126,24 @@ func (s *InstanceState) AttrsAsObjectValue(ty cty.Type) (cty.Value, error) {
 		s.Attributes["id"] = s.ID
 	}
 	return HCL2ValueFromFlatmap(s.Attributes, ty)
+}
+
+func cloneStringMap(input map[string]string) map[string]string {
+	output := make(map[string]string, len(input))
+	for key, value := range input {
+		output[key] = value
+	}
+	return output
+}
+
+func stringMapsEqual(left, right map[string]string) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for key, leftValue := range left {
+		if right[key] != leftValue {
+			return false
+		}
+	}
+	return true
 }

@@ -3,6 +3,7 @@
 package terraformutils
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"os/exec"
@@ -116,6 +117,31 @@ func TestPrintTfStateFallsBackToAttributesFlat(t *testing.T) {
 	}
 }
 
+func TestConvertTypedStatePreservesCurrentTypedAttributes(t *testing.T) {
+	resource := NewResource(
+		"kind-lemur",
+		"example",
+		"random_pet",
+		"random",
+		nil,
+		nil,
+		nil,
+	)
+	resource.InstanceState = tfcompat.NewInstanceStateShimmedFromValue(cty.ObjectVal(map[string]cty.Value{
+		"id":        cty.StringVal("kind-lemur"),
+		"length":    cty.NumberIntVal(2),
+		"separator": cty.StringVal("-"),
+	}), 0)
+	originalTypedAttributes := append([]byte(nil), resource.InstanceState.TypedAttributes...)
+
+	if err := resource.ConvertTypedState(nil); err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(resource.InstanceState.TypedAttributes, originalTypedAttributes) {
+		t.Fatalf("typed attributes were re-derived: got %s, want %s", resource.InstanceState.TypedAttributes, originalTypedAttributes)
+	}
+}
+
 func TestPrintTfStateCanBeListedByTerraformCLI(t *testing.T) {
 	terraformPath, err := exec.LookPath("terraform")
 	if err != nil {
@@ -175,6 +201,7 @@ func TestPrintTfStateCanPlanWithTerraformCLI(t *testing.T) {
   required_providers {
     random = {
       source = "hashicorp/random"
+      version = "3.7.2"
     }
   }
 }

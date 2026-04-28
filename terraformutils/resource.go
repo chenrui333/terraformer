@@ -165,6 +165,10 @@ func (r *Resource) ConvertTFstate(provider *providerwrapper.ProviderWrapper) err
 }
 
 func (r *Resource) ConvertTypedState(provider *providerwrapper.ProviderWrapper) error {
+	if r.InstanceState.HasCurrentTypedAttributes() {
+		return nil
+	}
+
 	schema := provider.GetSchema()
 	resourceSchema, ok := schema.ResourceTypes[r.InstanceInfo.Type]
 	if !ok {
@@ -178,7 +182,7 @@ func (r *Resource) ConvertTypedState(provider *providerwrapper.ProviderWrapper) 
 	if err != nil {
 		return err
 	}
-	r.InstanceState.TypedAttributes = typedAttributes
+	r.InstanceState.SetTypedAttributes(typedAttributes)
 	return nil
 }
 
