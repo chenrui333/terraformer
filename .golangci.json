@@ -45,6 +45,13 @@
         "common-false-positives",
         "legacy",
         "std-error-handling"
+      ],
+      "rules": [
+        {
+          "linters": ["gosec"],
+          "text": "G101",
+          "path": "_test\\.go$"
+        }
       ]
     }
   },
