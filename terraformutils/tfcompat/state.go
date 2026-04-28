@@ -44,8 +44,10 @@ func (r *ResourceAddress) String() string {
 }
 
 type InstanceState struct {
-	ID              string
-	Attributes      map[string]string
+	ID         string
+	Attributes map[string]string
+	// TypedAttributes is serialized only for Terraformer plan/import handoff.
+	// Final tfstate output writes this payload as TfInstanceV4.Attributes.
 	TypedAttributes json.RawMessage `json:"typed_attributes,omitempty"`
 	Meta            map[string]interface{}
 }
@@ -61,14 +63,14 @@ func NewInstanceStateShimmedFromValue(state cty.Value, schemaVersion int) *Insta
 	return &InstanceState{
 		ID:              attributes["id"],
 		Attributes:      attributes,
-		TypedAttributes: TypedAttributesFromValue(state),
+		TypedAttributes: TryTypedAttributesFromValue(state),
 		Meta: map[string]interface{}{
 			"schema_version": schemaVersion,
 		},
 	}
 }
 
-func TypedAttributesFromValue(state cty.Value) json.RawMessage {
+func TryTypedAttributesFromValue(state cty.Value) json.RawMessage {
 	raw, err := MarshalTypedAttributesFromValue(state)
 	if err != nil {
 		return nil

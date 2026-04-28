@@ -74,6 +74,48 @@ func TestPrintTfStateWritesV4ProviderSourceState(t *testing.T) {
 	}
 }
 
+func TestPrintTfStateFallsBackToAttributesFlat(t *testing.T) {
+	resource := NewResource(
+		"vpc-123",
+		"main",
+		"aws_vpc",
+		"aws",
+		map[string]string{"cidr_block": "10.0.0.0/16"},
+		nil,
+		nil,
+	)
+	resource.InstanceState.Meta = map[string]interface{}{"schema_version": 2}
+
+	stateBytes, err := PrintTfState([]Resource{resource})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var state map[string]interface{}
+	if err := json.Unmarshal(stateBytes, &state); err != nil {
+		t.Fatal(err)
+	}
+
+	resources := state["resources"].([]interface{})
+	gotResource := resources[0].(map[string]interface{})
+	instances := gotResource["instances"].([]interface{})
+	instance := instances[0].(map[string]interface{})
+
+	if _, ok := instance["attributes"]; ok {
+		t.Fatal("state instance contains typed attributes, want attributes_flat fallback")
+	}
+	attributesFlat := instance["attributes_flat"].(map[string]interface{})
+	if got := attributesFlat["id"].(string); got != "vpc-123" {
+		t.Fatalf("id attribute = %q, want %q", got, "vpc-123")
+	}
+	if got := attributesFlat["cidr_block"].(string); got != "10.0.0.0/16" {
+		t.Fatalf("cidr_block attribute = %q, want %q", got, "10.0.0.0/16")
+	}
+	if _, ok := instance["sensitive_attributes"]; ok {
+		t.Fatal("state instance contains sensitive_attributes for flat fallback")
+	}
+}
+
 func TestPrintTfStateCanBeListedByTerraformCLI(t *testing.T) {
 	terraformPath, err := exec.LookPath("terraform")
 	if err != nil {
