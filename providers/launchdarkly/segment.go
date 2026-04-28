@@ -13,6 +13,24 @@ type SegmentGenerator struct {
 	LaunchDarklyService
 }
 
+func getEnvironments(ctx context.Context, client *ldapi.APIClient, projectKey string) ([]ldapi.Environment, error) {
+	var allEnvs []ldapi.Environment
+	for offset := int64(0); ; offset += pageSize {
+		envs, _, err := client.EnvironmentsApi.GetEnvironmentsByProject(ctx, projectKey).
+			Limit(pageSize).
+			Offset(offset).
+			Execute()
+		if err != nil {
+			return nil, err
+		}
+		allEnvs = append(allEnvs, envs.Items...)
+		if envs.TotalCount == nil || int64(len(allEnvs)) >= int64(*envs.TotalCount) {
+			break
+		}
+	}
+	return allEnvs, nil
+}
+
 func (g *SegmentGenerator) loadSegment(ctx context.Context, client *ldapi.APIClient, project, envKey string) error {
 	var allSegments []ldapi.UserSegment
 	for offset := int64(0); ; offset += pageSize {
@@ -48,16 +66,20 @@ func (g *SegmentGenerator) loadSegment(ctx context.Context, client *ldapi.APICli
 }
 
 func (g *SegmentGenerator) InitResources() error {
-	projects, err := getProjects(g.GetArgs()["ctx"].(context.Context), g.GetArgs()["client"].(*ldapi.APIClient))
+	ctx := g.GetArgs()["ctx"].(context.Context)
+	client := g.GetArgs()["client"].(*ldapi.APIClient)
+
+	projects, err := getProjects(ctx, client)
 	if err != nil {
 		return err
 	}
 	for _, project := range projects {
-		if project.Environments == nil {
-			continue
+		envs, err := getEnvironments(ctx, client, project.Key)
+		if err != nil {
+			return err
 		}
-		for _, env := range project.Environments.Items {
-			if err := g.loadSegment(g.GetArgs()["ctx"].(context.Context), g.GetArgs()["client"].(*ldapi.APIClient), project.Key, env.Key); err != nil {
+		for _, env := range envs {
+			if err := g.loadSegment(ctx, client, project.Key, env.Key); err != nil {
 				return err
 			}
 		}

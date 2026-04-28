@@ -21,7 +21,6 @@ func getProjects(ctx context.Context, client *ldapi.APIClient) ([]ldapi.Project,
 		projects, _, err := client.ProjectsApi.GetProjects(ctx).
 			Limit(pageSize).
 			Offset(offset).
-			Expand("environments").
 			Execute()
 		if err != nil {
 			return nil, err
