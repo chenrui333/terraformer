@@ -3,6 +3,7 @@
 package tfcompat
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/zclconf/go-cty/cty"
@@ -63,6 +64,17 @@ func TestNewInstanceStateShimmedFromValue(t *testing.T) {
 	}
 	if got := state.Meta["schema_version"]; got != 7 {
 		t.Fatalf("schema_version = %#v, want 7", got)
+	}
+
+	var typed map[string]interface{}
+	if err := json.Unmarshal(state.TypedAttributes, &typed); err != nil {
+		t.Fatal(err)
+	}
+	if got := typed["id"].(string); got != "vpc-123" {
+		t.Fatalf("typed id attribute = %q, want %q", got, "vpc-123")
+	}
+	if got := typed["name"].(string); got != "main" {
+		t.Fatalf("typed name attribute = %q, want %q", got, "main")
 	}
 }
 

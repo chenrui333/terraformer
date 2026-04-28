@@ -55,8 +55,8 @@ for minor in $minors; do
   terraform_version_output=$("$terraform_dir/terraform" version)
   printf '%s\n' "${terraform_version_output%%$'\n'*}"
 
-  PATH="$terraform_dir:$PATH" GOWORK=off go test ./terraformutils \
-    -run 'TestPrintTfState(WritesV4ProviderSourceState|CanBeListedByTerraformCLI)$' \
+  PATH="$terraform_dir:$PATH" GOWORK=off TERRAFORMER_TFSTATE_PLAN_TEST=1 go test ./terraformutils \
+    -run 'TestPrintTfState(WritesV4ProviderSourceState|CanBeListedByTerraformCLI|CanPlanWithTerraformCLI)$' \
     -count=1 \
     -v
   echo "::endgroup::"

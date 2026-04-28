@@ -3,6 +3,7 @@
 package terraformutils
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"os/exec"
@@ -11,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
+	"github.com/zclconf/go-cty/cty"
 )
 
 func TestPrintTfStateWritesV4ProviderSourceState(t *testing.T) {
@@ -53,9 +55,90 @@ func TestPrintTfStateWritesV4ProviderSourceState(t *testing.T) {
 	if got := int(instance["schema_version"].(float64)); got != 2 {
 		t.Fatalf("schema version = %d, want 2", got)
 	}
-	attributes := instance["attributes_flat"].(map[string]interface{})
+	if _, ok := instance["attributes_flat"]; ok {
+		t.Fatal("state instance contains legacy attributes_flat")
+	}
+	attributes := instance["attributes"].(map[string]interface{})
 	if got := attributes["id"].(string); got != "vpc-123" {
-		t.Fatalf("flat id attribute = %q, want %q", got, "vpc-123")
+		t.Fatalf("id attribute = %q, want %q", got, "vpc-123")
+	}
+	if got := attributes["enable_dns_hostnames"].(bool); !got {
+		t.Fatal("enable_dns_hostnames = false, want true")
+	}
+	tags := attributes["tags"].(map[string]interface{})
+	if got := tags["env"].(string); got != "test" {
+		t.Fatalf("tags.env = %q, want %q", got, "test")
+	}
+	sensitiveAttributes := instance["sensitive_attributes"].([]interface{})
+	if len(sensitiveAttributes) != 0 {
+		t.Fatalf("sensitive attributes = %v, want empty", sensitiveAttributes)
+	}
+}
+
+func TestPrintTfStateFallsBackToAttributesFlat(t *testing.T) {
+	resource := NewResource(
+		"vpc-123",
+		"main",
+		"aws_vpc",
+		"aws",
+		map[string]string{"cidr_block": "10.0.0.0/16"},
+		nil,
+		nil,
+	)
+	resource.InstanceState.Meta = map[string]interface{}{"schema_version": 2}
+
+	stateBytes, err := PrintTfState([]Resource{resource})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var state map[string]interface{}
+	if err := json.Unmarshal(stateBytes, &state); err != nil {
+		t.Fatal(err)
+	}
+
+	resources := state["resources"].([]interface{})
+	gotResource := resources[0].(map[string]interface{})
+	instances := gotResource["instances"].([]interface{})
+	instance := instances[0].(map[string]interface{})
+
+	if _, ok := instance["attributes"]; ok {
+		t.Fatal("state instance contains typed attributes, want attributes_flat fallback")
+	}
+	attributesFlat := instance["attributes_flat"].(map[string]interface{})
+	if got := attributesFlat["id"].(string); got != "vpc-123" {
+		t.Fatalf("id attribute = %q, want %q", got, "vpc-123")
+	}
+	if got := attributesFlat["cidr_block"].(string); got != "10.0.0.0/16" {
+		t.Fatalf("cidr_block attribute = %q, want %q", got, "10.0.0.0/16")
+	}
+	if _, ok := instance["sensitive_attributes"]; ok {
+		t.Fatal("state instance contains sensitive_attributes for flat fallback")
+	}
+}
+
+func TestConvertTypedStatePreservesCurrentTypedAttributes(t *testing.T) {
+	resource := NewResource(
+		"kind-lemur",
+		"example",
+		"random_pet",
+		"random",
+		nil,
+		nil,
+		nil,
+	)
+	resource.InstanceState = tfcompat.NewInstanceStateShimmedFromValue(cty.ObjectVal(map[string]cty.Value{
+		"id":        cty.StringVal("kind-lemur"),
+		"length":    cty.NumberIntVal(2),
+		"separator": cty.StringVal("-"),
+	}), 0)
+	originalTypedAttributes := append([]byte(nil), resource.InstanceState.TypedAttributes...)
+
+	if err := resource.ConvertTypedState(nil); err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(resource.InstanceState.TypedAttributes, originalTypedAttributes) {
+		t.Fatalf("typed attributes were re-derived: got %s, want %s", resource.InstanceState.TypedAttributes, originalTypedAttributes)
 	}
 }
 
@@ -79,6 +162,69 @@ func TestPrintTfStateCanBeListedByTerraformCLI(t *testing.T) {
 	}
 }
 
+func TestPrintTfStateCanPlanWithTerraformCLI(t *testing.T) {
+	if os.Getenv("TERRAFORMER_TFSTATE_PLAN_TEST") == "" {
+		t.Skip("set TERRAFORMER_TFSTATE_PLAN_TEST to run provider-backed plan check")
+	}
+	terraformPath, err := exec.LookPath("terraform")
+	if err != nil {
+		t.Skip("terraform CLI not found")
+	}
+
+	resource := NewResource(
+		"kind-lemur",
+		"example",
+		"random_pet",
+		"random",
+		nil,
+		nil,
+		nil,
+	)
+	resource.InstanceState = tfcompat.NewInstanceStateShimmedFromValue(cty.ObjectVal(map[string]cty.Value{
+		"id":        cty.StringVal("kind-lemur"),
+		"keepers":   cty.NullVal(cty.Map(cty.String)),
+		"length":    cty.NumberIntVal(2),
+		"prefix":    cty.NullVal(cty.String),
+		"separator": cty.StringVal("-"),
+	}), 0)
+
+	testDir := t.TempDir()
+	stateBytes, err := PrintTfState([]Resource{resource})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(testDir, "terraform.tfstate"), stateBytes, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	mainTF := []byte(`terraform {
+  required_version = ">= 1.9, < 1.15"
+  required_providers {
+    random = {
+      source = "hashicorp/random"
+      version = "3.7.2"
+    }
+  }
+}
+
+resource "random_pet" "tfer--example" {
+  length    = 2
+  separator = "-"
+}
+`)
+	if err := os.WriteFile(filepath.Join(testDir, "main.tf"), mainTF, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	initOut, err := exec.Command(terraformPath, "-chdir="+testDir, "init", "-backend=false", "-input=false", "-no-color").CombinedOutput()
+	if err != nil {
+		t.Fatalf("terraform init failed: %s\n%s", err, initOut)
+	}
+	planOut, err := exec.Command(terraformPath, "-chdir="+testDir, "plan", "-refresh=false", "-input=false", "-no-color", "-detailed-exitcode").CombinedOutput()
+	if err != nil {
+		t.Fatalf("terraform plan failed: %s\n%s", err, planOut)
+	}
+}
+
 func testStateBytes(t *testing.T) []byte {
 	t.Helper()
 
@@ -91,7 +237,14 @@ func testStateBytes(t *testing.T) []byte {
 		nil,
 		nil,
 	)
-	resource.InstanceState.Meta = map[string]interface{}{"schema_version": 2}
+	resource.InstanceState = tfcompat.NewInstanceStateShimmedFromValue(cty.ObjectVal(map[string]cty.Value{
+		"cidr_block":           cty.StringVal("10.0.0.0/16"),
+		"enable_dns_hostnames": cty.BoolVal(true),
+		"id":                   cty.StringVal("vpc-123"),
+		"tags": cty.MapVal(map[string]cty.Value{
+			"env": cty.StringVal("test"),
+		}),
+	}), 2)
 	resource.Outputs = map[string]*tfcompat.OutputState{
 		"aws_vpc_main_id": {
 			Type:  "string",

@@ -164,6 +164,28 @@ func (r *Resource) ConvertTFstate(provider *providerwrapper.ProviderWrapper) err
 	return r.ParseTFstate(parser, impliedType)
 }
 
+func (r *Resource) ConvertTypedState(provider *providerwrapper.ProviderWrapper) error {
+	if r.InstanceState.HasCurrentTypedAttributes() {
+		return nil
+	}
+
+	schema := provider.GetSchema()
+	resourceSchema, ok := schema.ResourceTypes[r.InstanceInfo.Type]
+	if !ok {
+		return fmt.Errorf("missing schema for resource type %q", r.InstanceInfo.Type)
+	}
+	value, err := r.InstanceState.AttrsAsObjectValue(resourceSchema.Block.ImpliedType())
+	if err != nil {
+		return err
+	}
+	typedAttributes, err := tfcompat.MarshalTypedAttributesFromValue(value)
+	if err != nil {
+		return err
+	}
+	r.InstanceState.SetTypedAttributes(typedAttributes)
+	return nil
+}
+
 func (r *Resource) ServiceName() string {
 	return strings.TrimPrefix(r.InstanceInfo.Type, r.Provider+"_")
 }

@@ -169,6 +169,15 @@ func (p *ProvidersMapping) ConvertTFStates(providerWrapper *providerwrapper.Prov
 	}
 }
 
+func (p *ProvidersMapping) ConvertTypedStates(providerWrapper *providerwrapper.ProviderWrapper) {
+	for resource := range p.Resources {
+		err := resource.ConvertTypedState(providerWrapper)
+		if err != nil {
+			log.Printf("failed to convert typed state for resource %s because of error %s", resource.InstanceInfo.Id, err)
+		}
+	}
+}
+
 func (p *ProvidersMapping) CleanupProviders() {
 	for provider := range p.Providers {
 		provider.GetService().PostRefreshCleanup()

@@ -96,6 +96,7 @@ func Import(provider terraformutils.ProviderGenerator, options ImportOptions, ar
 	providerMapping.ConvertTFStates(providerWrapper)
 	// change structs with additional data for each resource
 	providerMapping.CleanupProviders()
+	providerMapping.ConvertTypedStates(providerWrapper)
 
 	err = importFromPlan(providerMapping, options, args)
 
