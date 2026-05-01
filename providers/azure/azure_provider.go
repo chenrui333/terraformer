@@ -179,14 +179,17 @@ func (p *AzureProvider) setEnvConfig() error {
 	if subscriptionID == "" {
 		return errors.New("set ARM_SUBSCRIPTION_ID env var")
 	}
-	environment := os.Getenv("ARM_ENVIRONMENT")
-	if environment == "" {
-		environment = "public"
+	rawEnvironment := os.Getenv("ARM_ENVIRONMENT")
+	if rawEnvironment == "" {
+		rawEnvironment = "public"
 	}
 	metadataHost := os.Getenv("ARM_METADATA_HOSTNAME")
-	environment = normalizeEnvironment(environment)
-	if metadataHost == "" && environment == "" {
-		return fmt.Errorf("unsupported ARM_ENVIRONMENT %q (supported: public, china, usgovernment and their Azure SDK aliases; or set ARM_METADATA_HOSTNAME for custom clouds)", os.Getenv("ARM_ENVIRONMENT"))
+	environment := normalizeEnvironment(rawEnvironment)
+	if environment == "" {
+		if metadataHost == "" {
+			return fmt.Errorf("unsupported ARM_ENVIRONMENT %q (supported: public, china, usgovernment and their Azure SDK aliases; or set ARM_METADATA_HOSTNAME for custom clouds)", os.Getenv("ARM_ENVIRONMENT"))
+		}
+		environment = rawEnvironment
 	}
 	var auxTenants []string
 	if v := os.Getenv("ARM_AUXILIARY_TENANT_IDS"); v != "" {
@@ -321,7 +324,8 @@ func (p *AzureProvider) getTokenCredential() (azcore.TokenCredential, error) {
 
 func (p *AzureProvider) getClientOptions() (*arm.ClientOptions, error) {
 	opts := &arm.ClientOptions{
-		AuxiliaryTenants: p.config.AuxiliaryTenantIDs,
+		AuxiliaryTenants:      p.config.AuxiliaryTenantIDs,
+		DisableRPRegistration: true,
 	}
 	if p.config.MetadataHost != "" {
 		cloudCfg, err := discoverCloudConfig(p.config.MetadataHost, p.config.Environment)

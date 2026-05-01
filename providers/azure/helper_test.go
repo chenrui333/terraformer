@@ -131,6 +131,41 @@ func TestAsHereDoc(t *testing.T) {
 	}
 }
 
+func TestSetEnvConfigPreservesCustomMetadataEnvironment(t *testing.T) {
+	t.Setenv("ARM_SUBSCRIPTION_ID", "subscription-id")
+	t.Setenv("ARM_ENVIRONMENT", "AzureStackCustomerCloud")
+	t.Setenv("ARM_METADATA_HOSTNAME", "metadata.example.test")
+
+	p := &AzureProvider{}
+	if err := p.setEnvConfig(); err != nil {
+		t.Fatalf("setEnvConfig() error = %v", err)
+	}
+	if p.config.Environment != "AzureStackCustomerCloud" {
+		t.Fatalf("Environment = %q, want AzureStackCustomerCloud", p.config.Environment)
+	}
+}
+
+func TestSetEnvConfigRejectsUnknownEnvironmentWithoutMetadataHost(t *testing.T) {
+	t.Setenv("ARM_SUBSCRIPTION_ID", "subscription-id")
+	t.Setenv("ARM_ENVIRONMENT", "AzureStackCustomerCloud")
+
+	p := &AzureProvider{}
+	if err := p.setEnvConfig(); err == nil {
+		t.Fatal("setEnvConfig() error = nil, want unsupported environment error")
+	}
+}
+
+func TestGetClientOptionsDisablesRPRegistration(t *testing.T) {
+	p := &AzureProvider{}
+	opts, err := p.getClientOptions()
+	if err != nil {
+		t.Fatalf("getClientOptions() error = %v", err)
+	}
+	if !opts.DisableRPRegistration {
+		t.Fatal("DisableRPRegistration = false, want true")
+	}
+}
+
 func TestCredentialUnavailableOnErrorAllowsChainedFallback(t *testing.T) {
 	fallbackToken := azcore.AccessToken{
 		Token:     "fallback",
