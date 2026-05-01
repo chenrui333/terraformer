@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/aws/aws-sdk-go-v2/service/ecrpublic"
 	"github.com/aws/aws-sdk-go-v2/service/ecrpublic/types"
@@ -52,7 +53,8 @@ func (g *EcrPublicGenerator) InitResources() error {
 				continue
 			}
 			if err != nil {
-				return err
+				log.Printf("failed to discover optional ECR Public repository policy for %s: %s", StringValue(repository.RepositoryName), err)
+				continue
 			}
 			if StringValue(repositoryPolicy.PolicyText) == "" {
 				continue

@@ -12,7 +12,7 @@ import (
 )
 
 func TestEcrAccountSettingNames(t *testing.T) {
-	want := []string{"BASIC_SCAN_TYPE_VERSION", "REGISTRY_POLICY_SCOPE"}
+	want := []string{"BASIC_SCAN_TYPE_VERSION", "BLOB_MOUNTING", "REGISTRY_POLICY_SCOPE"}
 	if len(ecrAccountSettingNames) != len(want) {
 		t.Fatalf("ecrAccountSettingNames length = %d, want %d", len(ecrAccountSettingNames), len(want))
 	}

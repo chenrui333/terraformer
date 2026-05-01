@@ -16,8 +16,10 @@ import (
 
 var ecrAllowEmptyValues = []string{"tags."}
 
+// Unsupported account settings are skipped by the InvalidParameterException guard.
 var ecrAccountSettingNames = []string{
 	"BASIC_SCAN_TYPE_VERSION",
+	"BLOB_MOUNTING",
 	"REGISTRY_POLICY_SCOPE",
 }
 
@@ -194,6 +196,7 @@ func (g *EcrGenerator) getPullThroughCacheRules(svc *ecr.Client) error {
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
 		if ecrPullThroughCacheRuleNotFound(err) {
+			// The unfiltered list should only return this before any rules are found.
 			return nil
 		}
 		if err != nil {
