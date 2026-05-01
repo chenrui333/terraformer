@@ -53,7 +53,6 @@ func (g *CloudWatchGenerator) InitResources() error {
 	}
 	g.getOptionalCloudWatchResources(
 		cloudwatchOptionalResourceLoader{name: "EventBridge archives", load: func() error { return g.createArchives(eventsSvc) }},
-		cloudwatchOptionalResourceLoader{name: "EventBridge connections", load: func() error { return g.createConnections(eventsSvc) }},
 		cloudwatchOptionalResourceLoader{name: "EventBridge API destinations", load: func() error { return g.createAPIDestinations(eventsSvc) }},
 	)
 
@@ -261,35 +260,6 @@ func (g *CloudWatchGenerator) createArchives(eventsSvc *cloudwatchevents.Client)
 				archiveName,
 				archiveName,
 				"aws_cloudwatch_event_archive",
-				"aws",
-				cloudwatchAllowEmptyValues))
-		}
-		nextToken = output.NextToken
-		if nextToken == nil {
-			break
-		}
-	}
-	return nil
-}
-
-func (g *CloudWatchGenerator) createConnections(eventsSvc *cloudwatchevents.Client) error {
-	var nextToken *string
-	for {
-		output, err := eventsSvc.ListConnections(context.TODO(), &cloudwatchevents.ListConnectionsInput{
-			NextToken: nextToken,
-		})
-		if err != nil {
-			return err
-		}
-		for _, connection := range output.Connections {
-			connectionName := StringValue(connection.Name)
-			if connectionName == "" {
-				continue
-			}
-			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				connectionName,
-				connectionName,
-				"aws_cloudwatch_event_connection",
 				"aws",
 				cloudwatchAllowEmptyValues))
 		}

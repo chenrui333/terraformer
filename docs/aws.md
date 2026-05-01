@@ -91,7 +91,6 @@ terraformer import aws --resources=sg --regions=us-east-1
     * `aws_cloudwatch_event_archive`
     * `aws_cloudwatch_event_bus`
     * `aws_cloudwatch_event_bus_policy`
-    * `aws_cloudwatch_event_connection`
     * `aws_cloudwatch_event_rule`
     * `aws_cloudwatch_event_target`
     * `aws_cloudwatch_metric_alarm`
