@@ -58,12 +58,9 @@ func (p *AzureProvider) setEnvConfig() error {
 		environment = "public"
 	}
 	metadataHost := os.Getenv("ARM_METADATA_HOSTNAME")
-	if metadataHost == "" {
-		switch strings.ToLower(environment) {
-		case "public", "china", "usgovernment":
-		default:
-			return fmt.Errorf("unsupported ARM_ENVIRONMENT %q (supported: public, china, usgovernment; or set ARM_METADATA_HOSTNAME for custom clouds)", environment)
-		}
+	environment = normalizeEnvironment(environment)
+	if metadataHost == "" && environment == "" {
+		return fmt.Errorf("unsupported ARM_ENVIRONMENT %q (supported: public, china, usgovernment and their Azure SDK aliases; or set ARM_METADATA_HOSTNAME for custom clouds)", os.Getenv("ARM_ENVIRONMENT"))
 	}
 	var auxTenants []string
 	if v := os.Getenv("ARM_AUXILIARY_TENANT_IDS"); v != "" {
@@ -185,7 +182,7 @@ func (p *AzureProvider) getClientOptions() *arm.ClientOptions {
 			opts.Cloud = cloudCfg
 		}
 	} else {
-		switch strings.ToLower(p.config.Environment) {
+		switch p.config.Environment {
 		case "china":
 			opts.Cloud = cloud.AzureChina
 		case "usgovernment":
@@ -193,6 +190,19 @@ func (p *AzureProvider) getClientOptions() *arm.ClientOptions {
 		}
 	}
 	return opts
+}
+
+func normalizeEnvironment(env string) string {
+	switch strings.ToLower(env) {
+	case "public", "azurecloud", "azurepubliccloud":
+		return "public"
+	case "china", "azurechinacloud":
+		return "china"
+	case "usgovernment", "azureusgovernment", "azureusgovernmentcloud":
+		return "usgovernment"
+	default:
+		return ""
+	}
 }
 
 func discoverCloudConfig(metadataHost string) (cloud.Configuration, error) {
