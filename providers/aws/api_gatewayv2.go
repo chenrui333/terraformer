@@ -38,6 +38,8 @@ func (g *APIGatewayV2Generator) InitResources() error {
 	if err := g.loadVpcLinks(svc); err != nil {
 		return err
 	}
+	// Domain names are account-level and often require separate permissions from API listing.
+	// Keep this best-effort so users who can enumerate APIs still get baseline API imports.
 	if err := g.loadDomainNames(svc); err != nil {
 		if !apiGatewayV2ResourceMissing(err) {
 			log.Printf("Skipping API Gateway V2 domain names: %v", err)
