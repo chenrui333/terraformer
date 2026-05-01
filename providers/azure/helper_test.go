@@ -5,10 +5,14 @@ package azure
 import (
 	"context"
 	"errors"
+	"net/http"
+	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 )
@@ -19,7 +23,7 @@ type stubTokenCredential struct {
 	calls int
 }
 
-func (c *stubTokenCredential) GetToken(ctx context.Context, opts policy.TokenRequestOptions) (azcore.AccessToken, error) {
+func (c *stubTokenCredential) GetToken(_ context.Context, _ policy.TokenRequestOptions) (azcore.AccessToken, error) {
 	c.calls++
 	return c.token, c.err
 }
@@ -191,5 +195,80 @@ func TestCredentialUnavailableOnErrorKeepsSuccessfulPrimary(t *testing.T) {
 	}
 	if fallback.calls != 0 {
 		t.Fatalf("fallback calls = %d, want 0", fallback.calls)
+	}
+}
+
+func TestGetTokenCredentialUsesCustomManagedIdentityEndpoint(t *testing.T) {
+	t.Setenv("MSI_ENDPOINT", "")
+	p := &AzureProvider{
+		clientOptions: &arm.ClientOptions{},
+		config: providerConfig{
+			ClientID:                      "client-id",
+			CustomManagedIdentityEndpoint: "http://127.0.0.1/metadata/identity/oauth2/token",
+			UseManagedIdentity:            true,
+		},
+	}
+
+	credential, err := p.getTokenCredential()
+	if err != nil {
+		t.Fatalf("getTokenCredential() error = %v", err)
+	}
+	if _, ok := credential.(*customManagedIdentityCredential); !ok {
+		t.Fatalf("getTokenCredential() = %T, want *customManagedIdentityCredential", credential)
+	}
+	if got := os.Getenv("MSI_ENDPOINT"); got != "" {
+		t.Fatalf("MSI_ENDPOINT = %q, want empty", got)
+	}
+}
+
+func TestCustomManagedIdentityCredentialUsesMetadataGet(t *testing.T) {
+	var (
+		gotAPIVersion string
+		gotClientID   string
+		gotMetadata   string
+		gotMethod     string
+		gotResource   string
+	)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAPIVersion = r.URL.Query().Get("api-version")
+		gotClientID = r.URL.Query().Get("client_id")
+		gotMetadata = r.Header.Get("Metadata")
+		gotMethod = r.Method
+		gotResource = r.URL.Query().Get("resource")
+		_, _ = w.Write([]byte("{\"access_token\":\"custom-msi-token\",\"expires_in\":\"3600\"}"))
+	}))
+	defer server.Close()
+
+	credential := &customManagedIdentityCredential{
+		clientID:   "client-id",
+		endpoint:   server.URL + "/metadata/identity/oauth2/token",
+		httpClient: server.Client(),
+	}
+	token, err := credential.GetToken(context.Background(), policy.TokenRequestOptions{
+		Scopes: []string{"https://management.azure.com/.default"},
+	})
+	if err != nil {
+		t.Fatalf("GetToken() error = %v", err)
+	}
+	if token.Token != "custom-msi-token" {
+		t.Fatalf("GetToken() token = %q, want custom-msi-token", token.Token)
+	}
+	if time.Until(token.ExpiresOn) <= 0 {
+		t.Fatalf("GetToken() ExpiresOn = %s, want future timestamp", token.ExpiresOn)
+	}
+	if gotMethod != http.MethodGet {
+		t.Fatalf("method = %q, want %q", gotMethod, http.MethodGet)
+	}
+	if gotMetadata != "true" {
+		t.Fatalf("Metadata header = %q, want true", gotMetadata)
+	}
+	if gotAPIVersion != "2018-02-01" {
+		t.Fatalf("api-version = %q, want 2018-02-01", gotAPIVersion)
+	}
+	if gotResource != "https://management.azure.com" {
+		t.Fatalf("resource = %q, want https://management.azure.com", gotResource)
+	}
+	if gotClientID != "client-id" {
+		t.Fatalf("client_id = %q, want client-id", gotClientID)
 	}
 }

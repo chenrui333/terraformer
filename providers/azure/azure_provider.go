@@ -7,8 +7,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -58,6 +61,98 @@ func (c *lazyDefaultAzureCredential) GetToken(ctx context.Context, opts policy.T
 		return azcore.AccessToken{}, c.err
 	}
 	return c.credential.GetToken(ctx, opts)
+}
+
+type customManagedIdentityCredential struct {
+	clientID   string
+	endpoint   string
+	httpClient *http.Client
+}
+
+func (c *customManagedIdentityCredential) GetToken(ctx context.Context, opts policy.TokenRequestOptions) (azcore.AccessToken, error) {
+	if len(opts.Scopes) != 1 {
+		return azcore.AccessToken{}, fmt.Errorf("custom managed identity credential requires exactly one scope")
+	}
+
+	tokenURL, err := url.Parse(c.endpoint)
+	if err != nil {
+		return azcore.AccessToken{}, fmt.Errorf("parsing managed identity endpoint: %w", err)
+	}
+	query := tokenURL.Query()
+	query.Set("api-version", "2018-02-01")
+	query.Set("resource", strings.TrimSuffix(opts.Scopes[0], "/.default"))
+	if c.clientID != "" {
+		query.Set("client_id", c.clientID)
+	}
+	tokenURL.RawQuery = query.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, tokenURL.String(), http.NoBody)
+	if err != nil {
+		return azcore.AccessToken{}, fmt.Errorf("creating managed identity token request: %w", err)
+	}
+	req.Header.Set("Metadata", "true")
+
+	client := c.httpClient
+	if client == nil {
+		client = http.DefaultClient
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return azcore.AccessToken{}, fmt.Errorf("requesting managed identity token: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return azcore.AccessToken{}, fmt.Errorf("reading managed identity token response: %w", err)
+	}
+	if resp.StatusCode < http.StatusOK || resp.StatusCode > 299 {
+		return azcore.AccessToken{}, fmt.Errorf("managed identity endpoint returned HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+
+	var result struct {
+		AccessToken string      `json:"access_token"`
+		ExpiresIn   interface{} `json:"expires_in"`
+		ExpiresOn   interface{} `json:"expires_on"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return azcore.AccessToken{}, fmt.Errorf("decoding managed identity token response: %w", err)
+	}
+	if result.AccessToken == "" {
+		return azcore.AccessToken{}, errors.New("managed identity token response missing access_token")
+	}
+
+	return azcore.AccessToken{
+		Token:     result.AccessToken,
+		ExpiresOn: managedIdentityTokenExpiresOn(result.ExpiresIn, result.ExpiresOn),
+	}, nil
+}
+
+func managedIdentityTokenExpiresOn(expiresIn interface{}, expiresOn interface{}) time.Time {
+	if seconds, ok := tokenDurationSeconds(expiresIn); ok && seconds > 0 {
+		return time.Now().Add(time.Duration(seconds) * time.Second)
+	}
+	if timestamp, ok := tokenDurationSeconds(expiresOn); ok && timestamp > 0 {
+		return time.Unix(timestamp, 0)
+	}
+	return time.Time{}
+}
+
+func tokenDurationSeconds(value interface{}) (int64, bool) {
+	switch v := value.(type) {
+	case float64:
+		return int64(v), true
+	case int64:
+		return v, true
+	case string:
+		if v == "" {
+			return 0, false
+		}
+		seconds, err := strconv.ParseInt(v, 10, 64)
+		return seconds, err == nil
+	default:
+		return 0, false
+	}
 }
 
 type providerConfig struct {
@@ -152,7 +247,10 @@ func (p *AzureProvider) getTokenCredential() (azcore.TokenCredential, error) {
 	}
 	if p.config.UseManagedIdentity {
 		if p.config.CustomManagedIdentityEndpoint != "" {
-			os.Setenv("MSI_ENDPOINT", p.config.CustomManagedIdentityEndpoint)
+			return &customManagedIdentityCredential{
+				clientID: p.config.ClientID,
+				endpoint: p.config.CustomManagedIdentityEndpoint,
+			}, nil
 		}
 		opts := &azidentity.ManagedIdentityCredentialOptions{}
 		opts.Cloud = cloudCfg
@@ -207,18 +305,18 @@ func (p *AzureProvider) getTokenCredential() (azcore.TokenCredential, error) {
 			TenantID:                   p.config.TenantID,
 		},
 	}
-	cliCred, err := azidentity.NewAzureCLICredential(&azidentity.AzureCLICredentialOptions{
+	cliCred, cliErr := azidentity.NewAzureCLICredential(&azidentity.AzureCLICredentialOptions{
 		AdditionallyAllowedTenants: p.config.AuxiliaryTenantIDs,
 		Subscription:               p.config.SubscriptionID,
 		TenantID:                   p.config.TenantID,
 	})
-	if err != nil {
-		return defaultCred, nil
+	if cliErr == nil {
+		return azidentity.NewChainedTokenCredential([]azcore.TokenCredential{
+			credentialUnavailableOnError{credential: cliCred},
+			defaultCred,
+		}, nil)
 	}
-	return azidentity.NewChainedTokenCredential([]azcore.TokenCredential{
-		credentialUnavailableOnError{credential: cliCred},
-		defaultCred,
-	}, nil)
+	return defaultCred, nil
 }
 
 func (p *AzureProvider) getClientOptions() (*arm.ClientOptions, error) {
