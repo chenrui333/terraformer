@@ -63,9 +63,12 @@ func (p *AzureProvider) setEnvConfig() error {
 }
 
 func (p *AzureProvider) getTokenCredential() (azcore.TokenCredential, error) {
+	cloudCfg := p.getClientOptions().Cloud
 	if p.config.UseClientSecret {
+		opts := &azidentity.ClientSecretCredentialOptions{}
+		opts.Cloud = cloudCfg
 		return azidentity.NewClientSecretCredential(
-			p.config.TenantID, p.config.ClientID, p.config.ClientSecret, nil)
+			p.config.TenantID, p.config.ClientID, p.config.ClientSecret, opts)
 	}
 	if p.config.UseClientCertificate {
 		certData, err := os.ReadFile(p.config.ClientCertificatePath)
@@ -76,17 +79,22 @@ func (p *AzureProvider) getTokenCredential() (azcore.TokenCredential, error) {
 		if err != nil {
 			return nil, fmt.Errorf("parsing client certificate: %w", err)
 		}
+		opts := &azidentity.ClientCertificateCredentialOptions{}
+		opts.Cloud = cloudCfg
 		return azidentity.NewClientCertificateCredential(
-			p.config.TenantID, p.config.ClientID, certs, key, nil)
+			p.config.TenantID, p.config.ClientID, certs, key, opts)
 	}
 	if p.config.UseManagedIdentity {
 		opts := &azidentity.ManagedIdentityCredentialOptions{}
+		opts.Cloud = cloudCfg
 		if p.config.ClientID != "" {
 			opts.ID = azidentity.ClientID(p.config.ClientID)
 		}
 		return azidentity.NewManagedIdentityCredential(opts)
 	}
-	return azidentity.NewDefaultAzureCredential(nil)
+	opts := &azidentity.DefaultAzureCredentialOptions{}
+	opts.Cloud = cloudCfg
+	return azidentity.NewDefaultAzureCredential(opts)
 }
 
 func (p *AzureProvider) getClientOptions() *arm.ClientOptions {

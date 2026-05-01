@@ -3,9 +3,11 @@
 package datadog
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 )
@@ -72,8 +74,14 @@ type pagerDutyServicePD struct {
 }
 
 func getPagerDutyIntegration(apiKey, appKey, apiURL string) (*pagerDutyIntegration, error) {
+	if apiURL == "" {
+		apiURL = "https://api.datadoghq.com"
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	url := apiURL + "/api/v1/integration/pagerduty"
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
