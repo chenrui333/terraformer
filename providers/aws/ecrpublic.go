@@ -4,8 +4,12 @@ package aws
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"log"
 
 	"github.com/aws/aws-sdk-go-v2/service/ecrpublic"
+	"github.com/aws/aws-sdk-go-v2/service/ecrpublic/types"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 )
@@ -40,7 +44,48 @@ func (g *EcrPublicGenerator) InitResources() error {
 				"aws",
 				ecrPublicAllowEmptyValues)
 			g.Resources = append(g.Resources, resource)
+
+			repositoryPolicy, err := svc.GetRepositoryPolicy(context.TODO(), &ecrpublic.GetRepositoryPolicyInput{
+				RepositoryName: repository.RepositoryName,
+				RegistryId:     repository.RegistryId,
+			})
+			if ecrPublicRepositoryPolicyNotFound(err) {
+				continue
+			}
+			if err != nil {
+				log.Printf("failed to discover optional ECR Public repository policy for %s: %s", StringValue(repository.RepositoryName), err)
+				continue
+			}
+			if StringValue(repositoryPolicy.PolicyText) == "" {
+				continue
+			}
+			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
+				*repository.RepositoryName,
+				*repository.RepositoryName,
+				"aws_ecrpublic_repository_policy",
+				"aws",
+				ecrPublicAllowEmptyValues))
 		}
 	}
 	return nil
+}
+
+func (g *EcrPublicGenerator) PostConvertHook() error {
+	for i, resource := range g.Resources {
+		if resource.InstanceInfo.Type != "aws_ecrpublic_repository_policy" {
+			continue
+		}
+		policy, ok := g.Resources[i].Item["policy"].(string)
+		if !ok || policy == "" {
+			continue
+		}
+		g.Resources[i].Item["policy"] = fmt.Sprintf("<<POLICY\n%s\nPOLICY", g.escapeAwsInterpolation(policy))
+	}
+	return nil
+}
+
+func ecrPublicRepositoryPolicyNotFound(err error) bool {
+	var policyNotFound *types.RepositoryPolicyNotFoundException
+	var repositoryNotFound *types.RepositoryNotFoundException
+	return errors.As(err, &policyNotFound) || errors.As(err, &repositoryNotFound)
 }
