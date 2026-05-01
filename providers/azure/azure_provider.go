@@ -63,6 +63,48 @@ func (c *lazyDefaultAzureCredential) GetToken(ctx context.Context, opts policy.T
 	return c.credential.GetToken(ctx, opts)
 }
 
+func getGitHubOIDCAssertion(ctx context.Context, requestURL, requestToken string) (string, error) {
+	const oidcAudience = "api://AzureADTokenExchange"
+	reqURL := requestURL
+	if !strings.Contains(reqURL, "audience=") {
+		if strings.Contains(reqURL, "?") {
+			reqURL += "&audience=" + oidcAudience
+		} else {
+			reqURL += "?audience=" + oidcAudience
+		}
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
+	if err != nil {
+		return "", fmt.Errorf("creating OIDC token request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+requestToken)
+	req.Header.Set("Accept", "application/json; api-version=2.0")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("requesting OIDC token: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("reading OIDC token response: %w", err)
+	}
+	if resp.StatusCode < http.StatusOK || resp.StatusCode > 299 {
+		return "", fmt.Errorf("requesting OIDC token returned HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+
+	var result struct {
+		Value string `json:"value"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", fmt.Errorf("decoding OIDC token response: %w", err)
+	}
+	if result.Value == "" {
+		return "", errors.New("oidc token response missing value")
+	}
+	return result.Value, nil
+}
+
 type customManagedIdentityCredential struct {
 	clientID   string
 	endpoint   string
@@ -222,15 +264,6 @@ func (p *AzureProvider) setEnvConfig() error {
 func (p *AzureProvider) getTokenCredential() (azcore.TokenCredential, error) {
 	cloudCfg := p.clientOptions.Cloud
 	isCustomCloud := p.config.MetadataHost != ""
-	if p.config.UseClientSecret && p.config.ClientID != "" && p.config.TenantID != "" {
-		opts := &azidentity.ClientSecretCredentialOptions{
-			AdditionallyAllowedTenants: p.config.AuxiliaryTenantIDs,
-			DisableInstanceDiscovery:   isCustomCloud,
-		}
-		opts.Cloud = cloudCfg
-		return azidentity.NewClientSecretCredential(
-			p.config.TenantID, p.config.ClientID, p.config.ClientSecret, opts)
-	}
 	if p.config.UseClientCertificate && p.config.ClientID != "" && p.config.TenantID != "" {
 		certData, err := os.ReadFile(p.config.ClientCertificatePath)
 		if err != nil {
@@ -248,6 +281,27 @@ func (p *AzureProvider) getTokenCredential() (azcore.TokenCredential, error) {
 		return azidentity.NewClientCertificateCredential(
 			p.config.TenantID, p.config.ClientID, certs, key, opts)
 	}
+	if p.config.UseClientSecret && p.config.ClientID != "" && p.config.TenantID != "" {
+		opts := &azidentity.ClientSecretCredentialOptions{
+			AdditionallyAllowedTenants: p.config.AuxiliaryTenantIDs,
+			DisableInstanceDiscovery:   isCustomCloud,
+		}
+		opts.Cloud = cloudCfg
+		return azidentity.NewClientSecretCredential(
+			p.config.TenantID, p.config.ClientID, p.config.ClientSecret, opts)
+	}
+	if p.config.UseGitHubOIDC && p.config.ClientID != "" && p.config.TenantID != "" && p.config.GitHubOIDCTokenRequestURL != "" {
+		getAssertion := func(ctx context.Context) (string, error) {
+			return getGitHubOIDCAssertion(ctx, p.config.GitHubOIDCTokenRequestURL, p.config.GitHubOIDCTokenRequestToken)
+		}
+		opts := &azidentity.ClientAssertionCredentialOptions{
+			AdditionallyAllowedTenants: p.config.AuxiliaryTenantIDs,
+			DisableInstanceDiscovery:   isCustomCloud,
+		}
+		opts.Cloud = cloudCfg
+		return azidentity.NewClientAssertionCredential(
+			p.config.TenantID, p.config.ClientID, getAssertion, opts)
+	}
 	if p.config.UseManagedIdentity {
 		if p.config.CustomManagedIdentityEndpoint != "" {
 			return &customManagedIdentityCredential{
@@ -261,44 +315,6 @@ func (p *AzureProvider) getTokenCredential() (azcore.TokenCredential, error) {
 			opts.ID = azidentity.ClientID(p.config.ClientID)
 		}
 		return azidentity.NewManagedIdentityCredential(opts)
-	}
-	if p.config.UseGitHubOIDC && p.config.ClientID != "" && p.config.TenantID != "" && p.config.GitHubOIDCTokenRequestURL != "" {
-		const oidcAudience = "api://AzureADTokenExchange"
-		getAssertion := func(ctx context.Context) (string, error) {
-			reqURL := p.config.GitHubOIDCTokenRequestURL
-			if !strings.Contains(reqURL, "audience=") {
-				if strings.Contains(reqURL, "?") {
-					reqURL += "&audience=" + oidcAudience
-				} else {
-					reqURL += "?audience=" + oidcAudience
-				}
-			}
-			req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
-			if err != nil {
-				return "", fmt.Errorf("creating OIDC token request: %w", err)
-			}
-			req.Header.Set("Authorization", "Bearer "+p.config.GitHubOIDCTokenRequestToken)
-			req.Header.Set("Accept", "application/json; api-version=2.0")
-			resp, err := http.DefaultClient.Do(req)
-			if err != nil {
-				return "", fmt.Errorf("requesting OIDC token: %w", err)
-			}
-			defer resp.Body.Close()
-			var result struct {
-				Value string `json:"value"`
-			}
-			if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-				return "", fmt.Errorf("decoding OIDC token response: %w", err)
-			}
-			return result.Value, nil
-		}
-		opts := &azidentity.ClientAssertionCredentialOptions{
-			AdditionallyAllowedTenants: p.config.AuxiliaryTenantIDs,
-			DisableInstanceDiscovery:   isCustomCloud,
-		}
-		opts.Cloud = cloudCfg
-		return azidentity.NewClientAssertionCredential(
-			p.config.TenantID, p.config.ClientID, getAssertion, opts)
 	}
 	defaultCred := &lazyDefaultAzureCredential{
 		options: &azidentity.DefaultAzureCredentialOptions{
@@ -339,9 +355,23 @@ func (p *AzureProvider) getClientOptions() (*arm.ClientOptions, error) {
 			opts.Cloud = cloud.AzureChina
 		case "usgovernment":
 			opts.Cloud = cloud.AzureGovernment
+		case "german":
+			opts.Cloud = azureGermanCloud()
 		}
 	}
 	return opts, nil
+}
+
+func azureGermanCloud() cloud.Configuration {
+	return cloud.Configuration{
+		ActiveDirectoryAuthorityHost: "https://login.microsoftonline.de/",
+		Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
+			cloud.ResourceManager: {
+				Audience: "https://management.microsoftazure.de/",
+				Endpoint: "https://management.microsoftazure.de",
+			},
+		},
+	}
 }
 
 func normalizeEnvironment(env string) string {
@@ -352,6 +382,8 @@ func normalizeEnvironment(env string) string {
 		return "china"
 	case "usgovernment", "azureusgovernment", "azureusgovernmentcloud":
 		return "usgovernment"
+	case "german", "azuregermancloud":
+		return "german"
 	default:
 		return ""
 	}
@@ -395,6 +427,8 @@ func discoverCloudConfig(metadataHost, environment string) (cloud.Configuration,
 			candidates = append(candidates, "AzureChinaCloud")
 		case "usgovernment":
 			candidates = append(candidates, "AzureUSGovernmentCloud", "AzureUSGovernment")
+		case "german":
+			candidates = append(candidates, "AzureGermanCloud")
 		}
 		for i := range endpoints {
 			for _, name := range candidates {

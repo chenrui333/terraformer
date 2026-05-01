@@ -8,11 +8,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 )
@@ -155,6 +157,19 @@ func TestSetEnvConfigRejectsUnknownEnvironmentWithoutMetadataHost(t *testing.T) 
 	}
 }
 
+func TestSetEnvConfigAcceptsGermanEnvironment(t *testing.T) {
+	t.Setenv("ARM_SUBSCRIPTION_ID", "subscription-id")
+	t.Setenv("ARM_ENVIRONMENT", "AzureGermanCloud")
+
+	p := &AzureProvider{}
+	if err := p.setEnvConfig(); err != nil {
+		t.Fatalf("setEnvConfig() error = %v", err)
+	}
+	if p.config.Environment != "german" {
+		t.Fatalf("Environment = %q, want german", p.config.Environment)
+	}
+}
+
 func TestGetClientOptionsDisablesRPRegistration(t *testing.T) {
 	p := &AzureProvider{}
 	opts, err := p.getClientOptions()
@@ -163,6 +178,28 @@ func TestGetClientOptionsDisablesRPRegistration(t *testing.T) {
 	}
 	if !opts.DisableRPRegistration {
 		t.Fatal("DisableRPRegistration = false, want true")
+	}
+}
+
+func TestGetClientOptionsGermanCloud(t *testing.T) {
+	p := &AzureProvider{
+		config: providerConfig{
+			Environment: "german",
+		},
+	}
+	opts, err := p.getClientOptions()
+	if err != nil {
+		t.Fatalf("getClientOptions() error = %v", err)
+	}
+	if opts.Cloud.ActiveDirectoryAuthorityHost != "https://login.microsoftonline.de/" {
+		t.Fatalf("ActiveDirectoryAuthorityHost = %q, want German cloud login endpoint", opts.Cloud.ActiveDirectoryAuthorityHost)
+	}
+	resourceManager := opts.Cloud.Services[cloud.ResourceManager]
+	if resourceManager.Endpoint != "https://management.microsoftazure.de" {
+		t.Fatalf("ResourceManager endpoint = %q, want German cloud endpoint", resourceManager.Endpoint)
+	}
+	if resourceManager.Audience != "https://management.microsoftazure.de/" {
+		t.Fatalf("ResourceManager audience = %q, want German cloud audience", resourceManager.Audience)
 	}
 }
 
@@ -230,6 +267,50 @@ func TestCredentialUnavailableOnErrorKeepsSuccessfulPrimary(t *testing.T) {
 	}
 	if fallback.calls != 0 {
 		t.Fatalf("fallback calls = %d, want 0", fallback.calls)
+	}
+}
+
+func TestGetTokenCredentialPrefersClientCertificateOverSecret(t *testing.T) {
+	p := &AzureProvider{
+		clientOptions: &arm.ClientOptions{},
+		config: providerConfig{
+			ClientCertificatePath: t.TempDir() + "/missing.pem",
+			ClientID:              "client-id",
+			ClientSecret:          "stale-secret",
+			TenantID:              "tenant-id",
+			UseClientCertificate:  true,
+			UseClientSecret:       true,
+		},
+	}
+
+	_, err := p.getTokenCredential()
+	if err == nil {
+		t.Fatal("getTokenCredential() error = nil, want client certificate read error")
+	}
+	if !strings.Contains(err.Error(), "reading client certificate") {
+		t.Fatalf("getTokenCredential() error = %q, want client certificate read error", err)
+	}
+}
+
+func TestGetTokenCredentialPrefersOIDCOverManagedIdentity(t *testing.T) {
+	p := &AzureProvider{
+		clientOptions: &arm.ClientOptions{},
+		config: providerConfig{
+			ClientID:                      "client-id",
+			CustomManagedIdentityEndpoint: "http://127.0.0.1/metadata/identity/oauth2/token",
+			GitHubOIDCTokenRequestURL:     "http://127.0.0.1/oidc",
+			TenantID:                      "tenant-id",
+			UseGitHubOIDC:                 true,
+			UseManagedIdentity:            true,
+		},
+	}
+
+	credential, err := p.getTokenCredential()
+	if err != nil {
+		t.Fatalf("getTokenCredential() error = %v", err)
+	}
+	if _, ok := credential.(*azidentity.ClientAssertionCredential); !ok {
+		t.Fatalf("getTokenCredential() = %T, want *azidentity.ClientAssertionCredential", credential)
 	}
 }
 
@@ -306,4 +387,61 @@ func TestCustomManagedIdentityCredentialUsesMetadataGet(t *testing.T) {
 	if gotClientID != "client-id" {
 		t.Fatalf("client_id = %q, want client-id", gotClientID)
 	}
+}
+
+func TestGetGitHubOIDCAssertion(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		var gotAudience string
+		var gotAuthorization string
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			gotAudience = r.URL.Query().Get("audience")
+			gotAuthorization = r.Header.Get("Authorization")
+			_, _ = w.Write([]byte("{\"value\":\"assertion\"}"))
+		}))
+		defer server.Close()
+
+		got, err := getGitHubOIDCAssertion(context.Background(), server.URL+"?existing=true", "request-token")
+		if err != nil {
+			t.Fatalf("getGitHubOIDCAssertion() error = %v", err)
+		}
+		if got != "assertion" {
+			t.Fatalf("getGitHubOIDCAssertion() = %q, want assertion", got)
+		}
+		if gotAudience != "api://AzureADTokenExchange" {
+			t.Fatalf("audience = %q, want api://AzureADTokenExchange", gotAudience)
+		}
+		if gotAuthorization != "Bearer request-token" {
+			t.Fatalf("Authorization = %q, want Bearer request-token", gotAuthorization)
+		}
+	})
+
+	t.Run("non-2xx", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			http.Error(w, "{\"message\":\"bad token\"}", http.StatusUnauthorized)
+		}))
+		defer server.Close()
+
+		_, err := getGitHubOIDCAssertion(context.Background(), server.URL, "request-token")
+		if err == nil {
+			t.Fatal("getGitHubOIDCAssertion() error = nil, want status error")
+		}
+		if !strings.Contains(err.Error(), "HTTP 401") {
+			t.Fatalf("getGitHubOIDCAssertion() error = %q, want HTTP 401", err)
+		}
+	})
+
+	t.Run("empty value", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			_, _ = w.Write([]byte("{}"))
+		}))
+		defer server.Close()
+
+		_, err := getGitHubOIDCAssertion(context.Background(), server.URL, "request-token")
+		if err == nil {
+			t.Fatal("getGitHubOIDCAssertion() error = nil, want missing value error")
+		}
+		if !strings.Contains(err.Error(), "missing value") {
+			t.Fatalf("getGitHubOIDCAssertion() error = %q, want missing value", err)
+		}
+	})
 }
