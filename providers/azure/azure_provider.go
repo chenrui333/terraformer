@@ -29,6 +29,7 @@ type AzureProvider struct { //nolint
 }
 
 type providerConfig struct {
+	AuxiliaryTenantIDs            []string
 	ClientCertificatePassword     string
 	ClientCertificatePath         string
 	ClientID                      string
@@ -54,7 +55,20 @@ func (p *AzureProvider) setEnvConfig() error {
 	if environment == "" {
 		environment = "public"
 	}
+	switch strings.ToLower(environment) {
+	case "public", "china", "usgovernment":
+	default:
+		return fmt.Errorf("unsupported ARM_ENVIRONMENT %q (supported: public, china, usgovernment)", environment)
+	}
+	var auxTenants []string
+	if v := os.Getenv("ARM_AUXILIARY_TENANT_IDS"); v != "" {
+		auxTenants = strings.Split(v, ";")
+		if len(auxTenants) > 3 {
+			return fmt.Errorf("the provider only supports 3 auxiliary tenant IDs for ARM_AUXILIARY_TENANT_IDS")
+		}
+	}
 	p.config = providerConfig{
+		AuxiliaryTenantIDs:            auxTenants,
 		ClientCertificatePassword:     os.Getenv("ARM_CLIENT_CERTIFICATE_PASSWORD"),
 		ClientCertificatePath:         os.Getenv("ARM_CLIENT_CERTIFICATE_PATH"),
 		ClientID:                      os.Getenv("ARM_CLIENT_ID"),
@@ -149,7 +163,9 @@ func (p *AzureProvider) getTokenCredential() (azcore.TokenCredential, error) {
 }
 
 func (p *AzureProvider) getClientOptions() *arm.ClientOptions {
-	opts := &arm.ClientOptions{}
+	opts := &arm.ClientOptions{
+		AuxiliaryTenants: p.config.AuxiliaryTenantIDs,
+	}
 	switch strings.ToLower(p.config.Environment) {
 	case "china":
 		opts.Cloud = cloud.AzureChina
