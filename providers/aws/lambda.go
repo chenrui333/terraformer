@@ -201,7 +201,7 @@ func (g *LambdaGenerator) addAliases(svc *lambda.Client, functions []lambdaFunct
 			page, err := p.NextPage(context.TODO())
 			if err != nil {
 				if lambdaResourceNotFound(err) {
-					continue
+					break
 				}
 				return err
 			}
@@ -237,7 +237,7 @@ func (g *LambdaGenerator) addFunctionURLs(svc *lambda.Client, functions []lambda
 			page, err := p.NextPage(context.TODO())
 			if err != nil {
 				if lambdaResourceNotFound(err) {
-					continue
+					break
 				}
 				return err
 			}
@@ -273,7 +273,7 @@ func (g *LambdaGenerator) addProvisionedConcurrencyConfigs(svc *lambda.Client, f
 			page, err := p.NextPage(context.TODO())
 			if err != nil {
 				if lambdaResourceNotFound(err) {
-					continue
+					break
 				}
 				return err
 			}
@@ -337,14 +337,20 @@ func (g *LambdaGenerator) addEventSourceMappings(svc *lambda.Client) error {
 			return err
 		}
 		for _, mapping := range page.EventSourceMappings {
+			mappingUUID := StringValue(mapping.UUID)
+			eventSourceARN := StringValue(mapping.EventSourceArn)
+			functionARN := StringValue(mapping.FunctionArn)
+			if mappingUUID == "" || eventSourceARN == "" || functionARN == "" {
+				continue
+			}
 			g.Resources = append(g.Resources, terraformutils.NewResource(
-				*mapping.UUID,
-				*mapping.UUID,
+				mappingUUID,
+				mappingUUID,
 				"aws_lambda_event_source_mapping",
 				"aws",
 				map[string]string{
-					"event_source_arn": *mapping.EventSourceArn,
-					"function_name":    *mapping.FunctionArn,
+					"event_source_arn": eventSourceARN,
+					"function_name":    functionARN,
 				},
 				lambdaAllowEmptyValues,
 				map[string]interface{}{},
