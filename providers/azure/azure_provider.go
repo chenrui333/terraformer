@@ -91,7 +91,7 @@ func (p *AzureProvider) setEnvConfig() error {
 }
 
 func (p *AzureProvider) getTokenCredential() (azcore.TokenCredential, error) {
-	cloudCfg := p.getClientOptions().Cloud
+	cloudCfg := p.clientOptions.Cloud
 	isCustomCloud := p.config.MetadataHost != ""
 	if p.config.UseClientSecret {
 		opts := &azidentity.ClientSecretCredentialOptions{
@@ -160,27 +160,38 @@ func (p *AzureProvider) getTokenCredential() (azcore.TokenCredential, error) {
 			}
 			return result.Value, nil
 		}
-		opts := &azidentity.ClientAssertionCredentialOptions{}
+		opts := &azidentity.ClientAssertionCredentialOptions{
+			AdditionallyAllowedTenants: p.config.AuxiliaryTenantIDs,
+			DisableInstanceDiscovery:   isCustomCloud,
+		}
 		opts.Cloud = cloudCfg
 		return azidentity.NewClientAssertionCredential(
 			p.config.TenantID, p.config.ClientID, getAssertion, opts)
 	}
-	opts := &azidentity.DefaultAzureCredentialOptions{
-		TenantID: p.config.TenantID,
+	cliCred, err := azidentity.NewAzureCLICredential(&azidentity.AzureCLICredentialOptions{
+		AdditionallyAllowedTenants: p.config.AuxiliaryTenantIDs,
+		Subscription:               p.config.SubscriptionID,
+		TenantID:                   p.config.TenantID,
+	})
+	if err != nil {
+		return azidentity.NewDefaultAzureCredential(&azidentity.DefaultAzureCredentialOptions{
+			AdditionallyAllowedTenants: p.config.AuxiliaryTenantIDs,
+			TenantID:                   p.config.TenantID,
+		})
 	}
-	opts.Cloud = cloudCfg
-	return azidentity.NewDefaultAzureCredential(opts)
+	return cliCred, nil
 }
 
-func (p *AzureProvider) getClientOptions() *arm.ClientOptions {
+func (p *AzureProvider) getClientOptions() (*arm.ClientOptions, error) {
 	opts := &arm.ClientOptions{
 		AuxiliaryTenants: p.config.AuxiliaryTenantIDs,
 	}
 	if p.config.MetadataHost != "" {
 		cloudCfg, err := discoverCloudConfig(p.config.MetadataHost)
-		if err == nil {
-			opts.Cloud = cloudCfg
+		if err != nil {
+			return nil, fmt.Errorf("discovering cloud config from %s: %w", p.config.MetadataHost, err)
 		}
+		opts.Cloud = cloudCfg
 	} else {
 		switch p.config.Environment {
 		case "china":
@@ -189,7 +200,7 @@ func (p *AzureProvider) getClientOptions() *arm.ClientOptions {
 			opts.Cloud = cloud.AzureGovernment
 		}
 	}
-	return opts
+	return opts, nil
 }
 
 func normalizeEnvironment(env string) string {
@@ -218,15 +229,21 @@ func discoverCloudConfig(metadataHost string) (cloud.Configuration, error) {
 		return cloud.Configuration{}, err
 	}
 	defer resp.Body.Close()
-	var meta struct {
+	type cloudEndpoint struct {
 		Authentication struct {
 			LoginEndpoint string `json:"loginEndpoint"`
 		} `json:"authentication"`
 		ResourceManager string `json:"resourceManager"`
+		Name            string `json:"name"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&meta); err != nil {
-		return cloud.Configuration{}, err
+	var endpoints []cloudEndpoint
+	if err := json.NewDecoder(resp.Body).Decode(&endpoints); err != nil {
+		return cloud.Configuration{}, fmt.Errorf("decoding metadata endpoints: %w", err)
 	}
+	if len(endpoints) == 0 {
+		return cloud.Configuration{}, fmt.Errorf("metadata endpoint returned no environments")
+	}
+	meta := endpoints[0]
 	return cloud.Configuration{
 		ActiveDirectoryAuthorityHost: meta.Authentication.LoginEndpoint,
 		Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
@@ -244,12 +261,17 @@ func (p *AzureProvider) Init(args []string) error {
 		return err
 	}
 
+	clientOptions, err := p.getClientOptions()
+	if err != nil {
+		return err
+	}
+	p.clientOptions = clientOptions
+
 	credential, err := p.getTokenCredential()
 	if err != nil {
 		return err
 	}
 	p.credential = credential
-	p.clientOptions = p.getClientOptions()
 	p.resourceGroup = args[0]
 
 	return nil
