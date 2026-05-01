@@ -141,6 +141,7 @@ func (g *CloudFrontGenerator) loadCachePolicy(svc *cloudfront.Client) error {
 	for {
 		out, err := svc.ListCachePolicies(context.TODO(), &cloudfront.ListCachePoliciesInput{
 			Marker: marker,
+			Type:   types.CachePolicyTypeCustom,
 		})
 		if err != nil {
 			return err
@@ -233,7 +234,10 @@ func (g *CloudFrontGenerator) loadOriginAccessIdentities(svc *cloudfront.Client)
 func (g *CloudFrontGenerator) loadOriginRequestPolicies(svc *cloudfront.Client) error {
 	var marker *string
 	for {
-		out, err := svc.ListOriginRequestPolicies(context.TODO(), &cloudfront.ListOriginRequestPoliciesInput{Marker: marker})
+		out, err := svc.ListOriginRequestPolicies(context.TODO(), &cloudfront.ListOriginRequestPoliciesInput{
+			Marker: marker,
+			Type:   types.OriginRequestPolicyTypeCustom,
+		})
 		if err != nil {
 			return err
 		}
@@ -267,7 +271,10 @@ func (g *CloudFrontGenerator) loadOriginRequestPolicies(svc *cloudfront.Client) 
 func (g *CloudFrontGenerator) loadResponseHeadersPolicies(svc *cloudfront.Client) error {
 	var marker *string
 	for {
-		out, err := svc.ListResponseHeadersPolicies(context.TODO(), &cloudfront.ListResponseHeadersPoliciesInput{Marker: marker})
+		out, err := svc.ListResponseHeadersPolicies(context.TODO(), &cloudfront.ListResponseHeadersPoliciesInput{
+			Marker: marker,
+			Type:   types.ResponseHeadersPolicyTypeCustom,
+		})
 		if err != nil {
 			return err
 		}
@@ -331,6 +338,8 @@ func (g *CloudFrontGenerator) loadRealtimeLogConfigs(svc *cloudfront.Client) err
 
 func (g *CloudFrontGenerator) loadFunctions(svc *cloudfront.Client) error {
 	var marker *string
+	// Function names are the Terraform import ID, and list results can include multiple
+	// stages of the same function. Emit one resource per function name.
 	seen := map[string]struct{}{}
 	for {
 		out, err := svc.ListFunctions(context.TODO(), &cloudfront.ListFunctionsInput{Marker: marker})
@@ -639,8 +648,8 @@ func (g *CloudFrontGenerator) replaceOriginID(distributionIndex int, field strin
 
 	if origins, ok := distribution.Item["origin"].([]interface{}); ok {
 		for _, origin := range origins {
-			if origin, ok := origin.(map[string]interface{}); ok {
-				cloudFrontReplaceFieldValue(origin, field, refID, ref)
+			if originMap, ok := origin.(map[string]interface{}); ok {
+				cloudFrontReplaceFieldValue(originMap, field, refID, ref)
 			}
 		}
 	}

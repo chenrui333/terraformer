@@ -27,10 +27,21 @@ func TestCloudFrontResourceMissing(t *testing.T) {
 	}{
 		{name: "nil", err: nil, want: false},
 		{name: "generic", err: errors.New("boom"), want: false},
+		{name: "entity missing", err: &types.EntityNotFound{}, want: true},
+		{name: "cache policy missing", err: &types.NoSuchCachePolicy{}, want: true},
+		{name: "origin access identity missing", err: &types.NoSuchCloudFrontOriginAccessIdentity{}, want: true},
+		{name: "continuous deployment policy missing", err: &types.NoSuchContinuousDeploymentPolicy{}, want: true},
 		{name: "distribution missing", err: &types.NoSuchDistribution{}, want: true},
+		{name: "field-level encryption config missing", err: &types.NoSuchFieldLevelEncryptionConfig{}, want: true},
+		{name: "field-level encryption profile missing", err: &types.NoSuchFieldLevelEncryptionProfile{}, want: true},
+		{name: "function missing", err: &types.NoSuchFunctionExists{}, want: true},
 		{name: "monitoring subscription missing", err: &types.NoSuchMonitoringSubscription{}, want: true},
 		{name: "origin access control missing", err: &types.NoSuchOriginAccessControl{}, want: true},
+		{name: "origin request policy missing", err: &types.NoSuchOriginRequestPolicy{}, want: true},
+		{name: "public key missing", err: &types.NoSuchPublicKey{}, want: true},
+		{name: "realtime log config missing", err: &types.NoSuchRealtimeLogConfig{}, want: true},
 		{name: "resource missing", err: &types.NoSuchResource{}, want: true},
+		{name: "response headers policy missing", err: &types.NoSuchResponseHeadersPolicy{}, want: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
