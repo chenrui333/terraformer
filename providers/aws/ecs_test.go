@@ -61,6 +61,42 @@ func TestEcsResourceName(t *testing.T) {
 	}
 }
 
+func TestEcsCapacityProviderImportable(t *testing.T) {
+	tests := []struct {
+		name             string
+		capacityProvider ecstypes.CapacityProvider
+		want             bool
+	}{
+		{
+			name: "auto scaling group provider",
+			capacityProvider: ecstypes.CapacityProvider{
+				AutoScalingGroupProvider: &ecstypes.AutoScalingGroupProvider{},
+			},
+			want: true,
+		},
+		{
+			name: "managed instances provider",
+			capacityProvider: ecstypes.CapacityProvider{
+				ManagedInstancesProvider: &ecstypes.ManagedInstancesProvider{},
+			},
+			want: true,
+		},
+		{
+			name:             "built in provider",
+			capacityProvider: ecstypes.CapacityProvider{},
+			want:             false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ecsCapacityProviderImportable(tt.capacityProvider); got != tt.want {
+				t.Fatalf("ecsCapacityProviderImportable() = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestEcsClusterNotFound(t *testing.T) {
 	if !ecsClusterNotFound(&ecstypes.ClusterNotFoundException{}) {
 		t.Fatal("ecsClusterNotFound() = false for ClusterNotFoundException, want true")

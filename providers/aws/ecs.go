@@ -37,6 +37,10 @@ type ecsOptionalResourceLoader struct {
 	load func() error
 }
 
+func ecsCapacityProviderImportable(capacityProvider ecstypes.CapacityProvider) bool {
+	return capacityProvider.AutoScalingGroupProvider != nil || capacityProvider.ManagedInstancesProvider != nil
+}
+
 func (g *EcsGenerator) InitResources() error {
 	config, e := g.generateConfig()
 	if e != nil {
@@ -181,7 +185,7 @@ func (g *EcsGenerator) addCapacityProviders(svc *ecs.Client) error {
 			return err
 		}
 		for _, capacityProvider := range output.CapacityProviders {
-			if capacityProvider.AutoScalingGroupProvider == nil {
+			if !ecsCapacityProviderImportable(capacityProvider) {
 				continue
 			}
 			capacityProviderARN := StringValue(capacityProvider.CapacityProviderArn)
