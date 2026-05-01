@@ -130,3 +130,45 @@ func TestEcsTaskSetScopeNotFound(t *testing.T) {
 		})
 	}
 }
+
+func TestEcsTaskSetUnsupported(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "invalid parameter", err: &ecstypes.InvalidParameterException{}, want: true},
+		{name: "client exception", err: &ecstypes.ClientException{}, want: true},
+		{name: "generic error", err: errors.New("boom"), want: false},
+		{name: "nil", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ecsTaskSetUnsupported(tt.err); got != tt.want {
+				t.Fatalf("ecsTaskSetUnsupported() = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEcsTaskSetDiscoverySkipError(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "scope missing", err: &ecstypes.ServiceNotFoundException{}, want: true},
+		{name: "unsupported service", err: &ecstypes.InvalidParameterException{}, want: true},
+		{name: "generic error", err: errors.New("boom"), want: false},
+		{name: "nil", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ecsTaskSetDiscoverySkipError(tt.err); got != tt.want {
+				t.Fatalf("ecsTaskSetDiscoverySkipError() = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}

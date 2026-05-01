@@ -256,7 +256,7 @@ func (g *EcsGenerator) addTaskSets(svc *ecs.Client, services []ecsServiceReferen
 			Service: &service.name,
 		})
 		if err != nil {
-			if ecsTaskSetScopeNotFound(err) {
+			if ecsTaskSetDiscoverySkipError(err) {
 				continue
 			}
 			return err
@@ -331,4 +331,17 @@ func ecsTaskSetScopeNotFound(err error) bool {
 	}
 	var taskSetNotFound *ecstypes.TaskSetNotFoundException
 	return errors.As(err, &taskSetNotFound)
+}
+
+func ecsTaskSetUnsupported(err error) bool {
+	var invalidParameter *ecstypes.InvalidParameterException
+	if errors.As(err, &invalidParameter) {
+		return true
+	}
+	var clientException *ecstypes.ClientException
+	return errors.As(err, &clientException)
+}
+
+func ecsTaskSetDiscoverySkipError(err error) bool {
+	return ecsTaskSetScopeNotFound(err) || ecsTaskSetUnsupported(err)
 }
