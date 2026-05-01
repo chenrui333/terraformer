@@ -87,6 +87,11 @@ terraformer import aws --resources=sg --regions=us-east-1
     * `aws_cloudtrail`
 *   `cloudwatch`
     * `aws_cloudwatch_dashboard`
+    * `aws_cloudwatch_event_api_destination`
+    * `aws_cloudwatch_event_archive`
+    * `aws_cloudwatch_event_bus`
+    * `aws_cloudwatch_event_bus_policy`
+    * `aws_cloudwatch_event_connection`
     * `aws_cloudwatch_event_rule`
     * `aws_cloudwatch_event_target`
     * `aws_cloudwatch_metric_alarm`
@@ -216,7 +221,14 @@ terraformer import aws --resources=sg --regions=us-east-1
     * `aws_lambda_layer_version`
     * `aws_lambda_permission`
 *   `logs`
+    * `aws_cloudwatch_log_account_policy`
+    * `aws_cloudwatch_log_data_protection_policy`
+    * `aws_cloudwatch_log_destination`
     * `aws_cloudwatch_log_group`
+    * `aws_cloudwatch_log_metric_filter`
+    * `aws_cloudwatch_log_resource_policy`
+    * `aws_cloudwatch_log_subscription_filter`
+    * `aws_cloudwatch_query_definition`
 *   `media_package`
     * `aws_media_package_channel`
 *   `media_store`
