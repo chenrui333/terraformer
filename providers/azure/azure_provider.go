@@ -93,7 +93,7 @@ func (p *AzureProvider) setEnvConfig() error {
 func (p *AzureProvider) getTokenCredential() (azcore.TokenCredential, error) {
 	cloudCfg := p.clientOptions.Cloud
 	isCustomCloud := p.config.MetadataHost != ""
-	if p.config.UseClientSecret {
+	if p.config.UseClientSecret && p.config.ClientID != "" && p.config.TenantID != "" {
 		opts := &azidentity.ClientSecretCredentialOptions{
 			AdditionallyAllowedTenants: p.config.AuxiliaryTenantIDs,
 			DisableInstanceDiscovery:   isCustomCloud,
@@ -102,7 +102,7 @@ func (p *AzureProvider) getTokenCredential() (azcore.TokenCredential, error) {
 		return azidentity.NewClientSecretCredential(
 			p.config.TenantID, p.config.ClientID, p.config.ClientSecret, opts)
 	}
-	if p.config.UseClientCertificate {
+	if p.config.UseClientCertificate && p.config.ClientID != "" && p.config.TenantID != "" {
 		certData, err := os.ReadFile(p.config.ClientCertificatePath)
 		if err != nil {
 			return nil, fmt.Errorf("reading client certificate: %w", err)
@@ -130,7 +130,7 @@ func (p *AzureProvider) getTokenCredential() (azcore.TokenCredential, error) {
 		}
 		return azidentity.NewManagedIdentityCredential(opts)
 	}
-	if p.config.UseGitHubOIDC {
+	if p.config.UseGitHubOIDC && p.config.ClientID != "" && p.config.TenantID != "" && p.config.GitHubOIDCTokenRequestURL != "" {
 		const oidcAudience = "api://AzureADTokenExchange"
 		getAssertion := func(ctx context.Context) (string, error) {
 			reqURL := p.config.GitHubOIDCTokenRequestURL
@@ -246,14 +246,30 @@ func discoverCloudConfig(metadataHost, environment string) (cloud.Configuration,
 	}
 	var meta *cloudEndpoint
 	if environment != "" {
+		candidates := []string{environment}
+		switch environment {
+		case "public":
+			candidates = append(candidates, "AzureCloud", "AzurePublicCloud")
+		case "china":
+			candidates = append(candidates, "AzureChinaCloud")
+		case "usgovernment":
+			candidates = append(candidates, "AzureUSGovernmentCloud", "AzureUSGovernment")
+		}
 		for i := range endpoints {
-			if strings.EqualFold(endpoints[i].Name, environment) {
-				meta = &endpoints[i]
+			for _, name := range candidates {
+				if strings.EqualFold(endpoints[i].Name, name) {
+					meta = &endpoints[i]
+					break
+				}
+			}
+			if meta != nil {
 				break
 			}
 		}
-	}
-	if meta == nil {
+		if meta == nil {
+			return cloud.Configuration{}, fmt.Errorf("metadata endpoint has no environment matching %q", environment)
+		}
+	} else {
 		meta = &endpoints[0]
 	}
 	audience := meta.ResourceManager

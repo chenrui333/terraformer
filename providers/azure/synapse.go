@@ -140,36 +140,42 @@ func (az *SynapseGenerator) appendManagedPrivateEndpoint(workspace *armsynapse.W
 		return err
 	}
 
-	url := fmt.Sprintf("%s%s/managedVirtualNetworks/%s/managedPrivateEndpoints?api-version=2021-06-01",
+	nextURL := fmt.Sprintf("%s%s/managedVirtualNetworks/%s/managedPrivateEndpoints?api-version=2021-06-01",
 		armEndpoint, *workspace.ID, vnetName)
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Authorization", "Bearer "+token.Token)
+	for nextURL != "" {
+		req, err := http.NewRequestWithContext(ctx, "GET", nextURL, nil)
+		if err != nil {
+			return err
+		}
+		req.Header.Set("Authorization", "Bearer "+token.Token)
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return err
+		}
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("listing managed private endpoints: HTTP %d", resp.StatusCode)
-	}
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			return fmt.Errorf("listing managed private endpoints: HTTP %d", resp.StatusCode)
+		}
 
-	var result struct {
-		Value []struct {
-			ID   *string `json:"id"`
-			Name *string `json:"name"`
-		} `json:"value"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return err
-	}
+		var page struct {
+			Value []struct {
+				ID   *string `json:"id"`
+				Name *string `json:"name"`
+			} `json:"value"`
+			NextLink string `json:"nextLink"`
+		}
+		err = json.NewDecoder(resp.Body).Decode(&page)
+		resp.Body.Close()
+		if err != nil {
+			return err
+		}
 
-	for _, item := range result.Value {
-		az.AppendSimpleResource(*item.ID, *item.Name, "azurerm_synapse_managed_private_endpoint")
+		for _, item := range page.Value {
+			az.AppendSimpleResource(*item.ID, *item.Name, "azurerm_synapse_managed_private_endpoint")
+		}
+		nextURL = page.NextLink
 	}
 	return nil
 }
