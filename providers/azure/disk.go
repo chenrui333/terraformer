@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
-//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package azure
 
 import (
 	"context"
-	"log"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
-	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v6"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -16,45 +15,48 @@ type DiskGenerator struct {
 	AzureService
 }
 
-func (g DiskGenerator) createResources(diskListIterator compute.DiskListIterator) ([]terraformutils.Resource, error) {
+func (g *DiskGenerator) InitResources() error {
+	ctx := context.Background()
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	credential := g.Args["credential"].(azcore.TokenCredential)
+	clientOptions := g.Args["clientOptions"].(*arm.ClientOptions)
+
+	client, err := armcompute.NewDisksClient(subscriptionID, credential, clientOptions)
+	if err != nil {
+		return err
+	}
+
+	var disks []*armcompute.Disk
+	rg := g.Args["resource_group"].(string)
+	if rg != "" {
+		pager := client.NewListByResourceGroupPager(rg, nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return err
+			}
+			disks = append(disks, page.Value...)
+		}
+	} else {
+		pager := client.NewListPager(nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return err
+			}
+			disks = append(disks, page.Value...)
+		}
+	}
+
 	var resources []terraformutils.Resource
-	for diskListIterator.NotDone() {
-		disk := diskListIterator.Value()
+	for _, disk := range disks {
 		resources = append(resources, terraformutils.NewSimpleResource(
 			*disk.ID,
 			*disk.Name,
 			"azurerm_managed_disk",
 			"azurerm",
 			[]string{}))
-		if err := diskListIterator.Next(); err != nil {
-			log.Println(err)
-			return resources, err
-		}
 	}
-	return resources, nil
-}
-
-func (g *DiskGenerator) InitResources() error {
-	ctx := context.Background()
-	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
-	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
-	disksClient := compute.NewDisksClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
-
-	disksClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
-
-	var (
-		output compute.DiskListIterator
-		err    error
-	)
-
-	if rg := g.Args["resource_group"].(string); rg != "" {
-		output, err = disksClient.ListByResourceGroupComplete(ctx, rg)
-	} else {
-		output, err = disksClient.ListComplete(ctx)
-	}
-	if err != nil {
-		return err
-	}
-	g.Resources, err = g.createResources(output)
-	return err
+	g.Resources = resources
+	return nil
 }

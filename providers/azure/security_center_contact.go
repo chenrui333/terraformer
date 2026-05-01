@@ -1,12 +1,13 @@
-//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
+// SPDX-License-Identifier: Apache-2.0
+
 package azure
 
 import (
 	"context"
 
-	"github.com/Azure/go-autorest/autorest"
-
-	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v3.0/security"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/security/armsecurity"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -18,30 +19,31 @@ func (g SecurityCenterContactGenerator) listContacts() ([]terraformutils.Resourc
 	var resources []terraformutils.Resource
 	ctx := context.Background()
 	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
-
-	securityCenterContactClient := security.NewContactsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
-	securityCenterContactClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
+	credential := g.Args["credential"].(azcore.TokenCredential)
+	clientOptions := g.Args["clientOptions"].(*arm.ClientOptions)
 
 	if rg := g.Args["resource_group"].(string); rg != "" {
 		return resources, nil
 	}
-	contactsIterator, err := securityCenterContactClient.ListComplete(ctx)
+
+	contactsClient, err := armsecurity.NewContactsClient(subscriptionID, credential, clientOptions)
 	if err != nil {
 		return resources, err
 	}
 
-	for contactsIterator.NotDone() {
-		contact := contactsIterator.Value()
-		resources = append(resources, terraformutils.NewSimpleResource(
-			*contact.ID,
-			*contact.Name,
-			"azurerm_security_center_contact",
-			g.ProviderName,
-			[]string{}))
-
-		if err := contactsIterator.NextWithContext(ctx); err != nil {
+	pager := contactsClient.NewListPager(nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
 			return resources, err
+		}
+		for _, contact := range page.Value {
+			resources = append(resources, terraformutils.NewSimpleResource(
+				*contact.ID,
+				*contact.Name,
+				"azurerm_security_center_contact",
+				g.ProviderName,
+				[]string{}))
 		}
 	}
 

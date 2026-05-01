@@ -3,17 +3,15 @@
 package azure
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
 
-	"github.com/Azure/go-autorest/autorest"
-	"github.com/hashicorp/go-azure-helpers/authentication"
-	azureauth "github.com/hashicorp/go-azure-sdk/sdk/auth"
-	azureautorest "github.com/hashicorp/go-azure-sdk/sdk/auth/autorest"
-	azuresdk "github.com/hashicorp/go-azure-sdk/sdk/environments"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/chenrui333/terraformer/terraformutils/providerwrapper"
@@ -22,29 +20,22 @@ import (
 type AzureProvider struct { //nolint
 	terraformutils.Provider
 	config        providerConfig
-	authorizer    autorest.Authorizer
+	credential    azcore.TokenCredential
+	clientOptions *arm.ClientOptions
 	resourceGroup string
 }
 
 type providerConfig struct {
-	AuxiliaryTenantIDs            []string
-	ClientCertificatePassword     string
-	ClientCertificatePath         string
-	ClientID                      string
-	ClientSecret                  string
-	CustomManagedIdentityEndpoint string
-	CustomResourceManagerEndpoint string
-	Environment                   string
-	GitHubOIDCTokenRequestToken   string
-	GitHubOIDCTokenRequestURL     string
-	MetadataHost                  string
-	SubscriptionID                string
-	TenantID                      string
-	UseAzureCLI                   bool
-	UseClientCertificate          bool
-	UseClientSecret               bool
-	UseGitHubOIDC                 bool
-	UseManagedIdentity            bool
+	ClientCertificatePassword string
+	ClientCertificatePath     string
+	ClientID                  string
+	ClientSecret              string
+	Environment               string
+	SubscriptionID            string
+	TenantID                  string
+	UseClientCertificate      bool
+	UseClientSecret           bool
+	UseManagedIdentity        bool
 }
 
 func (p *AzureProvider) setEnvConfig() error {
@@ -52,91 +43,61 @@ func (p *AzureProvider) setEnvConfig() error {
 	if subscriptionID == "" {
 		return errors.New("set ARM_SUBSCRIPTION_ID env var")
 	}
-	if os.Getenv("ARM_USE_ADAL") != "" {
-		return errors.New("ARM_USE_ADAL is no longer supported; unset it to use Azure SDK authentication")
-	}
-	var auxTenants []string
-	if v := os.Getenv("ARM_AUXILIARY_TENANT_IDS"); v != "" {
-		auxTenants = strings.Split(v, ";")
-		if len(auxTenants) > 3 {
-			return fmt.Errorf("the provider only supports 3 auxiliary tenant IDs for ARM_AUXILIARY_TENANT_IDS")
-		}
-	}
 	environment := os.Getenv("ARM_ENVIRONMENT")
 	if environment == "" {
 		environment = "public"
 	}
 	p.config = providerConfig{
-		AuxiliaryTenantIDs:            auxTenants,
-		ClientCertificatePassword:     os.Getenv("ARM_CLIENT_CERTIFICATE_PASSWORD"),
-		ClientCertificatePath:         os.Getenv("ARM_CLIENT_CERTIFICATE_PATH"),
-		ClientID:                      os.Getenv("ARM_CLIENT_ID"),
-		ClientSecret:                  os.Getenv("ARM_CLIENT_SECRET"),
-		CustomManagedIdentityEndpoint: os.Getenv("ARM_MSI_ENDPOINT"),
-		Environment:                   environment,
-		GitHubOIDCTokenRequestToken:   os.Getenv("ARM_OIDC_REQUEST_TOKEN"),
-		GitHubOIDCTokenRequestURL:     os.Getenv("ARM_OIDC_REQUEST_URL"),
-		MetadataHost:                  os.Getenv("ARM_METADATA_HOSTNAME"),
-		SubscriptionID:                subscriptionID,
-		TenantID:                      os.Getenv("ARM_TENANT_ID"),
-		UseAzureCLI:                   true,
-		UseClientCertificate:          os.Getenv("ARM_CLIENT_CERTIFICATE_PATH") != "",
-		UseClientSecret:               os.Getenv("ARM_CLIENT_SECRET") != "",
-		UseGitHubOIDC:                 os.Getenv("ARM_USE_OIDC") != "",
-		UseManagedIdentity:            os.Getenv("ARM_USE_MSI") != "",
+		ClientCertificatePassword: os.Getenv("ARM_CLIENT_CERTIFICATE_PASSWORD"),
+		ClientCertificatePath:     os.Getenv("ARM_CLIENT_CERTIFICATE_PATH"),
+		ClientID:                  os.Getenv("ARM_CLIENT_ID"),
+		ClientSecret:              os.Getenv("ARM_CLIENT_SECRET"),
+		Environment:               environment,
+		SubscriptionID:            subscriptionID,
+		TenantID:                  os.Getenv("ARM_TENANT_ID"),
+		UseClientCertificate:      os.Getenv("ARM_CLIENT_CERTIFICATE_PATH") != "",
+		UseClientSecret:           os.Getenv("ARM_CLIENT_SECRET") != "",
+		UseManagedIdentity:        os.Getenv("ARM_USE_MSI") != "",
 	}
-
 	return nil
 }
 
-func (p *AzureProvider) getAuthorizer() (autorest.Authorizer, error) {
-	ctx := context.Background()
-	env, err := authentication.DetermineEnvironment(p.config.Environment)
-	if err != nil {
-		return nil, err
+func (p *AzureProvider) getTokenCredential() (azcore.TokenCredential, error) {
+	if p.config.UseClientSecret {
+		return azidentity.NewClientSecretCredential(
+			p.config.TenantID, p.config.ClientID, p.config.ClientSecret, nil)
 	}
-	if p.config.MetadataHost != "" {
-		env, err = authentication.AzureEnvironmentByNameFromEndpoint(ctx, p.config.MetadataHost, p.config.Environment)
+	if p.config.UseClientCertificate {
+		certData, err := os.ReadFile(p.config.ClientCertificatePath)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("reading client certificate: %w", err)
 		}
-	}
-	p.config.CustomResourceManagerEndpoint = env.ResourceManagerEndpoint
-
-	sdkEnv, err := azuresdk.FromName(p.config.Environment)
-	if err != nil {
-		return nil, err
-	}
-	if p.config.MetadataHost != "" {
-		sdkEnv, err = azuresdk.FromEndpoint(ctx, p.config.MetadataHost)
+		certs, key, err := azidentity.ParseCertificates(certData, []byte(p.config.ClientCertificatePassword))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("parsing client certificate: %w", err)
 		}
+		return azidentity.NewClientCertificateCredential(
+			p.config.TenantID, p.config.ClientID, certs, key, nil)
 	}
+	if p.config.UseManagedIdentity {
+		opts := &azidentity.ManagedIdentityCredentialOptions{}
+		if p.config.ClientID != "" {
+			opts.ID = azidentity.ClientID(p.config.ClientID)
+		}
+		return azidentity.NewManagedIdentityCredential(opts)
+	}
+	return azidentity.NewDefaultAzureCredential(nil)
+}
 
-	credentials := azureauth.Credentials{
-		AuxiliaryTenantIDs:                         p.config.AuxiliaryTenantIDs,
-		AzureCliSubscriptionIDHint:                 p.config.SubscriptionID,
-		ClientCertificatePath:                      p.config.ClientCertificatePath,
-		ClientCertificatePassword:                  p.config.ClientCertificatePassword,
-		ClientID:                                   p.config.ClientID,
-		ClientSecret:                               p.config.ClientSecret,
-		CustomManagedIdentityEndpoint:              p.config.CustomManagedIdentityEndpoint,
-		EnableAuthenticationUsingGitHubOIDC:        p.config.UseGitHubOIDC,
-		EnableAuthenticatingUsingAzureCLI:          p.config.UseAzureCLI,
-		EnableAuthenticatingUsingClientCertificate: p.config.UseClientCertificate,
-		EnableAuthenticatingUsingClientSecret:      p.config.UseClientSecret,
-		EnableAuthenticatingUsingManagedIdentity:   p.config.UseManagedIdentity,
-		Environment:                                *sdkEnv,
-		OIDCTokenRequestToken:                      p.config.GitHubOIDCTokenRequestToken,
-		OIDCTokenRequestURL:                        p.config.GitHubOIDCTokenRequestURL,
-		TenantID:                                   p.config.TenantID,
+func (p *AzureProvider) getClientOptions() *arm.ClientOptions {
+	opts := &arm.ClientOptions{}
+	switch strings.ToLower(p.config.Environment) {
+	case "china":
+		opts.Cloud = cloud.AzureChina
+	case "usgovernment":
+		opts.Cloud = cloud.AzureGovernment
 	}
-	authorizer, err := azureauth.NewAuthorizerFromCredentials(ctx, credentials, sdkEnv.ResourceManager)
-	if err != nil {
-		return nil, err
-	}
-	return azureautorest.AutorestAuthorizer(authorizer), nil
+	return opts
 }
 
 func (p *AzureProvider) Init(args []string) error {
@@ -145,11 +106,12 @@ func (p *AzureProvider) Init(args []string) error {
 		return err
 	}
 
-	authorizer, err := p.getAuthorizer()
+	credential, err := p.getTokenCredential()
 	if err != nil {
 		return err
 	}
-	p.authorizer = authorizer
+	p.credential = credential
+	p.clientOptions = p.getClientOptions()
 	p.resourceGroup = args[0]
 
 	return nil
@@ -165,11 +127,6 @@ func (p *AzureProvider) GetProviderData(_ ...string) map[string]interface{} {
 		return map[string]interface{}{
 			"provider": map[string]interface{}{
 				"azurerm": map[string]interface{}{
-					// NOTE:
-					// Workaround for azurerm v2 provider changes
-					// Tested with azurerm_resource_group under v2.17.0
-					// https://github.com/terraform-providers/terraform-provider-azurerm/issues/5866#issuecomment-594239342
-					// https://github.com/hashicorp/terraform/issues/24200#issuecomment-594745861
 					"features": map[string]interface{}{},
 				},
 			},
@@ -420,7 +377,8 @@ func (p *AzureProvider) InitService(serviceName string, verbose bool) error {
 	p.Service.SetProviderName(p.GetName())
 	p.Service.SetArgs(map[string]interface{}{
 		"config":         p.config,
-		"authorizer":     p.authorizer,
+		"credential":     p.credential,
+		"clientOptions":  p.clientOptions,
 		"resource_group": p.resourceGroup,
 	})
 	return nil

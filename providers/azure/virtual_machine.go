@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
-//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package azure
 
 import (
 	"context"
-	"log"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-03-01/compute"
-	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v6"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -16,74 +15,62 @@ type VirtualMachineGenerator struct {
 	AzureService
 }
 
-func (g VirtualMachineGenerator) createResources(virtualMachineListResultIterator compute.VirtualMachineListResultIterator) ([]terraformutils.Resource, error) {
-	var resources []terraformutils.Resource
-	for virtualMachineListResultIterator.NotDone() {
-		vm := virtualMachineListResultIterator.Value()
-		var newResource terraformutils.Resource
-		if vm.OsProfile == nil {
-			if vm.StorageProfile.OsDisk.OsType == "Windows" {
-				newResource = terraformutils.NewSimpleResource(
-					*vm.ID,
-					*vm.Name,
-					"azurerm_windows_virtual_machine",
-					"azurerm",
-					[]string{})
-			} else {
-				newResource = terraformutils.NewSimpleResource(
-					*vm.ID,
-					*vm.Name,
-					"azurerm_linux_virtual_machine",
-					"azurerm",
-					[]string{})
-			}
-		} else {
-			if vm.OsProfile.WindowsConfiguration != nil {
-				newResource = terraformutils.NewSimpleResource(
-					*vm.ID,
-					*vm.Name,
-					"azurerm_windows_virtual_machine",
-					"azurerm",
-					[]string{})
-			} else {
-				newResource = terraformutils.NewSimpleResource(
-					*vm.ID,
-					*vm.Name,
-					"azurerm_linux_virtual_machine",
-					"azurerm",
-					[]string{})
-			}
-		}
-
-		resources = append(resources, newResource)
-		if err := virtualMachineListResultIterator.Next(); err != nil {
-			log.Println(err)
-			return resources, err
-		}
-	}
-	return resources, nil
-}
-
 func (g *VirtualMachineGenerator) InitResources() error {
 	ctx := context.Background()
 	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
-	vmClient := compute.NewVirtualMachinesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
+	credential := g.Args["credential"].(azcore.TokenCredential)
+	clientOptions := g.Args["clientOptions"].(*arm.ClientOptions)
 
-	vmClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
-
-	var (
-		output compute.VirtualMachineListResultIterator
-		err    error
-	)
-	if rg := g.Args["resource_group"].(string); rg != "" {
-		output, err = vmClient.ListComplete(ctx, rg)
-	} else {
-		output, err = vmClient.ListAllComplete(ctx)
-	}
+	client, err := armcompute.NewVirtualMachinesClient(subscriptionID, credential, clientOptions)
 	if err != nil {
 		return err
 	}
-	g.Resources, err = g.createResources(output)
-	return err
+
+	rg := g.Args["resource_group"].(string)
+	var vms []*armcompute.VirtualMachine
+	if rg != "" {
+		pager := client.NewListPager(rg, nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return err
+			}
+			vms = append(vms, page.Value...)
+		}
+	} else {
+		pager := client.NewListAllPager(nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return err
+			}
+			vms = append(vms, page.Value...)
+		}
+	}
+
+	var resources []terraformutils.Resource
+	for _, vm := range vms {
+		isWindows := false
+		if vm.Properties != nil {
+			if vm.Properties.OSProfile == nil {
+				if vm.Properties.StorageProfile != nil &&
+					vm.Properties.StorageProfile.OSDisk != nil &&
+					vm.Properties.StorageProfile.OSDisk.OSType != nil &&
+					*vm.Properties.StorageProfile.OSDisk.OSType == armcompute.OperatingSystemTypesWindows {
+					isWindows = true
+				}
+			} else if vm.Properties.OSProfile.WindowsConfiguration != nil {
+				isWindows = true
+			}
+		}
+
+		resourceType := "azurerm_linux_virtual_machine"
+		if isWindows {
+			resourceType = "azurerm_windows_virtual_machine"
+		}
+		resources = append(resources, terraformutils.NewSimpleResource(
+			*vm.ID, *vm.Name, resourceType, "azurerm", []string{}))
+	}
+	g.Resources = resources
+	return nil
 }

@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
-//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package azure
 
 import (
 	"context"
-	"log"
 
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
-	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v2"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -16,34 +15,19 @@ type ResourceGroupGenerator struct {
 	AzureService
 }
 
-func (g ResourceGroupGenerator) createResources(groupListResultIterator resources.GroupListResultIterator) []terraformutils.Resource {
-	var resources []terraformutils.Resource
-	for groupListResultIterator.NotDone() {
-		group := groupListResultIterator.Value()
-		resources = append(resources, terraformutils.NewSimpleResource(
-			*group.ID,
-			*group.Name,
-			"azurerm_resource_group",
-			"azurerm",
-			[]string{}))
-		if err := groupListResultIterator.Next(); err != nil {
-			log.Println(err)
-			break
-		}
-	}
-	return resources
-}
-
 func (g *ResourceGroupGenerator) InitResources() error {
 	ctx := context.Background()
 	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
-	groupsClient := resources.NewGroupsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
+	credential := g.Args["credential"].(azcore.TokenCredential)
+	clientOptions := g.Args["clientOptions"].(*arm.ClientOptions)
 
-	groupsClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
+	client, err := armresources.NewResourceGroupsClient(subscriptionID, credential, clientOptions)
+	if err != nil {
+		return err
+	}
 
 	if rg := g.Args["resource_group"].(string); rg != "" {
-		group, err := groupsClient.Get(ctx, rg)
+		group, err := client.Get(ctx, rg, nil)
 		if err != nil {
 			return err
 		}
@@ -57,10 +41,23 @@ func (g *ResourceGroupGenerator) InitResources() error {
 		}
 		return nil
 	}
-	output, err := groupsClient.ListComplete(ctx, "", nil)
-	if err != nil {
-		return err
+
+	var resources []terraformutils.Resource
+	pager := client.NewListPager(nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return err
+		}
+		for _, group := range page.Value {
+			resources = append(resources, terraformutils.NewSimpleResource(
+				*group.ID,
+				*group.Name,
+				"azurerm_resource_group",
+				"azurerm",
+				[]string{}))
+		}
 	}
-	g.Resources = g.createResources(output)
+	g.Resources = resources
 	return nil
 }

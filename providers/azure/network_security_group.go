@@ -1,67 +1,66 @@
 // SPDX-License-Identifier: Apache-2.0
 
-//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package azure
 
 import (
 	"context"
-	"log"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-03-01/network"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v6"
 )
 
 type NetworkSecurityGroupGenerator struct {
 	AzureService
 }
 
-func (az *NetworkSecurityGroupGenerator) listResources() ([]network.SecurityGroup, error) {
-	subscriptionID, resourceGroup, authorizer, resourceManagerEndpoint := az.getClientArgs()
-	client := network.NewSecurityGroupsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
-	client.Authorizer = authorizer
-	var (
-		iterator network.SecurityGroupListResultIterator
-		err      error
-	)
-	ctx := context.Background()
-	if resourceGroup != "" {
-		iterator, err = client.ListComplete(ctx, resourceGroup)
-	} else {
-		iterator, err = client.ListAllComplete(ctx)
-	}
+func (az *NetworkSecurityGroupGenerator) listResources() ([]*armnetwork.SecurityGroup, error) {
+	subscriptionID, resourceGroup, credential, clientOptions := az.getClientArgs()
+	client, err := armnetwork.NewSecurityGroupsClient(subscriptionID, credential, clientOptions)
 	if err != nil {
 		return nil, err
 	}
-	var resources []network.SecurityGroup
-	for iterator.NotDone() {
-		item := iterator.Value()
-		resources = append(resources, item)
-		if err := iterator.NextWithContext(ctx); err != nil {
-			log.Println(err)
-			return resources, err
+	ctx := context.Background()
+	var resources []*armnetwork.SecurityGroup
+	if resourceGroup != "" {
+		pager := client.NewListPager(resourceGroup, nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+			resources = append(resources, page.Value...)
+		}
+	} else {
+		pager := client.NewListAllPager(nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+			resources = append(resources, page.Value...)
 		}
 	}
 	return resources, nil
 }
 
-func (az *NetworkSecurityGroupGenerator) appendResource(resource *network.SecurityGroup) {
+func (az *NetworkSecurityGroupGenerator) appendResource(resource *armnetwork.SecurityGroup) {
 	az.AppendSimpleResourceWithDuplicateCheck(*resource.ID, *resource.Name, "azurerm_network_security_group")
 }
 
-func (az *NetworkSecurityGroupGenerator) appendRules(parent *network.SecurityGroup, resourceGroupID *ResourceID) error {
-	subscriptionID, _, authorizer, resourceManagerEndpoint := az.getClientArgs()
-	client := network.NewSecurityRulesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
-	client.Authorizer = authorizer
-	ctx := context.Background()
-	iterator, err := client.ListComplete(ctx, resourceGroupID.ResourceGroup, *parent.Name)
+func (az *NetworkSecurityGroupGenerator) appendRules(parent *armnetwork.SecurityGroup, resourceGroupID *ResourceID) error {
+	subscriptionID, _, credential, clientOptions := az.getClientArgs()
+	client, err := armnetwork.NewSecurityRulesClient(subscriptionID, credential, clientOptions)
 	if err != nil {
 		return err
 	}
-	for iterator.NotDone() {
-		item := iterator.Value()
-		az.AppendSimpleResourceWithDuplicateCheck(*item.ID, *item.Name, "azurerm_network_security_rule")
-		if err := iterator.NextWithContext(ctx); err != nil {
-			log.Println(err)
+	ctx := context.Background()
+	pager := client.NewListPager(resourceGroupID.ResourceGroup, *parent.Name, nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
 			return err
+		}
+		for _, item := range page.Value {
+			az.AppendSimpleResourceWithDuplicateCheck(*item.ID, *item.Name, "azurerm_network_security_rule")
 		}
 	}
 	return nil
@@ -73,12 +72,12 @@ func (az *NetworkSecurityGroupGenerator) InitResources() error {
 		return err
 	}
 	for _, resource := range resources {
-		az.appendResource(&resource)
+		az.appendResource(resource)
 		resourceGroupID, err := ParseAzureResourceID(*resource.ID)
 		if err != nil {
 			return err
 		}
-		err = az.appendRules(&resource, resourceGroupID)
+		err = az.appendRules(resource, resourceGroupID)
 		if err != nil {
 			return err
 		}

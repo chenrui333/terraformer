@@ -5,8 +5,6 @@ package datadog
 import (
 	"fmt"
 
-	datadogCommunity "github.com/zorkian/go-datadog-api"
-
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -44,16 +42,18 @@ func (g *IntegrationPagerdutyServiceObjectGenerator) createResource(serviceName 
 // from each PD Service create 1 TerraformResource.
 // Need IntegrationPagerdutyServiceObject ServiceName as ID for terraform resource
 func (g *IntegrationPagerdutyServiceObjectGenerator) InitResources() error {
-	client := datadogCommunity.NewClient(g.Args["api-key"].(string), g.Args["app-key"].(string))
-
-	pdIntegration, err := client.GetIntegrationPD()
+	integration, err := getPagerDutyIntegration(
+		g.Args["api-key"].(string),
+		g.Args["app-key"].(string),
+		g.Args["api-url"].(string),
+	)
 	if err != nil {
 		return err
 	}
 
 	var serviceNames []string
-	for _, service := range pdIntegration.Services {
-		serviceNames = append(serviceNames, *service.ServiceName)
+	for _, service := range integration.Services {
+		serviceNames = append(serviceNames, service.ServiceName)
 	}
 
 	g.Resources = g.createResources(serviceNames)

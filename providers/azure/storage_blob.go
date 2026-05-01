@@ -1,16 +1,17 @@
-//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
+// SPDX-License-Identifier: Apache-2.0
+
 package azure
 
 import (
 	"context"
 	"fmt"
-
 	"log"
 	"net/url"
 
-	"github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2019-06-01/storage"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/storage/armstorage/v2"
 	"github.com/Azure/azure-storage-blob-go/azblob"
-	"github.com/Azure/go-autorest/autorest"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -25,15 +26,19 @@ type StorageBlobGenerator struct {
 
 func (g StorageBlobGenerator) getAccountPrimaryKey(ctx context.Context, accountName, accountGroupName string) string {
 	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
-	storageAccountsClient := storage.NewAccountsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
-	storageAccountsClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
+	credential := g.Args["credential"].(azcore.TokenCredential)
+	clientOptions := g.Args["clientOptions"].(*arm.ClientOptions)
 
-	response, err := storageAccountsClient.ListKeys(ctx, accountGroupName, accountName, "kerb")
+	storageAccountsClient, err := armstorage.NewAccountsClient(subscriptionID, credential, clientOptions)
+	if err != nil {
+		log.Fatalf("failed to create accounts client: %v", err)
+	}
+
+	response, err := storageAccountsClient.ListKeys(ctx, accountGroupName, accountName, nil)
 	if err != nil {
 		log.Fatalf("failed to list keys: %v", err)
 	}
-	return *(((*response.Keys)[0]).Value)
+	return *response.Keys[0].Value
 }
 
 func (g StorageBlobGenerator) getContainerURL(ctx context.Context, accountName, accountGroupName, containerName string) (azblob.ContainerURL, error) {
@@ -81,10 +86,10 @@ func (g StorageBlobGenerator) listStorageBlobs() ([]terraformutils.Resource, err
 	ctx := context.Background()
 
 	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
-	authorizer := g.Args["authorizer"].(autorest.Authorizer)
+	credential := g.Args["credential"].(azcore.TokenCredential)
+	clientOptions := g.Args["clientOptions"].(*arm.ClientOptions)
 	resourceGroup := g.Args["resource_group"].(string)
-	blobContainerGenerator := NewStorageContainerGenerator(resourceManagerEndpoint, subscriptionID, authorizer, resourceGroup)
+	blobContainerGenerator := NewStorageContainerGenerator(subscriptionID, credential, clientOptions, resourceGroup)
 	blobContainersResources, err := blobContainerGenerator.ListBlobContainers()
 	if err != nil {
 		return storageBlobsResources, err

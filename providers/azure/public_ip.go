@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
-//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package azure
 
 import (
 	"context"
-	"log"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-03-01/network"
-	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v6"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -17,77 +16,92 @@ type PublicIPGenerator struct {
 }
 
 func (g *PublicIPGenerator) listAndAddForPublicIPAddress() ([]terraformutils.Resource, error) {
-	var resources []terraformutils.Resource
 	ctx := context.Background()
 	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
-	PublicIPAddressesClient := network.NewPublicIPAddressesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
-	PublicIPAddressesClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
+	credential := g.Args["credential"].(azcore.TokenCredential)
+	clientOptions := g.Args["clientOptions"].(*arm.ClientOptions)
 
-	var (
-		publicIPAddressIterator network.PublicIPAddressListResultIterator
-		err                     error
-	)
-	if rg := g.Args["resource_group"].(string); rg != "" {
-		publicIPAddressIterator, err = PublicIPAddressesClient.ListComplete(ctx, rg)
-	} else {
-		publicIPAddressIterator, err = PublicIPAddressesClient.ListAllComplete(ctx)
-	}
+	client, err := armnetwork.NewPublicIPAddressesClient(subscriptionID, credential, clientOptions)
 	if err != nil {
 		return nil, err
 	}
-	for publicIPAddressIterator.NotDone() {
-		publicIP := publicIPAddressIterator.Value()
+
+	rg := g.Args["resource_group"].(string)
+	var publicIPs []*armnetwork.PublicIPAddress
+	if rg != "" {
+		pager := client.NewListPager(rg, nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+			publicIPs = append(publicIPs, page.Value...)
+		}
+	} else {
+		pager := client.NewListAllPager(nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+			publicIPs = append(publicIPs, page.Value...)
+		}
+	}
+
+	var resources []terraformutils.Resource
+	for _, ip := range publicIPs {
 		resources = append(resources, terraformutils.NewSimpleResource(
-			*publicIP.ID,
-			*publicIP.Name,
+			*ip.ID,
+			*ip.Name,
 			"azurerm_public_ip",
 			g.ProviderName,
 			[]string{}))
-
-		if err := publicIPAddressIterator.Next(); err != nil {
-			log.Println(err)
-			return resources, err
-		}
 	}
 
 	return resources, nil
 }
 
 func (g *PublicIPGenerator) listAndAddForPublicIPPrefix() ([]terraformutils.Resource, error) {
-	var resources []terraformutils.Resource
 	ctx := context.Background()
 	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
-	PublicIPPrefixesClient := network.NewPublicIPPrefixesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
-	PublicIPPrefixesClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
+	credential := g.Args["credential"].(azcore.TokenCredential)
+	clientOptions := g.Args["clientOptions"].(*arm.ClientOptions)
 
-	var (
-		publicIPPrefixIterator network.PublicIPPrefixListResultIterator
-		err                    error
-	)
-
-	if rg := g.Args["resource_group"].(string); rg != "" {
-		publicIPPrefixIterator, err = PublicIPPrefixesClient.ListComplete(ctx, rg)
-	} else {
-		publicIPPrefixIterator, err = PublicIPPrefixesClient.ListAllComplete(ctx)
-	}
+	client, err := armnetwork.NewPublicIPPrefixesClient(subscriptionID, credential, clientOptions)
 	if err != nil {
 		return nil, err
 	}
-	for publicIPPrefixIterator.NotDone() {
-		publicIPPrefix := publicIPPrefixIterator.Value()
+
+	rg := g.Args["resource_group"].(string)
+	var prefixes []*armnetwork.PublicIPPrefix
+	if rg != "" {
+		pager := client.NewListPager(rg, nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+			prefixes = append(prefixes, page.Value...)
+		}
+	} else {
+		pager := client.NewListAllPager(nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+			prefixes = append(prefixes, page.Value...)
+		}
+	}
+
+	var resources []terraformutils.Resource
+	for _, prefix := range prefixes {
 		resources = append(resources, terraformutils.NewSimpleResource(
-			*publicIPPrefix.ID,
-			*publicIPPrefix.Name,
+			*prefix.ID,
+			*prefix.Name,
 			"azurerm_public_ip_prefix",
 			g.ProviderName,
 			[]string{}))
-
-		if err := publicIPPrefixIterator.Next(); err != nil {
-			log.Println(err)
-			return resources, err
-		}
 	}
 
 	return resources, nil
