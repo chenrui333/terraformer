@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -19,6 +20,20 @@ import (
 var S3AllowEmptyValues = []string{"tags."}
 
 var S3AdditionalFields = map[string]interface{}{}
+
+var s3BucketSplitResourceInlineFields = map[string][]string{
+	"aws_s3_bucket_accelerate_configuration":             {"acceleration_status"},
+	"aws_s3_bucket_cors_configuration":                   {"cors_rule"},
+	"aws_s3_bucket_lifecycle_configuration":              {"lifecycle_rule"},
+	"aws_s3_bucket_logging":                              {"logging"},
+	"aws_s3_bucket_object_lock_configuration":            {"object_lock_configuration", "object_lock_enabled"},
+	"aws_s3_bucket_policy":                               {"policy"},
+	"aws_s3_bucket_replication_configuration":            {"replication_configuration"},
+	"aws_s3_bucket_request_payment_configuration":        {"request_payer"},
+	"aws_s3_bucket_server_side_encryption_configuration": {"server_side_encryption_configuration"},
+	"aws_s3_bucket_versioning":                           {"versioning"},
+	"aws_s3_bucket_website_configuration":                {"website"},
+}
 
 type S3Generator struct {
 	AWSService
@@ -265,8 +280,11 @@ func (g *S3Generator) InitResources() error {
 // PostGenerateHook for add bucket policy json as heredoc
 // support only bucket with policy
 func (g *S3Generator) PostConvertHook() error {
+	inlineFieldsByBucket := s3BucketInlineFieldsByBucket(g.Resources)
 	for i, resource := range g.Resources {
-		if resource.InstanceInfo.Type == "aws_s3_bucket" {
+		switch resource.InstanceInfo.Type {
+		case "aws_s3_bucket":
+			removeS3BucketInlineFields(&g.Resources[i], inlineFieldsByBucket[resource.InstanceState.ID])
 			if val, ok := g.Resources[i].Item["acl"]; ok && val == "private" {
 				delete(g.Resources[i].Item, "acl")
 			}
@@ -275,7 +293,70 @@ func (g *S3Generator) PostConvertHook() error {
 %s
 POLICY`, g.escapeAwsInterpolation(val.(string)))
 			}
+		case "aws_s3_bucket_policy":
+			if val, ok := g.Resources[i].Item["policy"]; ok {
+				g.Resources[i].Item["policy"] = fmt.Sprintf(`<<POLICY
+%s
+POLICY`, g.escapeAwsInterpolation(val.(string)))
+			}
 		}
 	}
 	return nil
+}
+
+func s3BucketInlineFieldsByBucket(resources []terraformutils.Resource) map[string]map[string]struct{} {
+	fieldsByBucket := map[string]map[string]struct{}{}
+	for _, resource := range resources {
+		fields, ok := s3BucketSplitResourceInlineFields[resource.InstanceInfo.Type]
+		if !ok {
+			continue
+		}
+		bucketName := s3BucketNameForSplitResource(resource)
+		if bucketName == "" {
+			continue
+		}
+		if fieldsByBucket[bucketName] == nil {
+			fieldsByBucket[bucketName] = map[string]struct{}{}
+		}
+		for _, field := range fields {
+			fieldsByBucket[bucketName][field] = struct{}{}
+		}
+	}
+	return fieldsByBucket
+}
+
+func s3BucketNameForSplitResource(resource terraformutils.Resource) string {
+	if resource.InstanceState != nil && resource.InstanceState.Attributes != nil {
+		if bucketName := resource.InstanceState.Attributes["bucket"]; bucketName != "" {
+			return bucketName
+		}
+	}
+	if resource.InstanceState != nil {
+		return resource.InstanceState.ID
+	}
+	return ""
+}
+
+func removeS3BucketInlineFields(resource *terraformutils.Resource, fields map[string]struct{}) {
+	if resource == nil {
+		return
+	}
+	for field := range fields {
+		if resource.Item != nil {
+			delete(resource.Item, field)
+		}
+		if resource.InstanceState != nil {
+			deleteFlatmapAttribute(resource.InstanceState.Attributes, field)
+		}
+	}
+}
+
+func deleteFlatmapAttribute(attributes map[string]string, field string) {
+	delete(attributes, field)
+	prefix := field + "."
+	for key := range attributes {
+		if strings.HasPrefix(key, prefix) {
+			delete(attributes, key)
+		}
+	}
 }

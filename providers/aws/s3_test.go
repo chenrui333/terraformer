@@ -122,3 +122,82 @@ func TestS3BucketConfigurationMissing(t *testing.T) {
 		})
 	}
 }
+
+func TestS3BucketInlineFieldsByBucket(t *testing.T) {
+	versioning := terraformutils.NewResource(
+		"versioned-bucket",
+		"versioned-bucket",
+		"aws_s3_bucket_versioning",
+		"aws",
+		map[string]string{"bucket": "versioned-bucket"},
+		S3AllowEmptyValues,
+		S3AdditionalFields,
+	)
+	policy := terraformutils.NewResource(
+		"policy-bucket",
+		"policy-bucket",
+		"aws_s3_bucket_policy",
+		"aws",
+		nil,
+		S3AllowEmptyValues,
+		S3AdditionalFields,
+	)
+
+	fieldsByBucket := s3BucketInlineFieldsByBucket([]terraformutils.Resource{versioning, policy})
+	if _, ok := fieldsByBucket["versioned-bucket"]["versioning"]; !ok {
+		t.Fatalf("versioning inline field was not tracked: %#v", fieldsByBucket)
+	}
+	if _, ok := fieldsByBucket["policy-bucket"]["policy"]; !ok {
+		t.Fatalf("policy inline field was not tracked from resource ID fallback: %#v", fieldsByBucket)
+	}
+}
+
+func TestRemoveS3BucketInlineFields(t *testing.T) {
+	resource := terraformutils.NewResource(
+		"example-bucket",
+		"example-bucket",
+		"aws_s3_bucket",
+		"aws",
+		map[string]string{
+			"bucket":                                 "example-bucket",
+			"id":                                     "example-bucket",
+			"versioning.#":                           "1",
+			"versioning.0.enabled":                   "true",
+			"lifecycle_rule.#":                       "1",
+			"lifecycle_rule.0.id":                    "expire",
+			"server_side_encryption_configuration.#": "1",
+		},
+		S3AllowEmptyValues,
+		S3AdditionalFields,
+	)
+	resource.Item = map[string]interface{}{
+		"bucket":                               "example-bucket",
+		"versioning":                           []interface{}{map[string]interface{}{"enabled": true}},
+		"lifecycle_rule":                       []interface{}{map[string]interface{}{"id": "expire"}},
+		"server_side_encryption_configuration": []interface{}{map[string]interface{}{}},
+	}
+
+	removeS3BucketInlineFields(&resource, map[string]struct{}{
+		"versioning":                           {},
+		"server_side_encryption_configuration": {},
+	})
+
+	if _, ok := resource.Item["versioning"]; ok {
+		t.Fatal("versioning was not removed from rendered item")
+	}
+	if _, ok := resource.Item["server_side_encryption_configuration"]; ok {
+		t.Fatal("server_side_encryption_configuration was not removed from rendered item")
+	}
+	if _, ok := resource.Item["lifecycle_rule"]; !ok {
+		t.Fatal("unselected lifecycle_rule was removed from rendered item")
+	}
+	if _, ok := resource.InstanceState.Attributes["versioning.#"]; ok {
+		t.Fatal("versioning flatmap prefix was not removed")
+	}
+	if _, ok := resource.InstanceState.Attributes["server_side_encryption_configuration.#"]; ok {
+		t.Fatal("server_side_encryption_configuration flatmap prefix was not removed")
+	}
+	if _, ok := resource.InstanceState.Attributes["lifecycle_rule.#"]; !ok {
+		t.Fatal("unselected lifecycle_rule flatmap prefix was removed")
+	}
+}
