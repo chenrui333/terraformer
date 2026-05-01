@@ -142,9 +142,12 @@ terraformer import aws --resources=sg --regions=us-east-1
     * `aws_ecrpublic_repository`
     * `aws_ecrpublic_repository_policy`
 *   `ecs`
+    * `aws_ecs_capacity_provider`
     * `aws_ecs_cluster`
+    * `aws_ecs_cluster_capacity_providers`
     * `aws_ecs_service`
     * `aws_ecs_task_definition`
+    * `aws_ecs_task_set`
 *   `efs`
     * `aws_efs_access_point`
     * `aws_efs_file_system`
@@ -214,11 +217,15 @@ terraformer import aws --resources=sg --regions=us-east-1
     * `aws_kms_alias`
     * `aws_kms_grant`
 *   `lambda`
+    * `aws_lambda_alias`
+    * `aws_lambda_code_signing_config`
     * `aws_lambda_event_source_mapping`
     * `aws_lambda_function`
     * `aws_lambda_function_event_invoke_config`
+    * `aws_lambda_function_url`
     * `aws_lambda_layer_version`
     * `aws_lambda_permission`
+    * `aws_lambda_provisioned_concurrency_config`
 *   `logs`
     * `aws_cloudwatch_log_account_policy`
     * `aws_cloudwatch_log_data_protection_policy`
