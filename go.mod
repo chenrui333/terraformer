@@ -369,7 +369,6 @@ require (
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.4.0 // indirect
-	software.sslmate.com/src/go-pkcs12 v0.7.1 // indirect
 )
 
 require (
@@ -437,6 +436,7 @@ require (
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tcaplusdb v1.3.17
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc v1.3.83
 	gitlab.com/gitlab-org/api/client-go v1.46.0
+	software.sslmate.com/src/go-pkcs12 v0.7.1
 )
 
 replace gopkg.in/ns1/ns1-go.v2 => github.com/ns1/ns1-go/v2 v2.17.2

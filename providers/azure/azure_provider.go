@@ -4,6 +4,8 @@ package azure
 
 import (
 	"context"
+	"crypto"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -21,6 +23,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	sslmatepkcs12 "software.sslmate.com/src/go-pkcs12"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/chenrui333/terraformer/terraformutils/providerwrapper"
@@ -103,6 +106,40 @@ func getGitHubOIDCAssertion(ctx context.Context, requestURL, requestToken string
 		return "", errors.New("oidc token response missing value")
 	}
 	return result.Value, nil
+}
+
+func parseClientCertificate(certData []byte, password string) ([]*x509.Certificate, crypto.PrivateKey, error) {
+	certs, key, err := azidentity.ParseCertificates(certData, []byte(password))
+	if err == nil {
+		return certs, key, nil
+	}
+
+	pfxKey, cert, caCerts, pfxErr := sslmatepkcs12.DecodeChain(certData, password)
+	if pfxErr != nil {
+		return nil, nil, fmt.Errorf("%w; parsing PKCS#12 fallback: %v", err, pfxErr)
+	}
+	if cert == nil {
+		return nil, nil, errors.New("found no certificate")
+	}
+	if pfxKey == nil {
+		return nil, nil, errors.New("found no private key")
+	}
+	certs = append([]*x509.Certificate{cert}, caCerts...)
+	return certs, pfxKey, nil
+}
+
+func validateServicePrincipalConfig(authType, clientID, tenantID string) error {
+	var missing []string
+	if clientID == "" {
+		missing = append(missing, "ARM_CLIENT_ID")
+	}
+	if tenantID == "" {
+		missing = append(missing, "ARM_TENANT_ID")
+	}
+	if len(missing) == 0 {
+		return nil
+	}
+	return fmt.Errorf("%s authentication requires %s", authType, strings.Join(missing, ", "))
 }
 
 type customManagedIdentityCredential struct {
@@ -264,12 +301,15 @@ func (p *AzureProvider) setEnvConfig() error {
 func (p *AzureProvider) getTokenCredential() (azcore.TokenCredential, error) {
 	cloudCfg := p.clientOptions.Cloud
 	isCustomCloud := p.config.MetadataHost != ""
-	if p.config.UseClientCertificate && p.config.ClientID != "" && p.config.TenantID != "" {
+	if p.config.UseClientCertificate {
+		if err := validateServicePrincipalConfig("client certificate", p.config.ClientID, p.config.TenantID); err != nil {
+			return nil, err
+		}
 		certData, err := os.ReadFile(p.config.ClientCertificatePath)
 		if err != nil {
 			return nil, fmt.Errorf("reading client certificate: %w", err)
 		}
-		certs, key, err := azidentity.ParseCertificates(certData, []byte(p.config.ClientCertificatePassword))
+		certs, key, err := parseClientCertificate(certData, p.config.ClientCertificatePassword)
 		if err != nil {
 			return nil, fmt.Errorf("parsing client certificate: %w", err)
 		}
@@ -281,7 +321,10 @@ func (p *AzureProvider) getTokenCredential() (azcore.TokenCredential, error) {
 		return azidentity.NewClientCertificateCredential(
 			p.config.TenantID, p.config.ClientID, certs, key, opts)
 	}
-	if p.config.UseClientSecret && p.config.ClientID != "" && p.config.TenantID != "" {
+	if p.config.UseClientSecret {
+		if err := validateServicePrincipalConfig("client secret", p.config.ClientID, p.config.TenantID); err != nil {
+			return nil, err
+		}
 		opts := &azidentity.ClientSecretCredentialOptions{
 			AdditionallyAllowedTenants: p.config.AuxiliaryTenantIDs,
 			DisableInstanceDiscovery:   isCustomCloud,
