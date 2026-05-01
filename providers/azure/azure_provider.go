@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
@@ -38,6 +39,7 @@ type providerConfig struct {
 	Environment                   string
 	GitHubOIDCTokenRequestToken   string
 	GitHubOIDCTokenRequestURL     string
+	MetadataHost                  string
 	SubscriptionID                string
 	TenantID                      string
 	UseClientCertificate          bool
@@ -55,10 +57,13 @@ func (p *AzureProvider) setEnvConfig() error {
 	if environment == "" {
 		environment = "public"
 	}
-	switch strings.ToLower(environment) {
-	case "public", "china", "usgovernment":
-	default:
-		return fmt.Errorf("unsupported ARM_ENVIRONMENT %q (supported: public, china, usgovernment)", environment)
+	metadataHost := os.Getenv("ARM_METADATA_HOSTNAME")
+	if metadataHost == "" {
+		switch strings.ToLower(environment) {
+		case "public", "china", "usgovernment":
+		default:
+			return fmt.Errorf("unsupported ARM_ENVIRONMENT %q (supported: public, china, usgovernment; or set ARM_METADATA_HOSTNAME for custom clouds)", environment)
+		}
 	}
 	var auxTenants []string
 	if v := os.Getenv("ARM_AUXILIARY_TENANT_IDS"); v != "" {
@@ -77,6 +82,7 @@ func (p *AzureProvider) setEnvConfig() error {
 		Environment:                   environment,
 		GitHubOIDCTokenRequestToken:   os.Getenv("ARM_OIDC_REQUEST_TOKEN"),
 		GitHubOIDCTokenRequestURL:     os.Getenv("ARM_OIDC_REQUEST_URL"),
+		MetadataHost:                  metadataHost,
 		SubscriptionID:                subscriptionID,
 		TenantID:                      os.Getenv("ARM_TENANT_ID"),
 		UseClientCertificate:          os.Getenv("ARM_CLIENT_CERTIFICATE_PATH") != "",
@@ -89,8 +95,12 @@ func (p *AzureProvider) setEnvConfig() error {
 
 func (p *AzureProvider) getTokenCredential() (azcore.TokenCredential, error) {
 	cloudCfg := p.getClientOptions().Cloud
+	isCustomCloud := p.config.MetadataHost != ""
 	if p.config.UseClientSecret {
-		opts := &azidentity.ClientSecretCredentialOptions{}
+		opts := &azidentity.ClientSecretCredentialOptions{
+			AdditionallyAllowedTenants: p.config.AuxiliaryTenantIDs,
+			DisableInstanceDiscovery:   isCustomCloud,
+		}
 		opts.Cloud = cloudCfg
 		return azidentity.NewClientSecretCredential(
 			p.config.TenantID, p.config.ClientID, p.config.ClientSecret, opts)
@@ -104,7 +114,10 @@ func (p *AzureProvider) getTokenCredential() (azcore.TokenCredential, error) {
 		if err != nil {
 			return nil, fmt.Errorf("parsing client certificate: %w", err)
 		}
-		opts := &azidentity.ClientCertificateCredentialOptions{}
+		opts := &azidentity.ClientCertificateCredentialOptions{
+			AdditionallyAllowedTenants: p.config.AuxiliaryTenantIDs,
+			DisableInstanceDiscovery:   isCustomCloud,
+		}
 		opts.Cloud = cloudCfg
 		return azidentity.NewClientCertificateCredential(
 			p.config.TenantID, p.config.ClientID, certs, key, opts)
@@ -166,13 +179,53 @@ func (p *AzureProvider) getClientOptions() *arm.ClientOptions {
 	opts := &arm.ClientOptions{
 		AuxiliaryTenants: p.config.AuxiliaryTenantIDs,
 	}
-	switch strings.ToLower(p.config.Environment) {
-	case "china":
-		opts.Cloud = cloud.AzureChina
-	case "usgovernment":
-		opts.Cloud = cloud.AzureGovernment
+	if p.config.MetadataHost != "" {
+		cloudCfg, err := discoverCloudConfig(p.config.MetadataHost)
+		if err == nil {
+			opts.Cloud = cloudCfg
+		}
+	} else {
+		switch strings.ToLower(p.config.Environment) {
+		case "china":
+			opts.Cloud = cloud.AzureChina
+		case "usgovernment":
+			opts.Cloud = cloud.AzureGovernment
+		}
 	}
 	return opts
+}
+
+func discoverCloudConfig(metadataHost string) (cloud.Configuration, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	url := fmt.Sprintf("https://%s/metadata/endpoints?api-version=2019-05-01", metadataHost)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return cloud.Configuration{}, err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return cloud.Configuration{}, err
+	}
+	defer resp.Body.Close()
+	var meta struct {
+		Authentication struct {
+			LoginEndpoint string `json:"loginEndpoint"`
+		} `json:"authentication"`
+		ResourceManager string `json:"resourceManager"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&meta); err != nil {
+		return cloud.Configuration{}, err
+	}
+	return cloud.Configuration{
+		ActiveDirectoryAuthorityHost: meta.Authentication.LoginEndpoint,
+		Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
+			cloud.ResourceManager: {
+				Audience: meta.ResourceManager,
+				Endpoint: meta.ResourceManager,
+			},
+		},
+	}, nil
 }
 
 func (p *AzureProvider) Init(args []string) error {
