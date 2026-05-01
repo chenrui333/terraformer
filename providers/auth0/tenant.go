@@ -3,10 +3,11 @@
 package auth0
 
 import (
+	"context"
 	"encoding/base64"
 
+	"github.com/auth0/go-auth0/management"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"gopkg.in/auth0.v5/management"
 )
 
 var (
@@ -32,7 +33,8 @@ func (g TenantGenerator) createResources(tenant *management.Tenant) []terraformu
 
 func (g *TenantGenerator) InitResources() error {
 	m := g.generateClient()
-	Tenant, err := m.Tenant.Read()
+	ctx := context.Background()
+	Tenant, err := m.Tenant.Read(ctx)
 	if err != nil {
 		return err
 	}

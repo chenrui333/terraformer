@@ -3,8 +3,10 @@
 package auth0
 
 import (
+	"context"
+
+	"github.com/auth0/go-auth0/management"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"gopkg.in/auth0.v5/management"
 )
 
 var (
@@ -32,8 +34,9 @@ func (g RuleConfigGenerator) createResources(ruleConfigConfigs []*management.Rul
 
 func (g *RuleConfigGenerator) InitResources() error {
 	m := g.generateClient()
+	ctx := context.Background()
 
-	list, err := m.RuleConfig.List()
+	list, err := m.RuleConfig.List(ctx)
 	if err != nil {
 		return err
 	}

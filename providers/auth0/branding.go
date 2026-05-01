@@ -3,10 +3,11 @@
 package auth0
 
 import (
+	"context"
 	"encoding/base64"
 
+	"github.com/auth0/go-auth0/management"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"gopkg.in/auth0.v5/management"
 )
 
 var (
@@ -32,7 +33,8 @@ func (g BrandingGenerator) createResources(branding *management.Branding) []terr
 
 func (g *BrandingGenerator) InitResources() error {
 	m := g.generateClient()
-	branding, err := m.Branding.Read()
+	ctx := context.Background()
+	branding, err := m.Branding.Read(ctx)
 	if err != nil {
 		return err
 	}

@@ -3,10 +3,11 @@
 package auth0
 
 import (
+	"context"
 	"encoding/base64"
 
+	"github.com/auth0/go-auth0/management"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"gopkg.in/auth0.v5/management"
 )
 
 var (
@@ -32,7 +33,8 @@ func (g PromptGenerator) createResources(prompt *management.Prompt) []terraformu
 
 func (g *PromptGenerator) InitResources() error {
 	m := g.generateClient()
-	prompt, err := m.Prompt.Read()
+	ctx := context.Background()
+	prompt, err := m.Prompt.Read(ctx)
 	if err != nil {
 		return err
 	}

@@ -3,8 +3,10 @@
 package auth0
 
 import (
+	"context"
+
+	"github.com/auth0/go-auth0/management"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"gopkg.in/auth0.v5/management"
 )
 
 var (
@@ -15,7 +17,7 @@ type EmailGenerator struct {
 	Auth0Service
 }
 
-func (g EmailGenerator) createResources(email *management.Email) []terraformutils.Resource {
+func (g EmailGenerator) createResources(email *management.EmailProvider) []terraformutils.Resource {
 	resources := []terraformutils.Resource{}
 	resourceName := *email.Name
 	resources = append(resources, terraformutils.NewSimpleResource(
@@ -30,10 +32,11 @@ func (g EmailGenerator) createResources(email *management.Email) []terraformutil
 
 func (g *EmailGenerator) InitResources() error {
 	m := g.generateClient()
-	Email, err := m.Email.Read()
+	ctx := context.Background()
+	email, err := m.EmailProvider.Read(ctx)
 	if err != nil {
 		return err
 	}
-	g.Resources = g.createResources(Email)
+	g.Resources = g.createResources(email)
 	return nil
 }

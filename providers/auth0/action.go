@@ -3,8 +3,10 @@
 package auth0
 
 import (
+	"context"
+
+	"github.com/auth0/go-auth0/management"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"gopkg.in/auth0.v5/management"
 )
 
 var (
@@ -32,11 +34,12 @@ func (g ActionGenerator) createResources(actions []*management.Action) []terrafo
 
 func (g *ActionGenerator) InitResources() error {
 	m := g.generateClient()
+	ctx := context.Background()
 	list := []*management.Action{}
 
 	var page int
 	for {
-		l, err := m.Action.List(management.Page(page))
+		l, err := m.Action.List(ctx, management.Page(page))
 		if err != nil {
 			return err
 		}
