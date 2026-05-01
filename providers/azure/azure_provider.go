@@ -10,11 +10,13 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -27,6 +29,35 @@ type AzureProvider struct { //nolint
 	credential    azcore.TokenCredential
 	clientOptions *arm.ClientOptions
 	resourceGroup string
+}
+
+type credentialUnavailableOnError struct {
+	credential azcore.TokenCredential
+}
+
+func (c credentialUnavailableOnError) GetToken(ctx context.Context, opts policy.TokenRequestOptions) (azcore.AccessToken, error) {
+	token, err := c.credential.GetToken(ctx, opts)
+	if err != nil {
+		return token, azidentity.NewCredentialUnavailableError(err.Error())
+	}
+	return token, nil
+}
+
+type lazyDefaultAzureCredential struct {
+	options    *azidentity.DefaultAzureCredentialOptions
+	once       sync.Once
+	credential azcore.TokenCredential
+	err        error
+}
+
+func (c *lazyDefaultAzureCredential) GetToken(ctx context.Context, opts policy.TokenRequestOptions) (azcore.AccessToken, error) {
+	c.once.Do(func() {
+		c.credential, c.err = azidentity.NewDefaultAzureCredential(c.options)
+	})
+	if c.err != nil {
+		return azcore.AccessToken{}, c.err
+	}
+	return c.credential.GetToken(ctx, opts)
 }
 
 type providerConfig struct {
@@ -168,18 +199,26 @@ func (p *AzureProvider) getTokenCredential() (azcore.TokenCredential, error) {
 		return azidentity.NewClientAssertionCredential(
 			p.config.TenantID, p.config.ClientID, getAssertion, opts)
 	}
+	defaultCred := &lazyDefaultAzureCredential{
+		options: &azidentity.DefaultAzureCredentialOptions{
+			AdditionallyAllowedTenants: p.config.AuxiliaryTenantIDs,
+			ClientOptions:              azcore.ClientOptions{Cloud: cloudCfg},
+			DisableInstanceDiscovery:   isCustomCloud,
+			TenantID:                   p.config.TenantID,
+		},
+	}
 	cliCred, err := azidentity.NewAzureCLICredential(&azidentity.AzureCLICredentialOptions{
 		AdditionallyAllowedTenants: p.config.AuxiliaryTenantIDs,
 		Subscription:               p.config.SubscriptionID,
 		TenantID:                   p.config.TenantID,
 	})
 	if err != nil {
-		return azidentity.NewDefaultAzureCredential(&azidentity.DefaultAzureCredentialOptions{
-			AdditionallyAllowedTenants: p.config.AuxiliaryTenantIDs,
-			TenantID:                   p.config.TenantID,
-		})
+		return defaultCred, nil
 	}
-	return cliCred, nil
+	return azidentity.NewChainedTokenCredential([]azcore.TokenCredential{
+		credentialUnavailableOnError{credential: cliCred},
+		defaultCred,
+	}, nil)
 }
 
 func (p *AzureProvider) getClientOptions() (*arm.ClientOptions, error) {

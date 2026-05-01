@@ -2,18 +2,38 @@
 
 package azure
 
-import "testing"
+import (
+	"context"
+	"errors"
+	"testing"
+	"time"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+)
+
+type stubTokenCredential struct {
+	token azcore.AccessToken
+	err   error
+	calls int
+}
+
+func (c *stubTokenCredential) GetToken(ctx context.Context, opts policy.TokenRequestOptions) (azcore.AccessToken, error) {
+	c.calls++
+	return c.token, c.err
+}
 
 func TestParseAzureResourceID(t *testing.T) {
 	tests := []struct {
-		name           string
-		id             string
-		wantSubID      string
-		wantRG         string
-		wantProvider   string
-		wantPathKey    string
-		wantPathValue  string
-		wantErr        bool
+		name          string
+		id            string
+		wantSubID     string
+		wantRG        string
+		wantProvider  string
+		wantPathKey   string
+		wantPathValue string
+		wantErr       bool
 	}{
 		{
 			name:          "standard resource",
@@ -104,5 +124,72 @@ func TestAsHereDoc(t *testing.T) {
 	want := "<<JSON\n{\"key\":\"value\"}\nJSON"
 	if got != want {
 		t.Errorf("asHereDoc() = %q, want %q", got, want)
+	}
+}
+
+func TestCredentialUnavailableOnErrorAllowsChainedFallback(t *testing.T) {
+	fallbackToken := azcore.AccessToken{
+		Token:     "fallback",
+		ExpiresOn: time.Now().Add(time.Hour),
+	}
+	primary := &stubTokenCredential{err: errors.New("Azure CLI unavailable")}
+	fallback := &stubTokenCredential{token: fallbackToken}
+	chain, err := azidentity.NewChainedTokenCredential([]azcore.TokenCredential{
+		credentialUnavailableOnError{credential: primary},
+		fallback,
+	}, nil)
+	if err != nil {
+		t.Fatalf("creating credential chain: %v", err)
+	}
+
+	got, err := chain.GetToken(context.Background(), policy.TokenRequestOptions{
+		Scopes: []string{"https://management.azure.com/.default"},
+	})
+	if err != nil {
+		t.Fatalf("expected fallback token, got error: %v", err)
+	}
+	if got.Token != fallbackToken.Token {
+		t.Fatalf("GetToken() token = %q, want %q", got.Token, fallbackToken.Token)
+	}
+	if primary.calls != 1 {
+		t.Fatalf("primary calls = %d, want 1", primary.calls)
+	}
+	if fallback.calls != 1 {
+		t.Fatalf("fallback calls = %d, want 1", fallback.calls)
+	}
+}
+
+func TestCredentialUnavailableOnErrorKeepsSuccessfulPrimary(t *testing.T) {
+	primaryToken := azcore.AccessToken{
+		Token:     "primary",
+		ExpiresOn: time.Now().Add(time.Hour),
+	}
+	primary := &stubTokenCredential{token: primaryToken}
+	fallback := &stubTokenCredential{token: azcore.AccessToken{
+		Token:     "fallback",
+		ExpiresOn: time.Now().Add(time.Hour),
+	}}
+	chain, err := azidentity.NewChainedTokenCredential([]azcore.TokenCredential{
+		credentialUnavailableOnError{credential: primary},
+		fallback,
+	}, nil)
+	if err != nil {
+		t.Fatalf("creating credential chain: %v", err)
+	}
+
+	got, err := chain.GetToken(context.Background(), policy.TokenRequestOptions{
+		Scopes: []string{"https://management.azure.com/.default"},
+	})
+	if err != nil {
+		t.Fatalf("expected primary token, got error: %v", err)
+	}
+	if got.Token != primaryToken.Token {
+		t.Fatalf("GetToken() token = %q, want %q", got.Token, primaryToken.Token)
+	}
+	if primary.calls != 1 {
+		t.Fatalf("primary calls = %d, want 1", primary.calls)
+	}
+	if fallback.calls != 0 {
+		t.Fatalf("fallback calls = %d, want 0", fallback.calls)
 	}
 }
