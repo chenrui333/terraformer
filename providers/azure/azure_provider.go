@@ -187,7 +187,7 @@ func (p *AzureProvider) getClientOptions() (*arm.ClientOptions, error) {
 		AuxiliaryTenants: p.config.AuxiliaryTenantIDs,
 	}
 	if p.config.MetadataHost != "" {
-		cloudCfg, err := discoverCloudConfig(p.config.MetadataHost)
+		cloudCfg, err := discoverCloudConfig(p.config.MetadataHost, p.config.Environment)
 		if err != nil {
 			return nil, fmt.Errorf("discovering cloud config from %s: %w", p.config.MetadataHost, err)
 		}
@@ -216,7 +216,7 @@ func normalizeEnvironment(env string) string {
 	}
 }
 
-func discoverCloudConfig(metadataHost string) (cloud.Configuration, error) {
+func discoverCloudConfig(metadataHost, environment string) (cloud.Configuration, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	url := fmt.Sprintf("https://%s/metadata/endpoints?api-version=2019-05-01", metadataHost)
@@ -231,7 +231,8 @@ func discoverCloudConfig(metadataHost string) (cloud.Configuration, error) {
 	defer resp.Body.Close()
 	type cloudEndpoint struct {
 		Authentication struct {
-			LoginEndpoint string `json:"loginEndpoint"`
+			LoginEndpoint string   `json:"loginEndpoint"`
+			Audiences     []string `json:"audiences"`
 		} `json:"authentication"`
 		ResourceManager string `json:"resourceManager"`
 		Name            string `json:"name"`
@@ -243,12 +244,27 @@ func discoverCloudConfig(metadataHost string) (cloud.Configuration, error) {
 	if len(endpoints) == 0 {
 		return cloud.Configuration{}, fmt.Errorf("metadata endpoint returned no environments")
 	}
-	meta := endpoints[0]
+	var meta *cloudEndpoint
+	if environment != "" {
+		for i := range endpoints {
+			if strings.EqualFold(endpoints[i].Name, environment) {
+				meta = &endpoints[i]
+				break
+			}
+		}
+	}
+	if meta == nil {
+		meta = &endpoints[0]
+	}
+	audience := meta.ResourceManager
+	if len(meta.Authentication.Audiences) > 0 {
+		audience = meta.Authentication.Audiences[0]
+	}
 	return cloud.Configuration{
 		ActiveDirectoryAuthorityHost: meta.Authentication.LoginEndpoint,
 		Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
 			cloud.ResourceManager: {
-				Audience: meta.ResourceManager,
+				Audience: audience,
 				Endpoint: meta.ResourceManager,
 			},
 		},

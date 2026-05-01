@@ -125,12 +125,16 @@ func (az *SynapseGenerator) appendManagedPrivateEndpoint(workspace *armsynapse.W
 	ctx := context.Background()
 
 	armEndpoint := "https://management.azure.com"
+	armAudience := armEndpoint
 	if ep, ok := clientOptions.Cloud.Services[cloud.ResourceManager]; ok {
 		armEndpoint = ep.Endpoint
+		if ep.Audience != "" {
+			armAudience = ep.Audience
+		}
 	}
 
 	token, err := credential.GetToken(ctx, policy.TokenRequestOptions{
-		Scopes: []string{armEndpoint + "/.default"},
+		Scopes: []string{armAudience + "/.default"},
 	})
 	if err != nil {
 		return err
