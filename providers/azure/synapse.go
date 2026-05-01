@@ -4,8 +4,13 @@ package azure
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
+	"net/http"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/synapse/armsynapse"
 )
 
@@ -107,6 +112,64 @@ func (az *SynapseGenerator) appendFirewallRule(workspace *armsynapse.Workspace, 
 	return nil
 }
 
+func (az *SynapseGenerator) appendManagedPrivateEndpoint(workspace *armsynapse.Workspace) error {
+	if workspace.Properties == nil || workspace.Properties.ManagedVirtualNetwork == nil {
+		return nil
+	}
+	vnetName := *workspace.Properties.ManagedVirtualNetwork
+	if vnetName == "" {
+		return nil
+	}
+
+	_, _, credential, clientOptions := az.getClientArgs()
+	ctx := context.Background()
+
+	armEndpoint := "https://management.azure.com"
+	if ep, ok := clientOptions.Cloud.Services[cloud.ResourceManager]; ok {
+		armEndpoint = ep.Endpoint
+	}
+
+	token, err := credential.GetToken(ctx, policy.TokenRequestOptions{
+		Scopes: []string{armEndpoint + "/.default"},
+	})
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("%s%s/managedVirtualNetworks/%s/managedPrivateEndpoints?api-version=2021-06-01",
+		armEndpoint, *workspace.ID, vnetName)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+token.Token)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("listing managed private endpoints: HTTP %d", resp.StatusCode)
+	}
+
+	var result struct {
+		Value []struct {
+			ID   *string `json:"id"`
+			Name *string `json:"name"`
+		} `json:"value"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return err
+	}
+
+	for _, item := range result.Value {
+		az.AppendSimpleResource(*item.ID, *item.Name, "azurerm_synapse_managed_private_endpoint")
+	}
+	return nil
+}
+
 func (az *SynapseGenerator) listPrivateLinkHubs() ([]*armsynapse.PrivateLinkHub, error) {
 	subscriptionID, resourceGroup, credential, clientOptions := az.getClientArgs()
 	client, err := armsynapse.NewPrivateLinkHubsClient(subscriptionID, credential, clientOptions)
@@ -161,6 +224,11 @@ func (az *SynapseGenerator) InitResources() error {
 			return err
 		}
 		err = az.appendFirewallRule(workspace, workspaceRg)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		err = az.appendManagedPrivateEndpoint(workspace)
 		if err != nil {
 			log.Println(err)
 			return err

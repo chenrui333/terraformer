@@ -3,8 +3,11 @@
 package azure
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 
@@ -26,16 +29,19 @@ type AzureProvider struct { //nolint
 }
 
 type providerConfig struct {
-	ClientCertificatePassword string
-	ClientCertificatePath     string
-	ClientID                  string
-	ClientSecret              string
-	Environment               string
-	SubscriptionID            string
-	TenantID                  string
-	UseClientCertificate      bool
-	UseClientSecret           bool
-	UseManagedIdentity        bool
+	ClientCertificatePassword   string
+	ClientCertificatePath       string
+	ClientID                    string
+	ClientSecret                string
+	Environment                 string
+	GitHubOIDCTokenRequestToken string
+	GitHubOIDCTokenRequestURL   string
+	SubscriptionID              string
+	TenantID                    string
+	UseClientCertificate        bool
+	UseClientSecret             bool
+	UseGitHubOIDC               bool
+	UseManagedIdentity          bool
 }
 
 func (p *AzureProvider) setEnvConfig() error {
@@ -48,16 +54,19 @@ func (p *AzureProvider) setEnvConfig() error {
 		environment = "public"
 	}
 	p.config = providerConfig{
-		ClientCertificatePassword: os.Getenv("ARM_CLIENT_CERTIFICATE_PASSWORD"),
-		ClientCertificatePath:     os.Getenv("ARM_CLIENT_CERTIFICATE_PATH"),
-		ClientID:                  os.Getenv("ARM_CLIENT_ID"),
-		ClientSecret:              os.Getenv("ARM_CLIENT_SECRET"),
-		Environment:               environment,
-		SubscriptionID:            subscriptionID,
-		TenantID:                  os.Getenv("ARM_TENANT_ID"),
-		UseClientCertificate:      os.Getenv("ARM_CLIENT_CERTIFICATE_PATH") != "",
-		UseClientSecret:           os.Getenv("ARM_CLIENT_SECRET") != "",
-		UseManagedIdentity:        os.Getenv("ARM_USE_MSI") != "",
+		ClientCertificatePassword:   os.Getenv("ARM_CLIENT_CERTIFICATE_PASSWORD"),
+		ClientCertificatePath:       os.Getenv("ARM_CLIENT_CERTIFICATE_PATH"),
+		ClientID:                    os.Getenv("ARM_CLIENT_ID"),
+		ClientSecret:                os.Getenv("ARM_CLIENT_SECRET"),
+		Environment:                 environment,
+		GitHubOIDCTokenRequestToken: os.Getenv("ARM_OIDC_REQUEST_TOKEN"),
+		GitHubOIDCTokenRequestURL:   os.Getenv("ARM_OIDC_REQUEST_URL"),
+		SubscriptionID:              subscriptionID,
+		TenantID:                    os.Getenv("ARM_TENANT_ID"),
+		UseClientCertificate:        os.Getenv("ARM_CLIENT_CERTIFICATE_PATH") != "",
+		UseClientSecret:             os.Getenv("ARM_CLIENT_SECRET") != "",
+		UseGitHubOIDC:               os.Getenv("ARM_USE_OIDC") != "",
+		UseManagedIdentity:          os.Getenv("ARM_USE_MSI") != "",
 	}
 	return nil
 }
@@ -91,6 +100,32 @@ func (p *AzureProvider) getTokenCredential() (azcore.TokenCredential, error) {
 			opts.ID = azidentity.ClientID(p.config.ClientID)
 		}
 		return azidentity.NewManagedIdentityCredential(opts)
+	}
+	if p.config.UseGitHubOIDC {
+		getAssertion := func(ctx context.Context) (string, error) {
+			req, err := http.NewRequestWithContext(ctx, "GET", p.config.GitHubOIDCTokenRequestURL, nil)
+			if err != nil {
+				return "", fmt.Errorf("creating OIDC token request: %w", err)
+			}
+			req.Header.Set("Authorization", "Bearer "+p.config.GitHubOIDCTokenRequestToken)
+			req.Header.Set("Accept", "application/json; api-version=2.0")
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				return "", fmt.Errorf("requesting OIDC token: %w", err)
+			}
+			defer resp.Body.Close()
+			var result struct {
+				Value string `json:"value"`
+			}
+			if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+				return "", fmt.Errorf("decoding OIDC token response: %w", err)
+			}
+			return result.Value, nil
+		}
+		opts := &azidentity.ClientAssertionCredentialOptions{}
+		opts.Cloud = cloudCfg
+		return azidentity.NewClientAssertionCredential(
+			p.config.TenantID, p.config.ClientID, getAssertion, opts)
 	}
 	opts := &azidentity.DefaultAzureCredentialOptions{}
 	opts.Cloud = cloudCfg
