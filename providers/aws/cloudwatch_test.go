@@ -56,6 +56,8 @@ func TestCloudWatchEventResourceName(t *testing.T) {
 		want  string
 	}{
 		{name: "default bus omitted", parts: []string{defaultEventBusName, "daily"}, want: "daily"},
+		{name: "default rule name preserved", parts: []string{defaultEventBusName, defaultEventBusName}, want: "default"},
+		{name: "default target ID preserved", parts: []string{defaultEventBusName, "daily", defaultEventBusName}, want: "daily_default"},
 		{name: "custom bus included", parts: []string{"orders", "daily"}, want: "orders_daily"},
 		{name: "empty parts omitted", parts: []string{"", "orders", "", "daily"}, want: "orders_daily"},
 	}

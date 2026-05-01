@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
@@ -90,13 +89,7 @@ func (g *LogsGenerator) InitResources() error {
 		logsOptionalResourceLoader{name: "destinations", load: func() error { return g.addDestinations(svc) }},
 		logsOptionalResourceLoader{name: "resource policies", load: func() error { return g.addResourcePolicies(svc) }},
 		logsOptionalResourceLoader{name: "account policies", load: func() error { return g.addAccountPolicies(svc) }},
-		logsOptionalResourceLoader{name: "query definitions", load: func() error {
-			account, err := g.getAccountNumber(config)
-			if err != nil {
-				return err
-			}
-			return g.addQueryDefinitions(svc, config.Region, StringValue(account))
-		}},
+		logsOptionalResourceLoader{name: "query definitions", load: func() error { return g.addQueryDefinitions(svc) }},
 	)
 	return nil
 }
@@ -124,9 +117,8 @@ func (g *LogsGenerator) addMetricFilters(svc *cloudwatchlogs.Client, logGroupNam
 				if filterName == "" {
 					continue
 				}
-				id := fmt.Sprintf("%s:%s", logGroupName, filterName)
 				g.Resources = append(g.Resources, terraformutils.NewResource(
-					id,
+					filterName,
 					logsResourceName(logGroupName, filterName),
 					"aws_cloudwatch_log_metric_filter",
 					"aws",
@@ -175,6 +167,8 @@ func (g *LogsGenerator) addSubscriptionFilters(svc *cloudwatchlogs.Client, logGr
 	return nil
 }
 
+// AWS does not provide a list API for log group data protection policies, so
+// this optional loader probes each imported log group.
 func (g *LogsGenerator) addDataProtectionPolicies(svc *cloudwatchlogs.Client, logGroupNames []string) error {
 	for _, logGroupName := range logGroupNames {
 		output, err := svc.GetDataProtectionPolicy(context.TODO(), &cloudwatchlogs.GetDataProtectionPolicyInput{
@@ -236,16 +230,18 @@ func (g *LogsGenerator) addResourcePolicies(svc *cloudwatchlogs.Client) error {
 			return err
 		}
 		for _, policy := range output.ResourcePolicies {
-			policyName := StringValue(policy.PolicyName)
-			if policyName == "" || StringValue(policy.PolicyDocument) == "" {
+			policyID, resourceName, attributes := logsResourcePolicyResource(policy)
+			if policyID == "" || StringValue(policy.PolicyDocument) == "" {
 				continue
 			}
-			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				policyName,
-				policyName,
+			g.Resources = append(g.Resources, terraformutils.NewResource(
+				policyID,
+				resourceName,
 				"aws_cloudwatch_log_resource_policy",
 				"aws",
-				logsAllowEmptyValues))
+				attributes,
+				logsAllowEmptyValues,
+				map[string]interface{}{}))
 		}
 		nextToken = output.NextToken
 		if nextToken == nil {
@@ -272,9 +268,8 @@ func (g *LogsGenerator) addAccountPolicies(svc *cloudwatchlogs.Client) error {
 					continue
 				}
 				policyTypeName := string(policy.PolicyType)
-				id := fmt.Sprintf("%s:%s", policyName, policyTypeName)
 				g.Resources = append(g.Resources, terraformutils.NewResource(
-					id,
+					policyName,
 					logsResourceName(policyName, policyTypeName),
 					"aws_cloudwatch_log_account_policy",
 					"aws",
@@ -294,7 +289,7 @@ func (g *LogsGenerator) addAccountPolicies(svc *cloudwatchlogs.Client) error {
 	return nil
 }
 
-func (g *LogsGenerator) addQueryDefinitions(svc *cloudwatchlogs.Client, region, account string) error {
+func (g *LogsGenerator) addQueryDefinitions(svc *cloudwatchlogs.Client) error {
 	var nextToken *string
 	for {
 		output, err := svc.DescribeQueryDefinitions(context.TODO(), &cloudwatchlogs.DescribeQueryDefinitionsInput{
@@ -308,13 +303,16 @@ func (g *LogsGenerator) addQueryDefinitions(svc *cloudwatchlogs.Client, region, 
 			if queryDefinitionID == "" {
 				continue
 			}
-			queryDefinitionARN := logsQueryDefinitionARN(region, account, queryDefinitionID)
-			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				queryDefinitionARN,
+			g.Resources = append(g.Resources, terraformutils.NewResource(
+				queryDefinitionID,
 				logsResourceName(StringValue(queryDefinition.Name), queryDefinitionID),
 				"aws_cloudwatch_query_definition",
 				"aws",
-				logsAllowEmptyValues))
+				map[string]string{
+					"name": StringValue(queryDefinition.Name),
+				},
+				logsAllowEmptyValues,
+				map[string]interface{}{}))
 		}
 		nextToken = output.NextToken
 		if nextToken == nil {
@@ -353,17 +351,23 @@ func logsResourceNotFound(err error) bool {
 	return errors.As(err, &notFound)
 }
 
-func logsQueryDefinitionARN(region, account, queryDefinitionID string) string {
-	return fmt.Sprintf("arn:%s:logs:%s:%s:query-definition:%s", awsPartitionFromRegion(region), region, account, queryDefinitionID)
-}
+func logsResourcePolicyResource(policy types.ResourcePolicy) (string, string, map[string]string) {
+	if policy.PolicyScope == types.PolicyScopeResource {
+		resourceArn := StringValue(policy.ResourceArn)
+		if resourceArn == "" {
+			return "", "", nil
+		}
+		return resourceArn, logsResourceName(StringValue(policy.PolicyName), resourceArn), map[string]string{
+			"policy_scope": string(types.PolicyScopeResource),
+			"resource_arn": resourceArn,
+		}
+	}
 
-func awsPartitionFromRegion(region string) string {
-	switch {
-	case strings.HasPrefix(region, "cn-"):
-		return "aws-cn"
-	case strings.HasPrefix(region, "us-gov-"):
-		return "aws-us-gov"
-	default:
-		return "aws"
+	policyName := StringValue(policy.PolicyName)
+	if policyName == "" {
+		return "", "", nil
+	}
+	return policyName, policyName, map[string]string{
+		"policy_name": policyName,
 	}
 }

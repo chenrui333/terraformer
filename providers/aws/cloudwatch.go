@@ -346,8 +346,8 @@ func cloudwatchEventTargetImportID(eventBusName, ruleName, targetID string) stri
 
 func cloudwatchEventResourceName(parts ...string) string {
 	var name string
-	for _, part := range parts {
-		if part == "" || part == defaultEventBusName {
+	for i, part := range parts {
+		if part == "" || (i == 0 && part == defaultEventBusName) {
 			continue
 		}
 		if name != "" {
