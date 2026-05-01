@@ -306,6 +306,20 @@ terraformer import aws --resources=sg --regions=us-east-1
     * `aws_route_table_association`
 *   `s3`
     * `aws_s3_bucket`
+    * `aws_s3_bucket_accelerate_configuration`
+    * `aws_s3_bucket_cors_configuration`
+    * `aws_s3_bucket_lifecycle_configuration`
+    * `aws_s3_bucket_logging`
+    * `aws_s3_bucket_notification`
+    * `aws_s3_bucket_object_lock_configuration`
+    * `aws_s3_bucket_ownership_controls`
+    * `aws_s3_bucket_policy`
+    * `aws_s3_bucket_public_access_block`
+    * `aws_s3_bucket_replication_configuration`
+    * `aws_s3_bucket_request_payment_configuration`
+    * `aws_s3_bucket_server_side_encryption_configuration`
+    * `aws_s3_bucket_versioning`
+    * `aws_s3_bucket_website_configuration`
 *   `secretsmanager`
     * `aws_secretsmanager_secret`
 *   `securityhub`
