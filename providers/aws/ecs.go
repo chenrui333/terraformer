@@ -120,7 +120,7 @@ func (g *EcsGenerator) InitResources() error {
 	}
 
 	g.getOptionalEcsResources(
-		ecsOptionalResourceLoader{name: "capacity providers", load: func() error { return g.addCapacityProviders(svc) }},
+		ecsOptionalResourceLoader{name: "capacity providers", load: func() error { return g.addCapacityProviders(svc, clusters) }},
 		ecsOptionalResourceLoader{name: "cluster capacity providers", load: func() error { return g.addClusterCapacityProviders(svc, clusters) }},
 		ecsOptionalResourceLoader{name: "task sets", load: func() error { return g.addTaskSets(svc, services) }},
 	)
@@ -175,12 +175,36 @@ func (g *EcsGenerator) getOptionalEcsResources(loaders ...ecsOptionalResourceLoa
 	}
 }
 
-func (g *EcsGenerator) addCapacityProviders(svc *ecs.Client) error {
+func (g *EcsGenerator) addCapacityProviders(svc *ecs.Client, clusters []ecsClusterReference) error {
+	seen := map[string]struct{}{}
+	if err := g.addCapacityProvidersForCluster(svc, nil, seen); err != nil {
+		return err
+	}
+	for _, cluster := range clusters {
+		clusterID := ecsCapacityProviderClusterID(cluster)
+		if clusterID == "" {
+			continue
+		}
+		if err := g.addCapacityProvidersForCluster(svc, &clusterID, seen); err != nil {
+			if ecsClusterNotFound(err) {
+				continue
+			}
+			return err
+		}
+	}
+	return nil
+}
+
+func (g *EcsGenerator) addCapacityProvidersForCluster(svc *ecs.Client, cluster *string, seen map[string]struct{}) error {
 	var nextToken *string
 	for {
-		output, err := svc.DescribeCapacityProviders(context.TODO(), &ecs.DescribeCapacityProvidersInput{
+		input := &ecs.DescribeCapacityProvidersInput{
 			NextToken: nextToken,
-		})
+		}
+		if cluster != nil {
+			input.Cluster = cluster
+		}
+		output, err := svc.DescribeCapacityProviders(context.TODO(), input)
 		if err != nil {
 			return err
 		}
@@ -193,6 +217,10 @@ func (g *EcsGenerator) addCapacityProviders(svc *ecs.Client) error {
 			if capacityProviderARN == "" || capacityProviderName == "" {
 				continue
 			}
+			if _, ok := seen[capacityProviderARN]; ok {
+				continue
+			}
+			seen[capacityProviderARN] = struct{}{}
 			g.Resources = append(g.Resources, terraformutils.NewResource(
 				capacityProviderARN,
 				capacityProviderName,
@@ -211,6 +239,13 @@ func (g *EcsGenerator) addCapacityProviders(svc *ecs.Client) error {
 		}
 	}
 	return nil
+}
+
+func ecsCapacityProviderClusterID(cluster ecsClusterReference) string {
+	if cluster.name != "" {
+		return cluster.name
+	}
+	return cluster.arn
 }
 
 func (g *EcsGenerator) addClusterCapacityProviders(svc *ecs.Client, clusters []ecsClusterReference) error {
@@ -339,7 +374,11 @@ func ecsTaskSetUnsupported(err error) bool {
 		return true
 	}
 	var clientException *ecstypes.ClientException
-	return errors.As(err, &clientException)
+	if errors.As(err, &clientException) {
+		return true
+	}
+	var unsupportedFeature *ecstypes.UnsupportedFeatureException
+	return errors.As(err, &unsupportedFeature)
 }
 
 func ecsTaskSetDiscoverySkipError(err error) bool {

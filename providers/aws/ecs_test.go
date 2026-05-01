@@ -139,6 +139,7 @@ func TestEcsTaskSetUnsupported(t *testing.T) {
 	}{
 		{name: "invalid parameter", err: &ecstypes.InvalidParameterException{}, want: true},
 		{name: "client exception", err: &ecstypes.ClientException{}, want: true},
+		{name: "unsupported feature", err: &ecstypes.UnsupportedFeatureException{}, want: true},
 		{name: "generic error", err: errors.New("boom"), want: false},
 		{name: "nil", want: false},
 	}
