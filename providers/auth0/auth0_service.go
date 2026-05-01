@@ -3,10 +3,11 @@
 package auth0
 
 import (
+	"context"
 	"log"
 
+	"github.com/auth0/go-auth0/management"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"gopkg.in/auth0.v5/management"
 )
 
 type Auth0Service struct { //nolint
@@ -14,7 +15,7 @@ type Auth0Service struct { //nolint
 }
 
 func (s *Auth0Service) generateClient() *management.Management {
-	authenticationOption := management.WithClientCredentials(s.Args["client_id"].(string), s.Args["client_secret"].(string))
+	authenticationOption := management.WithClientCredentials(context.Background(), s.Args["client_id"].(string), s.Args["client_secret"].(string))
 
 	apiClient, err := management.New(s.Args["domain"].(string),
 		authenticationOption,

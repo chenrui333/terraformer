@@ -3,8 +3,10 @@
 package auth0
 
 import (
+	"context"
+
+	"github.com/auth0/go-auth0/management"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"gopkg.in/auth0.v5/management"
 )
 
 var (
@@ -37,9 +39,10 @@ func (g TriggerBindingGenerator) createResources(bindings map[string]*management
 
 func (g *TriggerBindingGenerator) InitResources() error {
 	m := g.generateClient()
+	ctx := context.Background()
 	bindings := map[string]*management.ActionBinding{}
 
-	t, err := m.Action.Triggers()
+	t, err := m.Action.Triggers(ctx)
 	if err != nil {
 		return err
 	}
@@ -47,7 +50,7 @@ func (g *TriggerBindingGenerator) InitResources() error {
 	for _, trigger := range t.Triggers {
 		var page int
 		for {
-			l, err := m.Action.Bindings(*trigger.ID, management.Page(page))
+			l, err := m.Action.Bindings(ctx, *trigger.ID, management.Page(page))
 			if err != nil {
 				return err
 			}

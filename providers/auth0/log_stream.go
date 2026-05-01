@@ -3,8 +3,10 @@
 package auth0
 
 import (
+	"context"
+
+	"github.com/auth0/go-auth0/management"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"gopkg.in/auth0.v5/management"
 )
 
 var (
@@ -32,7 +34,8 @@ func (g LogStreamGenerator) createResources(logStreams []*management.LogStream) 
 
 func (g *LogStreamGenerator) InitResources() error {
 	m := g.generateClient()
-	list, err := m.LogStream.List()
+	ctx := context.Background()
+	list, err := m.LogStream.List(ctx)
 	if err != nil {
 		return err
 	}
