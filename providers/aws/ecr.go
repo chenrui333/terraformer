@@ -16,10 +16,9 @@ import (
 
 var ecrAllowEmptyValues = []string{"tags."}
 
-// Unsupported account settings are skipped by the InvalidParameterException guard.
+// Keep this list aligned with the AWS provider v5.100 aws_ecr_account_setting schema.
 var ecrAccountSettingNames = []string{
 	"BASIC_SCAN_TYPE_VERSION",
-	"BLOB_MOUNTING",
 	"REGISTRY_POLICY_SCOPE",
 }
 
