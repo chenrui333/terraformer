@@ -41,6 +41,46 @@ func TestLambdaProvisionedConcurrencyConfigImportID(t *testing.T) {
 	}
 }
 
+func TestLambdaEventSourceMappingAttributes(t *testing.T) {
+	tests := []struct {
+		name           string
+		functionARN    string
+		eventSourceARN string
+		want           map[string]string
+	}{
+		{
+			name:           "managed event source",
+			functionARN:    "arn:aws:lambda:us-east-1:123456789012:function:consumer",
+			eventSourceARN: "arn:aws:sqs:us-east-1:123456789012:queue",
+			want: map[string]string{
+				"event_source_arn": "arn:aws:sqs:us-east-1:123456789012:queue",
+				"function_name":    "arn:aws:lambda:us-east-1:123456789012:function:consumer",
+			},
+		},
+		{
+			name:        "self managed event source",
+			functionARN: "arn:aws:lambda:us-east-1:123456789012:function:consumer",
+			want: map[string]string{
+				"function_name": "arn:aws:lambda:us-east-1:123456789012:function:consumer",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := lambdaEventSourceMappingAttributes(tt.functionARN, tt.eventSourceARN)
+			if len(got) != len(tt.want) {
+				t.Fatalf("lambdaEventSourceMappingAttributes() = %#v, want %#v", got, tt.want)
+			}
+			for key, want := range tt.want {
+				if got[key] != want {
+					t.Fatalf("lambdaEventSourceMappingAttributes()[%q] = %q, want %q", key, got[key], want)
+				}
+			}
+		})
+	}
+}
+
 func TestLambdaQualifierFromFunctionARN(t *testing.T) {
 	tests := []struct {
 		name         string

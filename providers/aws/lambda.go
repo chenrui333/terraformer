@@ -340,7 +340,7 @@ func (g *LambdaGenerator) addEventSourceMappings(svc *lambda.Client) error {
 			mappingUUID := StringValue(mapping.UUID)
 			eventSourceARN := StringValue(mapping.EventSourceArn)
 			functionARN := StringValue(mapping.FunctionArn)
-			if mappingUUID == "" || eventSourceARN == "" || functionARN == "" {
+			if mappingUUID == "" || functionARN == "" {
 				continue
 			}
 			g.Resources = append(g.Resources, terraformutils.NewResource(
@@ -348,16 +348,23 @@ func (g *LambdaGenerator) addEventSourceMappings(svc *lambda.Client) error {
 				mappingUUID,
 				"aws_lambda_event_source_mapping",
 				"aws",
-				map[string]string{
-					"event_source_arn": eventSourceARN,
-					"function_name":    functionARN,
-				},
+				lambdaEventSourceMappingAttributes(functionARN, eventSourceARN),
 				lambdaAllowEmptyValues,
 				map[string]interface{}{},
 			))
 		}
 	}
 	return nil
+}
+
+func lambdaEventSourceMappingAttributes(functionARN, eventSourceARN string) map[string]string {
+	attributes := map[string]string{
+		"function_name": functionARN,
+	}
+	if eventSourceARN != "" {
+		attributes["event_source_arn"] = eventSourceARN
+	}
+	return attributes
 }
 
 func lambdaAliasImportID(functionName, aliasName string) string {
