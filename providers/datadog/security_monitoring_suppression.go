@@ -14,7 +14,7 @@ import (
 
 var (
 	// SecurityMonitoringSuppressionAllowEmptyValues ...
-	SecurityMonitoringSuppressionAllowEmptyValues = []string{"rule_query"}
+	SecurityMonitoringSuppressionAllowEmptyValues = []string{"rule_query", "suppression_query"}
 )
 
 // SecurityMonitoringSuppressionGenerator ...

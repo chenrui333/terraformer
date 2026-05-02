@@ -12,17 +12,19 @@ import (
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
-func TestSecurityMonitoringSuppressionAllowEmptyValuesPreservesRuleQuery(t *testing.T) {
+func TestSecurityMonitoringSuppressionAllowEmptyValuesPreservesQueries(t *testing.T) {
 	allowEmptyValues := []*regexp.Regexp{}
 	for _, pattern := range SecurityMonitoringSuppressionAllowEmptyValues {
 		allowEmptyValues = append(allowEmptyValues, regexp.MustCompile(pattern))
 	}
 
 	parser := terraformutils.NewFlatmapParser(map[string]string{
-		"rule_query": "",
+		"rule_query":        "",
+		"suppression_query": "",
 	}, nil, allowEmptyValues)
 	suppressionType := cty.Object(map[string]cty.Type{
-		"rule_query": cty.String,
+		"rule_query":        cty.String,
+		"suppression_query": cty.String,
 	})
 
 	result, err := parser.Parse(suppressionType)
@@ -31,6 +33,9 @@ func TestSecurityMonitoringSuppressionAllowEmptyValuesPreservesRuleQuery(t *test
 	}
 	if result["rule_query"] != "" {
 		t.Fatalf("rule_query = %v, want empty string", result["rule_query"])
+	}
+	if result["suppression_query"] != "" {
+		t.Fatalf("suppression_query = %v, want empty string", result["suppression_query"])
 	}
 }
 
