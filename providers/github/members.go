@@ -4,7 +4,7 @@ package github
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -25,12 +25,16 @@ func (g *MembersGenerator) InitResources() error {
 	}
 
 	owner := g.Args["owner"].(string)
-	g.Resources = append(g.Resources, createMembershipsResources(ctx, client, owner)...)
+	resources, err := createMembershipsResources(ctx, client, owner)
+	if err != nil {
+		return err
+	}
+	g.Resources = append(g.Resources, resources...)
 
 	return nil
 }
 
-func createMembershipsResources(ctx context.Context, client *githubAPI.Client, owner string) []terraformutils.Resource {
+func createMembershipsResources(ctx context.Context, client *githubAPI.Client, owner string) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 
 	opt := &githubAPI.ListMembersOptions{
@@ -41,8 +45,7 @@ func createMembershipsResources(ctx context.Context, client *githubAPI.Client, o
 	for {
 		members, resp, err := client.Organizations.ListMembers(ctx, owner, opt)
 		if err != nil {
-			log.Println(err)
-			return nil
+			return nil, fmt.Errorf("list github members for %s: %w", owner, err)
 		}
 
 		for _, member := range members {
@@ -64,5 +67,5 @@ func createMembershipsResources(ctx context.Context, client *githubAPI.Client, o
 		opt.Page = resp.NextPage
 	}
 
-	return resources
+	return resources, nil
 }
