@@ -17,28 +17,28 @@ type mockProvider struct {
 	services map[string]ServiceGenerator
 }
 
-func (m *mockProvider) Init(_ []string) error                                { return nil }
-func (m *mockProvider) InitService(svc string, _ bool) error                 { m.Service = m.services[svc]; return nil }
-func (m *mockProvider) GetName() string                                      { return m.name }
-func (m *mockProvider) GetConfig() cty.Value                                 { return cty.EmptyObjectVal }
-func (m *mockProvider) GetBasicConfig() cty.Value                            { return cty.EmptyObjectVal }
-func (m *mockProvider) GetSupportedService() map[string]ServiceGenerator     { return m.services }
-func (m *mockProvider) GenerateFiles()                                       {}
-func (m *mockProvider) GetProviderData(_ ...string) map[string]interface{}   { return nil }
-func (m *mockProvider) GenerateOutputPath() error                            { return nil }
+func (m *mockProvider) Init(_ []string) error                                  { return nil }
+func (m *mockProvider) InitService(svc string, _ bool) error                   { m.Service = m.services[svc]; return nil }
+func (m *mockProvider) GetName() string                                        { return m.name }
+func (m *mockProvider) GetConfig() cty.Value                                   { return cty.EmptyObjectVal }
+func (m *mockProvider) GetBasicConfig() cty.Value                              { return cty.EmptyObjectVal }
+func (m *mockProvider) GetSupportedService() map[string]ServiceGenerator       { return m.services }
+func (m *mockProvider) GenerateFiles()                                         {}
+func (m *mockProvider) GetProviderData(_ ...string) map[string]interface{}     { return nil }
+func (m *mockProvider) GenerateOutputPath() error                              { return nil }
 func (m *mockProvider) GetResourceConnections() map[string]map[string][]string { return nil }
-func (m *mockProvider) PopulateIgnoreKeys(_ *providerwrapper.ProviderWrapper) {}
+func (m *mockProvider) PopulateIgnoreKeys(_ *providerwrapper.ProviderWrapper)  {}
 
-func newMockProvider(name string, serviceNames ...string) *mockProvider {
+func newMockProvider(serviceNames ...string) *mockProvider {
 	services := make(map[string]ServiceGenerator, len(serviceNames))
 	for _, s := range serviceNames {
 		services[s] = &Service{Name: s}
 	}
-	return &mockProvider{name: name, services: services}
+	return &mockProvider{name: "aws", services: services}
 }
 
 func TestNewProvidersMapping(t *testing.T) {
-	base := newMockProvider("aws", "vpc", "ec2")
+	base := newMockProvider("vpc", "ec2")
 	pm := NewProvidersMapping(base)
 
 	if pm == nil {
@@ -56,7 +56,7 @@ func TestNewProvidersMapping(t *testing.T) {
 }
 
 func TestGetBaseProvider(t *testing.T) {
-	base := newMockProvider("aws")
+	base := newMockProvider()
 	pm := NewProvidersMapping(base)
 	if pm.GetBaseProvider() != base {
 		t.Error("GetBaseProvider did not return the original provider")
@@ -64,7 +64,7 @@ func TestGetBaseProvider(t *testing.T) {
 }
 
 func TestAddServiceToProvider(t *testing.T) {
-	base := newMockProvider("aws", "vpc")
+	base := newMockProvider("vpc")
 	pm := NewProvidersMapping(base)
 
 	newProv := pm.AddServiceToProvider("vpc")
@@ -84,7 +84,7 @@ func TestAddServiceToProvider(t *testing.T) {
 }
 
 func TestAddMultipleServices(t *testing.T) {
-	base := newMockProvider("aws", "vpc", "ec2", "s3")
+	base := newMockProvider("vpc", "ec2", "s3")
 	pm := NewProvidersMapping(base)
 
 	p1 := pm.AddServiceToProvider("vpc")
@@ -103,7 +103,7 @@ func TestAddMultipleServices(t *testing.T) {
 }
 
 func TestGetServices(t *testing.T) {
-	base := newMockProvider("aws", "vpc", "ec2")
+	base := newMockProvider("vpc", "ec2")
 	pm := NewProvidersMapping(base)
 	pm.AddServiceToProvider("vpc")
 	pm.AddServiceToProvider("ec2")
@@ -121,7 +121,7 @@ func TestGetServices(t *testing.T) {
 }
 
 func TestRemoveServices(t *testing.T) {
-	base := newMockProvider("aws", "vpc", "ec2")
+	base := newMockProvider("vpc", "ec2")
 	pm := NewProvidersMapping(base)
 	pm.AddServiceToProvider("vpc")
 	pm.AddServiceToProvider("ec2")
@@ -140,7 +140,7 @@ func TestRemoveServices(t *testing.T) {
 }
 
 func TestRemoveServicesNonExistent(t *testing.T) {
-	base := newMockProvider("aws", "vpc")
+	base := newMockProvider("vpc")
 	pm := NewProvidersMapping(base)
 	pm.AddServiceToProvider("vpc")
 
@@ -152,7 +152,7 @@ func TestRemoveServicesNonExistent(t *testing.T) {
 }
 
 func TestShuffleResources(t *testing.T) {
-	base := newMockProvider("aws", "vpc")
+	base := newMockProvider("vpc")
 	pm := NewProvidersMapping(base)
 
 	r1 := &Resource{InstanceInfo: &tfcompat.InstanceInfo{Id: "a"}}
@@ -169,7 +169,7 @@ func TestShuffleResources(t *testing.T) {
 }
 
 func TestProcessResources(t *testing.T) {
-	base := newMockProvider("aws", "vpc")
+	base := newMockProvider("vpc")
 	pm := NewProvidersMapping(base)
 
 	prov := pm.AddServiceToProvider("vpc")
@@ -190,7 +190,7 @@ func TestProcessResources(t *testing.T) {
 }
 
 func TestProcessResourcesCleanup(t *testing.T) {
-	base := newMockProvider("aws", "vpc")
+	base := newMockProvider("vpc")
 	pm := NewProvidersMapping(base)
 
 	prov := pm.AddServiceToProvider("vpc")
@@ -218,7 +218,7 @@ func TestProcessResourcesCleanup(t *testing.T) {
 }
 
 func TestMatchProvider(t *testing.T) {
-	base := newMockProvider("aws", "vpc")
+	base := newMockProvider("vpc")
 	pm := NewProvidersMapping(base)
 	prov := pm.AddServiceToProvider("vpc")
 
@@ -232,7 +232,7 @@ func TestMatchProvider(t *testing.T) {
 }
 
 func TestSetResources(t *testing.T) {
-	base := newMockProvider("aws", "vpc")
+	base := newMockProvider("vpc")
 	pm := NewProvidersMapping(base)
 	prov := pm.AddServiceToProvider("vpc")
 	svc := &Service{Name: "vpc"}
@@ -256,7 +256,7 @@ func TestSetResources(t *testing.T) {
 }
 
 func TestGetResourcesByService(t *testing.T) {
-	base := newMockProvider("aws", "vpc", "ec2")
+	base := newMockProvider("vpc", "ec2")
 	pm := NewProvidersMapping(base)
 
 	provVpc := pm.AddServiceToProvider("vpc")
@@ -283,7 +283,7 @@ func TestGetResourcesByService(t *testing.T) {
 }
 
 func TestCleanupProviders(t *testing.T) {
-	base := newMockProvider("aws", "vpc")
+	base := newMockProvider("vpc")
 	pm := NewProvidersMapping(base)
 
 	prov := pm.AddServiceToProvider("vpc")
@@ -304,7 +304,7 @@ func TestCleanupProviders(t *testing.T) {
 }
 
 func TestGetServicesSorted(t *testing.T) {
-	base := newMockProvider("aws", "s3", "ec2", "vpc")
+	base := newMockProvider("s3", "ec2", "vpc")
 	pm := NewProvidersMapping(base)
 	pm.AddServiceToProvider("s3")
 	pm.AddServiceToProvider("ec2")

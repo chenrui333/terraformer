@@ -16,17 +16,17 @@ type testProvider struct {
 	services map[string]terraformutils.ServiceGenerator
 }
 
-func (p *testProvider) Init(_ []string) error                            { return nil }
-func (p *testProvider) InitService(_ string, _ bool) error               { return nil }
-func (p *testProvider) GetName() string                                  { return p.name }
-func (p *testProvider) GetConfig() cty.Value                             { return cty.EmptyObjectVal }
-func (p *testProvider) GetBasicConfig() cty.Value                        { return cty.EmptyObjectVal }
+func (p *testProvider) Init(_ []string) error              { return nil }
+func (p *testProvider) InitService(_ string, _ bool) error { return nil }
+func (p *testProvider) GetName() string                    { return p.name }
+func (p *testProvider) GetConfig() cty.Value               { return cty.EmptyObjectVal }
+func (p *testProvider) GetBasicConfig() cty.Value          { return cty.EmptyObjectVal }
 func (p *testProvider) GetSupportedService() map[string]terraformutils.ServiceGenerator {
 	return p.services
 }
-func (p *testProvider) GenerateFiles()                                       {}
-func (p *testProvider) GetProviderData(_ ...string) map[string]interface{}   { return nil }
-func (p *testProvider) GenerateOutputPath() error                            { return nil }
+func (p *testProvider) GenerateFiles()                                         {}
+func (p *testProvider) GetProviderData(_ ...string) map[string]interface{}     { return nil }
+func (p *testProvider) GenerateOutputPath() error                              { return nil }
 func (p *testProvider) GetResourceConnections() map[string]map[string][]string { return nil }
 
 func TestPath(t *testing.T) {

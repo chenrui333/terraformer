@@ -28,9 +28,9 @@ func TestNewResource(t *testing.T) {
 	if r.Provider != "aws" {
 		t.Errorf("Provider = %q, want %q", r.Provider, "aws")
 	}
-	wantId := "aws_vpc." + wantName
-	if r.InstanceInfo.Id != wantId {
-		t.Errorf("InstanceInfo.Id = %q, want %q", r.InstanceInfo.Id, wantId)
+	wantID := "aws_vpc." + wantName
+	if r.InstanceInfo.Id != wantID {
+		t.Errorf("InstanceInfo.Id = %q, want %q", r.InstanceInfo.Id, wantID)
 	}
 }
 
