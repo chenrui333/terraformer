@@ -58,9 +58,12 @@ func (g *RoleGenerator) InitResources() error {
 
 	var roles []datadogV2.Role
 	for remaining > int64(0) {
-		resp, _, err := api.ListRoles(auth, *datadogV2.NewListRolesOptionalParameters().
+		resp, httpResp, err := api.ListRoles(auth, *datadogV2.NewListRolesOptionalParameters().
 			WithPageSize(pageSize).
 			WithPageNumber(pageNumber))
+		if httpResp != nil && httpResp.Body != nil {
+			_ = httpResp.Body.Close()
+		}
 		if err != nil {
 			return err
 		}

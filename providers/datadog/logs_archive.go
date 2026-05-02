@@ -54,7 +54,10 @@ func (g *LogsArchiveGenerator) InitResources() error {
 	for _, filter := range g.Filter {
 		if filter.FieldPath == "id" && filter.IsApplicable("logs_archive") {
 			for _, value := range filter.AcceptableValues {
-				resp, _, err := api.GetLogsArchive(auth, value)
+				resp, httpResp, err := api.GetLogsArchive(auth, value)
+				if httpResp != nil && httpResp.Body != nil {
+					_ = httpResp.Body.Close()
+				}
 				if err != nil {
 					return err
 				}
@@ -69,11 +72,14 @@ func (g *LogsArchiveGenerator) InitResources() error {
 		return nil
 	}
 
-	logsArchiveListResp, _, err := api.ListLogsArchives(auth)
-	logsArchiveList := logsArchiveListResp.GetData()
+	logsArchiveListResp, httpResp, err := api.ListLogsArchives(auth)
+	if httpResp != nil && httpResp.Body != nil {
+		_ = httpResp.Body.Close()
+	}
 	if err != nil {
 		return err
 	}
+	logsArchiveList := logsArchiveListResp.GetData()
 	g.Resources = g.createResources(logsArchiveList)
 	return nil
 }

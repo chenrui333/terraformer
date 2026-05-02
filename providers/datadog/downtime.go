@@ -61,7 +61,10 @@ func (g *DowntimeGenerator) InitResources() error {
 					return err
 				}
 
-				monitor, _, err := api.GetDowntime(auth, i)
+				monitor, httpResp, err := api.GetDowntime(auth, i)
+				if httpResp != nil && httpResp.Body != nil {
+					_ = httpResp.Body.Close()
+				}
 				if err != nil {
 					return err
 				}
@@ -76,7 +79,10 @@ func (g *DowntimeGenerator) InitResources() error {
 		return nil
 	}
 
-	downtimes, _, err := api.ListDowntimes(auth)
+	downtimes, httpResp, err := api.ListDowntimes(auth)
+	if httpResp != nil && httpResp.Body != nil {
+		_ = httpResp.Body.Close()
+	}
 	if err != nil {
 		return err
 	}

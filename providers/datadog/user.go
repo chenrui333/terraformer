@@ -73,9 +73,12 @@ func (g *UserGenerator) InitResources() error {
 	}
 
 	for remaining > int64(0) {
-		resp, _, err := api.ListUsers(auth, *optionalParams.
+		resp, httpResp, err := api.ListUsers(auth, *optionalParams.
 			WithPageSize(pageSize).
 			WithPageNumber(pageNumber))
+		if httpResp != nil && httpResp.Body != nil {
+			_ = httpResp.Body.Close()
+		}
 		if err != nil {
 			return err
 		}

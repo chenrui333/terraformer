@@ -54,7 +54,10 @@ func (g *IntegrationSlackChannelGenerator) InitResources() error {
 	for _, filter := range g.Filter {
 		if filter.FieldPath == "account_name" && filter.IsApplicable("integration_slack_channel") {
 			for _, value := range filter.AcceptableValues {
-				slackChannels, _, err := api.GetSlackIntegrationChannels(auth, value)
+				slackChannels, httpResp, err := api.GetSlackIntegrationChannels(auth, value)
+				if httpResp != nil && httpResp.Body != nil {
+					_ = httpResp.Body.Close()
+				}
 				if err != nil {
 					return err
 				}

@@ -72,10 +72,13 @@ func (g *SecurityMonitoringRuleGenerator) InitResources() error {
 	remaining := int64(1)
 
 	for remaining > int64(0) {
-		resp, _, err := api.ListSecurityMonitoringRules(auth,
+		resp, httpResp, err := api.ListSecurityMonitoringRules(auth,
 			*datadogV2.NewListSecurityMonitoringRulesOptionalParameters().
 				WithPageNumber(pageNumber).
 				WithPageSize(pageSize))
+		if httpResp != nil && httpResp.Body != nil {
+			_ = httpResp.Body.Close()
+		}
 		if err != nil {
 			return err
 		}

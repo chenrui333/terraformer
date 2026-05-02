@@ -66,7 +66,10 @@ func (g *MonitorGenerator) InitResources() error {
 					return err
 				}
 
-				monitor, _, err := api.GetMonitor(auth, i)
+				monitor, httpResp, err := api.GetMonitor(auth, i)
+				if httpResp != nil && httpResp.Body != nil {
+					_ = httpResp.Body.Close()
+				}
 				if err != nil {
 					return err
 				}
@@ -88,9 +91,12 @@ func (g *MonitorGenerator) InitResources() error {
 	pageSize := int32(1000)
 	pageNumber := int64(0)
 	for {
-		resp, _, err := api.ListMonitors(auth, *optionalParams.
+		resp, httpResp, err := api.ListMonitors(auth, *optionalParams.
 			WithPageSize(pageSize).
 			WithPage(pageNumber))
+		if httpResp != nil && httpResp.Body != nil {
+			_ = httpResp.Body.Close()
+		}
 		if err != nil {
 			return err
 		}

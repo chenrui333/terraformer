@@ -50,7 +50,10 @@ func (g *IntegrationAzureGenerator) InitResources() error {
 	auth := g.Args["auth"].(context.Context)
 	api := datadogV1.NewAzureIntegrationApi(datadogClient)
 
-	integrations, _, err := api.ListAzureIntegration(auth)
+	integrations, httpResp, err := api.ListAzureIntegration(auth)
+	if httpResp != nil && httpResp.Body != nil {
+		_ = httpResp.Body.Close()
+	}
 	if err != nil {
 		return err
 	}

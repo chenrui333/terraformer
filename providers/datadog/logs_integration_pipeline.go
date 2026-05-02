@@ -53,7 +53,10 @@ func (g *LogsIntegrationPipelineGenerator) InitResources() error {
 	auth := g.Args["auth"].(context.Context)
 	api := datadogV1.NewLogsPipelinesApi(datadogClient)
 
-	logsIntegrationPipelines, _, err := api.ListLogsPipelines(auth)
+	logsIntegrationPipelines, httpResp, err := api.ListLogsPipelines(auth)
+	if httpResp != nil && httpResp.Body != nil {
+		_ = httpResp.Body.Close()
+	}
 	if err != nil {
 		return err
 	}

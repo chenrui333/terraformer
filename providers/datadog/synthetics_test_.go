@@ -54,7 +54,10 @@ func (g *SyntheticsTestGenerator) InitResources() error {
 	for _, filter := range g.Filter {
 		if filter.FieldPath == "id" && filter.IsApplicable("synthetics_test") {
 			for _, value := range filter.AcceptableValues {
-				syntheticsTest, _, err := api.GetTest(auth, value)
+				syntheticsTest, httpResp, err := api.GetTest(auth, value)
+				if httpResp != nil && httpResp.Body != nil {
+					_ = httpResp.Body.Close()
+				}
 				if err != nil {
 					return err
 				}
@@ -69,7 +72,10 @@ func (g *SyntheticsTestGenerator) InitResources() error {
 		return nil
 	}
 
-	syntheticsTests, _, err := api.ListTests(auth)
+	syntheticsTests, httpResp, err := api.ListTests(auth)
+	if httpResp != nil && httpResp.Body != nil {
+		_ = httpResp.Body.Close()
+	}
 	if err != nil {
 		return err
 	}
