@@ -148,6 +148,8 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_security_monitoring_rule`
 *   `service_level_objective`
     * `datadog_service_level_objective`
+*   `slo_correction`
+    * `datadog_slo_correction`
 *   `synthetics_global_variable`
     * `datadog_synthetics_global_variable`
         * **_NOTE:_** Importing resource requires resource ID's to be passed via [Filter][1] option
