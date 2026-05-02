@@ -290,7 +290,7 @@ func dynamodbResourceName(parts ...string) string {
 	if len(cleanParts) == 0 {
 		return "dynamodb_resource"
 	}
-	return strings.Join(cleanParts, "_")
+	return strings.Join(cleanParts, "/")
 }
 
 func dynamodbContributorInsightsImportable(summary dynamodbtypes.ContributorInsightsSummary) bool {

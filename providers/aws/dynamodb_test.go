@@ -45,7 +45,8 @@ func TestDynamoDBResourceName(t *testing.T) {
 		parts []string
 		want  string
 	}{
-		{name: "filters empty parts", parts: []string{"", "events", "", "policy"}, want: "events_policy"},
+		{name: "filters empty parts", parts: []string{"", "events", "", "policy"}, want: "events/policy"},
+		{name: "preserves segment boundaries", parts: []string{"orders", "stream", "policy"}, want: "orders/stream/policy"},
 		{name: "fallback", parts: nil, want: "dynamodb_resource"},
 	}
 	for _, tt := range tests {
@@ -115,8 +116,16 @@ func TestDynamoDBResourcePolicyTargets(t *testing.T) {
 	if got, want := targets[0].name, "events"; got != want {
 		t.Fatalf("table target name = %q, want %q", got, want)
 	}
-	if got, want := targets[1].name, "events_stream"; got != want {
+	if got, want := targets[1].name, "events/stream"; got != want {
 		t.Fatalf("stream target name = %q, want %q", got, want)
+	}
+}
+
+func TestDynamoDBResourceNamesAvoidSegmentCollisions(t *testing.T) {
+	tablePolicy := dynamodbResourceName("orders_stream", "policy")
+	streamPolicy := dynamodbResourceName("orders", "stream", "policy")
+	if tablePolicy == streamPolicy {
+		t.Fatalf("resource names collide: %q", tablePolicy)
 	}
 }
 
