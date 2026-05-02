@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/chenrui333/terraformer/terraformutils"
+	"github.com/iancoleman/strcase"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -215,6 +216,34 @@ func metadataPatchID(apiVersion, kind, namespace, name string, namespaced bool) 
 	return strings.Join(parts, ",")
 }
 
+func metadataPatchObjectKey(kind, namespace, name string, namespaced bool) string {
+	parts := []string{"kind=" + kind}
+	if namespaced {
+		parts = append(parts, "namespace="+namespace)
+	}
+	parts = append(parts, "name="+name)
+	return strings.Join(parts, ",")
+}
+
+func metadataPatchObjectKeyFromID(id string) (string, bool) {
+	values := map[string]string{}
+	for _, part := range strings.Split(id, ",") {
+		key, value, ok := strings.Cut(part, "=")
+		if !ok {
+			return "", false
+		}
+		values[key] = value
+	}
+
+	kind := values["kind"]
+	name := values["name"]
+	if kind == "" || name == "" {
+		return "", false
+	}
+	namespace, namespaced := values["namespace"]
+	return metadataPatchObjectKey(kind, namespace, name, namespaced), true
+}
+
 func metadataPatchResourceName(attributeName, apiVersion, kind, namespace, name string, namespaced bool) string {
 	parts := []string{attributeName, apiVersion, kind}
 	if namespaced {
@@ -253,6 +282,29 @@ func metadataPatchTargetIDs(resource terraformutils.Resource) []string {
 	return ids
 }
 
+func metadataPatchFallbackTargetKeys(resource terraformutils.Resource) []string {
+	if resource.InstanceInfo == nil || resource.InstanceState == nil {
+		return nil
+	}
+	if len(metadataPatchResourceKindsForTerraformType(resource.InstanceInfo.Type)) != 0 {
+		return nil
+	}
+
+	// selectTerraformResourceName can choose extractTfResourceName(kind) for
+	// typed resources that have no explicit preferred mapping; by this point the
+	// discovered group/version is no longer available, so match on object shape.
+	kind, ok := metadataPatchFallbackKindForTerraformType(resource.InstanceInfo.Type)
+	if !ok {
+		return nil
+	}
+	name := resource.InstanceState.Attributes["metadata.0.name"]
+	if name == "" {
+		return nil
+	}
+	namespace, namespaced := resource.InstanceState.Attributes["metadata.0.namespace"]
+	return []string{metadataPatchObjectKey(kind, namespace, name, namespaced)}
+}
+
 func metadataPatchResourceKindsForTerraformType(terraformType string) []kubernetesResourceID {
 	seen := map[kubernetesResourceID]struct{}{}
 	resourceIDs := []kubernetesResourceID{}
@@ -277,4 +329,21 @@ func metadataPatchResourceKindsForTerraformType(terraformType string) []kubernet
 		}
 	}
 	return resourceIDs
+}
+
+func metadataPatchFallbackKindForTerraformType(terraformType string) (string, bool) {
+	const prefix = "kubernetes_"
+	if !strings.HasPrefix(terraformType, prefix) {
+		return "", false
+	}
+	switch terraformType {
+	case labelsTerraformType, annotationsTerraformType, manifestTerraformResourceName:
+		return "", false
+	}
+
+	kind := strcase.ToCamel(strings.TrimPrefix(terraformType, prefix))
+	if kind == "" || extractTfResourceName(kind) != terraformType {
+		return "", false
+	}
+	return kind, true
 }

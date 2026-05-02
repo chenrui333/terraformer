@@ -398,6 +398,7 @@ func removeSecretDataDuplicates(resourcesByService map[string][]terraformutils.R
 
 func removeMetadataPatchDuplicates(resourcesByService map[string][]terraformutils.Resource) map[string][]terraformutils.Resource {
 	targetIDs := map[string]struct{}{}
+	targetObjectKeys := map[string]struct{}{}
 	for serviceName, resources := range resourcesByService {
 		if serviceName == labelsServiceName || serviceName == annotationsServiceName {
 			continue
@@ -406,9 +407,12 @@ func removeMetadataPatchDuplicates(resourcesByService map[string][]terraformutil
 			for _, targetID := range metadataPatchTargetIDs(resource) {
 				targetIDs[targetID] = struct{}{}
 			}
+			for _, targetKey := range metadataPatchFallbackTargetKeys(resource) {
+				targetObjectKeys[targetKey] = struct{}{}
+			}
 		}
 	}
-	if len(targetIDs) == 0 {
+	if len(targetIDs) == 0 && len(targetObjectKeys) == 0 {
 		return resourcesByService
 	}
 
@@ -425,6 +429,11 @@ func removeMetadataPatchDuplicates(resourcesByService map[string][]terraformutil
 			}
 			if _, duplicate := targetIDs[resource.InstanceState.ID]; duplicate {
 				continue
+			}
+			if targetKey, ok := metadataPatchObjectKeyFromID(resource.InstanceState.ID); ok {
+				if _, duplicate := targetObjectKeys[targetKey]; duplicate {
+					continue
+				}
 			}
 			filtered = append(filtered, resource)
 		}

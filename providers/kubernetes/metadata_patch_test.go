@@ -295,6 +295,38 @@ func TestPostProcessImportResourcesRemovesOverlappingMetadataPatches(t *testing.
 	assertResourceIDs(t, got[annotationsServiceName], []string{"apiVersion=v1,kind=ConfigMap,namespace=default,name=other-config"})
 }
 
+func TestPostProcessImportResourcesRemovesFallbackNativeMetadataPatchOverlap(t *testing.T) {
+	provider := KubernetesProvider{}
+	fullWidget := terraformutils.NewResource(
+		"default/sample",
+		"default/sample",
+		"kubernetes_widget",
+		"kubernetes",
+		map[string]string{
+			"metadata.#":           "1",
+			"metadata.0.name":      "sample",
+			"metadata.0.namespace": "default",
+		},
+		nil,
+		nil,
+	)
+	resourcesByService := map[string][]terraformutils.Resource{
+		"widgets": {fullWidget},
+		labelsServiceName: {
+			metadataPatchTestResource(labelsTerraformType, "apiVersion=example.com/v1,kind=Widget,namespace=default,name=sample"),
+			metadataPatchTestResource(labelsTerraformType, "apiVersion=example.com/v1,kind=Widget,namespace=default,name=other"),
+			metadataPatchTestResource(labelsTerraformType, "apiVersion=example.com/v1,kind=Gadget,namespace=default,name=sample"),
+		},
+	}
+
+	got := provider.PostProcessImportResources(resourcesByService)
+
+	assertResourceIDs(t, got[labelsServiceName], []string{
+		"apiVersion=example.com/v1,kind=Widget,namespace=default,name=other",
+		"apiVersion=example.com/v1,kind=Gadget,namespace=default,name=sample",
+	})
+}
+
 func TestPostProcessImportResourcesRemovesManifestMetadataPatchOverlap(t *testing.T) {
 	provider := KubernetesProvider{}
 	manifest := terraformutils.NewSimpleResource(
