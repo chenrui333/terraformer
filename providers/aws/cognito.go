@@ -568,7 +568,7 @@ func (g *CognitoGenerator) shouldLoadIdentityPoolChildResourceType(serviceName, 
 	if g.hasTypedIdentityPoolChildFilter() && !hasTypedChildFilter {
 		return false
 	}
-	if g.hasTypedCognitoFilter() && !hasTypedChildFilter && !g.hasTypedFilterFor(cognitoIdentityPoolResourceType) && !g.hasUntypedIDFilter() {
+	if g.hasTypedCognitoFilter() && !hasTypedChildFilter && !g.hasUntypedIDFilter() {
 		return false
 	}
 	if !g.initialIDFiltersCanMatchIdentityPoolChild(serviceName, identityPoolID) {
@@ -588,7 +588,7 @@ func (g *CognitoGenerator) shouldLoadUserPoolChildResourceType(serviceName, user
 	if g.hasTypedUserPoolChildFilter() && !hasTypedChildFilter {
 		return false
 	}
-	if g.hasTypedCognitoFilter() && !hasTypedChildFilter && !g.hasTypedFilterFor(cognitoUserPoolResourceType) && !g.hasUntypedIDFilter() {
+	if g.hasTypedCognitoFilter() && !hasTypedChildFilter && !g.hasUntypedIDFilter() {
 		return false
 	}
 	if !g.initialIDFiltersCanMatchUserPoolChild(serviceName, userPoolID) {

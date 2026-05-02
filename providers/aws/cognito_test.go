@@ -304,13 +304,12 @@ func TestCognitoFilterGatesUserPoolsAndChildren(t *testing.T) {
 			appendGroup:      true,
 		},
 		{
-			name: "typed user pool id filter limits parent output",
+			name: "typed user pool id filter skips child loading",
 			filters: []terraformutils.ResourceFilter{
 				{ServiceName: cognitoUserPoolResourceType, FieldPath: "id", AcceptableValues: []string{userPoolID}},
 			},
 			loadUserPools:  true,
 			appendUserPool: true,
-			loadClients:    true,
 		},
 		{
 			name: "typed child id filter skips parent output",
@@ -487,13 +486,12 @@ func TestCognitoFilterGatesIdentityPoolsAndChildren(t *testing.T) {
 			appendRoles: true,
 		},
 		{
-			name: "typed identity pool id filter scopes role loading",
+			name: "typed identity pool id filter skips child loading",
 			filters: []terraformutils.ResourceFilter{
 				{ServiceName: cognitoIdentityPoolResourceType, FieldPath: "id", AcceptableValues: []string{identityPoolID}},
 			},
 			loadPools:  true,
 			appendPool: true,
-			loadRoles:  true,
 		},
 		{
 			name: "typed identity pool non-id filter avoids child pre-load",
