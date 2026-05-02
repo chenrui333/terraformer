@@ -20,25 +20,25 @@ type GithubService struct { //nolint
 
 func (g *GithubService) createClient() (*github.Client, error) {
 	if g.GetArgs()["base_url"].(string) == githubDefaultURL {
-		return g.createRegularClient(), nil
+		return g.createRegularClient()
 	}
 	return g.createEnterpriseClient()
 }
 
-func (g *GithubService) createRegularClient() *github.Client {
+func (g *GithubService) createRegularClient() (*github.Client, error) {
 	ctx := context.Background()
 	if g.Args["app_id"].(int64) != 0 && g.Args["installation_id"].(int64) != 0 && g.Args["pem"].(string) != "" {
 		itr, err := ghinstallation.New(http.DefaultTransport, g.Args["app_id"].(int64), g.Args["installation_id"].(int64), []byte(g.Args["pem"].(string)))
 		if err != nil {
-			return nil
+			return nil, err
 		}
-		return github.NewClient(&http.Client{Transport: itr})
+		return github.NewClient(&http.Client{Transport: itr}), nil
 	}
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: g.Args["token"].(string)},
 	)
 	tc := oauth2.NewClient(ctx, ts)
-	return github.NewClient(tc)
+	return github.NewClient(tc), nil
 }
 
 func (g *GithubService) createEnterpriseClient() (*github.Client, error) {

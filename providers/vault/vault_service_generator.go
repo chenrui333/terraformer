@@ -82,8 +82,7 @@ func (g *ServiceGenerator) createSecretBackendRoleResources() error {
 		path := fmt.Sprintf("%s/roles", mount)
 		s, err := g.client.Logical().List(path)
 		if err != nil {
-			log.Printf("error calling path %s: %s", path, err)
-			continue
+			return fmt.Errorf("list vault secret backend roles at %s: %w", path, err)
 		}
 		if s == nil {
 			log.Printf("call to %s returned nil result", path)
@@ -148,8 +147,7 @@ func (g *ServiceGenerator) createAuthBackendEntityResources(apiEntity, tfEntity 
 		path := fmt.Sprintf("/auth/%s/%s", backend, apiEntity)
 		s, err := g.client.Logical().List(path)
 		if err != nil {
-			log.Printf("error calling path %s: %s", path, err)
-			continue
+			return fmt.Errorf("list vault auth backend %s at %s: %w", apiEntity, path, err)
 		}
 		if s == nil {
 			log.Printf("call to %s returned nil result", path)
@@ -218,8 +216,7 @@ func (g *ServiceGenerator) createGenericSecretResources() error {
 		path := fmt.Sprintf("%s/", mount)
 		s, err := g.client.Logical().List(path)
 		if err != nil {
-			log.Printf("error calling path %s: %s", path, err)
-			continue
+			return fmt.Errorf("list vault generic secrets at %s: %w", path, err)
 		}
 		if s == nil {
 			log.Printf("call to %s returned nil result", path)
