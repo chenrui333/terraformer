@@ -502,6 +502,23 @@ func TestSelectImportResourceName(t *testing.T) {
 			wantOK:      true,
 		},
 		{
+			name:    "falls back to manifest for custom group sharing native prefix",
+			group:   "apps.example.com",
+			version: "v1",
+			resource: metav1.APIResource{
+				Name:  "deployments",
+				Kind:  "Deployment",
+				Verbs: manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				"kubernetes_deployment":       {},
+				manifestTerraformResourceName: {},
+			},
+			want:        manifestTerraformResourceName,
+			wantDynamic: true,
+			wantOK:      true,
+		},
+		{
 			name:    "skips native typed resource without first-class provider type",
 			version: "v1",
 			resource: metav1.APIResource{
@@ -724,6 +741,7 @@ func TestSupportsTypedClientResource(t *testing.T) {
 		{name: "core service", version: "v1", kind: "Service", want: true},
 		{name: "core endpoints", version: "v1", kind: "Endpoints", want: true},
 		{name: "apps daemon set", group: "apps", version: "v1", kind: "DaemonSet", want: true},
+		{name: "custom group sharing native prefix is not typed", group: "apps.example.com", version: "v1", kind: "Deployment", want: false},
 		{name: "autoscaling hpa", group: "autoscaling", version: "v2", kind: "HorizontalPodAutoscaler", want: true},
 		{name: "autoscaling v2beta2 hpa is not exposed by kubernetes clientset", group: "autoscaling", version: "v2beta2", kind: "HorizontalPodAutoscaler", want: false},
 		{name: "certificate signing request", group: "certificates.k8s.io", version: "v1", kind: "CertificateSigningRequest", want: true},

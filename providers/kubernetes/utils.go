@@ -88,7 +88,40 @@ var dynamicClientResources = map[kubernetesResourceID]struct{}{
 	{group: "policy", version: "v1beta1", kind: "PodSecurityPolicy"}:            {},
 }
 
+// client-go group accessor names collapse DNS groups to their first label
+// (for example, rbac.authorization.k8s.io -> RbacV1), so require exact API
+// groups before reflection to avoid treating CRDs like apps.example.com as
+// native apps resources.
+var typedClientSetAPIGroups = map[string]struct{}{
+	"":                             {},
+	"admissionregistration.k8s.io": {},
+	"apps":                         {},
+	"authentication.k8s.io":        {},
+	"authorization.k8s.io":         {},
+	"autoscaling":                  {},
+	"batch":                        {},
+	"certificates.k8s.io":          {},
+	"coordination.k8s.io":          {},
+	"discovery.k8s.io":             {},
+	"events.k8s.io":                {},
+	"extensions":                   {},
+	"flowcontrol.apiserver.k8s.io": {},
+	"internal.apiserver.k8s.io":    {},
+	"networking.k8s.io":            {},
+	"node.k8s.io":                  {},
+	"policy":                       {},
+	"rbac.authorization.k8s.io":    {},
+	"resource.k8s.io":              {},
+	"scheduling.k8s.io":            {},
+	"storagemigration.k8s.io":      {},
+	"storage.k8s.io":               {},
+}
+
 func extractClientSetFuncGroupName(group, version string) string {
+	if _, ok := typedClientSetAPIGroups[group]; !ok {
+		return ""
+	}
+
 	v := strings.Title(version)
 	if len(group) > 0 {
 		return strings.Title(strings.Split(group, ".")[0]) + v
