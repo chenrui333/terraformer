@@ -6,6 +6,7 @@ package aws
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"strings"
 
@@ -26,8 +27,10 @@ type CognitoGenerator struct {
 }
 
 type cognitoOptionalResourceLoader struct {
-	name string
-	load func() error
+	name         string
+	serviceNames []string
+	required     bool
+	load         func() error
 }
 
 type cognitoIdentityPoolRef struct {
@@ -84,9 +87,15 @@ func (g *CognitoGenerator) InitResources() error {
 		if err != nil {
 			return err
 		}
-		g.loadOptionalResources([]cognitoOptionalResourceLoader{
-			{name: "identity pool role attachments", load: func() error { return g.loadIdentityPoolRolesAttachments(svcCognitoIdentity, identityPools) }},
-		})
+		if err := g.loadOptionalResources([]cognitoOptionalResourceLoader{
+			{
+				name:         "identity pool role attachments",
+				serviceNames: []string{cognitoIdentityPoolRolesAttachmentResourceType},
+				load:         func() error { return g.loadIdentityPoolRolesAttachments(svcCognitoIdentity, identityPools) },
+			},
+		}); err != nil {
+			return err
+		}
 	}
 
 	if g.shouldLoadUserPools() {
@@ -95,24 +104,51 @@ func (g *CognitoGenerator) InitResources() error {
 		if err != nil {
 			return err
 		}
-		g.loadOptionalResources([]cognitoOptionalResourceLoader{
-			{name: "user pool clients", load: func() error { return g.loadUserPoolClients(svcCognitoIdentityProvider, userPools) }},
-			{name: "user groups", load: func() error { return g.loadUserGroups(svcCognitoIdentityProvider, userPools) }},
-			{name: "identity providers", load: func() error { return g.loadIdentityProviders(svcCognitoIdentityProvider, userPools) }},
-			{name: "resource servers", load: func() error { return g.loadResourceServers(svcCognitoIdentityProvider, userPools) }},
-			{name: "user pool domains", load: func() error { return g.loadUserPoolDomains(userPools) }},
-		})
+		if err := g.loadOptionalResources([]cognitoOptionalResourceLoader{
+			{
+				name:         "user pool clients",
+				serviceNames: []string{cognitoUserPoolClientResourceType},
+				required:     true,
+				load:         func() error { return g.loadUserPoolClients(svcCognitoIdentityProvider, userPools) },
+			},
+			{
+				name:         "user groups",
+				serviceNames: []string{cognitoUserGroupResourceType},
+				load:         func() error { return g.loadUserGroups(svcCognitoIdentityProvider, userPools) },
+			},
+			{
+				name:         "identity providers",
+				serviceNames: []string{cognitoIdentityProviderResourceType},
+				load:         func() error { return g.loadIdentityProviders(svcCognitoIdentityProvider, userPools) },
+			},
+			{
+				name:         "resource servers",
+				serviceNames: []string{cognitoResourceServerResourceType},
+				load:         func() error { return g.loadResourceServers(svcCognitoIdentityProvider, userPools) },
+			},
+			{
+				name:         "user pool domains",
+				serviceNames: []string{cognitoUserPoolDomainResourceType},
+				load:         func() error { return g.loadUserPoolDomains(userPools) },
+			},
+		}); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func (g *CognitoGenerator) loadOptionalResources(loaders []cognitoOptionalResourceLoader) {
+func (g *CognitoGenerator) loadOptionalResources(loaders []cognitoOptionalResourceLoader) error {
 	for _, loader := range loaders {
 		if err := loader.load(); err != nil {
+			if loader.required || g.hasTypedFilterForAny(loader.serviceNames...) {
+				return fmt.Errorf("loading Cognito %s: %w", loader.name, err)
+			}
 			log.Printf("Skipping Cognito %s: %v", loader.name, err)
 		}
 	}
+	return nil
 }
 
 func (g *CognitoGenerator) loadIdentityPools(svc *cognitoidentity.Client) ([]cognitoIdentityPoolRef, error) {
@@ -188,13 +224,15 @@ func (g *CognitoGenerator) loadUserPools(svc *cognitoidentityprovider.Client) ([
 				continue
 			}
 			ref := cognitoUserPoolRef{id: id, name: resourceName}
-			if output, err := svc.DescribeUserPool(context.TODO(), &cognitoidentityprovider.DescribeUserPoolInput{
-				UserPoolId: aws.String(id),
-			}); err == nil && output.UserPool != nil {
-				ref.domain = StringValue(output.UserPool.Domain)
-				ref.customDomain = StringValue(output.UserPool.CustomDomain)
-			} else if err != nil && !cognitoIDPResourceMissing(err) {
-				log.Printf("Skipping Cognito user pool domain metadata for %s: %v", id, err)
+			if g.shouldLoadUserPoolDomainMetadata(id) {
+				if output, err := svc.DescribeUserPool(context.TODO(), &cognitoidentityprovider.DescribeUserPoolInput{
+					UserPoolId: aws.String(id),
+				}); err == nil && output.UserPool != nil {
+					ref.domain = StringValue(output.UserPool.Domain)
+					ref.customDomain = StringValue(output.UserPool.CustomDomain)
+				} else if err != nil && !cognitoIDPResourceMissing(err) {
+					log.Printf("Skipping Cognito user pool domain metadata for %s: %v", id, err)
+				}
 			}
 			userPools = append(userPools, ref)
 
@@ -339,6 +377,9 @@ func (g *CognitoGenerator) loadResourceServers(svc *cognitoidentityprovider.Clie
 
 func (g *CognitoGenerator) loadUserPoolDomains(userPools []cognitoUserPoolRef) error {
 	for _, userPool := range userPools {
+		if !g.shouldLoadUserPoolDomainMetadata(userPool.id) {
+			continue
+		}
 		for _, domain := range []string{userPool.domain, userPool.customDomain} {
 			if domain == "" {
 				continue
@@ -540,6 +581,13 @@ func (g *CognitoGenerator) shouldLoadUserPoolChildResourceType(serviceName, user
 	return true
 }
 
+func (g *CognitoGenerator) shouldLoadUserPoolDomainMetadata(userPoolID string) bool {
+	if g.hasTypedCognitoFilter() && !g.hasUntypedIDFilter() && !g.hasTypedFilterFor(cognitoUserPoolDomainResourceType) {
+		return false
+	}
+	return g.shouldLoadUserPoolChildResourceType(cognitoUserPoolDomainResourceType, userPoolID)
+}
+
 func (g *CognitoGenerator) shouldAppendCognitoResource(serviceName string, resource terraformutils.Resource) bool {
 	if !g.resourceMatchesInitialIDFilters(serviceName, resource) {
 		return false
@@ -688,6 +736,15 @@ func (g *CognitoGenerator) hasTypedCognitoFilter() bool {
 func (g *CognitoGenerator) hasTypedFilterFor(serviceName string) bool {
 	for _, filter := range g.Filter {
 		if filter.ServiceName == serviceName {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *CognitoGenerator) hasTypedFilterForAny(serviceNames ...string) bool {
+	for _, serviceName := range serviceNames {
+		if g.hasTypedFilterFor(serviceName) {
 			return true
 		}
 	}

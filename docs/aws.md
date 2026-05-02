@@ -148,6 +148,7 @@ terraformer import aws --resources=sg --regions=us-east-1
     * `aws_cognito_user_pool`
     * `aws_cognito_user_pool_client`
     * `aws_cognito_user_pool_domain`
+    * Note: `aws_cognito_user_pool_client` ID filters may use `<user_pool_id>/<client_id>`, such as `Type=cognito_user_pool_client;Name=id;Value=us-east-1_abc/client123`. Generated state stores `client123` as the resource ID and keeps `user_pool_id` separately, matching the provider read path in [providers/aws/cognito.go](../providers/aws/cognito.go).
 *   `config`
     * `aws_config_aggregate_authorization`
     * `aws_config_config_rule`

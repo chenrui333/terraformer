@@ -92,6 +92,64 @@ func TestCognitoResourceMissing(t *testing.T) {
 	}
 }
 
+func TestCognitoOptionalResourceLoaderErrors(t *testing.T) {
+	boom := errors.New("boom")
+	tests := []struct {
+		name    string
+		filters []terraformutils.ResourceFilter
+		loader  cognitoOptionalResourceLoader
+		wantErr bool
+	}{
+		{
+			name: "optional loader error is logged for broad discovery",
+			loader: cognitoOptionalResourceLoader{
+				name:         "user groups",
+				serviceNames: []string{cognitoUserGroupResourceType},
+				load:         func() error { return boom },
+			},
+		},
+		{
+			name: "typed child filter returns loader error",
+			filters: []terraformutils.ResourceFilter{
+				{ServiceName: cognitoUserGroupResourceType, FieldPath: "id", AcceptableValues: []string{"us-east-1_abc/admins"}},
+			},
+			loader: cognitoOptionalResourceLoader{
+				name:         "user groups",
+				serviceNames: []string{cognitoUserGroupResourceType},
+				load:         func() error { return boom },
+			},
+			wantErr: true,
+		},
+		{
+			name: "required loader returns error without typed filter",
+			loader: cognitoOptionalResourceLoader{
+				name:         "user pool clients",
+				serviceNames: []string{cognitoUserPoolClientResourceType},
+				required:     true,
+				load:         func() error { return boom },
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := CognitoGenerator{}
+			g.Filter = tt.filters
+			err := g.loadOptionalResources([]cognitoOptionalResourceLoader{tt.loader})
+			if tt.wantErr {
+				if !errors.Is(err, boom) {
+					t.Fatalf("loadOptionalResources() error = %v, want %v", err, boom)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("loadOptionalResources() error = %v, want nil", err)
+			}
+		})
+	}
+}
+
 func TestCognitoFilterGatesUserPoolsAndChildren(t *testing.T) {
 	userPoolID := "us-east-1_abc"
 	otherUserPoolID := "us-east-1_def"
@@ -196,6 +254,61 @@ func TestCognitoFilterGatesUserPoolsAndChildren(t *testing.T) {
 			}
 			if got := g.shouldAppendCognitoResource(cognitoUserGroupResourceType, group); got != tt.appendGroup {
 				t.Fatalf("shouldAppendCognitoResource(group) = %t, want %t", got, tt.appendGroup)
+			}
+		})
+	}
+}
+
+func TestCognitoUserPoolDomainMetadataGating(t *testing.T) {
+	userPoolID := "us-east-1_abc"
+	otherUserPoolID := "us-east-1_def"
+	tests := []struct {
+		name    string
+		filters []terraformutils.ResourceFilter
+		want    bool
+	}{
+		{name: "no filters loads domain metadata", want: true},
+		{
+			name: "typed user pool filter does not load domains",
+			filters: []terraformutils.ResourceFilter{
+				{ServiceName: cognitoUserPoolResourceType, FieldPath: "id", AcceptableValues: []string{userPoolID}},
+			},
+		},
+		{
+			name: "typed domain filter loads domain metadata",
+			filters: []terraformutils.ResourceFilter{
+				{ServiceName: cognitoUserPoolDomainResourceType, FieldPath: "id", AcceptableValues: []string{"auth.example.com"}},
+			},
+			want: true,
+		},
+		{
+			name: "typed client filter does not load domains",
+			filters: []terraformutils.ResourceFilter{
+				{ServiceName: cognitoUserPoolClientResourceType, FieldPath: "id", AcceptableValues: []string{cognitoUserPoolClientImportID(userPoolID, "client123")}},
+			},
+		},
+		{
+			name: "typed parent filter scopes typed domain discovery",
+			filters: []terraformutils.ResourceFilter{
+				{ServiceName: cognitoUserPoolResourceType, FieldPath: "id", AcceptableValues: []string{otherUserPoolID}},
+				{ServiceName: cognitoUserPoolDomainResourceType, FieldPath: "domain", AcceptableValues: []string{"auth.example.com"}},
+			},
+		},
+		{
+			name: "untyped id filter keeps domain discovery possible",
+			filters: []terraformutils.ResourceFilter{
+				{FieldPath: "id", AcceptableValues: []string{"auth.example.com"}},
+			},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := CognitoGenerator{}
+			g.Filter = tt.filters
+			if got := g.shouldLoadUserPoolDomainMetadata(userPoolID); got != tt.want {
+				t.Fatalf("shouldLoadUserPoolDomainMetadata() = %t, want %t", got, tt.want)
 			}
 		})
 	}
