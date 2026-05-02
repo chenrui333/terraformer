@@ -57,20 +57,36 @@ func newKinesisStreamResource(resourceName string) terraformutils.Resource {
 }
 
 func (g *KinesisGenerator) shouldLoadStreamChildren(streamName string) bool {
+	if g.hasUntypedIDFilters() && !g.hasUntypedChildIDFilters() {
+		return false
+	}
 	return g.streamMatchesExplicitIDFilters(streamName) ||
-		g.hasFilterFor("kinesis_stream_consumer") ||
-		g.hasFilterFor("kinesis_resource_policy")
+		g.hasTypedFilterFor("kinesis_stream_consumer") ||
+		g.hasTypedFilterFor("kinesis_resource_policy") ||
+		g.hasUntypedChildIDFilters()
 }
 
 func (g *KinesisGenerator) shouldLoadStreamConsumers(streamName string) bool {
+	if g.hasUntypedIDFilters() && !g.hasUntypedChildIDFilters() {
+		return false
+	}
 	return g.streamMatchesExplicitIDFilters(streamName) ||
-		g.hasFilterFor("kinesis_stream_consumer") ||
-		g.hasFilterFor("kinesis_resource_policy")
+		g.hasTypedFilterFor("kinesis_stream_consumer") ||
+		g.hasTypedFilterFor("kinesis_resource_policy") ||
+		g.hasUntypedChildIDFilters()
 }
 
 func (g *KinesisGenerator) shouldLoadResourcePolicies(streamName string) bool {
-	return g.streamMatchesExplicitIDFilters(streamName) ||
-		g.hasFilterFor("kinesis_resource_policy")
+	if g.hasUntypedIDFilters() {
+		return g.hasUntypedChildIDFilters()
+	}
+	if g.hasTypedFilterFor("kinesis_resource_policy") {
+		return true
+	}
+	if g.hasTypedFilterFor("kinesis_stream_consumer") && !g.hasTypedFilterFor("kinesis_stream") {
+		return false
+	}
+	return g.streamMatchesExplicitIDFilters(streamName)
 }
 
 func (g *KinesisGenerator) streamMatchesExplicitIDFilters(streamName string) bool {
@@ -83,13 +99,33 @@ func (g *KinesisGenerator) streamMatchesExplicitIDFilters(streamName string) boo
 	return true
 }
 
-func (g *KinesisGenerator) hasFilterFor(resourceType string) bool {
+func (g *KinesisGenerator) hasTypedFilterFor(resourceType string) bool {
 	for _, filter := range g.Filter {
-		if filter.ServiceName == "" {
+		if filter.ServiceName != "" && filter.IsApplicable(resourceType) {
 			return true
 		}
-		if filter.IsApplicable(resourceType) {
+	}
+	return false
+}
+
+func (g *KinesisGenerator) hasUntypedIDFilters() bool {
+	for _, filter := range g.Filter {
+		if filter.ServiceName == "" && filter.FieldPath == "id" {
 			return true
+		}
+	}
+	return false
+}
+
+func (g *KinesisGenerator) hasUntypedChildIDFilters() bool {
+	for _, filter := range g.Filter {
+		if filter.ServiceName != "" || filter.FieldPath != "id" {
+			continue
+		}
+		for _, value := range filter.AcceptableValues {
+			if strings.HasPrefix(value, "arn:") && strings.Contains(value, ":stream/") {
+				return true
+			}
 		}
 	}
 	return false

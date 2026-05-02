@@ -137,6 +137,15 @@ func TestKinesisShouldLoadStreamChildrenHonorsStreamIDFilters(t *testing.T) {
 			want:   true,
 		},
 		{
+			name: "untyped stream id filter skips child discovery",
+			filters: []terraformutils.ResourceFilter{{
+				FieldPath:        "id",
+				AcceptableValues: []string{"orders"},
+			}},
+			stream: "payments",
+			want:   false,
+		},
+		{
 			name: "non-id stream filter is handled by post-refresh cleanup",
 			filters: []terraformutils.ResourceFilter{{
 				ServiceName:      "kinesis_stream",
@@ -206,6 +215,16 @@ func TestKinesisShouldLoadResourcePoliciesHonorsFilters(t *testing.T) {
 			want:   false,
 		},
 		{
+			name: "typed consumer filter alone does not load every policy",
+			filters: []terraformutils.ResourceFilter{{
+				ServiceName:      "kinesis_stream_consumer",
+				FieldPath:        "id",
+				AcceptableValues: []string{"arn:aws:kinesis:us-east-1:123456789012:stream/payments/consumer/app:1"},
+			}},
+			stream: "orders",
+			want:   false,
+		},
+		{
 			name: "typed policy filter loads policies despite stream filter",
 			filters: []terraformutils.ResourceFilter{
 				{
@@ -230,6 +249,15 @@ func TestKinesisShouldLoadResourcePoliciesHonorsFilters(t *testing.T) {
 			}},
 			stream: "payments",
 			want:   true,
+		},
+		{
+			name: "untyped stream id filter does not load policies",
+			filters: []terraformutils.ResourceFilter{{
+				FieldPath:        "id",
+				AcceptableValues: []string{"orders"},
+			}},
+			stream: "orders",
+			want:   false,
 		},
 	}
 
@@ -280,6 +308,16 @@ func TestKinesisShouldLoadStreamConsumersHonorsFilters(t *testing.T) {
 			want:   true,
 		},
 		{
+			name: "typed consumer filter alone loads consumers",
+			filters: []terraformutils.ResourceFilter{{
+				ServiceName:      "kinesis_stream_consumer",
+				FieldPath:        "id",
+				AcceptableValues: []string{"arn:aws:kinesis:us-east-1:123456789012:stream/payments/consumer/app:1"},
+			}},
+			stream: "orders",
+			want:   true,
+		},
+		{
 			name: "typed policy filter loads consumers for consumer policies",
 			filters: []terraformutils.ResourceFilter{
 				{
@@ -295,6 +333,15 @@ func TestKinesisShouldLoadStreamConsumersHonorsFilters(t *testing.T) {
 			},
 			stream: "payments",
 			want:   true,
+		},
+		{
+			name: "untyped stream id filter does not load consumers",
+			filters: []terraformutils.ResourceFilter{{
+				FieldPath:        "id",
+				AcceptableValues: []string{"orders"},
+			}},
+			stream: "orders",
+			want:   false,
 		},
 	}
 
