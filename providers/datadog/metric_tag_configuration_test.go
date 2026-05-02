@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 func TestMetricTagConfigurationCreateResource(t *testing.T) {
@@ -34,6 +36,64 @@ func TestMetricTagConfigurationCreateResourceMissingMetricName(t *testing.T) {
 	_, err := generator.createResource(datadogV2.MetricTagConfiguration{})
 	if err == nil {
 		t.Fatal("createResource returned nil error, want missing metric name error")
+	}
+}
+
+func TestMetricTagConfigurationPostConvertHookPreservesEmptyTags(t *testing.T) {
+	resource := terraformutils.NewSimpleResource(
+		"example.empty.tags.metric",
+		"metric_tag_configuration_example.empty.tags.metric",
+		"datadog_metric_tag_configuration",
+		"datadog",
+		MetricTagConfigurationAllowEmptyValues,
+	)
+	resource.InstanceState.Attributes = map[string]string{
+		"metric_name": "example.empty.tags.metric",
+		"tags.#":      "0",
+	}
+	resource.Item = map[string]interface{}{
+		"metric_name": "example.empty.tags.metric",
+	}
+
+	generator := &MetricTagConfigurationGenerator{}
+	generator.Resources = []terraformutils.Resource{resource}
+
+	if err := generator.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook returned error: %v", err)
+	}
+
+	tags, ok := generator.Resources[0].Item["tags"].([]interface{})
+	if !ok {
+		t.Fatalf("tags = %T, want []interface{}", generator.Resources[0].Item["tags"])
+	}
+	if len(tags) != 0 {
+		t.Fatalf("tags length = %d, want %d", len(tags), 0)
+	}
+}
+
+func TestMetricTagConfigurationPostConvertHookDoesNotInventUnknownTags(t *testing.T) {
+	resource := terraformutils.NewSimpleResource(
+		"example.unknown.tags.metric",
+		"metric_tag_configuration_example.unknown.tags.metric",
+		"datadog_metric_tag_configuration",
+		"datadog",
+		MetricTagConfigurationAllowEmptyValues,
+	)
+	resource.InstanceState.Attributes = map[string]string{
+		"metric_name": "example.unknown.tags.metric",
+	}
+	resource.Item = map[string]interface{}{
+		"metric_name": "example.unknown.tags.metric",
+	}
+
+	generator := &MetricTagConfigurationGenerator{}
+	generator.Resources = []terraformutils.Resource{resource}
+
+	if err := generator.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook returned error: %v", err)
+	}
+	if _, ok := generator.Resources[0].Item["tags"]; ok {
+		t.Fatal("PostConvertHook added tags without empty tags state")
 	}
 }
 

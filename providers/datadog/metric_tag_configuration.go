@@ -14,8 +14,11 @@ import (
 
 var (
 	// MetricTagConfigurationAllowEmptyValues ...
-	MetricTagConfigurationAllowEmptyValues = []string{}
+	MetricTagConfigurationAllowEmptyValues = []string{"tags."}
 )
+
+// Avoid Datadog's one-hour default window when importing all configured metric tags.
+const metricTagConfigurationListWindowSeconds int64 = 60 * 60 * 24 * 30
 
 // MetricTagConfigurationGenerator ...
 type MetricTagConfigurationGenerator struct {
@@ -48,6 +51,30 @@ func (g *MetricTagConfigurationGenerator) createResource(metricTagConfiguration 
 		"datadog",
 		MetricTagConfigurationAllowEmptyValues,
 	), nil
+}
+
+func (g *MetricTagConfigurationGenerator) PostConvertHook() error {
+	for i := range g.Resources {
+		resource := &g.Resources[i]
+		if resource.Item == nil {
+			resource.Item = map[string]interface{}{}
+		}
+		if _, ok := resource.Item["tags"]; ok {
+			continue
+		}
+		if !metricTagConfigurationStateHasEmptyTags(resource) {
+			continue
+		}
+		resource.Item["tags"] = []interface{}{}
+	}
+	return nil
+}
+
+func metricTagConfigurationStateHasEmptyTags(resource *terraformutils.Resource) bool {
+	if resource == nil || resource.InstanceState == nil || resource.InstanceState.Attributes == nil {
+		return false
+	}
+	return resource.InstanceState.Attributes["tags.#"] == "0"
 }
 
 // InitResources Generate TerraformResources from Datadog API,
@@ -130,6 +157,7 @@ func listMetricTagConfigurations(auth context.Context, api *datadogV2.MetricsApi
 	for {
 		optionalParams := datadogV2.NewListTagConfigurationsOptionalParameters().
 			WithFilterConfigured(true).
+			WithWindowSeconds(metricTagConfigurationListWindowSeconds).
 			WithPageSize(pageSize)
 		if cursor != "" {
 			optionalParams.WithPageCursor(cursor)
