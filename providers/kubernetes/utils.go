@@ -88,6 +88,23 @@ var dynamicClientResources = map[kubernetesResourceID]struct{}{
 	{group: "policy", version: "v1beta1", kind: "PodSecurityPolicy"}:            {},
 }
 
+// Native manifest imports are limited to declarative Kubernetes APIs that the
+// Terraform provider does not expose as first-class resources in every version.
+var nativeManifestResources = map[kubernetesResourceID]struct{}{
+	{group: "admissionregistration.k8s.io", version: "v1", kind: "MutatingAdmissionPolicy"}:                {},
+	{group: "admissionregistration.k8s.io", version: "v1", kind: "MutatingAdmissionPolicyBinding"}:         {},
+	{group: "admissionregistration.k8s.io", version: "v1", kind: "ValidatingAdmissionPolicy"}:              {},
+	{group: "admissionregistration.k8s.io", version: "v1", kind: "ValidatingAdmissionPolicyBinding"}:       {},
+	{group: "admissionregistration.k8s.io", version: "v1beta1", kind: "MutatingAdmissionPolicy"}:           {},
+	{group: "admissionregistration.k8s.io", version: "v1beta1", kind: "MutatingAdmissionPolicyBinding"}:    {},
+	{group: "admissionregistration.k8s.io", version: "v1beta1", kind: "ValidatingAdmissionPolicy"}:         {},
+	{group: "admissionregistration.k8s.io", version: "v1beta1", kind: "ValidatingAdmissionPolicyBinding"}:  {},
+	{group: "admissionregistration.k8s.io", version: "v1alpha1", kind: "MutatingAdmissionPolicy"}:          {},
+	{group: "admissionregistration.k8s.io", version: "v1alpha1", kind: "MutatingAdmissionPolicyBinding"}:   {},
+	{group: "admissionregistration.k8s.io", version: "v1alpha1", kind: "ValidatingAdmissionPolicy"}:        {},
+	{group: "admissionregistration.k8s.io", version: "v1alpha1", kind: "ValidatingAdmissionPolicyBinding"}: {},
+}
+
 // client-go group accessor names collapse DNS groups to their first label
 // (for example, rbac.authorization.k8s.io -> RbacV1), so require exact API
 // groups before reflection to avoid treating CRDs like apps.example.com as
@@ -189,7 +206,11 @@ func selectImportResourceName(
 	}
 
 	// Keep native typed-client resources on explicit provider resources only.
-	// The manifest fallback is for CRDs and other untyped API extensions.
+	// The manifest fallback is for CRDs, other untyped API extensions, and
+	// explicitly allowed native APIs without first-class provider resources.
+	if supportsNativeManifestResource(group, version, resource.Kind) && supportsManifestResource(resource, hasResourceType) {
+		return manifestTerraformResourceName, true, true
+	}
 	if supportsTypedClientResource(clientset, group, version, resource.Kind) {
 		return "", false, false
 	}
@@ -201,6 +222,11 @@ func selectImportResourceName(
 
 func supportsDynamicClientResource(group, version, kind string) bool {
 	_, ok := dynamicClientResources[kubernetesResourceID{group: group, version: version, kind: kind}]
+	return ok
+}
+
+func supportsNativeManifestResource(group, version, kind string) bool {
+	_, ok := nativeManifestResources[kubernetesResourceID{group: group, version: version, kind: kind}]
 	return ok
 }
 

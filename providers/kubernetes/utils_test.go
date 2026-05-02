@@ -519,6 +519,22 @@ func TestSelectImportResourceName(t *testing.T) {
 			wantOK:      true,
 		},
 		{
+			name:    "falls back to manifest for native admission policy binding",
+			group:   "admissionregistration.k8s.io",
+			version: "v1",
+			resource: metav1.APIResource{
+				Name:  "validatingadmissionpolicybindings",
+				Kind:  "ValidatingAdmissionPolicyBinding",
+				Verbs: manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				manifestTerraformResourceName: {},
+			},
+			want:        manifestTerraformResourceName,
+			wantDynamic: true,
+			wantOK:      true,
+		},
+		{
 			name:    "skips native typed resource without first-class provider type",
 			version: "v1",
 			resource: metav1.APIResource{
@@ -644,6 +660,33 @@ func TestSupportsDynamicClientResource(t *testing.T) {
 			got := supportsDynamicClientResource(tt.group, tt.version, tt.kind)
 			if got != tt.want {
 				t.Fatalf("supportsDynamicClientResource(%q, %q, %q) = %t, want %t", tt.group, tt.version, tt.kind, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSupportsNativeManifestResource(t *testing.T) {
+	tests := []struct {
+		name    string
+		group   string
+		version string
+		kind    string
+		want    bool
+	}{
+		{name: "mutating admission policy v1", group: "admissionregistration.k8s.io", version: "v1", kind: "MutatingAdmissionPolicy", want: true},
+		{name: "validating admission policy binding v1", group: "admissionregistration.k8s.io", version: "v1", kind: "ValidatingAdmissionPolicyBinding", want: true},
+		{name: "validating admission policy beta", group: "admissionregistration.k8s.io", version: "v1beta1", kind: "ValidatingAdmissionPolicy", want: true},
+		{name: "mutating admission policy binding alpha", group: "admissionregistration.k8s.io", version: "v1alpha1", kind: "MutatingAdmissionPolicyBinding", want: true},
+		{name: "webhook has first-class provider resource", group: "admissionregistration.k8s.io", version: "v1", kind: "ValidatingWebhookConfiguration", want: false},
+		{name: "other native resource is not manifest-backed", group: "coordination.k8s.io", version: "v1", kind: "Lease", want: false},
+		{name: "custom resource is handled by general manifest fallback", group: "example.com", version: "v1", kind: "Widget", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := supportsNativeManifestResource(tt.group, tt.version, tt.kind)
+			if got != tt.want {
+				t.Fatalf("supportsNativeManifestResource(%q, %q, %q) = %t, want %t", tt.group, tt.version, tt.kind, got, tt.want)
 			}
 		})
 	}
