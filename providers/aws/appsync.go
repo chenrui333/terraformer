@@ -240,6 +240,7 @@ func (g *AppSyncGenerator) addFunctions(svc *appsync.Client, apiID string) error
 }
 
 func (g *AppSyncGenerator) addTypesAndResolvers(svc *appsync.Client, apiID string) error {
+	seenTypes := map[string]struct{}{}
 	seenResolverTypes := map[string]struct{}{}
 	for _, format := range appSyncTypeDefinitionFormats {
 		p := appsync.NewListTypesPaginator(svc, &appsync.ListTypesInput{
@@ -257,9 +258,13 @@ func (g *AppSyncGenerator) addTypesAndResolvers(svc *appsync.Client, apiID strin
 					continue
 				}
 				if g.shouldLoadAPIChildResourceType(appSyncTypeResourceType, apiID) {
+					if _, seen := seenTypes[typeName]; seen {
+						continue
+					}
 					resource := newAppSyncTypeResource(apiID, string(format), typeName)
 					if g.shouldAppendAppSyncChildResource(appSyncTypeResourceType, resource) {
 						g.Resources = append(g.Resources, resource)
+						seenTypes[typeName] = struct{}{}
 					}
 				}
 				if !g.shouldLoadAPIChildResourceType(appSyncResolverResourceType, apiID) {
