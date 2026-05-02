@@ -74,6 +74,8 @@ func (p *LaunchDarklyProvider) GetSupportedService() map[string]terraformutils.S
 		"segment":                 &SegmentGenerator{},
 		"team":                    &TeamGenerator{},
 		"teamMember":              &TeamMemberGenerator{},
+		"view":                    &ViewGenerator{},
+		"viewLinks":               &ViewLinksGenerator{},
 		"webhook":                 &WebhookGenerator{},
 	}
 }
