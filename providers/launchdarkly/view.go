@@ -20,6 +20,10 @@ type ViewLinksGenerator struct {
 	LaunchDarklyService
 }
 
+func newLaunchDarklyViewAPIClient() *ldapi.APIClient {
+	return ldapi.NewAPIClient(ldapi.NewConfiguration())
+}
+
 func getViews(ctx context.Context, client *ldapi.APIClient, projectKey string) ([]ldapi.View, error) {
 	var allViews []ldapi.View
 	for offset := int32(0); ; offset += pageSize {
@@ -94,13 +98,14 @@ func (g *ViewGenerator) loadViews(ctx context.Context, client *ldapi.APIClient, 
 func (g *ViewGenerator) InitResources() error {
 	ctx := g.GetArgs()["ctx"].(context.Context)
 	client := g.GetArgs()["client"].(*ldapi.APIClient)
+	viewClient := newLaunchDarklyViewAPIClient()
 
 	projects, err := getProjects(ctx, client)
 	if err != nil {
 		return err
 	}
 	for _, project := range projects {
-		if err := g.loadViews(ctx, client, project.Key); err != nil {
+		if err := g.loadViews(ctx, viewClient, project.Key); err != nil {
 			return err
 		}
 	}
@@ -144,13 +149,14 @@ func (g *ViewLinksGenerator) loadViewLinks(ctx context.Context, client *ldapi.AP
 func (g *ViewLinksGenerator) InitResources() error {
 	ctx := g.GetArgs()["ctx"].(context.Context)
 	client := g.GetArgs()["client"].(*ldapi.APIClient)
+	viewClient := newLaunchDarklyViewAPIClient()
 
 	projects, err := getProjects(ctx, client)
 	if err != nil {
 		return err
 	}
 	for _, project := range projects {
-		if err := g.loadViewLinks(ctx, client, project.Key); err != nil {
+		if err := g.loadViewLinks(ctx, viewClient, project.Key); err != nil {
 			return err
 		}
 	}
