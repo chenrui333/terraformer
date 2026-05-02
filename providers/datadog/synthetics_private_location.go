@@ -53,7 +53,10 @@ func (g *SyntheticsPrivateLocationGenerator) InitResources() error {
 	auth := g.Args["auth"].(context.Context)
 	api := datadogV1.NewSyntheticsApi(datadogClient)
 
-	data, _, err := api.ListLocations(auth)
+	data, httpResp, err := api.ListLocations(auth)
+	if httpResp != nil && httpResp.Body != nil {
+		_ = httpResp.Body.Close()
+	}
 	if err != nil {
 		return err
 	}

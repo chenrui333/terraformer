@@ -59,7 +59,10 @@ func (g *LogsCustomPipelineGenerator) InitResources() error {
 	for _, filter := range g.Filter {
 		if filter.FieldPath == "id" && filter.IsApplicable("logs_custom_pipeline") {
 			for _, value := range filter.AcceptableValues {
-				logsCustomPipeline, _, err := api.GetLogsPipeline(auth, value)
+				logsCustomPipeline, httpResp, err := api.GetLogsPipeline(auth, value)
+				if httpResp != nil && httpResp.Body != nil {
+					_ = httpResp.Body.Close()
+				}
 				if err != nil {
 					return err
 				}
@@ -74,7 +77,10 @@ func (g *LogsCustomPipelineGenerator) InitResources() error {
 		return nil
 	}
 
-	logsCustomPipelines, _, err := api.ListLogsPipelines(auth)
+	logsCustomPipelines, httpResp, err := api.ListLogsPipelines(auth)
+	if httpResp != nil && httpResp.Body != nil {
+		_ = httpResp.Body.Close()
+	}
 	if err != nil {
 		return err
 	}

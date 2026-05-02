@@ -50,7 +50,10 @@ func (g *IntegrationAWSLogCollectionGenerator) InitResources() error {
 	auth := g.Args["auth"].(context.Context)
 	api := datadogV1.NewAWSLogsIntegrationApi(datadogClient)
 
-	logCollections, _, err := api.ListAWSLogsIntegrations(auth)
+	logCollections, httpResp, err := api.ListAWSLogsIntegrations(auth)
+	if httpResp != nil && httpResp.Body != nil {
+		_ = httpResp.Body.Close()
+	}
 	if err != nil {
 		return err
 	}

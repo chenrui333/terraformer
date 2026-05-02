@@ -54,7 +54,10 @@ func (g *LogsIndexGenerator) InitResources() error {
 	for _, filter := range g.Filter {
 		if filter.FieldPath == "id" && filter.IsApplicable("logs_index") {
 			for _, value := range filter.AcceptableValues {
-				logsIndex, _, err := api.GetLogsIndex(auth, value)
+				logsIndex, httpResp, err := api.GetLogsIndex(auth, value)
+				if httpResp != nil && httpResp.Body != nil {
+					_ = httpResp.Body.Close()
+				}
 				if err != nil {
 					return err
 				}
@@ -69,11 +72,14 @@ func (g *LogsIndexGenerator) InitResources() error {
 		return nil
 	}
 
-	logsIndexList, _, err := api.ListLogIndexes(auth)
-	logsIndex := logsIndexList.GetIndexes()
+	logsIndexList, httpResp, err := api.ListLogIndexes(auth)
+	if httpResp != nil && httpResp.Body != nil {
+		_ = httpResp.Body.Close()
+	}
 	if err != nil {
 		return err
 	}
+	logsIndex := logsIndexList.GetIndexes()
 	g.Resources = g.createResources(logsIndex)
 	return nil
 }

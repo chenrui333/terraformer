@@ -51,7 +51,10 @@ func (g *ServiceLevelObjectiveGenerator) InitResources() error {
 	api := datadogV1.NewServiceLevelObjectivesApi(datadogClient)
 
 	var slos []datadogV1.ServiceLevelObjective
-	resp, _, err := api.ListSLOs(auth)
+	resp, httpResp, err := api.ListSLOs(auth)
+	if httpResp != nil && httpResp.Body != nil {
+		_ = httpResp.Body.Close()
+	}
 	if err != nil {
 		return err
 	}

@@ -51,7 +51,10 @@ func (g *IntegrationAWSGenerator) InitResources() error {
 	auth := g.Args["auth"].(context.Context)
 	api := datadogV1.NewAWSIntegrationApi(datadogClient)
 
-	integrations, _, err := api.ListAWSAccounts(auth)
+	integrations, httpResp, err := api.ListAWSAccounts(auth)
+	if httpResp != nil && httpResp.Body != nil {
+		_ = httpResp.Body.Close()
+	}
 	if err != nil {
 		return err
 	}

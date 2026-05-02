@@ -51,7 +51,10 @@ func (g *IntegrationGCPGenerator) InitResources() error {
 	auth := g.Args["auth"].(context.Context)
 	api := datadogV1.NewGCPIntegrationApi(datadogClient)
 
-	integrations, _, err := api.ListGCPIntegration(auth)
+	integrations, httpResp, err := api.ListGCPIntegration(auth)
+	if httpResp != nil && httpResp.Body != nil {
+		_ = httpResp.Body.Close()
+	}
 	if err != nil {
 		return err
 	}

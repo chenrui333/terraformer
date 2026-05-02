@@ -54,7 +54,10 @@ func (g *LogsMetricGenerator) InitResources() error {
 	for _, filter := range g.Filter {
 		if filter.FieldPath == "id" && filter.IsApplicable("logs_metric") {
 			for _, value := range filter.AcceptableValues {
-				logsMetric, _, err := api.GetLogsMetric(auth, value)
+				logsMetric, httpResp, err := api.GetLogsMetric(auth, value)
+				if httpResp != nil && httpResp.Body != nil {
+					_ = httpResp.Body.Close()
+				}
 				if err != nil {
 					return err
 				}
@@ -69,7 +72,10 @@ func (g *LogsMetricGenerator) InitResources() error {
 		return nil
 	}
 
-	logsMetrics, _, err := api.ListLogsMetrics(auth)
+	logsMetrics, httpResp, err := api.ListLogsMetrics(auth)
+	if httpResp != nil && httpResp.Body != nil {
+		_ = httpResp.Body.Close()
+	}
 	if err != nil {
 		return err
 	}

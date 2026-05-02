@@ -55,7 +55,10 @@ func (g *SyntheticsGlobalVariableGenerator) InitResources() error {
 	for _, filter := range g.Filter {
 		if filter.FieldPath == "id" && filter.IsApplicable("synthetics_global_variable") {
 			for _, v := range filter.AcceptableValues {
-				resp, _, err := api.GetGlobalVariable(auth, v)
+				resp, httpResp, err := api.GetGlobalVariable(auth, v)
+				if httpResp != nil && httpResp.Body != nil {
+					_ = httpResp.Body.Close()
+				}
 				if err != nil {
 					log.Printf("error retrieving synthetics gloval variable with id:%s - %s", v, err)
 					continue

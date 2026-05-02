@@ -54,7 +54,10 @@ func (g *DashboardJSONGenerator) InitResources() error {
 	for _, filter := range g.Filter {
 		if filter.FieldPath == "id" && filter.IsApplicable("dashboard_json") {
 			for _, value := range filter.AcceptableValues {
-				dashboard, _, err := api.GetDashboard(auth, value)
+				dashboard, httpResp, err := api.GetDashboard(auth, value)
+				if httpResp != nil && httpResp.Body != nil {
+					_ = httpResp.Body.Close()
+				}
 				if err != nil {
 					return err
 				}
@@ -69,7 +72,10 @@ func (g *DashboardJSONGenerator) InitResources() error {
 		return nil
 	}
 
-	summary, _, err := api.ListDashboards(auth)
+	summary, httpResp, err := api.ListDashboards(auth)
+	if httpResp != nil && httpResp.Body != nil {
+		_ = httpResp.Body.Close()
+	}
 	if err != nil {
 		return err
 	}
