@@ -4,7 +4,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/dataproc/v1"
@@ -21,7 +21,7 @@ type DataprocGenerator struct {
 }
 
 // Run on DataprocClusterList and create for each TerraformResource
-func (g DataprocGenerator) createClusterResources(ctx context.Context, clusterList *dataproc.ProjectsRegionsClustersListCall) []terraformutils.Resource {
+func (g DataprocGenerator) createClusterResources(ctx context.Context, clusterList *dataproc.ProjectsRegionsClustersListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := clusterList.Pages(ctx, func(page *dataproc.ListClustersResponse) error {
 		for _, cluster := range page.Clusters {
@@ -43,37 +43,10 @@ func (g DataprocGenerator) createClusterResources(ctx context.Context, clusterLi
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list dataproc clusters: %w", err)
 	}
-	return resources
+	return resources, nil
 }
-
-/*
-// Run on DataprocJobList and create for each TerraformResource
-func (g DataprocGenerator) createJobResources(jobList *dataproc.ProjectsRegionsJobsListCall, ctx context.Context) []terraformutils.Resource {
-	resources := []terraformutils.Resource{}
-	if err := jobList.Pages(ctx, func(page *dataproc.ListJobsResponse) error {
-		for _, job := range page.Jobs {
-			resources = append(resources, terraformutils.NewResource(
-				job.Reference.JobId,
-				job.Reference.JobId,
-				"google_dataproc_job",
-				g.ProviderName,
-				map[string]string{
-					"project": g.GetArgs()["project"].(string),
-					"region":  g.GetArgs()["region"].(compute.Region).Name,
-				},
-				dataprocAllowEmptyValues,
-				dataprocAdditionalFields,
-			))
-		}
-		return nil
-	}); err != nil {
-		log.Fatal(err)
-	}
-	return resources
-}
-*/
 
 // Generate TerraformResources from GCP API,
 // from each DataprocGenerator create 1 TerraformResource
@@ -86,10 +59,11 @@ func (g *DataprocGenerator) InitResources() error {
 	}
 
 	clusterList := dataprocService.Projects.Regions.Clusters.List(g.GetArgs()["project"].(string), g.GetArgs()["region"].(compute.Region).Name)
-	g.Resources = g.createClusterResources(ctx, clusterList)
-
-	// jobList := dataprocService.Projects.Regions.Jobs.List(g.GetArgs()["project"].(string), g.GetArgs()["region"])
-	// g.Resources = append(g.Resources, g.createJobResources(jobList, ctx)...)
+	resources, err := g.createClusterResources(ctx, clusterList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 }
