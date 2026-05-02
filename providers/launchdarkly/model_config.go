@@ -4,29 +4,32 @@ package launchdarkly
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	ldapi "github.com/launchdarkly/api-client-go/v22"
 )
 
-type EnvironmentGenerator struct {
+type ModelConfigGenerator struct {
 	LaunchDarklyService
 }
 
-func (g *EnvironmentGenerator) loadEnvironments(ctx context.Context, client *ldapi.APIClient, projectKey string) error {
-	envs, err := getEnvironments(ctx, client, projectKey)
+func (g *ModelConfigGenerator) loadModelConfigs(ctx context.Context, client *ldapi.APIClient, projectKey string) error {
+	modelConfigs, resp, err := client.AIConfigsApi.ListModelConfigs(ctx, projectKey).Execute()
+	closeResponseBody(resp)
 	if err != nil {
 		return err
 	}
-	for _, env := range envs {
+	for _, modelConfig := range modelConfigs {
+		modelConfigKey := modelConfig.GetKey()
 		resource := terraformutils.NewResource(
-			projectKey+"/"+env.Key,
-			projectKey+"-"+env.Name,
-			"launchdarkly_environment",
+			fmt.Sprintf("%s/%s", projectKey, modelConfigKey),
+			launchDarklyProjectResourceName(projectKey, modelConfig.GetName(), modelConfigKey),
+			"launchdarkly_model_config",
 			"launchdarkly",
 			map[string]string{
-				"key":         env.Key,
 				"project_key": projectKey,
+				"key":         modelConfigKey,
 			},
 			[]string{},
 			map[string]interface{}{})
@@ -35,7 +38,7 @@ func (g *EnvironmentGenerator) loadEnvironments(ctx context.Context, client *lda
 	return nil
 }
 
-func (g *EnvironmentGenerator) InitResources() error {
+func (g *ModelConfigGenerator) InitResources() error {
 	ctx := g.GetArgs()["ctx"].(context.Context)
 	client := g.GetArgs()["client"].(*ldapi.APIClient)
 
@@ -44,7 +47,7 @@ func (g *EnvironmentGenerator) InitResources() error {
 		return err
 	}
 	for _, project := range projects {
-		if err := g.loadEnvironments(ctx, client, project.Key); err != nil {
+		if err := g.loadModelConfigs(ctx, client, project.Key); err != nil {
 			return err
 		}
 	}

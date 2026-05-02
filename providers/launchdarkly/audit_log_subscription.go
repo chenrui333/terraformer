@@ -11,7 +11,7 @@ import (
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/iancoleman/strcase"
-	ldapi "github.com/launchdarkly/api-client-go/v16"
+	ldapi "github.com/launchdarkly/api-client-go/v22"
 )
 
 var auditLogSubscriptionIntegrationKeys = []string{

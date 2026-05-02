@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	ldapi "github.com/launchdarkly/api-client-go/v16"
+	ldapi "github.com/launchdarkly/api-client-go/v22"
 )
 
 type DestinationGenerator struct {

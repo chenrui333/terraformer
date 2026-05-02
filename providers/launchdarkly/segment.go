@@ -6,7 +6,7 @@ import (
 	"context"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	ldapi "github.com/launchdarkly/api-client-go/v16"
+	ldapi "github.com/launchdarkly/api-client-go/v22"
 )
 
 type SegmentGenerator struct {
@@ -42,7 +42,7 @@ func (g *SegmentGenerator) loadSegment(ctx context.Context, client *ldapi.APICli
 			return err
 		}
 		allSegments = append(allSegments, segments.Items...)
-		if int64(len(allSegments)) >= int64(segments.TotalCount) {
+		if segments.TotalCount == nil || int64(len(allSegments)) >= int64(*segments.TotalCount) {
 			break
 		}
 	}

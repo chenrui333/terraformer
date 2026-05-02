@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	ldapi "github.com/launchdarkly/api-client-go/v16"
+	ldapi "github.com/launchdarkly/api-client-go/v22"
 )
 
 type LaunchDarklyProvider struct { //nolint
@@ -57,6 +57,9 @@ func (LaunchDarklyProvider) GetResourceConnections() map[string]map[string][]str
 
 func (p *LaunchDarklyProvider) GetSupportedService() map[string]terraformutils.ServiceGenerator {
 	return map[string]terraformutils.ServiceGenerator{
+		"aiConfig":                &AIConfigGenerator{},
+		"aiConfigVariation":       &AIConfigVariationGenerator{},
+		"aiTool":                  &AIToolGenerator{},
 		"auditLogSubscription":    &AuditLogSubscriptionGenerator{},
 		"customRole":              &CustomRoleGenerator{},
 		"destination":             &DestinationGenerator{},
@@ -66,6 +69,7 @@ func (p *LaunchDarklyProvider) GetSupportedService() map[string]terraformutils.S
 		"flagTemplates":           &FlagTemplatesGenerator{},
 		"flagTrigger":             &FlagTriggerGenerator{},
 		"metric":                  &MetricGenerator{},
+		"modelConfig":             &ModelConfigGenerator{},
 		"relayProxyConfiguration": &RelayProxyConfigurationGenerator{},
 		"segment":                 &SegmentGenerator{},
 		"team":                    &TeamGenerator{},
