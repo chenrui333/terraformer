@@ -32,12 +32,15 @@ func (g *InlineHookGenerator) InitResources() error {
 
 	output, resp, err := client.InlineHook.ListInlineHooks(ctx, nil)
 	if err != nil {
-		return e
+		return err
 	}
 
 	for resp.HasNextPage() {
 		var nextInlineHookSet []*okta.InlineHook
-		resp, _ = resp.Next(ctx, &nextInlineHookSet)
+		resp, err = resp.Next(ctx, &nextInlineHookSet)
+		if err != nil {
+			return err
+		}
 		output = append(output, nextInlineHookSet...)
 	}
 

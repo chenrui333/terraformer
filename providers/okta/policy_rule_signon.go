@@ -70,7 +70,10 @@ func getSignOnPolicyRules(g *SignOnPolicyRuleGenerator, policyID string) ([]sdk.
 
 	for resp.HasNextPage() {
 		var nextPolicySet []sdk.SdkPolicyRule
-		resp, _ = resp.Next(ctx, &nextPolicySet)
+		resp, err = resp.Next(ctx, &nextPolicySet)
+		if err != nil {
+			return nil, err
+		}
 		output = append(output, nextPolicySet...)
 	}
 

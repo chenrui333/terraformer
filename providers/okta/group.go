@@ -34,12 +34,15 @@ func (g *GroupGenerator) InitResources() error {
 	filter := query.NewQueryParams(query.WithFilter("type eq \"OKTA_GROUP\""))
 	output, resp, err := client.Group.ListGroups(ctx, filter)
 	if err != nil {
-		return e
+		return err
 	}
 
 	for resp.HasNextPage() {
 		var nextGroupSet []*okta.Group
-		resp, _ = resp.Next(ctx, &nextGroupSet)
+		resp, err = resp.Next(ctx, &nextGroupSet)
+		if err != nil {
+			return err
+		}
 		output = append(output, nextGroupSet...)
 	}
 

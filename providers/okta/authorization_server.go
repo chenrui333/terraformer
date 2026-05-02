@@ -39,7 +39,7 @@ func (g *AuthorizationServerGenerator) InitResources() error {
 
 	output, err := getAuthorizationServers(ctx, client)
 	if err != nil {
-		return e
+		return err
 	}
 
 	g.Resources = g.createResources(output)
@@ -54,7 +54,10 @@ func getAuthorizationServers(ctx context.Context, client *okta.Client) ([]*okta.
 
 	for resp.HasNextPage() {
 		var nextAuthorizationServerSet []*okta.AuthorizationServer
-		resp, _ = resp.Next(ctx, &nextAuthorizationServerSet)
+		resp, err = resp.Next(ctx, &nextAuthorizationServerSet)
+		if err != nil {
+			return nil, err
+		}
 		output = append(output, nextAuthorizationServerSet...)
 	}
 

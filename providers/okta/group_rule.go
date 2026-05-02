@@ -32,12 +32,15 @@ func (g *GroupRuleGenerator) InitResources() error {
 
 	output, resp, err := client.Group.ListGroupRules(ctx, nil)
 	if err != nil {
-		return e
+		return err
 	}
 
 	for resp.HasNextPage() {
 		var nextGroupRuleSet []*okta.GroupRule
-		resp, _ = resp.Next(ctx, &nextGroupRuleSet)
+		resp, err = resp.Next(ctx, &nextGroupRuleSet)
+		if err != nil {
+			return err
+		}
 		output = append(output, nextGroupRuleSet...)
 	}
 
