@@ -33,13 +33,15 @@ func (g MFAPolicyGenerator) createResources(mfaPolicyList []*okta.Policy) []terr
 }
 
 func (g *MFAPolicyGenerator) InitResources() error {
-	var output []*okta.Policy
 	ctx, client, e := g.Client()
 	if e != nil {
 		return e
 	}
 
-	output, _ = getMFAPolicies(ctx, client)
+	output, err := getMFAPolicies(ctx, client)
+	if err != nil {
+		return err
+	}
 	g.Resources = g.createResources(output)
 	return nil
 }
@@ -54,7 +56,10 @@ func getMFAPolicies(ctx context.Context, client *okta.Client) ([]*okta.Policy, e
 
 	for resp.HasNextPage() {
 		var nextPolicies []*okta.Policy
-		resp, _ = resp.Next(ctx, &nextPolicies)
+		resp, err = resp.Next(ctx, &nextPolicies)
+		if err != nil {
+			return nil, err
+		}
 		policies = append(policies, nextPolicies...)
 	}
 	for _, p := range data {

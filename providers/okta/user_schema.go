@@ -90,7 +90,10 @@ func getUserTypes(ctx context.Context, client *okta.Client) ([]*okta.UserType, e
 
 	for resp.HasNextPage() {
 		var nextUserTypeSet []*okta.UserType
-		resp, _ = resp.Next(ctx, &nextUserTypeSet)
+		resp, err = resp.Next(ctx, &nextUserTypeSet)
+		if err != nil {
+			return nil, err
+		}
 		output = append(output, nextUserTypeSet...)
 	}
 

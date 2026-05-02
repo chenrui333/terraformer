@@ -32,12 +32,15 @@ func (g *TrustedOriginGenerator) InitResources() error {
 
 	output, resp, err := client.TrustedOrigin.ListOrigins(ctx, nil)
 	if err != nil {
-		return e
+		return err
 	}
 
 	for resp.HasNextPage() {
 		var nextTrustedOriginSet []*okta.TrustedOrigin
-		resp, _ = resp.Next(ctx, &nextTrustedOriginSet)
+		resp, err = resp.Next(ctx, &nextTrustedOriginSet)
+		if err != nil {
+			return err
+		}
 		output = append(output, nextTrustedOriginSet...)
 	}
 

@@ -32,12 +32,15 @@ func (g *UserTypeGenerator) InitResources() error {
 
 	output, resp, err := client.UserType.ListUserTypes(ctx)
 	if err != nil {
-		return e
+		return err
 	}
 
 	for resp.HasNextPage() {
 		var nextUserTypeSet []*okta.UserType
-		resp, _ = resp.Next(ctx, &nextUserTypeSet)
+		resp, err = resp.Next(ctx, &nextUserTypeSet)
+		if err != nil {
+			return err
+		}
 		output = append(output, nextUserTypeSet...)
 	}
 

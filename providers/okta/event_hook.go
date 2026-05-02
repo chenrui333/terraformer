@@ -32,12 +32,15 @@ func (g *EventHookGenerator) InitResources() error {
 
 	output, resp, err := client.EventHook.ListEventHooks(ctx)
 	if err != nil {
-		return e
+		return err
 	}
 
 	for resp.HasNextPage() {
 		var nextEventHookSet []*okta.EventHook
-		resp, _ = resp.Next(ctx, &nextEventHookSet)
+		resp, err = resp.Next(ctx, &nextEventHookSet)
+		if err != nil {
+			return err
+		}
 		output = append(output, nextEventHookSet...)
 	}
 

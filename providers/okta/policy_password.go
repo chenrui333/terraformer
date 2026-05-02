@@ -33,13 +33,15 @@ func (g PasswordPolicyGenerator) createResources(passwordPolicyList []*okta.Poli
 }
 
 func (g *PasswordPolicyGenerator) InitResources() error {
-	var output []*okta.Policy
 	ctx, client, e := g.Client()
 	if e != nil {
 		return e
 	}
 
-	output, _ = getPasswordPolicies(ctx, client)
+	output, err := getPasswordPolicies(ctx, client)
+	if err != nil {
+		return err
+	}
 	g.Resources = g.createResources(output)
 	return nil
 }
@@ -54,7 +56,10 @@ func getPasswordPolicies(ctx context.Context, client *okta.Client) ([]*okta.Poli
 
 	for resp.HasNextPage() {
 		var nextPolicies []*okta.Policy
-		resp, _ = resp.Next(ctx, &nextPolicies)
+		resp, err = resp.Next(ctx, &nextPolicies)
+		if err != nil {
+			return nil, err
+		}
 		policies = append(policies, nextPolicies...)
 	}
 	for _, p := range data {

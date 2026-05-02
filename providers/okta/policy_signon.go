@@ -31,13 +31,15 @@ func (g SignOnPolicyGenerator) createResources(signOnPolicyList []*okta.Policy) 
 }
 
 func (g *SignOnPolicyGenerator) InitResources() error {
-	var output []*okta.Policy
 	ctx, client, e := g.Client()
 	if e != nil {
 		return e
 	}
 
-	output, _ = getSignOnPolicies(ctx, client)
+	output, err := getSignOnPolicies(ctx, client)
+	if err != nil {
+		return err
+	}
 	g.Resources = g.createResources(output)
 	return nil
 }
@@ -52,7 +54,10 @@ func getSignOnPolicies(ctx context.Context, client *okta.Client) ([]*okta.Policy
 
 	for resp.HasNextPage() {
 		var nextPolicies []*okta.Policy
-		resp, _ = resp.Next(ctx, &nextPolicies)
+		resp, err = resp.Next(ctx, &nextPolicies)
+		if err != nil {
+			return nil, err
+		}
 		policies = append(policies, nextPolicies...)
 	}
 	for _, p := range data {

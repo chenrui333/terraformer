@@ -51,7 +51,10 @@ func getIdpOIDC(ctx context.Context, client *okta.Client) ([]*okta.IdentityProvi
 
 	for resp.HasNextPage() {
 		var nextIdpOIDCSet []*okta.IdentityProvider
-		resp, _ = resp.Next(ctx, &nextIdpOIDCSet)
+		resp, err = resp.Next(ctx, &nextIdpOIDCSet)
+		if err != nil {
+			return nil, err
+		}
 		output = append(output, nextIdpOIDCSet...)
 	}
 
