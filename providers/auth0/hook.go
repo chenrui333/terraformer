@@ -33,7 +33,10 @@ func (g HookGenerator) createResources(hooks []*management.Hook) []terraformutil
 }
 
 func (g *HookGenerator) InitResources() error {
-	m := g.generateClient()
+	m, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	ctx := context.Background()
 	list := []*management.Hook{}
 

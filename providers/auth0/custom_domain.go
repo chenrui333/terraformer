@@ -33,7 +33,10 @@ func (g CustomDomainGenerator) createResources(customDomains []*management.Custo
 }
 
 func (g *CustomDomainGenerator) InitResources() error {
-	m := g.generateClient()
+	m, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	ctx := context.Background()
 	list, err := m.CustomDomain.List(ctx)
 	if err != nil {

@@ -33,7 +33,10 @@ func (g ClientGenerator) createResources(clients []*management.Client) []terrafo
 }
 
 func (g *ClientGenerator) InitResources() error {
-	m := g.generateClient()
+	m, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	ctx := context.Background()
 	list := []*management.Client{}
 

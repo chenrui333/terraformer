@@ -33,7 +33,10 @@ func (g LogStreamGenerator) createResources(logStreams []*management.LogStream) 
 }
 
 func (g *LogStreamGenerator) InitResources() error {
-	m := g.generateClient()
+	m, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	ctx := context.Background()
 	list, err := m.LogStream.List(ctx)
 	if err != nil {

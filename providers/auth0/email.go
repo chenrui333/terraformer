@@ -31,7 +31,10 @@ func (g EmailGenerator) createResources(email *management.EmailProvider) []terra
 }
 
 func (g *EmailGenerator) InitResources() error {
-	m := g.generateClient()
+	m, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	ctx := context.Background()
 	email, err := m.EmailProvider.Read(ctx)
 	if err != nil {
