@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenrui333/terraformer/terraformutils/kubernetesmanifest"
 	"github.com/chenrui333/terraformer/terraformutils/terraformerstring"
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat/configschema"
@@ -211,7 +212,7 @@ func populateKubernetesManifestFromObject(resourceType string, state *tfcompat.I
 	object, ok := attributes["object"].(map[string]interface{})
 	changed := false
 	if !manifestHasValue(attributes["manifest"]) && ok && len(object) > 0 {
-		attributes["manifest"] = object
+		attributes["manifest"] = kubernetesmanifest.ConfigFromObject(object)
 		changed = true
 	}
 

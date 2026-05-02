@@ -90,7 +90,18 @@ func TestPopulateKubernetesManifestFromObject(t *testing.T) {
 				"apiVersion": "example.com/v1",
 				"kind": "Widget",
 				"metadata": {
-					"name": "sample"
+					"name": "sample",
+					"namespace": "default",
+					"resourceVersion": "123",
+					"uid": "uid-123",
+					"managedFields": [
+						{
+							"manager": "controller"
+						}
+					]
+				},
+				"status": {
+					"phase": "Ready"
 				}
 			}
 		}`),
@@ -112,12 +123,31 @@ func TestPopulateKubernetesManifestFromObject(t *testing.T) {
 	if manifest["kind"] != "Widget" {
 		t.Fatalf("manifest.kind = %v, want %q", manifest["kind"], "Widget")
 	}
+	metadata := manifest["metadata"].(map[string]interface{})
+	if metadata["name"] != "sample" {
+		t.Fatalf("manifest.metadata.name = %v, want %q", metadata["name"], "sample")
+	}
+	for _, key := range []string{"resourceVersion", "uid", "managedFields"} {
+		if _, ok := metadata[key]; ok {
+			t.Fatalf("manifest.metadata.%s was not stripped", key)
+		}
+	}
+	if _, ok := manifest["status"]; ok {
+		t.Fatal("manifest.status was not stripped")
+	}
 	object, ok := attributes["object"].(map[string]interface{})
 	if !ok {
 		t.Fatalf("object type = %T, want map[string]interface{}", attributes["object"])
 	}
 	if object["kind"] != "Widget" {
 		t.Fatalf("object.kind = %v, want %q", object["kind"], "Widget")
+	}
+	objectMetadata := object["metadata"].(map[string]interface{})
+	if objectMetadata["uid"] != "uid-123" {
+		t.Fatalf("object.metadata.uid = %v, want %q", objectMetadata["uid"], "uid-123")
+	}
+	if _, ok := object["status"]; !ok {
+		t.Fatal("object.status was not preserved")
 	}
 	if !state.HasCurrentTypedAttributes() {
 		t.Fatal("typed attributes were not marked current after manifest population")

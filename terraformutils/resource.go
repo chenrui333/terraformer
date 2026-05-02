@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenrui333/terraformer/terraformutils/kubernetesmanifest"
 	"github.com/chenrui333/terraformer/terraformutils/providerwrapper"
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat/providerproto"
@@ -213,7 +214,7 @@ func resourceTypeConfigAttributes(resourceType string, attributes map[string]int
 	}
 	if !manifestAttributeHasValue(attributes["manifest"]) {
 		if object, ok := attributes["object"].(map[string]interface{}); ok && len(object) > 0 {
-			attributes["manifest"] = object
+			attributes["manifest"] = kubernetesmanifest.ConfigFromObject(object)
 		}
 	}
 	delete(attributes, "object")

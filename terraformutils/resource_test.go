@@ -202,7 +202,7 @@ func TestConvertTFstateUsesTypedManifestWhenFlatmapHasNoManifest(t *testing.T) {
 			Attributes: map[string]string{
 				"id": "apiVersion=example.com/v1,kind=Widget,name=sample",
 			},
-			TypedAttributes: json.RawMessage("{\"id\":\"apiVersion=example.com/v1,kind=Widget,name=sample\",\"manifest\":{\"apiVersion\":\"example.com/v1\",\"kind\":\"Widget\",\"metadata\":{\"name\":\"sample\"}},\"object\":{\"apiVersion\":\"example.com/v1\",\"kind\":\"Widget\",\"status\":{\"phase\":\"Ready\"}},\"field_manager\":null,\"timeouts\":null,\"wait\":null}"),
+			TypedAttributes: json.RawMessage("{\"id\":\"apiVersion=example.com/v1,kind=Widget,name=sample\",\"manifest\":{},\"object\":{\"apiVersion\":\"example.com/v1\",\"kind\":\"Widget\",\"metadata\":{\"name\":\"sample\",\"uid\":\"uid-123\",\"resourceVersion\":\"123\",\"managedFields\":[{\"manager\":\"controller\"}]},\"status\":{\"phase\":\"Ready\"}},\"field_manager\":null,\"timeouts\":null,\"wait\":null}"),
 		},
 		IgnoreKeys: []string{"^id$"},
 	}
@@ -217,6 +217,18 @@ func TestConvertTFstateUsesTypedManifestWhenFlatmapHasNoManifest(t *testing.T) {
 	}
 	if manifest["apiVersion"] != "example.com/v1" {
 		t.Fatalf("manifest.apiVersion = %v, want %q", manifest["apiVersion"], "example.com/v1")
+	}
+	metadata := manifest["metadata"].(map[string]interface{})
+	if metadata["name"] != "sample" {
+		t.Fatalf("manifest.metadata.name = %v, want %q", metadata["name"], "sample")
+	}
+	for _, key := range []string{"uid", "resourceVersion", "managedFields"} {
+		if _, ok := metadata[key]; ok {
+			t.Fatalf("manifest.metadata.%s was not stripped", key)
+		}
+	}
+	if _, ok := manifest["status"]; ok {
+		t.Fatal("manifest.status was not stripped")
 	}
 	if _, ok := resource.Item["id"]; ok {
 		t.Fatal("id attribute was not filtered from typed manifest fallback")
