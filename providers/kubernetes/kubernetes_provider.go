@@ -172,6 +172,44 @@ func addDefaultServiceAccountService(
 	}
 }
 
+func (p KubernetesProvider) PostProcessImportResources(resourcesByService map[string][]terraformutils.Resource) map[string][]terraformutils.Resource {
+	defaultServiceAccountIDs := map[string]struct{}{}
+	for _, resource := range resourcesByService[defaultServiceAccountServiceName] {
+		if resource.InstanceState == nil {
+			continue
+		}
+		defaultServiceAccountIDs[resource.InstanceState.ID] = struct{}{}
+	}
+	if len(defaultServiceAccountIDs) == 0 {
+		return resourcesByService
+	}
+
+	serviceAccounts, ok := resourcesByService["serviceaccounts"]
+	if !ok {
+		return resourcesByService
+	}
+	filtered := serviceAccounts[:0]
+	for _, resource := range serviceAccounts {
+		if isDefaultServiceAccountDuplicate(resource, defaultServiceAccountIDs) {
+			continue
+		}
+		filtered = append(filtered, resource)
+	}
+	resourcesByService["serviceaccounts"] = filtered
+	return resourcesByService
+}
+
+func isDefaultServiceAccountDuplicate(resource terraformutils.Resource, defaultServiceAccountIDs map[string]struct{}) bool {
+	if resource.InstanceInfo == nil || resource.InstanceState == nil {
+		return false
+	}
+	if resource.InstanceInfo.Type != "kubernetes_service_account" && resource.InstanceInfo.Type != "kubernetes_service_account_v1" {
+		return false
+	}
+	_, ok := defaultServiceAccountIDs[resource.InstanceState.ID]
+	return ok
+}
+
 // InitClientAndConfig uses the KUBECONFIG environment variable to create
 // a new rest client and config object based on the existing kubectl config
 // and options passed from the plugin framework via environment variables
