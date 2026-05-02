@@ -484,7 +484,7 @@ func newAppSyncResolverResource(apiID, typeName, fieldName string) terraformutil
 }
 
 func newAppSyncSourceAPIAssociationResource(mergedAPIID, associationID string) terraformutils.Resource {
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		appSyncSourceAPIAssociationResourceID(mergedAPIID, associationID),
 		appSyncResourceName(mergedAPIID, "source-api-association", associationID),
 		"aws_appsync_source_api_association",
@@ -496,6 +496,8 @@ func newAppSyncSourceAPIAssociationResource(mergedAPIID, associationID string) t
 		appSyncAllowEmptyValues,
 		map[string]interface{}{},
 	)
+	resource.IgnoreKeys = append(resource.IgnoreKeys, "^merged_api_arn$", "^source_api_arn$")
+	return resource
 }
 
 func newAppSyncTypeResource(apiID, format, typeName string) terraformutils.Resource {
@@ -668,7 +670,8 @@ func (g *AppSyncGenerator) shouldRequireDomainNameLoad() bool {
 
 func (g *AppSyncGenerator) shouldLoadDomainNameAPIAssociation(domainName string) bool {
 	hasTypedDomainFilter := g.hasTypedFilterFor(appSyncDomainNameResourceType)
-	if g.hasTypedFilterFor(appSyncDomainNameResourceType) {
+	hasTypedAssociationIDFilter := g.hasTypedFilterFor(appSyncDomainNameAPIAssociationResourceType) && g.hasIDFilterFor(appSyncDomainNameAPIAssociationResourceType)
+	if hasTypedDomainFilter && !hasTypedAssociationIDFilter {
 		domainResource := newAppSyncDomainNameResource(domainName)
 		if !g.resourceMatchesInitialIDFilters(appSyncDomainNameResourceType, domainResource) || g.hasTypedNonIDFilterFor(appSyncDomainNameResourceType) {
 			return false

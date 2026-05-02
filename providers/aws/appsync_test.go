@@ -35,6 +35,19 @@ func TestAppSyncResourceIDs(t *testing.T) {
 	}
 }
 
+func TestAppSyncSourceAPIAssociationIgnoresARNIdentifiers(t *testing.T) {
+	resource := newAppSyncSourceAPIAssociationResource("api123", "assoc123")
+	want := []string{"^merged_api_arn$", "^source_api_arn$"}
+	if len(resource.IgnoreKeys) != len(want) {
+		t.Fatalf("IgnoreKeys = %v, want %v", resource.IgnoreKeys, want)
+	}
+	for i, key := range want {
+		if resource.IgnoreKeys[i] != key {
+			t.Fatalf("IgnoreKeys[%d] = %q, want %q", i, resource.IgnoreKeys[i], key)
+		}
+	}
+}
+
 func TestAppSyncResourceMissing(t *testing.T) {
 	tests := []struct {
 		name string
@@ -278,6 +291,18 @@ func TestAppSyncFilterGatesDomainNamesAndAssociations(t *testing.T) {
 			loadDomains:       true,
 			requireDomains:    true,
 			appendDomain:      true,
+			loadAssociation:   true,
+			appendAssociation: true,
+		},
+		{
+			name: "typed association id filter can load outside parent domain filter",
+			filters: []terraformutils.ResourceFilter{
+				{ServiceName: appSyncDomainNameResourceType, FieldPath: "id", AcceptableValues: []string{otherDomainName}},
+				{ServiceName: appSyncDomainNameAPIAssociationResourceType, FieldPath: "id", AcceptableValues: []string{domainName}},
+			},
+			loadDomains:       true,
+			requireDomains:    true,
+			appendOther:       true,
 			loadAssociation:   true,
 			appendAssociation: true,
 		},
