@@ -53,6 +53,10 @@ func getRegion(project, regionName string) (*compute.Region, error) {
 
 // check projectName in env params
 func (p *GCPProvider) Init(args []string) error {
+	if len(args) == 0 {
+		return errors.New("gcp region must be provided")
+	}
+
 	projectName := os.Getenv("GOOGLE_CLOUD_PROJECT")
 	if len(args) > 1 {
 		projectName = args[1]
@@ -66,7 +70,9 @@ func (p *GCPProvider) Init(args []string) error {
 		return err
 	}
 	p.region = *region
-	p.providerType = args[2]
+	if len(args) > 2 {
+		p.providerType = args[2]
+	}
 	return nil
 }
 
