@@ -4,6 +4,7 @@ package aws
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/service/cloud9"
 	"github.com/aws/aws-sdk-go-v2/service/cloud9/types"
@@ -27,9 +28,12 @@ func (g *Cloud9Generator) InitResources() error {
 		return err
 	}
 	for _, environmentID := range output.EnvironmentIds {
-		details, _ := svc.DescribeEnvironmentStatus(context.TODO(), &cloud9.DescribeEnvironmentStatusInput{
+		details, err := svc.DescribeEnvironmentStatus(context.TODO(), &cloud9.DescribeEnvironmentStatusInput{
 			EnvironmentId: &environmentID,
 		})
+		if err != nil {
+			return fmt.Errorf("describe Cloud9 environment status for %s: %w", environmentID, err)
+		}
 		if details.Status == types.EnvironmentStatusError ||
 			details.Status == types.EnvironmentStatusDeleting {
 			continue

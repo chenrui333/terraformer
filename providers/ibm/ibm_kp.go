@@ -153,7 +153,10 @@ func (g *KPGenerator) InitResources() error {
 				g.Resources = append(g.Resources, fnObjt(key.CRN, alias, dependsOn))
 			}
 
-			policies, _ := client.GetPolicies(context.Background(), key.ID)
+			policies, err := client.GetPolicies(context.Background(), key.ID)
+			if err != nil {
+				return fmt.Errorf("unable to get Key Protect policies for key %q: %w", key.ID, err)
+			}
 			funObjt := g.loadKpKeyPolicies()
 			for range policies {
 				g.Resources = append(g.Resources, funObjt(key.CRN, dependsOn))

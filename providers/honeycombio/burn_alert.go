@@ -28,7 +28,15 @@ func (g *BurnAlertGenerator) InitResources() error {
 		}
 
 		for _, slo := range slos {
-			bas, _ := client.BurnAlerts.ListForSLO(context.TODO(), dataset.Slug, slo.ID)
+			bas, err := client.BurnAlerts.ListForSLO(context.TODO(), dataset.Slug, slo.ID)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to list Honeycomb burn alerts for dataset %q SLO %q: %w",
+					dataset.Slug,
+					slo.ID,
+					err,
+				)
+			}
 			for _, ba := range bas {
 				g.Resources = append(g.Resources, terraformutils.NewResource(
 					ba.ID,
