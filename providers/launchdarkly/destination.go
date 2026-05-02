@@ -52,7 +52,14 @@ func destinationProjectEnv(destination ldapi.Destination) (string, string, error
 	if !ok || self.Href == nil {
 		return "", "", fmt.Errorf("destination %q is missing self link", destination.GetId())
 	}
-	path := strings.TrimPrefix(*self.Href, "/api/v2/destinations/")
+	href := *self.Href
+	if parsed, err := url.Parse(href); err == nil && parsed.Path != "" {
+		href = parsed.Path
+	}
+	path := strings.TrimPrefix(href, "/api/v2/destinations/")
+	if path == href {
+		return "", "", fmt.Errorf("unexpected destination self link %q", *self.Href)
+	}
 	parts := strings.Split(path, "/")
 	if len(parts) < 3 {
 		return "", "", fmt.Errorf("unexpected destination self link %q", *self.Href)

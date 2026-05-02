@@ -54,7 +54,7 @@ func (g *AuditLogSubscriptionGenerator) loadAuditLogSubscriptions(ctx context.Co
 		subscriptionID := subscription.GetId()
 		resource := terraformutils.NewResource(
 			fmt.Sprintf("%s/%s", integrationKey, subscriptionID),
-			resourceName(subscription.GetName(), subscriptionID),
+			fmt.Sprintf("%s-%s", integrationKey, resourceName(subscription.GetName(), subscriptionID)),
 			"launchdarkly_audit_log_subscription",
 			"launchdarkly",
 			map[string]string{
