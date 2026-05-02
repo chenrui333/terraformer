@@ -4,7 +4,7 @@ package github
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"strconv"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -30,8 +30,7 @@ func (g *OrganizationWebhooksGenerator) InitResources() error {
 	for {
 		hooks, resp, err := client.Organizations.ListHooks(ctx, g.Args["owner"].(string), opt)
 		if err != nil {
-			log.Println(err)
-			return nil
+			return fmt.Errorf("list github organization webhooks for %s: %w", g.Args["owner"].(string), err)
 		}
 
 		for _, hook := range hooks {

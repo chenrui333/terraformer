@@ -4,7 +4,7 @@ package github
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"strconv"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -30,8 +30,7 @@ func (g *RepositoriesGenerator) InitResources() error {
 	for {
 		repos, resp, err := client.Repositories.ListByOrg(ctx, g.GetArgs()["owner"].(string), opt)
 		if err != nil {
-			log.Println(err)
-			return nil
+			return fmt.Errorf("list github repositories for %s: %w", g.GetArgs()["owner"].(string), err)
 		}
 		for _, repo := range repos {
 			resource := terraformutils.NewSimpleResource(
@@ -43,10 +42,26 @@ func (g *RepositoriesGenerator) InitResources() error {
 			)
 			resource.SlowQueryRequired = true
 			g.Resources = append(g.Resources, resource)
-			g.Resources = append(g.Resources, g.createRepositoryWebhookResources(ctx, client, repo)...)
-			g.Resources = append(g.Resources, g.createRepositoryBranchProtectionResources(ctx, client, repo)...)
-			g.Resources = append(g.Resources, g.createRepositoryCollaboratorResources(ctx, client, repo)...)
-			g.Resources = append(g.Resources, g.createRepositoryDeployKeyResources(ctx, client, repo)...)
+			webhookResources, err := g.createRepositoryWebhookResources(ctx, client, repo)
+			if err != nil {
+				return err
+			}
+			g.Resources = append(g.Resources, webhookResources...)
+			branchProtectionResources, err := g.createRepositoryBranchProtectionResources(ctx, client, repo)
+			if err != nil {
+				return err
+			}
+			g.Resources = append(g.Resources, branchProtectionResources...)
+			collaboratorResources, err := g.createRepositoryCollaboratorResources(ctx, client, repo)
+			if err != nil {
+				return err
+			}
+			g.Resources = append(g.Resources, collaboratorResources...)
+			deployKeyResources, err := g.createRepositoryDeployKeyResources(ctx, client, repo)
+			if err != nil {
+				return err
+			}
+			g.Resources = append(g.Resources, deployKeyResources...)
 		}
 
 		if resp.NextPage == 0 {
@@ -58,11 +73,11 @@ func (g *RepositoriesGenerator) InitResources() error {
 	return nil
 }
 
-func (g *RepositoriesGenerator) createRepositoryWebhookResources(ctx context.Context, client *githubAPI.Client, repo *githubAPI.Repository) []terraformutils.Resource {
+func (g *RepositoriesGenerator) createRepositoryWebhookResources(ctx context.Context, client *githubAPI.Client, repo *githubAPI.Repository) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	hooks, _, err := client.Repositories.ListHooks(ctx, g.GetArgs()["owner"].(string), repo.GetName(), nil)
 	if err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list github repository webhooks for %s: %w", repo.GetName(), err)
 	}
 	for _, hook := range hooks {
 		resources = append(resources, terraformutils.NewResource(
@@ -77,14 +92,14 @@ func (g *RepositoriesGenerator) createRepositoryWebhookResources(ctx context.Con
 			map[string]interface{}{},
 		))
 	}
-	return resources
+	return resources, nil
 }
 
-func (g *RepositoriesGenerator) createRepositoryBranchProtectionResources(ctx context.Context, client *githubAPI.Client, repo *githubAPI.Repository) []terraformutils.Resource {
+func (g *RepositoriesGenerator) createRepositoryBranchProtectionResources(ctx context.Context, client *githubAPI.Client, repo *githubAPI.Repository) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	branches, _, err := client.Repositories.ListBranches(ctx, g.GetArgs()["owner"].(string), repo.GetName(), nil)
 	if err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list github repository branches for %s: %w", repo.GetName(), err)
 	}
 	for _, branch := range branches {
 		if branch.GetProtected() {
@@ -97,14 +112,14 @@ func (g *RepositoriesGenerator) createRepositoryBranchProtectionResources(ctx co
 			))
 		}
 	}
-	return resources
+	return resources, nil
 }
 
-func (g *RepositoriesGenerator) createRepositoryCollaboratorResources(ctx context.Context, client *githubAPI.Client, repo *githubAPI.Repository) []terraformutils.Resource {
+func (g *RepositoriesGenerator) createRepositoryCollaboratorResources(ctx context.Context, client *githubAPI.Client, repo *githubAPI.Repository) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	collaborators, _, err := client.Repositories.ListCollaborators(ctx, g.GetArgs()["owner"].(string), repo.GetName(), nil)
 	if err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list github repository collaborators for %s: %w", repo.GetName(), err)
 	}
 	for _, collaborator := range collaborators {
 		resources = append(resources, terraformutils.NewSimpleResource(
@@ -115,14 +130,14 @@ func (g *RepositoriesGenerator) createRepositoryCollaboratorResources(ctx contex
 			[]string{},
 		))
 	}
-	return resources
+	return resources, nil
 }
 
-func (g *RepositoriesGenerator) createRepositoryDeployKeyResources(ctx context.Context, client *githubAPI.Client, repo *githubAPI.Repository) []terraformutils.Resource {
+func (g *RepositoriesGenerator) createRepositoryDeployKeyResources(ctx context.Context, client *githubAPI.Client, repo *githubAPI.Repository) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	deployKeys, _, err := client.Repositories.ListKeys(ctx, g.GetArgs()["owner"].(string), repo.GetName(), nil)
 	if err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list github repository deploy keys for %s: %w", repo.GetName(), err)
 	}
 	for _, key := range deployKeys {
 		resources = append(resources, terraformutils.NewSimpleResource(
@@ -133,7 +148,7 @@ func (g *RepositoriesGenerator) createRepositoryDeployKeyResources(ctx context.C
 			[]string{},
 		))
 	}
-	return resources
+	return resources, nil
 }
 
 // PostGenerateHook for connect between resources

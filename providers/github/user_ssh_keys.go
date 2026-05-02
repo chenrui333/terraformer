@@ -4,7 +4,7 @@ package github
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"strconv"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -30,8 +30,7 @@ func (g *UserSSHKeyGenerator) InitResources() error {
 	for {
 		keys, resp, err := client.Users.ListKeys(ctx, "", opt)
 		if err != nil {
-			log.Println(err)
-			return nil
+			return fmt.Errorf("list github user ssh keys: %w", err)
 		}
 
 		for _, key := range keys {

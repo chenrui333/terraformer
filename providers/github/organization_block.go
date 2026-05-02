@@ -4,7 +4,7 @@ package github
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -24,12 +24,16 @@ func (g *OrganizationBlockGenerator) InitResources() error {
 	}
 
 	owner := g.Args["owner"].(string)
-	g.Resources = append(g.Resources, createOrganizationBlocksResources(ctx, client, owner)...)
+	resources, err := createOrganizationBlocksResources(ctx, client, owner)
+	if err != nil {
+		return err
+	}
+	g.Resources = append(g.Resources, resources...)
 
 	return nil
 }
 
-func createOrganizationBlocksResources(ctx context.Context, client *githubAPI.Client, owner string) []terraformutils.Resource {
+func createOrganizationBlocksResources(ctx context.Context, client *githubAPI.Client, owner string) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 
 	opt := &githubAPI.ListOptions{PerPage: 100}
@@ -38,8 +42,7 @@ func createOrganizationBlocksResources(ctx context.Context, client *githubAPI.Cl
 	for {
 		blocks, resp, err := client.Organizations.ListBlockedUsers(ctx, owner, opt)
 		if err != nil {
-			log.Println(err)
-			return nil
+			return nil, fmt.Errorf("list github organization blocks for %s: %w", owner, err)
 		}
 
 		for _, block := range blocks {
@@ -60,5 +63,5 @@ func createOrganizationBlocksResources(ctx context.Context, client *githubAPI.Cl
 		}
 		opt.Page = resp.NextPage
 	}
-	return resources
+	return resources, nil
 }

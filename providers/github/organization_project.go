@@ -4,7 +4,7 @@ package github
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"strconv"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -25,12 +25,16 @@ func (g *OrganizationProjectGenerator) InitResources() error {
 	}
 
 	owner := g.Args["owner"].(string)
-	g.Resources = append(g.Resources, createOrganizationProjects(ctx, client, owner)...)
+	resources, err := createOrganizationProjects(ctx, client, owner)
+	if err != nil {
+		return err
+	}
+	g.Resources = append(g.Resources, resources...)
 
 	return nil
 }
 
-func createOrganizationProjects(ctx context.Context, client *githubAPI.Client, owner string) []terraformutils.Resource {
+func createOrganizationProjects(ctx context.Context, client *githubAPI.Client, owner string) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 
 	opt := &githubAPI.ProjectListOptions{
@@ -41,8 +45,7 @@ func createOrganizationProjects(ctx context.Context, client *githubAPI.Client, o
 	for {
 		projects, resp, err := client.Organizations.ListProjects(ctx, owner, opt)
 		if err != nil {
-			log.Println(err)
-			return nil
+			return nil, fmt.Errorf("list github organization projects for %s: %w", owner, err)
 		}
 
 		for _, project := range projects {
@@ -62,5 +65,5 @@ func createOrganizationProjects(ctx context.Context, client *githubAPI.Client, o
 		}
 		opt.Page = resp.NextPage
 	}
-	return resources
+	return resources, nil
 }

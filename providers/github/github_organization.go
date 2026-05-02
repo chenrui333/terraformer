@@ -19,9 +19,21 @@ func (g *OrganizationGenerator) InitResources() error {
 	}
 
 	owner := g.Args["owner"].(string)
-	g.Resources = append(g.Resources, createMembershipsResources(ctx, client, owner)...)
-	g.Resources = append(g.Resources, createOrganizationBlocksResources(ctx, client, owner)...)
-	g.Resources = append(g.Resources, createOrganizationProjects(ctx, client, owner)...)
+	membershipResources, err := createMembershipsResources(ctx, client, owner)
+	if err != nil {
+		return err
+	}
+	g.Resources = append(g.Resources, membershipResources...)
+	blockResources, err := createOrganizationBlocksResources(ctx, client, owner)
+	if err != nil {
+		return err
+	}
+	g.Resources = append(g.Resources, blockResources...)
+	projectResources, err := createOrganizationProjects(ctx, client, owner)
+	if err != nil {
+		return err
+	}
+	g.Resources = append(g.Resources, projectResources...)
 
 	return nil
 }
