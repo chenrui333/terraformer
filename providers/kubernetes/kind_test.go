@@ -127,8 +127,9 @@ func TestInitDynamicResourcesManifestImportID(t *testing.T) {
 	if resource.InstanceState.ID != "apiVersion=example.com/v1,kind=Widget,namespace=default,name=sample" {
 		t.Fatalf("resource ID = %q, want %q", resource.InstanceState.ID, "apiVersion=example.com/v1,kind=Widget,namespace=default,name=sample")
 	}
-	if resource.ResourceName != terraformutils.TfSanitize("default/sample") {
-		t.Fatalf("resource name = %q, want %q", resource.ResourceName, terraformutils.TfSanitize("default/sample"))
+	wantResourceName := terraformutils.TfSanitize("example.com/v1/Widget/default/sample")
+	if resource.ResourceName != wantResourceName {
+		t.Fatalf("resource name = %q, want %q", resource.ResourceName, wantResourceName)
 	}
 	if resource.InstanceInfo.Type != manifestTerraformResourceName {
 		t.Fatalf("resource type = %q, want %q", resource.InstanceInfo.Type, manifestTerraformResourceName)
@@ -164,6 +165,35 @@ func TestInitDynamicResourcesManifestImportIDClusterScoped(t *testing.T) {
 	}
 	if kind.Resources[0].InstanceState.ID != "apiVersion=apiextensions.k8s.io/v1,kind=CustomResourceDefinition,name=widgets.example.com" {
 		t.Fatalf("resource ID = %q, want %q", kind.Resources[0].InstanceState.ID, "apiVersion=apiextensions.k8s.io/v1,kind=CustomResourceDefinition,name=widgets.example.com")
+	}
+	wantResourceName := terraformutils.TfSanitize("apiextensions.k8s.io/v1/CustomResourceDefinition/widgets.example.com")
+	if kind.Resources[0].ResourceName != wantResourceName {
+		t.Fatalf("resource name = %q, want %q", kind.Resources[0].ResourceName, wantResourceName)
+	}
+}
+
+func TestManifestResourceNameIncludesKind(t *testing.T) {
+	widget := newUnstructured("example.com/v1", "Widget", "sample", "default")
+	gadget := newUnstructured("example.com/v1", "Gadget", "sample", "default")
+	kind := &Kind{
+		Group:         "example.com",
+		Version:       "v1",
+		Name:          "Widget",
+		Namespaced:    true,
+		TerraformType: manifestTerraformResourceName,
+	}
+	widgetName := kind.resourceName(*widget)
+	kind.Name = "Gadget"
+	gadgetName := kind.resourceName(*gadget)
+
+	if widgetName == gadgetName {
+		t.Fatalf("manifest resource names collided: %q", widgetName)
+	}
+	if widgetName != "example.com/v1/Widget/default/sample" {
+		t.Fatalf("widget resource name = %q, want %q", widgetName, "example.com/v1/Widget/default/sample")
+	}
+	if gadgetName != "example.com/v1/Gadget/default/sample" {
+		t.Fatalf("gadget resource name = %q, want %q", gadgetName, "example.com/v1/Gadget/default/sample")
 	}
 }
 

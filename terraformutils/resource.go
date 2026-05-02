@@ -3,6 +3,7 @@
 package terraformutils
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"regexp"
@@ -133,18 +134,21 @@ func (r *Resource) ParseTFstate(parser Flatmapper, impliedType cty.Type) error {
 	if err != nil {
 		return err
 	}
+	r.setItem(attributes)
+	return nil
+}
+
+func (r *Resource) setItem(attributes map[string]interface{}) {
+	if attributes == nil {
+		attributes = map[string]interface{}{} // ensure HCL can represent empty resource correctly
+	}
 
 	// add Additional Fields to resource
 	for key, value := range r.AdditionalFields {
 		attributes[key] = value
 	}
 
-	if attributes == nil {
-		attributes = map[string]interface{}{} // ensure HCL can represent empty resource correctly
-	}
-
 	r.Item = attributes
-	return nil
 }
 
 func (r *Resource) ConvertTFstate(provider *providerwrapper.ProviderWrapper) error {
@@ -161,7 +165,37 @@ func (r *Resource) ConvertTFstate(provider *providerwrapper.ProviderWrapper) err
 	parser := NewFlatmapParser(r.InstanceState.Attributes, ignoreKeys, allowEmptyValues)
 	schema := provider.GetSchema()
 	impliedType := schema.ResourceTypes[r.InstanceInfo.Type].Block.ImpliedType()
-	return r.ParseTFstate(parser, impliedType)
+	err := r.ParseTFstate(parser, impliedType)
+	if err == nil {
+		return nil
+	}
+
+	attributes, typedErr := typedAttributesAsMap(r.InstanceState.TypedAttributes, ignoreKeys)
+	if typedErr != nil {
+		return err
+	}
+	r.setItem(attributes)
+	return nil
+}
+
+func typedAttributesAsMap(raw json.RawMessage, ignoreKeys []*regexp.Regexp) (map[string]interface{}, error) {
+	if len(raw) == 0 {
+		return nil, fmt.Errorf("typed attributes are empty")
+	}
+
+	attributes := map[string]interface{}{}
+	if err := json.Unmarshal(raw, &attributes); err != nil {
+		return nil, err
+	}
+	for key := range attributes {
+		for _, pattern := range ignoreKeys {
+			if pattern.MatchString(key) {
+				delete(attributes, key)
+				break
+			}
+		}
+	}
+	return attributes, nil
 }
 
 func (r *Resource) ConvertTypedState(provider *providerwrapper.ProviderWrapper) error {

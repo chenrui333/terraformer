@@ -141,7 +141,8 @@ func (p *ProviderWrapper) Refresh(info *tfcompat.InstanceInfo, state *tfcompat.I
 	impliedType := schema.ResourceTypes[info.Type].Block.ImpliedType()
 	priorState, err := state.AttrsAsObjectValue(impliedType)
 	if err != nil {
-		return nil, err
+		log.Printf("Fail prepare prior state for provider read, trying import command: %s", err)
+		return p.importResourceState(info, state, schema)
 	}
 	successReadResource := false
 	resp := providerproto.ReadResourceResponse{}
@@ -163,18 +164,7 @@ func (p *ProviderWrapper) Refresh(info *tfcompat.InstanceInfo, state *tfcompat.I
 
 	if !successReadResource {
 		log.Println("Fail read resource from provider, trying import command")
-		// retry with regular import command - without resource attributes
-		importResponse := p.Provider.ImportResourceState(providerproto.ImportResourceStateRequest{
-			TypeName: info.Type,
-			ID:       state.ID,
-		})
-		if importResponse.Diagnostics.HasErrors() {
-			return nil, resp.Diagnostics.Err()
-		}
-		if len(importResponse.ImportedResources) == 0 {
-			return nil, errors.New("not able to import resource for a given ID")
-		}
-		return tfcompat.NewInstanceStateShimmedFromValue(importResponse.ImportedResources[0].State, int(schema.ResourceTypes[info.Type].Version)), nil
+		return p.importResourceState(info, state, schema)
 	}
 
 	if resp.NewState.IsNull() {
@@ -183,6 +173,24 @@ func (p *ProviderWrapper) Refresh(info *tfcompat.InstanceInfo, state *tfcompat.I
 	}
 
 	return tfcompat.NewInstanceStateShimmedFromValue(resp.NewState, int(schema.ResourceTypes[info.Type].Version)), nil
+}
+
+func (p *ProviderWrapper) importResourceState(info *tfcompat.InstanceInfo, state *tfcompat.InstanceState, schema *providerproto.GetProviderSchemaResponse) (*tfcompat.InstanceState, error) {
+	id := ""
+	if state != nil {
+		id = state.ID
+	}
+	importResponse := p.Provider.ImportResourceState(providerproto.ImportResourceStateRequest{
+		TypeName: info.Type,
+		ID:       id,
+	})
+	if importResponse.Diagnostics.HasErrors() {
+		return nil, importResponse.Diagnostics.Err()
+	}
+	if len(importResponse.ImportedResources) == 0 {
+		return nil, errors.New("not able to import resource for a given ID")
+	}
+	return tfcompat.NewInstanceStateShimmedFromValue(importResponse.ImportedResources[0].State, int(schema.ResourceTypes[info.Type].Version)), nil
 }
 
 func (p *ProviderWrapper) initProvider(verbose bool) error {

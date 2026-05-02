@@ -3,6 +3,8 @@
 package terraformutils
 
 import (
+	"encoding/json"
+	"regexp"
 	"testing"
 
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
@@ -154,5 +156,38 @@ func TestResourceFilterByID(t *testing.T) {
 	}
 	if rf2.Filter(r) {
 		t.Error("Filter should reject resource with non-matching ID")
+	}
+}
+
+func TestTypedAttributesAsMapFiltersIgnoredTopLevelAttributes(t *testing.T) {
+	raw := json.RawMessage(`{
+		"id": "apiVersion=example.com/v1,kind=Widget,name=sample",
+		"manifest": {
+			"apiVersion": "example.com/v1",
+			"kind": "Widget"
+		},
+		"object": {
+			"computed": true
+		}
+	}`)
+	attributes, err := typedAttributesAsMap(raw, []*regexp.Regexp{
+		regexp.MustCompile("^id$"),
+		regexp.MustCompile("^object$"),
+	})
+	if err != nil {
+		t.Fatalf("typedAttributesAsMap() error = %v", err)
+	}
+	if _, ok := attributes["id"]; ok {
+		t.Fatal("id attribute was not filtered")
+	}
+	if _, ok := attributes["object"]; ok {
+		t.Fatal("object attribute was not filtered")
+	}
+	manifest, ok := attributes["manifest"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("manifest attribute type = %T, want map[string]interface{}", attributes["manifest"])
+	}
+	if manifest["apiVersion"] != "example.com/v1" {
+		t.Fatalf("manifest.apiVersion = %v, want %q", manifest["apiVersion"], "example.com/v1")
 	}
 }
