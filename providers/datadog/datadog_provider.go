@@ -174,6 +174,7 @@ func (p *DatadogProvider) GetSupportedService() map[string]terraformutils.Servic
 		"monitor_config_policy":                &MonitorConfigPolicyGenerator{},
 		"monitor_json":                         &MonitorJSONGenerator{},
 		"monitor_notification_rule":            &MonitorNotificationRuleGenerator{},
+		"rum_metric":                           &RumMetricGenerator{},
 		"security_monitoring_default_rule":     &SecurityMonitoringDefaultRuleGenerator{},
 		"security_monitoring_filter":           &SecurityMonitoringFilterGenerator{},
 		"security_monitoring_rule":             &SecurityMonitoringRuleGenerator{},
