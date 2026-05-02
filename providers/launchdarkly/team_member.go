@@ -37,7 +37,7 @@ func (g *TeamMemberGenerator) loadTeamMembers(ctx context.Context, client *ldapi
 	for _, member := range allMembers {
 		resource := terraformutils.NewResource(
 			member.Id,
-			resourceName(member.Email, member.Id),
+			teamMemberResourceName(member.Email, member.Id),
 			"launchdarkly_team_member",
 			"launchdarkly",
 			map[string]string{},
@@ -46,6 +46,10 @@ func (g *TeamMemberGenerator) loadTeamMembers(ctx context.Context, client *ldapi
 		g.Resources = append(g.Resources, resource)
 	}
 	return nil
+}
+
+func teamMemberResourceName(email, id string) string {
+	return resourceNameWithID(email, id)
 }
 
 func (g *TeamMemberGenerator) InitResources() error {

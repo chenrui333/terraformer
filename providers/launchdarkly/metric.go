@@ -26,7 +26,7 @@ func (g *MetricGenerator) loadMetrics(ctx context.Context, apiKey, projectKey st
 		for _, metric := range metrics.GetItems() {
 			resource := terraformutils.NewResource(
 				projectKey+"/"+metric.Key,
-				projectKey+"-"+metric.Name,
+				metricResourceName(projectKey, metric.Name, metric.Key),
 				"launchdarkly_metric",
 				"launchdarkly",
 				map[string]string{
@@ -40,6 +40,10 @@ func (g *MetricGenerator) loadMetrics(ctx context.Context, apiKey, projectKey st
 		path = nextPagePath(metrics.GetLinks())
 	}
 	return nil
+}
+
+func metricResourceName(projectKey, name, key string) string {
+	return launchDarklyProjectResourceName(projectKey, name, key)
 }
 
 func (g *MetricGenerator) InitResources() error {

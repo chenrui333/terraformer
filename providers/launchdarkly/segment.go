@@ -49,7 +49,7 @@ func (g *SegmentGenerator) loadSegment(ctx context.Context, client *ldapi.APICli
 	for _, segment := range allSegments {
 		resource := terraformutils.NewResource(
 			segment.Key,
-			project+"-"+envKey+"-"+segment.Name,
+			segmentResourceName(project, envKey, segment.Name, segment.Key),
 			"launchdarkly_segment",
 			"launchdarkly",
 			map[string]string{
@@ -63,6 +63,10 @@ func (g *SegmentGenerator) loadSegment(ctx context.Context, client *ldapi.APICli
 		g.Resources = append(g.Resources, resource)
 	}
 	return nil
+}
+
+func segmentResourceName(projectKey, envKey, name, key string) string {
+	return projectKey + "-" + envKey + "-" + resourceNameWithID(name, key)
 }
 
 func (g *SegmentGenerator) InitResources() error {
