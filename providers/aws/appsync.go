@@ -82,8 +82,14 @@ func (g *AppSyncGenerator) InitResources() error {
 		}
 	}
 	if g.shouldLoadDomainNames() {
-		if err := g.loadDomainNames(svc); err != nil {
-			return err
+		if g.shouldRequireDomainNameLoad() {
+			if err := g.loadDomainNames(svc); err != nil {
+				return err
+			}
+		} else {
+			g.loadOptionalResources([]appSyncOptionalResourceLoader{
+				{name: "domain names", load: func() error { return g.loadDomainNames(svc) }},
+			})
 		}
 	}
 	return nil
@@ -619,22 +625,31 @@ func (g *AppSyncGenerator) shouldLoadGraphQLAPIs() bool {
 }
 
 func (g *AppSyncGenerator) shouldLoadAPIChildResourceType(serviceName, apiID string) bool {
-	if !g.hasTypedAppSyncAPIChildFilter() && !g.hasUntypedIDFilter() {
-		apiResource := newAppSyncGraphQLAPIResource(apiID, apiID)
-		if !g.resourceMatchesInitialIDFilters(appSyncGraphQLAPIResourceType, apiResource) {
-			return false
-		}
-		if g.hasTypedNonIDFilterFor(appSyncGraphQLAPIResourceType) {
-			return false
-		}
-	}
+	hasTypedChildFilter := g.hasTypedFilterFor(serviceName)
 	if g.hasTypedAppSyncAPIChildFilter() && !g.hasTypedFilterFor(serviceName) {
 		return false
 	}
-	if g.hasTypedAppSyncFilter() && !g.hasTypedFilterFor(serviceName) && !g.hasTypedFilterFor(appSyncGraphQLAPIResourceType) && !g.hasUntypedIDFilter() {
+	if g.hasTypedAppSyncFilter() && !hasTypedChildFilter && !g.hasTypedFilterFor(appSyncGraphQLAPIResourceType) && !g.hasUntypedIDFilter() {
 		return false
 	}
-	return g.initialIDFiltersCanMatchAPIChild(serviceName, apiID)
+	if !g.initialIDFiltersCanMatchAPIChild(serviceName, apiID) {
+		return false
+	}
+	if !hasTypedChildFilter && !g.hasUntypedIDFilter() {
+		return g.graphQLAPIMatchesPreDiscoveryFilters(apiID)
+	}
+	if hasTypedChildFilter && !g.hasIDFilterFor(serviceName) && !g.hasUntypedIDFilter() && g.hasTypedFilterFor(appSyncGraphQLAPIResourceType) {
+		return g.graphQLAPIMatchesPreDiscoveryFilters(apiID)
+	}
+	return true
+}
+
+func (g *AppSyncGenerator) graphQLAPIMatchesPreDiscoveryFilters(apiID string) bool {
+	apiResource := newAppSyncGraphQLAPIResource(apiID, apiID)
+	if !g.resourceMatchesInitialIDFilters(appSyncGraphQLAPIResourceType, apiResource) {
+		return false
+	}
+	return !g.hasTypedNonIDFilterFor(appSyncGraphQLAPIResourceType)
 }
 
 func (g *AppSyncGenerator) shouldLoadDomainNames() bool {
@@ -647,13 +662,23 @@ func (g *AppSyncGenerator) shouldLoadDomainNames() bool {
 	return true
 }
 
+func (g *AppSyncGenerator) shouldRequireDomainNameLoad() bool {
+	return g.hasTypedFilterFor(appSyncDomainNameResourceType) || g.hasTypedFilterFor(appSyncDomainNameAPIAssociationResourceType)
+}
+
 func (g *AppSyncGenerator) shouldLoadDomainNameAPIAssociation(domainName string) bool {
+	hasTypedDomainFilter := g.hasTypedFilterFor(appSyncDomainNameResourceType)
+	if g.hasTypedFilterFor(appSyncDomainNameResourceType) {
+		domainResource := newAppSyncDomainNameResource(domainName)
+		if !g.resourceMatchesInitialIDFilters(appSyncDomainNameResourceType, domainResource) || g.hasTypedNonIDFilterFor(appSyncDomainNameResourceType) {
+			return false
+		}
+	}
 	if g.hasTypedFilterFor(appSyncDomainNameAPIAssociationResourceType) {
 		return g.initialIDFiltersCanMatchDomainName(appSyncDomainNameAPIAssociationResourceType, domainName)
 	}
-	if g.hasTypedFilterFor(appSyncDomainNameResourceType) {
-		domainResource := newAppSyncDomainNameResource(domainName)
-		return g.resourceMatchesInitialIDFilters(appSyncDomainNameResourceType, domainResource) && !g.hasTypedNonIDFilterFor(appSyncDomainNameResourceType)
+	if hasTypedDomainFilter {
+		return true
 	}
 	if g.hasTypedAppSyncFilter() && !g.hasUntypedIDFilter() {
 		return false
@@ -767,6 +792,15 @@ func (g *AppSyncGenerator) hasTypedFilterFor(serviceName string) bool {
 func (g *AppSyncGenerator) hasTypedNonIDFilterFor(serviceName string) bool {
 	for _, filter := range g.Filter {
 		if filter.ServiceName == serviceName && filter.FieldPath != "id" {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *AppSyncGenerator) hasIDFilterFor(serviceName string) bool {
+	for _, filter := range g.Filter {
+		if filter.FieldPath == "id" && filter.IsApplicable(serviceName) {
 			return true
 		}
 	}

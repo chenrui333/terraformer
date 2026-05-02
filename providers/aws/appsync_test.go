@@ -124,6 +124,18 @@ func TestAppSyncFilterGatesGraphQLAPIAndChildDiscovery(t *testing.T) {
 			appendAPIKey:   true,
 		},
 		{
+			name: "typed parent id filter scopes typed child non-id discovery",
+			filters: []terraformutils.ResourceFilter{
+				{ServiceName: appSyncGraphQLAPIResourceType, FieldPath: "id", AcceptableValues: []string{apiID}},
+				{ServiceName: appSyncAPIKeyResourceType, FieldPath: "description", AcceptableValues: []string{"orders"}},
+			},
+			loadAPIs:     true,
+			appendAPI:    true,
+			loadChildren: true,
+			loadAPIKeys:  true,
+			appendAPIKey: true,
+		},
+		{
 			name: "typed domain id filter skips APIs and API children",
 			filters: []terraformutils.ResourceFilter{
 				{ServiceName: appSyncDomainNameResourceType, FieldPath: "id", AcceptableValues: []string{"api.example.com"}},
@@ -204,21 +216,24 @@ func TestAppSyncFilterGatesDomainNamesAndAssociations(t *testing.T) {
 	association := newAppSyncDomainNameAPIAssociationResource(domainName, "api123")
 
 	tests := []struct {
-		name              string
-		filters           []terraformutils.ResourceFilter
-		loadDomains       bool
-		appendDomain      bool
-		appendOther       bool
-		loadAssociation   bool
-		appendAssociation bool
+		name                 string
+		filters              []terraformutils.ResourceFilter
+		loadDomains          bool
+		requireDomains       bool
+		appendDomain         bool
+		appendOther          bool
+		loadAssociation      bool
+		loadOtherAssociation bool
+		appendAssociation    bool
 	}{
 		{
-			name:              "no filters imports domain names and associations",
-			loadDomains:       true,
-			appendDomain:      true,
-			appendOther:       true,
-			loadAssociation:   true,
-			appendAssociation: true,
+			name:                 "no filters imports domain names and associations",
+			loadDomains:          true,
+			appendDomain:         true,
+			appendOther:          true,
+			loadAssociation:      true,
+			loadOtherAssociation: true,
+			appendAssociation:    true,
 		},
 		{
 			name: "typed GraphQL API filter skips domain scan",
@@ -249,6 +264,19 @@ func TestAppSyncFilterGatesDomainNamesAndAssociations(t *testing.T) {
 				{ServiceName: appSyncDomainNameResourceType, FieldPath: "id", AcceptableValues: []string{domainName}},
 			},
 			loadDomains:       true,
+			requireDomains:    true,
+			appendDomain:      true,
+			loadAssociation:   true,
+			appendAssociation: true,
+		},
+		{
+			name: "typed domain id filter scopes typed association non-id discovery",
+			filters: []terraformutils.ResourceFilter{
+				{ServiceName: appSyncDomainNameResourceType, FieldPath: "id", AcceptableValues: []string{domainName}},
+				{ServiceName: appSyncDomainNameAPIAssociationResourceType, FieldPath: "api_id", AcceptableValues: []string{"api123"}},
+			},
+			loadDomains:       true,
+			requireDomains:    true,
 			appendDomain:      true,
 			loadAssociation:   true,
 			appendAssociation: true,
@@ -259,6 +287,7 @@ func TestAppSyncFilterGatesDomainNamesAndAssociations(t *testing.T) {
 				{ServiceName: appSyncDomainNameResourceType, FieldPath: "tags.env", AcceptableValues: []string{"prod"}},
 			},
 			loadDomains:       true,
+			requireDomains:    true,
 			appendDomain:      true,
 			appendOther:       true,
 			appendAssociation: true,
@@ -269,6 +298,7 @@ func TestAppSyncFilterGatesDomainNamesAndAssociations(t *testing.T) {
 				{ServiceName: appSyncDomainNameAPIAssociationResourceType, FieldPath: "id", AcceptableValues: []string{domainName}},
 			},
 			loadDomains:       true,
+			requireDomains:    true,
 			loadAssociation:   true,
 			appendAssociation: true,
 		},
@@ -278,8 +308,9 @@ func TestAppSyncFilterGatesDomainNamesAndAssociations(t *testing.T) {
 				{FieldPath: "id", AcceptableValues: []string{otherDomainName}},
 				{ServiceName: appSyncDomainNameAPIAssociationResourceType, FieldPath: "id", AcceptableValues: []string{domainName}},
 			},
-			loadDomains: true,
-			appendOther: true,
+			loadDomains:    true,
+			requireDomains: true,
+			appendOther:    true,
 		},
 	}
 
@@ -290,6 +321,9 @@ func TestAppSyncFilterGatesDomainNamesAndAssociations(t *testing.T) {
 			if got := g.shouldLoadDomainNames(); got != tt.loadDomains {
 				t.Fatalf("shouldLoadDomainNames() = %t, want %t", got, tt.loadDomains)
 			}
+			if got := g.shouldRequireDomainNameLoad(); got != tt.requireDomains {
+				t.Fatalf("shouldRequireDomainNameLoad() = %t, want %t", got, tt.requireDomains)
+			}
 			if got := g.shouldAppendDomainNameResource(domain); got != tt.appendDomain {
 				t.Fatalf("shouldAppendDomainNameResource(domain) = %t, want %t", got, tt.appendDomain)
 			}
@@ -298,6 +332,9 @@ func TestAppSyncFilterGatesDomainNamesAndAssociations(t *testing.T) {
 			}
 			if got := g.shouldLoadDomainNameAPIAssociation(domainName); got != tt.loadAssociation {
 				t.Fatalf("shouldLoadDomainNameAPIAssociation() = %t, want %t", got, tt.loadAssociation)
+			}
+			if got := g.shouldLoadDomainNameAPIAssociation(otherDomainName); got != tt.loadOtherAssociation {
+				t.Fatalf("shouldLoadDomainNameAPIAssociation(other) = %t, want %t", got, tt.loadOtherAssociation)
 			}
 			if got := g.shouldAppendAppSyncChildResource(appSyncDomainNameAPIAssociationResourceType, association); got != tt.appendAssociation {
 				t.Fatalf("shouldAppendAppSyncChildResource(association) = %t, want %t", got, tt.appendAssociation)
