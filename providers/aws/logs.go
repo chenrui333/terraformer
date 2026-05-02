@@ -244,7 +244,7 @@ func (g *LogsGenerator) addResourcePolicies(svc *cloudwatchlogs.Client) error {
 				map[string]interface{}{}))
 		}
 		nextToken = output.NextToken
-		if nextToken == nil {
+		if !awsHasMorePages(nextToken) {
 			break
 		}
 	}
@@ -281,7 +281,7 @@ func (g *LogsGenerator) addAccountPolicies(svc *cloudwatchlogs.Client) error {
 					map[string]interface{}{}))
 			}
 			nextToken = output.NextToken
-			if nextToken == nil {
+			if !awsHasMorePages(nextToken) {
 				break
 			}
 		}
@@ -315,7 +315,7 @@ func (g *LogsGenerator) addQueryDefinitions(svc *cloudwatchlogs.Client) error {
 				map[string]interface{}{}))
 		}
 		nextToken = output.NextToken
-		if nextToken == nil {
+		if !awsHasMorePages(nextToken) {
 			break
 		}
 	}

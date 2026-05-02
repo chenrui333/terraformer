@@ -38,7 +38,7 @@ func (g *DirectConnectGenerator) getDirectConnectGateways(svc *directconnect.Cli
 		}
 
 		// Check if there are more pages
-		if output.NextToken == nil {
+		if !awsHasMorePages(output.NextToken) {
 			break
 		}
 

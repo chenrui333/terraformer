@@ -249,7 +249,7 @@ func (g *EcsGenerator) addCapacityProvidersForCluster(svc *ecs.Client, cluster *
 			))
 		}
 		nextToken = output.NextToken
-		if nextToken == nil {
+		if !awsHasMorePages(nextToken) {
 			break
 		}
 	}

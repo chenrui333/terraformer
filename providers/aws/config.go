@@ -120,7 +120,7 @@ func (g *ConfigGenerator) addConfigRules(svc *configservice.Client, configuratio
 			))
 		}
 		nextToken = configRules.NextToken
-		if nextToken == nil {
+		if !awsHasMorePages(nextToken) {
 			break
 		}
 	}

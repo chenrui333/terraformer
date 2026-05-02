@@ -74,7 +74,7 @@ func (g *WorkspacesGenerator) loadWorkspacesIPGroup(svc *workspaces.Client) erro
 				workspacesAllowEmptyValues))
 		}
 		nextToken = response.NextToken
-		if nextToken == nil {
+		if !awsHasMorePages(nextToken) {
 			break
 		}
 	}

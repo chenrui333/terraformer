@@ -225,7 +225,7 @@ func (g *EksGenerator) getAccessPolicyAssociations(clusterName, principalArn str
 			))
 		}
 		nextToken = page.NextToken
-		if nextToken == nil {
+		if !awsHasMorePages(nextToken) {
 			break
 		}
 	}
