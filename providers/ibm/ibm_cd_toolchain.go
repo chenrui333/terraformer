@@ -336,7 +336,7 @@ func (g *ToolchainGenerator) InitResources() error {
 
 	apiKey := os.Getenv("IC_API_KEY")
 	if apiKey == "" {
-		log.Fatal("No API key set")
+		return errMissingICAPIKey
 	}
 
 	bmxConfig := &bluemix.Config{

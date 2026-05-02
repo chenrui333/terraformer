@@ -13,6 +13,8 @@ import (
 const DefaultRegion = "us-south"
 const NoRegion = ""
 
+var errMissingICAPIKey = errors.New("set IC_API_KEY env var")
+
 var resourceMutex sync.RWMutex // Used for g.Resources
 
 type IBMProvider struct { //nolint
@@ -23,6 +25,10 @@ type IBMProvider struct { //nolint
 }
 
 func (p *IBMProvider) Init(args []string) error {
+	if os.Getenv("IC_API_KEY") == "" {
+		return errMissingICAPIKey
+	}
+
 	p.ResourceGroup = args[0]
 	p.Region = args[1]
 	p.VPC = args[2]
