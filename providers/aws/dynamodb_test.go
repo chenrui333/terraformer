@@ -70,6 +70,16 @@ func TestDynamoDBContributorInsightsImportable(t *testing.T) {
 	}) {
 		t.Fatal("disabled contributor insights should not be importable")
 	}
+	if dynamodbContributorInsightsImportable(dynamodbtypes.ContributorInsightsSummary{
+		ContributorInsightsStatus: dynamodbtypes.ContributorInsightsStatusFailed,
+	}) {
+		t.Fatal("failed contributor insights should not be importable")
+	}
+	if dynamodbContributorInsightsImportable(dynamodbtypes.ContributorInsightsSummary{
+		ContributorInsightsStatus: dynamodbtypes.ContributorInsightsStatusDisabling,
+	}) {
+		t.Fatal("disabling contributor insights should not be importable")
+	}
 	if dynamodbContributorInsightsImportable(dynamodbtypes.ContributorInsightsSummary{}) {
 		t.Fatal("empty contributor insights status should not be importable")
 	}
@@ -86,6 +96,16 @@ func TestDynamoDBKinesisStreamingDestinationImportable(t *testing.T) {
 	}) {
 		t.Fatal("disabled Kinesis streaming destination should not be importable")
 	}
+	if dynamodbKinesisStreamingDestinationImportable(dynamodbtypes.KinesisDataStreamDestination{
+		DestinationStatus: dynamodbtypes.DestinationStatusEnableFailed,
+	}) {
+		t.Fatal("enable-failed Kinesis streaming destination should not be importable")
+	}
+	if dynamodbKinesisStreamingDestinationImportable(dynamodbtypes.KinesisDataStreamDestination{
+		DestinationStatus: dynamodbtypes.DestinationStatusDisabling,
+	}) {
+		t.Fatal("disabling Kinesis streaming destination should not be importable")
+	}
 	if dynamodbKinesisStreamingDestinationImportable(dynamodbtypes.KinesisDataStreamDestination{}) {
 		t.Fatal("empty Kinesis streaming destination status should not be importable")
 	}
@@ -95,8 +115,8 @@ func TestDynamoDBTableExportImportable(t *testing.T) {
 	if !dynamodbTableExportImportable(dynamodbtypes.ExportSummary{ExportStatus: dynamodbtypes.ExportStatusCompleted}) {
 		t.Fatal("completed table export should be importable")
 	}
-	if dynamodbTableExportImportable(dynamodbtypes.ExportSummary{ExportStatus: dynamodbtypes.ExportStatusFailed}) {
-		t.Fatal("failed table export should not be importable")
+	if !dynamodbTableExportImportable(dynamodbtypes.ExportSummary{ExportStatus: dynamodbtypes.ExportStatusFailed}) {
+		t.Fatal("failed table export should be importable")
 	}
 	if dynamodbTableExportImportable(dynamodbtypes.ExportSummary{}) {
 		t.Fatal("empty table export status should not be importable")

@@ -294,15 +294,15 @@ func dynamodbResourceName(parts ...string) string {
 }
 
 func dynamodbContributorInsightsImportable(summary dynamodbtypes.ContributorInsightsSummary) bool {
-	return summary.ContributorInsightsStatus != "" && summary.ContributorInsightsStatus != dynamodbtypes.ContributorInsightsStatusDisabled
+	return summary.ContributorInsightsStatus == dynamodbtypes.ContributorInsightsStatusEnabled
 }
 
 func dynamodbKinesisStreamingDestinationImportable(destination dynamodbtypes.KinesisDataStreamDestination) bool {
-	return destination.DestinationStatus != "" && destination.DestinationStatus != dynamodbtypes.DestinationStatusDisabled
+	return destination.DestinationStatus == dynamodbtypes.DestinationStatusActive
 }
 
 func dynamodbTableExportImportable(export dynamodbtypes.ExportSummary) bool {
-	return export.ExportStatus != "" && export.ExportStatus != dynamodbtypes.ExportStatusFailed
+	return export.ExportStatus != ""
 }
 
 func dynamodbResourcePolicyMissing(err error) bool {
