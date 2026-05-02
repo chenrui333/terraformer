@@ -14,7 +14,7 @@ type FactorGenerator struct {
 	OktaService
 }
 
-func (g FactorGenerator) createResources(ctx context.Context, factorList []*okta.UserFactor, client *sdk.APISupplement) []terraformutils.Resource {
+func (g FactorGenerator) createResources(ctx context.Context, factorList []*okta.UserFactor, client *sdk.APISupplement) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	for _, factor := range factorList {
 		if factor.Status == "ACTIVE" {
@@ -31,7 +31,10 @@ func (g FactorGenerator) createResources(ctx context.Context, factorList []*okta
 			))
 
 			if factor.FactorType == "token:hotp" {
-				hotpFactorProfiles, _, _ := getHotpFactorProfiles(ctx, client)
+				hotpFactorProfiles, _, err := getHotpFactorProfiles(ctx, client)
+				if err != nil {
+					return nil, err
+				}
 
 				for _, factorProfile := range hotpFactorProfiles {
 					if factorProfile != nil {
@@ -56,7 +59,7 @@ func (g FactorGenerator) createResources(ctx context.Context, factorList []*okta
 			}
 		}
 	}
-	return resources
+	return resources, nil
 }
 
 func (g *FactorGenerator) InitResources() error {
@@ -74,7 +77,11 @@ func (g *FactorGenerator) InitResources() error {
 
 	factors = append(factors, output...)
 
-	g.Resources = g.createResources(ctx, factors, client)
+	resources, err := g.createResources(ctx, factors, client)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 	return nil
 }
 

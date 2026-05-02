@@ -11,7 +11,6 @@ type EquinixMetalService struct { //nolint
 	terraformutils.Service
 }
 
-func (s *EquinixMetalService) generateClient() *packngo.Client {
-	client, _ := packngo.NewClient()
-	return client
+func (s *EquinixMetalService) generateClient() (*packngo.Client, error) {
+	return packngo.NewClient()
 }

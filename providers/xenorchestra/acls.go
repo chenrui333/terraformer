@@ -25,7 +25,10 @@ func (g AclGenerator) createResources(acls []client.Acl) []terraformutils.Resour
 }
 
 func (g *AclGenerator) InitResources() error {
-	client := g.generateClient()
+	client, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	acls, err := client.GetAcls()
 
 	if err != nil {

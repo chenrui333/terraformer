@@ -88,7 +88,10 @@ func (g *COSGenerator) InitResources() error {
 		singleSiteLocationRegex := regexp.MustCompile("^[a-z]{3}[0-9][0-9]-[a-z]{4,8}$")
 		regionLocationRegex := regexp.MustCompile("^[a-z]{2}-[a-z]{2,5}[0-9]?-[a-z]{4,8}$")
 		crossRegionLocationRegex := regexp.MustCompile("^[a-z]{2}-[a-z]{4,8}$")
-		d, _ := s3Client.ListBucketsExtended(&coss3.ListBucketsExtendedInput{})
+		d, err := s3Client.ListBucketsExtended(&coss3.ListBucketsExtendedInput{})
+		if err != nil {
+			return err
+		}
 		for _, b := range d.Buckets {
 			var apiType, location string
 

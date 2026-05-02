@@ -518,7 +518,10 @@ func (g *CISGenerator) InitResources() error {
 				Crn:    &crn,
 				ZoneID: &zoneID,
 			}
-			cisWAFPackageClient, _ := wafrulepackagesapiv1.NewWafRulePackagesApiV1(cisWAFPackagesOpt)
+			cisWAFPackageClient, err := wafrulepackagesapiv1.NewWafRulePackagesApiV1(cisWAFPackagesOpt)
+			if err != nil {
+				return err
+			}
 			wasPkgList, _, err := cisWAFPackageClient.ListWafPackages(&wafrulepackagesapiv1.ListWafPackagesOptions{})
 			if err != nil {
 				return err
@@ -545,7 +548,10 @@ func (g *CISGenerator) InitResources() error {
 						Crn:    &crn,
 						ZoneID: &zoneID,
 					}
-					cisWAFGroupClient, _ := wafrulegroupsapiv1.NewWafRuleGroupsApiV1(cisWAFGroupOpt)
+					cisWAFGroupClient, err := wafrulegroupsapiv1.NewWafRuleGroupsApiV1(cisWAFGroupOpt)
+					if err != nil {
+						return err
+					}
 					wasGrpList, _, err := cisWAFGroupClient.ListWafRuleGroups(&wafrulegroupsapiv1.ListWafRuleGroupsOptions{
 						PkgID: wafPkg.Result.ID,
 					})
@@ -567,7 +573,10 @@ func (g *CISGenerator) InitResources() error {
 				ZoneIdentifier: &zoneID,
 			}
 
-			rateLimitService, _ := zoneratelimitsv1.NewZoneRateLimitsV1(rateLimitPoolOpts)
+			rateLimitService, err := zoneratelimitsv1.NewZoneRateLimitsV1(rateLimitPoolOpts)
+			if err != nil {
+				return err
+			}
 			rateLimitList, _, err := rateLimitService.ListAllZoneRateLimits(&zoneratelimitsv1.ListAllZoneRateLimitsOptions{})
 			if err != nil {
 				fmt.Printf("Error in getting rate limit.")
@@ -667,7 +676,10 @@ func (g *CISGenerator) InitResources() error {
 				ZoneIdentifier: &zoneID,
 			}
 
-			cisEdgeFunctionClient, _ := edgefunctionsapiv1.NewEdgeFunctionsApiV1(cisEdgeFunctionOpt)
+			cisEdgeFunctionClient, err := edgefunctionsapiv1.NewEdgeFunctionsApiV1(cisEdgeFunctionOpt)
+			if err != nil {
+				return err
+			}
 			edgeActionResonse, _, err := cisEdgeFunctionClient.ListEdgeFunctionsActions(&edgefunctionsapiv1.ListEdgeFunctionsActionsOptions{})
 			if err != nil {
 				return err
@@ -696,7 +708,10 @@ func (g *CISGenerator) InitResources() error {
 				ZoneIdentifier: &zoneID,
 			}
 
-			rangeAppClient, _ := rangeapplicationsv1.NewRangeApplicationsV1(rangeAppOpt)
+			rangeAppClient, err := rangeapplicationsv1.NewRangeApplicationsV1(rangeAppOpt)
+			if err != nil {
+				return err
+			}
 			ranegAppList, _, err := rangeAppClient.ListRangeApps(&rangeapplicationsv1.ListRangeAppsOptions{})
 			if err != nil {
 				fmt.Printf("Error in getting range app list.")
@@ -718,7 +733,10 @@ func (g *CISGenerator) InitResources() error {
 				ZoneID: &zoneID,
 			}
 
-			pageRuleClient, _ := pageruleapiv1.NewPageRuleApiV1(pageRueleOpt)
+			pageRuleClient, err := pageruleapiv1.NewPageRuleApiV1(pageRueleOpt)
+			if err != nil {
+				return err
+			}
 			pageRuleList, _, err := pageRuleClient.ListPageRules(&pageruleapiv1.ListPageRulesOptions{})
 			if err != nil {
 				return err
@@ -738,7 +756,10 @@ func (g *CISGenerator) InitResources() error {
 				ZoneIdentifier: &zoneID,
 			}
 
-			customPageClient, _ := custompagesv1.NewCustomPagesV1(customPageOpt)
+			customPageClient, err := custompagesv1.NewCustomPagesV1(customPageOpt)
+			if err != nil {
+				return err
+			}
 			customPageList, _, err := customPageClient.ListInstanceCustomPages(&custompagesv1.ListInstanceCustomPagesOptions{})
 			if err != nil {
 				return err

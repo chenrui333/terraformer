@@ -34,7 +34,10 @@ func (g SpotMarketRequestGenerator) createResources(spotMarketRequestsList []pac
 }
 
 func (g *SpotMarketRequestGenerator) InitResources() error {
-	client := g.generateClient()
+	client, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	output, err := g.listSpotMarketRequests(client)
 	if err != nil {
 		return err
