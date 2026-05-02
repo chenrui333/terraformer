@@ -7,6 +7,14 @@ import (
 	"testing"
 )
 
+func TestAuditLogSubscriptionResourceNameIncludesSubscriptionID(t *testing.T) {
+	got := auditLogSubscriptionResourceName("datadog", "duplicate", "sub-123")
+	want := "datadog-duplicate-sub-123"
+	if got != want {
+		t.Fatalf("auditLogSubscriptionResourceName() = %q, want %q", got, want)
+	}
+}
+
 func TestAuditLogSubscriptionAttributesSeedsConfig(t *testing.T) {
 	got := auditLogSubscriptionAttributes("datadog", map[string]interface{}{
 		"apiKey":          "secret",

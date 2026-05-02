@@ -31,7 +31,7 @@ func (g *DestinationGenerator) loadDestinations(ctx context.Context) error {
 			destinationID := destination.GetId()
 			resource := terraformutils.NewResource(
 				strings.Join([]string{projectKey, envKey, destinationID}, "/"),
-				fmt.Sprintf("%s-%s-%s", projectKey, envKey, resourceName(destination.GetName(), destinationID)),
+				destinationResourceName(projectKey, envKey, destination.GetName(), destinationID),
 				"launchdarkly_destination",
 				"launchdarkly",
 				map[string]string{
@@ -45,6 +45,10 @@ func (g *DestinationGenerator) loadDestinations(ctx context.Context) error {
 		path = nextPagePath(destinations.GetLinks())
 	}
 	return nil
+}
+
+func destinationResourceName(projectKey, envKey, name, destinationID string) string {
+	return fmt.Sprintf("%s-%s-%s", projectKey, envKey, resourceNameWithID(name, destinationID))
 }
 
 func destinationProjectEnv(destination ldapi.Destination) (string, string, error) {
