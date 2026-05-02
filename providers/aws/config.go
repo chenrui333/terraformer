@@ -82,7 +82,7 @@ func (g *ConfigGenerator) addConfigurationRecorders(svc *configservice.Client) (
 			configAllowEmptyValues,
 		))
 		configurationRecorderRefs = append(configurationRecorderRefs,
-			"aws_config_configuration_recorder.tfer--"+name)
+			configResourceRef("aws_config_configuration_recorder", name))
 	}
 	return configurationRecorderRefs, nil
 }
@@ -151,7 +151,7 @@ func (g *ConfigGenerator) addDeliveryChannels(svc *configservice.Client, configu
 				"depends_on": configurationRecorderRefs,
 			},
 		))
-		deliveryChannelRefs = append(deliveryChannelRefs, "aws_config_delivery_channel.tfer--"+name)
+		deliveryChannelRefs = append(deliveryChannelRefs, configResourceRef("aws_config_delivery_channel", name))
 	}
 	return deliveryChannelRefs, nil
 }
@@ -395,8 +395,12 @@ func configAggregateAuthorizationID(accountID, region string) string {
 	return fmt.Sprintf("%s:%s", accountID, region)
 }
 
+func configResourceRef(resourceType, name string) string {
+	return resourceType + "." + terraformutils.TfSanitize(name)
+}
+
 func configRuleResourceRef(name string) string {
-	return "aws_config_config_rule." + terraformutils.TfSanitize(name)
+	return configResourceRef("aws_config_config_rule", name)
 }
 
 func configOrganizationRuleResourceType(rule configtypes.OrganizationConfigRule) string {

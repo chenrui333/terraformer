@@ -28,6 +28,37 @@ func TestConfigRuleResourceRef(t *testing.T) {
 	}
 }
 
+func TestConfigResourceRefSanitizesName(t *testing.T) {
+	tests := []struct {
+		name         string
+		resourceType string
+		resourceName string
+		want         string
+	}{
+		{
+			name:         "recorder",
+			resourceType: "aws_config_configuration_recorder",
+			resourceName: "recorder:with/slashes",
+			want:         "aws_config_configuration_recorder.tfer--recorder-003A-with-002F-slashes",
+		},
+		{
+			name:         "delivery channel",
+			resourceType: "aws_config_delivery_channel",
+			resourceName: "channel:with/slashes",
+			want:         "aws_config_delivery_channel.tfer--channel-003A-with-002F-slashes",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := configResourceRef(tt.resourceType, tt.resourceName)
+			if got != tt.want {
+				t.Fatalf("configResourceRef() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestConfigOrganizationRuleResourceType(t *testing.T) {
 	tests := []struct {
 		name string
