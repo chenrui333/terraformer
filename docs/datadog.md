@@ -216,7 +216,7 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `team_sync`
     * `datadog_team_sync`
         * **_NOTE:_** Requires DataDog/datadog provider 4.5.0 or newer.
-        * **_NOTE:_** The Datadog provider currently supports the `github` team sync source
+        * **_NOTE:_** The Datadog provider currently supports the GitHub team sync source
 *   `user`
     * `datadog_user`
 

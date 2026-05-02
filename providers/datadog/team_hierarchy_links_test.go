@@ -101,15 +101,14 @@ func TestTeamHierarchyLinksInitResourcesFiltersByID(t *testing.T) {
 }
 
 func TestTeamHierarchyLinksInitResourcesFiltersByParentTeam(t *testing.T) {
+	filterCh := make(chan string, 1)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if r.URL.Path != "/api/v2/team-hierarchy-links" {
 			http.NotFound(w, r)
 			return
 		}
-		if got := r.URL.Query().Get("filter[parent_team]"); got != "parent-1" {
-			t.Fatalf("filter[parent_team] = %q, want parent-1", got)
-		}
+		filterCh <- r.URL.Query().Get("filter[parent_team]")
 		_, _ = fmt.Fprint(w, teamHierarchyLinksListResponseJSON(teamHierarchyLinkJSON("link-1", "parent-1", "sub-1")))
 	}))
 	defer server.Close()
@@ -124,6 +123,7 @@ func TestTeamHierarchyLinksInitResourcesFiltersByParentTeam(t *testing.T) {
 	if err := generator.InitResources(); err != nil {
 		t.Fatalf("InitResources returned error: %v", err)
 	}
+	assertObservedQueryValue(t, filterCh, "filter[parent_team]", "parent-1")
 	if len(generator.Resources) != 1 {
 		t.Fatalf("expected 1 resource, got %d", len(generator.Resources))
 	}

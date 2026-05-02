@@ -53,15 +53,14 @@ func TestTeamSyncCreateResourceRequiresSourceAndType(t *testing.T) {
 }
 
 func TestTeamSyncInitResourcesGetsGitHubSource(t *testing.T) {
+	filterCh := make(chan string, 1)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if r.URL.Path != "/api/v2/team/sync" {
 			http.NotFound(w, r)
 			return
 		}
-		if got := r.URL.Query().Get("filter[source]"); got != "github" {
-			t.Fatalf("filter[source] = %q, want github", got)
-		}
+		filterCh <- r.URL.Query().Get("filter[source]")
 		_, _ = fmt.Fprint(w, teamSyncResponseJSON(teamSyncJSON("github", "link")))
 	}))
 	defer server.Close()
@@ -70,6 +69,7 @@ func TestTeamSyncInitResourcesGetsGitHubSource(t *testing.T) {
 	if err := generator.InitResources(); err != nil {
 		t.Fatalf("InitResources returned error: %v", err)
 	}
+	assertObservedQueryValue(t, filterCh, "filter[source]", "github")
 	if len(generator.Resources) != 1 {
 		t.Fatalf("expected 1 resource, got %d", len(generator.Resources))
 	}
@@ -110,11 +110,10 @@ func TestTeamSyncInitResourcesSkipsNotFound(t *testing.T) {
 }
 
 func TestTeamSyncInitResourcesFiltersBySource(t *testing.T) {
+	filterCh := make(chan string, 1)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		if got := r.URL.Query().Get("filter[source]"); got != "github" {
-			t.Fatalf("filter[source] = %q, want github", got)
-		}
+		filterCh <- r.URL.Query().Get("filter[source]")
 		_, _ = fmt.Fprint(w, teamSyncResponseJSON(teamSyncJSON("github", "provision")))
 	}))
 	defer server.Close()
@@ -129,6 +128,7 @@ func TestTeamSyncInitResourcesFiltersBySource(t *testing.T) {
 	if err := generator.InitResources(); err != nil {
 		t.Fatalf("InitResources returned error: %v", err)
 	}
+	assertObservedQueryValue(t, filterCh, "filter[source]", "github")
 	if len(generator.Resources) != 1 {
 		t.Fatalf("expected 1 resource, got %d", len(generator.Resources))
 	}

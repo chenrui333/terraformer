@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
@@ -79,15 +80,14 @@ func TestTeamConnectionInitResourcesListsConnections(t *testing.T) {
 }
 
 func TestTeamConnectionInitResourcesFiltersByID(t *testing.T) {
+	filterCh := make(chan string, 1)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if r.URL.Path != "/api/v2/team/connections" {
 			http.NotFound(w, r)
 			return
 		}
-		if got := r.URL.Query().Get("filter[connection_ids]"); got != "connection-1" {
-			t.Fatalf("filter[connection_ids] = %q, want connection-1", got)
-		}
+		filterCh <- r.URL.Query().Get("filter[connection_ids]")
 		_, _ = fmt.Fprint(w, teamConnectionListResponseJSON(teamConnectionJSON("connection-1", "team-1", "github-team-1")))
 	}))
 	defer server.Close()
@@ -102,6 +102,7 @@ func TestTeamConnectionInitResourcesFiltersByID(t *testing.T) {
 	if err := generator.InitResources(); err != nil {
 		t.Fatalf("InitResources returned error: %v", err)
 	}
+	assertObservedQueryValue(t, filterCh, "filter[connection_ids]", "connection-1")
 	if len(generator.Resources) != 1 {
 		t.Fatalf("expected 1 resource, got %d", len(generator.Resources))
 	}
@@ -111,15 +112,14 @@ func TestTeamConnectionInitResourcesFiltersByID(t *testing.T) {
 }
 
 func TestTeamConnectionInitResourcesFiltersBySource(t *testing.T) {
+	filterCh := make(chan string, 1)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if r.URL.Path != "/api/v2/team/connections" {
 			http.NotFound(w, r)
 			return
 		}
-		if got := r.URL.Query().Get("filter[sources]"); got != "github" {
-			t.Fatalf("filter[sources] = %q, want github", got)
-		}
+		filterCh <- r.URL.Query().Get("filter[sources]")
 		_, _ = fmt.Fprint(w, teamConnectionListResponseJSON(teamConnectionJSON("connection-1", "team-1", "github-team-1")))
 	}))
 	defer server.Close()
@@ -134,8 +134,22 @@ func TestTeamConnectionInitResourcesFiltersBySource(t *testing.T) {
 	if err := generator.InitResources(); err != nil {
 		t.Fatalf("InitResources returned error: %v", err)
 	}
+	assertObservedQueryValue(t, filterCh, "filter[sources]", "github")
 	if len(generator.Resources) != 1 {
 		t.Fatalf("expected 1 resource, got %d", len(generator.Resources))
+	}
+}
+
+func assertObservedQueryValue(t *testing.T, observed <-chan string, name string, want string) {
+	t.Helper()
+
+	select {
+	case got := <-observed:
+		if got != want {
+			t.Fatalf("%s = %q, want %q", name, got, want)
+		}
+	case <-time.After(time.Second):
+		t.Fatalf("timed out waiting for %s query value", name)
 	}
 }
 
