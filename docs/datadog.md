@@ -83,6 +83,11 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 
 ## Supported Datadog resources
 
+*   `apm_retention_filter`
+    * `datadog_apm_retention_filter`
+*   `apm_retention_filter_order`
+    * `datadog_apm_retention_filter_order`
+        * **_NOTE:_** Importing a single retention filter order by ID accepts any value because the Datadog provider stores it as `filtersOrderID`, for example `--filter=apm_retention_filter_order=any-value`
 *   `dashboard`
     * `datadog_dashboard`
 *   `dashboard_json`

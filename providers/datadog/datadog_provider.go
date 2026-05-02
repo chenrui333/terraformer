@@ -159,6 +159,8 @@ func (p *DatadogProvider) InitService(serviceName string, verbose bool) error {
 // GetSupportedService return map of support service for Datadog
 func (p *DatadogProvider) GetSupportedService() map[string]terraformutils.ServiceGenerator {
 	return map[string]terraformutils.ServiceGenerator{
+		"apm_retention_filter":                 &APMRetentionFilterGenerator{},
+		"apm_retention_filter_order":           &APMRetentionFilterOrderGenerator{},
 		"cloud_inventory_sync_config":          &CloudInventorySyncConfigGenerator{},
 		"dashboard_list":                       &DashboardListGenerator{},
 		"dashboard":                            &DashboardGenerator{},
@@ -213,6 +215,11 @@ func (p *DatadogProvider) GetSupportedService() map[string]terraformutils.Servic
 // GetResourceConnections return map of resource connections for Datadog
 func (p DatadogProvider) GetResourceConnections() map[string]map[string][]string {
 	return map[string]map[string][]string{
+		"apm_retention_filter_order": {
+			"apm_retention_filter": {
+				"filter_ids", "id",
+			},
+		},
 		"dashboard": {
 			"monitor": {
 				"widget.alert_graph_definition.alert_id", "id",
