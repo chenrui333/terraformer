@@ -263,7 +263,9 @@ terraformer import aws --resources=sg --regions=us-east-1
     * `aws_iot_topic_rule`
     * `aws_iot_role_alias`
 *   `kinesis`
+    * `aws_kinesis_resource_policy`
     * `aws_kinesis_stream`
+    * `aws_kinesis_stream_consumer`
 *   `kms`
     * `aws_kms_key`
     * `aws_kms_alias`
