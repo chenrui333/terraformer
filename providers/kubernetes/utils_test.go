@@ -18,10 +18,10 @@ func TestTerraformResourceNameCandidates(t *testing.T) {
 		want    []string
 	}{
 		{
-			name:    "uses default name for existing core resource",
+			name:    "prefers service v1 name for core v1 resource",
 			version: "v1",
 			kind:    "Service",
-			want:    []string{"kubernetes_service"},
+			want:    []string{"kubernetes_service_v1", "kubernetes_service"},
 		},
 		{
 			name:    "prefers modern daemon set name before legacy provider spelling for apps v1",
@@ -296,6 +296,65 @@ func TestSelectTerraformResourceName(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Fatalf("selectTerraformResourceName(%q, %q, %q) = %q, want %q", tt.group, tt.version, tt.kind, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSelectTerraformResourceNameStableV1Aliases(t *testing.T) {
+	tests := []struct {
+		name       string
+		group      string
+		kind       string
+		modernType string
+		legacyType string
+	}{
+		{name: "config map", kind: "ConfigMap", modernType: "kubernetes_config_map_v1", legacyType: "kubernetes_config_map"},
+		{name: "deployment", group: "apps", kind: "Deployment", modernType: "kubernetes_deployment_v1", legacyType: "kubernetes_deployment"},
+		{name: "endpoints", kind: "Endpoints", modernType: "kubernetes_endpoints_v1", legacyType: "kubernetes_endpoints"},
+		{name: "limit range", kind: "LimitRange", modernType: "kubernetes_limit_range_v1", legacyType: "kubernetes_limit_range"},
+		{name: "namespace", kind: "Namespace", modernType: "kubernetes_namespace_v1", legacyType: "kubernetes_namespace"},
+		{name: "persistent volume", kind: "PersistentVolume", modernType: "kubernetes_persistent_volume_v1", legacyType: "kubernetes_persistent_volume"},
+		{name: "persistent volume claim", kind: "PersistentVolumeClaim", modernType: "kubernetes_persistent_volume_claim_v1", legacyType: "kubernetes_persistent_volume_claim"},
+		{name: "pod", kind: "Pod", modernType: "kubernetes_pod_v1", legacyType: "kubernetes_pod"},
+		{name: "replication controller", kind: "ReplicationController", modernType: "kubernetes_replication_controller_v1", legacyType: "kubernetes_replication_controller"},
+		{name: "resource quota", kind: "ResourceQuota", modernType: "kubernetes_resource_quota_v1", legacyType: "kubernetes_resource_quota"},
+		{name: "secret", kind: "Secret", modernType: "kubernetes_secret_v1", legacyType: "kubernetes_secret"},
+		{name: "service", kind: "Service", modernType: "kubernetes_service_v1", legacyType: "kubernetes_service"},
+		{name: "service account", kind: "ServiceAccount", modernType: "kubernetes_service_account_v1", legacyType: "kubernetes_service_account"},
+		{name: "stateful set", group: "apps", kind: "StatefulSet", modernType: "kubernetes_stateful_set_v1", legacyType: "kubernetes_stateful_set"},
+		{name: "storage class", group: "storage.k8s.io", kind: "StorageClass", modernType: "kubernetes_storage_class_v1", legacyType: "kubernetes_storage_class"},
+		{name: "cluster role", group: "rbac.authorization.k8s.io", kind: "ClusterRole", modernType: "kubernetes_cluster_role_v1", legacyType: "kubernetes_cluster_role"},
+		{name: "cluster role binding", group: "rbac.authorization.k8s.io", kind: "ClusterRoleBinding", modernType: "kubernetes_cluster_role_binding_v1", legacyType: "kubernetes_cluster_role_binding"},
+		{name: "role", group: "rbac.authorization.k8s.io", kind: "Role", modernType: "kubernetes_role_v1", legacyType: "kubernetes_role"},
+		{name: "role binding", group: "rbac.authorization.k8s.io", kind: "RoleBinding", modernType: "kubernetes_role_binding_v1", legacyType: "kubernetes_role_binding"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			supportedTypes := map[string]struct{}{
+				tt.legacyType: {},
+				tt.modernType: {},
+			}
+			got, ok := selectTerraformResourceName(tt.group, "v1", tt.kind, func(name string) bool {
+				_, exists := supportedTypes[name]
+				return exists
+			})
+			if !ok {
+				t.Fatalf("selectTerraformResourceName(%q, %q, %q) did not find a type", tt.group, "v1", tt.kind)
+			}
+			if got != tt.modernType {
+				t.Fatalf("selectTerraformResourceName(%q, %q, %q) = %q, want %q", tt.group, "v1", tt.kind, got, tt.modernType)
+			}
+
+			got, ok = selectTerraformResourceName(tt.group, "v1", tt.kind, func(name string) bool {
+				return name == tt.legacyType
+			})
+			if !ok {
+				t.Fatalf("selectTerraformResourceName(%q, %q, %q) did not find legacy fallback", tt.group, "v1", tt.kind)
+			}
+			if got != tt.legacyType {
+				t.Fatalf("selectTerraformResourceName(%q, %q, %q) fallback = %q, want %q", tt.group, "v1", tt.kind, got, tt.legacyType)
 			}
 		})
 	}
