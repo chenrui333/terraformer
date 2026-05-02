@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	ldapi "github.com/launchdarkly/api-client-go/v16"
+	ldapi "github.com/launchdarkly/api-client-go/v22"
 )
 
 func TestGetTriggerWorkflowsUsesSDKArgumentOrder(t *testing.T) {

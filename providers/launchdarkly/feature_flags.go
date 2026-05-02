@@ -6,7 +6,7 @@ import (
 	"context"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	ldapi "github.com/launchdarkly/api-client-go/v16"
+	ldapi "github.com/launchdarkly/api-client-go/v22"
 )
 
 var featureFlagsAllowEmptyValues = []string{"variations.*.value"}
@@ -20,7 +20,7 @@ func (g *FeatureFlagsGenerator) loadFeatureFlagEnv(ctx context.Context, client *
 	if err != nil {
 		return err
 	}
-	for envKey := range ff.Environments {
+	for envKey := range ff.GetEnvironments() {
 		resource := terraformutils.NewResource(
 			projectKey+"/"+envKey+"/"+flagKey,
 			projectKey+"-"+envKey+"-"+flagKey,

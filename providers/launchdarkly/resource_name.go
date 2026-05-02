@@ -15,3 +15,7 @@ func resourceNameWithID(name, id string) string {
 	}
 	return name + "-" + id
 }
+
+func launchDarklyProjectResourceName(projectKey, name, key string) string {
+	return projectKey + "-" + resourceNameWithID(name, key)
+}
