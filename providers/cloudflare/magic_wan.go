@@ -151,7 +151,7 @@ func (g *MagicWANGenerator) InitResources() error {
 		}
 		g.Resources = append(g.Resources, terraformutils.NewResource(
 			route.ID,
-			cloudflareResourceName(accountID, route.Prefix, route.ID),
+			cloudflareResourceName(accountID, route.ID),
 			"cloudflare_magic_wan_static_route",
 			"cloudflare",
 			attributes,
