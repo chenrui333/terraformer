@@ -51,7 +51,7 @@ type importResourcesPostProcessor interface {
 }
 
 type importValidator interface {
-	ValidateImport() error
+	ValidateImport(resources []string) error
 }
 
 const DefaultPathPattern = "{output}/{provider}/{service}/"
@@ -116,10 +116,6 @@ func initOptionsAndWrapper(provider terraformutils.ProviderGenerator, options Im
 	if err != nil {
 		return nil, options, err
 	}
-	if err := validateImport(provider); err != nil {
-		return nil, options, err
-	}
-
 	if terraformerstring.ContainsString(options.Resources, "*") {
 		log.Println("Attempting an import of ALL resources in " + provider.GetName())
 		options.Resources = providerServices(provider)
@@ -141,6 +137,9 @@ func initOptionsAndWrapper(provider terraformutils.ProviderGenerator, options Im
 		}
 		options.Resources = localSlice
 	}
+	if err := validateImport(provider, options.Resources); err != nil {
+		return nil, options, err
+	}
 
 	providerWrapper, err := providerwrapper.NewProviderWrapper(provider.GetName(), provider.GetConfig(), options.Verbose, map[string]int{"retryCount": options.RetryCount, "retrySleepMs": options.RetrySleepMs})
 	if err != nil {
@@ -150,9 +149,9 @@ func initOptionsAndWrapper(provider terraformutils.ProviderGenerator, options Im
 	return providerWrapper, options, nil
 }
 
-func validateImport(provider terraformutils.ProviderGenerator) error {
+func validateImport(provider terraformutils.ProviderGenerator, resources []string) error {
 	if validator, ok := provider.(importValidator); ok {
-		return validator.ValidateImport()
+		return validator.ValidateImport(resources)
 	}
 	return nil
 }
