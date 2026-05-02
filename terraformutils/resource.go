@@ -12,6 +12,7 @@ import (
 
 	"github.com/chenrui333/terraformer/terraformutils/providerwrapper"
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat/providerproto"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -152,6 +153,10 @@ func (r *Resource) setItem(attributes map[string]interface{}) {
 }
 
 func (r *Resource) ConvertTFstate(provider *providerwrapper.ProviderWrapper) error {
+	return r.convertTFstate(provider.GetSchema())
+}
+
+func (r *Resource) convertTFstate(schema *providerproto.GetProviderSchemaResponse) error {
 	ignoreKeys := []*regexp.Regexp{}
 	for _, pattern := range r.IgnoreKeys {
 		ignoreKeys = append(ignoreKeys, regexp.MustCompile(pattern))
@@ -163,19 +168,42 @@ func (r *Resource) ConvertTFstate(provider *providerwrapper.ProviderWrapper) err
 		}
 	}
 	parser := NewFlatmapParser(r.InstanceState.Attributes, ignoreKeys, allowEmptyValues)
-	schema := provider.GetSchema()
 	impliedType := schema.ResourceTypes[r.InstanceInfo.Type].Block.ImpliedType()
 	err := r.ParseTFstate(parser, impliedType)
-	if err == nil {
+	if err == nil && !needsTypedManifestAttributes(r.InstanceInfo.Type, r.Item) {
 		return nil
 	}
 
 	attributes, typedErr := typedAttributesAsMap(r.InstanceState.TypedAttributes, ignoreKeys)
 	if typedErr != nil {
+		if err == nil {
+			return nil
+		}
 		return err
+	}
+	if err == nil && needsTypedManifestAttributes(r.InstanceInfo.Type, attributes) {
+		return nil
 	}
 	r.setItem(attributes)
 	return nil
+}
+
+func needsTypedManifestAttributes(resourceType string, attributes map[string]interface{}) bool {
+	if resourceType != "kubernetes_manifest" {
+		return false
+	}
+	return !manifestAttributeHasValue(attributes["manifest"])
+}
+
+func manifestAttributeHasValue(value interface{}) bool {
+	switch value := value.(type) {
+	case nil:
+		return false
+	case map[string]interface{}:
+		return len(value) > 0
+	default:
+		return true
+	}
 }
 
 func typedAttributesAsMap(raw json.RawMessage, ignoreKeys []*regexp.Regexp) (map[string]interface{}, error) {

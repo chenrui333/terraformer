@@ -8,6 +8,9 @@ import (
 	"testing"
 
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat/configschema"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat/providerproto"
+	"github.com/zclconf/go-cty/cty"
 )
 
 func TestNewResource(t *testing.T) {
@@ -189,5 +192,77 @@ func TestTypedAttributesAsMapFiltersIgnoredTopLevelAttributes(t *testing.T) {
 	}
 	if manifest["apiVersion"] != "example.com/v1" {
 		t.Fatalf("manifest.apiVersion = %v, want %q", manifest["apiVersion"], "example.com/v1")
+	}
+}
+
+func TestConvertTFstateUsesTypedManifestWhenFlatmapHasNoManifest(t *testing.T) {
+	resource := Resource{
+		InstanceInfo: &tfcompat.InstanceInfo{Type: "kubernetes_manifest"},
+		InstanceState: &tfcompat.InstanceState{
+			Attributes: map[string]string{
+				"id": "apiVersion=example.com/v1,kind=Widget,name=sample",
+			},
+			TypedAttributes: json.RawMessage("{\"id\":\"apiVersion=example.com/v1,kind=Widget,name=sample\",\"manifest\":{\"apiVersion\":\"example.com/v1\",\"kind\":\"Widget\",\"metadata\":{\"name\":\"sample\"}}}"),
+		},
+		IgnoreKeys: []string{"^id$"},
+	}
+
+	if err := resource.convertTFstate(kubernetesManifestTestSchema()); err != nil {
+		t.Fatalf("ConvertTFstate() error = %v", err)
+	}
+
+	manifest, ok := resource.Item["manifest"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("manifest attribute type = %T, want map[string]interface{}", resource.Item["manifest"])
+	}
+	if manifest["apiVersion"] != "example.com/v1" {
+		t.Fatalf("manifest.apiVersion = %v, want %q", manifest["apiVersion"], "example.com/v1")
+	}
+	if _, ok := resource.Item["id"]; ok {
+		t.Fatal("id attribute was not filtered from typed manifest fallback")
+	}
+}
+
+func TestConvertTFstateKeepsParsedManifestWhenFlatmapHasManifest(t *testing.T) {
+	resource := Resource{
+		InstanceInfo: &tfcompat.InstanceInfo{Type: "kubernetes_manifest"},
+		InstanceState: &tfcompat.InstanceState{
+			Attributes: map[string]string{
+				"manifest.%":          "2",
+				"manifest.apiVersion": "example.com/v1",
+				"manifest.kind":       "Widget",
+			},
+			TypedAttributes: json.RawMessage("{\"manifest\":{\"apiVersion\":\"typed.example.com/v1\",\"kind\":\"Widget\"}}"),
+		},
+	}
+
+	if err := resource.convertTFstate(kubernetesManifestTestSchema()); err != nil {
+		t.Fatalf("ConvertTFstate() error = %v", err)
+	}
+
+	manifest := resource.Item["manifest"].(map[string]interface{})
+	if manifest["apiVersion"] != "example.com/v1" {
+		t.Fatalf("manifest.apiVersion = %v, want flatmap value %q", manifest["apiVersion"], "example.com/v1")
+	}
+}
+
+func kubernetesManifestTestSchema() *providerproto.GetProviderSchemaResponse {
+	return &providerproto.GetProviderSchemaResponse{
+		ResourceTypes: map[string]configschema.Schema{
+			"kubernetes_manifest": {
+				Block: &configschema.Block{
+					Attributes: map[string]*configschema.Attribute{
+						"id": {
+							Type:     cty.String,
+							Computed: true,
+						},
+						"manifest": {
+							Type:     cty.Map(cty.String),
+							Optional: true,
+						},
+					},
+				},
+			},
+		},
 	}
 }
