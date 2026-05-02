@@ -60,16 +60,12 @@ func (g *TeamGenerator) InitResources() error {
 	for _, filter := range g.Filter {
 		if filter.FieldPath == "id" && filter.IsApplicable("team") {
 			for _, value := range filter.AcceptableValues {
-				teamResponse, _, err := api.GetTeam(auth, value)
+				team, err := getTeam(auth, api, value)
 				if err != nil {
 					return err
 				}
-				team, ok := teamResponse.GetDataOk()
-				if !ok {
-					return fmt.Errorf("team %q not found", value)
-				}
 
-				resources = append(resources, g.createResource(*team))
+				resources = append(resources, g.createResource(team))
 			}
 		}
 	}
@@ -85,6 +81,23 @@ func (g *TeamGenerator) InitResources() error {
 	}
 	g.Resources = g.createResources(teams)
 	return nil
+}
+
+func getTeam(auth context.Context, api *datadogV2.TeamsApi, teamID string) (datadogV2.Team, error) {
+	teamResponse, httpResponse, err := api.GetTeam(auth, teamID)
+	if httpResponse != nil && httpResponse.Body != nil {
+		defer httpResponse.Body.Close()
+	}
+	if err != nil {
+		return datadogV2.Team{}, err
+	}
+
+	team, ok := teamResponse.GetDataOk()
+	if !ok {
+		return datadogV2.Team{}, fmt.Errorf("team %q not found", teamID)
+	}
+
+	return *team, nil
 }
 
 func listTeams(auth context.Context, api *datadogV2.TeamsApi) ([]datadogV2.Team, error) {
