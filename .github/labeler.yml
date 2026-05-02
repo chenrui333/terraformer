@@ -51,3 +51,312 @@ bug:
   - head-branch:
       - "^fix/"
       - "^bugfix/"
+
+
+provider/alicloud:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/alicloud/**"
+          - "docs/alicloud.md"
+          - "cmd/provider_cmd_alicloud.go"
+
+provider/auth0:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/auth0/**"
+          - "docs/auth0.md"
+          - "cmd/provider_cmd_auth0.go"
+
+provider/aws:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/aws/**"
+          - "docs/aws.md"
+          - "cmd/provider_cmd_aws.go"
+
+provider/azure:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/azure/**"
+          - "docs/azure.md"
+          - "cmd/provider_cmd_azure.go"
+
+provider/azuread:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/azuread/**"
+          - "docs/azuread.md"
+          - "cmd/provider_cmd_azuread.go"
+
+provider/azuredevops:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/azuredevops/**"
+          - "docs/azuredevops.md"
+          - "cmd/provider_cmd_azuredevops.go"
+
+provider/cloudflare:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/cloudflare/**"
+          - "docs/cloudflare.md"
+          - "cmd/provider_cmd_cloudflare.go"
+
+provider/commercetools:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/commercetools/**"
+          - "docs/commercetools.md"
+          - "cmd/provider_cmd_commercetools.go"
+
+provider/datadog:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/datadog/**"
+          - "docs/datadog.md"
+          - "cmd/provider_cmd_datadog.go"
+
+provider/digitalocean:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/digitalocean/**"
+          - "docs/digitalocean.md"
+          - "cmd/provider_cmd_digitalocean.go"
+
+provider/equinixmetal:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/equinixmetal/**"
+          - "docs/equinixmetal.md"
+          - "cmd/provider_cmd_equinixmetal.go"
+
+provider/fastly:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/fastly/**"
+          - "docs/fastly.md"
+          - "cmd/provider_cmd_fastly.go"
+
+provider/gcp:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/gcp/**"
+          - "docs/gcp.md"
+          - "cmd/provider_cmd_google.go"
+
+provider/github:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/github/**"
+          - "docs/github.md"
+          - "cmd/provider_cmd_github.go"
+
+provider/gitlab:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/gitlab/**"
+          - "docs/gitlab.md"
+          - "cmd/provider_cmd_gitlab.go"
+
+provider/gmailfilter:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/gmailfilter/**"
+          - "docs/gmailfilter.md"
+          - "cmd/provider_cmd_gmailfilter.go"
+
+provider/grafana:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/grafana/**"
+          - "docs/grafana.md"
+          - "cmd/provider_cmd_grafana.go"
+
+provider/heroku:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/heroku/**"
+          - "docs/heroku.md"
+          - "cmd/provider_cmd_heroku.go"
+
+provider/honeycombio:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/honeycombio/**"
+          - "docs/honeycombio.md"
+          - "cmd/provider_cmd_honeycombio.go"
+
+provider/ibm:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/ibm/**"
+          - "docs/ibmcloud.md"
+          - "cmd/provider_cmd_ibm.go"
+
+provider/ionoscloud:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/ionoscloud/**"
+          - "docs/ionoscloud.md"
+          - "cmd/provider_cmd_ionoscloud.go"
+
+provider/keycloak:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/keycloak/**"
+          - "docs/keycloak.md"
+          - "cmd/provider_cmd_keycloak.go"
+
+provider/kubernetes:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/kubernetes/**"
+          - "docs/kubernetes.md"
+          - "cmd/provider_cmd_kubernetes.go"
+
+provider/launchdarkly:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/launchdarkly/**"
+          - "docs/launchdarkly.md"
+          - "cmd/provider_cmd_launchdarkly.go"
+
+provider/linode:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/linode/**"
+          - "docs/linode.md"
+          - "cmd/provider_cmd_linode.go"
+
+provider/logzio:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/logzio/**"
+          - "docs/logz.md"
+          - "cmd/provider_cmd_logzio.go"
+
+provider/mackerel:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/mackerel/**"
+          - "docs/mackerel.md"
+          - "cmd/provider_cmd_mackerel.go"
+
+provider/mikrotik:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/mikrotik/**"
+          - "docs/mikrotik.md"
+          - "cmd/provider_cmd_mikrotik.go"
+
+provider/myrasec:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/myrasec/**"
+          - "docs/myrasec.md"
+          - "cmd/provider_cmd_myrasec.go"
+
+provider/newrelic:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/newrelic/**"
+          - "docs/relic.md"
+          - "cmd/provider_cmd_newrelic.go"
+
+provider/ns1:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/ns1/**"
+          - "docs/ns1.md"
+          - "cmd/provider_cmd_ns1.go"
+
+provider/octopusdeploy:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/octopusdeploy/**"
+          - "docs/octopus.md"
+          - "cmd/provider_cmd_octopusdeploy.go"
+
+provider/okta:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/okta/**"
+          - "docs/okta.md"
+          - "cmd/provider_cmd_okta.go"
+
+provider/opal:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/opal/**"
+          - "docs/opal.md"
+          - "cmd/provider_cmd_opal.go"
+
+provider/openstack:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/openstack/**"
+          - "docs/openstack.md"
+          - "cmd/provider_cmd_openstack.go"
+
+provider/opsgenie:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/opsgenie/**"
+          - "docs/opsgenie.md"
+          - "cmd/provider_cmd_opsgenie.go"
+
+provider/pagerduty:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/pagerduty/**"
+          - "docs/pagerduty.md"
+          - "cmd/provider_cmd_pagerduty.go"
+
+provider/panos:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/panos/**"
+          - "docs/panos.md"
+          - "cmd/provider_cmd_panos.go"
+
+provider/rabbitmq:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/rabbitmq/**"
+          - "docs/rabbitmq.md"
+          - "cmd/provider_cmd_rabbitmq.go"
+
+provider/tencentcloud:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/tencentcloud/**"
+          - "docs/tencentcloud.md"
+          - "cmd/provider_cmd_tencentcloud.go"
+
+provider/vault:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/vault/**"
+          - "docs/vault.md"
+          - "cmd/provider_cmd_vault.go"
+
+provider/vultr:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/vultr/**"
+          - "docs/vultr.md"
+          - "cmd/provider_cmd_vultr.go"
+
+provider/xenorchestra:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/xenorchestra/**"
+          - "docs/xen.md"
+          - "cmd/provider_cmd_xenorchestra.go"
+
+provider/yandex:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/yandex/**"
+          - "docs/yandex.md"
+          - "cmd/provider_cmd_yandex.go"

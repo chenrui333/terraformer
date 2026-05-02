@@ -7,6 +7,8 @@ on:
       - synchronize
       - reopened
       - edited
+      - ready_for_review
+  workflow_dispatch:
 
 permissions:
   contents: read
