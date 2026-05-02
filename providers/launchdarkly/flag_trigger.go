@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	ldapi "github.com/launchdarkly/api-client-go/v16"
@@ -57,7 +56,7 @@ func (g *FlagTriggerGenerator) loadFlagTriggers(ctx context.Context, client *lda
 	for _, trigger := range triggers.GetItems() {
 		triggerID := trigger.GetId()
 		resource := terraformutils.NewResource(
-			strings.Join([]string{projectKey, envKey, flagKey, triggerID}, "/"),
+			triggerID,
 			fmt.Sprintf("%s-%s-%s-%s", projectKey, envKey, flagKey, triggerID),
 			"launchdarkly_flag_trigger",
 			"launchdarkly",
