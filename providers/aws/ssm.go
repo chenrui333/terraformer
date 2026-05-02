@@ -55,6 +55,7 @@ func (g *SsmGenerator) InitResources() error {
 		{name: "associations", load: func() error { return g.addAssociations(svc) }},
 		{name: "maintenance windows", load: func() error { return g.addMaintenanceWindows(svc) }},
 		{name: "patch baselines", load: func() error { return g.addPatchBaselines(svc) }},
+		{name: "default patch baselines", load: func() error { return g.addDefaultPatchBaselines(svc) }},
 		{name: "patch groups", load: func() error { return g.addPatchGroups(svc) }},
 		{name: "resource data syncs", load: func() error { return g.addResourceDataSyncs(svc) }},
 		{name: "activations", load: func() error { return g.addActivations(svc) }},
@@ -279,25 +280,40 @@ func (g *SsmGenerator) addPatchBaselines(svc *ssm.Client) error {
 				ssmAllowEmptyValues,
 				map[string]interface{}{},
 			))
-			if baseline.DefaultBaseline {
-				operatingSystem := string(baseline.OperatingSystem)
-				if operatingSystem == "" {
-					continue
-				}
-				g.Resources = append(g.Resources, terraformutils.NewResource(
-					operatingSystem,
-					ssmResourceName("default", operatingSystem, baselineID),
-					"aws_ssm_default_patch_baseline",
-					"aws",
-					map[string]string{
-						"baseline_id":      baselineID,
-						"operating_system": operatingSystem,
-					},
-					ssmAllowEmptyValues,
-					map[string]interface{}{},
-				))
-			}
 		}
+	}
+	return nil
+}
+
+func (g *SsmGenerator) addDefaultPatchBaselines(svc *ssm.Client) error {
+	for _, operatingSystem := range ssmtypes.OperatingSystem("").Values() {
+		output, err := svc.GetDefaultPatchBaseline(context.TODO(), &ssm.GetDefaultPatchBaselineInput{
+			OperatingSystem: operatingSystem,
+		})
+		if err != nil {
+			log.Printf("Skipping AWS SSM default patch baseline for %s: %v", operatingSystem, err)
+			continue
+		}
+		baselineID := StringValue(output.BaselineId)
+		if baselineID == "" {
+			continue
+		}
+		outputOperatingSystem := string(output.OperatingSystem)
+		if outputOperatingSystem == "" {
+			outputOperatingSystem = string(operatingSystem)
+		}
+		g.Resources = append(g.Resources, terraformutils.NewResource(
+			outputOperatingSystem,
+			ssmResourceName("default", outputOperatingSystem, baselineID),
+			"aws_ssm_default_patch_baseline",
+			"aws",
+			map[string]string{
+				"baseline_id":      baselineID,
+				"operating_system": outputOperatingSystem,
+			},
+			ssmAllowEmptyValues,
+			map[string]interface{}{},
+		))
 	}
 	return nil
 }
@@ -342,7 +358,7 @@ func (g *SsmGenerator) addResourceDataSyncs(svc *ssm.Client) error {
 		}
 		for _, sync := range page.ResourceDataSyncItems {
 			name := StringValue(sync.SyncName)
-			if name == "" {
+			if name == "" || !ssmResourceDataSyncImportable(sync) {
 				continue
 			}
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
@@ -485,6 +501,10 @@ func patchGroupBaselineID(patchGroup ssmtypes.PatchGroupPatchBaselineMapping) st
 		return ""
 	}
 	return StringValue(patchGroup.BaselineIdentity.BaselineId)
+}
+
+func ssmResourceDataSyncImportable(sync ssmtypes.ResourceDataSyncItem) bool {
+	return sync.S3Destination != nil || StringValue(sync.SyncType) == "SyncToDestination"
 }
 
 func ssmServiceSettingImportID(setting *ssmtypes.ServiceSetting, fallback string) string {

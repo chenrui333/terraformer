@@ -92,6 +92,27 @@ func TestSsmPatchGroupBaselineID(t *testing.T) {
 	}
 }
 
+func TestSsmResourceDataSyncImportable(t *testing.T) {
+	tests := []struct {
+		name string
+		sync ssmtypes.ResourceDataSyncItem
+		want bool
+	}{
+		{name: "empty", sync: ssmtypes.ResourceDataSyncItem{}, want: false},
+		{name: "s3 destination", sync: ssmtypes.ResourceDataSyncItem{S3Destination: &ssmtypes.ResourceDataSyncS3Destination{}}, want: true},
+		{name: "sync to destination", sync: ssmtypes.ResourceDataSyncItem{SyncType: aws.String("SyncToDestination")}, want: true},
+		{name: "sync from source", sync: ssmtypes.ResourceDataSyncItem{SyncType: aws.String("SyncFromSource")}, want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ssmResourceDataSyncImportable(tt.sync)
+			if got != tt.want {
+				t.Fatalf("ssmResourceDataSyncImportable() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestSsmServiceSettingImportID(t *testing.T) {
 	if got := ssmServiceSettingImportID(nil, "/ssm/example"); got != "/ssm/example" {
 		t.Fatalf("ssmServiceSettingImportID(nil) = %q, want fallback", got)
