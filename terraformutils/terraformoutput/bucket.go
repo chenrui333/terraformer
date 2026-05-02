@@ -3,7 +3,6 @@ package terraformoutput
 
 import (
 	"context"
-	"log"
 	"strings"
 
 	"cloud.google.com/go/storage"
@@ -38,7 +37,7 @@ func (b BucketState) BucketUpload(path string, file []byte) error {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
+		return err
 	}
 	name := strings.ReplaceAll(b.Name, "gs://", "")
 	wc := client.Bucket(name).Object(b.BucketPrefix(path) + "/default.tfstate").NewWriter(ctx)

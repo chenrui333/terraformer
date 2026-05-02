@@ -2,7 +2,11 @@
 
 package terraformoutput
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 func TestGetFileExtension(t *testing.T) {
 	tests := []struct {
@@ -87,5 +91,28 @@ func TestBucketGetTfData(t *testing.T) {
 				t.Errorf("prefix = %v, want %q", gcs["prefix"], tc.wantPrefix)
 			}
 		})
+	}
+}
+
+func TestPrintFileWritesData(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "provider.tf")
+	want := []byte("terraform {}")
+
+	if err := PrintFile(path, want); err != nil {
+		t.Fatalf("PrintFile() error = %v", err)
+	}
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error = %v", err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("PrintFile() wrote %q, want %q", got, want)
+	}
+}
+
+func TestPrintFileReturnsWriteError(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "missing", "provider.tf")
+	if err := PrintFile(path, []byte("terraform {}")); err == nil {
+		t.Fatal("PrintFile() error = nil, want write error")
 	}
 }

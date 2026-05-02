@@ -260,8 +260,12 @@ func printService(provider terraformutils.ProviderGenerator, serviceName string,
 			return err
 		}
 		// create Bucket file
-		if bucketStateDataFile, err := terraformutils.Print(bucket.BucketGetTfData(path), map[string]struct{}{}, options.Output, !options.NoSort); err == nil {
-			terraformoutput.PrintFile(path+"/bucket.tf", bucketStateDataFile)
+		bucketStateDataFile, err := terraformutils.Print(bucket.BucketGetTfData(path), map[string]struct{}{}, options.Output, !options.NoSort)
+		if err != nil {
+			return err
+		}
+		if err := terraformoutput.PrintFile(path+"/bucket.tf", bucketStateDataFile); err != nil {
+			return err
 		}
 	} else {
 		if serviceName == "" {
@@ -311,7 +315,9 @@ func printService(provider terraformutils.ProviderGenerator, serviceName string,
 				if err != nil {
 					return err
 				}
-				terraformoutput.PrintFile(path+"/variables."+terraformoutput.GetFileExtension(options.Output), variablesFile)
+				if err := terraformoutput.PrintFile(path+"/variables."+terraformoutput.GetFileExtension(options.Output), variablesFile); err != nil {
+					return err
+				}
 			}
 		}
 	} else {
@@ -341,7 +347,9 @@ func printService(provider terraformutils.ProviderGenerator, serviceName string,
 				if err != nil {
 					return err
 				}
-				terraformoutput.PrintFile(path+"/variables."+terraformoutput.GetFileExtension(options.Output), variablesFile)
+				if err := terraformoutput.PrintFile(path+"/variables."+terraformoutput.GetFileExtension(options.Output), variablesFile); err != nil {
+					return err
+				}
 			}
 		}
 	}
