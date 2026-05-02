@@ -15,7 +15,7 @@ import (
 
 var (
 	// SensitiveDataScannerRuleAllowEmptyValues ...
-	SensitiveDataScannerRuleAllowEmptyValues = []string{"included_keyword_configuration.*.keywords"}
+	SensitiveDataScannerRuleAllowEmptyValues = []string{"excluded_namespaces.", "included_keyword_configuration.*.keywords", "namespaces."}
 )
 
 // SensitiveDataScannerRuleGenerator ...

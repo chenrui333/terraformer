@@ -45,6 +45,52 @@ func TestSensitiveDataScannerGroupAllowEmptyValuesPreservesFilterQuery(t *testin
 	}
 }
 
+func TestSensitiveDataScannerRuleAllowEmptyValuesPreservesNamespaceEntries(t *testing.T) {
+	allowEmptyValues := compileSensitiveDataScannerAllowEmptyValues(SensitiveDataScannerRuleAllowEmptyValues)
+
+	parser := terraformutils.NewFlatmapParser(map[string]string{
+		"namespaces.#":          "2",
+		"namespaces.0":          "",
+		"namespaces.1":          "payload.user",
+		"excluded_namespaces.#": "1",
+		"excluded_namespaces.0": "",
+	}, nil, allowEmptyValues)
+	ruleType := cty.Object(map[string]cty.Type{
+		"namespaces":          cty.List(cty.String),
+		"excluded_namespaces": cty.List(cty.String),
+	})
+
+	result, err := parser.Parse(ruleType)
+	if err != nil {
+		t.Fatalf("Parse returned error: %v", err)
+	}
+
+	namespaces, ok := result["namespaces"].([]interface{})
+	if !ok {
+		t.Fatalf("namespaces = %T, want []interface{}", result["namespaces"])
+	}
+	if len(namespaces) != 2 {
+		t.Fatalf("namespaces length = %d, want %d", len(namespaces), 2)
+	}
+	if namespaces[0] != "" {
+		t.Fatalf("namespaces[0] = %v, want empty string", namespaces[0])
+	}
+	if namespaces[1] != "payload.user" {
+		t.Fatalf("namespaces[1] = %v, want %q", namespaces[1], "payload.user")
+	}
+
+	excludedNamespaces, ok := result["excluded_namespaces"].([]interface{})
+	if !ok {
+		t.Fatalf("excluded_namespaces = %T, want []interface{}", result["excluded_namespaces"])
+	}
+	if len(excludedNamespaces) != 1 {
+		t.Fatalf("excluded_namespaces length = %d, want %d", len(excludedNamespaces), 1)
+	}
+	if excludedNamespaces[0] != "" {
+		t.Fatalf("excluded_namespaces[0] = %v, want empty string", excludedNamespaces[0])
+	}
+}
+
 func TestSensitiveDataScannerGroupCreateResource(t *testing.T) {
 	group := datadogV2.NewSensitiveDataScannerGroupIncludedItemWithDefaults()
 	group.SetId("group-id")
