@@ -105,7 +105,7 @@ func (g *TeamLinkGenerator) filteredResources(auth context.Context, api *datadog
 	resources := []terraformutils.Resource{}
 	filtered := false
 
-	for _, filter := range g.Filter {
+	for filterIndex, filter := range g.Filter {
 		if !filter.IsApplicable("team_link") {
 			continue
 		}
@@ -113,21 +113,22 @@ func (g *TeamLinkGenerator) filteredResources(auth context.Context, api *datadog
 		switch filter.FieldPath {
 		case "id":
 			filtered = true
-			for _, value := range filter.AcceptableValues {
-				teamID, linkID, err := parseTeamLinkImportID(value)
+			filterIDs, err := parseTeamLinkImportIDs(filter.AcceptableValues)
+			if err != nil {
+				return nil, true, err
+			}
+			for _, filterID := range filterIDs {
+				teamLink, err := getTeamLink(auth, api, filterID.teamID, filterID.linkID)
 				if err != nil {
 					return nil, true, err
 				}
-				teamLink, err := getTeamLink(auth, api, teamID, linkID)
-				if err != nil {
-					return nil, true, err
-				}
-				resource, err := g.createResource(teamID, teamLink)
+				resource, err := g.createResource(filterID.teamID, teamLink)
 				if err != nil {
 					return nil, true, err
 				}
 				resources = append(resources, resource)
 			}
+			g.Filter[filterIndex].AcceptableValues = teamLinkIDs(filterIDs)
 		case "team_id":
 			filtered = true
 			for _, teamID := range filter.AcceptableValues {
@@ -145,6 +146,31 @@ func (g *TeamLinkGenerator) filteredResources(auth context.Context, api *datadog
 	}
 
 	return resources, filtered, nil
+}
+
+type teamLinkFilterID struct {
+	teamID string
+	linkID string
+}
+
+func parseTeamLinkImportIDs(importIDs []string) ([]teamLinkFilterID, error) {
+	filterIDs := []teamLinkFilterID{}
+	for _, importID := range importIDs {
+		teamID, linkID, err := parseTeamLinkImportID(importID)
+		if err != nil {
+			return nil, err
+		}
+		filterIDs = append(filterIDs, teamLinkFilterID{teamID: teamID, linkID: linkID})
+	}
+	return filterIDs, nil
+}
+
+func teamLinkIDs(filterIDs []teamLinkFilterID) []string {
+	linkIDs := []string{}
+	for _, filterID := range filterIDs {
+		linkIDs = append(linkIDs, filterID.linkID)
+	}
+	return linkIDs
 }
 
 func parseTeamLinkImportID(importID string) (string, string, error) {

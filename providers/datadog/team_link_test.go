@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 func TestTeamLinkCreateResource(t *testing.T) {
@@ -153,6 +154,41 @@ func TestParseTeamLinkImportID(t *testing.T) {
 				t.Fatalf("linkID = %q, want %q", linkID, tt.wantLinkID)
 			}
 		})
+	}
+}
+
+func TestTeamLinkNormalizeIDFilterValues(t *testing.T) {
+	filterIDs, err := parseTeamLinkImportIDs([]string{"team-1:link-1", "team-2:link-2"})
+	if err != nil {
+		t.Fatalf("parseTeamLinkImportIDs() error = %v", err)
+	}
+
+	resource, err := (&TeamLinkGenerator{}).createResource("team-1", datadogV2.TeamLink{Id: "link-1"})
+	if err != nil {
+		t.Fatalf("createResource() error = %v", err)
+	}
+
+	compositeFilter := terraformutils.ResourceFilter{
+		ServiceName:      "team_link",
+		FieldPath:        "id",
+		AcceptableValues: []string{"team-1:link-1", "team-2:link-2"},
+	}
+	if compositeFilter.Filter(resource) {
+		t.Fatal("composite id filter should not match resource whose state ID is the link ID")
+	}
+
+	generator := TeamLinkGenerator{}
+	generator.Filter = []terraformutils.ResourceFilter{
+		{
+			ServiceName:      "team_link",
+			FieldPath:        "id",
+			AcceptableValues: []string{"team-1:link-1", "team-2:link-2"},
+		},
+	}
+	generator.Filter[0].AcceptableValues = teamLinkIDs(filterIDs)
+
+	if !generator.Filter[0].Filter(resource) {
+		t.Fatal("normalized id filter should keep resource whose state ID is the link ID")
 	}
 }
 
