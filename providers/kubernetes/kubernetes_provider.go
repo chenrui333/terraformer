@@ -139,6 +139,10 @@ func (p *KubernetesProvider) GetSupportedService() map[string]terraformutils.Ser
 		_, exists := resp.ResourceTypes[name]
 		return exists
 	})
+	addSecretDataService(resources, clientset, listableResources, func(name string) bool {
+		_, exists := resp.ResourceTypes[name]
+		return exists
+	})
 	return resources
 }
 
@@ -236,9 +240,31 @@ func addConfigMapDataService(
 	}
 }
 
+func addSecretDataService(
+	resources map[string]terraformutils.ServiceGenerator,
+	clientset k8sclient.Interface,
+	listableResources map[kubernetesResourceID]struct{},
+	hasResourceType func(string) bool,
+) {
+	if _, ok := listableResources[kubernetesResourceID{version: "v1", kind: "Secret"}]; !ok {
+		return
+	}
+	if !supportsTypedClientResource(clientset, "", "v1", "Secret") {
+		return
+	}
+	if !hasResourceType(secretDataTerraformType) {
+		return
+	}
+
+	resources[secretDataServiceName] = &SecretData{
+		TerraformType: secretDataTerraformType,
+	}
+}
+
 func (p KubernetesProvider) PostProcessImportResources(resourcesByService map[string][]terraformutils.Resource) map[string][]terraformutils.Resource {
 	resourcesByService = removeDefaultServiceAccountDuplicates(resourcesByService)
 	resourcesByService = removeConfigMapDataDuplicates(resourcesByService)
+	resourcesByService = removeSecretDataDuplicates(resourcesByService)
 	return resourcesByService
 }
 
@@ -304,6 +330,44 @@ func removeConfigMapDataDuplicates(resourcesByService map[string][]terraformutil
 		return resourcesByService
 	}
 	resourcesByService[configMapDataServiceName] = filtered
+	return resourcesByService
+}
+
+func removeSecretDataDuplicates(resourcesByService map[string][]terraformutils.Resource) map[string][]terraformutils.Resource {
+	secrets, ok := resourcesByService["secrets"]
+	if !ok {
+		return resourcesByService
+	}
+	secretIDs := map[string]struct{}{}
+	for _, resource := range secrets {
+		if resource.InstanceState != nil {
+			secretIDs[resource.InstanceState.ID] = struct{}{}
+		}
+	}
+	if len(secretIDs) == 0 {
+		return resourcesByService
+	}
+
+	secretData, ok := resourcesByService[secretDataServiceName]
+	if !ok {
+		return resourcesByService
+	}
+	filtered := secretData[:0]
+	for _, resource := range secretData {
+		if resource.InstanceState == nil {
+			filtered = append(filtered, resource)
+			continue
+		}
+		if _, duplicate := secretIDs[resource.InstanceState.ID]; duplicate {
+			continue
+		}
+		filtered = append(filtered, resource)
+	}
+	if len(filtered) == 0 {
+		delete(resourcesByService, secretDataServiceName)
+		return resourcesByService
+	}
+	resourcesByService[secretDataServiceName] = filtered
 	return resourcesByService
 }
 
