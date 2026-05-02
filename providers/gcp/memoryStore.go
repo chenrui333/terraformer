@@ -4,7 +4,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"strings"
 
 	"google.golang.org/api/compute/v1"
@@ -22,7 +22,7 @@ type MemoryStoreGenerator struct {
 }
 
 // Run on redisInstancesList and create for each TerraformResource
-func (g MemoryStoreGenerator) createResources(ctx context.Context, redisInstancesList *redis.ProjectsLocationsInstancesListCall) []terraformutils.Resource {
+func (g MemoryStoreGenerator) createResources(ctx context.Context, redisInstancesList *redis.ProjectsLocationsInstancesListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := redisInstancesList.Pages(ctx, func(page *redis.ListInstancesResponse) error {
 		for _, obj := range page.Instances {
@@ -44,9 +44,9 @@ func (g MemoryStoreGenerator) createResources(ctx context.Context, redisInstance
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list redis instances: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -61,6 +61,10 @@ func (g *MemoryStoreGenerator) InitResources() error {
 
 	redisInstancesList := redisService.Projects.Locations.Instances.List("projects/" + g.GetArgs()["project"].(string) + "/locations/" + g.GetArgs()["region"].(compute.Region).Name)
 
-	g.Resources = g.createResources(ctx, redisInstancesList)
+	resources, err := g.createResources(ctx, redisInstancesList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 	return nil
 }
