@@ -4,7 +4,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"strings"
 
 	"google.golang.org/api/pubsub/v1"
@@ -21,7 +21,7 @@ type PubsubGenerator struct {
 }
 
 // Run on subscriptionsList and create for each TerraformResource
-func (g PubsubGenerator) createSubscriptionsResources(ctx context.Context, subscriptionsList *pubsub.ProjectsSubscriptionsListCall) []terraformutils.Resource {
+func (g PubsubGenerator) createSubscriptionsResources(ctx context.Context, subscriptionsList *pubsub.ProjectsSubscriptionsListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := subscriptionsList.Pages(ctx, func(page *pubsub.ListSubscriptionsResponse) error {
 		for _, obj := range page.Subscriptions {
@@ -42,13 +42,13 @@ func (g PubsubGenerator) createSubscriptionsResources(ctx context.Context, subsc
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list pubsub subscriptions: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Run on topicsList and create for each TerraformResource
-func (g PubsubGenerator) createTopicsListResources(ctx context.Context, topicsList *pubsub.ProjectsTopicsListCall) []terraformutils.Resource {
+func (g PubsubGenerator) createTopicsListResources(ctx context.Context, topicsList *pubsub.ProjectsTopicsListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := topicsList.Pages(ctx, func(page *pubsub.ListTopicsResponse) error {
 		for _, obj := range page.Topics {
@@ -69,9 +69,9 @@ func (g PubsubGenerator) createTopicsListResources(ctx context.Context, topicsLi
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list pubsub topics: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -83,10 +83,16 @@ func (g *PubsubGenerator) InitResources() error {
 	}
 
 	subscriptionsList := pubsubService.Projects.Subscriptions.List("projects/" + g.GetArgs()["project"].(string))
-	subscriptionsResources := g.createSubscriptionsResources(ctx, subscriptionsList)
+	subscriptionsResources, err := g.createSubscriptionsResources(ctx, subscriptionsList)
+	if err != nil {
+		return err
+	}
 
 	topicsList := pubsubService.Projects.Topics.List("projects/" + g.GetArgs()["project"].(string))
-	topicsResources := g.createTopicsListResources(ctx, topicsList)
+	topicsResources, err := g.createTopicsListResources(ctx, topicsList)
+	if err != nil {
+		return err
+	}
 
 	g.Resources = append(g.Resources, subscriptionsResources...)
 	g.Resources = append(g.Resources, topicsResources...)
