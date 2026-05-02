@@ -4,7 +4,6 @@ package ibm
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/IBM/go-sdk-core/v4/core"
@@ -32,7 +31,7 @@ func (g *FlowLogGenerator) InitResources() error {
 	region := g.Args["region"].(string)
 	apiKey := os.Getenv("IC_API_KEY")
 	if apiKey == "" {
-		log.Fatal("No API key set")
+		return errMissingICAPIKey
 	}
 
 	isURL := GetVPCEndPoint(region)

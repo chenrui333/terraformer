@@ -3,6 +3,7 @@
 package cmd
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -28,6 +29,15 @@ func (p *testProvider) GenerateFiles()                                         {
 func (p *testProvider) GetProviderData(_ ...string) map[string]interface{}     { return nil }
 func (p *testProvider) GenerateOutputPath() error                              { return nil }
 func (p *testProvider) GetResourceConnections() map[string]map[string][]string { return nil }
+
+type validatingTestProvider struct {
+	testProvider
+	err error
+}
+
+func (p *validatingTestProvider) ValidateImport() error {
+	return p.err
+}
 
 func TestPath(t *testing.T) {
 	tests := []struct {
@@ -83,6 +93,18 @@ func TestProviderServices(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestValidateImport(t *testing.T) {
+	if err := validateImport(&testProvider{}); err != nil {
+		t.Fatalf("expected provider without validator to pass, got %v", err)
+	}
+
+	wantErr := errors.New("validation failed")
+	provider := &validatingTestProvider{err: wantErr}
+	if err := validateImport(provider); !errors.Is(err, wantErr) {
+		t.Fatalf("expected validation error %v, got %v", wantErr, err)
 	}
 }
 
