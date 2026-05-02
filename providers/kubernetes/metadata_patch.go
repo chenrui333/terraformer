@@ -269,11 +269,10 @@ func metadataPatchTargetIDs(resource terraformutils.Resource) []string {
 		return []string{resource.InstanceState.ID}
 	}
 
-	name := resource.InstanceState.Attributes["metadata.0.name"]
-	if name == "" {
+	name, namespace, namespaced, ok := metadataPatchResourceObject(resource)
+	if !ok {
 		return nil
 	}
-	namespace, namespaced := resource.InstanceState.Attributes["metadata.0.namespace"]
 
 	ids := []string{}
 	for _, resourceID := range metadataPatchResourceKindsForTerraformType(resource.InstanceInfo.Type) {
@@ -298,12 +297,41 @@ func metadataPatchFallbackTargetKeys(resource terraformutils.Resource) []string 
 	if !ok {
 		return nil
 	}
-	name := resource.InstanceState.Attributes["metadata.0.name"]
-	if name == "" {
+	name, namespace, namespaced, ok := metadataPatchResourceObject(resource)
+	if !ok {
 		return nil
 	}
-	namespace, namespaced := resource.InstanceState.Attributes["metadata.0.namespace"]
 	return []string{metadataPatchObjectKey(kind, namespace, name, namespaced)}
+}
+
+func metadataPatchResourceObject(resource terraformutils.Resource) (string, string, bool, bool) {
+	name := resource.InstanceState.Attributes["metadata.0.name"]
+	if name != "" {
+		namespace, namespaced := resource.InstanceState.Attributes["metadata.0.namespace"]
+		return name, namespace, namespaced, true
+	}
+	return metadataPatchResourceObjectFromImportID(resource.InstanceState.ID)
+}
+
+func metadataPatchResourceObjectFromImportID(id string) (string, string, bool, bool) {
+	if id == "" || strings.HasPrefix(id, "apiVersion=") {
+		return "", "", false, false
+	}
+	parts := strings.Split(id, "/")
+	switch len(parts) {
+	case 1:
+		if parts[0] == "" {
+			return "", "", false, false
+		}
+		return parts[0], "", false, true
+	case 2:
+		if parts[0] == "" || parts[1] == "" {
+			return "", "", false, false
+		}
+		return parts[1], parts[0], true, true
+	default:
+		return "", "", false, false
+	}
 }
 
 func metadataPatchResourceKindsForTerraformType(terraformType string) []kubernetesResourceID {

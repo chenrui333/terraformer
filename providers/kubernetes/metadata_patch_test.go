@@ -264,17 +264,11 @@ func TestAddMetadataPatchServicesRequiresProviderTypes(t *testing.T) {
 
 func TestPostProcessImportResourcesRemovesOverlappingMetadataPatches(t *testing.T) {
 	provider := KubernetesProvider{}
-	fullConfigMap := terraformutils.NewResource(
+	fullConfigMap := terraformutils.NewSimpleResource(
 		"default/app-config",
 		"default/app-config",
 		"kubernetes_config_map_v1",
 		"kubernetes",
-		map[string]string{
-			"metadata.#":           "1",
-			"metadata.0.name":      "app-config",
-			"metadata.0.namespace": "default",
-		},
-		nil,
 		nil,
 	)
 	resourcesByService := map[string][]terraformutils.Resource{
@@ -297,17 +291,11 @@ func TestPostProcessImportResourcesRemovesOverlappingMetadataPatches(t *testing.
 
 func TestPostProcessImportResourcesRemovesFallbackNativeMetadataPatchOverlap(t *testing.T) {
 	provider := KubernetesProvider{}
-	fullWidget := terraformutils.NewResource(
+	fullWidget := terraformutils.NewSimpleResource(
 		"default/sample",
 		"default/sample",
 		"kubernetes_widget",
 		"kubernetes",
-		map[string]string{
-			"metadata.#":           "1",
-			"metadata.0.name":      "sample",
-			"metadata.0.namespace": "default",
-		},
-		nil,
 		nil,
 	)
 	resourcesByService := map[string][]terraformutils.Resource{
@@ -329,17 +317,11 @@ func TestPostProcessImportResourcesRemovesFallbackNativeMetadataPatchOverlap(t *
 
 func TestPostProcessImportResourcesKeepsAmbiguousFallbackNativeMetadataPatchOverlap(t *testing.T) {
 	provider := KubernetesProvider{}
-	fullWidget := terraformutils.NewResource(
+	fullWidget := terraformutils.NewSimpleResource(
 		"default/sample",
 		"default/sample",
 		"kubernetes_widget",
 		"kubernetes",
-		map[string]string{
-			"metadata.#":           "1",
-			"metadata.0.name":      "sample",
-			"metadata.0.namespace": "default",
-		},
-		nil,
 		nil,
 	)
 	resourcesByService := map[string][]terraformutils.Resource{
@@ -383,16 +365,11 @@ func TestPostProcessImportResourcesRemovesManifestMetadataPatchOverlap(t *testin
 
 func TestPostProcessImportResourcesRemovesClusterScopedNativeMetadataPatchOverlap(t *testing.T) {
 	provider := KubernetesProvider{}
-	namespace := terraformutils.NewResource(
+	namespace := terraformutils.NewSimpleResource(
 		"team-a",
 		"team-a",
 		"kubernetes_namespace_v1",
 		"kubernetes",
-		map[string]string{
-			"metadata.#":      "1",
-			"metadata.0.name": "team-a",
-		},
-		nil,
 		nil,
 	)
 	resourcesByService := map[string][]terraformutils.Resource{
