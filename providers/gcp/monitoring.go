@@ -6,7 +6,7 @@ package gcp
 import (
 	"context"
 	"errors"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -42,8 +42,7 @@ func (g *MonitoringGenerator) loadAlerts(ctx context.Context, project string) er
 			break
 		}
 		if err != nil {
-			log.Println("error with alert:", err)
-			continue
+			return fmt.Errorf("list GCP monitoring alert policies: %w", err)
 		}
 		g.Resources = append(g.Resources, terraformutils.NewResource(
 			alert.Name,
@@ -78,8 +77,7 @@ func (g *MonitoringGenerator) loadGroups(ctx context.Context, project string) er
 			break
 		}
 		if err != nil {
-			log.Println("error with group:", err)
-			continue
+			return fmt.Errorf("list GCP monitoring groups: %w", err)
 		}
 		g.Resources = append(g.Resources, terraformutils.NewResource(
 			group.Name,
@@ -114,8 +112,7 @@ func (g *MonitoringGenerator) loadNotificationChannel(ctx context.Context, proje
 			break
 		}
 		if err != nil {
-			log.Println("error with notification Channel:", err)
-			continue
+			return fmt.Errorf("list GCP monitoring notification channels: %w", err)
 		}
 		g.Resources = append(g.Resources, terraformutils.NewResource(
 			notificationChannel.Name,
@@ -149,8 +146,7 @@ func (g *MonitoringGenerator) loadUptimeCheck(ctx context.Context, project strin
 			break
 		}
 		if err != nil {
-			log.Println("error with uptimeCheckConfigs:", err)
-			continue
+			return fmt.Errorf("list GCP monitoring uptime check configs: %w", err)
 		}
 		g.Resources = append(g.Resources, terraformutils.NewResource(
 			uptimeCheckConfigs.Name,
