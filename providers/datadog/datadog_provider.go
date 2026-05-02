@@ -278,6 +278,16 @@ func (p DatadogProvider) GetResourceConnections() map[string]map[string][]string
 				"monitor_ids", "id",
 			},
 		},
+		"sensitive_data_scanner_group_order": {
+			"sensitive_data_scanner_group": {
+				"group_ids", "id",
+			},
+		},
+		"sensitive_data_scanner_rule": {
+			"sensitive_data_scanner_group": {
+				"group_id", "id",
+			},
+		},
 		"synthetics_test": {
 			"synthetics_private_location": {
 				"locations", "id",
