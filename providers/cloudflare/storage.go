@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	cf "github.com/cloudflare/cloudflare-go"
@@ -25,17 +26,32 @@ type r2BucketListResult struct {
 	Buckets []cf.R2Bucket
 }
 
-func cloudflareClientSkipError(err error) bool {
-	var authErr *cf.AuthenticationError
-	if errors.As(err, &authErr) {
-		return true
-	}
+func cloudflareUnsupportedJurisdictionError(err error) bool {
 	var notFoundErr *cf.NotFoundError
 	if errors.As(err, &notFoundErr) {
-		return true
+		return cloudflareErrorIndicatesUnsupportedJurisdiction(notFoundErr.Error(), notFoundErr.ErrorMessages())
 	}
 	var requestErr *cf.RequestError
-	return errors.As(err, &requestErr)
+	if errors.As(err, &requestErr) {
+		return cloudflareErrorIndicatesUnsupportedJurisdiction(requestErr.Error(), requestErr.ErrorMessages())
+	}
+	return false
+}
+
+func cloudflareErrorIndicatesUnsupportedJurisdiction(message string, errorMessages []string) bool {
+	messages := append([]string{message}, errorMessages...)
+	for _, msg := range messages {
+		normalized := strings.ToLower(msg)
+		if !strings.Contains(normalized, "jurisdiction") {
+			continue
+		}
+		for _, marker := range []string{"not enabled", "not found", "not supported", "unsupported", "invalid", "unknown"} {
+			if strings.Contains(normalized, marker) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func listR2BucketsInJurisdiction(
@@ -62,7 +78,7 @@ func listR2BucketsInJurisdiction(
 			headers,
 		)
 		if err != nil {
-			if jurisdiction != "default" && cloudflareClientSkipError(err) {
+			if jurisdiction != "default" && cloudflareUnsupportedJurisdictionError(err) {
 				return buckets, nil
 			}
 			return nil, err

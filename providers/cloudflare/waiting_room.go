@@ -6,6 +6,7 @@ import (
 	"context"
 
 	"github.com/chenrui333/terraformer/terraformutils"
+	cf "github.com/cloudflare/cloudflare-go"
 )
 
 type WaitingRoomGenerator struct {
@@ -40,17 +41,23 @@ func (g *WaitingRoomGenerator) InitResources() error {
 			setCloudflareImportID(&waitingRoomResource, zone.ID+"/"+waitingRoom.ID)
 			g.Resources = append(g.Resources, waitingRoomResource)
 
-			waitingRoomRulesResource := terraformutils.NewResource(
-				waitingRoom.ID,
-				cloudflareResourceName(zone.Name, waitingRoom.Name, waitingRoom.ID, "rules"),
-				"cloudflare_waiting_room_rules",
-				"cloudflare",
-				map[string]string{"zone_id": zone.ID, "waiting_room_id": waitingRoom.ID},
-				[]string{},
-				map[string]interface{}{},
-			)
-			setCloudflareImportID(&waitingRoomRulesResource, zone.ID+"/"+waitingRoom.ID)
-			g.Resources = append(g.Resources, waitingRoomRulesResource)
+			rules, err := api.ListWaitingRoomRules(ctx, cf.ZoneIdentifier(zone.ID), cf.ListWaitingRoomRuleParams{WaitingRoomID: waitingRoom.ID})
+			if err != nil {
+				return err
+			}
+			if len(rules) > 0 {
+				waitingRoomRulesResource := terraformutils.NewResource(
+					waitingRoom.ID,
+					cloudflareResourceName(zone.Name, waitingRoom.Name, waitingRoom.ID, "rules"),
+					"cloudflare_waiting_room_rules",
+					"cloudflare",
+					map[string]string{"zone_id": zone.ID, "waiting_room_id": waitingRoom.ID},
+					[]string{},
+					map[string]interface{}{},
+				)
+				setCloudflareImportID(&waitingRoomRulesResource, zone.ID+"/"+waitingRoom.ID)
+				g.Resources = append(g.Resources, waitingRoomRulesResource)
+			}
 
 			events, err := api.ListWaitingRoomEvents(ctx, zone.ID, waitingRoom.ID)
 			if err != nil {
