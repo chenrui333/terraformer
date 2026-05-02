@@ -4,11 +4,14 @@ package keycloak
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/zclconf/go-cty/cty"
 )
+
+const keycloakInitArgCount = 10
 
 type KeycloakProvider struct { //nolint
 	terraformutils.Provider
@@ -32,15 +35,32 @@ func getArg(arg string) string {
 }
 
 func (p *KeycloakProvider) Init(args []string) error {
+	if len(args) < keycloakInitArgCount {
+		return fmt.Errorf("keycloak: expected %d init args, got %d", keycloakInitArgCount, len(args))
+	}
+
+	clientTimeout, err := strconv.Atoi(args[5])
+	if err != nil {
+		return fmt.Errorf("keycloak: invalid client timeout %q: %w", args[5], err)
+	}
+	tlsInsecureSkipVerify, err := strconv.ParseBool(args[7])
+	if err != nil {
+		return fmt.Errorf("keycloak: invalid tls insecure skip verify %q: %w", args[7], err)
+	}
+	redHatSSO, err := strconv.ParseBool(args[8])
+	if err != nil {
+		return fmt.Errorf("keycloak: invalid red hat sso %q: %w", args[8], err)
+	}
+
 	p.url = args[0]
 	p.basePath = args[1]
 	p.clientID = args[2]
 	p.clientSecret = args[3]
 	p.realm = args[4]
-	p.clientTimeout, _ = strconv.Atoi(args[5])
+	p.clientTimeout = clientTimeout
 	p.caCert = getArg(args[6])
-	p.tlsInsecureSkipVerify, _ = strconv.ParseBool(args[7])
-	p.redHatSSO, _ = strconv.ParseBool(args[8])
+	p.tlsInsecureSkipVerify = tlsInsecureSkipVerify
+	p.redHatSSO = redHatSSO
 	p.target = getArg(args[9])
 	return nil
 }
