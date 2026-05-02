@@ -114,12 +114,14 @@ func TestFromFlatmapMap(t *testing.T) {
 
 func TestFromFlatmapMapOfLists(t *testing.T) {
 	attributes := map[string]string{
-		"pools.%":    "2",
-		"pools.EU.#": "1",
-		"pools.EU.0": "pool-eu",
-		"pools.US.#": "2",
-		"pools.US.0": "pool-us-a",
-		"pools.US.1": "pool-us-b",
+		"pools.%":       "3",
+		"pools.EU.#":    "1",
+		"pools.EU.0":    "pool-eu",
+		"pools.US.#":    "2",
+		"pools.US.0":    "pool-us-a",
+		"pools.US.1":    "pool-us-b",
+		"pools.X.Foo.#": "1",
+		"pools.X.Foo.0": "pool-dotted-key",
 	}
 	parser := NewFlatmapParser(attributes, nil, nil)
 	ty := cty.Object(map[string]cty.Type{
@@ -147,6 +149,16 @@ func TestFromFlatmapMapOfLists(t *testing.T) {
 	}
 	if len(eu) != 1 {
 		t.Errorf("pools[EU] length = %d, want 1", len(eu))
+	}
+	dotted, ok := pools["X.Foo"].([]interface{})
+	if !ok {
+		t.Fatalf("pools[X.Foo] is not []interface{}, got %T", pools["X.Foo"])
+	}
+	if len(dotted) != 1 {
+		t.Errorf("pools[X.Foo] length = %d, want 1", len(dotted))
+	}
+	if dotted[0] != "pool-dotted-key" {
+		t.Errorf("pools[X.Foo][0] = %v, want %q", dotted[0], "pool-dotted-key")
 	}
 }
 

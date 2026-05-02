@@ -222,10 +222,7 @@ func (p *FlatmapParser) fromFlatmapMap(prefix string, ty cty.Type) (map[string]i
 
 		valueKey := fullKey
 		if !ty.IsPrimitiveType() {
-			if dot := strings.IndexByte(key, '.'); dot != -1 {
-				key = key[:dot]
-				valueKey = prefix + key
-			}
+			key, valueKey = p.fromFlatmapMapElementKey(prefix, key, ty)
 		}
 		if _, exists := values[key]; exists {
 			continue
@@ -243,6 +240,68 @@ func (p *FlatmapParser) fromFlatmapMap(prefix string, ty cty.Type) (map[string]i
 		return nil, nil
 	}
 	return values, nil
+}
+
+func (p *FlatmapParser) fromFlatmapMapElementKey(prefix, key string, ty cty.Type) (string, string) {
+	for _, candidate := range flatmapMapKeyCandidates(key) {
+		valueKey := prefix + candidate
+		if p.flatmapValueExists(valueKey, ty) {
+			return candidate, valueKey
+		}
+	}
+
+	if dot := strings.IndexByte(key, '.'); dot != -1 {
+		key = key[:dot]
+	}
+	return key, prefix + key
+}
+
+func flatmapMapKeyCandidates(key string) []string {
+	candidates := []string{key}
+	for dot := strings.LastIndexByte(key, '.'); dot != -1; dot = strings.LastIndexByte(key[:dot], '.') {
+		if dot == 0 {
+			continue
+		}
+		candidates = append(candidates, key[:dot])
+	}
+	return candidates
+}
+
+func (p *FlatmapParser) flatmapValueExists(key string, ty cty.Type) bool {
+	if p.attributes[key] == tfcompat.UnknownVariableValue {
+		return true
+	}
+
+	switch {
+	case ty.IsPrimitiveType():
+		_, exists := p.attributes[key]
+		return exists
+	case ty.IsObjectType():
+		return p.flatmapObjectValueExists(key+".", ty.AttributeTypes())
+	case ty.IsTupleType(), ty.IsListType(), ty.IsSetType():
+		_, exists := p.attributes[key+".#"]
+		return exists
+	case ty.IsMapType():
+		_, exists := p.attributes[key+".%"]
+		return exists
+	default:
+		return false
+	}
+}
+
+func (p *FlatmapParser) flatmapObjectValueExists(prefix string, tys map[string]cty.Type) bool {
+	for name, ty := range tys {
+		key := prefix + name
+		if p.flatmapValueExists(key, ty) {
+			return true
+		}
+		for attributeKey := range p.attributes {
+			if strings.HasPrefix(attributeKey, key+".") {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (p *FlatmapParser) fromFlatmapList(prefix string, ty cty.Type) ([]interface{}, error) {
