@@ -23,7 +23,7 @@ func (*FirewallGenerator) createZoneLockdownsResources(api *cf.API, zoneID, zone
 		return resources, err
 	}
 	for _, zonelockdown := range zonelockdowns {
-		resources = append(resources, terraformutils.NewResource(
+		resource := terraformutils.NewResource(
 			zonelockdown.ID,
 			fmt.Sprintf("%s_%s", zoneName, zonelockdown.ID),
 			"cloudflare_zone_lockdown",
@@ -34,7 +34,9 @@ func (*FirewallGenerator) createZoneLockdownsResources(api *cf.API, zoneID, zone
 			},
 			[]string{},
 			map[string]interface{}{},
-		))
+		)
+		setCloudflareImportID(&resource, zoneID+"/"+zonelockdown.ID)
+		resources = append(resources, resource)
 	}
 
 	return resources, nil
@@ -50,13 +52,17 @@ func (g *FirewallGenerator) createAccountAccessRuleResources(api *cf.API) ([]ter
 
 	totalPages := rules.TotalPages
 	for _, rule := range rules.Result {
-		resources = append(resources, terraformutils.NewSimpleResource(
+		resource := terraformutils.NewResource(
 			rule.ID,
-			rule.ID,
+			cloudflareResourceName("accounts", accountID, rule.ID),
 			"cloudflare_access_rule",
 			"cloudflare",
+			map[string]string{"account_id": accountID},
 			[]string{},
-		))
+			map[string]interface{}{},
+		)
+		setCloudflareImportID(&resource, "accounts/"+accountID+"/"+rule.ID)
+		resources = append(resources, resource)
 	}
 
 	for page := 2; page <= totalPages; page++ {
@@ -65,13 +71,17 @@ func (g *FirewallGenerator) createAccountAccessRuleResources(api *cf.API) ([]ter
 			return resources, err
 		}
 		for _, rule := range rules.Result {
-			resources = append(resources, terraformutils.NewSimpleResource(
+			resource := terraformutils.NewResource(
 				rule.ID,
-				rule.ID,
+				cloudflareResourceName("accounts", accountID, rule.ID),
 				"cloudflare_access_rule",
 				"cloudflare",
+				map[string]string{"account_id": accountID},
 				[]string{},
-			))
+				map[string]interface{}{},
+			)
+			setCloudflareImportID(&resource, "accounts/"+accountID+"/"+rule.ID)
+			resources = append(resources, resource)
 		}
 	}
 
@@ -88,7 +98,7 @@ func (*FirewallGenerator) createZoneAccessRuleResources(api *cf.API, zoneID, zon
 	totalPages := rules.TotalPages
 	for _, r := range rules.Result {
 		if strings.Compare(r.Scope.Type, "organization") != 0 {
-			resources = append(resources, terraformutils.NewResource(
+			resource := terraformutils.NewResource(
 				r.ID,
 				fmt.Sprintf("%s_%s", zoneName, r.ID),
 				"cloudflare_access_rule",
@@ -98,7 +108,9 @@ func (*FirewallGenerator) createZoneAccessRuleResources(api *cf.API, zoneID, zon
 				},
 				[]string{},
 				map[string]interface{}{},
-			))
+			)
+			setCloudflareImportID(&resource, "zones/"+zoneID+"/"+r.ID)
+			resources = append(resources, resource)
 		}
 	}
 
@@ -109,7 +121,7 @@ func (*FirewallGenerator) createZoneAccessRuleResources(api *cf.API, zoneID, zon
 		}
 		for _, r := range rules.Result {
 			if strings.Compare(r.Scope.Type, "organization") != 0 {
-				resources = append(resources, terraformutils.NewResource(
+				resource := terraformutils.NewResource(
 					r.ID,
 					fmt.Sprintf("%s_%s", zoneName, r.ID),
 					"cloudflare_access_rule",
@@ -119,7 +131,9 @@ func (*FirewallGenerator) createZoneAccessRuleResources(api *cf.API, zoneID, zon
 					},
 					[]string{},
 					map[string]interface{}{},
-				))
+				)
+				setCloudflareImportID(&resource, "zones/"+zoneID+"/"+r.ID)
+				resources = append(resources, resource)
 			}
 		}
 	}
@@ -135,7 +149,7 @@ func (*FirewallGenerator) createFilterResources(api *cf.API, zoneID, zoneName st
 	}
 
 	for _, filter := range filters {
-		resources = append(resources, terraformutils.NewResource(
+		resource := terraformutils.NewResource(
 			filter.ID,
 			fmt.Sprintf("%s_%s", zoneName, filter.ID),
 			"cloudflare_filter",
@@ -145,7 +159,9 @@ func (*FirewallGenerator) createFilterResources(api *cf.API, zoneID, zoneName st
 			},
 			[]string{},
 			map[string]interface{}{},
-		))
+		)
+		setCloudflareImportID(&resource, zoneID+"/"+filter.ID)
+		resources = append(resources, resource)
 	}
 
 	return resources, nil
@@ -159,7 +175,7 @@ func (*FirewallGenerator) createFirewallRuleResources(api *cf.API, zoneID, zoneN
 		return resources, err
 	}
 	for _, rule := range fwrules {
-		resources = append(resources, terraformutils.NewResource(
+		resource := terraformutils.NewResource(
 			rule.ID,
 			fmt.Sprintf("%s_%s", zoneName, rule.ID),
 			"cloudflare_firewall_rule",
@@ -169,7 +185,9 @@ func (*FirewallGenerator) createFirewallRuleResources(api *cf.API, zoneID, zoneN
 			},
 			[]string{},
 			map[string]interface{}{},
-		))
+		)
+		setCloudflareImportID(&resource, zoneID+"/"+rule.ID)
+		resources = append(resources, resource)
 	}
 
 	return resources, nil
@@ -183,12 +201,17 @@ func (g *FirewallGenerator) createRateLimitResources(api *cf.API, zoneID, _ stri
 		return resources, err
 	}
 	for _, rateLimit := range rateLimits {
-		resources = append(resources, terraformutils.NewSimpleResource(
+		resource := terraformutils.NewResource(
 			rateLimit.ID,
 			fmt.Sprintf("%s_%s", zoneID, rateLimit.ID),
 			"cloudflare_rate_limit",
 			"cloudflare",
-			[]string{}))
+			map[string]string{"zone_id": zoneID},
+			[]string{},
+			map[string]interface{}{},
+		)
+		setCloudflareImportID(&resource, zoneID+"/"+rateLimit.ID)
+		resources = append(resources, resource)
 	}
 
 	return resources, nil
