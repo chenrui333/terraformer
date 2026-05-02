@@ -3,6 +3,7 @@
 package providerwrapper
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -26,6 +27,8 @@ import (
 
 // DefaultDataDir is the default directory for storing local data.
 const DefaultDataDir = ".terraform"
+
+const kubernetesManifestResourceType = "kubernetes_manifest"
 
 type ProviderWrapper struct {
 	Provider     *providerproto.GRPCProvider
@@ -190,7 +193,46 @@ func (p *ProviderWrapper) importResourceState(info *tfcompat.InstanceInfo, state
 	if len(importResponse.ImportedResources) == 0 {
 		return nil, errors.New("not able to import resource for a given ID")
 	}
-	return tfcompat.NewInstanceStateShimmedFromValue(importResponse.ImportedResources[0].State, int(schema.ResourceTypes[info.Type].Version)), nil
+	importedState := tfcompat.NewInstanceStateShimmedFromValue(importResponse.ImportedResources[0].State, int(schema.ResourceTypes[info.Type].Version))
+	populateKubernetesManifestFromObject(info.Type, importedState)
+	return importedState, nil
+}
+
+func populateKubernetesManifestFromObject(resourceType string, state *tfcompat.InstanceState) {
+	if resourceType != kubernetesManifestResourceType || state == nil || len(state.TypedAttributes) == 0 {
+		return
+	}
+
+	attributes := map[string]interface{}{}
+	if err := json.Unmarshal(state.TypedAttributes, &attributes); err != nil {
+		return
+	}
+	if manifestHasValue(attributes["manifest"]) {
+		return
+	}
+
+	object, ok := attributes["object"].(map[string]interface{})
+	if !ok || len(object) == 0 {
+		return
+	}
+	attributes["manifest"] = object
+
+	raw, err := json.Marshal(attributes)
+	if err != nil {
+		return
+	}
+	state.SetTypedAttributes(raw)
+}
+
+func manifestHasValue(value interface{}) bool {
+	switch value := value.(type) {
+	case nil:
+		return false
+	case map[string]interface{}:
+		return len(value) > 0
+	default:
+		return true
+	}
 }
 
 func (p *ProviderWrapper) initProvider(verbose bool) error {

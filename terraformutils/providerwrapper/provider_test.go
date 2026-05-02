@@ -1,6 +1,7 @@
 package providerwrapper
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -8,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat/configschema"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -73,6 +75,84 @@ func TestIgnoredAttributes(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestPopulateKubernetesManifestFromObject(t *testing.T) {
+	state := &tfcompat.InstanceState{
+		Attributes: map[string]string{
+			"id": "apiVersion=example.com/v1,kind=Widget,name=sample",
+		},
+		TypedAttributes: json.RawMessage(`{
+			"id": "apiVersion=example.com/v1,kind=Widget,name=sample",
+			"manifest": {},
+			"object": {
+				"apiVersion": "example.com/v1",
+				"kind": "Widget",
+				"metadata": {
+					"name": "sample"
+				}
+			}
+		}`),
+	}
+
+	populateKubernetesManifestFromObject(kubernetesManifestResourceType, state)
+
+	attributes := map[string]interface{}{}
+	if err := json.Unmarshal(state.TypedAttributes, &attributes); err != nil {
+		t.Fatalf("TypedAttributes unmarshal error = %v", err)
+	}
+	manifest, ok := attributes["manifest"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("manifest type = %T, want map[string]interface{}", attributes["manifest"])
+	}
+	if manifest["apiVersion"] != "example.com/v1" {
+		t.Fatalf("manifest.apiVersion = %v, want %q", manifest["apiVersion"], "example.com/v1")
+	}
+	if manifest["kind"] != "Widget" {
+		t.Fatalf("manifest.kind = %v, want %q", manifest["kind"], "Widget")
+	}
+	if _, ok := attributes["object"]; !ok {
+		t.Fatal("object was removed from imported state")
+	}
+	if !state.HasCurrentTypedAttributes() {
+		t.Fatal("typed attributes were not marked current after manifest population")
+	}
+}
+
+func TestPopulateKubernetesManifestFromObjectPreservesExistingManifest(t *testing.T) {
+	state := &tfcompat.InstanceState{
+		Attributes: map[string]string{
+			"id": "apiVersion=example.com/v1,kind=Widget,name=sample",
+		},
+		TypedAttributes: json.RawMessage(`{
+			"manifest": {
+				"apiVersion": "example.com/v1",
+				"kind": "Widget",
+				"metadata": {
+					"name": "configured"
+				}
+			},
+			"object": {
+				"apiVersion": "example.com/v1",
+				"kind": "Widget",
+				"metadata": {
+					"name": "sample"
+				}
+			}
+		}`),
+	}
+
+	populateKubernetesManifestFromObject(kubernetesManifestResourceType, state)
+
+	attributes := map[string]interface{}{}
+	if err := json.Unmarshal(state.TypedAttributes, &attributes); err != nil {
+		t.Fatalf("TypedAttributes unmarshal error = %v", err)
+	}
+	manifest := attributes["manifest"].(map[string]interface{})
+	metadata := manifest["metadata"].(map[string]interface{})
+	if metadata["name"] != "configured" {
+		t.Fatalf("manifest.metadata.name = %v, want %q", metadata["name"], "configured")
 	}
 }
 
