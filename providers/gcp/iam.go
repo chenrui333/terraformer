@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
-//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package gcp
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"regexp"
 
 	admin "cloud.google.com/go/iam/admin/apiv1"
+	adminpb "cloud.google.com/go/iam/admin/apiv1/adminpb"
 	"google.golang.org/api/cloudresourcemanager/v1"
 	"google.golang.org/api/iterator"
-	adminpb "google.golang.org/genproto/googleapis/iam/admin/v1"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 )
@@ -25,7 +25,11 @@ type IamGenerator struct {
 	GCPService
 }
 
-func (g IamGenerator) createServiceAccountResources(serviceAccountsIterator *admin.ServiceAccountIterator) []terraformutils.Resource {
+type serviceAccountIterator interface {
+	Next() (*adminpb.ServiceAccount, error)
+}
+
+func (g IamGenerator) createServiceAccountResources(serviceAccountsIterator serviceAccountIterator) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	re := regexp.MustCompile(`^[a-z]`)
 	for {
@@ -34,8 +38,7 @@ func (g IamGenerator) createServiceAccountResources(serviceAccountsIterator *adm
 			break
 		}
 		if err != nil {
-			log.Println("error with service account:", err)
-			continue
+			return nil, fmt.Errorf("list iam service accounts: %w", err)
 		}
 		if !re.MatchString(serviceAccount.Email) {
 			log.Printf("skipping %s: service account email must start with [a-z]\n", serviceAccount.Name)
@@ -49,7 +52,7 @@ func (g IamGenerator) createServiceAccountResources(serviceAccountsIterator *adm
 			IamAllowEmptyValues,
 		))
 	}
-	return resources
+	return resources, nil
 }
 
 func (g *IamGenerator) createIamCustomRoleResources(rolesResponse *adminpb.ListRolesResponse, project string) []terraformutils.Resource {
@@ -125,7 +128,11 @@ func (g *IamGenerator) InitResources() error {
 		return err
 	}
 
-	g.Resources = g.createServiceAccountResources(serviceAccountsIterator)
+	serviceAccountResources, err := g.createServiceAccountResources(serviceAccountsIterator)
+	if err != nil {
+		return err
+	}
+	g.Resources = serviceAccountResources
 	g.Resources = append(g.Resources, g.createIamCustomRoleResources(rolesResponse, projectID)...)
 	g.Resources = append(g.Resources, g.createIamMemberResources(policyResponse, projectID)...)
 	return nil
