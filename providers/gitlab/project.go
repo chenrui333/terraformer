@@ -5,7 +5,6 @@ package gitlab
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -25,12 +24,16 @@ func (g *ProjectGenerator) InitResources() error {
 	}
 
 	group := g.Args["group"].(string)
-	g.Resources = append(g.Resources, createProjects(ctx, client, group)...)
+	resources, err := createProjects(ctx, client, group)
+	if err != nil {
+		return err
+	}
+	g.Resources = append(g.Resources, resources...)
 
 	return nil
 }
 
-func createProjects(ctx context.Context, client *gitlab.Client, group string) []terraformutils.Resource {
+func createProjects(ctx context.Context, client *gitlab.Client, group string) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	opt := &gitlab.ListGroupProjectsOptions{
 		ListOptions: gitlab.ListOptions{
@@ -41,8 +44,7 @@ func createProjects(ctx context.Context, client *gitlab.Client, group string) []
 	for {
 		projects, resp, err := client.Groups.ListGroupProjects(group, opt, gitlab.WithContext(ctx))
 		if err != nil {
-			log.Println(err)
-			return nil
+			return nil, fmt.Errorf("list gitlab projects for %s: %w", group, err)
 		}
 
 		for _, project := range projects {
@@ -59,10 +61,26 @@ func createProjects(ctx context.Context, client *gitlab.Client, group string) []
 
 			resource.SlowQueryRequired = true
 			resources = append(resources, resource)
-			resources = append(resources, createProjectVariables(ctx, client, project)...)
-			resources = append(resources, createBranchProtections(ctx, client, project)...)
-			resources = append(resources, createTagProtections(ctx, client, project)...)
-			resources = append(resources, createProjectMembership(ctx, client, project)...)
+			variableResources, err := createProjectVariables(ctx, client, project)
+			if err != nil {
+				return nil, err
+			}
+			resources = append(resources, variableResources...)
+			branchProtectionResources, err := createBranchProtections(ctx, client, project)
+			if err != nil {
+				return nil, err
+			}
+			resources = append(resources, branchProtectionResources...)
+			tagProtectionResources, err := createTagProtections(ctx, client, project)
+			if err != nil {
+				return nil, err
+			}
+			resources = append(resources, tagProtectionResources...)
+			membershipResources, err := createProjectMembership(ctx, client, project)
+			if err != nil {
+				return nil, err
+			}
+			resources = append(resources, membershipResources...)
 		}
 
 		if resp.NextPage == 0 {
@@ -70,17 +88,17 @@ func createProjects(ctx context.Context, client *gitlab.Client, group string) []
 		}
 		opt.Page = resp.NextPage
 	}
-	return resources
+	return resources, nil
 }
-func createProjectVariables(ctx context.Context, client *gitlab.Client, project *gitlab.Project) []terraformutils.Resource {
+
+func createProjectVariables(ctx context.Context, client *gitlab.Client, project *gitlab.Project) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	opt := &gitlab.ListProjectVariablesOptions{}
 
 	for {
 		projectVariables, resp, err := client.ProjectVariables.ListVariables(project.ID, opt, gitlab.WithContext(ctx))
 		if err != nil {
-			log.Println(err)
-			return nil
+			return nil, fmt.Errorf("list gitlab project variables for %d: %w", project.ID, err)
 		}
 
 		for _, projectVariable := range projectVariables {
@@ -100,18 +118,17 @@ func createProjectVariables(ctx context.Context, client *gitlab.Client, project 
 		}
 		opt.Page = resp.NextPage
 	}
-	return resources
+	return resources, nil
 }
 
-func createBranchProtections(ctx context.Context, client *gitlab.Client, project *gitlab.Project) []terraformutils.Resource {
+func createBranchProtections(ctx context.Context, client *gitlab.Client, project *gitlab.Project) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	opt := &gitlab.ListProtectedBranchesOptions{}
 
 	for {
 		protectedBranches, resp, err := client.ProtectedBranches.ListProtectedBranches(project.ID, opt, gitlab.WithContext(ctx))
 		if err != nil {
-			log.Println(err)
-			return nil
+			return nil, fmt.Errorf("list gitlab branch protections for %d: %w", project.ID, err)
 		}
 
 		for _, protectedBranch := range protectedBranches {
@@ -131,18 +148,17 @@ func createBranchProtections(ctx context.Context, client *gitlab.Client, project
 		}
 		opt.Page = resp.NextPage
 	}
-	return resources
+	return resources, nil
 }
 
-func createTagProtections(ctx context.Context, client *gitlab.Client, project *gitlab.Project) []terraformutils.Resource {
+func createTagProtections(ctx context.Context, client *gitlab.Client, project *gitlab.Project) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	opt := &gitlab.ListProtectedTagsOptions{}
 
 	for {
 		protectedTags, resp, err := client.ProtectedTags.ListProtectedTags(project.ID, opt, gitlab.WithContext(ctx))
 		if err != nil {
-			log.Println(err)
-			return nil
+			return nil, fmt.Errorf("list gitlab tag protections for %d: %w", project.ID, err)
 		}
 
 		for _, protectedTag := range protectedTags {
@@ -162,18 +178,17 @@ func createTagProtections(ctx context.Context, client *gitlab.Client, project *g
 		}
 		opt.Page = resp.NextPage
 	}
-	return resources
+	return resources, nil
 }
 
-func createProjectMembership(ctx context.Context, client *gitlab.Client, project *gitlab.Project) []terraformutils.Resource {
+func createProjectMembership(ctx context.Context, client *gitlab.Client, project *gitlab.Project) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	opt := &gitlab.ListProjectMembersOptions{}
 
 	for {
 		projectMembers, resp, err := client.ProjectMembers.ListProjectMembers(project.ID, opt, gitlab.WithContext(ctx))
 		if err != nil {
-			log.Println(err)
-			return nil
+			return nil, fmt.Errorf("list gitlab project memberships for %d: %w", project.ID, err)
 		}
 
 		for _, projectMember := range projectMembers {
@@ -193,7 +208,7 @@ func createProjectMembership(ctx context.Context, client *gitlab.Client, project
 		}
 		opt.Page = resp.NextPage
 	}
-	return resources
+	return resources, nil
 }
 
 func getProjectResourceName(project *gitlab.Project) string {
