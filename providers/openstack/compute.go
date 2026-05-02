@@ -21,7 +21,7 @@ type ComputeGenerator struct {
 }
 
 // createResources iterate on all openstack_compute_instance_v2
-func (g *ComputeGenerator) createResources(list *pagination.Pager, volclient *gophercloud.ServiceClient) []terraformutils.Resource {
+func (g *ComputeGenerator) createResources(list *pagination.Pager, volclient *gophercloud.ServiceClient) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 
 	err := list.EachPage(func(page pagination.Page) (bool, error) {
@@ -107,9 +107,9 @@ func (g *ComputeGenerator) createResources(list *pagination.Pager, volclient *go
 		return true, nil
 	})
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from OpenStack API,
@@ -138,7 +138,11 @@ func (g *ComputeGenerator) InitResources() error {
 		log.Println("VolumeImageMetadata requires blockStorage API v3")
 		volclient = nil
 	}
-	g.Resources = g.createResources(&list, volclient)
+	resources, err := g.createResources(&list, volclient)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 }

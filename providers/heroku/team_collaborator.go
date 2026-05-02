@@ -4,7 +4,6 @@ package heroku
 
 import (
 	"context"
-	"log"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	heroku "github.com/heroku/heroku-go/v5"
@@ -14,17 +13,17 @@ type TeamCollaboratorGenerator struct {
 	HerokuService
 }
 
-func (g TeamCollaboratorGenerator) createResources(svc *heroku.Service, teamList []heroku.Team) []terraformutils.Resource {
+func (g TeamCollaboratorGenerator) createResources(svc *heroku.Service, teamList []heroku.Team) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	for _, team := range teamList {
 		apps, err := svc.TeamAppListByTeam(context.TODO(), team.ID, &heroku.ListRange{Field: "id"})
 		if err != nil {
-			log.Println(err)
+			return nil, err
 		}
 		for _, app := range apps {
 			collaborators, err := svc.TeamAppCollaboratorList(context.TODO(), app.ID, &heroku.ListRange{Field: "id"})
 			if err != nil {
-				log.Println(err)
+				return nil, err
 			}
 			for _, collaborator := range collaborators {
 				resources = append(resources, terraformutils.NewResource(
@@ -38,7 +37,7 @@ func (g TeamCollaboratorGenerator) createResources(svc *heroku.Service, teamList
 			}
 		}
 	}
-	return resources
+	return resources, nil
 }
 
 func (g *TeamCollaboratorGenerator) InitResources() error {
@@ -47,6 +46,10 @@ func (g *TeamCollaboratorGenerator) InitResources() error {
 	if err != nil {
 		return err
 	}
-	g.Resources = g.createResources(svc, output)
+	resources, err := g.createResources(svc, output)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 	return nil
 }

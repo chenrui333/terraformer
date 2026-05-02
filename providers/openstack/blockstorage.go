@@ -24,7 +24,7 @@ type BlockStorageGenerator struct {
 }
 
 // createResources iterate on all openstack_blockstorage_volume
-func (g *BlockStorageGenerator) createResources(list *pagination.Pager, clientType string) []terraformutils.Resource {
+func (g *BlockStorageGenerator) createResources(list *pagination.Pager, clientType string) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 
 	err := list.EachPage(func(page pagination.Page) (bool, error) {
@@ -54,10 +54,10 @@ func (g *BlockStorageGenerator) createResources(list *pagination.Pager, clientTy
 		return true, nil
 	})
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
 
-	return resources
+	return resources, nil
 }
 
 // Creates a BlockStorage ServiceClient
@@ -106,7 +106,11 @@ func (g *BlockStorageGenerator) InitResources() error {
 
 	list := volumes.List(client, nil)
 
-	g.Resources = g.createResources(&list, client.Type)
+	resources, err := g.createResources(&list, client.Type)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 }

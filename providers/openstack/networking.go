@@ -3,8 +3,6 @@
 package openstack
 
 import (
-	"log"
-
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
@@ -18,7 +16,7 @@ type NetworkingGenerator struct {
 }
 
 // createResources iterate on all openstack_networking_secgroup_v2
-func (g *NetworkingGenerator) createSecgroupResources(list *pagination.Pager) []terraformutils.Resource {
+func (g *NetworkingGenerator) createSecgroupResources(list *pagination.Pager) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 
 	err := list.EachPage(func(page pagination.Page) (bool, error) {
@@ -42,9 +40,9 @@ func (g *NetworkingGenerator) createSecgroupResources(list *pagination.Pager) []
 		return true, nil
 	})
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
-	return resources
+	return resources, nil
 }
 
 // createResources iterate on all openstack_networking_secgroup_v2
@@ -84,7 +82,11 @@ func (g *NetworkingGenerator) InitResources() error {
 
 	list := groups.List(client, groups.ListOpts{})
 
-	g.Resources = g.createSecgroupResources(&list)
+	resources, err := g.createSecgroupResources(&list)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 }

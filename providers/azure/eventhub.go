@@ -4,7 +4,6 @@ package azure
 
 import (
 	"context"
-	"log"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/eventhub/armeventhub"
 )
@@ -63,7 +62,6 @@ func (az *EventHubGenerator) appendEventHubs(namespace *armeventhub.EHNamespace,
 		for _, item := range page.Value {
 			az.AppendSimpleResource(*item.ID, *item.Name, "azurerm_eventhub")
 			if err := az.appendConsumerGroups(namespace, namespaceRg, *item.Name); err != nil {
-				log.Println(err)
 				return err
 			}
 		}
