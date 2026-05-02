@@ -27,6 +27,18 @@ func TestCreateMembershipsResourcesReturnsListError(t *testing.T) {
 	}
 }
 
+func TestGithubProviderInitRequiresOwner(t *testing.T) {
+	var provider GithubProvider
+
+	err := provider.Init(nil)
+	if err == nil {
+		t.Fatal("expected missing owner error")
+	}
+	if !strings.Contains(err.Error(), "owner is required") {
+		t.Fatalf("Init error = %q, want missing owner", err)
+	}
+}
+
 func TestCreateRepositoryWebhookResourcesReturnsListError(t *testing.T) {
 	ctx := context.Background()
 	server := newErrorGitHubServer(t)

@@ -10,6 +10,28 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
+func TestKubernetesProviderInitHandlesMissingVerboseArg(t *testing.T) {
+	provider := KubernetesProvider{verbose: "true"}
+
+	if err := provider.Init(nil); err != nil {
+		t.Fatalf("expected Init to succeed: %v", err)
+	}
+	if provider.verbose != "" {
+		t.Fatalf("verbose = %q, want empty", provider.verbose)
+	}
+}
+
+func TestKubernetesProviderInitStoresVerboseArg(t *testing.T) {
+	var provider KubernetesProvider
+
+	if err := provider.Init([]string{"true"}); err != nil {
+		t.Fatalf("expected Init to succeed: %v", err)
+	}
+	if provider.verbose != "true" {
+		t.Fatalf("verbose = %q, want true", provider.verbose)
+	}
+}
+
 func TestAddDefaultServiceAccountService(t *testing.T) {
 	resources := map[string]terraformutils.ServiceGenerator{}
 	clientset := fake.NewSimpleClientset()

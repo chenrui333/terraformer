@@ -39,7 +39,7 @@ func (p *NewRelicProvider) Init(args []string) error {
 		}
 		p.accountID = accountID
 	}
-	if len(args) > 1 {
+	if len(args) > 2 {
 		p.Region = args[2]
 	}
 	if p.Region == "" {

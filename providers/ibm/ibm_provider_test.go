@@ -22,6 +22,17 @@ func TestProviderInitDoesNotRequireAPIKey(t *testing.T) {
 	}
 }
 
+func TestProviderInitRequiresArgs(t *testing.T) {
+	provider := &IBMProvider{}
+	err := provider.Init([]string{"", ""})
+	if err == nil {
+		t.Fatal("expected missing args error")
+	}
+	if err.Error() != "ibm: expected 3 init args (resource group, region, vpc)" {
+		t.Fatalf("Init error = %q, want missing IBM args", err)
+	}
+}
+
 func TestProviderValidateImportRequiresAPIKey(t *testing.T) {
 	t.Setenv("IC_API_KEY", "")
 
