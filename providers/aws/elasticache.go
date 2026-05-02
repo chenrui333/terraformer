@@ -4,17 +4,32 @@ package aws
 
 import (
 	"context"
+	"log"
 	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
 	"github.com/aws/aws-sdk-go-v2/service/elasticache"
+	elasticachetypes "github.com/aws/aws-sdk-go-v2/service/elasticache/types"
 )
 
 var elastiCacheAllowEmptyValues = []string{"tags."}
 
 type ElastiCacheGenerator struct {
 	AWSService
+}
+
+type elastiCacheOptionalResourceLoader struct {
+	name string
+	load func() error
+}
+
+func (g *ElastiCacheGenerator) loadOptionalResources(loaders []elastiCacheOptionalResourceLoader) {
+	for _, loader := range loaders {
+		if err := loader.load(); err != nil {
+			log.Printf("Skipping ElastiCache %s: %v", loader.name, err)
+		}
+	}
 }
 
 func (g *ElastiCacheGenerator) loadCacheClusters(svc *elasticache.Client) error {
@@ -130,6 +145,117 @@ func (g *ElastiCacheGenerator) loadReplicationGroups(svc *elasticache.Client) er
 	return nil
 }
 
+func (g *ElastiCacheGenerator) loadGlobalReplicationGroups(svc *elasticache.Client) error {
+	p := elasticache.NewDescribeGlobalReplicationGroupsPaginator(svc, &elasticache.DescribeGlobalReplicationGroupsInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, globalReplicationGroup := range page.GlobalReplicationGroups {
+			resourceName := StringValue(globalReplicationGroup.GlobalReplicationGroupId)
+			if resourceName == "" || !elastiCacheStatusImportable(StringValue(globalReplicationGroup.Status)) {
+				continue
+			}
+			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
+				resourceName,
+				resourceName,
+				"aws_elasticache_global_replication_group",
+				"aws",
+				elastiCacheAllowEmptyValues,
+			))
+		}
+	}
+	return nil
+}
+
+func (g *ElastiCacheGenerator) loadServerlessCaches(svc *elasticache.Client) error {
+	p := elasticache.NewDescribeServerlessCachesPaginator(svc, &elasticache.DescribeServerlessCachesInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, serverlessCache := range page.ServerlessCaches {
+			resourceName := StringValue(serverlessCache.ServerlessCacheName)
+			if resourceName == "" || !elastiCacheStatusImportable(StringValue(serverlessCache.Status)) {
+				continue
+			}
+			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
+				resourceName,
+				resourceName,
+				"aws_elasticache_serverless_cache",
+				"aws",
+				elastiCacheAllowEmptyValues,
+			))
+		}
+	}
+	return nil
+}
+
+func (g *ElastiCacheGenerator) loadUsers(svc *elasticache.Client) error {
+	p := elasticache.NewDescribeUsersPaginator(svc, &elasticache.DescribeUsersInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, user := range page.Users {
+			resourceName := StringValue(user.UserId)
+			if resourceName == "" || !elastiCacheUserImportable(user) {
+				continue
+			}
+			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
+				resourceName,
+				resourceName,
+				"aws_elasticache_user",
+				"aws",
+				elastiCacheAllowEmptyValues,
+			))
+		}
+	}
+	return nil
+}
+
+func (g *ElastiCacheGenerator) loadUserGroups(svc *elasticache.Client) error {
+	p := elasticache.NewDescribeUserGroupsPaginator(svc, &elasticache.DescribeUserGroupsInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, userGroup := range page.UserGroups {
+			resourceName := StringValue(userGroup.UserGroupId)
+			if resourceName == "" || !elastiCacheStatusImportable(StringValue(userGroup.Status)) {
+				continue
+			}
+			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
+				resourceName,
+				resourceName,
+				"aws_elasticache_user_group",
+				"aws",
+				elastiCacheAllowEmptyValues,
+			))
+		}
+	}
+	return nil
+}
+
+func elastiCacheStatusImportable(status string) bool {
+	status = strings.ToLower(status)
+	return status != "" && !strings.Contains(status, "delet") && !strings.Contains(status, "fail")
+}
+
+func elastiCacheUserImportable(user elasticachetypes.User) bool {
+	if !elastiCacheStatusImportable(StringValue(user.Status)) {
+		return false
+	}
+	if user.Authentication == nil {
+		return true
+	}
+	return user.Authentication.Type != elasticachetypes.AuthenticationTypePassword
+}
+
 // Generate TerraformResources from AWS API,
 // from each database create 1 TerraformResource.
 // Need only database name as ID for terraform resource
@@ -153,6 +279,12 @@ func (g *ElastiCacheGenerator) InitResources() error {
 	if err := g.loadSubnetGroups(svc); err != nil {
 		return err
 	}
+	g.loadOptionalResources([]elastiCacheOptionalResourceLoader{
+		{name: "global replication groups", load: func() error { return g.loadGlobalReplicationGroups(svc) }},
+		{name: "serverless caches", load: func() error { return g.loadServerlessCaches(svc) }},
+		{name: "users", load: func() error { return g.loadUsers(svc) }},
+		{name: "user groups", load: func() error { return g.loadUserGroups(svc) }},
+	})
 
 	return nil
 }
