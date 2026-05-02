@@ -47,12 +47,17 @@ func (g *TeamMembershipGenerator) createResource(teamID string, teamMembership d
 	}
 
 	resourceID := fmt.Sprintf("%s:%s", teamID, userID)
-	return terraformutils.NewSimpleResource(
+	return terraformutils.NewResource(
 		resourceID,
 		fmt.Sprintf("team_membership_%s_%s", teamID, userID),
 		"datadog_team_membership",
 		"datadog",
+		map[string]string{
+			"team_id": teamID,
+			"user_id": userID,
+		},
 		TeamMembershipAllowEmptyValues,
+		map[string]interface{}{},
 	), nil
 }
 

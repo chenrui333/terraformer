@@ -14,6 +14,8 @@ func TestTeamMembershipCreateResource(t *testing.T) {
 		teamID         string
 		teamMembership datadogV2.UserTeam
 		wantID         string
+		wantTeamID     string
+		wantUserID     string
 		wantName       string
 		wantType       string
 	}{
@@ -35,9 +37,11 @@ func TestTeamMembershipCreateResource(t *testing.T) {
 					},
 				},
 			},
-			wantID:   "team-id:user-id",
-			wantName: "tfer--team_membership_team-id_user-id",
-			wantType: "datadog_team_membership",
+			wantID:     "team-id:user-id",
+			wantTeamID: "team-id",
+			wantUserID: "user-id",
+			wantName:   "tfer--team_membership_team-id_user-id",
+			wantType:   "datadog_team_membership",
 		},
 		{
 			name:   "falls back to supplied team id",
@@ -52,9 +56,11 @@ func TestTeamMembershipCreateResource(t *testing.T) {
 					},
 				},
 			},
-			wantID:   "team-id:user-id",
-			wantName: "tfer--team_membership_team-id_user-id",
-			wantType: "datadog_team_membership",
+			wantID:     "team-id:user-id",
+			wantTeamID: "team-id",
+			wantUserID: "user-id",
+			wantName:   "tfer--team_membership_team-id_user-id",
+			wantType:   "datadog_team_membership",
 		},
 	}
 
@@ -67,6 +73,12 @@ func TestTeamMembershipCreateResource(t *testing.T) {
 			}
 			if resource.InstanceState.ID != tt.wantID {
 				t.Fatalf("resource ID = %q, want %q", resource.InstanceState.ID, tt.wantID)
+			}
+			if resource.InstanceState.Attributes["team_id"] != tt.wantTeamID {
+				t.Fatalf("team_id attribute = %q, want %q", resource.InstanceState.Attributes["team_id"], tt.wantTeamID)
+			}
+			if resource.InstanceState.Attributes["user_id"] != tt.wantUserID {
+				t.Fatalf("user_id attribute = %q, want %q", resource.InstanceState.Attributes["user_id"], tt.wantUserID)
 			}
 			if resource.ResourceName != tt.wantName {
 				t.Fatalf("resource name = %q, want %q", resource.ResourceName, tt.wantName)
