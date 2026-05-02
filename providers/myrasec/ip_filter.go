@@ -2,7 +2,6 @@
 package myrasec
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 
@@ -28,7 +27,7 @@ func (g *IPFilterGenerator) createIPFilterResources(api *mgo.API, domainId int, 
 		params["page"] = strconv.Itoa(page)
 
 		filters, err := api.ListIPFilters(domainId, vhost.Label, params)
-		if !errors.Is(err, err) {
+		if err != nil {
 			return err
 		}
 
