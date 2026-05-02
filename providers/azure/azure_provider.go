@@ -37,16 +37,44 @@ type AzureProvider struct { //nolint
 	resourceGroup string
 }
 
-type credentialUnavailableOnError struct {
+type azureCLIUnavailableFallbackCredential struct {
 	credential azcore.TokenCredential
 }
 
-func (c credentialUnavailableOnError) GetToken(ctx context.Context, opts policy.TokenRequestOptions) (azcore.AccessToken, error) {
+func (c azureCLIUnavailableFallbackCredential) GetToken(ctx context.Context, opts policy.TokenRequestOptions) (azcore.AccessToken, error) {
 	token, err := c.credential.GetToken(ctx, opts)
-	if err != nil {
+	if azureCLIErrorIsUnavailable(err) {
 		return token, azidentity.NewCredentialUnavailableError(err.Error())
 	}
-	return token, nil
+	return token, err
+}
+
+func azureCLIErrorIsUnavailable(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	if strings.Contains(msg, "executable not found on path") {
+		return true
+	}
+
+	lowerMsg := strings.ToLower(msg)
+	for _, marker := range []string{
+		"aadsts",
+		"claims",
+		"denied",
+		"expired",
+		"forbidden",
+		"invalid",
+		"scope",
+		"tenant",
+	} {
+		if strings.Contains(lowerMsg, marker) {
+			return false
+		}
+	}
+	return strings.Contains(lowerMsg, "please run 'az login'") ||
+		strings.Contains(lowerMsg, "please run \"az login\"")
 }
 
 type lazyDefaultAzureCredential struct {
@@ -116,7 +144,7 @@ func parseClientCertificate(certData []byte, password string) ([]*x509.Certifica
 
 	pfxKey, cert, caCerts, pfxErr := sslmatepkcs12.DecodeChain(certData, password)
 	if pfxErr != nil {
-		return nil, nil, fmt.Errorf("%w; parsing PKCS#12 fallback: %v", err, pfxErr)
+		return nil, nil, fmt.Errorf("%w; parsing PKCS#12 fallback: %w", err, pfxErr)
 	}
 	if cert == nil {
 		return nil, nil, errors.New("found no certificate")
@@ -354,7 +382,7 @@ func (p *AzureProvider) getTokenCredential() (azcore.TokenCredential, error) {
 	})
 	if cliErr == nil {
 		return azidentity.NewChainedTokenCredential([]azcore.TokenCredential{
-			credentialUnavailableOnError{credential: cliCred},
+			azureCLIUnavailableFallbackCredential{credential: cliCred},
 			defaultCred,
 		}, nil)
 	}

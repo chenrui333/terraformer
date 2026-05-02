@@ -203,15 +203,15 @@ func TestGetClientOptionsGermanCloud(t *testing.T) {
 	}
 }
 
-func TestCredentialUnavailableOnErrorAllowsChainedFallback(t *testing.T) {
+func TestAzureCLIUnavailableFallbackCredentialAllowsChainedFallback(t *testing.T) {
 	fallbackToken := azcore.AccessToken{
 		Token:     "fallback",
 		ExpiresOn: time.Now().Add(time.Hour),
 	}
-	primary := &stubTokenCredential{err: errors.New("Azure CLI unavailable")}
+	primary := &stubTokenCredential{err: errors.New("AzureCLICredential: Please run 'az login' to set up an account")}
 	fallback := &stubTokenCredential{token: fallbackToken}
 	chain, err := azidentity.NewChainedTokenCredential([]azcore.TokenCredential{
-		credentialUnavailableOnError{credential: primary},
+		azureCLIUnavailableFallbackCredential{credential: primary},
 		fallback,
 	}, nil)
 	if err != nil {
@@ -235,7 +235,38 @@ func TestCredentialUnavailableOnErrorAllowsChainedFallback(t *testing.T) {
 	}
 }
 
-func TestCredentialUnavailableOnErrorKeepsSuccessfulPrimary(t *testing.T) {
+func TestAzureCLIUnavailableFallbackCredentialPreservesHardFailure(t *testing.T) {
+	primary := &stubTokenCredential{err: errors.New("AzureCLICredential: AADSTS700082: the refresh token has expired; please run 'az login'")}
+	fallback := &stubTokenCredential{token: azcore.AccessToken{
+		Token:     "fallback",
+		ExpiresOn: time.Now().Add(time.Hour),
+	}}
+	chain, err := azidentity.NewChainedTokenCredential([]azcore.TokenCredential{
+		azureCLIUnavailableFallbackCredential{credential: primary},
+		fallback,
+	}, nil)
+	if err != nil {
+		t.Fatalf("creating credential chain: %v", err)
+	}
+
+	_, err = chain.GetToken(context.Background(), policy.TokenRequestOptions{
+		Scopes: []string{"https://management.azure.com/.default"},
+	})
+	if err == nil {
+		t.Fatal("expected hard Azure CLI error, got nil")
+	}
+	if !strings.Contains(err.Error(), "refresh token has expired") {
+		t.Fatalf("GetToken() error = %q, want refresh token failure", err)
+	}
+	if primary.calls != 1 {
+		t.Fatalf("primary calls = %d, want 1", primary.calls)
+	}
+	if fallback.calls != 0 {
+		t.Fatalf("fallback calls = %d, want 0", fallback.calls)
+	}
+}
+
+func TestAzureCLIUnavailableFallbackCredentialKeepsSuccessfulPrimary(t *testing.T) {
 	primaryToken := azcore.AccessToken{
 		Token:     "primary",
 		ExpiresOn: time.Now().Add(time.Hour),
@@ -246,7 +277,7 @@ func TestCredentialUnavailableOnErrorKeepsSuccessfulPrimary(t *testing.T) {
 		ExpiresOn: time.Now().Add(time.Hour),
 	}}
 	chain, err := azidentity.NewChainedTokenCredential([]azcore.TokenCredential{
-		credentialUnavailableOnError{credential: primary},
+		azureCLIUnavailableFallbackCredential{credential: primary},
 		fallback,
 	}, nil)
 	if err != nil {
