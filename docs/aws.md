@@ -134,9 +134,17 @@ terraformer import aws --resources=sg --regions=us-east-1
     * `aws_cognito_identity_pool`
     * `aws_cognito_user_pool`
 *   `config`
+    * `aws_config_aggregate_authorization`
     * `aws_config_config_rule`
+    * `aws_config_configuration_aggregator`
     * `aws_config_configuration_recorder`
+    * `aws_config_configuration_recorder_status`
     * `aws_config_delivery_channel`
+    * `aws_config_organization_custom_policy_rule`
+    * `aws_config_organization_custom_rule`
+    * `aws_config_organization_managed_rule`
+    * `aws_config_remediation_configuration`
+    * `aws_config_retention_configuration`
 *   `customer_gateway`
     * `aws_customer_gateway`
 *   `datapipeline`
