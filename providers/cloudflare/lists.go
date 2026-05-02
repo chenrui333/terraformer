@@ -101,6 +101,32 @@ func listAttributes(ctx context.Context, api *cf.API, account *cf.ResourceContai
 	return attributes, nil
 }
 
+func listAllLists(ctx context.Context, api *cf.API, account *cf.ResourceContainer) ([]cf.List, error) {
+	lists := []cf.List{}
+	page, cursor := 1, ""
+	for {
+		response, err := api.Raw(
+			ctx,
+			http.MethodGet,
+			fmt.Sprintf("/accounts/%s/rules/lists?%s", account.Identifier, cloudflarePaginationQuery(page, cursor)),
+			nil,
+			nil,
+		)
+		if err != nil {
+			return nil, err
+		}
+		var pageLists []cf.List
+		if err := json.Unmarshal(response.Result, &pageLists); err != nil {
+			return nil, err
+		}
+		lists = append(lists, pageLists...)
+		if !cloudflareAdvancePagination(response.ResultInfo, &page, &cursor) {
+			break
+		}
+	}
+	return lists, nil
+}
+
 func (g *ListsGenerator) InitResources() error {
 	ctx := context.Background()
 	api, err := g.initializeAPI()
@@ -111,7 +137,7 @@ func (g *ListsGenerator) InitResources() error {
 	if err != nil {
 		return err
 	}
-	lists, err := api.ListLists(ctx, account, cf.ListListsParams{})
+	lists, err := listAllLists(ctx, api, account)
 	if err != nil {
 		return err
 	}

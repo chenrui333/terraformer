@@ -234,7 +234,7 @@ func (g *AccessGenerator) appendAccountAccessPolicyResources(ctx context.Context
 }
 
 func (g *AccessGenerator) appendAccountAccessCustomPageResources(ctx context.Context, api *cf.API, accountID string) error {
-	pages, err := api.ListAccessCustomPages(ctx, cf.AccountIdentifier(accountID), cf.ListAccessCustomPagesParams{})
+	pages, err := listAccessCustomPages(ctx, api, cf.AccountIdentifier(accountID))
 	if err != nil {
 		return err
 	}
@@ -252,8 +252,34 @@ func (g *AccessGenerator) appendAccountAccessCustomPageResources(ctx context.Con
 	return nil
 }
 
+func listAccessCustomPages(ctx context.Context, api *cf.API, rc *cf.ResourceContainer) ([]cf.AccessCustomPage, error) {
+	var pages []cf.AccessCustomPage
+	page, cursor := 1, ""
+	for {
+		response, err := api.Raw(
+			ctx,
+			http.MethodGet,
+			fmt.Sprintf("/%s/%s/access/custom_pages?%s", rc.Level, rc.Identifier, cloudflarePaginationQuery(page, cursor)),
+			nil,
+			nil,
+		)
+		if err != nil {
+			return nil, err
+		}
+		var pageCustomPages []cf.AccessCustomPage
+		if err := json.Unmarshal(response.Result, &pageCustomPages); err != nil {
+			return nil, err
+		}
+		pages = append(pages, pageCustomPages...)
+		if !cloudflareAdvancePagination(response.ResultInfo, &page, &cursor) {
+			break
+		}
+	}
+	return pages, nil
+}
+
 func (g *AccessGenerator) appendAccountAccessTagResources(ctx context.Context, api *cf.API, accountID string) error {
-	tags, err := api.ListAccessTags(ctx, cf.AccountIdentifier(accountID), cf.ListAccessTagsParams{})
+	tags, err := listAccessTags(ctx, api, cf.AccountIdentifier(accountID))
 	if err != nil {
 		return err
 	}
@@ -269,6 +295,32 @@ func (g *AccessGenerator) appendAccountAccessTagResources(ctx context.Context, a
 		))
 	}
 	return nil
+}
+
+func listAccessTags(ctx context.Context, api *cf.API, rc *cf.ResourceContainer) ([]cf.AccessTag, error) {
+	var tags []cf.AccessTag
+	page, cursor := 1, ""
+	for {
+		response, err := api.Raw(
+			ctx,
+			http.MethodGet,
+			fmt.Sprintf("/%s/%s/access/tags?%s", rc.Level, rc.Identifier, cloudflarePaginationQuery(page, cursor)),
+			nil,
+			nil,
+		)
+		if err != nil {
+			return nil, err
+		}
+		var pageTags []cf.AccessTag
+		if err := json.Unmarshal(response.Result, &pageTags); err != nil {
+			return nil, err
+		}
+		tags = append(tags, pageTags...)
+		if !cloudflareAdvancePagination(response.ResultInfo, &page, &cursor) {
+			break
+		}
+	}
+	return tags, nil
 }
 
 func (g *AccessGenerator) appendScopedAccessResources(ctx context.Context, api *cf.API, rc *cf.ResourceContainer, scopeType string) error {

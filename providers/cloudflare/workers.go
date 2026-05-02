@@ -4,6 +4,9 @@ package cloudflare
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	cf "github.com/cloudflare/cloudflare-go"
@@ -24,11 +27,11 @@ func (g *WorkersGenerator) InitResources() error {
 		return err
 	}
 	for _, zone := range zones {
-		response, err := api.ListWorkerRoutes(ctx, cf.ZoneIdentifier(zone.ID), cf.ListWorkerRoutesParams{})
+		routes, err := listWorkerRoutes(ctx, api, zone.ID)
 		if err != nil {
 			return err
 		}
-		for _, route := range response.Routes {
+		for _, route := range routes {
 			g.Resources = append(g.Resources, terraformutils.NewResource(
 				route.ID,
 				cloudflareResourceName(zone.Name, route.Pattern, route.ID),
@@ -41,4 +44,30 @@ func (g *WorkersGenerator) InitResources() error {
 		}
 	}
 	return nil
+}
+
+func listWorkerRoutes(ctx context.Context, api *cf.API, zoneID string) ([]cf.WorkerRoute, error) {
+	var routes []cf.WorkerRoute
+	page, cursor := 1, ""
+	for {
+		response, err := api.Raw(
+			ctx,
+			http.MethodGet,
+			fmt.Sprintf("/zones/%s/workers/routes?%s", zoneID, cloudflarePaginationQuery(page, cursor)),
+			nil,
+			nil,
+		)
+		if err != nil {
+			return nil, err
+		}
+		var pageRoutes []cf.WorkerRoute
+		if err := json.Unmarshal(response.Result, &pageRoutes); err != nil {
+			return nil, err
+		}
+		routes = append(routes, pageRoutes...)
+		if !cloudflareAdvancePagination(response.ResultInfo, &page, &cursor) {
+			break
+		}
+	}
+	return routes, nil
 }

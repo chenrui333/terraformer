@@ -7,7 +7,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -65,6 +67,42 @@ func setCloudflareImportID(resource *terraformutils.Resource, importID string) {
 		resource.InstanceState.Meta = map[string]interface{}{}
 	}
 	resource.InstanceState.Meta["import_id"] = importID
+}
+
+func cloudflarePaginationQuery(page int, cursor string) string {
+	values := url.Values{}
+	values.Set("per_page", strconv.Itoa(cloudflarePageSize))
+	if cursor != "" {
+		values.Set("cursor", cursor)
+	} else {
+		values.Set("page", strconv.Itoa(page))
+	}
+	return values.Encode()
+}
+
+func cloudflareAdvancePagination(info *cf.ResultInfo, page *int, cursor *string) bool {
+	if info == nil {
+		return false
+	}
+	if info.Cursors.After != "" {
+		if info.Cursors.After == *cursor {
+			return false
+		}
+		*cursor = info.Cursors.After
+		return true
+	}
+	if info.Cursor != "" {
+		if info.Cursor == *cursor {
+			return false
+		}
+		*cursor = info.Cursor
+		return true
+	}
+	if info.HasMorePages() {
+		*page++
+		return true
+	}
+	return false
 }
 
 func cloudflareZones(ctx context.Context, api *cf.API) ([]cf.Zone, error) {

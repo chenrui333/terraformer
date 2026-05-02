@@ -4,7 +4,9 @@ package cloudflare
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -16,7 +18,7 @@ type RulesetGenerator struct {
 }
 
 func (g *RulesetGenerator) appendRulesetResources(ctx context.Context, api *cf.API, rc *cf.ResourceContainer, scopeType string) error {
-	rulesets, err := api.ListRulesets(ctx, rc, cf.ListRulesetsParams{})
+	rulesets, err := listRulesets(ctx, api, rc)
 	if err != nil {
 		return fmt.Errorf("%s/%s: %w", scopeType, rc.Identifier, err)
 	}
@@ -35,6 +37,32 @@ func (g *RulesetGenerator) appendRulesetResources(ctx context.Context, api *cf.A
 		))
 	}
 	return nil
+}
+
+func listRulesets(ctx context.Context, api *cf.API, rc *cf.ResourceContainer) ([]cf.Ruleset, error) {
+	var rulesets []cf.Ruleset
+	page, cursor := 1, ""
+	for {
+		response, err := api.Raw(
+			ctx,
+			http.MethodGet,
+			fmt.Sprintf("/%s/%s/rulesets?%s", rc.Level, rc.Identifier, cloudflarePaginationQuery(page, cursor)),
+			nil,
+			nil,
+		)
+		if err != nil {
+			return nil, err
+		}
+		var pageRulesets []cf.Ruleset
+		if err := json.Unmarshal(response.Result, &pageRulesets); err != nil {
+			return nil, err
+		}
+		rulesets = append(rulesets, pageRulesets...)
+		if !cloudflareAdvancePagination(response.ResultInfo, &page, &cursor) {
+			break
+		}
+	}
+	return rulesets, nil
 }
 
 func (g *RulesetGenerator) InitResources() error {

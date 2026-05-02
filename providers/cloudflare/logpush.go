@@ -4,6 +4,9 @@ package cloudflare
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
 	"strconv"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -15,7 +18,7 @@ type LogpushGenerator struct {
 }
 
 func (g *LogpushGenerator) appendLogpushJobResources(ctx context.Context, api *cf.API, rc *cf.ResourceContainer, scopeType string) error {
-	jobs, err := api.ListLogpushJobs(ctx, rc, cf.ListLogpushJobsParams{})
+	jobs, err := listLogpushJobs(ctx, api, rc)
 	if err != nil {
 		return err
 	}
@@ -32,6 +35,32 @@ func (g *LogpushGenerator) appendLogpushJobResources(ctx context.Context, api *c
 		))
 	}
 	return nil
+}
+
+func listLogpushJobs(ctx context.Context, api *cf.API, rc *cf.ResourceContainer) ([]cf.LogpushJob, error) {
+	var jobs []cf.LogpushJob
+	page, cursor := 1, ""
+	for {
+		response, err := api.Raw(
+			ctx,
+			http.MethodGet,
+			fmt.Sprintf("/%s/%s/logpush/jobs?%s", rc.Level, rc.Identifier, cloudflarePaginationQuery(page, cursor)),
+			nil,
+			nil,
+		)
+		if err != nil {
+			return nil, err
+		}
+		var pageJobs []cf.LogpushJob
+		if err := json.Unmarshal(response.Result, &pageJobs); err != nil {
+			return nil, err
+		}
+		jobs = append(jobs, pageJobs...)
+		if !cloudflareAdvancePagination(response.ResultInfo, &page, &cursor) {
+			break
+		}
+	}
+	return jobs, nil
 }
 
 func (g *LogpushGenerator) InitResources() error {

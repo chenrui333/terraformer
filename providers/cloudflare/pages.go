@@ -4,6 +4,9 @@ package cloudflare
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	cf "github.com/cloudflare/cloudflare-go"
@@ -44,7 +47,7 @@ func (g *PagesGenerator) InitResources() error {
 			setCloudflareImportID(&projectResource, accountID+"/"+project.Name)
 			g.Resources = append(g.Resources, projectResource)
 
-			domains, err := api.GetPagesDomains(ctx, cf.PagesDomainsParameters{AccountID: accountID, ProjectName: project.Name})
+			domains, err := listPagesDomains(ctx, api, accountID, project.Name)
 			if err != nil {
 				return err
 			}
@@ -68,4 +71,30 @@ func (g *PagesGenerator) InitResources() error {
 		params.Page++
 	}
 	return nil
+}
+
+func listPagesDomains(ctx context.Context, api *cf.API, accountID, projectName string) ([]cf.PagesDomain, error) {
+	var domains []cf.PagesDomain
+	page, cursor := 1, ""
+	for {
+		response, err := api.Raw(
+			ctx,
+			http.MethodGet,
+			fmt.Sprintf("/accounts/%s/pages/projects/%s/domains?%s", accountID, projectName, cloudflarePaginationQuery(page, cursor)),
+			nil,
+			nil,
+		)
+		if err != nil {
+			return nil, err
+		}
+		var pageDomains []cf.PagesDomain
+		if err := json.Unmarshal(response.Result, &pageDomains); err != nil {
+			return nil, err
+		}
+		domains = append(domains, pageDomains...)
+		if !cloudflareAdvancePagination(response.ResultInfo, &page, &cursor) {
+			break
+		}
+	}
+	return domains, nil
 }

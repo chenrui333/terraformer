@@ -4,6 +4,9 @@ package cloudflare
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	cf "github.com/cloudflare/cloudflare-go"
@@ -24,7 +27,7 @@ func (g *WaitingRoomGenerator) InitResources() error {
 		return err
 	}
 	for _, zone := range zones {
-		waitingRooms, err := api.ListWaitingRooms(ctx, zone.ID)
+		waitingRooms, err := listWaitingRooms(ctx, api, zone.ID)
 		if err != nil {
 			return err
 		}
@@ -59,7 +62,7 @@ func (g *WaitingRoomGenerator) InitResources() error {
 				g.Resources = append(g.Resources, waitingRoomRulesResource)
 			}
 
-			events, err := api.ListWaitingRoomEvents(ctx, zone.ID, waitingRoom.ID)
+			events, err := listWaitingRoomEvents(ctx, api, zone.ID, waitingRoom.ID)
 			if err != nil {
 				return err
 			}
@@ -79,4 +82,56 @@ func (g *WaitingRoomGenerator) InitResources() error {
 		}
 	}
 	return nil
+}
+
+func listWaitingRooms(ctx context.Context, api *cf.API, zoneID string) ([]cf.WaitingRoom, error) {
+	var waitingRooms []cf.WaitingRoom
+	page, cursor := 1, ""
+	for {
+		response, err := api.Raw(
+			ctx,
+			http.MethodGet,
+			fmt.Sprintf("/zones/%s/waiting_rooms?%s", zoneID, cloudflarePaginationQuery(page, cursor)),
+			nil,
+			nil,
+		)
+		if err != nil {
+			return nil, err
+		}
+		var pageWaitingRooms []cf.WaitingRoom
+		if err := json.Unmarshal(response.Result, &pageWaitingRooms); err != nil {
+			return nil, err
+		}
+		waitingRooms = append(waitingRooms, pageWaitingRooms...)
+		if !cloudflareAdvancePagination(response.ResultInfo, &page, &cursor) {
+			break
+		}
+	}
+	return waitingRooms, nil
+}
+
+func listWaitingRoomEvents(ctx context.Context, api *cf.API, zoneID, waitingRoomID string) ([]cf.WaitingRoomEvent, error) {
+	var events []cf.WaitingRoomEvent
+	page, cursor := 1, ""
+	for {
+		response, err := api.Raw(
+			ctx,
+			http.MethodGet,
+			fmt.Sprintf("/zones/%s/waiting_rooms/%s/events?%s", zoneID, waitingRoomID, cloudflarePaginationQuery(page, cursor)),
+			nil,
+			nil,
+		)
+		if err != nil {
+			return nil, err
+		}
+		var pageEvents []cf.WaitingRoomEvent
+		if err := json.Unmarshal(response.Result, &pageEvents); err != nil {
+			return nil, err
+		}
+		events = append(events, pageEvents...)
+		if !cloudflareAdvancePagination(response.ResultInfo, &page, &cursor) {
+			break
+		}
+	}
+	return events, nil
 }
