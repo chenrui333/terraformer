@@ -230,8 +230,10 @@ func (g *CognitoGenerator) loadUserPools(svc *cognitoidentityprovider.Client) ([
 				}); err == nil && output.UserPool != nil {
 					ref.domain = StringValue(output.UserPool.Domain)
 					ref.customDomain = StringValue(output.UserPool.CustomDomain)
-				} else if err != nil && !cognitoIDPResourceMissing(err) {
-					log.Printf("Skipping Cognito user pool domain metadata for %s: %v", id, err)
+				} else if err != nil {
+					if err := g.handleUserPoolDomainMetadataError(id, err); err != nil {
+						return nil, err
+					}
 				}
 			}
 			userPools = append(userPools, ref)
@@ -390,6 +392,17 @@ func (g *CognitoGenerator) loadUserPoolDomains(userPools []cognitoUserPoolRef) e
 			}
 		}
 	}
+	return nil
+}
+
+func (g *CognitoGenerator) handleUserPoolDomainMetadataError(userPoolID string, err error) error {
+	if err == nil || cognitoIDPResourceMissing(err) {
+		return nil
+	}
+	if g.hasTypedFilterFor(cognitoUserPoolDomainResourceType) {
+		return fmt.Errorf("loading Cognito user pool domain metadata for %s: %w", userPoolID, err)
+	}
+	log.Printf("Skipping Cognito user pool domain metadata for %s: %v", userPoolID, err)
 	return nil
 }
 
@@ -596,6 +609,20 @@ func (g *CognitoGenerator) shouldAppendCognitoResource(serviceName string, resou
 		return false
 	}
 	return true
+}
+
+func (g *CognitoGenerator) InitialCleanup() {
+	if len(g.Filter) == 0 {
+		return
+	}
+	var resources []terraformutils.Resource
+	for _, resource := range g.Resources {
+		serviceName := strings.TrimPrefix(resource.InstanceInfo.Type, resource.Provider+"_")
+		if g.resourceMatchesInitialIDFilters(serviceName, resource) && !terraformutils.ContainsResource(resources, resource) {
+			resources = append(resources, resource)
+		}
+	}
+	g.Resources = resources
 }
 
 func (g *CognitoGenerator) identityPoolMatchesPreDiscoveryFilters(identityPoolID string) bool {

@@ -92,6 +92,53 @@ func TestCognitoResourceMissing(t *testing.T) {
 	}
 }
 
+func TestCognitoUserPoolDomainMetadataError(t *testing.T) {
+	boom := errors.New("boom")
+	tests := []struct {
+		name    string
+		filters []terraformutils.ResourceFilter
+		err     error
+		wantErr bool
+	}{
+		{
+			name: "broad discovery logs domain metadata error",
+			err:  boom,
+		},
+		{
+			name: "typed domain filter returns domain metadata error",
+			filters: []terraformutils.ResourceFilter{
+				{ServiceName: cognitoUserPoolDomainResourceType, FieldPath: "id", AcceptableValues: []string{"auth.example.com"}},
+			},
+			err:     boom,
+			wantErr: true,
+		},
+		{
+			name: "typed domain filter ignores missing user pool",
+			filters: []terraformutils.ResourceFilter{
+				{ServiceName: cognitoUserPoolDomainResourceType, FieldPath: "id", AcceptableValues: []string{"auth.example.com"}},
+			},
+			err: &idptypes.ResourceNotFoundException{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := CognitoGenerator{}
+			g.Filter = tt.filters
+			err := g.handleUserPoolDomainMetadataError("us-east-1_abc", tt.err)
+			if tt.wantErr {
+				if !errors.Is(err, boom) {
+					t.Fatalf("handleUserPoolDomainMetadataError() error = %v, want %v", err, boom)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("handleUserPoolDomainMetadataError() error = %v, want nil", err)
+			}
+		})
+	}
+}
+
 func TestCognitoOptionalResourceLoaderErrors(t *testing.T) {
 	boom := errors.New("boom")
 	tests := []struct {
@@ -148,6 +195,47 @@ func TestCognitoOptionalResourceLoaderErrors(t *testing.T) {
 			}
 			if err != nil {
 				t.Fatalf("loadOptionalResources() error = %v, want nil", err)
+			}
+		})
+	}
+}
+
+func TestCognitoInitialCleanupPreservesUserPoolClientImportIDFilter(t *testing.T) {
+	userPoolID := "us-east-1_abc"
+	clientID := "client123"
+	resource := newCognitoUserPoolClientResource(userPoolID, clientID, "web")
+
+	tests := []struct {
+		name        string
+		filterValue string
+		wantCount   int
+	}{
+		{
+			name:        "full import ID filter keeps client resource",
+			filterValue: cognitoUserPoolClientImportID(userPoolID, clientID),
+			wantCount:   1,
+		},
+		{
+			name:        "client ID filter keeps client resource",
+			filterValue: clientID,
+			wantCount:   1,
+		},
+		{
+			name:        "nonmatching full import ID filter removes client resource",
+			filterValue: cognitoUserPoolClientImportID(userPoolID, "other"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := CognitoGenerator{}
+			g.Resources = []terraformutils.Resource{resource}
+			g.Filter = []terraformutils.ResourceFilter{
+				{ServiceName: cognitoUserPoolClientResourceType, FieldPath: "id", AcceptableValues: []string{tt.filterValue}},
+			}
+			g.InitialCleanup()
+			if got := len(g.Resources); got != tt.wantCount {
+				t.Fatalf("len(Resources) = %d, want %d", got, tt.wantCount)
 			}
 		})
 	}
