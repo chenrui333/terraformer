@@ -5,6 +5,7 @@ package kubernetes
 import (
 	"context"
 	"strconv"
+	"time"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -17,6 +18,7 @@ const (
 	configMapDataServiceName       = "configmapdata"
 	configMapDataTerraformType     = "kubernetes_config_map_v1_data"
 	configMapDataAllowEmptyPattern = `^data\.`
+	configMapDataListTimeout       = 30 * time.Second
 )
 
 type ConfigMapData struct {
@@ -39,7 +41,10 @@ func (c *ConfigMapData) InitResources() error {
 }
 
 func (c *ConfigMapData) initResources(clientset kubernetes.Interface) error {
-	configMaps, err := clientset.CoreV1().ConfigMaps(metav1.NamespaceAll).List(context.Background(), metav1.ListOptions{})
+	ctx, cancel := context.WithTimeout(context.Background(), configMapDataListTimeout)
+	defer cancel()
+
+	configMaps, err := clientset.CoreV1().ConfigMaps(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
