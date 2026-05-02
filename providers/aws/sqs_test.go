@@ -184,6 +184,76 @@ func TestSqsFilterGatesQueueAndChildDiscovery(t *testing.T) {
 	}
 }
 
+func TestSqsFilterGatesSplitAttributeAppend(t *testing.T) {
+	queueURL := "https://sqs.us-east-1.amazonaws.com/123456789012/orders"
+	policyResource := sqsQueueAttributeResources[0]
+	redrivePolicyResource := sqsQueueAttributeResources[1]
+	redriveAllowPolicyResource := sqsQueueAttributeResources[2]
+	policy := newSqsQueueAttributeResource(queueURL, "orders", "{\"Version\":\"2012-10-17\"}", policyResource)
+	redrivePolicy := newSqsQueueAttributeResource(queueURL, "orders", "{\"maxReceiveCount\":5}", redrivePolicyResource)
+	redriveAllowPolicy := newSqsQueueAttributeResource(queueURL, "orders", "{\"redrivePermission\":\"allowAll\"}", redriveAllowPolicyResource)
+
+	tests := []struct {
+		name                string
+		filters             []terraformutils.ResourceFilter
+		appendPolicy        bool
+		appendRedrivePolicy bool
+		appendAllowPolicy   bool
+	}{
+		{
+			name:                "no typed child filter appends all configured split resources",
+			appendPolicy:        true,
+			appendRedrivePolicy: true,
+			appendAllowPolicy:   true,
+		},
+		{
+			name: "typed redrive policy id filter only appends redrive policy",
+			filters: []terraformutils.ResourceFilter{
+				{ServiceName: "sqs_queue_redrive_policy", FieldPath: "id", AcceptableValues: []string{queueURL}},
+			},
+			appendRedrivePolicy: true,
+		},
+		{
+			name: "typed policy and allow policy filters append only requested siblings",
+			filters: []terraformutils.ResourceFilter{
+				{ServiceName: "sqs_queue_policy", FieldPath: "id", AcceptableValues: []string{queueURL}},
+				{ServiceName: "sqs_queue_redrive_allow_policy", FieldPath: "id", AcceptableValues: []string{queueURL}},
+			},
+			appendPolicy:      true,
+			appendAllowPolicy: true,
+		},
+		{
+			name: "typed child non-id filter checks the candidate resource",
+			filters: []terraformutils.ResourceFilter{
+				{ServiceName: "sqs_queue_redrive_allow_policy", FieldPath: "redrive_allow_policy", AcceptableValues: []string{"{\"redrivePermission\":\"allowAll\"}"}},
+			},
+			appendAllowPolicy: true,
+		},
+		{
+			name: "typed child id filter with different queue skips all siblings",
+			filters: []terraformutils.ResourceFilter{
+				{ServiceName: "sqs_queue_redrive_policy", FieldPath: "id", AcceptableValues: []string{"https://sqs.us-east-1.amazonaws.com/123456789012/other"}},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := SqsGenerator{}
+			g.Filter = tt.filters
+			if got := g.shouldAppendQueueAttributeResource(policyResource, policy); got != tt.appendPolicy {
+				t.Fatalf("shouldAppendQueueAttributeResource(policy) = %t, want %t", got, tt.appendPolicy)
+			}
+			if got := g.shouldAppendQueueAttributeResource(redrivePolicyResource, redrivePolicy); got != tt.appendRedrivePolicy {
+				t.Fatalf("shouldAppendQueueAttributeResource(redrive_policy) = %t, want %t", got, tt.appendRedrivePolicy)
+			}
+			if got := g.shouldAppendQueueAttributeResource(redriveAllowPolicyResource, redriveAllowPolicy); got != tt.appendAllowPolicy {
+				t.Fatalf("shouldAppendQueueAttributeResource(redrive_allow_policy) = %t, want %t", got, tt.appendAllowPolicy)
+			}
+		})
+	}
+}
+
 func TestSqsQueueMissing(t *testing.T) {
 	tests := []struct {
 		name string

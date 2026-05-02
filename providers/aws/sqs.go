@@ -137,7 +137,11 @@ func (g *SqsGenerator) addQueueAttributeResources(svc *sqs.Client, queueURL, que
 		if !sqsQueueAttributeConfigured(value) {
 			continue
 		}
-		g.Resources = append(g.Resources, newSqsQueueAttributeResource(queueURL, queueName, value, resource))
+		queueAttributeResource := newSqsQueueAttributeResource(queueURL, queueName, value, resource)
+		if !g.shouldAppendQueueAttributeResource(resource, queueAttributeResource) {
+			continue
+		}
+		g.Resources = append(g.Resources, queueAttributeResource)
 	}
 
 	return nil
@@ -161,6 +165,24 @@ func (g *SqsGenerator) shouldLoadQueueAttributeResources(queueResource terraform
 		return !g.hasTypedNonIDQueueFilter()
 	}
 	return g.queueMatchesAnySqsChildInitialFilter(queueResource)
+}
+
+func (g *SqsGenerator) shouldAppendQueueAttributeResource(resource sqsQueueAttributeResource, queueAttributeResource terraformutils.Resource) bool {
+	if !g.hasTypedSqsChildFilter() {
+		return true
+	}
+
+	hasTypedResourceFilter := false
+	for _, filter := range g.Filter {
+		if filter.ServiceName == "" || !filter.IsApplicable(resource.serviceName) {
+			continue
+		}
+		hasTypedResourceFilter = true
+		if !filter.Filter(queueAttributeResource) {
+			return false
+		}
+	}
+	return hasTypedResourceFilter
 }
 
 func (g *SqsGenerator) queueMatchesInitialIDFilters(queueResource terraformutils.Resource) bool {
