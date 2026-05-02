@@ -30,10 +30,8 @@ List of supported Cloudflare services:
 * `account_member`
   * `cloudflare_account_member`
 * `certificates`
-  * `cloudflare_certificate_pack`
   * `cloudflare_custom_hostname`
   * `cloudflare_mtls_certificate`
-  * `cloudflare_origin_ca_certificate`
 * `dns`
   * `cloudflare_dns_record`
   * `cloudflare_zone`

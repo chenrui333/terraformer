@@ -276,18 +276,24 @@ func hcl2ValueFromFlatmapMap(m map[string]string, prefix string, ty cty.Type) (c
 			continue
 		}
 
-		// The flatmap format doesn't allow us to distinguish between keys
-		// that contain periods and nested objects, so by convention a
-		// map is only ever of primitive type in flatmap, and we just assume
-		// that the remainder of the raw key (dots and all) is the key we
-		// want in the result value.
 		key := fullKey[len(prefix):]
 		if key == "%" {
 			// Ignore the "count" key
 			continue
 		}
 
-		val, err := hcl2ValueFromFlatmapValue(m, fullKey, ety)
+		valueKey := fullKey
+		if !ety.IsPrimitiveType() {
+			if dot := strings.IndexByte(key, '.'); dot != -1 {
+				key = key[:dot]
+				valueKey = prefix + key
+			}
+		}
+		if _, exists := vals[key]; exists {
+			continue
+		}
+
+		val, err := hcl2ValueFromFlatmapValue(m, valueKey, ety)
 		if err != nil {
 			return cty.DynamicVal, err
 		}

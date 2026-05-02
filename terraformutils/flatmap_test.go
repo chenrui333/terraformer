@@ -112,6 +112,44 @@ func TestFromFlatmapMap(t *testing.T) {
 	}
 }
 
+func TestFromFlatmapMapOfLists(t *testing.T) {
+	attributes := map[string]string{
+		"pools.%":    "2",
+		"pools.EU.#": "1",
+		"pools.EU.0": "pool-eu",
+		"pools.US.#": "2",
+		"pools.US.0": "pool-us-a",
+		"pools.US.1": "pool-us-b",
+	}
+	parser := NewFlatmapParser(attributes, nil, nil)
+	ty := cty.Object(map[string]cty.Type{
+		"pools": cty.Map(cty.List(cty.String)),
+	})
+
+	result, err := parser.Parse(ty)
+	if err != nil {
+		t.Fatalf("Parse error: %v", err)
+	}
+	pools, ok := result["pools"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("pools is not map[string]interface{}, got %T", result["pools"])
+	}
+	us, ok := pools["US"].([]interface{})
+	if !ok {
+		t.Fatalf("pools[US] is not []interface{}, got %T", pools["US"])
+	}
+	if len(us) != 2 {
+		t.Errorf("pools[US] length = %d, want 2", len(us))
+	}
+	eu, ok := pools["EU"].([]interface{})
+	if !ok {
+		t.Fatalf("pools[EU] is not []interface{}, got %T", pools["EU"])
+	}
+	if len(eu) != 1 {
+		t.Errorf("pools[EU] length = %d, want 1", len(eu))
+	}
+}
+
 func TestFromFlatmapSet(t *testing.T) {
 	attributes := map[string]string{
 		"ingress.#":               "1",

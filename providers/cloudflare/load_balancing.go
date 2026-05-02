@@ -41,6 +41,16 @@ func addPrimitiveMapAttributes[T ~float64](attributes map[string]string, key str
 	}
 }
 
+func addStringListMapAttributes(attributes map[string]string, key string, values map[string][]string) {
+	if len(values) == 0 {
+		return
+	}
+	attributes[key+".%"] = strconv.Itoa(len(values))
+	for mapKey, list := range values {
+		addStringListAttributes(attributes, key+"."+mapKey, list)
+	}
+}
+
 func addLoadBalancerRuleFixedResponseAttributes(attributes map[string]string, prefix string, response *cf.LoadBalancerFixedResponseData) {
 	if response == nil {
 		return
@@ -66,7 +76,10 @@ func addLoadBalancerRuleOverrideAttributes(attributes map[string]string, prefix 
 		attributes[prefix+".random_steering.default_weight"] = strconv.FormatFloat(overrides.RandomSteering.DefaultWeight, 'f', -1, 64)
 		addPrimitiveMapAttributes(attributes, prefix+".random_steering.pool_weights", overrides.RandomSteering.PoolWeights)
 	}
+	addStringListMapAttributes(attributes, prefix+".country_pools", overrides.CountryPools)
 	addStringListAttributes(attributes, prefix+".default_pools", overrides.DefaultPools)
+	addStringListMapAttributes(attributes, prefix+".pop_pools", overrides.PoPPools)
+	addStringListMapAttributes(attributes, prefix+".region_pools", overrides.RegionPools)
 	addStringAttribute(attributes, prefix+".session_affinity", overrides.Persistence)
 	if overrides.PersistenceTTL != nil {
 		attributes[prefix+".session_affinity_ttl"] = strconv.FormatUint(uint64(*overrides.PersistenceTTL), 10)

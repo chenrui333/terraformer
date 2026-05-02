@@ -4,7 +4,11 @@ package cloudflare
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/url"
+	"strconv"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	cf "github.com/cloudflare/cloudflare-go"
@@ -157,7 +161,7 @@ func (g *AccessGenerator) appendAccessMTLSCertificateResources(
 }
 
 func (g *AccessGenerator) appendAccessServiceTokenResources(ctx context.Context, api *cf.API, rc *cf.ResourceContainer, scopeType string) error {
-	serviceTokens, _, err := api.ListAccessServiceTokens(ctx, rc, cf.ListAccessServiceTokensParams{})
+	serviceTokens, err := listAccessServiceTokens(ctx, api, rc)
 	if err != nil {
 		return err
 	}
@@ -173,6 +177,34 @@ func (g *AccessGenerator) appendAccessServiceTokenResources(ctx context.Context,
 		))
 	}
 	return nil
+}
+
+func listAccessServiceTokens(ctx context.Context, api *cf.API, rc *cf.ResourceContainer) ([]cf.AccessServiceToken, error) {
+	var serviceTokens []cf.AccessServiceToken
+	for page := 1; ; page++ {
+		values := url.Values{}
+		values.Set("page", strconv.Itoa(page))
+		values.Set("per_page", strconv.Itoa(cloudflarePageSize))
+		response, err := api.Raw(
+			ctx,
+			http.MethodGet,
+			fmt.Sprintf("/%s/%s/access/service_tokens?%s", rc.Level, rc.Identifier, values.Encode()),
+			nil,
+			nil,
+		)
+		if err != nil {
+			return nil, err
+		}
+		var pageTokens []cf.AccessServiceToken
+		if err := json.Unmarshal(response.Result, &pageTokens); err != nil {
+			return nil, err
+		}
+		serviceTokens = append(serviceTokens, pageTokens...)
+		if response.ResultInfo == nil || !response.ResultInfo.HasMorePages() {
+			break
+		}
+	}
+	return serviceTokens, nil
 }
 
 func (g *AccessGenerator) appendAccountAccessPolicyResources(ctx context.Context, api *cf.API, accountID string) error {

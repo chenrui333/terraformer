@@ -39,42 +39,6 @@ func (g *CertificatesGenerator) appendMTLSCertificateResources(ctx context.Conte
 	return nil
 }
 
-func (g *CertificatesGenerator) appendOriginCACertificateResources(ctx context.Context, api *cf.API) error {
-	certificates, err := api.ListOriginCACertificates(ctx, cf.ListOriginCertificatesParams{})
-	if err != nil {
-		return err
-	}
-	for _, certificate := range certificates {
-		g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-			certificate.ID,
-			cloudflareResourceName(certificate.ID),
-			"cloudflare_origin_ca_certificate",
-			"cloudflare",
-			[]string{},
-		))
-	}
-	return nil
-}
-
-func (g *CertificatesGenerator) appendCertificatePackResources(ctx context.Context, api *cf.API, zone cf.Zone) error {
-	certificatePacks, err := api.ListCertificatePacks(ctx, zone.ID)
-	if err != nil {
-		return err
-	}
-	for _, certificatePack := range certificatePacks {
-		g.Resources = append(g.Resources, terraformutils.NewResource(
-			certificatePack.ID,
-			cloudflareResourceName(zone.Name, certificatePack.Type, certificatePack.ID),
-			"cloudflare_certificate_pack",
-			"cloudflare",
-			map[string]string{"zone_id": zone.ID},
-			[]string{},
-			map[string]interface{}{},
-		))
-	}
-	return nil
-}
-
 func (g *CertificatesGenerator) appendCustomHostnameResources(ctx context.Context, api *cf.API, zone cf.Zone) error {
 	for page := 1; ; page++ {
 		customHostnames, info, err := api.CustomHostnames(ctx, zone.ID, page, cf.CustomHostname{})
@@ -110,17 +74,11 @@ func (g *CertificatesGenerator) InitResources() error {
 			return err
 		}
 	}
-	if err := g.appendOriginCACertificateResources(ctx, api); err != nil {
-		return err
-	}
 	zones, err := cloudflareZones(ctx, api)
 	if err != nil {
 		return err
 	}
 	for _, zone := range zones {
-		if err := g.appendCertificatePackResources(ctx, api, zone); err != nil {
-			return err
-		}
 		if err := g.appendCustomHostnameResources(ctx, api, zone); err != nil {
 			return err
 		}

@@ -219,7 +219,19 @@ func (p *FlatmapParser) fromFlatmapMap(prefix string, ty cty.Type) (map[string]i
 		if p.isAttributeIgnored(fullKey) {
 			continue
 		}
-		value, err := p.fromFlatmapValue(fullKey, ty)
+
+		valueKey := fullKey
+		if !ty.IsPrimitiveType() {
+			if dot := strings.IndexByte(key, '.'); dot != -1 {
+				key = key[:dot]
+				valueKey = prefix + key
+			}
+		}
+		if _, exists := values[key]; exists {
+			continue
+		}
+
+		value, err := p.fromFlatmapValue(valueKey, ty)
 		if err != nil {
 			return nil, err
 		}

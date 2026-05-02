@@ -119,6 +119,40 @@ func TestHCL2ValueFromFlatmapMapUnknown(t *testing.T) {
 	}
 }
 
+func TestHCL2ValueFromFlatmapMapOfLists(t *testing.T) {
+	m := map[string]string{
+		"pools.%":    "2",
+		"pools.EU.#": "1",
+		"pools.EU.0": "pool-eu",
+		"pools.US.#": "2",
+		"pools.US.0": "pool-us-a",
+		"pools.US.1": "pool-us-b",
+	}
+	ty := cty.Object(map[string]cty.Type{"pools": cty.Map(cty.List(cty.String))})
+
+	val, err := HCL2ValueFromFlatmap(m, ty)
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+	pools := val.GetAttr("pools")
+	if !pools.IsKnown() {
+		t.Fatal("pools is unknown")
+	}
+	if pools.IsNull() {
+		t.Fatal("pools is null")
+	}
+	poolMap := pools.AsValueMap()
+	if len(poolMap) != 2 {
+		t.Fatalf("pools length = %d, want 2", len(poolMap))
+	}
+	if poolMap["US"].LengthInt() != 2 {
+		t.Errorf("pools[US] length = %d, want 2", poolMap["US"].LengthInt())
+	}
+	if poolMap["EU"].LengthInt() != 1 {
+		t.Errorf("pools[EU] length = %d, want 1", poolMap["EU"].LengthInt())
+	}
+}
+
 func TestHCL2ValueFromFlatmapSet(t *testing.T) {
 	m := map[string]string{"ids.#": "2", "ids.12345": "a", "ids.67890": "b"}
 	ty := cty.Object(map[string]cty.Type{"ids": cty.Set(cty.String)})
