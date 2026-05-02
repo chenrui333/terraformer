@@ -73,7 +73,16 @@ terraformer import aws --resources=sg --regions=us-east-1
     * `aws_apigatewayv2_stage`
     * `aws_apigatewayv2_vpc_link`
 *   `appsync`
+    * `aws_appsync_api_cache`
+    * `aws_appsync_api_key`
+    * `aws_appsync_datasource`
+    * `aws_appsync_domain_name`
+    * `aws_appsync_domain_name_api_association`
+    * `aws_appsync_function`
     * `aws_appsync_graphql_api`
+    * `aws_appsync_resolver`
+    * `aws_appsync_source_api_association`
+    * `aws_appsync_type`
 *   `auto_scaling`
     * `aws_autoscaling_group`
     * `aws_launch_configuration`
