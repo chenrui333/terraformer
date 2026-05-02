@@ -34,7 +34,10 @@ func (g SSHKeyGenerator) createResources(sshLeyList []packngo.SSHKey) []terrafor
 }
 
 func (g *SSHKeyGenerator) InitResources() error {
-	client := g.generateClient()
+	client, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	output, err := g.listSSHKeys(client)
 	if err != nil {
 		return err

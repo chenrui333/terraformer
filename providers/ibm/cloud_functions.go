@@ -68,11 +68,17 @@ func (g CloudFunctionGenerator) loadTriggers(namespace, triggerName string) terr
  *
  */
 func setupOpenWhiskClientConfigIAM(response ns.NamespaceResponse, c *bluemix.Config, region string) (*whisk.Client, error) {
-	u, _ := url.Parse(fmt.Sprintf("https://%s.functions.cloud.ibm.com/api", region))
-	wskClient, _ := whisk.NewClient(http.DefaultClient, &whisk.Config{
+	u, err := url.Parse(fmt.Sprintf("https://%s.functions.cloud.ibm.com/api", region))
+	if err != nil {
+		return nil, err
+	}
+	wskClient, err := whisk.NewClient(http.DefaultClient, &whisk.Config{
 		Host:    u.Host,
 		Version: "v1",
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	if os.Getenv("TF_LOG") != "" {
 		whisk.SetDebug(true)

@@ -34,7 +34,10 @@ func (g VolumeGenerator) createResources(volumeList []packngo.Volume) []terrafor
 }
 
 func (g *VolumeGenerator) InitResources() error {
-	client := g.generateClient()
+	client, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	output, err := g.listVolumes(client)
 	if err != nil {
 		return err

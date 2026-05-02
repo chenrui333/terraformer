@@ -25,7 +25,10 @@ func (g ResourceSetGenerator) createResources(acls []client.ResourceSet) []terra
 }
 
 func (g *ResourceSetGenerator) InitResources() error {
-	client := g.generateClient()
+	client, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	acls, err := client.GetResourceSets()
 
 	if err != nil {

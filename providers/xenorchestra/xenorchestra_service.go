@@ -10,12 +10,11 @@ type XenorchestraService struct { //nolint
 	terraformutils.Service
 }
 
-func (m *XenorchestraService) generateClient() *client.Client {
+func (m *XenorchestraService) generateClient() (*client.Client, error) {
 	config := client.Config{
 		Url:      m.Args["url"].(string),
 		Username: m.Args["username"].(string),
 		Password: m.Args["password"].(string),
 	}
-	client, _ := client.NewClient(config)
-	return client
+	return client.NewClient(config)
 }

@@ -34,7 +34,10 @@ func (g DeviceGenerator) createResources(deviceList []packngo.Device) []terrafor
 }
 
 func (g *DeviceGenerator) InitResources() error {
-	client := g.generateClient()
+	client, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	output, err := g.listDevices(client)
 	if err != nil {
 		return err
