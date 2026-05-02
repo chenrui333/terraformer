@@ -207,15 +207,21 @@ func populateKubernetesManifestFromObject(resourceType string, state *tfcompat.I
 	if err := json.Unmarshal(state.TypedAttributes, &attributes); err != nil {
 		return
 	}
-	if manifestHasValue(attributes["manifest"]) {
-		return
-	}
 
 	object, ok := attributes["object"].(map[string]interface{})
-	if !ok || len(object) == 0 {
+	changed := false
+	if !manifestHasValue(attributes["manifest"]) && ok && len(object) > 0 {
+		attributes["manifest"] = object
+		changed = true
+	}
+
+	if _, ok := attributes["object"]; ok {
+		delete(attributes, "object")
+		changed = true
+	}
+	if !changed {
 		return
 	}
-	attributes["manifest"] = object
 
 	raw, err := json.Marshal(attributes)
 	if err != nil {
