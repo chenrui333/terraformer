@@ -63,7 +63,7 @@ func TestConfigOrganizationRuleResourceType(t *testing.T) {
 	}
 }
 
-func TestConfigRuleMissing(t *testing.T) {
+func TestConfigRemediationConfigurationMissing(t *testing.T) {
 	tests := []struct {
 		name string
 		err  error
@@ -80,6 +80,16 @@ func TestConfigRuleMissing(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "no such remediation configuration",
+			err:  &configtypes.NoSuchRemediationConfigurationException{},
+			want: true,
+		},
+		{
+			name: "wrapped no such remediation configuration",
+			err:  errors.Join(errors.New("lookup failed"), &configtypes.NoSuchRemediationConfigurationException{}),
+			want: true,
+		},
+		{
 			name: "generic error",
 			err:  errors.New("boom"),
 			want: false,
@@ -93,9 +103,9 @@ func TestConfigRuleMissing(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := configRuleMissing(tt.err)
+			got := configRemediationConfigurationMissing(tt.err)
 			if got != tt.want {
-				t.Fatalf("configRuleMissing() = %v, want %v", got, tt.want)
+				t.Fatalf("configRemediationConfigurationMissing() = %v, want %v", got, tt.want)
 			}
 		})
 	}

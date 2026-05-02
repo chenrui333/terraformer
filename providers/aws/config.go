@@ -323,7 +323,7 @@ func (g *ConfigGenerator) addRemediationConfigurationsBatch(svc *configservice.C
 			ConfigRuleNames: configRuleNames,
 		})
 	if err != nil {
-		if configRuleMissing(err) && len(configRuleNames) > 1 {
+		if configRemediationConfigurationMissing(err) && len(configRuleNames) > 1 {
 			for _, configRuleName := range configRuleNames {
 				if err := g.addRemediationConfigurationsBatch(svc, []string{configRuleName}); err != nil {
 					return err
@@ -331,7 +331,7 @@ func (g *ConfigGenerator) addRemediationConfigurationsBatch(svc *configservice.C
 			}
 			return nil
 		}
-		if configRuleMissing(err) {
+		if configRemediationConfigurationMissing(err) {
 			return nil
 		}
 		return err
@@ -410,9 +410,13 @@ func configOrganizationRuleResourceType(rule configtypes.OrganizationConfigRule)
 	}
 }
 
-func configRuleMissing(err error) bool {
+func configRemediationConfigurationMissing(err error) bool {
 	var notFound *configtypes.NoSuchConfigRuleException
-	return errors.As(err, &notFound)
+	if errors.As(err, &notFound) {
+		return true
+	}
+	var noRemediation *configtypes.NoSuchRemediationConfigurationException
+	return errors.As(err, &noRemediation)
 }
 
 func chunkStrings(values []string, size int) [][]string {
