@@ -11,6 +11,7 @@ Terraformer discovers Kubernetes API resources from the active cluster and impor
 Discovered CRDs and other untyped API extensions without a first-class Terraform Kubernetes provider type can be imported through `kubernetes_manifest` when the API resource is manageable and the installed provider supports that resource.
 Manifest-backed custom resources use a group/version-qualified resource selector such as `example.com/v1/widgets` to avoid collisions between CRDs that share the same plural name.
 When `labels` or `annotations` are selected with full resource imports, Terraformer keeps the full resource import and skips overlapping metadata-only resources to avoid duplicate Terraform ownership of the same object metadata.
+When `env` is selected with full workload imports, Terraformer keeps the full workload import and skips overlapping environment-only resources to avoid duplicate Terraform ownership of the same container environment.
 When `configmaps` and `configmapdata` are selected together, Terraformer keeps the full `configmaps` import and skips overlapping data-only resources to avoid duplicate Terraform ownership of the same ConfigMap data.
 When `secrets` and `secretdata` are selected together, Terraformer keeps the full `secrets` import and skips overlapping data-only resources to avoid duplicate Terraform ownership of the same Secret data.
 Because `kubernetes_secret_v1_data` only accepts string data, `secretdata` skips Secrets containing non-UTF-8 payloads instead of emitting lossy configuration.
@@ -45,6 +46,8 @@ Common supported resources include:
     * `kubernetes_endpoints_v1`
 *   `endpointslices`
     * `kubernetes_endpoint_slice_v1`
+*   `env`
+    * `kubernetes_env`
 *   discovered CRDs and custom resources
     * `kubernetes_manifest`
 *   `horizontalpodautoscalers`

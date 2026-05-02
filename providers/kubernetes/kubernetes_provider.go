@@ -97,6 +97,7 @@ func (p *KubernetesProvider) GetSupportedService() map[string]terraformutils.Ser
 	}
 	resp := provider.GetSchema()
 	listableResources := map[kubernetesResourceID]struct{}{}
+	envResources := map[kubernetesResourceID]struct{}{}
 	for _, list := range lists {
 		if len(list.APIResources) == 0 {
 			continue
@@ -117,6 +118,9 @@ func (p *KubernetesProvider) GetSupportedService() map[string]terraformutils.Ser
 				continue
 			}
 			listableResources[kubernetesResourceID{group: gv.Group, version: gv.Version, kind: resource.Kind}] = struct{}{}
+			if envSupportsResource(resource) {
+				envResources[kubernetesResourceID{group: gv.Group, version: gv.Version, kind: resource.Kind}] = struct{}{}
+			}
 
 			hasResourceType := func(name string) bool {
 				_, exists := resp.ResourceTypes[name]
@@ -143,6 +147,10 @@ func (p *KubernetesProvider) GetSupportedService() map[string]terraformutils.Ser
 		return exists
 	})
 	addSecretDataService(resources, clientset, listableResources, func(name string) bool {
+		_, exists := resp.ResourceTypes[name]
+		return exists
+	})
+	addEnvService(resources, envResources, func(name string) bool {
 		_, exists := resp.ResourceTypes[name]
 		return exists
 	})
@@ -268,6 +276,24 @@ func addSecretDataService(
 	}
 }
 
+func addEnvService(
+	resources map[string]terraformutils.ServiceGenerator,
+	envResources map[kubernetesResourceID]struct{},
+	hasResourceType func(string) bool,
+) {
+	if !hasResourceType(envTerraformType) {
+		return
+	}
+	for resourceID := range envResources {
+		if envSupportsKind(resourceID.kind) {
+			resources[envServiceName] = &Env{
+				TerraformType: envTerraformType,
+			}
+			return
+		}
+	}
+}
+
 func addMetadataPatchServices(
 	resources map[string]terraformutils.ServiceGenerator,
 	hasResourceType func(string) bool,
@@ -292,6 +318,7 @@ func (p KubernetesProvider) PostProcessImportResources(resourcesByService map[st
 	resourcesByService = removeDefaultServiceAccountDuplicates(resourcesByService)
 	resourcesByService = removeConfigMapDataDuplicates(resourcesByService)
 	resourcesByService = removeSecretDataDuplicates(resourcesByService)
+	resourcesByService = removeEnvDuplicates(resourcesByService)
 	resourcesByService = removeMetadataPatchDuplicates(resourcesByService)
 	return resourcesByService
 }
@@ -396,6 +423,46 @@ func removeSecretDataDuplicates(resourcesByService map[string][]terraformutils.R
 		return resourcesByService
 	}
 	resourcesByService[secretDataServiceName] = filtered
+	return resourcesByService
+}
+
+func removeEnvDuplicates(resourcesByService map[string][]terraformutils.Resource) map[string][]terraformutils.Resource {
+	env, ok := resourcesByService[envServiceName]
+	if !ok {
+		return resourcesByService
+	}
+
+	targetIDs := map[string]struct{}{}
+	for serviceName, resources := range resourcesByService {
+		if serviceName == envServiceName {
+			continue
+		}
+		for _, resource := range resources {
+			for _, targetID := range envTargetIDs(resource) {
+				targetIDs[targetID] = struct{}{}
+			}
+		}
+	}
+	if len(targetIDs) == 0 {
+		return resourcesByService
+	}
+
+	filtered := env[:0]
+	for _, resource := range env {
+		if resource.InstanceState == nil {
+			filtered = append(filtered, resource)
+			continue
+		}
+		if _, duplicate := targetIDs[resource.InstanceState.ID]; duplicate {
+			continue
+		}
+		filtered = append(filtered, resource)
+	}
+	if len(filtered) == 0 {
+		delete(resourcesByService, envServiceName)
+		return resourcesByService
+	}
+	resourcesByService[envServiceName] = filtered
 	return resourcesByService
 }
 

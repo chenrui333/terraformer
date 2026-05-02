@@ -366,7 +366,7 @@ func metadataPatchFallbackKindForTerraformType(terraformType string) (string, bo
 		return "", false
 	}
 	switch terraformType {
-	case labelsTerraformType, annotationsTerraformType, manifestTerraformResourceName:
+	case labelsTerraformType, annotationsTerraformType, envTerraformType, manifestTerraformResourceName:
 		return "", false
 	}
 
