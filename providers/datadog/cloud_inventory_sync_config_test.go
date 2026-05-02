@@ -39,21 +39,49 @@ func TestCloudInventorySyncConfigResponseDataListUnmarshal(t *testing.T) {
 }
 
 func TestCloudInventorySyncConfigCreateResource(t *testing.T) {
-	generator := CloudInventorySyncConfigGenerator{}
-	resource := generator.createResource(cloudInventorySyncConfigResponseData{
-		ID: "3526615b-4d65-4d9b-947a-d89c18faf0dc",
-		Attributes: cloudInventorySyncConfigResponseAttributes{
-			CloudProvider: "aws",
+	tests := []struct {
+		name       string
+		syncConfig cloudInventorySyncConfigResponseData
+		wantID     string
+		wantName   string
+		wantType   string
+	}{
+		{
+			name: "uses cloud provider in resource name",
+			syncConfig: cloudInventorySyncConfigResponseData{
+				ID: "3526615b-4d65-4d9b-947a-d89c18faf0dc",
+				Attributes: cloudInventorySyncConfigResponseAttributes{
+					CloudProvider: "aws",
+				},
+			},
+			wantID:   "3526615b-4d65-4d9b-947a-d89c18faf0dc",
+			wantName: "tfer--cloud_inventory_sync_config_aws",
+			wantType: "datadog_cloud_inventory_sync_config",
 		},
-	})
+		{
+			name: "falls back to id in resource name",
+			syncConfig: cloudInventorySyncConfigResponseData{
+				ID: "3526615b-4d65-4d9b-947a-d89c18faf0dc",
+			},
+			wantID:   "3526615b-4d65-4d9b-947a-d89c18faf0dc",
+			wantName: "tfer--cloud_inventory_sync_config_3526615b-4d65-4d9b-947a-d89c18faf0dc",
+			wantType: "datadog_cloud_inventory_sync_config",
+		},
+	}
 
-	if resource.InstanceState.ID != "3526615b-4d65-4d9b-947a-d89c18faf0dc" {
-		t.Fatalf("resource ID = %q, want %q", resource.InstanceState.ID, "3526615b-4d65-4d9b-947a-d89c18faf0dc")
-	}
-	if resource.ResourceName != "tfer--cloud_inventory_sync_config_aws" {
-		t.Fatalf("resource name = %q, want %q", resource.ResourceName, "tfer--cloud_inventory_sync_config_aws")
-	}
-	if resource.InstanceInfo.Type != "datadog_cloud_inventory_sync_config" {
-		t.Fatalf("resource type = %q, want %q", resource.InstanceInfo.Type, "datadog_cloud_inventory_sync_config")
+	generator := CloudInventorySyncConfigGenerator{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resource := generator.createResource(tt.syncConfig)
+			if resource.InstanceState.ID != tt.wantID {
+				t.Fatalf("resource ID = %q, want %q", resource.InstanceState.ID, tt.wantID)
+			}
+			if resource.ResourceName != tt.wantName {
+				t.Fatalf("resource name = %q, want %q", resource.ResourceName, tt.wantName)
+			}
+			if resource.InstanceInfo.Type != tt.wantType {
+				t.Fatalf("resource type = %q, want %q", resource.InstanceInfo.Type, tt.wantType)
+			}
+		})
 	}
 }

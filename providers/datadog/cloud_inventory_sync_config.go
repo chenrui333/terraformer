@@ -44,6 +44,8 @@ type cloudInventorySyncConfigResponseAttributes struct {
 	CloudProvider string `json:"cloud_provider,omitempty"`
 }
 
+const cloudInventorySyncConfigMaxErrorBody = 512
+
 func (d *cloudInventorySyncConfigResponseDataList) UnmarshalJSON(data []byte) error {
 	var list []cloudInventorySyncConfigResponseData
 	if err := json.Unmarshal(data, &list); err == nil {
@@ -57,15 +59,6 @@ func (d *cloudInventorySyncConfigResponseDataList) UnmarshalJSON(data []byte) er
 	}
 	*d = []cloudInventorySyncConfigResponseData{single}
 	return nil
-}
-
-func (g *CloudInventorySyncConfigGenerator) createResources(syncConfigs []cloudInventorySyncConfigResponseData) []terraformutils.Resource {
-	resources := []terraformutils.Resource{}
-	for _, syncConfig := range syncConfigs {
-		resources = append(resources, g.createResource(syncConfig))
-	}
-
-	return resources
 }
 
 func (g *CloudInventorySyncConfigGenerator) createResource(syncConfig cloudInventorySyncConfigResponseData) terraformutils.Resource {
@@ -113,7 +106,7 @@ func (g *CloudInventorySyncConfigGenerator) InitResources() error {
 }
 
 func getCloudInventorySyncConfig(ctx context.Context, client *datadog.APIClient, id string) (cloudInventorySyncConfigResponseData, error) {
-	body, err := sendCloudInventorySyncConfigRequest(ctx, client, fmt.Sprintf(cloudInventorySyncConfigByIDPath, id))
+	body, err := sendCloudInventorySyncConfigRequest(ctx, client, fmt.Sprintf(cloudInventorySyncConfigByIDPath, url.PathEscape(id)))
 	if err != nil {
 		return cloudInventorySyncConfigResponseData{}, err
 	}
@@ -128,6 +121,8 @@ func getCloudInventorySyncConfig(ctx context.Context, client *datadog.APIClient,
 	return response.Data[0], nil
 }
 
+// The Datadog Go SDK does not generate a typed Cloud Inventory sync config API,
+// so Terraformer mirrors the upstream Terraform provider's raw endpoint request.
 func sendCloudInventorySyncConfigRequest(ctx context.Context, client *datadog.APIClient, path string) ([]byte, error) {
 	basePath, err := client.GetConfig().ServerURLWithContext(ctx, "")
 	if err != nil {
@@ -163,7 +158,14 @@ func sendCloudInventorySyncConfigRequest(ctx context.Context, client *datadog.AP
 		return nil, err
 	}
 	if response.StatusCode >= 300 {
-		return nil, fmt.Errorf("cloud inventory sync config request failed: %s: %s", response.Status, string(body))
+		return nil, fmt.Errorf("cloud inventory sync config request failed: %s: %s", response.Status, truncateCloudInventorySyncConfigErrorBody(body))
 	}
 	return body, nil
+}
+
+func truncateCloudInventorySyncConfigErrorBody(body []byte) string {
+	if len(body) <= cloudInventorySyncConfigMaxErrorBody {
+		return string(body)
+	}
+	return string(body[:cloudInventorySyncConfigMaxErrorBody]) + "...(truncated)"
 }
