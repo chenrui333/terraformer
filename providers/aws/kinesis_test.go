@@ -55,6 +55,174 @@ func TestKinesisResourceName(t *testing.T) {
 	}
 }
 
+func TestKinesisShouldAppendStreamResourceHonorsFilters(t *testing.T) {
+	tests := []struct {
+		name    string
+		filters []terraformutils.ResourceFilter
+		stream  string
+		want    bool
+	}{
+		{name: "no filters", stream: "orders", want: true},
+		{
+			name: "typed child consumer filter does not append parents",
+			filters: []terraformutils.ResourceFilter{{
+				ServiceName:      "kinesis_stream_consumer",
+				FieldPath:        "id",
+				AcceptableValues: []string{"arn:aws:kinesis:us-east-1:123456789012:stream/orders/consumer/app:1"},
+			}},
+			stream: "orders",
+			want:   false,
+		},
+		{
+			name: "typed policy filter does not append parents",
+			filters: []terraformutils.ResourceFilter{{
+				ServiceName:      "kinesis_resource_policy",
+				FieldPath:        "id",
+				AcceptableValues: []string{"arn:aws:kinesis:us-east-1:123456789012:stream/orders"},
+			}},
+			stream: "orders",
+			want:   false,
+		},
+		{
+			name: "typed stream id filter matches parent",
+			filters: []terraformutils.ResourceFilter{{
+				ServiceName:      "kinesis_stream",
+				FieldPath:        "id",
+				AcceptableValues: []string{"orders"},
+			}},
+			stream: "orders",
+			want:   true,
+		},
+		{
+			name: "typed stream id filter skips nonmatching parent",
+			filters: []terraformutils.ResourceFilter{{
+				ServiceName:      "kinesis_stream",
+				FieldPath:        "id",
+				AcceptableValues: []string{"orders"},
+			}},
+			stream: "payments",
+			want:   false,
+		},
+		{
+			name: "typed stream tag filter waits for post-refresh cleanup",
+			filters: []terraformutils.ResourceFilter{{
+				ServiceName:      "kinesis_stream",
+				FieldPath:        "tags.env",
+				AcceptableValues: []string{"prod"},
+			}},
+			stream: "orders",
+			want:   true,
+		},
+		{
+			name: "untyped stream id filter matches parent",
+			filters: []terraformutils.ResourceFilter{{
+				FieldPath:        "id",
+				AcceptableValues: []string{"orders"},
+			}},
+			stream: "orders",
+			want:   true,
+		},
+		{
+			name: "untyped stream id filter skips nonmatching parent",
+			filters: []terraformutils.ResourceFilter{{
+				FieldPath:        "id",
+				AcceptableValues: []string{"orders"},
+			}},
+			stream: "payments",
+			want:   false,
+		},
+		{
+			name: "untyped child arn filter does not append parents",
+			filters: []terraformutils.ResourceFilter{{
+				FieldPath:        "id",
+				AcceptableValues: []string{"arn:aws:kinesis:us-east-1:123456789012:stream/orders/consumer/app:1"},
+			}},
+			stream: "orders",
+			want:   false,
+		},
+		{
+			name: "typed stream and child filters append matching parent only",
+			filters: []terraformutils.ResourceFilter{
+				{
+					ServiceName:      "kinesis_stream",
+					FieldPath:        "id",
+					AcceptableValues: []string{"orders"},
+				},
+				{
+					ServiceName:      "kinesis_stream_consumer",
+					FieldPath:        "id",
+					AcceptableValues: []string{"arn:aws:kinesis:us-east-1:123456789012:stream/payments/consumer/app:1"},
+				},
+			},
+			stream: "orders",
+			want:   true,
+		},
+		{
+			name: "untyped stream and child id values append matching parent",
+			filters: []terraformutils.ResourceFilter{{
+				FieldPath:        "id",
+				AcceptableValues: []string{"orders", "arn:aws:kinesis:us-east-1:123456789012:stream/payments/consumer/app:1"},
+			}},
+			stream: "orders",
+			want:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := &KinesisGenerator{}
+			g.Filter = tt.filters
+			got := g.shouldAppendStreamResource(tt.stream)
+			if got != tt.want {
+				t.Fatalf("shouldAppendStreamResource() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestKinesisCreateResourcesAppliesInitialFilters(t *testing.T) {
+	tests := []struct {
+		name    string
+		filters []terraformutils.ResourceFilter
+		want    []string
+	}{
+		{name: "no filters", want: []string{"orders", "payments"}},
+		{
+			name: "typed child filter excludes parents",
+			filters: []terraformutils.ResourceFilter{{
+				ServiceName:      "kinesis_stream_consumer",
+				FieldPath:        "id",
+				AcceptableValues: []string{"arn:aws:kinesis:us-east-1:123456789012:stream/orders/consumer/app:1"},
+			}},
+			want: nil,
+		},
+		{
+			name: "untyped stream id filter keeps matching parent",
+			filters: []terraformutils.ResourceFilter{{
+				FieldPath:        "id",
+				AcceptableValues: []string{"orders"},
+			}},
+			want: []string{"orders"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := &KinesisGenerator{}
+			g.Filter = tt.filters
+			resources := g.createResources([]string{"orders", "payments"})
+			if len(resources) != len(tt.want) {
+				t.Fatalf("createResources() len = %d, want %d", len(resources), len(tt.want))
+			}
+			for i, want := range tt.want {
+				if got := resources[i].InstanceState.ID; got != want {
+					t.Fatalf("createResources()[%d].ID = %q, want %q", i, got, want)
+				}
+			}
+		})
+	}
+}
+
 func TestKinesisShouldLoadStreamChildrenHonorsStreamIDFilters(t *testing.T) {
 	tests := []struct {
 		name    string

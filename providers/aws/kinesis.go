@@ -40,6 +40,9 @@ func (g *KinesisGenerator) loadOptionalResources(loaders []kinesisOptionalResour
 func (g *KinesisGenerator) createResources(streamNames []string) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 	for _, resourceName := range streamNames {
+		if !g.shouldAppendStreamResource(resourceName) {
+			continue
+		}
 		resources = append(resources, newKinesisStreamResource(resourceName))
 	}
 	return resources
@@ -94,6 +97,26 @@ func (g *KinesisGenerator) shouldLoadResourcePolicies(streamName string) bool {
 		return false
 	}
 	return g.streamMatchesExplicitIDFilters(streamName)
+}
+
+func (g *KinesisGenerator) shouldAppendStreamResource(streamName string) bool {
+	streamResource := newKinesisStreamResource(streamName)
+	hasUntypedIDFilter := false
+	for _, filter := range g.Filter {
+		if filter.FieldPath != "id" {
+			continue
+		}
+		if filter.ServiceName == "" {
+			hasUntypedIDFilter = true
+		}
+		if filter.IsApplicable("kinesis_stream") && !filter.Filter(streamResource) {
+			return false
+		}
+	}
+	if g.hasTypedFilterFor("kinesis_stream") || hasUntypedIDFilter {
+		return true
+	}
+	return !g.hasTypedFilterFor("kinesis_stream_consumer") && !g.hasTypedFilterFor("kinesis_resource_policy")
 }
 
 func (g *KinesisGenerator) streamMatchesExplicitIDFilters(streamName string) bool {
