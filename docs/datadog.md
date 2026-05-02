@@ -144,6 +144,8 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_role`
 *   `security_monitoring_default_rule`
     * `datadog_security_monitoring_default_rule`
+*   `security_monitoring_filter`
+    * `datadog_security_monitoring_filter`
 *   `security_monitoring_rule`
     * `datadog_security_monitoring_rule`
 *   `service_level_objective`
