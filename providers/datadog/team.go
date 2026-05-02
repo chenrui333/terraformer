@@ -14,7 +14,7 @@ import (
 
 var (
 	// TeamAllowEmptyValues ...
-	TeamAllowEmptyValues = []string{}
+	TeamAllowEmptyValues = []string{"description"}
 )
 
 // TeamGenerator ...

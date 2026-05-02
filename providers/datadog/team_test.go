@@ -3,10 +3,17 @@
 package datadog
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 )
+
+func TestTeamAllowEmptyValuesIncludesDescription(t *testing.T) {
+	if !slices.Contains(TeamAllowEmptyValues, "description") {
+		t.Fatal("TeamAllowEmptyValues must include description")
+	}
+}
 
 func TestTeamCreateResource(t *testing.T) {
 	tests := []struct {
