@@ -202,7 +202,7 @@ func TestConvertTFstateUsesTypedManifestWhenFlatmapHasNoManifest(t *testing.T) {
 			Attributes: map[string]string{
 				"id": "apiVersion=example.com/v1,kind=Widget,name=sample",
 			},
-			TypedAttributes: json.RawMessage("{\"id\":\"apiVersion=example.com/v1,kind=Widget,name=sample\",\"manifest\":{\"apiVersion\":\"example.com/v1\",\"kind\":\"Widget\",\"metadata\":{\"name\":\"sample\"}}}"),
+			TypedAttributes: json.RawMessage("{\"id\":\"apiVersion=example.com/v1,kind=Widget,name=sample\",\"manifest\":{\"apiVersion\":\"example.com/v1\",\"kind\":\"Widget\",\"metadata\":{\"name\":\"sample\"}},\"object\":{\"apiVersion\":\"example.com/v1\",\"kind\":\"Widget\",\"status\":{\"phase\":\"Ready\"}}}"),
 		},
 		IgnoreKeys: []string{"^id$"},
 	}
@@ -220,6 +220,9 @@ func TestConvertTFstateUsesTypedManifestWhenFlatmapHasNoManifest(t *testing.T) {
 	}
 	if _, ok := resource.Item["id"]; ok {
 		t.Fatal("id attribute was not filtered from typed manifest fallback")
+	}
+	if _, ok := resource.Item["object"]; ok {
+		t.Fatal("object attribute was not filtered from generated config item")
 	}
 }
 

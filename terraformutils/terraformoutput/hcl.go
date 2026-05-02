@@ -48,12 +48,14 @@ func OutputHclFiles(resources []terraformutils.Resource, provider terraformutils
 
 	for i, r := range resources {
 		outputState := map[string]*tfcompat.OutputState{}
-		outputsByResource[r.InstanceInfo.Type+"_"+r.ResourceName+"_"+r.GetIDKey()] = map[string]interface{}{
-			"value": "${" + r.InstanceInfo.Type + "." + r.ResourceName + "." + r.GetIDKey() + "}",
-		}
-		outputState[r.InstanceInfo.Type+"_"+r.ResourceName+"_"+r.GetIDKey()] = &tfcompat.OutputState{
-			Type:  "string",
-			Value: r.InstanceState.Attributes[r.GetIDKey()],
+		if idKey, ok := resourceOutputIDKey(r); ok {
+			outputsByResource[r.InstanceInfo.Type+"_"+r.ResourceName+"_"+idKey] = map[string]interface{}{
+				"value": "${" + r.InstanceInfo.Type + "." + r.ResourceName + "." + idKey + "}",
+			}
+			outputState[r.InstanceInfo.Type+"_"+r.ResourceName+"_"+idKey] = &tfcompat.OutputState{
+				Type:  "string",
+				Value: r.InstanceState.Attributes[idKey],
+			}
 		}
 		for _, v := range provider.GetResourceConnections() {
 			for k, ids := range v {
@@ -136,6 +138,13 @@ func printFile(v []terraformutils.Resource, fileName, path, output string, sort 
 	}
 
 	return nil
+}
+
+func resourceOutputIDKey(resource terraformutils.Resource) (string, bool) {
+	if resource.InstanceInfo.Type == "kubernetes_manifest" {
+		return "", false
+	}
+	return resource.GetIDKey(), true
 }
 
 func PrintFile(path string, data []byte) error {

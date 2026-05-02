@@ -5,7 +5,11 @@ package terraformoutput
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/chenrui333/terraformer/terraformutils"
+	"github.com/zclconf/go-cty/cty"
 )
 
 func TestGetFileExtension(t *testing.T) {
@@ -115,4 +119,77 @@ func TestPrintFileReturnsWriteError(t *testing.T) {
 	if err := PrintFile(path, []byte("terraform {}")); err == nil {
 		t.Fatal("PrintFile() error = nil, want write error")
 	}
+}
+
+func TestOutputHclFilesSkipsManifestIDOutput(t *testing.T) {
+	path := t.TempDir()
+	resource := terraformutils.NewSimpleResource(
+		"apiVersion=example.com/v1,kind=Widget,name=sample",
+		"example.com/v1/Widget/sample",
+		"kubernetes_manifest",
+		"kubernetes",
+		nil,
+	)
+	resource.Item = map[string]interface{}{
+		"manifest": map[string]interface{}{
+			"apiVersion": "example.com/v1",
+			"kind":       "Widget",
+		},
+	}
+
+	if err := OutputHclFiles([]terraformutils.Resource{resource}, &testProvider{name: "kubernetes"}, path, "example.com/v1/widgets", false, "hcl", true); err != nil {
+		t.Fatalf("OutputHclFiles() error = %v", err)
+	}
+
+	outputsPath := filepath.Join(path, "outputs.tf")
+	if _, err := os.Stat(outputsPath); !os.IsNotExist(err) {
+		t.Fatalf("outputs.tf exists for manifest resource, stat err = %v", err)
+	}
+}
+
+func TestOutputHclFilesKeepsNativeIDOutput(t *testing.T) {
+	path := t.TempDir()
+	resource := terraformutils.NewResource(
+		"svc-123",
+		"sample",
+		"kubernetes_service_v1",
+		"kubernetes",
+		map[string]string{"id": "svc-123"},
+		nil,
+		nil,
+	)
+	resource.Item = map[string]interface{}{"metadata": map[string]interface{}{"name": "sample"}}
+
+	if err := OutputHclFiles([]terraformutils.Resource{resource}, &testProvider{name: "kubernetes"}, path, "services", false, "hcl", true); err != nil {
+		t.Fatalf("OutputHclFiles() error = %v", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(path, "outputs.tf"))
+	if err != nil {
+		t.Fatalf("ReadFile(outputs.tf) error = %v", err)
+	}
+	if !strings.Contains(string(data), "kubernetes_service_v1."+resource.ResourceName+".id") {
+		t.Fatalf("outputs.tf missing native id reference:\n%s", data)
+	}
+}
+
+type testProvider struct {
+	terraformutils.Provider
+	name string
+}
+
+func (p testProvider) GetName() string { return p.name }
+
+func (p testProvider) InitService(_ string, _ bool) error { return nil }
+
+func (p testProvider) GetConfig() cty.Value { return cty.EmptyObjectVal }
+
+func (p testProvider) GetBasicConfig() cty.Value { return cty.EmptyObjectVal }
+
+func (p testProvider) GetProviderData(_ ...string) map[string]interface{} {
+	return map[string]interface{}{}
+}
+
+func (p testProvider) GetResourceConnections() map[string]map[string][]string {
+	return map[string]map[string][]string{}
 }

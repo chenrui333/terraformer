@@ -117,6 +117,39 @@ func TestPrintTfStateFallsBackToAttributesFlat(t *testing.T) {
 	}
 }
 
+func TestPrintTfStatePreservesManifestObjectTypedAttribute(t *testing.T) {
+	resource := NewSimpleResource(
+		"apiVersion=example.com/v1,kind=Widget,name=sample",
+		"example.com/v1/Widget/sample",
+		"kubernetes_manifest",
+		"kubernetes",
+		nil,
+	)
+	resource.InstanceState.TypedAttributes = json.RawMessage("{\"manifest\":{\"apiVersion\":\"example.com/v1\",\"kind\":\"Widget\"},\"object\":{\"apiVersion\":\"example.com/v1\",\"kind\":\"Widget\",\"status\":{\"phase\":\"Ready\"}}}")
+
+	stateBytes, err := PrintTfState([]Resource{resource})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var state map[string]interface{}
+	if err := json.Unmarshal(stateBytes, &state); err != nil {
+		t.Fatal(err)
+	}
+	resources := state["resources"].([]interface{})
+	gotResource := resources[0].(map[string]interface{})
+	instances := gotResource["instances"].([]interface{})
+	instance := instances[0].(map[string]interface{})
+	attributes := instance["attributes"].(map[string]interface{})
+	object, ok := attributes["object"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("object attribute type = %T, want map[string]interface{}", attributes["object"])
+	}
+	if object["kind"] != "Widget" {
+		t.Fatalf("object.kind = %v, want %q", object["kind"], "Widget")
+	}
+}
+
 func TestConvertTypedStatePreservesCurrentTypedAttributes(t *testing.T) {
 	resource := NewResource(
 		"kind-lemur",

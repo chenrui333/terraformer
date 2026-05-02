@@ -112,8 +112,12 @@ func TestPopulateKubernetesManifestFromObject(t *testing.T) {
 	if manifest["kind"] != "Widget" {
 		t.Fatalf("manifest.kind = %v, want %q", manifest["kind"], "Widget")
 	}
-	if _, ok := attributes["object"]; ok {
-		t.Fatal("computed object was not removed from imported state")
+	object, ok := attributes["object"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("object type = %T, want map[string]interface{}", attributes["object"])
+	}
+	if object["kind"] != "Widget" {
+		t.Fatalf("object.kind = %v, want %q", object["kind"], "Widget")
 	}
 	if !state.HasCurrentTypedAttributes() {
 		t.Fatal("typed attributes were not marked current after manifest population")
@@ -154,8 +158,12 @@ func TestPopulateKubernetesManifestFromObjectPreservesExistingManifest(t *testin
 	if metadata["name"] != "configured" {
 		t.Fatalf("manifest.metadata.name = %v, want %q", metadata["name"], "configured")
 	}
-	if _, ok := attributes["object"]; ok {
-		t.Fatal("computed object was not removed from imported state")
+	object, ok := attributes["object"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("object type = %T, want map[string]interface{}", attributes["object"])
+	}
+	if object["kind"] != "Widget" {
+		t.Fatalf("object.kind = %v, want %q", object["kind"], "Widget")
 	}
 }
 

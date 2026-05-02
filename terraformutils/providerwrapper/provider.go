@@ -215,10 +215,6 @@ func populateKubernetesManifestFromObject(resourceType string, state *tfcompat.I
 		changed = true
 	}
 
-	if _, ok := attributes["object"]; ok {
-		delete(attributes, "object")
-		changed = true
-	}
 	if !changed {
 		return
 	}

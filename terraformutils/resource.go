@@ -181,6 +181,7 @@ func (r *Resource) convertTFstate(schema *providerproto.GetProviderSchemaRespons
 		}
 		return err
 	}
+	attributes = resourceTypeConfigAttributes(r.InstanceInfo.Type, attributes)
 	if err == nil && needsTypedManifestAttributes(r.InstanceInfo.Type, attributes) {
 		return nil
 	}
@@ -204,6 +205,19 @@ func manifestAttributeHasValue(value interface{}) bool {
 	default:
 		return true
 	}
+}
+
+func resourceTypeConfigAttributes(resourceType string, attributes map[string]interface{}) map[string]interface{} {
+	if resourceType != "kubernetes_manifest" {
+		return attributes
+	}
+	if !manifestAttributeHasValue(attributes["manifest"]) {
+		if object, ok := attributes["object"].(map[string]interface{}); ok && len(object) > 0 {
+			attributes["manifest"] = object
+		}
+	}
+	delete(attributes, "object")
+	return attributes
 }
 
 func typedAttributesAsMap(raw json.RawMessage, ignoreKeys []*regexp.Regexp) (map[string]interface{}, error) {
