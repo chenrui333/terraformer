@@ -80,6 +80,12 @@ func TestTerraformResourceNameCandidates(t *testing.T) {
 			want:    []string{"kubernetes_certificate_signing_request_v1", "kubernetes_certificate_signing_request"},
 		},
 		{
+			name:    "prefers default service account v1 name",
+			version: "v1",
+			kind:    "DefaultServiceAccount",
+			want:    []string{"kubernetes_default_service_account_v1", "kubernetes_default_service_account"},
+		},
+		{
 			name:    "prefers csi driver v1 name",
 			group:   "storage.k8s.io",
 			version: "v1",
@@ -284,6 +290,17 @@ func TestSelectTerraformResourceName(t *testing.T) {
 			wantOK: true,
 		},
 		{
+			name:    "selects default service account v1",
+			version: "v1",
+			kind:    "DefaultServiceAccount",
+			supportedTypes: map[string]struct{}{
+				"kubernetes_default_service_account":    {},
+				"kubernetes_default_service_account_v1": {},
+			},
+			want:   "kubernetes_default_service_account_v1",
+			wantOK: true,
+		},
+		{
 			name:    "prefers legacy certificate signing request for certificates beta API",
 			group:   "certificates.k8s.io",
 			version: "v1beta1",
@@ -417,6 +434,7 @@ func TestSelectTerraformResourceNameStableV1Aliases(t *testing.T) {
 	}{
 		{name: "config map", kind: "ConfigMap", modernType: "kubernetes_config_map_v1", legacyType: "kubernetes_config_map"},
 		{name: "deployment", group: "apps", kind: "Deployment", modernType: "kubernetes_deployment_v1", legacyType: "kubernetes_deployment"},
+		{name: "default service account", kind: "DefaultServiceAccount", modernType: "kubernetes_default_service_account_v1", legacyType: "kubernetes_default_service_account"},
 		{name: "endpoints", kind: "Endpoints", modernType: "kubernetes_endpoints_v1", legacyType: "kubernetes_endpoints"},
 		{name: "limit range", kind: "LimitRange", modernType: "kubernetes_limit_range_v1", legacyType: "kubernetes_limit_range"},
 		{name: "namespace", kind: "Namespace", modernType: "kubernetes_namespace_v1", legacyType: "kubernetes_namespace"},

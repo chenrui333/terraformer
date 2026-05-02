@@ -27,6 +27,8 @@ Common supported resources include:
     * `kubernetes_csi_driver_v1`
 *   `daemonsets`
     * `kubernetes_daemon_set_v1`
+*   `defaultserviceaccounts`
+    * `kubernetes_default_service_account_v1`
 *   `deployments`
     * `kubernetes_deployment_v1`
 *   `endpoints`

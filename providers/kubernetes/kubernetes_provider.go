@@ -92,6 +92,7 @@ func (p *KubernetesProvider) GetSupportedService() map[string]terraformutils.Ser
 		return resources
 	}
 	resp := provider.GetSchema()
+	listableResources := map[kubernetesResourceID]struct{}{}
 	for _, list := range lists {
 		if len(list.APIResources) == 0 {
 			continue
@@ -111,6 +112,7 @@ func (p *KubernetesProvider) GetSupportedService() map[string]terraformutils.Ser
 			if len(resource.Verbs) > 0 && !sets.NewString(resource.Verbs...).Has("list") {
 				continue
 			}
+			listableResources[kubernetesResourceID{group: gv.Group, version: gv.Version, kind: resource.Kind}] = struct{}{}
 
 			// filter to resources that the Terraform Kubernetes provider can import
 			terraformResourceName, ok := selectTerraformResourceName(gv.Group, gv.Version, resource.Kind, func(name string) bool {
@@ -140,7 +142,34 @@ func (p *KubernetesProvider) GetSupportedService() map[string]terraformutils.Ser
 			}
 		}
 	}
+	addDefaultServiceAccountService(resources, clientset, listableResources, func(name string) bool {
+		_, exists := resp.ResourceTypes[name]
+		return exists
+	})
 	return resources
+}
+
+func addDefaultServiceAccountService(
+	resources map[string]terraformutils.ServiceGenerator,
+	clientset k8sclient.Interface,
+	listableResources map[kubernetesResourceID]struct{},
+	hasResourceType func(string) bool,
+) {
+	if _, ok := listableResources[kubernetesResourceID{version: "v1", kind: "ServiceAccount"}]; !ok {
+		return
+	}
+	if !supportsTypedClientResource(clientset, "", "v1", "ServiceAccount") {
+		return
+	}
+
+	terraformResourceName, ok := selectTerraformResourceName("", "v1", defaultServiceAccountKind, hasResourceType)
+	if !ok {
+		return
+	}
+
+	resources[defaultServiceAccountServiceName] = &DefaultServiceAccount{
+		TerraformType: terraformResourceName,
+	}
 }
 
 // InitClientAndConfig uses the KUBECONFIG environment variable to create

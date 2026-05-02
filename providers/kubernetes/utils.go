@@ -33,6 +33,7 @@ var preferredTerraformResourceNames = map[kubernetesResourceID][]string{
 	{group: "batch", version: "v1beta1", kind: "CronJob"}:                                               {"kubernetes_cron_job"},
 	{group: "certificates.k8s.io", version: "v1", kind: "CertificateSigningRequest"}:                    {"kubernetes_certificate_signing_request_v1", "kubernetes_certificate_signing_request"},
 	{group: "certificates.k8s.io", version: "v1beta1", kind: "CertificateSigningRequest"}:               {"kubernetes_certificate_signing_request"},
+	{version: "v1", kind: "DefaultServiceAccount"}:                                                      {"kubernetes_default_service_account_v1", "kubernetes_default_service_account"},
 	{group: "discovery.k8s.io", version: "v1", kind: "EndpointSlice"}:                                   {"kubernetes_endpoint_slice_v1"},
 	{group: "extensions", version: "v1beta1", kind: "DaemonSet"}:                                        {"kubernetes_daemonset"},
 	{group: "extensions", version: "v1beta1", kind: "Ingress"}:                                          {"kubernetes_ingress"},
