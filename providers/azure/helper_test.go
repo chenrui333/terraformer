@@ -203,6 +203,47 @@ func TestGetClientOptionsGermanCloud(t *testing.T) {
 	}
 }
 
+func TestDiscoverCloudConfigFallsBackToMetadataHostResourceManager(t *testing.T) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/metadata/endpoints" {
+			t.Errorf("request path = %q, want /metadata/endpoints", r.URL.Path)
+			http.NotFound(w, r)
+			return
+		}
+		if got := r.URL.Query().Get("api-version"); got != "2019-05-01" {
+			t.Errorf("api-version = %q, want 2019-05-01", got)
+			http.Error(w, "bad api-version", http.StatusBadRequest)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte("[" +
+			"{\"name\":\"AzureStackCustomerCloud\"," +
+			"\"authentication\":{\"loginEndpoint\":\"https://login.example.test/\"," +
+			"\"audiences\":[\"https://audience.example.test/\"]}," +
+			"\"resourceManager\":\"\"}" +
+			"]"))
+	}))
+	defer server.Close()
+
+	oldClient := http.DefaultClient
+	http.DefaultClient = server.Client()
+	t.Cleanup(func() {
+		http.DefaultClient = oldClient
+	})
+
+	cfg, err := discoverCloudConfig(strings.TrimPrefix(server.URL, "https://"), "AzureStackCustomerCloud")
+	if err != nil {
+		t.Fatalf("discoverCloudConfig() error = %v", err)
+	}
+	resourceManager := cfg.Services[cloud.ResourceManager]
+	if resourceManager.Endpoint != server.URL+"/" {
+		t.Fatalf("ResourceManager endpoint = %q, want metadata host fallback", resourceManager.Endpoint)
+	}
+	if resourceManager.Audience != "https://audience.example.test/" {
+		t.Fatalf("ResourceManager audience = %q, want metadata audience", resourceManager.Audience)
+	}
+}
+
 func TestAzureCLIUnavailableFallbackCredentialAllowsChainedFallback(t *testing.T) {
 	for _, errMessage := range []string{
 		"AzureCLICredential: Azure CLI not found on path",

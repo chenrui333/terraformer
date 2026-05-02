@@ -502,7 +502,11 @@ func discoverCloudConfig(metadataHost, environment string) (cloud.Configuration,
 	} else {
 		meta = &endpoints[0]
 	}
-	audience := meta.ResourceManager
+	resourceManager := meta.ResourceManager
+	if resourceManager == "" {
+		resourceManager = fmt.Sprintf("https://%s/", metadataHost)
+	}
+	audience := resourceManager
 	if len(meta.Authentication.Audiences) > 0 {
 		audience = meta.Authentication.Audiences[0]
 	}
@@ -511,7 +515,7 @@ func discoverCloudConfig(metadataHost, environment string) (cloud.Configuration,
 		Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
 			cloud.ResourceManager: {
 				Audience: audience,
-				Endpoint: meta.ResourceManager,
+				Endpoint: resourceManager,
 			},
 		},
 	}, nil
