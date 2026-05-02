@@ -12,11 +12,11 @@ Terraformer discovers Kubernetes API resources from the active cluster and impor
 Common supported resources include:
 
 *   `clusterroles`
-    * `kubernetes_cluster_role`
+    * `kubernetes_cluster_role_v1`
 *   `clusterrolebindings`
-    * `kubernetes_cluster_role_binding`
+    * `kubernetes_cluster_role_binding_v1`
 *   `configmaps`
-    * `kubernetes_config_map`
+    * `kubernetes_config_map_v1`
 *   `cronjobs`
     * `kubernetes_cron_job_v1`
 *   `csidrivers`
@@ -24,7 +24,9 @@ Common supported resources include:
 *   `daemonsets`
     * `kubernetes_daemon_set_v1`
 *   `deployments`
-    * `kubernetes_deployment`
+    * `kubernetes_deployment_v1`
+*   `endpoints`
+    * `kubernetes_endpoints_v1`
 *   `endpointslices`
     * `kubernetes_endpoint_slice_v1`
 *   `horizontalpodautoscalers`
@@ -36,43 +38,43 @@ Common supported resources include:
 *   `jobs`
     * `kubernetes_job_v1`
 *   `limitranges`
-    * `kubernetes_limit_range`
+    * `kubernetes_limit_range_v1`
 *   `mutatingwebhookconfigurations`
     * `kubernetes_mutating_webhook_configuration_v1`
 *   `namespaces`
-    * `kubernetes_namespace`
+    * `kubernetes_namespace_v1`
 *   `networkpolicies`
     * `kubernetes_network_policy_v1`
 *   `persistentvolumes`
-    * `kubernetes_persistent_volume`
+    * `kubernetes_persistent_volume_v1`
 *   `persistentvolumeclaims`
-    * `kubernetes_persistent_volume_claim`
+    * `kubernetes_persistent_volume_claim_v1`
 *   `pods`
-    * `kubernetes_pod`
+    * `kubernetes_pod_v1`
 *   `poddisruptionbudgets`
     * `kubernetes_pod_disruption_budget_v1`
 *   `priorityclasses`
     * `kubernetes_priority_class_v1`
 *   `replicationcontrollers`
-    * `kubernetes_replication_controller`
+    * `kubernetes_replication_controller_v1`
 *   `resourcequotas`
-    * `kubernetes_resource_quota`
+    * `kubernetes_resource_quota_v1`
 *   `roles`
-    * `kubernetes_role`
+    * `kubernetes_role_v1`
 *   `rolebindings`
-    * `kubernetes_role_binding`
+    * `kubernetes_role_binding_v1`
 *   `runtimeclasses`
     * `kubernetes_runtime_class_v1`
 *   `secrets`
-    * `kubernetes_secret`
+    * `kubernetes_secret_v1`
 *   `services`
-    * `kubernetes_service`
+    * `kubernetes_service_v1`
 *   `serviceaccounts`
-    * `kubernetes_service_account`
+    * `kubernetes_service_account_v1`
 *   `statefulsets`
-    * `kubernetes_stateful_set`
+    * `kubernetes_stateful_set_v1`
 *   `storageclasses`
-    * `kubernetes_storage_class`
+    * `kubernetes_storage_class_v1`
 *   `validatingadmissionpolicies`
     * `kubernetes_validating_admission_policy_v1`
 *   `validatingwebhookconfigurations`
