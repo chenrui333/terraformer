@@ -56,6 +56,8 @@ Common supported resources include:
     * `kubernetes_namespace_v1`
 *   `networkpolicies`
     * `kubernetes_network_policy_v1`
+*   `nodetaints`
+    * `kubernetes_node_taint`
 *   `persistentvolumes`
     * `kubernetes_persistent_volume_v1`
 *   `persistentvolumeclaims`

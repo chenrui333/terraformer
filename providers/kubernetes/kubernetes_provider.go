@@ -131,6 +131,10 @@ func (p *KubernetesProvider) GetSupportedService() map[string]terraformutils.Ser
 		_, exists := resp.ResourceTypes[name]
 		return exists
 	})
+	addNodeTaintService(resources, clientset, listableResources, func(name string) bool {
+		_, exists := resp.ResourceTypes[name]
+		return exists
+	})
 	return resources
 }
 
@@ -183,6 +187,27 @@ func addDefaultServiceAccountService(
 
 	resources[defaultServiceAccountServiceName] = &DefaultServiceAccount{
 		TerraformType: terraformResourceName,
+	}
+}
+
+func addNodeTaintService(
+	resources map[string]terraformutils.ServiceGenerator,
+	clientset k8sclient.Interface,
+	listableResources map[kubernetesResourceID]struct{},
+	hasResourceType func(string) bool,
+) {
+	if _, ok := listableResources[kubernetesResourceID{version: "v1", kind: "Node"}]; !ok {
+		return
+	}
+	if !supportsTypedClientResource(clientset, "", "v1", "Node") {
+		return
+	}
+	if !hasResourceType(nodeTaintTerraformType) {
+		return
+	}
+
+	resources[nodeTaintServiceName] = &NodeTaint{
+		TerraformType: nodeTaintTerraformType,
 	}
 }
 
