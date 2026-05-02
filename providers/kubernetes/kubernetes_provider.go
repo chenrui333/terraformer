@@ -143,6 +143,10 @@ func (p *KubernetesProvider) GetSupportedService() map[string]terraformutils.Ser
 		_, exists := resp.ResourceTypes[name]
 		return exists
 	})
+	addMetadataPatchServices(resources, func(name string) bool {
+		_, exists := resp.ResourceTypes[name]
+		return exists
+	})
 	return resources
 }
 
@@ -261,10 +265,31 @@ func addSecretDataService(
 	}
 }
 
+func addMetadataPatchServices(
+	resources map[string]terraformutils.ServiceGenerator,
+	hasResourceType func(string) bool,
+) {
+	if hasResourceType(labelsTerraformType) {
+		resources[labelsServiceName] = &MetadataPatch{
+			TerraformType:     labelsTerraformType,
+			AttributeName:     "labels",
+			AllowEmptyPattern: labelsAllowEmptyPattern,
+		}
+	}
+	if hasResourceType(annotationsTerraformType) {
+		resources[annotationsServiceName] = &MetadataPatch{
+			TerraformType:     annotationsTerraformType,
+			AttributeName:     "annotations",
+			AllowEmptyPattern: annotationsAllowEmptyPattern,
+		}
+	}
+}
+
 func (p KubernetesProvider) PostProcessImportResources(resourcesByService map[string][]terraformutils.Resource) map[string][]terraformutils.Resource {
 	resourcesByService = removeDefaultServiceAccountDuplicates(resourcesByService)
 	resourcesByService = removeConfigMapDataDuplicates(resourcesByService)
 	resourcesByService = removeSecretDataDuplicates(resourcesByService)
+	resourcesByService = removeMetadataPatchDuplicates(resourcesByService)
 	return resourcesByService
 }
 
@@ -368,6 +393,47 @@ func removeSecretDataDuplicates(resourcesByService map[string][]terraformutils.R
 		return resourcesByService
 	}
 	resourcesByService[secretDataServiceName] = filtered
+	return resourcesByService
+}
+
+func removeMetadataPatchDuplicates(resourcesByService map[string][]terraformutils.Resource) map[string][]terraformutils.Resource {
+	targetIDs := map[string]struct{}{}
+	for serviceName, resources := range resourcesByService {
+		if serviceName == labelsServiceName || serviceName == annotationsServiceName {
+			continue
+		}
+		for _, resource := range resources {
+			for _, targetID := range metadataPatchTargetIDs(resource) {
+				targetIDs[targetID] = struct{}{}
+			}
+		}
+	}
+	if len(targetIDs) == 0 {
+		return resourcesByService
+	}
+
+	for _, serviceName := range []string{labelsServiceName, annotationsServiceName} {
+		resources, ok := resourcesByService[serviceName]
+		if !ok {
+			continue
+		}
+		filtered := resources[:0]
+		for _, resource := range resources {
+			if resource.InstanceState == nil {
+				filtered = append(filtered, resource)
+				continue
+			}
+			if _, duplicate := targetIDs[resource.InstanceState.ID]; duplicate {
+				continue
+			}
+			filtered = append(filtered, resource)
+		}
+		if len(filtered) == 0 {
+			delete(resourcesByService, serviceName)
+			continue
+		}
+		resourcesByService[serviceName] = filtered
+	}
 	return resourcesByService
 }
 
