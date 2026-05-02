@@ -15,6 +15,10 @@ type PanosProvider struct { //nolint
 }
 
 func (p *PanosProvider) Init(args []string) error {
+	if len(args) < 1 {
+		return errors.New("panos: vsys is required")
+	}
+
 	p.vsys = args[0]
 
 	return nil

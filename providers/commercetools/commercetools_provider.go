@@ -27,6 +27,10 @@ func (p CommercetoolsProvider) GetProviderData(_ ...string) map[string]interface
 
 // Init CommerectoolsProvider
 func (p *CommercetoolsProvider) Init(args []string) error {
+	if len(args) < 6 {
+		return errors.New("commercetools: client id, client scope, client secret, project key, base URL, and token URL are required")
+	}
+
 	p.clientID = args[0]
 	p.clientScope = args[1]
 	p.clientSecret = args[2]
