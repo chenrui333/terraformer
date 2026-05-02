@@ -5,6 +5,7 @@ package cloudflare
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	cf "github.com/cloudflare/cloudflare-go"
@@ -37,7 +38,9 @@ func (g *RulesetGenerator) appendRulesetResources(ctx context.Context, api *cf.A
 }
 
 func (g *RulesetGenerator) InitResources() error {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
 	api, err := g.initializeAPI()
 	if err != nil {
 		return err
