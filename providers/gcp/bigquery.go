@@ -4,7 +4,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -18,7 +18,7 @@ type BigQueryGenerator struct {
 }
 
 // Run on datasetsList and create for each TerraformResource
-func (g BigQueryGenerator) createDatasets(ctx context.Context, dataSetsList *bigquery.DatasetsListCall, bigQueryService *bigquery.Service) []terraformutils.Resource {
+func (g BigQueryGenerator) createDatasets(ctx context.Context, dataSetsList *bigquery.DatasetsListCall, bigQueryService *bigquery.Service) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := dataSetsList.Pages(ctx, func(page *bigquery.DatasetList) error {
 		for _, dataset := range page.Datasets {
@@ -39,16 +39,20 @@ func (g BigQueryGenerator) createDatasets(ctx context.Context, dataSetsList *big
 				bigQueryAllowEmptyValues,
 				map[string]interface{}{},
 			))
-			resources = append(resources, g.createResourcesTables(ctx, ID, bigQueryService)...)
+			tableResources, err := g.createResourcesTables(ctx, ID, bigQueryService)
+			if err != nil {
+				return err
+			}
+			resources = append(resources, tableResources...)
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list bigquery datasets: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
-func (g *BigQueryGenerator) createResourcesTables(ctx context.Context, datasetID string, bigQueryService *bigquery.Service) []terraformutils.Resource {
+func (g *BigQueryGenerator) createResourcesTables(ctx context.Context, datasetID string, bigQueryService *bigquery.Service) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	tableList := bigQueryService.Tables.List(g.Args["project"].(string), datasetID)
 	if err := tableList.Pages(ctx, func(page *bigquery.TableList) error {
@@ -74,9 +78,9 @@ func (g *BigQueryGenerator) createResourcesTables(ctx context.Context, datasetID
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list bigquery tables for %s: %w", datasetID, err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -89,7 +93,11 @@ func (g *BigQueryGenerator) InitResources() error {
 
 	datasetsList := bigQueryService.Datasets.List(g.GetArgs()["project"].(string))
 
-	g.Resources = g.createDatasets(ctx, datasetsList, bigQueryService)
+	resources, err := g.createDatasets(ctx, datasetsList, bigQueryService)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 	return nil
 }
 
