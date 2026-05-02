@@ -555,8 +555,8 @@ func (g *CognitoGenerator) shouldLoadIdentityPoolChildResourceType(serviceName, 
 	if !hasTypedChildFilter && !g.hasUntypedIDFilter() {
 		return g.identityPoolMatchesPreDiscoveryFilters(identityPoolID)
 	}
-	if hasTypedChildFilter && !g.hasIDFilterFor(serviceName) && !g.hasUntypedIDFilter() && g.hasTypedFilterFor(cognitoIdentityPoolResourceType) {
-		return g.identityPoolMatchesPreDiscoveryFilters(identityPoolID)
+	if hasTypedChildFilter && !g.hasIDFilterFor(serviceName) && !g.hasUntypedIDFilter() && g.hasIDFilterFor(cognitoIdentityPoolResourceType) {
+		return g.identityPoolMatchesInitialIDFilters(identityPoolID)
 	}
 	return true
 }
@@ -575,8 +575,8 @@ func (g *CognitoGenerator) shouldLoadUserPoolChildResourceType(serviceName, user
 	if !hasTypedChildFilter && !g.hasUntypedIDFilter() {
 		return g.userPoolMatchesPreDiscoveryFilters(userPoolID)
 	}
-	if hasTypedChildFilter && !g.hasIDFilterFor(serviceName) && !g.hasUntypedIDFilter() && g.hasTypedFilterFor(cognitoUserPoolResourceType) {
-		return g.userPoolMatchesPreDiscoveryFilters(userPoolID)
+	if hasTypedChildFilter && !g.hasIDFilterFor(serviceName) && !g.hasUntypedIDFilter() && g.hasIDFilterFor(cognitoUserPoolResourceType) {
+		return g.userPoolMatchesInitialIDFilters(userPoolID)
 	}
 	return true
 }
@@ -599,19 +599,27 @@ func (g *CognitoGenerator) shouldAppendCognitoResource(serviceName string, resou
 }
 
 func (g *CognitoGenerator) identityPoolMatchesPreDiscoveryFilters(identityPoolID string) bool {
-	resource := terraformutils.NewSimpleResource(identityPoolID, identityPoolID, "aws_cognito_identity_pool", "aws", CognitoAllowEmptyValues)
-	if !g.resourceMatchesInitialIDFilters(cognitoIdentityPoolResourceType, resource) {
+	if !g.identityPoolMatchesInitialIDFilters(identityPoolID) {
 		return false
 	}
 	return !g.hasTypedNonIDFilterFor(cognitoIdentityPoolResourceType)
 }
 
 func (g *CognitoGenerator) userPoolMatchesPreDiscoveryFilters(userPoolID string) bool {
-	resource := terraformutils.NewSimpleResource(userPoolID, userPoolID, "aws_cognito_user_pool", "aws", CognitoAllowEmptyValues)
-	if !g.resourceMatchesInitialIDFilters(cognitoUserPoolResourceType, resource) {
+	if !g.userPoolMatchesInitialIDFilters(userPoolID) {
 		return false
 	}
 	return !g.hasTypedNonIDFilterFor(cognitoUserPoolResourceType)
+}
+
+func (g *CognitoGenerator) identityPoolMatchesInitialIDFilters(identityPoolID string) bool {
+	resource := terraformutils.NewSimpleResource(identityPoolID, identityPoolID, "aws_cognito_identity_pool", "aws", CognitoAllowEmptyValues)
+	return g.resourceMatchesInitialIDFilters(cognitoIdentityPoolResourceType, resource)
+}
+
+func (g *CognitoGenerator) userPoolMatchesInitialIDFilters(userPoolID string) bool {
+	resource := terraformutils.NewSimpleResource(userPoolID, userPoolID, "aws_cognito_user_pool", "aws", CognitoAllowEmptyValues)
+	return g.resourceMatchesInitialIDFilters(cognitoUserPoolResourceType, resource)
 }
 
 func (g *CognitoGenerator) resourceMatchesInitialIDFilters(serviceName string, resource terraformutils.Resource) bool {

@@ -228,6 +228,19 @@ func TestCognitoFilterGatesUserPoolsAndChildren(t *testing.T) {
 			appendUserPool:  true,
 			appendOtherPool: true,
 		},
+		{
+			name: "typed user pool non-id filter does not block typed child non-id discovery",
+			filters: []terraformutils.ResourceFilter{
+				{ServiceName: cognitoUserPoolResourceType, FieldPath: "tags.env", AcceptableValues: []string{"prod"}},
+				{ServiceName: cognitoUserPoolClientResourceType, FieldPath: "name", AcceptableValues: []string{"web"}},
+			},
+			loadUserPools:    true,
+			appendUserPool:   true,
+			appendOtherPool:  true,
+			loadClients:      true,
+			loadOtherClients: true,
+			appendClient:     true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -366,6 +379,19 @@ func TestCognitoFilterGatesIdentityPoolsAndChildren(t *testing.T) {
 			loadPools:   true,
 			appendPool:  true,
 			appendOther: true,
+		},
+		{
+			name: "typed identity pool non-id filter does not block typed child non-id discovery",
+			filters: []terraformutils.ResourceFilter{
+				{ServiceName: cognitoIdentityPoolResourceType, FieldPath: "tags.env", AcceptableValues: []string{"prod"}},
+				{ServiceName: cognitoIdentityPoolRolesAttachmentResourceType, FieldPath: "roles.authenticated", AcceptableValues: []string{"arn:aws:iam::123456789012:role/auth"}},
+			},
+			loadPools:      true,
+			appendPool:     true,
+			appendOther:    true,
+			loadRoles:      true,
+			loadOtherRoles: true,
+			appendRoles:    true,
 		},
 	}
 
