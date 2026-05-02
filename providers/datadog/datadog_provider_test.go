@@ -93,6 +93,29 @@ func TestDatadogProviderSensitiveDataScannerConnections(t *testing.T) {
 	)
 }
 
+func TestDatadogProviderTeamRelationshipConnections(t *testing.T) {
+	connections := DatadogProvider{}.GetResourceConnections()
+
+	assertDatadogConnection(
+		t,
+		connections,
+		"team_connection",
+		"team",
+		"team.id",
+		"id",
+	)
+	assertDatadogConnectionPairs(
+		t,
+		connections,
+		"team_hierarchy_links",
+		"team",
+		[]string{
+			"parent_team_id", "id",
+			"sub_team_id", "id",
+		},
+	)
+}
+
 func TestDatadogProviderMonitorJSONConnections(t *testing.T) {
 	connections := DatadogProvider{}.GetResourceConnections()
 

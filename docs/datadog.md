@@ -192,6 +192,13 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_synthetics_test`
 *   `team`
     * `datadog_team`
+*   `team_connection`
+    * `datadog_team_connection`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.5.0 or newer.
+        * **_NOTE:_** Team connections can be filtered by `source`
+*   `team_hierarchy_links`
+    * `datadog_team_hierarchy_links`
+        * **_NOTE:_** Team hierarchy links can be filtered by `parent_team_id` or `sub_team_id`
 *   `team_link`
     * `datadog_team_link`
         * **_NOTE:_** Importing a single team link by ID requires quoting the `team_id:link_id` filter value, for example `--filter="team_link='team-id:link-id'"`; links can also be filtered by `team_id`
@@ -206,6 +213,10 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_team_permission_setting`
         * **_NOTE:_** Requires DataDog/datadog provider 3.90.0 or newer.
         * **_NOTE:_** Importing a single permission setting by ID requires quoting the `team_id:action` filter value, for example `--filter="team_permission_setting='team-id:manage_membership'"`; permission settings can also be filtered by `team_id`
+*   `team_sync`
+    * `datadog_team_sync`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.5.0 or newer.
+        * **_NOTE:_** The Datadog provider currently supports the `github` team sync source
 *   `user`
     * `datadog_user`
 

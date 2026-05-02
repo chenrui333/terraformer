@@ -206,10 +206,13 @@ func (p *DatadogProvider) GetSupportedService() map[string]terraformutils.Servic
 		"synthetics_global_variable":           &SyntheticsGlobalVariableGenerator{},
 		"synthetics_private_location":          &SyntheticsPrivateLocationGenerator{},
 		"team":                                 &TeamGenerator{},
+		"team_connection":                      &TeamConnectionGenerator{},
+		"team_hierarchy_links":                 &TeamHierarchyLinksGenerator{},
 		"team_link":                            &TeamLinkGenerator{},
 		"team_membership":                      &TeamMembershipGenerator{},
 		"team_notification_rule":               &TeamNotificationRuleGenerator{},
 		"team_permission_setting":              &TeamPermissionSettingGenerator{},
+		"team_sync":                            &TeamSyncGenerator{},
 		"user":                                 &UserGenerator{},
 		"role":                                 &RoleGenerator{},
 	}
@@ -262,6 +265,17 @@ func (p DatadogProvider) GetResourceConnections() map[string]map[string][]string
 		"rum_retention_filters_order": {
 			"rum_application": {
 				"application_id", "id",
+			},
+		},
+		"team_connection": {
+			"team": {
+				"team.id", "id",
+			},
+		},
+		"team_hierarchy_links": {
+			"team": {
+				"parent_team_id", "id",
+				"sub_team_id", "id",
 			},
 		},
 		"integration_aws_lambda_arn": {
