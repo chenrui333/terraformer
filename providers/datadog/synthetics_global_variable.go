@@ -60,8 +60,7 @@ func (g *SyntheticsGlobalVariableGenerator) InitResources() error {
 					_ = httpResp.Body.Close()
 				}
 				if err != nil {
-					log.Printf("error retrieving synthetics gloval variable with id:%s - %s", v, err)
-					continue
+					return fmt.Errorf("get datadog synthetics global variable %s: %w", v, err)
 				}
 				globalVariableIDs = append(globalVariableIDs, resp)
 			}
