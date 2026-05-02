@@ -5,7 +5,7 @@ package gcp
 import (
 	"context"
 	"errors"
-	"log"
+	"fmt"
 	"os"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -19,8 +19,12 @@ type GCPProvider struct { //nolint
 	providerType string
 }
 
+var newComputeService = func(ctx context.Context) (*compute.Service, error) {
+	return compute.NewService(ctx)
+}
+
 func GetRegions(project string) []string {
-	computeService, err := compute.NewService(context.Background())
+	computeService, err := newComputeService(context.Background())
 	if err != nil {
 		return []string{}
 	}
@@ -35,26 +39,28 @@ func GetRegions(project string) []string {
 	return regions
 }
 
-func getRegion(project, regionName string) *compute.Region {
+func getRegion(project, regionName string) (*compute.Region, error) {
 	if regionName == "global" {
-		return &compute.Region{}
+		return &compute.Region{}, nil
 	}
-	computeService, err := compute.NewService(context.Background())
+	computeService, err := newComputeService(context.Background())
 	if err != nil {
-		log.Println(err)
-		return &compute.Region{}
+		return nil, fmt.Errorf("initialize GCP compute service: %w", err)
 	}
 	regionsGetCall := computeService.Regions.Get(project, regionName).Fields("name", "zones")
 	region, err := regionsGetCall.Do()
 	if err != nil {
-		log.Println(err)
-		return &compute.Region{}
+		return nil, fmt.Errorf("get GCP region %q for project %q: %w", regionName, project, err)
 	}
-	return region
+	return region, nil
 }
 
 // check projectName in env params
 func (p *GCPProvider) Init(args []string) error {
+	if len(args) == 0 {
+		return errors.New("gcp region must be provided")
+	}
+
 	projectName := os.Getenv("GOOGLE_CLOUD_PROJECT")
 	if len(args) > 1 {
 		projectName = args[1]
@@ -63,8 +69,16 @@ func (p *GCPProvider) Init(args []string) error {
 		return errors.New("google cloud project name must be set")
 	}
 	p.projectName = projectName
-	p.region = *getRegion(projectName, args[0])
-	p.providerType = args[2]
+	region, err := getRegion(projectName, args[0])
+	if err != nil {
+		return err
+	}
+	p.region = *region
+	if len(args) > 2 {
+		p.providerType = args[2]
+	} else {
+		p.providerType = ""
+	}
 	return nil
 }
 
