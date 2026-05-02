@@ -113,7 +113,7 @@ func (p *KubernetesProvider) GetSupportedService() map[string]terraformutils.Ser
 			}
 
 			// filter to resources that the Terraform Kubernetes provider can import
-			terraformResourceName, ok := selectTerraformResourceName(resource.Kind, func(name string) bool {
+			terraformResourceName, ok := selectTerraformResourceName(gv.Group, gv.Version, resource.Kind, func(name string) bool {
 				_, exists := resp.ResourceTypes[name]
 				return exists
 			})
