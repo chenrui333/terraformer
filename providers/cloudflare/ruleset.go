@@ -20,6 +20,9 @@ func (g *RulesetGenerator) appendRulesetResources(ctx context.Context, api *cf.A
 		return fmt.Errorf("%s/%s: %w", scopeType, rc.Identifier, err)
 	}
 	for _, ruleset := range rulesets {
+		if ruleset.Kind == string(cf.RulesetKindManaged) {
+			continue
+		}
 		g.Resources = append(g.Resources, terraformutils.NewResource(
 			ruleset.ID,
 			cloudflareResourceName(scopeType, rc.Identifier, ruleset.Name, ruleset.ID),
