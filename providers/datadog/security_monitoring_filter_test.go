@@ -3,10 +3,57 @@
 package datadog
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"github.com/zclconf/go-cty/cty"
+
+	"github.com/chenrui333/terraformer/terraformutils"
 )
+
+func TestSecurityMonitoringFilterAllowEmptyValuesPreservesQueries(t *testing.T) {
+	allowEmptyValues := []*regexp.Regexp{}
+	for _, pattern := range SecurityMonitoringFilterAllowEmptyValues {
+		allowEmptyValues = append(allowEmptyValues, regexp.MustCompile(pattern))
+	}
+
+	parser := terraformutils.NewFlatmapParser(map[string]string{
+		"query":                    "",
+		"exclusion_filter.#":       "1",
+		"exclusion_filter.0.name":  "catch-all",
+		"exclusion_filter.0.query": "",
+	}, nil, allowEmptyValues)
+	filterType := cty.Object(map[string]cty.Type{
+		"query": cty.String,
+		"exclusion_filter": cty.List(cty.Object(map[string]cty.Type{
+			"name":  cty.String,
+			"query": cty.String,
+		})),
+	})
+
+	result, err := parser.Parse(filterType)
+	if err != nil {
+		t.Fatalf("Parse returned error: %v", err)
+	}
+	if result["query"] != "" {
+		t.Fatalf("query = %v, want empty string", result["query"])
+	}
+	exclusionFilters, ok := result["exclusion_filter"].([]interface{})
+	if !ok {
+		t.Fatalf("exclusion_filter = %T, want []interface{}", result["exclusion_filter"])
+	}
+	if len(exclusionFilters) != 1 {
+		t.Fatalf("exclusion_filter length = %d, want %d", len(exclusionFilters), 1)
+	}
+	exclusionFilter, ok := exclusionFilters[0].(map[string]interface{})
+	if !ok {
+		t.Fatalf("exclusion_filter[0] = %T, want map[string]interface{}", exclusionFilters[0])
+	}
+	if exclusionFilter["query"] != "" {
+		t.Fatalf("exclusion_filter[0].query = %v, want empty string", exclusionFilter["query"])
+	}
+}
 
 func TestSecurityMonitoringFilterCreateResource(t *testing.T) {
 	securityFilter := datadogV2.NewSecurityFilterWithDefaults()

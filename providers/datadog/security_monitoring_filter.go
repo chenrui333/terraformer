@@ -14,7 +14,7 @@ import (
 
 var (
 	// SecurityMonitoringFilterAllowEmptyValues ...
-	SecurityMonitoringFilterAllowEmptyValues = []string{}
+	SecurityMonitoringFilterAllowEmptyValues = []string{"query", "exclusion_filter.*.query"}
 )
 
 // SecurityMonitoringFilterGenerator ...
