@@ -114,10 +114,10 @@ func TestFromFlatmapMap(t *testing.T) {
 
 func TestFromFlatmapSet(t *testing.T) {
 	attributes := map[string]string{
-		"ingress.#":                   "1",
-		"ingress.12345.from_port":     "80",
-		"ingress.12345.to_port":       "80",
-		"ingress.12345.protocol":      "tcp",
+		"ingress.#":               "1",
+		"ingress.12345.from_port": "80",
+		"ingress.12345.to_port":   "80",
+		"ingress.12345.protocol":  "tcp",
 	}
 	parser := NewFlatmapParser(attributes, nil, nil)
 	ty := cty.Object(map[string]cty.Type{
