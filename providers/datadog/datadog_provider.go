@@ -176,6 +176,7 @@ func (p *DatadogProvider) GetSupportedService() map[string]terraformutils.Servic
 		"security_monitoring_default_rule":     &SecurityMonitoringDefaultRuleGenerator{},
 		"security_monitoring_filter":           &SecurityMonitoringFilterGenerator{},
 		"security_monitoring_rule":             &SecurityMonitoringRuleGenerator{},
+		"security_monitoring_suppression":      &SecurityMonitoringSuppressionGenerator{},
 		"service_level_objective":              &ServiceLevelObjectiveGenerator{},
 		"slo_correction":                       &SLOCorrectionGenerator{},
 		"synthetics_test":                      &SyntheticsTestGenerator{},
