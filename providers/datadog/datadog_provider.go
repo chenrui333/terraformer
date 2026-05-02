@@ -190,6 +190,8 @@ func (p *DatadogProvider) GetSupportedService() map[string]terraformutils.Servic
 		"monitor_notification_rule":            &MonitorNotificationRuleGenerator{},
 		"rum_application":                      &RumApplicationGenerator{},
 		"rum_metric":                           &RumMetricGenerator{},
+		"rum_retention_filter":                 &RumRetentionFilterGenerator{},
+		"rum_retention_filters_order":          &RumRetentionFiltersOrderGenerator{},
 		"security_monitoring_default_rule":     &SecurityMonitoringDefaultRuleGenerator{},
 		"security_monitoring_filter":           &SecurityMonitoringFilterGenerator{},
 		"security_monitoring_rule":             &SecurityMonitoringRuleGenerator{},
@@ -250,6 +252,16 @@ func (p DatadogProvider) GetResourceConnections() map[string]map[string][]string
 			},
 			"monitor_json": {
 				"monitor_id", "id",
+			},
+		},
+		"rum_retention_filter": {
+			"rum_application": {
+				"application_id", "id",
+			},
+		},
+		"rum_retention_filters_order": {
+			"rum_application": {
+				"application_id", "id",
 			},
 		},
 		"integration_aws_lambda_arn": {

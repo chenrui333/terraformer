@@ -51,6 +51,27 @@ func TestDatadogProviderAPMRetentionFilterConnections(t *testing.T) {
 	)
 }
 
+func TestDatadogProviderRumRetentionFilterConnections(t *testing.T) {
+	connections := DatadogProvider{}.GetResourceConnections()
+
+	assertDatadogConnection(
+		t,
+		connections,
+		"rum_retention_filter",
+		"rum_application",
+		"application_id",
+		"id",
+	)
+	assertDatadogConnection(
+		t,
+		connections,
+		"rum_retention_filters_order",
+		"rum_application",
+		"application_id",
+		"id",
+	)
+}
+
 func TestDatadogProviderSensitiveDataScannerConnections(t *testing.T) {
 	connections := DatadogProvider{}.GetResourceConnections()
 
