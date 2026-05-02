@@ -177,6 +177,9 @@ func (p *DatadogProvider) GetSupportedService() map[string]terraformutils.Servic
 		"security_monitoring_filter":           &SecurityMonitoringFilterGenerator{},
 		"security_monitoring_rule":             &SecurityMonitoringRuleGenerator{},
 		"security_monitoring_suppression":      &SecurityMonitoringSuppressionGenerator{},
+		"sensitive_data_scanner_group":         &SensitiveDataScannerGroupGenerator{},
+		"sensitive_data_scanner_group_order":   &SensitiveDataScannerGroupOrderGenerator{},
+		"sensitive_data_scanner_rule":          &SensitiveDataScannerRuleGenerator{},
 		"service_level_objective":              &ServiceLevelObjectiveGenerator{},
 		"slo_correction":                       &SLOCorrectionGenerator{},
 		"synthetics_test":                      &SyntheticsTestGenerator{},
@@ -273,6 +276,16 @@ func (p DatadogProvider) GetResourceConnections() map[string]map[string][]string
 		"service_level_objective": {
 			"monitor": {
 				"monitor_ids", "id",
+			},
+		},
+		"sensitive_data_scanner_group_order": {
+			"sensitive_data_scanner_group": {
+				"group_ids", "id",
+			},
+		},
+		"sensitive_data_scanner_rule": {
+			"sensitive_data_scanner_group": {
+				"group_id", "id",
 			},
 		},
 		"synthetics_test": {

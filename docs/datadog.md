@@ -151,6 +151,15 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `security_monitoring_suppression`
     * `datadog_security_monitoring_suppression`
         * **_NOTE:_** Requires DataDog/datadog provider 3.36.0 or newer.
+*   `sensitive_data_scanner_group`
+    * `datadog_sensitive_data_scanner_group`
+        * **_NOTE:_** Requires DataDog/datadog provider 3.90.0 or newer.
+*   `sensitive_data_scanner_group_order`
+    * `datadog_sensitive_data_scanner_group_order`
+        * **_NOTE:_** Requires DataDog/datadog provider 3.90.0 or newer.
+*   `sensitive_data_scanner_rule`
+    * `datadog_sensitive_data_scanner_rule`
+        * **_NOTE:_** Requires DataDog/datadog provider 3.90.0 or newer.
 *   `service_level_objective`
     * `datadog_service_level_objective`
 *   `slo_correction`
