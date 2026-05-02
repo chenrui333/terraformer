@@ -4,21 +4,26 @@ package kubernetes
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 )
 
 type Kind struct {
 	KubernetesService
-	Name          string
-	Group         string
-	Version       string
-	Namespaced    bool
-	TerraformType string
+	Name             string
+	ResourceName     string
+	Group            string
+	Version          string
+	Namespaced       bool
+	TerraformType    string
+	UseDynamicClient bool
 }
 
 // Generate TerraformResources from Kubernetes API,
@@ -30,11 +35,23 @@ func (k *Kind) InitResources() error {
 		return err
 	}
 
+	if k.UseDynamicClient {
+		client, err := dynamic.NewForConfig(config)
+		if err != nil {
+			return err
+		}
+		return k.initDynamicResources(client)
+	}
+
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return err
 	}
 
+	return k.initTypedResources(clientset)
+}
+
+func (k *Kind) initTypedResources(clientset kubernetes.Interface) error {
 	group := reflect.ValueOf(clientset).MethodByName(
 		extractClientSetFuncGroupName(k.Group, k.Version)).Call(
 		[]reflect.Value{})[0]
@@ -54,11 +71,7 @@ func (k *Kind) InitResources() error {
 		return results[1].Interface().(error)
 	}
 	items := reflect.Indirect(results[0]).FieldByName("Items")
-
-	terraformType := k.TerraformType
-	if terraformType == "" {
-		terraformType = extractTfResourceName(k.Name)
-	}
+	terraformType := k.terraformType()
 
 	for i := 0; i < items.Len(); i++ {
 		item := items.Index(i)
@@ -83,4 +96,58 @@ func (k *Kind) InitResources() error {
 		))
 	}
 	return nil
+}
+
+func (k *Kind) initDynamicResources(client dynamic.Interface) error {
+	if k.ResourceName == "" {
+		return fmt.Errorf("kubernetes: resource name is required for dynamic resource %s", k.Name)
+	}
+
+	resource := client.Resource(schema.GroupVersionResource{
+		Group:    k.Group,
+		Version:  k.Version,
+		Resource: k.ResourceName,
+	})
+
+	listClient := dynamic.ResourceInterface(resource)
+	if k.Namespaced {
+		listClient = resource.Namespace(metav1.NamespaceAll)
+	}
+
+	results, err := listClient.List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+
+	terraformType := k.terraformType()
+	for i := range results.Items {
+		item := results.Items[i]
+		// Filter to resources that aren't owned by any other resource.
+		if len(item.GetOwnerReferences()) > 0 {
+			continue
+		}
+
+		name := ""
+		if k.Namespaced {
+			name = item.GetNamespace() + "/" + item.GetName()
+		} else {
+			name = item.GetName()
+		}
+
+		k.Resources = append(k.Resources, terraformutils.NewSimpleResource(
+			name,
+			name,
+			terraformType,
+			"kubernetes",
+			[]string{},
+		))
+	}
+	return nil
+}
+
+func (k *Kind) terraformType() string {
+	if k.TerraformType != "" {
+		return k.TerraformType
+	}
+	return extractTfResourceName(k.Name)
 }

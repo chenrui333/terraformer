@@ -18,6 +18,8 @@ type kubernetesResourceID struct {
 }
 
 var preferredTerraformResourceNames = map[kubernetesResourceID][]string{
+	{group: "apiregistration.k8s.io", version: "v1", kind: "APIService"}:                                {"kubernetes_api_service_v1", "kubernetes_api_service"},
+	{group: "apiregistration.k8s.io", version: "v1beta1", kind: "APIService"}:                           {"kubernetes_api_service"},
 	{group: "apps", version: "v1", kind: "DaemonSet"}:                                                   {"kubernetes_daemon_set_v1", "kubernetes_daemonset"},
 	{group: "apps", version: "v1", kind: "Deployment"}:                                                  {"kubernetes_deployment_v1", "kubernetes_deployment"},
 	{group: "apps", version: "v1", kind: "StatefulSet"}:                                                 {"kubernetes_stateful_set_v1", "kubernetes_stateful_set"},
@@ -25,9 +27,12 @@ var preferredTerraformResourceNames = map[kubernetesResourceID][]string{
 	{group: "apps", version: "v1beta2", kind: "DaemonSet"}:                                              {"kubernetes_daemonset"},
 	{group: "autoscaling", version: "v1", kind: "HorizontalPodAutoscaler"}:                              {"kubernetes_horizontal_pod_autoscaler_v1", "kubernetes_horizontal_pod_autoscaler"},
 	{group: "autoscaling", version: "v2", kind: "HorizontalPodAutoscaler"}:                              {"kubernetes_horizontal_pod_autoscaler_v2", "kubernetes_horizontal_pod_autoscaler"},
+	{group: "autoscaling", version: "v2beta2", kind: "HorizontalPodAutoscaler"}:                         {"kubernetes_horizontal_pod_autoscaler_v2beta2", "kubernetes_horizontal_pod_autoscaler"},
 	{group: "batch", version: "v1", kind: "CronJob"}:                                                    {"kubernetes_cron_job_v1", "kubernetes_cron_job"},
 	{group: "batch", version: "v1", kind: "Job"}:                                                        {"kubernetes_job_v1", "kubernetes_job"},
 	{group: "batch", version: "v1beta1", kind: "CronJob"}:                                               {"kubernetes_cron_job"},
+	{group: "certificates.k8s.io", version: "v1", kind: "CertificateSigningRequest"}:                    {"kubernetes_certificate_signing_request_v1", "kubernetes_certificate_signing_request"},
+	{group: "certificates.k8s.io", version: "v1beta1", kind: "CertificateSigningRequest"}:               {"kubernetes_certificate_signing_request"},
 	{group: "discovery.k8s.io", version: "v1", kind: "EndpointSlice"}:                                   {"kubernetes_endpoint_slice_v1"},
 	{group: "extensions", version: "v1beta1", kind: "DaemonSet"}:                                        {"kubernetes_daemonset"},
 	{group: "extensions", version: "v1beta1", kind: "Ingress"}:                                          {"kubernetes_ingress"},
@@ -44,6 +49,7 @@ var preferredTerraformResourceNames = map[kubernetesResourceID][]string{
 	{group: "node.k8s.io", version: "v1", kind: "RuntimeClass"}:                                         {"kubernetes_runtime_class_v1"},
 	{group: "policy", version: "v1", kind: "PodDisruptionBudget"}:                                       {"kubernetes_pod_disruption_budget_v1", "kubernetes_pod_disruption_budget"},
 	{group: "policy", version: "v1beta1", kind: "PodDisruptionBudget"}:                                  {"kubernetes_pod_disruption_budget"},
+	{group: "policy", version: "v1beta1", kind: "PodSecurityPolicy"}:                                    {"kubernetes_pod_security_policy"},
 	{group: "scheduling.k8s.io", version: "v1", kind: "PriorityClass"}:                                  {"kubernetes_priority_class_v1", "kubernetes_priority_class"},
 	{group: "scheduling.k8s.io", version: "v1beta1", kind: "PriorityClass"}:                             {"kubernetes_priority_class"},
 	{group: "storage.k8s.io", version: "v1", kind: "CSIDriver"}:                                         {"kubernetes_csi_driver_v1", "kubernetes_csi_driver"},
@@ -66,6 +72,15 @@ var preferredTerraformResourceNames = map[kubernetesResourceID][]string{
 	{group: "admissionregistration.k8s.io", version: "v1", kind: "ValidatingWebhookConfiguration"}:      {"kubernetes_validating_webhook_configuration_v1", "kubernetes_validating_webhook_configuration"},
 	{group: "admissionregistration.k8s.io", version: "v1beta1", kind: "MutatingWebhookConfiguration"}:   {"kubernetes_mutating_webhook_configuration"},
 	{group: "admissionregistration.k8s.io", version: "v1beta1", kind: "ValidatingWebhookConfiguration"}: {"kubernetes_validating_webhook_configuration"},
+}
+
+// Dynamic imports are limited to provider resources that are importable but not
+// exposed through kubernetes.Interface in the pinned client-go version.
+var dynamicClientResources = map[kubernetesResourceID]struct{}{
+	{group: "apiregistration.k8s.io", version: "v1", kind: "APIService"}:        {},
+	{group: "apiregistration.k8s.io", version: "v1beta1", kind: "APIService"}:   {},
+	{group: "autoscaling", version: "v2beta2", kind: "HorizontalPodAutoscaler"}: {},
+	{group: "policy", version: "v1beta1", kind: "PodSecurityPolicy"}:            {},
 }
 
 func extractClientSetFuncGroupName(group, version string) string {
@@ -112,6 +127,11 @@ func selectTerraformResourceName(group, version, kind string, hasResourceType fu
 		}
 	}
 	return "", false
+}
+
+func supportsDynamicClientResource(group, version, kind string) bool {
+	_, ok := dynamicClientResources[kubernetesResourceID{group: group, version: version, kind: kind}]
+	return ok
 }
 
 func supportsTypedClientResource(clientset kubernetes.Interface, group, version, kind string) (ok bool) {
