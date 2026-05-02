@@ -133,6 +133,8 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
         * **_NOTE:_** Importing resource requires resource ID's to be passed via [Filter][1] option
 *   `monitor`
     * `datadog_monitor`
+*   `monitor_config_policy`
+    * `datadog_monitor_config_policy`
 *   `monitor_notification_rule`
     * `datadog_monitor_notification_rule`
         * **_NOTE:_** Requires DataDog/datadog provider 3.83.0 or newer.
