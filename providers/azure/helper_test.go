@@ -204,34 +204,42 @@ func TestGetClientOptionsGermanCloud(t *testing.T) {
 }
 
 func TestAzureCLIUnavailableFallbackCredentialAllowsChainedFallback(t *testing.T) {
-	fallbackToken := azcore.AccessToken{
-		Token:     "fallback",
-		ExpiresOn: time.Now().Add(time.Hour),
-	}
-	primary := &stubTokenCredential{err: errors.New("AzureCLICredential: Please run 'az login' to set up an account")}
-	fallback := &stubTokenCredential{token: fallbackToken}
-	chain, err := azidentity.NewChainedTokenCredential([]azcore.TokenCredential{
-		azureCLIUnavailableFallbackCredential{credential: primary},
-		fallback,
-	}, nil)
-	if err != nil {
-		t.Fatalf("creating credential chain: %v", err)
-	}
+	for _, errMessage := range []string{
+		"AzureCLICredential: Azure CLI not found on path",
+		"AzureCLICredential: executable not found on path",
+		"AzureCLICredential: Please run 'az login' to set up an account",
+	} {
+		t.Run(errMessage, func(t *testing.T) {
+			fallbackToken := azcore.AccessToken{
+				Token:     "fallback",
+				ExpiresOn: time.Now().Add(time.Hour),
+			}
+			primary := &stubTokenCredential{err: errors.New(errMessage)}
+			fallback := &stubTokenCredential{token: fallbackToken}
+			chain, err := azidentity.NewChainedTokenCredential([]azcore.TokenCredential{
+				azureCLIUnavailableFallbackCredential{credential: primary},
+				fallback,
+			}, nil)
+			if err != nil {
+				t.Fatalf("creating credential chain: %v", err)
+			}
 
-	got, err := chain.GetToken(context.Background(), policy.TokenRequestOptions{
-		Scopes: []string{"https://management.azure.com/.default"},
-	})
-	if err != nil {
-		t.Fatalf("expected fallback token, got error: %v", err)
-	}
-	if got.Token != fallbackToken.Token {
-		t.Fatalf("GetToken() token = %q, want %q", got.Token, fallbackToken.Token)
-	}
-	if primary.calls != 1 {
-		t.Fatalf("primary calls = %d, want 1", primary.calls)
-	}
-	if fallback.calls != 1 {
-		t.Fatalf("fallback calls = %d, want 1", fallback.calls)
+			got, err := chain.GetToken(context.Background(), policy.TokenRequestOptions{
+				Scopes: []string{"https://management.azure.com/.default"},
+			})
+			if err != nil {
+				t.Fatalf("expected fallback token, got error: %v", err)
+			}
+			if got.Token != fallbackToken.Token {
+				t.Fatalf("GetToken() token = %q, want %q", got.Token, fallbackToken.Token)
+			}
+			if primary.calls != 1 {
+				t.Fatalf("primary calls = %d, want 1", primary.calls)
+			}
+			if fallback.calls != 1 {
+				t.Fatalf("fallback calls = %d, want 1", fallback.calls)
+			}
+		})
 	}
 }
 

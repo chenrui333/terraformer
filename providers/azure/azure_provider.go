@@ -53,12 +53,16 @@ func azureCLIErrorIsUnavailable(err error) bool {
 	if err == nil {
 		return false
 	}
-	msg := err.Error()
-	if strings.Contains(msg, "executable not found on path") {
-		return true
+	lowerMsg := strings.ToLower(err.Error())
+	for _, marker := range []string{
+		"azure cli not found on path",
+		"executable not found on path",
+	} {
+		if strings.Contains(lowerMsg, marker) {
+			return true
+		}
 	}
 
-	lowerMsg := strings.ToLower(msg)
 	for _, marker := range []string{
 		"aadsts",
 		"claims",
