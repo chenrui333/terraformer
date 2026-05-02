@@ -362,12 +362,22 @@ func (g *LoadBalancingGenerator) appendLoadBalancerMonitorResources(ctx context.
 			return err
 		}
 		for _, monitor := range monitors {
+			attributes := map[string]string{"account_id": accountID}
+			if monitor.ConsecutiveUp != 0 {
+				attributes["consecutive_up"] = strconv.Itoa(monitor.ConsecutiveUp)
+			}
+			if monitor.ConsecutiveDown != 0 {
+				attributes["consecutive_down"] = strconv.Itoa(monitor.ConsecutiveDown)
+			}
+			if monitor.Port != 0 {
+				attributes["port"] = strconv.FormatUint(uint64(monitor.Port), 10)
+			}
 			g.Resources = append(g.Resources, terraformutils.NewResource(
 				monitor.ID,
 				cloudflareResourceName(accountID, monitor.Description, monitor.ID),
 				"cloudflare_load_balancer_monitor",
 				"cloudflare",
-				map[string]string{"account_id": accountID},
+				attributes,
 				[]string{},
 				map[string]interface{}{},
 			))

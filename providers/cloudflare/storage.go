@@ -106,7 +106,7 @@ func (g *StorageGenerator) appendWorkersKVNamespaceResources(ctx context.Context
 			return err
 		}
 		for _, namespace := range namespaces {
-			g.Resources = append(g.Resources, terraformutils.NewResource(
+			resource := terraformutils.NewResource(
 				namespace.ID,
 				cloudflareResourceName(accountID, namespace.Title, namespace.ID),
 				"cloudflare_workers_kv_namespace",
@@ -114,7 +114,9 @@ func (g *StorageGenerator) appendWorkersKVNamespaceResources(ctx context.Context
 				map[string]string{"account_id": accountID},
 				[]string{},
 				map[string]interface{}{},
-			))
+			)
+			setCloudflareImportID(&resource, accountID+"/"+namespace.ID)
+			g.Resources = append(g.Resources, resource)
 		}
 		if info == nil || !info.HasMorePages() {
 			break
@@ -132,7 +134,7 @@ func (g *StorageGenerator) appendQueueResources(ctx context.Context, api *cf.API
 			return err
 		}
 		for _, queue := range queues {
-			g.Resources = append(g.Resources, terraformutils.NewResource(
+			resource := terraformutils.NewResource(
 				queue.ID,
 				cloudflareResourceName(accountID, queue.Name, queue.ID),
 				"cloudflare_queue",
@@ -140,7 +142,9 @@ func (g *StorageGenerator) appendQueueResources(ctx context.Context, api *cf.API
 				map[string]string{"account_id": accountID, "queue_id": queue.ID},
 				[]string{},
 				map[string]interface{}{},
-			))
+			)
+			setCloudflareImportID(&resource, accountID+"/"+queue.ID)
+			g.Resources = append(g.Resources, resource)
 		}
 		if info == nil || !info.HasMorePages() {
 			break
@@ -157,7 +161,7 @@ func (g *StorageGenerator) appendR2BucketResources(ctx context.Context, api *cf.
 			return err
 		}
 		for _, bucket := range buckets {
-			g.Resources = append(g.Resources, terraformutils.NewResource(
+			resource := terraformutils.NewResource(
 				bucket.Name,
 				cloudflareResourceName(accountID, jurisdiction, bucket.Name),
 				"cloudflare_r2_bucket",
@@ -169,7 +173,9 @@ func (g *StorageGenerator) appendR2BucketResources(ctx context.Context, api *cf.
 				},
 				[]string{},
 				map[string]interface{}{},
-			))
+			)
+			setCloudflareImportID(&resource, accountID+"/"+bucket.Name+"/"+jurisdiction)
+			g.Resources = append(g.Resources, resource)
 		}
 	}
 	return nil
@@ -183,7 +189,7 @@ func (g *StorageGenerator) appendD1DatabaseResources(ctx context.Context, api *c
 			return err
 		}
 		for _, database := range databases {
-			g.Resources = append(g.Resources, terraformutils.NewResource(
+			resource := terraformutils.NewResource(
 				database.UUID,
 				cloudflareResourceName(accountID, database.Name, database.UUID),
 				"cloudflare_d1_database",
@@ -191,7 +197,9 @@ func (g *StorageGenerator) appendD1DatabaseResources(ctx context.Context, api *c
 				map[string]string{"account_id": accountID, "uuid": database.UUID},
 				[]string{},
 				map[string]interface{}{},
-			))
+			)
+			setCloudflareImportID(&resource, accountID+"/"+database.UUID)
+			g.Resources = append(g.Resources, resource)
 		}
 		if info == nil || !info.HasMorePages() {
 			break
