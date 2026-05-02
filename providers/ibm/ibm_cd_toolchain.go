@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"regexp"
 	"slices"
 	"strings"
 	"sync"
@@ -327,11 +326,9 @@ func getS2SPolicies(sess *session.Session, targetTcID string) (map[string][]iamp
 func (g *ToolchainGenerator) InitResources() error {
 	region := g.Args["region"].(string)
 
-	guidRegex := regexp.MustCompile("[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$")
-
 	targetTcID := os.Getenv("IBM_CD_TOOLCHAIN_TARGET")
-	if targetTcID != "" && !guidRegex.MatchString(targetTcID) {
-		log.Fatal("Env variable IBM_CD_TOOLCHAIN_TARGET is not a GUID")
+	if err := validateCDToolchainTarget(); err != nil {
+		return err
 	}
 
 	apiKey := os.Getenv("IC_API_KEY")
@@ -402,7 +399,7 @@ func (g *ToolchainGenerator) InitResources() error {
 
 		tcID := crnSplit[7]
 
-		if !guidRegex.MatchString(tcID) {
+		if !cdToolchainTargetGUIDPattern.MatchString(tcID) {
 			fmt.Println("received invalid CRN format from Resource Controller, skipping...")
 			continue
 		}

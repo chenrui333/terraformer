@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -32,10 +33,12 @@ func (p *testProvider) GetResourceConnections() map[string]map[string][]string {
 
 type validatingTestProvider struct {
 	testProvider
-	err error
+	err       error
+	resources []string
 }
 
-func (p *validatingTestProvider) ValidateImport() error {
+func (p *validatingTestProvider) ValidateImport(resources []string) error {
+	p.resources = append([]string(nil), resources...)
 	return p.err
 }
 
@@ -97,14 +100,18 @@ func TestProviderServices(t *testing.T) {
 }
 
 func TestValidateImport(t *testing.T) {
-	if err := validateImport(&testProvider{}); err != nil {
+	resources := []string{"service"}
+	if err := validateImport(&testProvider{}, resources); err != nil {
 		t.Fatalf("expected provider without validator to pass, got %v", err)
 	}
 
 	wantErr := errors.New("validation failed")
 	provider := &validatingTestProvider{err: wantErr}
-	if err := validateImport(provider); !errors.Is(err, wantErr) {
+	if err := validateImport(provider, resources); !errors.Is(err, wantErr) {
 		t.Fatalf("expected validation error %v, got %v", wantErr, err)
+	}
+	if !reflect.DeepEqual(provider.resources, resources) {
+		t.Fatalf("expected validator resources %v, got %v", resources, provider.resources)
 	}
 }
 

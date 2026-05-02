@@ -5,6 +5,7 @@ package ibm
 import (
 	"errors"
 	"os"
+	"regexp"
 	"sync"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -13,7 +14,11 @@ import (
 const DefaultRegion = "us-south"
 const NoRegion = ""
 
-var errMissingICAPIKey = errors.New("set IC_API_KEY env var")
+var (
+	errMissingICAPIKey           = errors.New("set IC_API_KEY env var")
+	errInvalidCDToolchainTarget  = errors.New("IBM_CD_TOOLCHAIN_TARGET must be a GUID")
+	cdToolchainTargetGUIDPattern = regexp.MustCompile("^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$")
+)
 
 var resourceMutex sync.RWMutex // Used for g.Resources
 
@@ -42,11 +47,31 @@ func (p *IBMProvider) Init(args []string) error {
 	return nil
 }
 
-func (p *IBMProvider) ValidateImport() error {
+func (p *IBMProvider) ValidateImport(resources []string) error {
 	if os.Getenv("IC_API_KEY") == "" {
 		return errMissingICAPIKey
 	}
+	if serviceRequested(resources, "ibm_cd_toolchain") {
+		return validateCDToolchainTarget()
+	}
 	return nil
+}
+
+func validateCDToolchainTarget() error {
+	targetTcID := os.Getenv("IBM_CD_TOOLCHAIN_TARGET")
+	if targetTcID != "" && !cdToolchainTargetGUIDPattern.MatchString(targetTcID) {
+		return errInvalidCDToolchainTarget
+	}
+	return nil
+}
+
+func serviceRequested(resources []string, service string) bool {
+	for _, resource := range resources {
+		if resource == service || resource == "*" {
+			return true
+		}
+	}
+	return false
 }
 
 func (p *IBMProvider) GetName() string {
