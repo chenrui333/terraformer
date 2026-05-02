@@ -32,7 +32,7 @@ func (g *PagesGenerator) InitResources() error {
 			return err
 		}
 		for _, project := range projects {
-			g.Resources = append(g.Resources, terraformutils.NewResource(
+			projectResource := terraformutils.NewResource(
 				project.Name,
 				cloudflareResourceName(accountID, project.Name),
 				"cloudflare_pages_project",
@@ -40,14 +40,16 @@ func (g *PagesGenerator) InitResources() error {
 				map[string]string{"account_id": accountID, "name": project.Name},
 				[]string{},
 				map[string]interface{}{},
-			))
+			)
+			setCloudflareImportID(&projectResource, accountID+"/"+project.Name)
+			g.Resources = append(g.Resources, projectResource)
 
 			domains, err := api.GetPagesDomains(ctx, cf.PagesDomainsParameters{AccountID: accountID, ProjectName: project.Name})
 			if err != nil {
 				return err
 			}
 			for _, domain := range domains {
-				g.Resources = append(g.Resources, terraformutils.NewResource(
+				domainResource := terraformutils.NewResource(
 					domain.Name,
 					cloudflareResourceName(accountID, project.Name, domain.Name),
 					"cloudflare_pages_domain",
@@ -55,7 +57,9 @@ func (g *PagesGenerator) InitResources() error {
 					map[string]string{"account_id": accountID, "project_name": project.Name, "name": domain.Name},
 					[]string{},
 					map[string]interface{}{},
-				))
+				)
+				setCloudflareImportID(&domainResource, accountID+"/"+project.Name+"/"+domain.Name)
+				g.Resources = append(g.Resources, domainResource)
 			}
 		}
 		if !info.HasMorePages() {

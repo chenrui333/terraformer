@@ -57,6 +57,7 @@ func (*DNSGenerator) createRecordsResources(api *cf.API, zoneID, zoneName string
 			map[string]interface{}{},
 		)
 
+		setCloudflareImportID(&r, zoneID+"/"+record.ID)
 		r.IgnoreKeys = append(r.IgnoreKeys, "^metadata")
 		resources = append(resources, r)
 	}
