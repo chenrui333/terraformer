@@ -239,14 +239,18 @@ terraformer import aws --resources=sg --regions=us-east-1
     * `aws_glue_workflow`
 *   `iam`
     * `aws_iam_access_key`
+    * `aws_iam_account_alias`
+    * `aws_iam_account_password_policy`
     * `aws_iam_group`
     * `aws_iam_group_policy`
     * `aws_iam_group_policy_attachment`
     * `aws_iam_instance_profile`
+    * `aws_iam_openid_connect_provider`
     * `aws_iam_policy`
     * `aws_iam_role`
     * `aws_iam_role_policy`
     * `aws_iam_role_policy_attachment`
+    * `aws_iam_saml_provider`
     * `aws_iam_user`
     * `aws_iam_user_group_membership`
     * `aws_iam_user_policy`
