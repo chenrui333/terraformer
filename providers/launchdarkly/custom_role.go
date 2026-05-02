@@ -16,10 +16,13 @@ type CustomRoleGenerator struct {
 func (g *CustomRoleGenerator) loadCustomRoles(ctx context.Context, client *ldapi.APIClient) error {
 	var allRoles []ldapi.CustomRole
 	for offset := int64(0); ; offset += pageSize {
-		roles, _, err := client.CustomRolesApi.GetCustomRoles(ctx).
+		roles, resp, err := client.CustomRolesApi.GetCustomRoles(ctx).
 			Limit(pageSize).
 			Offset(offset).
 			Execute()
+		if resp != nil && resp.Body != nil {
+			_ = resp.Body.Close()
+		}
 		if err != nil {
 			return err
 		}

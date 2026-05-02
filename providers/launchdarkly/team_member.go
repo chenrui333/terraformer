@@ -16,10 +16,13 @@ type TeamMemberGenerator struct {
 func (g *TeamMemberGenerator) loadTeamMembers(ctx context.Context, client *ldapi.APIClient) error {
 	var allMembers []ldapi.Member
 	for offset := int64(0); ; offset += pageSize {
-		members, _, err := client.AccountMembersApi.GetMembers(ctx).
+		members, resp, err := client.AccountMembersApi.GetMembers(ctx).
 			Limit(pageSize).
 			Offset(offset).
 			Execute()
+		if resp != nil && resp.Body != nil {
+			_ = resp.Body.Close()
+		}
 		if err != nil {
 			return err
 		}

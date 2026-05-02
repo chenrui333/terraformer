@@ -14,7 +14,11 @@ type FlagTemplatesGenerator struct {
 }
 
 func (g *FlagTemplatesGenerator) loadFlagTemplates(ctx context.Context, client *ldapi.APIClient, projectKey string) error {
-	if _, _, err := client.ProjectsApi.GetFlagDefaultsByProject(ctx, projectKey).Execute(); err != nil {
+	_, resp, err := client.ProjectsApi.GetFlagDefaultsByProject(ctx, projectKey).Execute()
+	if resp != nil && resp.Body != nil {
+		_ = resp.Body.Close()
+	}
+	if err != nil {
 		return err
 	}
 	resource := terraformutils.NewResource(

@@ -14,7 +14,10 @@ type RelayProxyConfigurationGenerator struct {
 }
 
 func (g *RelayProxyConfigurationGenerator) loadRelayProxyConfigurations(ctx context.Context, client *ldapi.APIClient) error {
-	configs, _, err := client.RelayProxyConfigurationsApi.GetRelayProxyConfigs(ctx).Execute()
+	configs, resp, err := client.RelayProxyConfigurationsApi.GetRelayProxyConfigs(ctx).Execute()
+	if resp != nil && resp.Body != nil {
+		_ = resp.Body.Close()
+	}
 	if err != nil {
 		return err
 	}
