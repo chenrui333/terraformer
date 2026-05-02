@@ -156,6 +156,10 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `team_membership`
     * `datadog_team_membership`
         * **_NOTE:_** Importing a single membership by ID requires quoting the `team_id:user_id` filter value, for example `--filter="team_membership='team-id:user-id'"`; memberships can also be filtered by `team_id`
+*   `team_permission_setting`
+    * `datadog_team_permission_setting`
+        * **_NOTE:_** Requires DataDog/datadog provider 3.90.0 or newer.
+        * **_NOTE:_** Importing a single permission setting by ID requires quoting the `team_id:action` filter value, for example `--filter="team_permission_setting='team-id:manage_membership'"`; permission settings can also be filtered by `team_id`
 *   `user`
     * `datadog_user`
 
