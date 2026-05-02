@@ -3,6 +3,7 @@
 package kubernetes
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -13,7 +14,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/discovery"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
+	k8stesting "k8s.io/client-go/testing"
 )
 
 func TestMetadataPatchInitResourcesLabels(t *testing.T) {
@@ -140,6 +143,98 @@ func TestMetadataPatchInitResourcesAnnotations(t *testing.T) {
 	}
 }
 
+func TestMetadataPatchPreferredResourcesKeepsPartialDiscoveryResults(t *testing.T) {
+	lists := metadataPatchTestAPIResources()
+	got, err := metadataPatchPreferredResources(metadataPatchDiscoveryClient{
+		lists: lists,
+		err: &discovery.ErrGroupDiscoveryFailed{Groups: map[schema.GroupVersion]error{
+			{Group: "broken.example.com", Version: "v1"}: errors.New("unavailable"),
+		}},
+	})
+	if err != nil {
+		t.Fatalf("metadataPatchPreferredResources() error = %v", err)
+	}
+	if len(got) != len(lists) {
+		t.Fatalf("lists len = %d, want %d", len(got), len(lists))
+	}
+}
+
+func TestMetadataPatchPreferredResourcesReturnsNonPartialDiscoveryErrors(t *testing.T) {
+	if _, err := metadataPatchPreferredResources(metadataPatchDiscoveryClient{err: errors.New("boom")}); err == nil {
+		t.Fatal("metadataPatchPreferredResources() error = nil, want error")
+	}
+}
+
+func TestMetadataPatchInitResourcesSkipsListFailures(t *testing.T) {
+	configMap := newUnstructured("v1", "ConfigMap", "app-config", "default")
+	configMap.SetLabels(map[string]string{"app": "demo"})
+	client := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(
+		runtime.NewScheme(),
+		map[schema.GroupVersionResource]string{
+			{Version: "v1", Resource: "configmaps"}: "ConfigMapList",
+			{Version: "v1", Resource: "secrets"}:    "SecretList",
+		},
+		configMap,
+	)
+	client.PrependReactor("list", "secrets", func(k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, errors.New("forbidden")
+	})
+	service := &MetadataPatch{
+		TerraformType:     labelsTerraformType,
+		AttributeName:     "labels",
+		AllowEmptyPattern: labelsAllowEmptyPattern,
+	}
+
+	if err := service.initResources(client, []*metav1.APIResourceList{{
+		GroupVersion: "v1",
+		APIResources: []metav1.APIResource{
+			{Name: "configmaps", Kind: "ConfigMap", Namespaced: true, Verbs: []string{"get", "list", "patch"}},
+			{Name: "secrets", Kind: "Secret", Namespaced: true, Verbs: []string{"get", "list", "patch"}},
+		},
+	}}); err != nil {
+		t.Fatalf("initResources() error = %v", err)
+	}
+
+	assertResourceIDs(t, service.Resources, []string{"apiVersion=v1,kind=ConfigMap,namespace=default,name=app-config"})
+}
+
+func TestMetadataPatchSupportsResourceRequiresReadAndPatchVerbs(t *testing.T) {
+	tests := []struct {
+		name     string
+		resource metav1.APIResource
+		want     bool
+	}{
+		{
+			name:     "manageable resource",
+			resource: metav1.APIResource{Name: "configmaps", Kind: "ConfigMap", Verbs: []string{"get", "list", "patch"}},
+			want:     true,
+		},
+		{
+			name:     "list only",
+			resource: metav1.APIResource{Name: "widgets", Kind: "Widget", Verbs: []string{"list"}},
+		},
+		{
+			name:     "missing patch",
+			resource: metav1.APIResource{Name: "widgets", Kind: "Widget", Verbs: []string{"get", "list"}},
+		},
+		{
+			name:     "missing get",
+			resource: metav1.APIResource{Name: "widgets", Kind: "Widget", Verbs: []string{"list", "patch"}},
+		},
+		{
+			name:     "subresource",
+			resource: metav1.APIResource{Name: "configmaps/status", Kind: "ConfigMap", Verbs: []string{"get", "list", "patch"}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := metadataPatchSupportsResource(tt.resource); got != tt.want {
+				t.Fatalf("metadataPatchSupportsResource() = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestAddMetadataPatchServices(t *testing.T) {
 	resources := map[string]terraformutils.ServiceGenerator{}
 
@@ -227,12 +322,22 @@ func metadataPatchTestAPIResources() []*metav1.APIResourceList {
 	return []*metav1.APIResourceList{{
 		GroupVersion: "v1",
 		APIResources: []metav1.APIResource{
-			{Name: "configmaps", Kind: "ConfigMap", Namespaced: true, Verbs: []string{"get", "list"}},
+			{Name: "configmaps", Kind: "ConfigMap", Namespaced: true, Verbs: []string{"get", "list", "patch"}},
 			{Name: "configmaps/status", Kind: "ConfigMap", Namespaced: true, Verbs: []string{"get", "list"}},
 			{Name: "secrets", Kind: "Secret", Namespaced: true, Verbs: []string{"get"}},
-			{Name: "namespaces", Kind: "Namespace", Verbs: []string{"get", "list"}},
+			{Name: "namespaces", Kind: "Namespace", Verbs: []string{"get", "list", "patch"}},
 		},
 	}}
+}
+
+type metadataPatchDiscoveryClient struct {
+	discovery.DiscoveryInterface
+	lists []*metav1.APIResourceList
+	err   error
+}
+
+func (m metadataPatchDiscoveryClient) ServerPreferredResources() ([]*metav1.APIResourceList, error) {
+	return m.lists, m.err
 }
 
 func metadataPatchTestBlock(attributeName string, required bool) *configschema.Block {

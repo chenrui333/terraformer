@@ -4,6 +4,7 @@ package kubernetes
 
 import (
 	"context"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -46,7 +47,7 @@ func (m *MetadataPatch) InitResources() error {
 	if err != nil {
 		return err
 	}
-	lists, err := dc.ServerPreferredResources()
+	lists, err := metadataPatchPreferredResources(dc)
 	if err != nil {
 		return err
 	}
@@ -57,6 +58,17 @@ func (m *MetadataPatch) InitResources() error {
 	}
 
 	return m.initResources(client, lists)
+}
+
+func metadataPatchPreferredResources(dc discovery.DiscoveryInterface) ([]*metav1.APIResourceList, error) {
+	lists, err := dc.ServerPreferredResources()
+	if err != nil {
+		if !discovery.IsGroupDiscoveryFailedError(err) {
+			return nil, err
+		}
+		log.Printf("kubernetes: metadata patch discovery skipped unavailable API groups: %v", err)
+	}
+	return lists, nil
 }
 
 func (m *MetadataPatch) initResources(client dynamic.Interface, lists []*metav1.APIResourceList) error {
@@ -74,7 +86,8 @@ func (m *MetadataPatch) initResources(client dynamic.Interface, lists []*metav1.
 				continue
 			}
 			if err := m.initResourceList(client, gv, resource); err != nil {
-				return err
+				log.Printf("kubernetes: metadata patch skipped %s/%s: %v", list.GroupVersion, resource.Name, err)
+				continue
 			}
 		}
 	}
@@ -131,12 +144,20 @@ func metadataPatchSupportsResource(resource metav1.APIResource) bool {
 	if resource.Kind == "" || strings.Contains(resource.Name, "/") {
 		return false
 	}
+	return metadataPatchHasVerbs(resource, "get", "list", "patch")
+}
+
+func metadataPatchHasVerbs(resource metav1.APIResource, required ...string) bool {
+	verbs := map[string]struct{}{}
 	for _, verb := range resource.Verbs {
-		if verb == "list" {
-			return true
+		verbs[verb] = struct{}{}
+	}
+	for _, verb := range required {
+		if _, ok := verbs[verb]; !ok {
+			return false
 		}
 	}
-	return false
+	return true
 }
 
 func (m *MetadataPatch) terraformType() string {
