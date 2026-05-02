@@ -69,6 +69,79 @@ func TestTeamNotificationRuleCreateResourcesAllowsSharedRuleIDs(t *testing.T) {
 	}
 }
 
+func TestTeamNotificationRuleFromResponse(t *testing.T) {
+	ruleID := "rule-id"
+	teamNotificationRule := datadogV2.TeamNotificationRule{
+		Id: &ruleID,
+	}
+
+	tests := []struct {
+		name     string
+		response datadogV2.TeamNotificationRuleResponse
+		request  string
+		wantID   string
+		wantOK   bool
+	}{
+		{
+			name: "parsed data",
+			response: datadogV2.TeamNotificationRuleResponse{
+				Data: &teamNotificationRule,
+			},
+			request: "requested-rule-id",
+			wantID:  "rule-id",
+			wantOK:  true,
+		},
+		{
+			name: "minimal unparsed data",
+			response: datadogV2.TeamNotificationRuleResponse{
+				UnparsedObject: map[string]interface{}{
+					"data": map[string]interface{}{
+						"id":   "rule-id",
+						"type": "team_notification_rules",
+					},
+				},
+			},
+			request: "requested-rule-id",
+			wantID:  "rule-id",
+			wantOK:  true,
+		},
+		{
+			name: "minimal unparsed data without id",
+			response: datadogV2.TeamNotificationRuleResponse{
+				UnparsedObject: map[string]interface{}{
+					"data": map[string]interface{}{
+						"type": "team_notification_rules",
+					},
+				},
+			},
+			request: "requested-rule-id",
+			wantID:  "requested-rule-id",
+			wantOK:  true,
+		},
+		{
+			name:     "no data",
+			response: datadogV2.TeamNotificationRuleResponse{},
+			request:  "requested-rule-id",
+			wantOK:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := teamNotificationRuleFromResponse(tt.response, tt.request)
+			if ok != tt.wantOK {
+				t.Fatalf("teamNotificationRuleFromResponse() ok = %t, want %t", ok, tt.wantOK)
+			}
+			if !tt.wantOK {
+				return
+			}
+			if got.GetId() != tt.wantID {
+				t.Fatalf("rule ID = %q, want %q", got.GetId(), tt.wantID)
+			}
+		})
+	}
+}
+
 func TestParseTeamNotificationRuleImportID(t *testing.T) {
 	tests := []struct {
 		name       string

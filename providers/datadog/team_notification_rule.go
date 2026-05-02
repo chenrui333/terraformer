@@ -185,11 +185,34 @@ func getTeamNotificationRule(auth context.Context, api *datadogV2.TeamsApi, team
 		return datadogV2.TeamNotificationRule{}, err
 	}
 
-	teamNotificationRule, ok := teamNotificationRuleResponse.GetDataOk()
+	teamNotificationRule, ok := teamNotificationRuleFromResponse(teamNotificationRuleResponse, ruleID)
 	if !ok {
 		return datadogV2.TeamNotificationRule{}, fmt.Errorf("team notification rule %q not found", fmt.Sprintf("%s:%s", teamID, ruleID))
 	}
-	return *teamNotificationRule, nil
+	return teamNotificationRule, nil
+}
+
+func teamNotificationRuleFromResponse(teamNotificationRuleResponse datadogV2.TeamNotificationRuleResponse, ruleID string) (datadogV2.TeamNotificationRule, bool) {
+	if teamNotificationRule, ok := teamNotificationRuleResponse.GetDataOk(); ok {
+		return *teamNotificationRule, true
+	}
+
+	dataRaw, ok := teamNotificationRuleResponse.UnparsedObject["data"].(map[string]interface{})
+	if !ok {
+		return datadogV2.TeamNotificationRule{}, false
+	}
+
+	// Minimal API responses without attributes are stored as UnparsedObject by the SDK.
+	if responseRuleID, ok := dataRaw["id"].(string); ok && responseRuleID != "" {
+		ruleID = responseRuleID
+	}
+	if ruleID == "" {
+		return datadogV2.TeamNotificationRule{}, false
+	}
+
+	teamNotificationRule := datadogV2.TeamNotificationRule{}
+	teamNotificationRule.SetId(ruleID)
+	return teamNotificationRule, true
 }
 
 func listTeamNotificationRules(auth context.Context, api *datadogV2.TeamsApi, teamID string) ([]datadogV2.TeamNotificationRule, error) {
