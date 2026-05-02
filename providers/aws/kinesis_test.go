@@ -94,6 +94,15 @@ func TestKinesisShouldLoadStreamChildrenHonorsStreamIDFilters(t *testing.T) {
 			want:   true,
 		},
 		{
+			name: "untyped child id filter reaches cleanup",
+			filters: []terraformutils.ResourceFilter{{
+				FieldPath:        "id",
+				AcceptableValues: []string{"arn:aws:kinesis:us-east-1:123456789012:stream/orders/consumer/app:1"},
+			}},
+			stream: "orders",
+			want:   true,
+		},
+		{
 			name: "non-id stream filter is handled by post-refresh cleanup",
 			filters: []terraformutils.ResourceFilter{{
 				ServiceName:      "kinesis_stream",

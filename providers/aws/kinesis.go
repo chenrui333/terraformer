@@ -59,7 +59,7 @@ func newKinesisStreamResource(resourceName string) terraformutils.Resource {
 func (g *KinesisGenerator) shouldLoadStreamChildren(streamName string) bool {
 	streamResource := newKinesisStreamResource(streamName)
 	for _, filter := range g.Filter {
-		if filter.FieldPath == "id" && !filter.Filter(streamResource) {
+		if filter.ServiceName != "" && filter.FieldPath == "id" && filter.IsApplicable("kinesis_stream") && !filter.Filter(streamResource) {
 			return false
 		}
 	}
