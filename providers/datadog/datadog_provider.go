@@ -183,6 +183,7 @@ func (p *DatadogProvider) GetSupportedService() map[string]terraformutils.Servic
 		"sensitive_data_scanner_rule":          &SensitiveDataScannerRuleGenerator{},
 		"service_level_objective":              &ServiceLevelObjectiveGenerator{},
 		"slo_correction":                       &SLOCorrectionGenerator{},
+		"spans_metric":                         &SpansMetricGenerator{},
 		"synthetics_test":                      &SyntheticsTestGenerator{},
 		"synthetics_global_variable":           &SyntheticsGlobalVariableGenerator{},
 		"synthetics_private_location":          &SyntheticsPrivateLocationGenerator{},
