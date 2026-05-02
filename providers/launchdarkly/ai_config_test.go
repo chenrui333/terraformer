@@ -27,3 +27,16 @@ func TestAIConfigVariationAttributesSeedsToolKeys(t *testing.T) {
 		t.Fatalf("aiConfigVariationAttributes() = %#v, want %#v", got, want)
 	}
 }
+
+func TestAIConfigVariationResourceNameIncludesConfigKey(t *testing.T) {
+	got := aiConfigVariationResourceName("proj", "assistant", "Default", "default")
+	want := "proj-assistant-Default-default"
+	if got != want {
+		t.Fatalf("aiConfigVariationResourceName() = %q, want %q", got, want)
+	}
+
+	other := aiConfigVariationResourceName("proj", "summarizer", "Default", "default")
+	if got == other {
+		t.Fatalf("aiConfigVariationResourceName() generated duplicate names %q and %q", got, other)
+	}
+}

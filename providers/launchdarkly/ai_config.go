@@ -92,7 +92,7 @@ func (g *AIConfigVariationGenerator) loadAIConfigVariations(ctx context.Context,
 			variationKey := variation.GetKey()
 			resource := terraformutils.NewResource(
 				fmt.Sprintf("%s/%s/%s", projectKey, configKey, variationKey),
-				fmt.Sprintf("%s-%s", projectKey, resourceNameWithID(variation.GetName(), variationKey)),
+				aiConfigVariationResourceName(projectKey, configKey, variation.GetName(), variationKey),
 				"launchdarkly_ai_config_variation",
 				"launchdarkly",
 				aiConfigVariationAttributes(projectKey, configKey, variationKey, variation.GetTools()),
@@ -118,6 +118,10 @@ func (g *AIConfigVariationGenerator) InitResources() error {
 		}
 	}
 	return nil
+}
+
+func aiConfigVariationResourceName(projectKey, configKey, name, variationKey string) string {
+	return fmt.Sprintf("%s-%s-%s", projectKey, configKey, resourceNameWithID(name, variationKey))
 }
 
 func aiConfigVariationAttributes(projectKey, configKey, variationKey string, tools []ldapi.VariationTool) map[string]string {
