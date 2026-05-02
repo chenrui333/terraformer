@@ -223,11 +223,20 @@ terraformer import aws --resources=sg --regions=us-east-1
 *   `firehose`
     * `aws_kinesis_firehose_delivery_stream`
 *   `glue`
-    * `aws_glue_crawler`
     * `aws_glue_catalog_database`
     * `aws_glue_catalog_table`
+    * `aws_glue_classifier`
+    * `aws_glue_crawler`
+    * `aws_glue_data_quality_ruleset`
+    * `aws_glue_dev_endpoint`
     * `aws_glue_job`
+    * `aws_glue_ml_transform`
+    * `aws_glue_registry`
+    * `aws_glue_resource_policy`
+    * `aws_glue_security_configuration`
     * `aws_glue_trigger`
+    * `aws_glue_user_defined_function`
+    * `aws_glue_workflow`
 *   `iam`
     * `aws_iam_access_key`
     * `aws_iam_group`

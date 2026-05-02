@@ -5,17 +5,40 @@ package aws
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"log"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/glue"
+	gluetypes "github.com/aws/aws-sdk-go-v2/service/glue/types"
+	"github.com/aws/smithy-go"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
+
+var glueAllowEmptyValues = []string{"tags."}
 
 type GlueGenerator struct {
 	AWSService
 }
 
+type glueOptionalResourceLoader struct {
+	name string
+	load func() error
+}
+
+func (g *GlueGenerator) loadOptionalResources(loaders []glueOptionalResourceLoader) {
+	for _, loader := range loaders {
+		if err := loader.load(); err != nil {
+			if glueResourceMissing(err) {
+				continue
+			}
+			log.Printf("Skipping Glue %s: %v", loader.name, err)
+		}
+	}
+}
+
 func (g *GlueGenerator) loadGlueCrawlers(svc *glue.Client) error {
-	var GlueCrawlerAllowEmptyValues = []string{"tags."}
 	p := glue.NewGetCrawlersPaginator(svc, &glue.GetCrawlersInput{})
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
@@ -23,10 +46,14 @@ func (g *GlueGenerator) loadGlueCrawlers(svc *glue.Client) error {
 			return err
 		}
 		for _, crawler := range page.Crawlers {
-			resource := terraformutils.NewSimpleResource(*crawler.Name, *crawler.Name,
+			crawlerName := StringValue(crawler.Name)
+			if crawlerName == "" {
+				continue
+			}
+			resource := terraformutils.NewSimpleResource(crawlerName, crawlerName,
 				"aws_glue_crawler",
 				"aws",
-				GlueCrawlerAllowEmptyValues)
+				glueAllowEmptyValues)
 			g.Resources = append(g.Resources, resource)
 		}
 	}
@@ -34,7 +61,6 @@ func (g *GlueGenerator) loadGlueCrawlers(svc *glue.Client) error {
 }
 
 func (g *GlueGenerator) loadGlueCatalogDatabase(svc *glue.Client, account *string) (databaseNames []*string, error error) {
-	var GlueCatalogDatabaseAllowEmptyValues = []string{"tags."}
 	p := glue.NewGetDatabasesPaginator(svc, &glue.GetDatabasesInput{})
 	for p.HasMorePages() {
 		page, error := p.NextPage(context.TODO())
@@ -42,14 +68,18 @@ func (g *GlueGenerator) loadGlueCatalogDatabase(svc *glue.Client, account *strin
 			return databaseNames, error
 		}
 		for _, catalogDatabase := range page.DatabaseList {
+			databaseName := StringValue(catalogDatabase.Name)
+			if databaseName == "" {
+				continue
+			}
 			// format of ID is "CATALOG-ID:DATABASE-NAME".
 			// CATALOG-ID is AWS Account ID
 			// https://docs.aws.amazon.com/cli/latest/reference/glue/create-database.html#options
-			id := *account + ":" + *catalogDatabase.Name
-			resource := terraformutils.NewSimpleResource(id, *catalogDatabase.Name,
+			id := *account + ":" + databaseName
+			resource := terraformutils.NewSimpleResource(id, databaseName,
 				"aws_glue_catalog_database",
 				"aws",
-				GlueCatalogDatabaseAllowEmptyValues)
+				glueAllowEmptyValues)
 			g.Resources = append(g.Resources, resource)
 			databaseNames = append(databaseNames, catalogDatabase.Name)
 		}
@@ -61,7 +91,6 @@ func (g *GlueGenerator) loadGlueCatalogTable(svc *glue.Client, account *string, 
 	// format of ID is "CATALOG-ID:DATABASE-NAME:TABLE-NAME".
 	// CATALOG-ID is AWS Account ID
 	// https://docs.aws.amazon.com/cli/latest/reference/glue/create-database.html#options
-	var GlueCatalogTableAllowEmptyValues = []string{"tags."}
 	p := glue.NewGetTablesPaginator(svc, &glue.GetTablesInput{DatabaseName: databaseName})
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
@@ -69,12 +98,16 @@ func (g *GlueGenerator) loadGlueCatalogTable(svc *glue.Client, account *string, 
 			return err
 		}
 		for _, catalogTable := range page.TableList {
-			databaseTable := *databaseName + ":" + *catalogTable.Name
+			tableName := StringValue(catalogTable.Name)
+			if tableName == "" {
+				continue
+			}
+			databaseTable := *databaseName + ":" + tableName
 			id := *account + ":" + databaseTable
 			resource := terraformutils.NewSimpleResource(id, databaseTable,
 				"aws_glue_catalog_table",
 				"aws",
-				GlueCatalogTableAllowEmptyValues)
+				glueAllowEmptyValues)
 			g.Resources = append(g.Resources, resource)
 		}
 	}
@@ -82,7 +115,6 @@ func (g *GlueGenerator) loadGlueCatalogTable(svc *glue.Client, account *string, 
 }
 
 func (g *GlueGenerator) loadGlueJobs(svc *glue.Client) error {
-	var GlueJobAllowEmptyValues = []string{"tags."}
 	p := glue.NewGetJobsPaginator(svc, &glue.GetJobsInput{})
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
@@ -90,10 +122,14 @@ func (g *GlueGenerator) loadGlueJobs(svc *glue.Client) error {
 			return err
 		}
 		for _, job := range page.Jobs {
-			resource := terraformutils.NewSimpleResource(*job.Name, *job.Name,
+			jobName := StringValue(job.Name)
+			if jobName == "" {
+				continue
+			}
+			resource := terraformutils.NewSimpleResource(jobName, jobName,
 				"aws_glue_job",
 				"aws",
-				GlueJobAllowEmptyValues)
+				glueAllowEmptyValues)
 			g.Resources = append(g.Resources, resource)
 		}
 	}
@@ -101,7 +137,6 @@ func (g *GlueGenerator) loadGlueJobs(svc *glue.Client) error {
 }
 
 func (g *GlueGenerator) loadGlueTriggers(svc *glue.Client) error {
-	var GlueTriggerAllowEmptyValues = []string{"tags."}
 	p := glue.NewGetTriggersPaginator(svc, &glue.GetTriggersInput{})
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
@@ -109,14 +144,321 @@ func (g *GlueGenerator) loadGlueTriggers(svc *glue.Client) error {
 			return err
 		}
 		for _, trigger := range page.Triggers {
-			resource := terraformutils.NewSimpleResource(*trigger.Name, *trigger.Name,
+			triggerName := StringValue(trigger.Name)
+			if triggerName == "" {
+				continue
+			}
+			resource := terraformutils.NewSimpleResource(triggerName, triggerName,
 				"aws_glue_trigger",
 				"aws",
-				GlueTriggerAllowEmptyValues)
+				glueAllowEmptyValues)
 			g.Resources = append(g.Resources, resource)
 		}
 	}
 	return nil
+}
+
+func (g *GlueGenerator) loadGlueClassifiers(svc *glue.Client) error {
+	p := glue.NewGetClassifiersPaginator(svc, &glue.GetClassifiersInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, classifier := range page.Classifiers {
+			classifierName := glueClassifierName(classifier)
+			if classifierName == "" {
+				continue
+			}
+			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
+				classifierName,
+				classifierName,
+				"aws_glue_classifier",
+				"aws",
+				glueAllowEmptyValues,
+			))
+		}
+	}
+	return nil
+}
+
+func (g *GlueGenerator) loadGlueWorkflows(svc *glue.Client) error {
+	p := glue.NewListWorkflowsPaginator(svc, &glue.ListWorkflowsInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, workflowName := range page.Workflows {
+			if workflowName == "" {
+				continue
+			}
+			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
+				workflowName,
+				workflowName,
+				"aws_glue_workflow",
+				"aws",
+				glueAllowEmptyValues,
+			))
+		}
+	}
+	return nil
+}
+
+func (g *GlueGenerator) loadGlueSecurityConfigurations(svc *glue.Client) error {
+	p := glue.NewGetSecurityConfigurationsPaginator(svc, &glue.GetSecurityConfigurationsInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, configuration := range page.SecurityConfigurations {
+			configurationName := StringValue(configuration.Name)
+			if configurationName == "" {
+				continue
+			}
+			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
+				configurationName,
+				configurationName,
+				"aws_glue_security_configuration",
+				"aws",
+				glueAllowEmptyValues,
+			))
+		}
+	}
+	return nil
+}
+
+func (g *GlueGenerator) loadGlueDevEndpoints(svc *glue.Client) error {
+	p := glue.NewGetDevEndpointsPaginator(svc, &glue.GetDevEndpointsInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, endpoint := range page.DevEndpoints {
+			endpointName := StringValue(endpoint.EndpointName)
+			if endpointName == "" || !glueDevEndpointImportable(endpoint) {
+				continue
+			}
+			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
+				endpointName,
+				endpointName,
+				"aws_glue_dev_endpoint",
+				"aws",
+				glueAllowEmptyValues,
+			))
+		}
+	}
+	return nil
+}
+
+func (g *GlueGenerator) loadGlueMLTransforms(svc *glue.Client) error {
+	p := glue.NewGetMLTransformsPaginator(svc, &glue.GetMLTransformsInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, transform := range page.Transforms {
+			transformID := StringValue(transform.TransformId)
+			transformName := StringValue(transform.Name)
+			if transformID == "" || !glueMLTransformImportable(transform) {
+				continue
+			}
+			if transformName == "" {
+				transformName = transformID
+			}
+			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
+				transformID,
+				transformName,
+				"aws_glue_ml_transform",
+				"aws",
+				glueAllowEmptyValues,
+			))
+		}
+	}
+	return nil
+}
+
+func (g *GlueGenerator) loadGlueRegistries(svc *glue.Client) error {
+	p := glue.NewListRegistriesPaginator(svc, &glue.ListRegistriesInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, registry := range page.Registries {
+			registryARN := StringValue(registry.RegistryArn)
+			registryName := StringValue(registry.RegistryName)
+			if registryARN == "" || registryName == "" || !glueRegistryImportable(registry) {
+				continue
+			}
+			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
+				registryARN,
+				registryName,
+				"aws_glue_registry",
+				"aws",
+				glueAllowEmptyValues,
+			))
+		}
+	}
+	return nil
+}
+
+func (g *GlueGenerator) loadGlueDataQualityRulesets(svc *glue.Client) error {
+	p := glue.NewListDataQualityRulesetsPaginator(svc, &glue.ListDataQualityRulesetsInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, ruleset := range page.Rulesets {
+			rulesetName := StringValue(ruleset.Name)
+			if rulesetName == "" {
+				continue
+			}
+			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
+				rulesetName,
+				rulesetName,
+				"aws_glue_data_quality_ruleset",
+				"aws",
+				glueAllowEmptyValues,
+			))
+		}
+	}
+	return nil
+}
+
+func (g *GlueGenerator) loadGlueUserDefinedFunctions(svc *glue.Client, account *string, databaseName *string) error {
+	pattern := ".*"
+	p := glue.NewGetUserDefinedFunctionsPaginator(svc, &glue.GetUserDefinedFunctionsInput{
+		CatalogId:    account,
+		DatabaseName: databaseName,
+		Pattern:      &pattern,
+	})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, function := range page.UserDefinedFunctions {
+			functionName := StringValue(function.FunctionName)
+			if functionName == "" {
+				continue
+			}
+			database := StringValue(databaseName)
+			catalog := StringValue(account)
+			if function.DatabaseName != nil {
+				database = StringValue(function.DatabaseName)
+			}
+			if function.CatalogId != nil {
+				catalog = StringValue(function.CatalogId)
+			}
+			if database == "" || catalog == "" {
+				continue
+			}
+			id := glueUserDefinedFunctionImportID(catalog, database, functionName)
+			g.Resources = append(g.Resources, terraformutils.NewResource(
+				id,
+				glueResourceName(database, functionName),
+				"aws_glue_user_defined_function",
+				"aws",
+				map[string]string{
+					"catalog_id":    catalog,
+					"database_name": database,
+					"name":          functionName,
+				},
+				glueAllowEmptyValues,
+				map[string]interface{}{},
+			))
+		}
+	}
+	return nil
+}
+
+func (g *GlueGenerator) loadGlueResourcePolicy(svc *glue.Client, region string) error {
+	output, err := svc.GetResourcePolicy(context.TODO(), &glue.GetResourcePolicyInput{})
+	if err != nil {
+		return err
+	}
+	policy := StringValue(output.PolicyInJson)
+	if policy == "" || region == "" {
+		return nil
+	}
+	g.Resources = append(g.Resources, terraformutils.NewResource(
+		region,
+		"resource_policy",
+		"aws_glue_resource_policy",
+		"aws",
+		map[string]string{"policy": policy},
+		glueAllowEmptyValues,
+		map[string]interface{}{},
+	))
+	return nil
+}
+
+func glueClassifierName(classifier gluetypes.Classifier) string {
+	switch {
+	case classifier.CsvClassifier != nil:
+		return StringValue(classifier.CsvClassifier.Name)
+	case classifier.GrokClassifier != nil:
+		return StringValue(classifier.GrokClassifier.Name)
+	case classifier.JsonClassifier != nil:
+		return StringValue(classifier.JsonClassifier.Name)
+	case classifier.XMLClassifier != nil:
+		return StringValue(classifier.XMLClassifier.Name)
+	default:
+		return ""
+	}
+}
+
+func glueDevEndpointImportable(endpoint gluetypes.DevEndpoint) bool {
+	status := strings.ToUpper(StringValue(endpoint.Status))
+	return status != "DELETING" && status != "FAILED"
+}
+
+func glueMLTransformImportable(transform gluetypes.MLTransform) bool {
+	switch transform.Status {
+	case gluetypes.TransformStatusTypeReady, gluetypes.TransformStatusTypeNotReady:
+		return true
+	default:
+		return false
+	}
+}
+
+func glueRegistryImportable(registry gluetypes.RegistryListItem) bool {
+	return registry.Status == gluetypes.RegistryStatusAvailable
+}
+
+func glueUserDefinedFunctionImportID(catalogID string, databaseName string, functionName string) string {
+	return fmt.Sprintf("%s:%s:%s", catalogID, databaseName, functionName)
+}
+
+func glueResourceName(parts ...string) string {
+	segments := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if part != "" {
+			segments = append(segments, part)
+		}
+	}
+	if len(segments) == 0 {
+		return "glue_resource"
+	}
+	return strings.Join(segments, "/")
+}
+
+func glueResourceMissing(err error) bool {
+	var entityNotFound *gluetypes.EntityNotFoundException
+	if errors.As(err, &entityNotFound) {
+		return true
+	}
+	var resourceNotFound *gluetypes.ResourceNotFoundException
+	if errors.As(err, &resourceNotFound) {
+		return true
+	}
+	var apiErr smithy.APIError
+	return errors.As(err, &apiErr) && strings.Contains(strings.ToLower(apiErr.ErrorCode()), "notfound")
 }
 
 // Generate TerraformResources from AWS API,
@@ -156,5 +498,39 @@ func (g *GlueGenerator) InitResources() error {
 		return err
 	}
 
+	g.loadOptionalResources([]glueOptionalResourceLoader{
+		{name: "classifiers", load: func() error { return g.loadGlueClassifiers(svc) }},
+		{name: "workflows", load: func() error { return g.loadGlueWorkflows(svc) }},
+		{name: "security configurations", load: func() error { return g.loadGlueSecurityConfigurations(svc) }},
+		{name: "dev endpoints", load: func() error { return g.loadGlueDevEndpoints(svc) }},
+		{name: "ML transforms", load: func() error { return g.loadGlueMLTransforms(svc) }},
+		{name: "registries", load: func() error { return g.loadGlueRegistries(svc) }},
+		{name: "data quality rulesets", load: func() error { return g.loadGlueDataQualityRulesets(svc) }},
+		{name: "resource policy", load: func() error { return g.loadGlueResourcePolicy(svc, config.Region) }},
+	})
+
+	for _, databaseName := range DatabaseNames {
+		g.loadOptionalResources([]glueOptionalResourceLoader{
+			{
+				name: fmt.Sprintf("user-defined functions for %s", StringValue(databaseName)),
+				load: func() error { return g.loadGlueUserDefinedFunctions(svc, account, databaseName) },
+			},
+		})
+	}
+
+	return nil
+}
+
+func (g *GlueGenerator) PostConvertHook() error {
+	for i, resource := range g.Resources {
+		if resource.InstanceInfo.Type != "aws_glue_resource_policy" {
+			continue
+		}
+		policy, ok := resource.Item["policy"].(string)
+		if !ok || policy == "" {
+			continue
+		}
+		g.Resources[i].Item["policy"] = fmt.Sprintf("<<POLICY\n%s\nPOLICY", g.escapeAwsInterpolation(policy))
+	}
 	return nil
 }
