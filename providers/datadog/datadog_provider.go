@@ -170,6 +170,7 @@ func (p *DatadogProvider) GetSupportedService() map[string]terraformutils.Servic
 		"integration_slack_channel":            &IntegrationSlackChannelGenerator{},
 		"metric_metadata":                      &MetricMetadataGenerator{},
 		"monitor":                              &MonitorGenerator{},
+		"monitor_config_policy":                &MonitorConfigPolicyGenerator{},
 		"monitor_notification_rule":            &MonitorNotificationRuleGenerator{},
 		"security_monitoring_default_rule":     &SecurityMonitoringDefaultRuleGenerator{},
 		"security_monitoring_rule":             &SecurityMonitoringRuleGenerator{},
