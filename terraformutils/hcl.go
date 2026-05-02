@@ -300,7 +300,7 @@ func hclPrintManifestResources(resources []Resource, sortOutput bool) ([]byte, e
 func manifestConfigAttributes(item map[string]interface{}) map[string]interface{} {
 	attributes := make(map[string]interface{}, len(item))
 	for key, value := range item {
-		if key == "object" {
+		if key == "object" || value == nil {
 			continue
 		}
 		attributes[key] = value

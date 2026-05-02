@@ -202,7 +202,7 @@ func TestConvertTFstateUsesTypedManifestWhenFlatmapHasNoManifest(t *testing.T) {
 			Attributes: map[string]string{
 				"id": "apiVersion=example.com/v1,kind=Widget,name=sample",
 			},
-			TypedAttributes: json.RawMessage("{\"id\":\"apiVersion=example.com/v1,kind=Widget,name=sample\",\"manifest\":{\"apiVersion\":\"example.com/v1\",\"kind\":\"Widget\",\"metadata\":{\"name\":\"sample\"}},\"object\":{\"apiVersion\":\"example.com/v1\",\"kind\":\"Widget\",\"status\":{\"phase\":\"Ready\"}}}"),
+			TypedAttributes: json.RawMessage("{\"id\":\"apiVersion=example.com/v1,kind=Widget,name=sample\",\"manifest\":{\"apiVersion\":\"example.com/v1\",\"kind\":\"Widget\",\"metadata\":{\"name\":\"sample\"}},\"object\":{\"apiVersion\":\"example.com/v1\",\"kind\":\"Widget\",\"status\":{\"phase\":\"Ready\"}},\"field_manager\":null,\"timeouts\":null,\"wait\":null}"),
 		},
 		IgnoreKeys: []string{"^id$"},
 	}
@@ -223,6 +223,11 @@ func TestConvertTFstateUsesTypedManifestWhenFlatmapHasNoManifest(t *testing.T) {
 	}
 	if _, ok := resource.Item["object"]; ok {
 		t.Fatal("object attribute was not filtered from generated config item")
+	}
+	for _, key := range []string{"field_manager", "timeouts", "wait"} {
+		if _, ok := resource.Item[key]; ok {
+			t.Fatalf("%s null block attribute was not filtered from generated config item", key)
+		}
 	}
 }
 

@@ -217,6 +217,11 @@ func resourceTypeConfigAttributes(resourceType string, attributes map[string]int
 		}
 	}
 	delete(attributes, "object")
+	for key, value := range attributes {
+		if value == nil {
+			delete(attributes, key)
+		}
+	}
 	return attributes
 }
 

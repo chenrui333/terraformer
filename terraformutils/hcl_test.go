@@ -52,6 +52,7 @@ func TestPrintManifestResourceKeepsNestedMapsRenderable(t *testing.T) {
 		nil,
 	)
 	resource.Item = map[string]interface{}{
+		"field_manager": nil,
 		"manifest": map[string]interface{}{
 			"apiVersion": "example.com/v1",
 			"kind":       "Widget",
@@ -101,6 +102,8 @@ func TestPrintManifestResourceKeepsNestedMapsRenderable(t *testing.T) {
 				"phase": "Ready",
 			},
 		},
+		"timeouts": nil,
+		"wait":     nil,
 	}
 
 	data, err := HclPrintResource([]Resource{resource}, map[string]interface{}{}, "hcl", true)
@@ -130,8 +133,10 @@ func TestPrintManifestResourceKeepsNestedMapsRenderable(t *testing.T) {
 			t.Fatalf("%s rendered as a block:\n%s", block, output)
 		}
 	}
-	if strings.Contains(output, "object =") || strings.Contains(output, "status =") {
-		t.Fatalf("computed object state was rendered:\n%s", output)
+	for _, unwanted := range []string{"object =", "status =", "field_manager =", "timeouts =", "wait ="} {
+		if strings.Contains(output, unwanted) {
+			t.Fatalf("%s was rendered:\n%s", unwanted, output)
+		}
 	}
 	if _, err := hclParser.Parse(data); err != nil {
 		t.Fatalf("generated HCL does not parse: %v\n%s", err, output)
