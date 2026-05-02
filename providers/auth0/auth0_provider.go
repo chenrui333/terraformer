@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 
+	"github.com/auth0/go-auth0/management"
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -15,9 +16,12 @@ type Auth0Provider struct { //nolint
 	domain       string
 	clientID     string
 	clientSecret string
+	client       *management.Management
 }
 
 func (p *Auth0Provider) Init(_ []string) error {
+	p.client = nil
+
 	orgName := os.Getenv("AUTH0_DOMAIN")
 	if orgName == "" {
 		return errors.New("set AUTH0_DOMAIN env var")
@@ -35,6 +39,12 @@ func (p *Auth0Provider) Init(_ []string) error {
 		return errors.New("set AUTH0_CLIENT_SECRET env var")
 	}
 	p.clientSecret = apiToken
+
+	client, err := newManagementClient(p.domain, p.clientID, p.clientSecret)
+	if err != nil {
+		return err
+	}
+	p.client = client
 
 	return nil
 }
@@ -65,9 +75,10 @@ func (p *Auth0Provider) InitService(serviceName string, verbose bool) error {
 	p.Service.SetVerbose(verbose)
 	p.Service.SetProviderName(p.GetName())
 	p.Service.SetArgs(map[string]interface{}{
-		"domain":        p.domain,
-		"client_id":     p.clientID,
-		"client_secret": p.clientSecret,
+		"domain":            p.domain,
+		"client_id":         p.clientID,
+		"client_secret":     p.clientSecret,
+		managementClientArg: p.client,
 	})
 	return nil
 }

@@ -14,10 +14,12 @@ type Auth0Service struct { //nolint
 	terraformutils.Service
 }
 
-func (s *Auth0Service) generateClient() (*management.Management, error) {
-	authenticationOption := management.WithClientCredentials(context.Background(), s.Args["client_id"].(string), s.Args["client_secret"].(string))
+const managementClientArg = "management_client"
 
-	apiClient, err := management.New(s.Args["domain"].(string),
+func newManagementClient(domain, clientID, clientSecret string) (*management.Management, error) {
+	authenticationOption := management.WithClientCredentials(context.Background(), clientID, clientSecret)
+
+	apiClient, err := management.New(domain,
 		authenticationOption,
 		management.WithDebug(false),
 	)
@@ -26,4 +28,12 @@ func (s *Auth0Service) generateClient() (*management.Management, error) {
 	}
 
 	return apiClient, nil
+}
+
+func (s *Auth0Service) generateClient() (*management.Management, error) {
+	if apiClient, ok := s.Args[managementClientArg].(*management.Management); ok && apiClient != nil {
+		return apiClient, nil
+	}
+
+	return newManagementClient(s.Args["domain"].(string), s.Args["client_id"].(string), s.Args["client_secret"].(string))
 }
