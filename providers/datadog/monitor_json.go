@@ -58,8 +58,10 @@ func (g *MonitorJSONGenerator) InitResources() error {
 
 	optionalParams := datadogV1.NewListMonitorsOptionalParameters()
 	resources := []terraformutils.Resource{}
+	hasIDFilter := false
 	for _, filter := range g.Filter {
 		if filter.FieldPath == "id" && filter.IsApplicable("monitor_json") {
+			hasIDFilter = true
 			for _, value := range filter.AcceptableValues {
 				i, err := strconv.ParseInt(value, 10, 64)
 				if err != nil {
@@ -85,7 +87,7 @@ func (g *MonitorJSONGenerator) InitResources() error {
 		}
 	}
 
-	if len(resources) > 0 {
+	if hasIDFilter || len(resources) > 0 {
 		g.Resources = resources
 		return nil
 	}
