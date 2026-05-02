@@ -39,6 +39,25 @@ func TestGithubProviderInitRequiresOwner(t *testing.T) {
 	}
 }
 
+func TestGithubServiceCreateClientReturnsAppAuthError(t *testing.T) {
+	service := &GithubService{}
+	service.SetArgs(map[string]interface{}{
+		"base_url":        githubDefaultURL,
+		"app_id":          int64(123),
+		"installation_id": int64(456),
+		"pem":             "not a pem",
+		"token":           "",
+	})
+
+	client, err := service.createClient()
+	if err == nil {
+		t.Fatal("expected GitHub app auth setup error")
+	}
+	if client != nil {
+		t.Fatalf("client = %v, want nil", client)
+	}
+}
+
 func TestCreateRepositoryWebhookResourcesReturnsListError(t *testing.T) {
 	ctx := context.Background()
 	server := newErrorGitHubServer(t)
