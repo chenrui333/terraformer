@@ -177,6 +177,7 @@ func (p *DatadogProvider) GetSupportedService() map[string]terraformutils.Servic
 		"synthetics_global_variable":           &SyntheticsGlobalVariableGenerator{},
 		"synthetics_private_location":          &SyntheticsPrivateLocationGenerator{},
 		"team":                                 &TeamGenerator{},
+		"team_membership":                      &TeamMembershipGenerator{},
 		"user":                                 &UserGenerator{},
 		"role":                                 &RoleGenerator{},
 	}

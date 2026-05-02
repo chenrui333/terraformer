@@ -150,6 +150,9 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_synthetics_test`
 *   `team`
     * `datadog_team`
+*   `team_membership`
+    * `datadog_team_membership`
+        * **_NOTE:_** Importing a single membership by ID requires quoting the `team_id:user_id` filter value, for example `--filter="team_membership='team-id:user-id'"`; memberships can also be filtered by `team_id`
 *   `user`
     * `datadog_user`
 
