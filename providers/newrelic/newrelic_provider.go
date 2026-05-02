@@ -19,32 +19,33 @@ type NewRelicProvider struct { //nolint
 }
 
 func (p *NewRelicProvider) Init(args []string) error {
-	if apiKey := os.Getenv("NEW_RELIC_API_KEY"); apiKey != "" {
-		p.APIKey = os.Getenv("NEW_RELIC_API_KEY")
-	}
+	apiKey := os.Getenv("NEW_RELIC_API_KEY")
+	accountID := 0
+	region := "US"
+
 	if accountIDs := os.Getenv("NEW_RELIC_ACCOUNT_ID"); accountIDs != "" {
-		accountID, err := strconv.Atoi(accountIDs)
+		parsedAccountID, err := strconv.Atoi(accountIDs)
 		if err != nil {
 			return err
 		}
-		p.accountID = accountID
+		accountID = parsedAccountID
 	}
-	if len(args) > 0 {
-		p.APIKey = args[0]
+	if len(args) > 0 && args[0] != "" {
+		apiKey = args[0]
 	}
-	if len(args) > 1 {
-		accountID, err := strconv.Atoi(args[1])
+	if len(args) > 1 && args[1] != "" {
+		parsedAccountID, err := strconv.Atoi(args[1])
 		if err != nil {
 			return err
 		}
-		p.accountID = accountID
+		accountID = parsedAccountID
 	}
-	if len(args) > 2 {
-		p.Region = args[2]
+	if len(args) > 2 && args[2] != "" {
+		region = args[2]
 	}
-	if p.Region == "" {
-		p.Region = "US"
-	}
+	p.APIKey = apiKey
+	p.accountID = accountID
+	p.Region = region
 	return nil
 }
 

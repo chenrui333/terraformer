@@ -39,6 +39,51 @@ func TestGithubProviderInitRequiresOwner(t *testing.T) {
 	}
 }
 
+func TestGithubProviderInitUsesEnvTokenForEmptyTokenArg(t *testing.T) {
+	t.Setenv("GITHUB_TOKEN", "env-token")
+	t.Setenv("GITHUB_APP_ID", "")
+	t.Setenv("GITHUB_APP_INSTALLATION_ID", "")
+	t.Setenv("GITHUB_APP_PEM_FILE", "")
+	var provider GithubProvider
+
+	if err := provider.Init([]string{"test-org", "", ""}); err != nil {
+		t.Fatalf("Init returned error: %v", err)
+	}
+	if provider.token != "env-token" {
+		t.Fatalf("token = %q, want env-token", provider.token)
+	}
+	if provider.baseURL != githubDefaultURL {
+		t.Fatalf("baseURL = %q, want %q", provider.baseURL, githubDefaultURL)
+	}
+}
+
+func TestGithubProviderInitClearsStaleOptionalAuthConfig(t *testing.T) {
+	t.Setenv("GITHUB_TOKEN", "env-token")
+	t.Setenv("GITHUB_APP_ID", "")
+	t.Setenv("GITHUB_APP_INSTALLATION_ID", "")
+	t.Setenv("GITHUB_APP_PEM_FILE", "")
+	provider := GithubProvider{
+		token:          "old-token",
+		baseURL:        "https://github.example.com/api/v3/",
+		appID:          123,
+		installationID: 456,
+		pem:            "old-pem",
+	}
+
+	if err := provider.Init([]string{"test-org"}); err != nil {
+		t.Fatalf("Init returned error: %v", err)
+	}
+	if provider.token != "env-token" {
+		t.Fatalf("token = %q, want env-token", provider.token)
+	}
+	if provider.baseURL != githubDefaultURL {
+		t.Fatalf("baseURL = %q, want %q", provider.baseURL, githubDefaultURL)
+	}
+	if provider.appID != 0 || provider.installationID != 0 || provider.pem != "" {
+		t.Fatalf("app auth = (%d, %d, %q), want cleared", provider.appID, provider.installationID, provider.pem)
+	}
+}
+
 func TestGithubServiceCreateClientReturnsAppAuthError(t *testing.T) {
 	service := &GithubService{}
 	service.SetArgs(map[string]interface{}{

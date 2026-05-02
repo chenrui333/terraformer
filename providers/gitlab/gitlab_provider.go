@@ -48,19 +48,18 @@ func (p *GitLabProvider) Init(args []string) error {
 	}
 
 	p.group = args[0]
+	p.token = ""
 	p.baseURL = gitLabDefaultURL
-	if len(args) < 2 {
-		if os.Getenv("GITLAB_TOKEN") == "" {
+	if len(args) > 1 && args[1] != "" {
+		p.token = args[1]
+	} else {
+		if os.Getenv("GITLAB_TOKEN") == "" && len(args) < 2 {
 			return errors.New("token requirement")
 		}
 		p.token = os.Getenv("GITLAB_TOKEN")
-	} else {
-		p.token = args[1]
 	}
-	if len(args) > 2 {
-		if args[2] != "" {
-			p.baseURL = args[2]
-		}
+	if len(args) > 2 && args[2] != "" {
+		p.baseURL = args[2]
 	}
 	return nil
 }

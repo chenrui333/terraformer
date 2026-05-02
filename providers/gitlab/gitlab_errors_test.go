@@ -37,6 +37,39 @@ func TestGitLabProviderInitRequiresGroup(t *testing.T) {
 	}
 }
 
+func TestGitLabProviderInitUsesEnvTokenForEmptyTokenArg(t *testing.T) {
+	t.Setenv("GITLAB_TOKEN", "env-token")
+	var provider GitLabProvider
+
+	if err := provider.Init([]string{"test-group", "", ""}); err != nil {
+		t.Fatalf("Init returned error: %v", err)
+	}
+	if provider.token != "env-token" {
+		t.Fatalf("token = %q, want env-token", provider.token)
+	}
+	if provider.baseURL != gitLabDefaultURL {
+		t.Fatalf("baseURL = %q, want %q", provider.baseURL, gitLabDefaultURL)
+	}
+}
+
+func TestGitLabProviderInitClearsStaleOptionalConfig(t *testing.T) {
+	t.Setenv("GITLAB_TOKEN", "env-token")
+	provider := GitLabProvider{
+		token:   "old-token",
+		baseURL: "https://gitlab.example.com/api/v4/",
+	}
+
+	if err := provider.Init([]string{"test-group"}); err != nil {
+		t.Fatalf("Init returned error: %v", err)
+	}
+	if provider.token != "env-token" {
+		t.Fatalf("token = %q, want env-token", provider.token)
+	}
+	if provider.baseURL != gitLabDefaultURL {
+		t.Fatalf("baseURL = %q, want %q", provider.baseURL, gitLabDefaultURL)
+	}
+}
+
 func TestCreateProjectsReturnsProjectListError(t *testing.T) {
 	ctx := context.Background()
 	client := newErrorGitLabClient(t)

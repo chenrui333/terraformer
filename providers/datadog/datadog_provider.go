@@ -32,48 +32,48 @@ func (p *DatadogProvider) Init(args []string) error {
 	appKeyArg := optionalInitArg(args, 1)
 	apiURLArg := optionalInitArg(args, 2)
 	validateArg := optionalInitArg(args, 3)
+	var apiKey, appKey, apiURL string
+	validate := true
 
 	switch {
 	case validateArg != "":
-		validate, validateErr := strconv.ParseBool(validateArg)
+		parsedValidate, validateErr := strconv.ParseBool(validateArg)
 		if validateErr != nil {
 			return fmt.Errorf(`invalid validate arg : %w`, validateErr)
 		}
-		p.validate = validate
+		validate = parsedValidate
 	case os.Getenv("DATADOG_VALIDATE") != "":
-		validate, validateErr := strconv.ParseBool(os.Getenv("DATADOG_VALIDATE"))
+		parsedValidate, validateErr := strconv.ParseBool(os.Getenv("DATADOG_VALIDATE"))
 		if validateErr != nil {
 			return fmt.Errorf(`invalid DATADOG_VALIDATE env var : %w`, validateErr)
 		}
-		p.validate = validate
-	default:
-		p.validate = true
+		validate = parsedValidate
 	}
 
 	if apiKeyArg != "" {
-		p.apiKey = apiKeyArg
+		apiKey = apiKeyArg
 	} else {
-		if apiKey := os.Getenv("DATADOG_API_KEY"); apiKey != "" {
-			p.apiKey = apiKey
-		} else if p.validate {
+		if envAPIKey := os.Getenv("DATADOG_API_KEY"); envAPIKey != "" {
+			apiKey = envAPIKey
+		} else if validate {
 			return errors.New("api-key requirement")
 		}
 	}
 
 	if appKeyArg != "" {
-		p.appKey = appKeyArg
+		appKey = appKeyArg
 	} else {
-		if appKey := os.Getenv("DATADOG_APP_KEY"); appKey != "" {
-			p.appKey = appKey
-		} else if p.validate {
+		if envAppKey := os.Getenv("DATADOG_APP_KEY"); envAppKey != "" {
+			appKey = envAppKey
+		} else if validate {
 			return errors.New("app-key requirement")
 		}
 	}
 
 	if apiURLArg != "" {
-		p.apiURL = apiURLArg
+		apiURL = apiURLArg
 	} else if v := os.Getenv("DATADOG_HOST"); v != "" {
-		p.apiURL = v
+		apiURL = v
 	}
 
 	// Initialize the Datadog V1 API client
@@ -82,20 +82,20 @@ func (p *DatadogProvider) Init(args []string) error {
 		datadog.ContextAPIKeys,
 		map[string]datadog.APIKey{
 			"apiKeyAuth": {
-				Key: p.apiKey,
+				Key: apiKey,
 			},
 			"appKeyAuth": {
-				Key: p.appKey,
+				Key: appKey,
 			},
 		},
 	)
-	if p.apiURL != "" {
-		parsedAPIURL, parseErr := url.Parse(p.apiURL)
+	if apiURL != "" {
+		parsedAPIURL, parseErr := url.Parse(apiURL)
 		if parseErr != nil {
 			return fmt.Errorf(`invalid API Url : %w`, parseErr)
 		}
 		if parsedAPIURL.Host == "" || parsedAPIURL.Scheme == "" {
-			return fmt.Errorf(`missing protocol or host : %v`, p.apiURL)
+			return fmt.Errorf(`missing protocol or host : %v`, apiURL)
 		}
 		// If api url is passed, set and use the api name and protocol on ServerIndex{1}
 		auth = context.WithValue(auth, datadog.ContextServerIndex, 1)
@@ -107,6 +107,10 @@ func (p *DatadogProvider) Init(args []string) error {
 	configV1 := datadog.NewConfiguration()
 	datadogClient := datadog.NewAPIClient(configV1)
 
+	p.apiKey = apiKey
+	p.appKey = appKey
+	p.apiURL = apiURL
+	p.validate = validate
 	p.auth = auth
 	p.datadogClient = datadogClient
 
