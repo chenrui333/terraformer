@@ -40,7 +40,7 @@ func getFeatureFlags(ctx context.Context, client *ldapi.APIClient, projectKey st
 }
 
 func (g *FlagTriggerGenerator) loadFlagTriggers(ctx context.Context, client *ldapi.APIClient, projectKey, envKey, flagKey string) error {
-	triggers, resp, err := client.FlagTriggersApi.GetTriggerWorkflows(ctx, projectKey, envKey, flagKey).Execute()
+	triggers, resp, err := getTriggerWorkflows(ctx, client, projectKey, envKey, flagKey)
 	if resp != nil && resp.Body != nil {
 		_ = resp.Body.Close()
 	}
@@ -71,6 +71,11 @@ func (g *FlagTriggerGenerator) loadFlagTriggers(ctx context.Context, client *lda
 		g.Resources = append(g.Resources, resource)
 	}
 	return nil
+}
+
+func getTriggerWorkflows(ctx context.Context, client *ldapi.APIClient, projectKey, environmentKey, featureFlagKey string) (*ldapi.TriggerWorkflowCollectionRep, *http.Response, error) {
+	// The generated SDK order is project, environment, flag, even though the REST path renders flag before environment.
+	return client.FlagTriggersApi.GetTriggerWorkflows(ctx, projectKey, environmentKey, featureFlagKey).Execute()
 }
 
 func (g *FlagTriggerGenerator) InitResources() error {
