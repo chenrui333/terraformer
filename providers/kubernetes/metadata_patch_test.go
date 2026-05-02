@@ -327,6 +327,37 @@ func TestPostProcessImportResourcesRemovesFallbackNativeMetadataPatchOverlap(t *
 	})
 }
 
+func TestPostProcessImportResourcesKeepsAmbiguousFallbackNativeMetadataPatchOverlap(t *testing.T) {
+	provider := KubernetesProvider{}
+	fullWidget := terraformutils.NewResource(
+		"default/sample",
+		"default/sample",
+		"kubernetes_widget",
+		"kubernetes",
+		map[string]string{
+			"metadata.#":           "1",
+			"metadata.0.name":      "sample",
+			"metadata.0.namespace": "default",
+		},
+		nil,
+		nil,
+	)
+	resourcesByService := map[string][]terraformutils.Resource{
+		"widgets": {fullWidget},
+		labelsServiceName: {
+			metadataPatchTestResource(labelsTerraformType, "apiVersion=example.com/v1,kind=Widget,namespace=default,name=sample"),
+			metadataPatchTestResource(labelsTerraformType, "apiVersion=other.example.com/v1,kind=Widget,namespace=default,name=sample"),
+		},
+	}
+
+	got := provider.PostProcessImportResources(resourcesByService)
+
+	assertResourceIDs(t, got[labelsServiceName], []string{
+		"apiVersion=example.com/v1,kind=Widget,namespace=default,name=sample",
+		"apiVersion=other.example.com/v1,kind=Widget,namespace=default,name=sample",
+	})
+}
+
 func TestPostProcessImportResourcesRemovesManifestMetadataPatchOverlap(t *testing.T) {
 	provider := KubernetesProvider{}
 	manifest := terraformutils.NewSimpleResource(

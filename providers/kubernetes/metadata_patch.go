@@ -225,23 +225,24 @@ func metadataPatchObjectKey(kind, namespace, name string, namespaced bool) strin
 	return strings.Join(parts, ",")
 }
 
-func metadataPatchObjectKeyFromID(id string) (string, bool) {
+func metadataPatchObjectKeyAndAPIVersionFromID(id string) (string, string, bool) {
 	values := map[string]string{}
 	for _, part := range strings.Split(id, ",") {
 		key, value, ok := strings.Cut(part, "=")
 		if !ok {
-			return "", false
+			return "", "", false
 		}
 		values[key] = value
 	}
 
+	apiVersion := values["apiVersion"]
 	kind := values["kind"]
 	name := values["name"]
-	if kind == "" || name == "" {
-		return "", false
+	if apiVersion == "" || kind == "" || name == "" {
+		return "", "", false
 	}
 	namespace, namespaced := values["namespace"]
-	return metadataPatchObjectKey(kind, namespace, name, namespaced), true
+	return metadataPatchObjectKey(kind, namespace, name, namespaced), apiVersion, true
 }
 
 func metadataPatchResourceName(attributeName, apiVersion, kind, namespace, name string, namespaced bool) string {

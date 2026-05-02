@@ -415,6 +415,7 @@ func removeMetadataPatchDuplicates(resourcesByService map[string][]terraformutil
 	if len(targetIDs) == 0 && len(targetObjectKeys) == 0 {
 		return resourcesByService
 	}
+	ambiguousObjectKeys := metadataPatchAmbiguousObjectKeys(resourcesByService)
 
 	for _, serviceName := range []string{labelsServiceName, annotationsServiceName} {
 		resources, ok := resourcesByService[serviceName]
@@ -430,7 +431,11 @@ func removeMetadataPatchDuplicates(resourcesByService map[string][]terraformutil
 			if _, duplicate := targetIDs[resource.InstanceState.ID]; duplicate {
 				continue
 			}
-			if targetKey, ok := metadataPatchObjectKeyFromID(resource.InstanceState.ID); ok {
+			if targetKey, _, ok := metadataPatchObjectKeyAndAPIVersionFromID(resource.InstanceState.ID); ok {
+				if _, ambiguous := ambiguousObjectKeys[targetKey]; ambiguous {
+					filtered = append(filtered, resource)
+					continue
+				}
 				if _, duplicate := targetObjectKeys[targetKey]; duplicate {
 					continue
 				}
@@ -444,6 +449,33 @@ func removeMetadataPatchDuplicates(resourcesByService map[string][]terraformutil
 		resourcesByService[serviceName] = filtered
 	}
 	return resourcesByService
+}
+
+func metadataPatchAmbiguousObjectKeys(resourcesByService map[string][]terraformutils.Resource) map[string]struct{} {
+	apiVersionsByObjectKey := map[string]map[string]struct{}{}
+	for _, serviceName := range []string{labelsServiceName, annotationsServiceName} {
+		for _, resource := range resourcesByService[serviceName] {
+			if resource.InstanceState == nil {
+				continue
+			}
+			objectKey, apiVersion, ok := metadataPatchObjectKeyAndAPIVersionFromID(resource.InstanceState.ID)
+			if !ok {
+				continue
+			}
+			if _, ok := apiVersionsByObjectKey[objectKey]; !ok {
+				apiVersionsByObjectKey[objectKey] = map[string]struct{}{}
+			}
+			apiVersionsByObjectKey[objectKey][apiVersion] = struct{}{}
+		}
+	}
+
+	ambiguousObjectKeys := map[string]struct{}{}
+	for objectKey, apiVersions := range apiVersionsByObjectKey {
+		if len(apiVersions) > 1 {
+			ambiguousObjectKeys[objectKey] = struct{}{}
+		}
+	}
+	return ambiguousObjectKeys
 }
 
 func isDefaultServiceAccountDuplicate(resource terraformutils.Resource, defaultServiceAccountIDs map[string]struct{}) bool {
