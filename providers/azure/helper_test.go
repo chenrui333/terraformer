@@ -292,7 +292,68 @@ func TestGetTokenCredentialPrefersClientCertificateOverSecret(t *testing.T) {
 	}
 }
 
+func TestGetTokenCredentialSkipsPartialServicePrincipalConfig(t *testing.T) {
+	t.Run("client secret", func(t *testing.T) {
+		p := &AzureProvider{
+			clientOptions: &arm.ClientOptions{},
+			config: providerConfig{
+				ClientSecret:    "leftover-secret",
+				UseClientSecret: true,
+			},
+		}
+
+		credential, err := p.getTokenCredential()
+		if err != nil {
+			t.Fatalf("getTokenCredential() error = %v", err)
+		}
+		if _, ok := credential.(*azidentity.ChainedTokenCredential); !ok {
+			t.Fatalf("getTokenCredential() = %T, want fallback credential chain", credential)
+		}
+	})
+
+	t.Run("client certificate", func(t *testing.T) {
+		p := &AzureProvider{
+			clientOptions: &arm.ClientOptions{},
+			config: providerConfig{
+				ClientCertificatePath: t.TempDir() + "/missing.pem",
+				UseClientCertificate:  true,
+			},
+		}
+
+		credential, err := p.getTokenCredential()
+		if err != nil {
+			t.Fatalf("getTokenCredential() error = %v", err)
+		}
+		if _, ok := credential.(*azidentity.ChainedTokenCredential); !ok {
+			t.Fatalf("getTokenCredential() = %T, want fallback credential chain", credential)
+		}
+	})
+}
+
 func TestGetTokenCredentialPrefersOIDCOverManagedIdentity(t *testing.T) {
+	p := &AzureProvider{
+		clientOptions: &arm.ClientOptions{},
+		config: providerConfig{
+			ClientID:                      "client-id",
+			CustomManagedIdentityEndpoint: "http://127.0.0.1/metadata/identity/oauth2/token",
+			GitHubOIDCTokenRequestToken:   "request-token",
+			GitHubOIDCTokenRequestURL:     "http://127.0.0.1/oidc",
+			TenantID:                      "tenant-id",
+			UseGitHubOIDC:                 true,
+			UseManagedIdentity:            true,
+		},
+	}
+
+	credential, err := p.getTokenCredential()
+	if err != nil {
+		t.Fatalf("getTokenCredential() error = %v", err)
+	}
+	if _, ok := credential.(*azidentity.ClientAssertionCredential); !ok {
+		t.Fatalf("getTokenCredential() = %T, want *azidentity.ClientAssertionCredential", credential)
+	}
+}
+
+func TestGetTokenCredentialSkipsOIDCWithoutRequestToken(t *testing.T) {
 	p := &AzureProvider{
 		clientOptions: &arm.ClientOptions{},
 		config: providerConfig{
@@ -309,8 +370,8 @@ func TestGetTokenCredentialPrefersOIDCOverManagedIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatalf("getTokenCredential() error = %v", err)
 	}
-	if _, ok := credential.(*azidentity.ClientAssertionCredential); !ok {
-		t.Fatalf("getTokenCredential() = %T, want *azidentity.ClientAssertionCredential", credential)
+	if _, ok := credential.(*customManagedIdentityCredential); !ok {
+		t.Fatalf("getTokenCredential() = %T, want *customManagedIdentityCredential", credential)
 	}
 }
 

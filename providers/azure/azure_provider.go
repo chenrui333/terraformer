@@ -128,20 +128,6 @@ func parseClientCertificate(certData []byte, password string) ([]*x509.Certifica
 	return certs, pfxKey, nil
 }
 
-func validateServicePrincipalConfig(authType, clientID, tenantID string) error {
-	var missing []string
-	if clientID == "" {
-		missing = append(missing, "ARM_CLIENT_ID")
-	}
-	if tenantID == "" {
-		missing = append(missing, "ARM_TENANT_ID")
-	}
-	if len(missing) == 0 {
-		return nil
-	}
-	return fmt.Errorf("%s authentication requires %s", authType, strings.Join(missing, ", "))
-}
-
 type customManagedIdentityCredential struct {
 	clientID   string
 	endpoint   string
@@ -301,10 +287,7 @@ func (p *AzureProvider) setEnvConfig() error {
 func (p *AzureProvider) getTokenCredential() (azcore.TokenCredential, error) {
 	cloudCfg := p.clientOptions.Cloud
 	isCustomCloud := p.config.MetadataHost != ""
-	if p.config.UseClientCertificate {
-		if err := validateServicePrincipalConfig("client certificate", p.config.ClientID, p.config.TenantID); err != nil {
-			return nil, err
-		}
+	if p.config.UseClientCertificate && p.config.ClientID != "" && p.config.TenantID != "" {
 		certData, err := os.ReadFile(p.config.ClientCertificatePath)
 		if err != nil {
 			return nil, fmt.Errorf("reading client certificate: %w", err)
@@ -321,10 +304,7 @@ func (p *AzureProvider) getTokenCredential() (azcore.TokenCredential, error) {
 		return azidentity.NewClientCertificateCredential(
 			p.config.TenantID, p.config.ClientID, certs, key, opts)
 	}
-	if p.config.UseClientSecret {
-		if err := validateServicePrincipalConfig("client secret", p.config.ClientID, p.config.TenantID); err != nil {
-			return nil, err
-		}
+	if p.config.UseClientSecret && p.config.ClientID != "" && p.config.TenantID != "" {
 		opts := &azidentity.ClientSecretCredentialOptions{
 			AdditionallyAllowedTenants: p.config.AuxiliaryTenantIDs,
 			DisableInstanceDiscovery:   isCustomCloud,
@@ -333,7 +313,7 @@ func (p *AzureProvider) getTokenCredential() (azcore.TokenCredential, error) {
 		return azidentity.NewClientSecretCredential(
 			p.config.TenantID, p.config.ClientID, p.config.ClientSecret, opts)
 	}
-	if p.config.UseGitHubOIDC && p.config.ClientID != "" && p.config.TenantID != "" && p.config.GitHubOIDCTokenRequestURL != "" {
+	if p.config.UseGitHubOIDC && p.config.ClientID != "" && p.config.TenantID != "" && p.config.GitHubOIDCTokenRequestURL != "" && p.config.GitHubOIDCTokenRequestToken != "" {
 		getAssertion := func(ctx context.Context) (string, error) {
 			return getGitHubOIDCAssertion(ctx, p.config.GitHubOIDCTokenRequestURL, p.config.GitHubOIDCTokenRequestToken)
 		}
