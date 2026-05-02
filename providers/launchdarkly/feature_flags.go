@@ -16,7 +16,8 @@ type FeatureFlagsGenerator struct {
 }
 
 func (g *FeatureFlagsGenerator) loadFeatureFlagEnv(ctx context.Context, client *ldapi.APIClient, projectKey, flagKey string) error {
-	ff, _, err := client.FeatureFlagsApi.GetFeatureFlag(ctx, projectKey, flagKey).Execute()
+	ff, resp, err := client.FeatureFlagsApi.GetFeatureFlag(ctx, projectKey, flagKey).Execute()
+	closeResponseBody(resp)
 	if err != nil {
 		return err
 	}
@@ -40,10 +41,11 @@ func (g *FeatureFlagsGenerator) loadFeatureFlagEnv(ctx context.Context, client *
 func (g *FeatureFlagsGenerator) loadFeatureFlags(ctx context.Context, client *ldapi.APIClient, project string) error {
 	var allFlags []ldapi.FeatureFlag
 	for offset := int64(0); ; offset += pageSize {
-		featureFlags, _, err := client.FeatureFlagsApi.GetFeatureFlags(ctx, project).
+		featureFlags, resp, err := client.FeatureFlagsApi.GetFeatureFlags(ctx, project).
 			Limit(pageSize).
 			Offset(offset).
 			Execute()
+		closeResponseBody(resp)
 		if err != nil {
 			return err
 		}

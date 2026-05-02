@@ -18,10 +18,11 @@ type ProjectGenerator struct {
 func getProjects(ctx context.Context, client *ldapi.APIClient) ([]ldapi.Project, error) {
 	var allProjects []ldapi.Project
 	for offset := int64(0); ; offset += pageSize {
-		projects, _, err := client.ProjectsApi.GetProjects(ctx).
+		projects, resp, err := client.ProjectsApi.GetProjects(ctx).
 			Limit(pageSize).
 			Offset(offset).
 			Execute()
+		closeResponseBody(resp)
 		if err != nil {
 			return nil, err
 		}

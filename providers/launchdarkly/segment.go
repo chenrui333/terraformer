@@ -16,10 +16,11 @@ type SegmentGenerator struct {
 func getEnvironments(ctx context.Context, client *ldapi.APIClient, projectKey string) ([]ldapi.Environment, error) {
 	var allEnvs []ldapi.Environment
 	for offset := int64(0); ; offset += pageSize {
-		envs, _, err := client.EnvironmentsApi.GetEnvironmentsByProject(ctx, projectKey).
+		envs, resp, err := client.EnvironmentsApi.GetEnvironmentsByProject(ctx, projectKey).
 			Limit(pageSize).
 			Offset(offset).
 			Execute()
+		closeResponseBody(resp)
 		if err != nil {
 			return nil, err
 		}
@@ -34,10 +35,11 @@ func getEnvironments(ctx context.Context, client *ldapi.APIClient, projectKey st
 func (g *SegmentGenerator) loadSegment(ctx context.Context, client *ldapi.APIClient, project, envKey string) error {
 	var allSegments []ldapi.UserSegment
 	for offset := int64(0); ; offset += pageSize {
-		segments, _, err := client.SegmentsApi.GetSegments(ctx, project, envKey).
+		segments, resp, err := client.SegmentsApi.GetSegments(ctx, project, envKey).
 			Limit(pageSize).
 			Offset(offset).
 			Execute()
+		closeResponseBody(resp)
 		if err != nil {
 			return err
 		}
