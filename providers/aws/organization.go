@@ -19,59 +19,89 @@ type OrganizationGenerator struct {
 	AWSService
 }
 
-func (g *OrganizationGenerator) traverseNode(svc *organizations.Client, parentID string) {
-	accountsForParent, err := svc.ListAccountsForParent(context.TODO(),
-		&organizations.ListAccountsForParentInput{ParentId: aws.String(parentID)})
-	if err != nil {
-		return
-	}
-	for _, account := range accountsForParent.Accounts {
-		g.Resources = append(g.Resources, terraformutils.NewResource(
-			StringValue(account.Id),
-			StringValue(account.Name),
-			"aws_organizations_organization",
-			"aws",
-			map[string]string{
-				"id":  StringValue(account.Id),
-				"arn": StringValue(account.Arn),
-			},
-			organizationAllowEmptyValues,
-			map[string]interface{}{},
-		))
-		g.Resources = append(g.Resources, terraformutils.NewResource(
-			StringValue(account.Id),
-			StringValue(account.Name),
-			"aws_organizations_account",
-			"aws",
-			map[string]string{
-				"id":  StringValue(account.Id),
-				"arn": StringValue(account.Arn),
-			},
-			organizationAllowEmptyValues,
-			map[string]interface{}{},
-		))
+type organizationClient interface {
+	ListAccountsForParent(context.Context, *organizations.ListAccountsForParentInput, ...func(*organizations.Options)) (*organizations.ListAccountsForParentOutput, error)
+	ListOrganizationalUnitsForParent(context.Context, *organizations.ListOrganizationalUnitsForParentInput, ...func(*organizations.Options)) (*organizations.ListOrganizationalUnitsForParentOutput, error)
+	ListTargetsForPolicy(context.Context, *organizations.ListTargetsForPolicyInput, ...func(*organizations.Options)) (*organizations.ListTargetsForPolicyOutput, error)
+}
+
+func (g *OrganizationGenerator) traverseNode(svc organizationClient, parentID string) error {
+	var accountNextToken *string
+	for {
+		accountsForParent, err := svc.ListAccountsForParent(context.TODO(),
+			&organizations.ListAccountsForParentInput{
+				ParentId:  aws.String(parentID),
+				NextToken: accountNextToken,
+			})
+		if err != nil {
+			return fmt.Errorf("list organization accounts for parent %s: %w", parentID, err)
+		}
+		for _, account := range accountsForParent.Accounts {
+			g.Resources = append(g.Resources, terraformutils.NewResource(
+				StringValue(account.Id),
+				StringValue(account.Name),
+				"aws_organizations_organization",
+				"aws",
+				map[string]string{
+					"id":  StringValue(account.Id),
+					"arn": StringValue(account.Arn),
+				},
+				organizationAllowEmptyValues,
+				map[string]interface{}{},
+			))
+			g.Resources = append(g.Resources, terraformutils.NewResource(
+				StringValue(account.Id),
+				StringValue(account.Name),
+				"aws_organizations_account",
+				"aws",
+				map[string]string{
+					"id":  StringValue(account.Id),
+					"arn": StringValue(account.Arn),
+				},
+				organizationAllowEmptyValues,
+				map[string]interface{}{},
+			))
+		}
+		accountNextToken = accountsForParent.NextToken
+		if accountNextToken == nil {
+			break
+		}
 	}
 
-	unitsForParent, err := svc.ListOrganizationalUnitsForParent(context.TODO(),
-		&organizations.ListOrganizationalUnitsForParentInput{ParentId: aws.String(parentID)})
-	if err != nil {
-		return
+	var unitNextToken *string
+	for {
+		unitsForParent, err := svc.ListOrganizationalUnitsForParent(context.TODO(),
+			&organizations.ListOrganizationalUnitsForParentInput{
+				ParentId:  aws.String(parentID),
+				NextToken: unitNextToken,
+			})
+		if err != nil {
+			return fmt.Errorf("list organization units for parent %s: %w", parentID, err)
+		}
+		for _, unit := range unitsForParent.OrganizationalUnits {
+			unitID := StringValue(unit.Id)
+			g.Resources = append(g.Resources, terraformutils.NewResource(
+				unitID,
+				StringValue(unit.Name),
+				"aws_organizations_organizational_unit",
+				"aws",
+				map[string]string{
+					"id":  unitID,
+					"arn": StringValue(unit.Arn),
+				},
+				organizationAllowEmptyValues,
+				map[string]interface{}{},
+			))
+			if err := g.traverseNode(svc, unitID); err != nil {
+				return err
+			}
+		}
+		unitNextToken = unitsForParent.NextToken
+		if unitNextToken == nil {
+			break
+		}
 	}
-	for _, unit := range unitsForParent.OrganizationalUnits {
-		g.Resources = append(g.Resources, terraformutils.NewResource(
-			StringValue(unit.Id),
-			StringValue(unit.Name),
-			"aws_organizations_organizational_unit",
-			"aws",
-			map[string]string{
-				"id":  StringValue(unit.Id),
-				"arn": StringValue(unit.Arn),
-			},
-			organizationAllowEmptyValues,
-			map[string]interface{}{},
-		))
-		g.traverseNode(svc, StringValue(unit.Id))
-	}
+	return nil
 }
 
 func (g *OrganizationGenerator) InitResources() error {
@@ -88,7 +118,9 @@ func (g *OrganizationGenerator) InitResources() error {
 
 	for _, root := range roots.Roots {
 		nodeID := StringValue(root.Id)
-		g.traverseNode(svc, nodeID)
+		if err := g.traverseNode(svc, nodeID); err != nil {
+			return err
+		}
 	}
 
 	p := organizations.NewListPoliciesPaginator(svc, &organizations.ListPoliciesInput{
@@ -115,28 +147,45 @@ func (g *OrganizationGenerator) InitResources() error {
 				map[string]interface{}{},
 			))
 
-			targetsForPolicy, err := svc.ListTargetsForPolicy(context.TODO(),
-				&organizations.ListTargetsForPolicyInput{PolicyId: policy.Id})
-			if err != nil {
-				fmt.Println(err.Error())
-				continue
-			}
-			for _, target := range targetsForPolicy.Targets {
-				g.Resources = append(g.Resources, terraformutils.NewResource(
-					StringValue(target.TargetId)+":"+policyID,
-					"pa-"+StringValue(target.TargetId)+":"+policyName,
-					"aws_organizations_policy_attachment",
-					"aws",
-					map[string]string{
-						"policy_id": policyID,
-						"target_id": StringValue(target.TargetId),
-					},
-					organizationAllowEmptyValues,
-					map[string]interface{}{},
-				))
+			if err := g.addPolicyAttachments(svc, policyID, policyName); err != nil {
+				return err
 			}
 		}
 	}
 
+	return nil
+}
+
+func (g *OrganizationGenerator) addPolicyAttachments(svc organizationClient, policyID, policyName string) error {
+	var nextToken *string
+	for {
+		targetsForPolicy, err := svc.ListTargetsForPolicy(context.TODO(),
+			&organizations.ListTargetsForPolicyInput{
+				PolicyId:  aws.String(policyID),
+				NextToken: nextToken,
+			})
+		if err != nil {
+			return fmt.Errorf("list organization targets for policy %s: %w", policyID, err)
+		}
+		for _, target := range targetsForPolicy.Targets {
+			targetID := StringValue(target.TargetId)
+			g.Resources = append(g.Resources, terraformutils.NewResource(
+				targetID+":"+policyID,
+				"pa-"+targetID+":"+policyName,
+				"aws_organizations_policy_attachment",
+				"aws",
+				map[string]string{
+					"policy_id": policyID,
+					"target_id": targetID,
+				},
+				organizationAllowEmptyValues,
+				map[string]interface{}{},
+			))
+		}
+		nextToken = targetsForPolicy.NextToken
+		if nextToken == nil {
+			break
+		}
+	}
 	return nil
 }
