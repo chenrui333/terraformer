@@ -35,9 +35,10 @@ func TestCognitoResourceIDs(t *testing.T) {
 
 func TestCognitoIdentityPoolRolesAttachmentConfigured(t *testing.T) {
 	tests := []struct {
-		name   string
-		output *cognitoidentity.GetIdentityPoolRolesOutput
-		want   bool
+		name                string
+		output              *cognitoidentity.GetIdentityPoolRolesOutput
+		wantConfigured      bool
+		wantNeedsEmptyRoles bool
 	}{
 		{name: "nil", output: nil},
 		{name: "empty", output: &cognitoidentity.GetIdentityPoolRolesOutput{}},
@@ -46,23 +47,55 @@ func TestCognitoIdentityPoolRolesAttachmentConfigured(t *testing.T) {
 			output: &cognitoidentity.GetIdentityPoolRolesOutput{
 				Roles: map[string]string{"authenticated": "arn:aws:iam::123456789012:role/auth"},
 			},
-			want: true,
+			wantConfigured: true,
 		},
 		{
-			name: "role mappings",
+			name: "role mappings only",
 			output: &cognitoidentity.GetIdentityPoolRolesOutput{
 				RoleMappings: map[string]identitytypes.RoleMapping{"accounts.google.com": {}},
 			},
-			want: true,
+			wantConfigured:      true,
+			wantNeedsEmptyRoles: true,
+		},
+		{
+			name: "roles and role mappings",
+			output: &cognitoidentity.GetIdentityPoolRolesOutput{
+				Roles:        map[string]string{"authenticated": "arn:aws:iam::123456789012:role/auth"},
+				RoleMappings: map[string]identitytypes.RoleMapping{"accounts.google.com": {}},
+			},
+			wantConfigured: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := cognitoIdentityPoolRolesAttachmentConfigured(tt.output); got != tt.want {
-				t.Fatalf("cognitoIdentityPoolRolesAttachmentConfigured() = %t, want %t", got, tt.want)
+			if got := cognitoIdentityPoolRolesAttachmentConfigured(tt.output); got != tt.wantConfigured {
+				t.Fatalf("cognitoIdentityPoolRolesAttachmentConfigured() = %t, want %t", got, tt.wantConfigured)
+			}
+			if got := cognitoIdentityPoolRolesAttachmentNeedsEmptyRoles(tt.output); got != tt.wantNeedsEmptyRoles {
+				t.Fatalf("cognitoIdentityPoolRolesAttachmentNeedsEmptyRoles() = %t, want %t", got, tt.wantNeedsEmptyRoles)
 			}
 		})
+	}
+}
+
+func TestCognitoIdentityPoolRolesAttachmentPreservesMappingOnlyRoles(t *testing.T) {
+	identityPool := cognitoIdentityPoolRef{
+		id:   "us-east-1:11111111-1111-1111-1111-111111111111",
+		name: "orders",
+	}
+	resource := newCognitoIdentityPoolRolesAttachmentResource(identityPool, true)
+	roles, ok := resource.AdditionalFields["roles"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("roles additional field = %#v, want empty map", resource.AdditionalFields["roles"])
+	}
+	if len(roles) != 0 {
+		t.Fatalf("roles additional field len = %d, want 0", len(roles))
+	}
+
+	resource = newCognitoIdentityPoolRolesAttachmentResource(identityPool, false)
+	if _, ok := resource.AdditionalFields["roles"]; ok {
+		t.Fatal("roles additional field exists for non-mapping-only attachment")
 	}
 }
 
@@ -423,7 +456,7 @@ func TestCognitoFilterGatesIdentityPoolsAndChildren(t *testing.T) {
 	otherIdentityPoolID := "us-east-1:22222222-2222-2222-2222-222222222222"
 	identityPool := newCognitoIdentityPoolResource(cognitoIdentityPoolRef{id: identityPoolID, name: "orders"})
 	otherIdentityPool := newCognitoIdentityPoolResource(cognitoIdentityPoolRef{id: otherIdentityPoolID, name: "other"})
-	roles := newCognitoIdentityPoolRolesAttachmentResource(cognitoIdentityPoolRef{id: identityPoolID, name: "orders"})
+	roles := newCognitoIdentityPoolRolesAttachmentResource(cognitoIdentityPoolRef{id: identityPoolID, name: "orders"}, false)
 
 	tests := []struct {
 		name           string

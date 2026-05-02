@@ -198,7 +198,10 @@ func (g *CognitoGenerator) loadIdentityPoolRolesAttachments(svc *cognitoidentity
 		if !cognitoIdentityPoolRolesAttachmentConfigured(output) {
 			continue
 		}
-		resource := newCognitoIdentityPoolRolesAttachmentResource(identityPool)
+		resource := newCognitoIdentityPoolRolesAttachmentResource(
+			identityPool,
+			cognitoIdentityPoolRolesAttachmentNeedsEmptyRoles(output),
+		)
 		if g.shouldAppendCognitoResource(cognitoIdentityPoolRolesAttachmentResourceType, resource) {
 			g.Resources = append(g.Resources, resource)
 		}
@@ -415,7 +418,13 @@ func newCognitoIdentityPoolResource(identityPool cognitoIdentityPoolRef) terrafo
 		[]string{})
 }
 
-func newCognitoIdentityPoolRolesAttachmentResource(identityPool cognitoIdentityPoolRef) terraformutils.Resource {
+func newCognitoIdentityPoolRolesAttachmentResource(identityPool cognitoIdentityPoolRef, preserveEmptyRoles bool) terraformutils.Resource {
+	additionalFields := CognitoAdditionalFields
+	if preserveEmptyRoles {
+		additionalFields = map[string]interface{}{
+			"roles": map[string]interface{}{},
+		}
+	}
 	return terraformutils.NewResource(
 		identityPool.id,
 		cognitoResourceName(identityPool.name, "roles", identityPool.id),
@@ -425,7 +434,7 @@ func newCognitoIdentityPoolRolesAttachmentResource(identityPool cognitoIdentityP
 			"identity_pool_id": identityPool.id,
 		},
 		CognitoAllowEmptyValues,
-		CognitoAdditionalFields)
+		additionalFields)
 }
 
 func newCognitoUserPoolResource(userPool cognitoUserPoolRef) terraformutils.Resource {
@@ -818,6 +827,13 @@ func cognitoIdentityPoolRolesAttachmentConfigured(output *cognitoidentity.GetIde
 		return false
 	}
 	return len(output.Roles) > 0 || len(output.RoleMappings) > 0
+}
+
+func cognitoIdentityPoolRolesAttachmentNeedsEmptyRoles(output *cognitoidentity.GetIdentityPoolRolesOutput) bool {
+	if output == nil {
+		return false
+	}
+	return len(output.Roles) == 0 && len(output.RoleMappings) > 0
 }
 
 func cognitoIdentityResourceMissing(err error) bool {
