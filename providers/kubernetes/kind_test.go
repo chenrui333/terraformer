@@ -1,0 +1,112 @@
+// SPDX-License-Identifier: Apache-2.0
+
+package kubernetes
+
+import (
+	"testing"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
+)
+
+func TestInitDynamicResources(t *testing.T) {
+	gvr := schema.GroupVersionResource{
+		Group:    "apiregistration.k8s.io",
+		Version:  "v1",
+		Resource: "apiservices",
+	}
+	apiService := newUnstructured("apiregistration.k8s.io/v1", "APIService", "v1.apps.example.com", "")
+	ownedAPIService := newUnstructured("apiregistration.k8s.io/v1", "APIService", "owned.example.com", "")
+	ownedAPIService.SetOwnerReferences([]metav1.OwnerReference{{
+		APIVersion: "v1",
+		Kind:       "ConfigMap",
+		Name:       "owner",
+		UID:        "owner-uid",
+	}})
+
+	client := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(
+		runtime.NewScheme(),
+		map[schema.GroupVersionResource]string{gvr: "APIServiceList"},
+		apiService,
+		ownedAPIService,
+	)
+
+	kind := &Kind{
+		Group:         "apiregistration.k8s.io",
+		Version:       "v1",
+		Name:          "APIService",
+		ResourceName:  "apiservices",
+		TerraformType: "kubernetes_api_service_v1",
+	}
+	if err := kind.initDynamicResources(client); err != nil {
+		t.Fatalf("initDynamicResources() error = %v", err)
+	}
+
+	if len(kind.Resources) != 1 {
+		t.Fatalf("Resources len = %d, want 1", len(kind.Resources))
+	}
+	resource := kind.Resources[0]
+	if resource.InstanceState.ID != "v1.apps.example.com" {
+		t.Fatalf("resource ID = %q, want %q", resource.InstanceState.ID, "v1.apps.example.com")
+	}
+	if resource.InstanceInfo.Type != "kubernetes_api_service_v1" {
+		t.Fatalf("resource type = %q, want %q", resource.InstanceInfo.Type, "kubernetes_api_service_v1")
+	}
+}
+
+func TestInitDynamicResourcesNamespaced(t *testing.T) {
+	gvr := schema.GroupVersionResource{
+		Group:    "example.com",
+		Version:  "v1",
+		Resource: "widgets",
+	}
+	widget := newUnstructured("example.com/v1", "Widget", "sample", "default")
+	client := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(
+		runtime.NewScheme(),
+		map[schema.GroupVersionResource]string{gvr: "WidgetList"},
+		widget,
+	)
+
+	kind := &Kind{
+		Group:        "example.com",
+		Version:      "v1",
+		Name:         "Widget",
+		ResourceName: "widgets",
+		Namespaced:   true,
+	}
+	if err := kind.initDynamicResources(client); err != nil {
+		t.Fatalf("initDynamicResources() error = %v", err)
+	}
+
+	if len(kind.Resources) != 1 {
+		t.Fatalf("Resources len = %d, want 1", len(kind.Resources))
+	}
+	resource := kind.Resources[0]
+	if resource.InstanceState.ID != "default/sample" {
+		t.Fatalf("resource ID = %q, want %q", resource.InstanceState.ID, "default/sample")
+	}
+	if resource.InstanceInfo.Type != "kubernetes_widget" {
+		t.Fatalf("resource type = %q, want %q", resource.InstanceInfo.Type, "kubernetes_widget")
+	}
+}
+
+func TestInitDynamicResourcesRequiresResourceName(t *testing.T) {
+	client := dynamicfake.NewSimpleDynamicClient(runtime.NewScheme())
+	kind := &Kind{Name: "APIService"}
+
+	if err := kind.initDynamicResources(client); err == nil {
+		t.Fatal("initDynamicResources() error = nil, want error")
+	}
+}
+
+func newUnstructured(apiVersion, kind, name, namespace string) *unstructured.Unstructured {
+	resource := &unstructured.Unstructured{}
+	resource.SetAPIVersion(apiVersion)
+	resource.SetKind(kind)
+	resource.SetName(name)
+	resource.SetNamespace(namespace)
+	return resource
+}

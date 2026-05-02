@@ -7,10 +7,14 @@ Example:
  terraformer import kubernetes --resources=deployments,services,storageclasses --filter=deployment=name1:name2:name3
 ```
 
-Terraformer discovers Kubernetes API resources from the active cluster and imports resources that are available through both the typed Kubernetes client and the installed Terraform Kubernetes provider schema.
+Terraformer discovers Kubernetes API resources from the active cluster and imports resources that are available through either the typed Kubernetes client or an explicit dynamic-client import path, and the installed Terraform Kubernetes provider schema.
 
 Common supported resources include:
 
+*   `apiservices`
+    * `kubernetes_api_service_v1`
+*   `certificatesigningrequests`
+    * `kubernetes_certificate_signing_request_v1`
 *   `clusterroles`
     * `kubernetes_cluster_role_v1`
 *   `clusterrolebindings`
@@ -31,6 +35,7 @@ Common supported resources include:
     * `kubernetes_endpoint_slice_v1`
 *   `horizontalpodautoscalers`
     * `kubernetes_horizontal_pod_autoscaler_v2`
+    * `kubernetes_horizontal_pod_autoscaler_v2beta2`
 *   `ingressclasses`
     * `kubernetes_ingress_class_v1`
 *   `ingresses`
@@ -51,6 +56,8 @@ Common supported resources include:
     * `kubernetes_persistent_volume_claim_v1`
 *   `pods`
     * `kubernetes_pod_v1`
+*   `podsecuritypolicies`
+    * `kubernetes_pod_security_policy`
 *   `poddisruptionbudgets`
     * `kubernetes_pod_disruption_budget_v1`
 *   `priorityclasses`

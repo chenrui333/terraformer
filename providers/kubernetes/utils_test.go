@@ -52,11 +52,32 @@ func TestTerraformResourceNameCandidates(t *testing.T) {
 			want:    []string{"kubernetes_pod_disruption_budget"},
 		},
 		{
+			name:    "uses legacy pod security policy name for policy beta",
+			group:   "policy",
+			version: "v1beta1",
+			kind:    "PodSecurityPolicy",
+			want:    []string{"kubernetes_pod_security_policy"},
+		},
+		{
 			name:    "prefers autoscaling v2 hpa name",
 			group:   "autoscaling",
 			version: "v2",
 			kind:    "HorizontalPodAutoscaler",
 			want:    []string{"kubernetes_horizontal_pod_autoscaler_v2", "kubernetes_horizontal_pod_autoscaler"},
+		},
+		{
+			name:    "prefers autoscaling v2beta2 hpa name",
+			group:   "autoscaling",
+			version: "v2beta2",
+			kind:    "HorizontalPodAutoscaler",
+			want:    []string{"kubernetes_horizontal_pod_autoscaler_v2beta2", "kubernetes_horizontal_pod_autoscaler"},
+		},
+		{
+			name:    "prefers certificate signing request v1 name",
+			group:   "certificates.k8s.io",
+			version: "v1",
+			kind:    "CertificateSigningRequest",
+			want:    []string{"kubernetes_certificate_signing_request_v1", "kubernetes_certificate_signing_request"},
 		},
 		{
 			name:    "prefers csi driver v1 name",
@@ -85,6 +106,20 @@ func TestTerraformResourceNameCandidates(t *testing.T) {
 			version: "v1",
 			kind:    "RuntimeClass",
 			want:    []string{"kubernetes_runtime_class_v1", "kubernetes_runtime_class"},
+		},
+		{
+			name:    "prefers api service v1 name",
+			group:   "apiregistration.k8s.io",
+			version: "v1",
+			kind:    "APIService",
+			want:    []string{"kubernetes_api_service_v1", "kubernetes_api_service"},
+		},
+		{
+			name:    "prefers legacy api service name for beta API",
+			group:   "apiregistration.k8s.io",
+			version: "v1beta1",
+			kind:    "APIService",
+			want:    []string{"kubernetes_api_service"},
 		},
 	}
 
@@ -190,6 +225,17 @@ func TestSelectTerraformResourceName(t *testing.T) {
 			wantOK: true,
 		},
 		{
+			name:    "selects pod security policy for policy beta API",
+			group:   "policy",
+			version: "v1beta1",
+			kind:    "PodSecurityPolicy",
+			supportedTypes: map[string]struct{}{
+				"kubernetes_pod_security_policy": {},
+			},
+			want:   "kubernetes_pod_security_policy",
+			wantOK: true,
+		},
+		{
 			name:    "prefers legacy cron job for beta API",
 			group:   "batch",
 			version: "v1beta1",
@@ -211,6 +257,42 @@ func TestSelectTerraformResourceName(t *testing.T) {
 				"kubernetes_horizontal_pod_autoscaler_v2": {},
 			},
 			want:   "kubernetes_horizontal_pod_autoscaler_v2",
+			wantOK: true,
+		},
+		{
+			name:    "selects autoscaling v2beta2 hpa for v2beta2 API",
+			group:   "autoscaling",
+			version: "v2beta2",
+			kind:    "HorizontalPodAutoscaler",
+			supportedTypes: map[string]struct{}{
+				"kubernetes_horizontal_pod_autoscaler":         {},
+				"kubernetes_horizontal_pod_autoscaler_v2beta2": {},
+			},
+			want:   "kubernetes_horizontal_pod_autoscaler_v2beta2",
+			wantOK: true,
+		},
+		{
+			name:    "selects certificate signing request v1 for certificates v1 API",
+			group:   "certificates.k8s.io",
+			version: "v1",
+			kind:    "CertificateSigningRequest",
+			supportedTypes: map[string]struct{}{
+				"kubernetes_certificate_signing_request":    {},
+				"kubernetes_certificate_signing_request_v1": {},
+			},
+			want:   "kubernetes_certificate_signing_request_v1",
+			wantOK: true,
+		},
+		{
+			name:    "prefers legacy certificate signing request for certificates beta API",
+			group:   "certificates.k8s.io",
+			version: "v1beta1",
+			kind:    "CertificateSigningRequest",
+			supportedTypes: map[string]struct{}{
+				"kubernetes_certificate_signing_request":    {},
+				"kubernetes_certificate_signing_request_v1": {},
+			},
+			want:   "kubernetes_certificate_signing_request",
 			wantOK: true,
 		},
 		{
@@ -270,6 +352,30 @@ func TestSelectTerraformResourceName(t *testing.T) {
 				"kubernetes_validating_admission_policy_v1": {},
 			},
 			want:   "kubernetes_validating_admission_policy_v1",
+			wantOK: true,
+		},
+		{
+			name:    "selects api service v1 for apiregistration v1 API",
+			group:   "apiregistration.k8s.io",
+			version: "v1",
+			kind:    "APIService",
+			supportedTypes: map[string]struct{}{
+				"kubernetes_api_service":    {},
+				"kubernetes_api_service_v1": {},
+			},
+			want:   "kubernetes_api_service_v1",
+			wantOK: true,
+		},
+		{
+			name:    "prefers legacy api service for apiregistration beta API",
+			group:   "apiregistration.k8s.io",
+			version: "v1beta1",
+			kind:    "APIService",
+			supportedTypes: map[string]struct{}{
+				"kubernetes_api_service":    {},
+				"kubernetes_api_service_v1": {},
+			},
+			want:   "kubernetes_api_service",
 			wantOK: true,
 		},
 		{
@@ -360,6 +466,32 @@ func TestSelectTerraformResourceNameStableV1Aliases(t *testing.T) {
 	}
 }
 
+func TestSupportsDynamicClientResource(t *testing.T) {
+	tests := []struct {
+		name    string
+		group   string
+		version string
+		kind    string
+		want    bool
+	}{
+		{name: "api service v1", group: "apiregistration.k8s.io", version: "v1", kind: "APIService", want: true},
+		{name: "api service beta", group: "apiregistration.k8s.io", version: "v1beta1", kind: "APIService", want: true},
+		{name: "autoscaling v2beta2 hpa", group: "autoscaling", version: "v2beta2", kind: "HorizontalPodAutoscaler", want: true},
+		{name: "pod security policy beta", group: "policy", version: "v1beta1", kind: "PodSecurityPolicy", want: true},
+		{name: "typed core resource", version: "v1", kind: "Service", want: false},
+		{name: "unknown resource", group: "example.com", version: "v1", kind: "Widget", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := supportsDynamicClientResource(tt.group, tt.version, tt.kind)
+			if got != tt.want {
+				t.Fatalf("supportsDynamicClientResource(%q, %q, %q) = %t, want %t", tt.group, tt.version, tt.kind, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestSupportsTypedClientResource(t *testing.T) {
 	clientset := fake.NewSimpleClientset()
 
@@ -374,6 +506,8 @@ func TestSupportsTypedClientResource(t *testing.T) {
 		{name: "core endpoints", version: "v1", kind: "Endpoints", want: true},
 		{name: "apps daemon set", group: "apps", version: "v1", kind: "DaemonSet", want: true},
 		{name: "autoscaling hpa", group: "autoscaling", version: "v2", kind: "HorizontalPodAutoscaler", want: true},
+		{name: "autoscaling v2beta2 hpa is not exposed by kubernetes clientset", group: "autoscaling", version: "v2beta2", kind: "HorizontalPodAutoscaler", want: false},
+		{name: "certificate signing request", group: "certificates.k8s.io", version: "v1", kind: "CertificateSigningRequest", want: true},
 		{name: "storage csi driver", group: "storage.k8s.io", version: "v1", kind: "CSIDriver", want: true},
 		{name: "scheduling priority class", group: "scheduling.k8s.io", version: "v1", kind: "PriorityClass", want: true},
 		{name: "admission validating policy", group: "admissionregistration.k8s.io", version: "v1", kind: "ValidatingAdmissionPolicy", want: true},
@@ -381,6 +515,7 @@ func TestSupportsTypedClientResource(t *testing.T) {
 		{name: "discovery endpoint slice", group: "discovery.k8s.io", version: "v1", kind: "EndpointSlice", want: true},
 		{name: "node runtime class", group: "node.k8s.io", version: "v1", kind: "RuntimeClass", want: true},
 		{name: "api service is not exposed by kubernetes clientset", group: "apiregistration.k8s.io", version: "v1", kind: "APIService", want: false},
+		{name: "pod security policy is not exposed by kubernetes clientset", group: "policy", version: "v1beta1", kind: "PodSecurityPolicy", want: false},
 		{name: "unknown group", group: "example.com", version: "v1", kind: "Widget", want: false},
 	}
 

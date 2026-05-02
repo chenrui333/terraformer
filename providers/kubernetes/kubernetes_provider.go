@@ -121,17 +121,22 @@ func (p *KubernetesProvider) GetSupportedService() map[string]terraformutils.Ser
 				continue
 			}
 
-			// filter to resources available through the typed client-go Clientset
+			useDynamicClient := false
 			if !supportsTypedClientResource(clientset, gv.Group, gv.Version, resource.Kind) {
-				continue
+				if !supportsDynamicClientResource(gv.Group, gv.Version, resource.Kind) {
+					continue
+				}
+				useDynamicClient = true
 			}
 
 			resources[resource.Name] = &Kind{
-				Group:         gv.Group,
-				Version:       gv.Version,
-				Name:          resource.Kind,
-				Namespaced:    resource.Namespaced,
-				TerraformType: terraformResourceName,
+				Group:            gv.Group,
+				Version:          gv.Version,
+				Name:             resource.Kind,
+				ResourceName:     resource.Name,
+				Namespaced:       resource.Namespaced,
+				TerraformType:    terraformResourceName,
+				UseDynamicClient: useDynamicClient,
 			}
 		}
 	}
