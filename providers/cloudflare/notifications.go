@@ -4,12 +4,74 @@ package cloudflare
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/url"
+	"strconv"
 
 	"github.com/chenrui333/terraformer/terraformutils"
+	cf "github.com/cloudflare/cloudflare-go"
 )
 
 type NotificationsGenerator struct {
 	CloudflareService
+}
+
+func listNotificationPolicies(ctx context.Context, api *cf.API, accountID string) ([]cf.NotificationPolicy, error) {
+	policies := []cf.NotificationPolicy{}
+	for page := 1; ; page++ {
+		values := url.Values{}
+		values.Set("page", strconv.Itoa(page))
+		values.Set("per_page", strconv.Itoa(cloudflarePageSize))
+		response, err := api.Raw(
+			ctx,
+			http.MethodGet,
+			fmt.Sprintf("/accounts/%s/alerting/v3/policies?%s", accountID, values.Encode()),
+			nil,
+			nil,
+		)
+		if err != nil {
+			return nil, err
+		}
+		var pagePolicies []cf.NotificationPolicy
+		if err := json.Unmarshal(response.Result, &pagePolicies); err != nil {
+			return nil, err
+		}
+		policies = append(policies, pagePolicies...)
+		if response.ResultInfo == nil || !response.ResultInfo.HasMorePages() {
+			break
+		}
+	}
+	return policies, nil
+}
+
+func listNotificationWebhooks(ctx context.Context, api *cf.API, accountID string) ([]cf.NotificationWebhookIntegration, error) {
+	webhooks := []cf.NotificationWebhookIntegration{}
+	for page := 1; ; page++ {
+		values := url.Values{}
+		values.Set("page", strconv.Itoa(page))
+		values.Set("per_page", strconv.Itoa(cloudflarePageSize))
+		response, err := api.Raw(
+			ctx,
+			http.MethodGet,
+			fmt.Sprintf("/accounts/%s/alerting/v3/destinations/webhooks?%s", accountID, values.Encode()),
+			nil,
+			nil,
+		)
+		if err != nil {
+			return nil, err
+		}
+		var pageWebhooks []cf.NotificationWebhookIntegration
+		if err := json.Unmarshal(response.Result, &pageWebhooks); err != nil {
+			return nil, err
+		}
+		webhooks = append(webhooks, pageWebhooks...)
+		if response.ResultInfo == nil || !response.ResultInfo.HasMorePages() {
+			break
+		}
+	}
+	return webhooks, nil
 }
 
 func (g *NotificationsGenerator) InitResources() error {
@@ -24,11 +86,11 @@ func (g *NotificationsGenerator) InitResources() error {
 	}
 	accountID := account.Identifier
 
-	policies, err := api.ListNotificationPolicies(ctx, accountID)
+	policies, err := listNotificationPolicies(ctx, api, accountID)
 	if err != nil {
 		return err
 	}
-	for _, policy := range policies.Result {
+	for _, policy := range policies {
 		g.Resources = append(g.Resources, terraformutils.NewResource(
 			policy.ID,
 			cloudflareResourceName(accountID, policy.Name, policy.ID),
@@ -40,11 +102,11 @@ func (g *NotificationsGenerator) InitResources() error {
 		))
 	}
 
-	webhooks, err := api.ListNotificationWebhooks(ctx, accountID)
+	webhooks, err := listNotificationWebhooks(ctx, api, accountID)
 	if err != nil {
 		return err
 	}
-	for _, webhook := range webhooks.Result {
+	for _, webhook := range webhooks {
 		g.Resources = append(g.Resources, terraformutils.NewResource(
 			webhook.ID,
 			cloudflareResourceName(accountID, webhook.Name, webhook.ID),

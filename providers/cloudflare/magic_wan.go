@@ -20,14 +20,13 @@ func magicWANGRETunnelAttributes(accountID string, tunnel cf.MagicTransitGRETunn
 		return nil, false
 	}
 	attributes := map[string]string{
-		"account_id":               accountID,
-		"cloudflare_gre_endpoint":  tunnel.CloudflareGREEndpoint,
-		"customer_gre_endpoint":    tunnel.CustomerGREEndpoint,
-		"interface_address":        tunnel.InterfaceAddress,
-		"name":                     tunnel.Name,
-		"mtu":                      strconv.FormatUint(uint64(tunnel.MTU), 10),
-		"ttl":                      strconv.FormatUint(uint64(tunnel.TTL), 10),
-		"automatic_return_routing": "false",
+		"account_id":              accountID,
+		"cloudflare_gre_endpoint": tunnel.CloudflareGREEndpoint,
+		"customer_gre_endpoint":   tunnel.CustomerGREEndpoint,
+		"interface_address":       tunnel.InterfaceAddress,
+		"name":                    tunnel.Name,
+		"mtu":                     strconv.FormatUint(uint64(tunnel.MTU), 10),
+		"ttl":                     strconv.FormatUint(uint64(tunnel.TTL), 10),
 	}
 	addStringAttribute(attributes, "description", tunnel.Description)
 	if tunnel.HealthCheck != nil {
@@ -43,12 +42,11 @@ func magicWANIPsecTunnelAttributes(accountID string, tunnel cf.MagicTransitIPsec
 		return nil, false
 	}
 	attributes := map[string]string{
-		"account_id":               accountID,
-		"cloudflare_endpoint":      tunnel.CloudflareEndpoint,
-		"interface_address":        tunnel.InterfaceAddress,
-		"name":                     tunnel.Name,
-		"allow_null_cipher":        strconv.FormatBool(tunnel.AllowNullCipher),
-		"automatic_return_routing": "false",
+		"account_id":          accountID,
+		"cloudflare_endpoint": tunnel.CloudflareEndpoint,
+		"interface_address":   tunnel.InterfaceAddress,
+		"name":                tunnel.Name,
+		"allow_null_cipher":   strconv.FormatBool(tunnel.AllowNullCipher),
 	}
 	addStringAttribute(attributes, "customer_endpoint", tunnel.CustomerEndpoint)
 	addStringAttribute(attributes, "description", tunnel.Description)

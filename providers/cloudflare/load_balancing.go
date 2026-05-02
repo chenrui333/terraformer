@@ -4,7 +4,10 @@ package cloudflare
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -278,8 +281,36 @@ func (g *LoadBalancingGenerator) appendLoadBalancerResources(ctx context.Context
 	return nil
 }
 
+func listHealthchecks(ctx context.Context, api *cf.API, zoneID string) ([]cf.Healthcheck, error) {
+	healthchecks := []cf.Healthcheck{}
+	for page := 1; ; page++ {
+		values := url.Values{}
+		values.Set("page", strconv.Itoa(page))
+		values.Set("per_page", strconv.Itoa(cloudflarePageSize))
+		response, err := api.Raw(
+			ctx,
+			http.MethodGet,
+			fmt.Sprintf("/zones/%s/healthchecks?%s", zoneID, values.Encode()),
+			nil,
+			nil,
+		)
+		if err != nil {
+			return nil, err
+		}
+		var pageHealthchecks []cf.Healthcheck
+		if err := json.Unmarshal(response.Result, &pageHealthchecks); err != nil {
+			return nil, err
+		}
+		healthchecks = append(healthchecks, pageHealthchecks...)
+		if response.ResultInfo == nil || !response.ResultInfo.HasMorePages() {
+			break
+		}
+	}
+	return healthchecks, nil
+}
+
 func (g *LoadBalancingGenerator) appendHealthcheckResources(ctx context.Context, api *cf.API, zone cf.Zone) error {
-	healthchecks, err := api.Healthchecks(ctx, zone.ID)
+	healthchecks, err := listHealthchecks(ctx, api, zone.ID)
 	if err != nil {
 		return err
 	}

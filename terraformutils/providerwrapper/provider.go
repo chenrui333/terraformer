@@ -186,6 +186,11 @@ func (p *ProviderWrapper) importResourceState(info *tfcompat.InstanceInfo, state
 	id := ""
 	if state != nil {
 		id = state.ID
+		if state.Meta != nil {
+			if metaImportID, ok := state.Meta["import_id"].(string); ok && metaImportID != "" {
+				id = metaImportID
+			}
+		}
 	}
 	importResponse := p.Provider.ImportResourceState(providerproto.ImportResourceStateRequest{
 		TypeName: info.Type,

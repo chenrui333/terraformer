@@ -28,7 +28,7 @@ func (g *WaitingRoomGenerator) InitResources() error {
 			return err
 		}
 		for _, waitingRoom := range waitingRooms {
-			g.Resources = append(g.Resources, terraformutils.NewResource(
+			waitingRoomResource := terraformutils.NewResource(
 				waitingRoom.ID,
 				cloudflareResourceName(zone.Name, waitingRoom.Name, waitingRoom.ID),
 				"cloudflare_waiting_room",
@@ -36,8 +36,11 @@ func (g *WaitingRoomGenerator) InitResources() error {
 				map[string]string{"zone_id": zone.ID},
 				[]string{},
 				map[string]interface{}{},
-			))
-			g.Resources = append(g.Resources, terraformutils.NewResource(
+			)
+			setCloudflareImportID(&waitingRoomResource, zone.ID+"/"+waitingRoom.ID)
+			g.Resources = append(g.Resources, waitingRoomResource)
+
+			waitingRoomRulesResource := terraformutils.NewResource(
 				waitingRoom.ID,
 				cloudflareResourceName(zone.Name, waitingRoom.Name, waitingRoom.ID, "rules"),
 				"cloudflare_waiting_room_rules",
@@ -45,13 +48,16 @@ func (g *WaitingRoomGenerator) InitResources() error {
 				map[string]string{"zone_id": zone.ID, "waiting_room_id": waitingRoom.ID},
 				[]string{},
 				map[string]interface{}{},
-			))
+			)
+			setCloudflareImportID(&waitingRoomRulesResource, zone.ID+"/"+waitingRoom.ID)
+			g.Resources = append(g.Resources, waitingRoomRulesResource)
+
 			events, err := api.ListWaitingRoomEvents(ctx, zone.ID, waitingRoom.ID)
 			if err != nil {
 				return err
 			}
 			for _, event := range events {
-				g.Resources = append(g.Resources, terraformutils.NewResource(
+				waitingRoomEventResource := terraformutils.NewResource(
 					event.ID,
 					cloudflareResourceName(zone.Name, waitingRoom.Name, event.Name, event.ID),
 					"cloudflare_waiting_room_event",
@@ -59,7 +65,9 @@ func (g *WaitingRoomGenerator) InitResources() error {
 					map[string]string{"zone_id": zone.ID, "waiting_room_id": waitingRoom.ID},
 					[]string{},
 					map[string]interface{}{},
-				))
+				)
+				setCloudflareImportID(&waitingRoomEventResource, zone.ID+"/"+waitingRoom.ID+"/"+event.ID)
+				g.Resources = append(g.Resources, waitingRoomEventResource)
 			}
 		}
 	}

@@ -1,7 +1,7 @@
 ### Use with Cloudflare
 
 Example using a Cloudflare API Key and corresponding email:
-```
+```bash
 export CLOUDFLARE_API_KEY=[CLOUDFLARE_API_KEY]
 export CLOUDFLARE_EMAIL=[CLOUDFLARE_EMAIL]
 export CLOUDFLARE_ACCOUNT_ID=[CLOUDFLARE_ACCOUNT_ID]
@@ -10,7 +10,7 @@ export CLOUDFLARE_ACCOUNT_ID=[CLOUDFLARE_ACCOUNT_ID]
 
 or using a Cloudflare API Token:
 
-```
+```bash
 export CLOUDFLARE_API_TOKEN=[CLOUDFLARE_API_TOKEN]
 export CLOUDFLARE_ACCOUNT_ID=[CLOUDFLARE_ACCOUNT_ID]
 ./terraformer import cloudflare --resources=dns,firewall,ruleset,access,storage

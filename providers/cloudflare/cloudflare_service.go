@@ -60,6 +60,13 @@ func cloudflareResourceName(parts ...string) string {
 	return strings.Join(filtered, "_")
 }
 
+func setCloudflareImportID(resource *terraformutils.Resource, importID string) {
+	if resource.InstanceState.Meta == nil {
+		resource.InstanceState.Meta = map[string]interface{}{}
+	}
+	resource.InstanceState.Meta["import_id"] = importID
+}
+
 func cloudflareZones(ctx context.Context, api *cf.API) ([]cf.Zone, error) {
 	return api.ListZones(ctx)
 }

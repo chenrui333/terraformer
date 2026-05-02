@@ -4,7 +4,10 @@ package cloudflare
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -50,9 +53,41 @@ func addListItemAttributes(attributes map[string]string, index int, item cf.List
 	}
 }
 
+func listAllListItems(ctx context.Context, api *cf.API, account *cf.ResourceContainer, listID string) ([]cf.ListItem, error) {
+	items := []cf.ListItem{}
+	cursor := ""
+	for {
+		values := url.Values{}
+		values.Set("per_page", strconv.Itoa(cloudflarePageSize))
+		if cursor != "" {
+			values.Set("cursor", cursor)
+		}
+		response, err := api.Raw(
+			ctx,
+			http.MethodGet,
+			fmt.Sprintf("/accounts/%s/rules/lists/%s/items?%s", account.Identifier, listID, values.Encode()),
+			nil,
+			nil,
+		)
+		if err != nil {
+			return nil, err
+		}
+		var pageItems []cf.ListItem
+		if err := json.Unmarshal(response.Result, &pageItems); err != nil {
+			return nil, err
+		}
+		items = append(items, pageItems...)
+		if response.ResultInfo == nil || response.ResultInfo.Cursors.After == "" {
+			break
+		}
+		cursor = response.ResultInfo.Cursors.After
+	}
+	return items, nil
+}
+
 func listAttributes(ctx context.Context, api *cf.API, account *cf.ResourceContainer, list cf.List) (map[string]string, error) {
 	attributes := map[string]string{"account_id": account.Identifier}
-	items, err := api.ListListItems(ctx, account, cf.ListListItemsParams{ID: list.ID, PerPage: cloudflarePageSize})
+	items, err := listAllListItems(ctx, api, account, list.ID)
 	if err != nil {
 		return nil, err
 	}
