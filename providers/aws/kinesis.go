@@ -63,7 +63,7 @@ func (g *KinesisGenerator) shouldLoadStreamChildren(streamName string) bool {
 	if g.hasUntypedIDFilters() && !g.hasUntypedChildIDFilters() {
 		return false
 	}
-	return g.streamMatchesExplicitIDFilters(streamName) ||
+	return g.streamAllowsChildDiscovery(streamName) ||
 		g.hasTypedFilterFor("kinesis_stream_consumer") ||
 		g.hasTypedFilterFor("kinesis_resource_policy") ||
 		g.hasUntypedChildIDFilters()
@@ -83,7 +83,7 @@ func (g *KinesisGenerator) shouldAppendStreamConsumers(streamName string) bool {
 	if g.hasTypedFilterFor("kinesis_resource_policy") {
 		return false
 	}
-	return g.streamMatchesExplicitIDFilters(streamName)
+	return g.streamAllowsChildDiscovery(streamName)
 }
 
 func (g *KinesisGenerator) shouldLoadResourcePolicies(streamName string) bool {
@@ -96,7 +96,7 @@ func (g *KinesisGenerator) shouldLoadResourcePolicies(streamName string) bool {
 	if g.hasTypedFilterFor("kinesis_stream_consumer") {
 		return false
 	}
-	return g.streamMatchesExplicitIDFilters(streamName)
+	return g.streamAllowsChildDiscovery(streamName)
 }
 
 func (g *KinesisGenerator) shouldAppendStreamResource(streamName string) bool {
@@ -119,6 +119,13 @@ func (g *KinesisGenerator) shouldAppendStreamResource(streamName string) bool {
 	return !g.hasTypedFilterFor("kinesis_stream_consumer") && !g.hasTypedFilterFor("kinesis_resource_policy")
 }
 
+func (g *KinesisGenerator) streamAllowsChildDiscovery(streamName string) bool {
+	if g.hasTypedNonIDStreamFilters() {
+		return false
+	}
+	return g.streamMatchesExplicitIDFilters(streamName)
+}
+
 func (g *KinesisGenerator) streamMatchesExplicitIDFilters(streamName string) bool {
 	streamResource := newKinesisStreamResource(streamName)
 	for _, filter := range g.Filter {
@@ -132,6 +139,15 @@ func (g *KinesisGenerator) streamMatchesExplicitIDFilters(streamName string) boo
 func (g *KinesisGenerator) hasTypedFilterFor(resourceType string) bool {
 	for _, filter := range g.Filter {
 		if filter.ServiceName != "" && filter.IsApplicable(resourceType) {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *KinesisGenerator) hasTypedNonIDStreamFilters() bool {
+	for _, filter := range g.Filter {
+		if filter.ServiceName != "" && filter.FieldPath != "id" && filter.IsApplicable("kinesis_stream") {
 			return true
 		}
 	}

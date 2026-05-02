@@ -314,13 +314,30 @@ func TestKinesisShouldLoadStreamChildrenHonorsStreamIDFilters(t *testing.T) {
 			want:   false,
 		},
 		{
-			name: "non-id stream filter is handled by post-refresh cleanup",
+			name: "non-id stream filter skips child discovery",
 			filters: []terraformutils.ResourceFilter{{
 				ServiceName:      "kinesis_stream",
 				FieldPath:        "tags.env",
 				AcceptableValues: []string{"prod"},
 			}},
 			stream: "orders",
+			want:   false,
+		},
+		{
+			name: "child filter keeps discovery despite non-id stream filter",
+			filters: []terraformutils.ResourceFilter{
+				{
+					ServiceName:      "kinesis_stream",
+					FieldPath:        "tags.env",
+					AcceptableValues: []string{"prod"},
+				},
+				{
+					ServiceName:      "kinesis_stream_consumer",
+					FieldPath:        "id",
+					AcceptableValues: []string{"arn:aws:kinesis:us-east-1:123456789012:stream/payments/consumer/app:1"},
+				},
+			},
+			stream: "payments",
 			want:   true,
 		},
 	}
@@ -427,6 +444,33 @@ func TestKinesisShouldLoadResourcePoliciesHonorsFilters(t *testing.T) {
 			stream: "orders",
 			want:   false,
 		},
+		{
+			name: "non-id stream filter does not load policies",
+			filters: []terraformutils.ResourceFilter{{
+				ServiceName:      "kinesis_stream",
+				FieldPath:        "tags.env",
+				AcceptableValues: []string{"prod"},
+			}},
+			stream: "orders",
+			want:   false,
+		},
+		{
+			name: "policy filter loads policies despite non-id stream filter",
+			filters: []terraformutils.ResourceFilter{
+				{
+					ServiceName:      "kinesis_stream",
+					FieldPath:        "tags.env",
+					AcceptableValues: []string{"prod"},
+				},
+				{
+					ServiceName:      "kinesis_resource_policy",
+					FieldPath:        "id",
+					AcceptableValues: []string{"arn:aws:kinesis:us-east-1:123456789012:stream/payments"},
+				},
+			},
+			stream: "payments",
+			want:   true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -511,6 +555,33 @@ func TestKinesisShouldLoadStreamConsumersHonorsFilters(t *testing.T) {
 			stream: "orders",
 			want:   false,
 		},
+		{
+			name: "non-id stream filter does not load consumers",
+			filters: []terraformutils.ResourceFilter{{
+				ServiceName:      "kinesis_stream",
+				FieldPath:        "tags.env",
+				AcceptableValues: []string{"prod"},
+			}},
+			stream: "orders",
+			want:   false,
+		},
+		{
+			name: "consumer filter loads consumers despite non-id stream filter",
+			filters: []terraformutils.ResourceFilter{
+				{
+					ServiceName:      "kinesis_stream",
+					FieldPath:        "tags.env",
+					AcceptableValues: []string{"prod"},
+				},
+				{
+					ServiceName:      "kinesis_stream_consumer",
+					FieldPath:        "id",
+					AcceptableValues: []string{"arn:aws:kinesis:us-east-1:123456789012:stream/payments/consumer/app:1"},
+				},
+			},
+			stream: "payments",
+			want:   true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -594,6 +665,16 @@ func TestKinesisShouldAppendStreamConsumersHonorsFilters(t *testing.T) {
 			filters: []terraformutils.ResourceFilter{{
 				FieldPath:        "id",
 				AcceptableValues: []string{"orders"},
+			}},
+			stream: "orders",
+			want:   false,
+		},
+		{
+			name: "non-id stream filter does not append consumers",
+			filters: []terraformutils.ResourceFilter{{
+				ServiceName:      "kinesis_stream",
+				FieldPath:        "tags.env",
+				AcceptableValues: []string{"prod"},
 			}},
 			stream: "orders",
 			want:   false,
