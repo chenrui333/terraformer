@@ -10,7 +10,10 @@ import (
 )
 
 func TestAddDefaultServiceAccountService(t *testing.T) {
-	resources := map[string]terraformutils.ServiceGenerator{}
+	serviceAccounts := &Kind{Name: "ServiceAccount"}
+	resources := map[string]terraformutils.ServiceGenerator{
+		"serviceaccounts": serviceAccounts,
+	}
 	clientset := fake.NewSimpleClientset()
 	listableResources := map[kubernetesResourceID]struct{}{
 		{version: "v1", kind: "ServiceAccount"}: {},
@@ -30,6 +33,9 @@ func TestAddDefaultServiceAccountService(t *testing.T) {
 	}
 	if defaultServiceAccount.TerraformType != "kubernetes_default_service_account_v1" {
 		t.Fatalf("TerraformType = %q, want %q", defaultServiceAccount.TerraformType, "kubernetes_default_service_account_v1")
+	}
+	if !serviceAccounts.SkipDefaultServiceAccount {
+		t.Fatal("serviceaccounts Kind did not skip default service accounts")
 	}
 }
 

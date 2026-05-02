@@ -95,3 +95,38 @@ func TestDefaultServiceAccountInitResourcesDefaultTerraformType(t *testing.T) {
 		t.Fatalf("resource type = %q, want %q", service.Resources[0].InstanceInfo.Type, "kubernetes_default_service_account")
 	}
 }
+
+func TestServiceAccountKindSkipsDefaultServiceAccounts(t *testing.T) {
+	clientset := fake.NewSimpleClientset(
+		&corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "default",
+				Name:      "default",
+			},
+		},
+		&corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "default",
+				Name:      "builder",
+			},
+		},
+	)
+	kind := &Kind{
+		Name:                      "ServiceAccount",
+		Version:                   "v1",
+		Namespaced:                true,
+		TerraformType:             "kubernetes_service_account_v1",
+		SkipDefaultServiceAccount: true,
+	}
+
+	if err := kind.initTypedResources(clientset); err != nil {
+		t.Fatalf("initTypedResources() error = %v", err)
+	}
+
+	if len(kind.Resources) != 1 {
+		t.Fatalf("Resources len = %d, want 1", len(kind.Resources))
+	}
+	if kind.Resources[0].InstanceState.ID != "default/builder" {
+		t.Fatalf("resource ID = %q, want %q", kind.Resources[0].InstanceState.ID, "default/builder")
+	}
+}

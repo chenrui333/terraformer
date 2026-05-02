@@ -170,6 +170,9 @@ func addDefaultServiceAccountService(
 	resources[defaultServiceAccountServiceName] = &DefaultServiceAccount{
 		TerraformType: terraformResourceName,
 	}
+	if serviceAccounts, ok := resources["serviceaccounts"].(*Kind); ok {
+		serviceAccounts.SkipDefaultServiceAccount = true
+	}
 }
 
 // InitClientAndConfig uses the KUBECONFIG environment variable to create

@@ -17,13 +17,14 @@ import (
 
 type Kind struct {
 	KubernetesService
-	Name             string
-	ResourceName     string
-	Group            string
-	Version          string
-	Namespaced       bool
-	TerraformType    string
-	UseDynamicClient bool
+	Name                      string
+	ResourceName              string
+	Group                     string
+	Version                   string
+	Namespaced                bool
+	TerraformType             string
+	UseDynamicClient          bool
+	SkipDefaultServiceAccount bool
 }
 
 // Generate TerraformResources from Kubernetes API,
@@ -75,6 +76,9 @@ func (k *Kind) initTypedResources(clientset kubernetes.Interface) error {
 
 	for i := 0; i < items.Len(); i++ {
 		item := items.Index(i)
+		if k.shouldSkipTypedItem(item) {
+			continue
+		}
 		// Filter to resources that aren't owned by any other resource
 		if item.FieldByName("OwnerReferences").Len() > 0 {
 			continue
@@ -96,6 +100,14 @@ func (k *Kind) initTypedResources(clientset kubernetes.Interface) error {
 		))
 	}
 	return nil
+}
+
+func (k *Kind) shouldSkipTypedItem(item reflect.Value) bool {
+	return k.SkipDefaultServiceAccount &&
+		k.Group == "" &&
+		k.Version == "v1" &&
+		k.Name == "ServiceAccount" &&
+		item.FieldByName("Name").String() == defaultServiceAccountName
 }
 
 func (k *Kind) initDynamicResources(client dynamic.Interface) error {
