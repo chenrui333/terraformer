@@ -5,7 +5,6 @@ package gcp
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -21,7 +20,7 @@ type CloudDNSGenerator struct {
 	GCPService
 }
 
-func (g CloudDNSGenerator) createZonesResources(ctx context.Context, svc *dns.Service, project string) []terraformutils.Resource {
+func (g CloudDNSGenerator) createZonesResources(ctx context.Context, svc *dns.Service, project string) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	managedZonesListCall := svc.ManagedZones.List(project)
 	err := managedZonesListCall.Pages(ctx, func(listDNS *dns.ManagedZonesListResponse) error {
@@ -38,18 +37,21 @@ func (g CloudDNSGenerator) createZonesResources(ctx context.Context, svc *dns.Se
 				cloudDNSAllowEmptyValues,
 				cloudDNSAdditionalFields,
 			))
-			records := g.createRecordsResources(ctx, svc, project, zone.Name)
+			records, err := g.createRecordsResources(ctx, svc, project, zone.Name)
+			if err != nil {
+				return err
+			}
 			resources = append(resources, records...)
 		}
 		return nil
 	})
 	if err != nil {
-		log.Println(err)
-		return []terraformutils.Resource{}
+		return nil, fmt.Errorf("list dns managed zones: %w", err)
 	}
-	return resources
+	return resources, nil
 }
-func (g CloudDNSGenerator) createRecordsResources(ctx context.Context, svc *dns.Service, project, zoneName string) []terraformutils.Resource {
+
+func (g CloudDNSGenerator) createRecordsResources(ctx context.Context, svc *dns.Service, project, zoneName string) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	managedRecordsListCall := svc.ResourceRecordSets.List(project, zoneName)
 	err := managedRecordsListCall.Pages(ctx, func(listDNS *dns.ResourceRecordSetsListResponse) error {
@@ -72,10 +74,9 @@ func (g CloudDNSGenerator) createRecordsResources(ctx context.Context, svc *dns.
 		return nil
 	})
 	if err != nil {
-		log.Println(err)
-		return []terraformutils.Resource{}
+		return nil, fmt.Errorf("list dns records for %s: %w", zoneName, err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -88,7 +89,11 @@ func (g *CloudDNSGenerator) InitResources() error {
 		return err
 	}
 
-	g.Resources = g.createZonesResources(ctx, svc, project)
+	resources, err := g.createZonesResources(ctx, svc, project)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 	return nil
 }
 
