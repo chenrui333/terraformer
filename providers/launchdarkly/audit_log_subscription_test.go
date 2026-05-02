@@ -11,15 +11,17 @@ func TestAuditLogSubscriptionAttributesSeedsConfig(t *testing.T) {
 	got := auditLogSubscriptionAttributes("datadog", map[string]interface{}{
 		"apiKey":          "secret",
 		"hostURL":         "https://api.datadoghq.com",
+		"last9":           "token",
 		"skipHTTPArchive": true,
 		"nested":          map[string]interface{}{"key": "value"},
 	})
 
 	want := map[string]string{
 		"integration_key":          "datadog",
-		"config.%":                 "4",
+		"config.%":                 "5",
 		"config.api_key":           "secret",
 		"config.host_url":          "https://api.datadoghq.com",
+		"config.last9":             "token",
 		"config.skip_http_archive": "true",
 		"config.nested":            `{"key":"value"}`,
 	}

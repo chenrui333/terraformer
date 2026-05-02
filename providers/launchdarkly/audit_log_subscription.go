@@ -74,9 +74,16 @@ func auditLogSubscriptionAttributes(integrationKey string, config map[string]int
 		"config.%":        strconv.Itoa(len(config)),
 	}
 	for key, value := range config {
-		attributes["config."+strcase.ToSnake(key)] = auditLogSubscriptionConfigValue(value)
+		attributes["config."+auditLogSubscriptionConfigKey(key)] = auditLogSubscriptionConfigValue(value)
 	}
 	return attributes
+}
+
+func auditLogSubscriptionConfigKey(key string) string {
+	if key == "last9" {
+		return key
+	}
+	return strcase.ToSnake(key)
 }
 
 func auditLogSubscriptionConfigValue(value interface{}) string {
