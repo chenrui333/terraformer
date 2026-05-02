@@ -6,10 +6,12 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -135,7 +137,7 @@ func (k *Kind) initDynamicResources(client dynamic.Interface) error {
 		}
 
 		k.Resources = append(k.Resources, terraformutils.NewSimpleResource(
-			name,
+			k.importID(item),
 			name,
 			terraformType,
 			"kubernetes",
@@ -150,4 +152,31 @@ func (k *Kind) terraformType() string {
 		return k.TerraformType
 	}
 	return extractTfResourceName(k.Name)
+}
+
+func (k *Kind) importID(item unstructured.Unstructured) string {
+	name := item.GetName()
+	if k.terraformType() != manifestTerraformResourceName {
+		if k.Namespaced {
+			return item.GetNamespace() + "/" + name
+		}
+		return name
+	}
+
+	parts := []string{
+		"apiVersion=" + k.apiVersion(),
+		"kind=" + k.Name,
+	}
+	if k.Namespaced {
+		parts = append(parts, "namespace="+item.GetNamespace())
+	}
+	parts = append(parts, "name="+name)
+	return strings.Join(parts, ",")
+}
+
+func (k *Kind) apiVersion() string {
+	if k.Group == "" {
+		return k.Version
+	}
+	return k.Group + "/" + k.Version
 }

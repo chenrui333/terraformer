@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
@@ -424,6 +425,110 @@ func TestSelectTerraformResourceName(t *testing.T) {
 	}
 }
 
+func TestSelectImportResourceName(t *testing.T) {
+	clientset := fake.NewSimpleClientset()
+	manageableVerbs := []string{"create", "delete", "get", "list", "patch", "update"}
+	tests := []struct {
+		name           string
+		group          string
+		version        string
+		resource       metav1.APIResource
+		supportedTypes map[string]struct{}
+		want           string
+		wantDynamic    bool
+		wantOK         bool
+	}{
+		{
+			name:    "selects first-class typed resource",
+			version: "v1",
+			resource: metav1.APIResource{
+				Name:  "services",
+				Kind:  "Service",
+				Verbs: manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				"kubernetes_service_v1": {},
+			},
+			want:   "kubernetes_service_v1",
+			wantOK: true,
+		},
+		{
+			name:    "selects explicit dynamic first-class resource",
+			group:   "apiregistration.k8s.io",
+			version: "v1",
+			resource: metav1.APIResource{
+				Name:  "apiservices",
+				Kind:  "APIService",
+				Verbs: manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				"kubernetes_api_service_v1": {},
+			},
+			want:        "kubernetes_api_service_v1",
+			wantDynamic: true,
+			wantOK:      true,
+		},
+		{
+			name:    "falls back to manifest for untyped API extension",
+			group:   "example.com",
+			version: "v1",
+			resource: metav1.APIResource{
+				Name:  "widgets",
+				Kind:  "Widget",
+				Verbs: manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				manifestTerraformResourceName: {},
+			},
+			want:        manifestTerraformResourceName,
+			wantDynamic: true,
+			wantOK:      true,
+		},
+		{
+			name:    "skips native typed resource without first-class provider type",
+			version: "v1",
+			resource: metav1.APIResource{
+				Name:  "nodes",
+				Kind:  "Node",
+				Verbs: manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				manifestTerraformResourceName: {},
+			},
+			wantOK: false,
+		},
+		{
+			name:    "skips untyped resource without manifest provider type",
+			group:   "example.com",
+			version: "v1",
+			resource: metav1.APIResource{
+				Name:  "widgets",
+				Kind:  "Widget",
+				Verbs: manageableVerbs,
+			},
+			wantOK: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, dynamic, ok := selectImportResourceName(clientset, tt.group, tt.version, tt.resource, func(name string) bool {
+				_, exists := tt.supportedTypes[name]
+				return exists
+			})
+			if ok != tt.wantOK {
+				t.Fatalf("selectImportResourceName() ok = %t, want %t", ok, tt.wantOK)
+			}
+			if dynamic != tt.wantDynamic {
+				t.Fatalf("selectImportResourceName() dynamic = %t, want %t", dynamic, tt.wantDynamic)
+			}
+			if got != tt.want {
+				t.Fatalf("selectImportResourceName() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestSelectTerraformResourceNameStableV1Aliases(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -505,6 +610,85 @@ func TestSupportsDynamicClientResource(t *testing.T) {
 			got := supportsDynamicClientResource(tt.group, tt.version, tt.kind)
 			if got != tt.want {
 				t.Fatalf("supportsDynamicClientResource(%q, %q, %q) = %t, want %t", tt.group, tt.version, tt.kind, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSupportsManifestResource(t *testing.T) {
+	manageableVerbs := []string{"create", "delete", "get", "list", "patch", "update"}
+	tests := []struct {
+		name           string
+		resource       metav1.APIResource
+		supportedTypes map[string]struct{}
+		want           bool
+	}{
+		{
+			name: "supports manageable custom resource",
+			resource: metav1.APIResource{
+				Name:  "widgets",
+				Kind:  "Widget",
+				Verbs: manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				manifestTerraformResourceName: {},
+			},
+			want: true,
+		},
+		{
+			name: "requires manifest provider type",
+			resource: metav1.APIResource{
+				Name:  "widgets",
+				Kind:  "Widget",
+				Verbs: manageableVerbs,
+			},
+			want: false,
+		},
+		{
+			name: "rejects subresources",
+			resource: metav1.APIResource{
+				Name:  "widgets/status",
+				Kind:  "Widget",
+				Verbs: manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				manifestTerraformResourceName: {},
+			},
+			want: false,
+		},
+		{
+			name: "requires manageable verbs",
+			resource: metav1.APIResource{
+				Name:  "podmetrics",
+				Kind:  "PodMetrics",
+				Verbs: []string{"get", "list"},
+			},
+			supportedTypes: map[string]struct{}{
+				manifestTerraformResourceName: {},
+			},
+			want: false,
+		},
+		{
+			name: "requires kind",
+			resource: metav1.APIResource{
+				Name:  "widgets",
+				Verbs: manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				manifestTerraformResourceName: {},
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := supportsManifestResource(tt.resource, func(name string) bool {
+				_, exists := tt.supportedTypes[name]
+				return exists
+			})
+			if got != tt.want {
+				t.Fatalf("supportsManifestResource() = %t, want %t", got, tt.want)
 			}
 		})
 	}

@@ -5,6 +5,8 @@ package kubernetes
 import (
 	"testing"
 
+	"github.com/chenrui333/terraformer/terraformutils"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -90,6 +92,78 @@ func TestInitDynamicResourcesNamespaced(t *testing.T) {
 	}
 	if resource.InstanceInfo.Type != "kubernetes_widget" {
 		t.Fatalf("resource type = %q, want %q", resource.InstanceInfo.Type, "kubernetes_widget")
+	}
+}
+
+func TestInitDynamicResourcesManifestImportID(t *testing.T) {
+	gvr := schema.GroupVersionResource{
+		Group:    "example.com",
+		Version:  "v1",
+		Resource: "widgets",
+	}
+	widget := newUnstructured("example.com/v1", "Widget", "sample", "default")
+	client := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(
+		runtime.NewScheme(),
+		map[schema.GroupVersionResource]string{gvr: "WidgetList"},
+		widget,
+	)
+
+	kind := &Kind{
+		Group:         "example.com",
+		Version:       "v1",
+		Name:          "Widget",
+		ResourceName:  "widgets",
+		Namespaced:    true,
+		TerraformType: manifestTerraformResourceName,
+	}
+	if err := kind.initDynamicResources(client); err != nil {
+		t.Fatalf("initDynamicResources() error = %v", err)
+	}
+
+	if len(kind.Resources) != 1 {
+		t.Fatalf("Resources len = %d, want 1", len(kind.Resources))
+	}
+	resource := kind.Resources[0]
+	if resource.InstanceState.ID != "apiVersion=example.com/v1,kind=Widget,namespace=default,name=sample" {
+		t.Fatalf("resource ID = %q, want %q", resource.InstanceState.ID, "apiVersion=example.com/v1,kind=Widget,namespace=default,name=sample")
+	}
+	if resource.ResourceName != terraformutils.TfSanitize("default/sample") {
+		t.Fatalf("resource name = %q, want %q", resource.ResourceName, terraformutils.TfSanitize("default/sample"))
+	}
+	if resource.InstanceInfo.Type != manifestTerraformResourceName {
+		t.Fatalf("resource type = %q, want %q", resource.InstanceInfo.Type, manifestTerraformResourceName)
+	}
+}
+
+func TestInitDynamicResourcesManifestImportIDClusterScoped(t *testing.T) {
+	gvr := schema.GroupVersionResource{
+		Group:    "apiextensions.k8s.io",
+		Version:  "v1",
+		Resource: "customresourcedefinitions",
+	}
+	crd := newUnstructured("apiextensions.k8s.io/v1", "CustomResourceDefinition", "widgets.example.com", "")
+	client := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(
+		runtime.NewScheme(),
+		map[schema.GroupVersionResource]string{gvr: "CustomResourceDefinitionList"},
+		crd,
+	)
+
+	kind := &Kind{
+		Group:         "apiextensions.k8s.io",
+		Version:       "v1",
+		Name:          "CustomResourceDefinition",
+		ResourceName:  "customresourcedefinitions",
+		TerraformType: manifestTerraformResourceName,
+	}
+	if err := kind.initDynamicResources(client); err != nil {
+		t.Fatalf("initDynamicResources() error = %v", err)
+	}
+
+	if len(kind.Resources) != 1 {
+		t.Fatalf("Resources len = %d, want 1", len(kind.Resources))
+	}
+	if kind.Resources[0].InstanceState.ID != "apiVersion=apiextensions.k8s.io/v1,kind=CustomResourceDefinition,name=widgets.example.com" {
+		t.Fatalf("resource ID = %q, want %q", kind.Resources[0].InstanceState.ID, "apiVersion=apiextensions.k8s.io/v1,kind=CustomResourceDefinition,name=widgets.example.com")
 	}
 }
 

@@ -8,8 +8,12 @@ import (
 	"strings"
 
 	"github.com/iancoleman/strcase"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes"
 )
+
+const manifestTerraformResourceName = "kubernetes_manifest"
 
 type kubernetesResourceID struct {
 	group   string
@@ -130,9 +134,50 @@ func selectTerraformResourceName(group, version, kind string, hasResourceType fu
 	return "", false
 }
 
+func selectImportResourceName(
+	clientset kubernetes.Interface,
+	group string,
+	version string,
+	resource metav1.APIResource,
+	hasResourceType func(string) bool,
+) (string, bool, bool) {
+	terraformResourceName, ok := selectTerraformResourceName(group, version, resource.Kind, hasResourceType)
+	if ok {
+		if supportsTypedClientResource(clientset, group, version, resource.Kind) {
+			return terraformResourceName, false, true
+		}
+		if supportsDynamicClientResource(group, version, resource.Kind) {
+			return terraformResourceName, true, true
+		}
+		return "", false, false
+	}
+
+	// Keep native typed-client resources on explicit provider resources only.
+	// The manifest fallback is for CRDs and other untyped API extensions.
+	if supportsTypedClientResource(clientset, group, version, resource.Kind) {
+		return "", false, false
+	}
+	if !supportsManifestResource(resource, hasResourceType) {
+		return "", false, false
+	}
+	return manifestTerraformResourceName, true, true
+}
+
 func supportsDynamicClientResource(group, version, kind string) bool {
 	_, ok := dynamicClientResources[kubernetesResourceID{group: group, version: version, kind: kind}]
 	return ok
+}
+
+func supportsManifestResource(resource metav1.APIResource, hasResourceType func(string) bool) bool {
+	if !hasResourceType(manifestTerraformResourceName) {
+		return false
+	}
+	if resource.Kind == "" || strings.Contains(resource.Name, "/") {
+		return false
+	}
+
+	verbs := sets.NewString(resource.Verbs...)
+	return verbs.HasAll("create", "delete", "get", "list", "patch")
 }
 
 func supportsTypedClientResource(clientset kubernetes.Interface, group, version, kind string) (ok bool) {

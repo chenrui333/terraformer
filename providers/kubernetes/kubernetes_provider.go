@@ -114,21 +114,13 @@ func (p *KubernetesProvider) GetSupportedService() map[string]terraformutils.Ser
 			}
 			listableResources[kubernetesResourceID{group: gv.Group, version: gv.Version, kind: resource.Kind}] = struct{}{}
 
-			// filter to resources that the Terraform Kubernetes provider can import
-			terraformResourceName, ok := selectTerraformResourceName(gv.Group, gv.Version, resource.Kind, func(name string) bool {
+			hasResourceType := func(name string) bool {
 				_, exists := resp.ResourceTypes[name]
 				return exists
-			})
+			}
+			terraformResourceName, useDynamicClient, ok := selectImportResourceName(clientset, gv.Group, gv.Version, resource, hasResourceType)
 			if !ok {
 				continue
-			}
-
-			useDynamicClient := false
-			if !supportsTypedClientResource(clientset, gv.Group, gv.Version, resource.Kind) {
-				if !supportsDynamicClientResource(gv.Group, gv.Version, resource.Kind) {
-					continue
-				}
-				useDynamicClient = true
 			}
 
 			resources[resource.Name] = &Kind{
