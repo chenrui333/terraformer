@@ -74,10 +74,10 @@ func listR2BucketsInJurisdiction(
 		}
 		buckets = append(buckets, result.Buckets...)
 
-		if len(result.Buckets) < cloudflarePageSize || response.ResultInfo == nil || response.ResultInfo.Cursors.After == "" {
+		if len(result.Buckets) < cloudflarePageSize || response.ResultInfo == nil || response.ResultInfo.Cursor == "" {
 			break
 		}
-		cursor = response.ResultInfo.Cursors.After
+		cursor = response.ResultInfo.Cursor
 	}
 	return buckets, nil
 }

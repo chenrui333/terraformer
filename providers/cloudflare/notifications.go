@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	cf "github.com/cloudflare/cloudflare-go"
@@ -75,7 +76,9 @@ func listNotificationWebhooks(ctx context.Context, api *cf.API, accountID string
 }
 
 func (g *NotificationsGenerator) InitResources() error {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
 	api, err := g.initializeAPI()
 	if err != nil {
 		return err
