@@ -5,6 +5,7 @@ package aws
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -79,6 +80,52 @@ func TestOrganizationTraverseNodePaginatesChildren(t *testing.T) {
 	}
 }
 
+func TestOrganizationTraverseNodeStopsOnEmptyTokens(t *testing.T) {
+	generator := &OrganizationGenerator{}
+	client := &fakeOrganizationClient{
+		accountsByParent: map[string][]*organizations.ListAccountsForParentOutput{
+			"r-root": {
+				{
+					Accounts: []organizationtypes.Account{
+						{Id: aws.String("111111111111"), Name: aws.String("dev"), Arn: aws.String("arn:aws:organizations::111111111111:account/o-example/111111111111")},
+					},
+					NextToken: aws.String(""),
+				},
+				{
+					Accounts: []organizationtypes.Account{
+						{Id: aws.String("222222222222"), Name: aws.String("prod"), Arn: aws.String("arn:aws:organizations::222222222222:account/o-example/222222222222")},
+					},
+				},
+			},
+		},
+		unitsByParent: map[string][]*organizations.ListOrganizationalUnitsForParentOutput{
+			"r-root": {
+				{
+					NextToken: aws.String(""),
+				},
+				{
+					OrganizationalUnits: []organizationtypes.OrganizationalUnit{
+						{Id: aws.String("ou-root-child"), Name: aws.String("child"), Arn: aws.String("arn:aws:organizations::123456789012:ou/o-example/ou-root-child")},
+					},
+				},
+			},
+		},
+	}
+
+	if err := generator.traverseNode(client, "r-root"); err != nil {
+		t.Fatalf("traverseNode returned error: %v", err)
+	}
+	if len(generator.Resources) != 2 {
+		t.Fatalf("len(Resources) = %d, want 2", len(generator.Resources))
+	}
+	if client.accountCalls["r-root"] != 1 {
+		t.Fatalf("root account calls = %d, want 1", client.accountCalls["r-root"])
+	}
+	if client.unitCalls["r-root"] != 1 {
+		t.Fatalf("root unit calls = %d, want 1", client.unitCalls["r-root"])
+	}
+}
+
 func TestOrganizationAddPolicyAttachmentsReturnsTargetErrors(t *testing.T) {
 	listErr := errors.New("targets unavailable")
 	generator := &OrganizationGenerator{}
@@ -126,6 +173,37 @@ func TestOrganizationAddPolicyAttachmentsPaginatesTargets(t *testing.T) {
 	}
 }
 
+func TestOrganizationAddPolicyAttachmentsStopsOnEmptyToken(t *testing.T) {
+	generator := &OrganizationGenerator{}
+	client := &fakeOrganizationClient{
+		targetsByPolicy: map[string][]*organizations.ListTargetsForPolicyOutput{
+			"p-policy": {
+				{
+					Targets: []organizationtypes.PolicyTargetSummary{
+						{TargetId: aws.String("111111111111")},
+					},
+					NextToken: aws.String(""),
+				},
+				{
+					Targets: []organizationtypes.PolicyTargetSummary{
+						{TargetId: aws.String("ou-root-child")},
+					},
+				},
+			},
+		},
+	}
+
+	if err := generator.addPolicyAttachments(client, "p-policy", "policy"); err != nil {
+		t.Fatalf("addPolicyAttachments returned error: %v", err)
+	}
+	if len(generator.Resources) != 1 {
+		t.Fatalf("len(Resources) = %d, want 1", len(generator.Resources))
+	}
+	if client.targetCalls["p-policy"] != 1 {
+		t.Fatalf("target calls = %d, want 1", client.targetCalls["p-policy"])
+	}
+}
+
 type fakeOrganizationClient struct {
 	accountsByParent map[string][]*organizations.ListAccountsForParentOutput
 	unitsByParent    map[string][]*organizations.ListOrganizationalUnitsForParentOutput
@@ -143,8 +221,12 @@ func (c *fakeOrganizationClient) ListAccountsForParent(_ context.Context, input 
 		return nil, c.accountErr
 	}
 	parentID := aws.ToString(input.ParentId)
+	outputs := c.accountsByParent[parentID]
 	call := c.incrementAccountCall(parentID)
-	return outputAt(c.accountsByParent[parentID], call), nil
+	if err := validateOrganizationNextToken("accounts", parentID, call, input.NextToken, previousAccountNextToken(outputs, call)); err != nil {
+		return nil, err
+	}
+	return outputAt(outputs, call), nil
 }
 
 func (c *fakeOrganizationClient) ListOrganizationalUnitsForParent(_ context.Context, input *organizations.ListOrganizationalUnitsForParentInput, _ ...func(*organizations.Options)) (*organizations.ListOrganizationalUnitsForParentOutput, error) {
@@ -152,8 +234,12 @@ func (c *fakeOrganizationClient) ListOrganizationalUnitsForParent(_ context.Cont
 		return nil, c.unitErr
 	}
 	parentID := aws.ToString(input.ParentId)
+	outputs := c.unitsByParent[parentID]
 	call := c.incrementUnitCall(parentID)
-	return outputAt(c.unitsByParent[parentID], call), nil
+	if err := validateOrganizationNextToken("organizational units", parentID, call, input.NextToken, previousUnitNextToken(outputs, call)); err != nil {
+		return nil, err
+	}
+	return outputAt(outputs, call), nil
 }
 
 func (c *fakeOrganizationClient) ListTargetsForPolicy(_ context.Context, input *organizations.ListTargetsForPolicyInput, _ ...func(*organizations.Options)) (*organizations.ListTargetsForPolicyOutput, error) {
@@ -161,8 +247,12 @@ func (c *fakeOrganizationClient) ListTargetsForPolicy(_ context.Context, input *
 		return nil, c.targetErr
 	}
 	policyID := aws.ToString(input.PolicyId)
+	outputs := c.targetsByPolicy[policyID]
 	call := c.incrementTargetCall(policyID)
-	return outputAt(c.targetsByPolicy[policyID], call), nil
+	if err := validateOrganizationNextToken("policy targets", policyID, call, input.NextToken, previousTargetNextToken(outputs, call)); err != nil {
+		return nil, err
+	}
+	return outputAt(outputs, call), nil
 }
 
 func (c *fakeOrganizationClient) incrementAccountCall(parentID string) int {
@@ -197,4 +287,43 @@ func outputAt[T any](outputs []*T, index int) *T {
 		return new(T)
 	}
 	return outputs[index]
+}
+
+func validateOrganizationNextToken(resourceType, id string, call int, got, previous *string) error {
+	if call == 0 {
+		if aws.ToString(got) != "" {
+			return fmt.Errorf("%s request for %s used first-page next token %q", resourceType, id, aws.ToString(got))
+		}
+		return nil
+	}
+
+	want := aws.ToString(previous)
+	if want == "" {
+		return fmt.Errorf("%s request for %s fetched page %d after empty next token", resourceType, id, call+1)
+	}
+	if aws.ToString(got) != want {
+		return fmt.Errorf("%s request for %s next token = %q, want %q", resourceType, id, aws.ToString(got), want)
+	}
+	return nil
+}
+
+func previousAccountNextToken(outputs []*organizations.ListAccountsForParentOutput, call int) *string {
+	if call == 0 || call-1 >= len(outputs) || outputs[call-1] == nil {
+		return nil
+	}
+	return outputs[call-1].NextToken
+}
+
+func previousUnitNextToken(outputs []*organizations.ListOrganizationalUnitsForParentOutput, call int) *string {
+	if call == 0 || call-1 >= len(outputs) || outputs[call-1] == nil {
+		return nil
+	}
+	return outputs[call-1].NextToken
+}
+
+func previousTargetNextToken(outputs []*organizations.ListTargetsForPolicyOutput, call int) *string {
+	if call == 0 || call-1 >= len(outputs) || outputs[call-1] == nil {
+		return nil
+	}
+	return outputs[call-1].NextToken
 }

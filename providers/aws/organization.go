@@ -63,7 +63,7 @@ func (g *OrganizationGenerator) traverseNode(svc organizationClient, parentID st
 			))
 		}
 		accountNextToken = accountsForParent.NextToken
-		if accountNextToken == nil {
+		if !organizationHasMorePages(accountNextToken) {
 			break
 		}
 	}
@@ -97,7 +97,7 @@ func (g *OrganizationGenerator) traverseNode(svc organizationClient, parentID st
 			}
 		}
 		unitNextToken = unitsForParent.NextToken
-		if unitNextToken == nil {
+		if !organizationHasMorePages(unitNextToken) {
 			break
 		}
 	}
@@ -183,9 +183,13 @@ func (g *OrganizationGenerator) addPolicyAttachments(svc organizationClient, pol
 			))
 		}
 		nextToken = targetsForPolicy.NextToken
-		if nextToken == nil {
+		if !organizationHasMorePages(nextToken) {
 			break
 		}
 	}
 	return nil
+}
+
+func organizationHasMorePages(nextToken *string) bool {
+	return aws.ToString(nextToken) != ""
 }
