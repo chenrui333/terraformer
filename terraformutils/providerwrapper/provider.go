@@ -3,6 +3,7 @@
 package providerwrapper
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -13,10 +14,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenrui333/terraformer/terraformutils/kubernetesmanifest"
 	"github.com/chenrui333/terraformer/terraformutils/terraformerstring"
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat/configschema"
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat/providerproto"
+	"github.com/chenrui333/terraformer/terraformutils/typedjson"
 
 	"github.com/zclconf/go-cty/cty"
 
@@ -26,6 +29,8 @@ import (
 
 // DefaultDataDir is the default directory for storing local data.
 const DefaultDataDir = ".terraform"
+
+const kubernetesManifestResourceType = "kubernetes_manifest"
 
 type ProviderWrapper struct {
 	Provider     *providerproto.GRPCProvider
@@ -141,7 +146,8 @@ func (p *ProviderWrapper) Refresh(info *tfcompat.InstanceInfo, state *tfcompat.I
 	impliedType := schema.ResourceTypes[info.Type].Block.ImpliedType()
 	priorState, err := state.AttrsAsObjectValue(impliedType)
 	if err != nil {
-		return nil, err
+		log.Printf("Fail prepare prior state for provider read, trying import command: %s", err)
+		return p.importResourceState(info, state, schema)
 	}
 	successReadResource := false
 	resp := providerproto.ReadResourceResponse{}
@@ -163,18 +169,7 @@ func (p *ProviderWrapper) Refresh(info *tfcompat.InstanceInfo, state *tfcompat.I
 
 	if !successReadResource {
 		log.Println("Fail read resource from provider, trying import command")
-		// retry with regular import command - without resource attributes
-		importResponse := p.Provider.ImportResourceState(providerproto.ImportResourceStateRequest{
-			TypeName: info.Type,
-			ID:       state.ID,
-		})
-		if importResponse.Diagnostics.HasErrors() {
-			return nil, resp.Diagnostics.Err()
-		}
-		if len(importResponse.ImportedResources) == 0 {
-			return nil, errors.New("not able to import resource for a given ID")
-		}
-		return tfcompat.NewInstanceStateShimmedFromValue(importResponse.ImportedResources[0].State, int(schema.ResourceTypes[info.Type].Version)), nil
+		return p.importResourceState(info, state, schema)
 	}
 
 	if resp.NewState.IsNull() {
@@ -182,7 +177,76 @@ func (p *ProviderWrapper) Refresh(info *tfcompat.InstanceInfo, state *tfcompat.I
 		return nil, errors.New(msg)
 	}
 
-	return tfcompat.NewInstanceStateShimmedFromValue(resp.NewState, int(schema.ResourceTypes[info.Type].Version)), nil
+	refreshedState := tfcompat.NewInstanceStateShimmedFromValue(resp.NewState, int(schema.ResourceTypes[info.Type].Version))
+	preserveKubernetesManifestID(info.Type, refreshedState, state)
+	return refreshedState, nil
+}
+
+func (p *ProviderWrapper) importResourceState(info *tfcompat.InstanceInfo, state *tfcompat.InstanceState, schema *providerproto.GetProviderSchemaResponse) (*tfcompat.InstanceState, error) {
+	id := ""
+	if state != nil {
+		id = state.ID
+	}
+	importResponse := p.Provider.ImportResourceState(providerproto.ImportResourceStateRequest{
+		TypeName: info.Type,
+		ID:       id,
+	})
+	if importResponse.Diagnostics.HasErrors() {
+		return nil, importResponse.Diagnostics.Err()
+	}
+	if len(importResponse.ImportedResources) == 0 {
+		return nil, errors.New("not able to import resource for a given ID")
+	}
+	importedState := tfcompat.NewInstanceStateShimmedFromValue(importResponse.ImportedResources[0].State, int(schema.ResourceTypes[info.Type].Version))
+	preserveKubernetesManifestID(info.Type, importedState, state)
+	populateKubernetesManifestFromObject(info.Type, importedState)
+	return importedState, nil
+}
+
+func preserveKubernetesManifestID(resourceType string, next *tfcompat.InstanceState, previous *tfcompat.InstanceState) {
+	if resourceType != kubernetesManifestResourceType || next == nil || next.ID != "" || previous == nil {
+		return
+	}
+	next.ID = previous.ID
+}
+
+func populateKubernetesManifestFromObject(resourceType string, state *tfcompat.InstanceState) {
+	if resourceType != kubernetesManifestResourceType || state == nil || len(state.TypedAttributes) == 0 {
+		return
+	}
+
+	attributes, err := typedjson.UnmarshalObject(state.TypedAttributes)
+	if err != nil {
+		return
+	}
+
+	object, ok := attributes["object"].(map[string]interface{})
+	changed := false
+	if !manifestHasValue(attributes["manifest"]) && ok && len(object) > 0 {
+		attributes["manifest"] = kubernetesmanifest.ConfigFromObject(object)
+		changed = true
+	}
+
+	if !changed {
+		return
+	}
+
+	raw, err := json.Marshal(attributes)
+	if err != nil {
+		return
+	}
+	state.SetTypedAttributes(raw)
+}
+
+func manifestHasValue(value interface{}) bool {
+	switch value := value.(type) {
+	case nil:
+		return false
+	case map[string]interface{}:
+		return len(value) > 0
+	default:
+		return true
+	}
 }
 
 func (p *ProviderWrapper) initProvider(verbose bool) error {

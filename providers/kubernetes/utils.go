@@ -8,8 +8,12 @@ import (
 	"strings"
 
 	"github.com/iancoleman/strcase"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes"
 )
+
+const manifestTerraformResourceName = "kubernetes_manifest"
 
 type kubernetesResourceID struct {
 	group   string
@@ -84,7 +88,40 @@ var dynamicClientResources = map[kubernetesResourceID]struct{}{
 	{group: "policy", version: "v1beta1", kind: "PodSecurityPolicy"}:            {},
 }
 
+// client-go group accessor names collapse DNS groups to their first label
+// (for example, rbac.authorization.k8s.io -> RbacV1), so require exact API
+// groups before reflection to avoid treating CRDs like apps.example.com as
+// native apps resources.
+var typedClientSetAPIGroups = map[string]struct{}{
+	"":                             {},
+	"admissionregistration.k8s.io": {},
+	"apps":                         {},
+	"authentication.k8s.io":        {},
+	"authorization.k8s.io":         {},
+	"autoscaling":                  {},
+	"batch":                        {},
+	"certificates.k8s.io":          {},
+	"coordination.k8s.io":          {},
+	"discovery.k8s.io":             {},
+	"events.k8s.io":                {},
+	"extensions":                   {},
+	"flowcontrol.apiserver.k8s.io": {},
+	"internal.apiserver.k8s.io":    {},
+	"networking.k8s.io":            {},
+	"node.k8s.io":                  {},
+	"policy":                       {},
+	"rbac.authorization.k8s.io":    {},
+	"resource.k8s.io":              {},
+	"scheduling.k8s.io":            {},
+	"storagemigration.k8s.io":      {},
+	"storage.k8s.io":               {},
+}
+
 func extractClientSetFuncGroupName(group, version string) string {
+	if _, ok := typedClientSetAPIGroups[group]; !ok {
+		return ""
+	}
+
 	v := strings.Title(version)
 	if len(group) > 0 {
 		return strings.Title(strings.Split(group, ".")[0]) + v
@@ -130,9 +167,53 @@ func selectTerraformResourceName(group, version, kind string, hasResourceType fu
 	return "", false
 }
 
+func selectImportResourceName(
+	clientset kubernetes.Interface,
+	group string,
+	version string,
+	resource metav1.APIResource,
+	hasResourceType func(string) bool,
+) (string, bool, bool) {
+	terraformResourceName, ok := selectTerraformResourceName(group, version, resource.Kind, hasResourceType)
+	if ok {
+		if supportsTypedClientResource(clientset, group, version, resource.Kind) {
+			return terraformResourceName, false, true
+		}
+		if supportsDynamicClientResource(group, version, resource.Kind) {
+			return terraformResourceName, true, true
+		}
+		if supportsManifestResource(resource, hasResourceType) {
+			return manifestTerraformResourceName, true, true
+		}
+		return "", false, false
+	}
+
+	// Keep native typed-client resources on explicit provider resources only.
+	// The manifest fallback is for CRDs and other untyped API extensions.
+	if supportsTypedClientResource(clientset, group, version, resource.Kind) {
+		return "", false, false
+	}
+	if !supportsManifestResource(resource, hasResourceType) {
+		return "", false, false
+	}
+	return manifestTerraformResourceName, true, true
+}
+
 func supportsDynamicClientResource(group, version, kind string) bool {
 	_, ok := dynamicClientResources[kubernetesResourceID{group: group, version: version, kind: kind}]
 	return ok
+}
+
+func supportsManifestResource(resource metav1.APIResource, hasResourceType func(string) bool) bool {
+	if !hasResourceType(manifestTerraformResourceName) {
+		return false
+	}
+	if resource.Kind == "" || strings.Contains(resource.Name, "/") {
+		return false
+	}
+
+	verbs := sets.NewString(resource.Verbs...)
+	return verbs.HasAll("create", "delete", "get", "list", "patch")
 }
 
 func supportsTypedClientResource(clientset kubernetes.Interface, group, version, kind string) (ok bool) {

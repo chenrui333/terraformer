@@ -5,6 +5,8 @@ package terraformutils
 import (
 	"strings"
 	"testing"
+
+	hclParser "github.com/hashicorp/hcl/hcl/parser"
 )
 
 func TestPrintResource(t *testing.T) {
@@ -38,5 +40,109 @@ func TestPrintResource(t *testing.T) {
 	}
 	if strings.Count(string(data), "map2 = ") != 1 {
 		t.Errorf("failed to parse data %s", string(data))
+	}
+}
+
+func TestPrintManifestResourceKeepsNestedMapsRenderable(t *testing.T) {
+	resource := NewSimpleResource(
+		"apiVersion=example.com/v1,kind=Widget,namespace=default,name=sample",
+		"example.com/v1/Widget/default/sample",
+		"kubernetes_manifest",
+		"kubernetes",
+		nil,
+	)
+	resource.Item = map[string]interface{}{
+		"field_manager": nil,
+		"manifest": map[string]interface{}{
+			"apiVersion": "example.com/v1",
+			"kind":       "Widget",
+			"metadata": map[string]interface{}{
+				"annotations": map[string]interface{}{
+					"${terraform.io/template}":  "literal ${FOO}",
+					"%{terraform.io/directive}": "literal %{ if true }enabled%{ endif }",
+					"if":                        "reserved",
+					"kubernetes.io/description": "sample widget",
+				},
+				"name":      "sample",
+				"namespace": "default",
+				"labels": map[string]interface{}{
+					"123abc": "numeric",
+					"app":    "sample",
+					"for":    "reserved",
+				},
+			},
+			"spec": map[string]interface{}{
+				"template": map[string]interface{}{
+					"metadata": map[string]interface{}{
+						"labels": map[string]interface{}{
+							"app": "sample",
+						},
+					},
+				},
+				"versions": []interface{}{
+					map[string]interface{}{
+						"name": "v1",
+						"schema": map[string]interface{}{
+							"openAPIV3Schema": map[string]interface{}{
+								"type": "object",
+							},
+						},
+					},
+					map[string]interface{}{
+						"name": "v2",
+						"schema": map[string]interface{}{
+							"openAPIV3Schema": map[string]interface{}{
+								"type": "object",
+							},
+						},
+					},
+				},
+			},
+		},
+		"object": map[string]interface{}{
+			"status": map[string]interface{}{
+				"phase": "Ready",
+			},
+		},
+		"timeouts": nil,
+		"wait":     nil,
+	}
+
+	data, err := HclPrintResource([]Resource{resource}, map[string]interface{}{}, "hcl", true)
+	if err != nil {
+		t.Fatalf("HclPrintResource() error = %v", err)
+	}
+	output := string(data)
+	for _, want := range []string{
+		"manifest = {",
+		"metadata = {",
+		"labels = {",
+		"template = {",
+		"versions = [",
+		"schema = {",
+		"openAPIV3Schema = {",
+		"\"123abc\" = \"numeric\"",
+		"\"$${terraform.io/template}\" = \"literal $${FOO}\"",
+		"\"%%{terraform.io/directive}\" = \"literal %%{ if true }enabled%%{ endif }\"",
+		"\"for\" = \"reserved\"",
+		"\"if\" = \"reserved\"",
+		"\"kubernetes.io/description\" = \"sample widget\"",
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("output does not contain %q:\n%s", want, output)
+		}
+	}
+	for _, block := range []string{"manifest {", "schema {", "openAPIV3Schema {"} {
+		if strings.Contains(output, block) {
+			t.Fatalf("%s rendered as a block:\n%s", block, output)
+		}
+	}
+	for _, unwanted := range []string{"object =", "status =", "field_manager =", "timeouts =", "wait ="} {
+		if strings.Contains(output, unwanted) {
+			t.Fatalf("%s was rendered:\n%s", unwanted, output)
+		}
+	}
+	if _, err := hclParser.Parse(data); err != nil {
+		t.Fatalf("generated HCL does not parse: %v\n%s", err, output)
 	}
 }

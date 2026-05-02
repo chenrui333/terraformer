@@ -3,9 +3,14 @@
 package terraformutils
 
 import (
+	"encoding/json"
+	"regexp"
 	"testing"
 
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat/configschema"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat/providerproto"
+	"github.com/zclconf/go-cty/cty"
 )
 
 func TestNewResource(t *testing.T) {
@@ -154,5 +159,143 @@ func TestResourceFilterByID(t *testing.T) {
 	}
 	if rf2.Filter(r) {
 		t.Error("Filter should reject resource with non-matching ID")
+	}
+}
+
+func TestTypedAttributesAsMapFiltersIgnoredTopLevelAttributes(t *testing.T) {
+	raw := json.RawMessage(`{
+		"id": "apiVersion=example.com/v1,kind=Widget,name=sample",
+		"manifest": {
+			"apiVersion": "example.com/v1",
+			"kind": "Widget"
+		},
+		"object": {
+			"computed": true
+		}
+	}`)
+	attributes, err := typedAttributesAsMap(raw, []*regexp.Regexp{
+		regexp.MustCompile("^id$"),
+		regexp.MustCompile("^object$"),
+	})
+	if err != nil {
+		t.Fatalf("typedAttributesAsMap() error = %v", err)
+	}
+	if _, ok := attributes["id"]; ok {
+		t.Fatal("id attribute was not filtered")
+	}
+	if _, ok := attributes["object"]; ok {
+		t.Fatal("object attribute was not filtered")
+	}
+	manifest, ok := attributes["manifest"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("manifest attribute type = %T, want map[string]interface{}", attributes["manifest"])
+	}
+	if manifest["apiVersion"] != "example.com/v1" {
+		t.Fatalf("manifest.apiVersion = %v, want %q", manifest["apiVersion"], "example.com/v1")
+	}
+}
+
+func TestConvertTFstateUsesTypedManifestWhenFlatmapHasNoManifest(t *testing.T) {
+	resource := Resource{
+		InstanceInfo: &tfcompat.InstanceInfo{Type: "kubernetes_manifest"},
+		InstanceState: &tfcompat.InstanceState{
+			Attributes: map[string]string{
+				"id": "apiVersion=example.com/v1,kind=Widget,name=sample",
+			},
+			TypedAttributes: json.RawMessage("{\"id\":\"apiVersion=example.com/v1,kind=Widget,name=sample\",\"manifest\":{},\"object\":{\"apiVersion\":\"example.com/v1\",\"kind\":\"Widget\",\"metadata\":{\"name\":\"sample\",\"uid\":\"uid-123\",\"resourceVersion\":\"123\",\"managedFields\":[{\"manager\":\"controller\"}]},\"spec\":{\"bigInteger\":9007199254740993},\"status\":{\"phase\":\"Ready\"}},\"field_manager\":null,\"timeouts\":null,\"wait\":null}"),
+		},
+		IgnoreKeys: []string{"^id$"},
+	}
+
+	if err := resource.convertTFstate(kubernetesManifestTestSchema()); err != nil {
+		t.Fatalf("ConvertTFstate() error = %v", err)
+	}
+
+	manifest, ok := resource.Item["manifest"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("manifest attribute type = %T, want map[string]interface{}", resource.Item["manifest"])
+	}
+	if manifest["apiVersion"] != "example.com/v1" {
+		t.Fatalf("manifest.apiVersion = %v, want %q", manifest["apiVersion"], "example.com/v1")
+	}
+	metadata := manifest["metadata"].(map[string]interface{})
+	if metadata["name"] != "sample" {
+		t.Fatalf("manifest.metadata.name = %v, want %q", metadata["name"], "sample")
+	}
+	for _, key := range []string{"uid", "resourceVersion", "managedFields"} {
+		if _, ok := metadata[key]; ok {
+			t.Fatalf("manifest.metadata.%s was not stripped", key)
+		}
+	}
+	if _, ok := manifest["status"]; ok {
+		t.Fatal("manifest.status was not stripped")
+	}
+	spec := manifest["spec"].(map[string]interface{})
+	assertJSONNumber(t, spec["bigInteger"], "9007199254740993")
+	if _, ok := resource.Item["id"]; ok {
+		t.Fatal("id attribute was not filtered from typed manifest fallback")
+	}
+	if _, ok := resource.Item["object"]; ok {
+		t.Fatal("object attribute was not filtered from generated config item")
+	}
+	for _, key := range []string{"field_manager", "timeouts", "wait"} {
+		if _, ok := resource.Item[key]; ok {
+			t.Fatalf("%s null block attribute was not filtered from generated config item", key)
+		}
+	}
+}
+
+func assertJSONNumber(t *testing.T, value interface{}, want string) {
+	t.Helper()
+	number, ok := value.(json.Number)
+	if !ok {
+		t.Fatalf("number type = %T, want json.Number", value)
+	}
+	if number.String() != want {
+		t.Fatalf("number = %s, want %s", number.String(), want)
+	}
+}
+
+func TestConvertTFstateKeepsParsedManifestWhenFlatmapHasManifest(t *testing.T) {
+	resource := Resource{
+		InstanceInfo: &tfcompat.InstanceInfo{Type: "kubernetes_manifest"},
+		InstanceState: &tfcompat.InstanceState{
+			Attributes: map[string]string{
+				"manifest.%":          "2",
+				"manifest.apiVersion": "example.com/v1",
+				"manifest.kind":       "Widget",
+			},
+			TypedAttributes: json.RawMessage("{\"manifest\":{\"apiVersion\":\"typed.example.com/v1\",\"kind\":\"Widget\"}}"),
+		},
+	}
+
+	if err := resource.convertTFstate(kubernetesManifestTestSchema()); err != nil {
+		t.Fatalf("ConvertTFstate() error = %v", err)
+	}
+
+	manifest := resource.Item["manifest"].(map[string]interface{})
+	if manifest["apiVersion"] != "example.com/v1" {
+		t.Fatalf("manifest.apiVersion = %v, want flatmap value %q", manifest["apiVersion"], "example.com/v1")
+	}
+}
+
+func kubernetesManifestTestSchema() *providerproto.GetProviderSchemaResponse {
+	return &providerproto.GetProviderSchemaResponse{
+		ResourceTypes: map[string]configschema.Schema{
+			"kubernetes_manifest": {
+				Block: &configschema.Block{
+					Attributes: map[string]*configschema.Attribute{
+						"id": {
+							Type:     cty.String,
+							Computed: true,
+						},
+						"manifest": {
+							Type:     cty.Map(cty.String),
+							Optional: true,
+						},
+					},
+				},
+			},
+		},
 	}
 }

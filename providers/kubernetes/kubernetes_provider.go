@@ -20,6 +20,7 @@ import (
 	"github.com/zclconf/go-cty/cty"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/discovery"
@@ -114,32 +115,16 @@ func (p *KubernetesProvider) GetSupportedService() map[string]terraformutils.Ser
 			}
 			listableResources[kubernetesResourceID{group: gv.Group, version: gv.Version, kind: resource.Kind}] = struct{}{}
 
-			// filter to resources that the Terraform Kubernetes provider can import
-			terraformResourceName, ok := selectTerraformResourceName(gv.Group, gv.Version, resource.Kind, func(name string) bool {
+			hasResourceType := func(name string) bool {
 				_, exists := resp.ResourceTypes[name]
 				return exists
-			})
+			}
+			terraformResourceName, useDynamicClient, ok := selectImportResourceName(clientset, gv.Group, gv.Version, resource, hasResourceType)
 			if !ok {
 				continue
 			}
 
-			useDynamicClient := false
-			if !supportsTypedClientResource(clientset, gv.Group, gv.Version, resource.Kind) {
-				if !supportsDynamicClientResource(gv.Group, gv.Version, resource.Kind) {
-					continue
-				}
-				useDynamicClient = true
-			}
-
-			resources[resource.Name] = &Kind{
-				Group:            gv.Group,
-				Version:          gv.Version,
-				Name:             resource.Kind,
-				ResourceName:     resource.Name,
-				Namespaced:       resource.Namespaced,
-				TerraformType:    terraformResourceName,
-				UseDynamicClient: useDynamicClient,
-			}
+			addKubernetesResourceService(resources, gv.Group, gv.Version, resource, terraformResourceName, useDynamicClient)
 		}
 	}
 	addDefaultServiceAccountService(resources, clientset, listableResources, func(name string) bool {
@@ -147,6 +132,35 @@ func (p *KubernetesProvider) GetSupportedService() map[string]terraformutils.Ser
 		return exists
 	})
 	return resources
+}
+
+func addKubernetesResourceService(
+	resources map[string]terraformutils.ServiceGenerator,
+	group string,
+	version string,
+	resource metav1.APIResource,
+	terraformResourceName string,
+	useDynamicClient bool,
+) {
+	resources[kubernetesResourceServiceKey(group, version, resource.Name, terraformResourceName)] = &Kind{
+		Group:            group,
+		Version:          version,
+		Name:             resource.Kind,
+		ResourceName:     resource.Name,
+		Namespaced:       resource.Namespaced,
+		TerraformType:    terraformResourceName,
+		UseDynamicClient: useDynamicClient,
+	}
+}
+
+func kubernetesResourceServiceKey(group, version, resourceName, terraformResourceName string) string {
+	if terraformResourceName != manifestTerraformResourceName {
+		return resourceName
+	}
+	if group == "" {
+		return version + "/" + resourceName
+	}
+	return group + "/" + version + "/" + resourceName
 }
 
 func addDefaultServiceAccountService(

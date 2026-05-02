@@ -8,6 +8,8 @@ Example:
 ```
 
 Terraformer discovers Kubernetes API resources from the active cluster and imports resources that are available through either the typed Kubernetes client or an explicit dynamic-client import path, and the installed Terraform Kubernetes provider schema.
+Discovered CRDs and other untyped API extensions without a first-class Terraform Kubernetes provider type can be imported through `kubernetes_manifest` when the API resource is manageable and the installed provider supports that resource.
+Manifest-backed custom resources use a group/version-qualified resource selector such as `example.com/v1/widgets` to avoid collisions between CRDs that share the same plural name.
 
 Common supported resources include:
 
@@ -35,6 +37,8 @@ Common supported resources include:
     * `kubernetes_endpoints_v1`
 *   `endpointslices`
     * `kubernetes_endpoint_slice_v1`
+*   discovered CRDs and custom resources
+    * `kubernetes_manifest`
 *   `horizontalpodautoscalers`
     * `kubernetes_horizontal_pod_autoscaler_v2`
     * `kubernetes_horizontal_pod_autoscaler_v2beta2`

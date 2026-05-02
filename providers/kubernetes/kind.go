@@ -6,10 +6,12 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -127,15 +129,10 @@ func (k *Kind) initDynamicResources(client dynamic.Interface) error {
 			continue
 		}
 
-		name := ""
-		if k.Namespaced {
-			name = item.GetNamespace() + "/" + item.GetName()
-		} else {
-			name = item.GetName()
-		}
-
+		name := k.resourceName(item)
+		importID := k.importID(item)
 		k.Resources = append(k.Resources, terraformutils.NewSimpleResource(
-			name,
+			importID,
 			name,
 			terraformType,
 			"kubernetes",
@@ -145,9 +142,53 @@ func (k *Kind) initDynamicResources(client dynamic.Interface) error {
 	return nil
 }
 
+func (k *Kind) resourceName(item unstructured.Unstructured) string {
+	name := item.GetName()
+	if k.terraformType() != manifestTerraformResourceName {
+		if k.Namespaced {
+			return item.GetNamespace() + "/" + name
+		}
+		return name
+	}
+
+	parts := []string{k.apiVersion(), k.Name}
+	if k.Namespaced {
+		parts = append(parts, item.GetNamespace())
+	}
+	parts = append(parts, name)
+	return strings.Join(parts, "/")
+}
+
 func (k *Kind) terraformType() string {
 	if k.TerraformType != "" {
 		return k.TerraformType
 	}
 	return extractTfResourceName(k.Name)
+}
+
+func (k *Kind) importID(item unstructured.Unstructured) string {
+	name := item.GetName()
+	if k.terraformType() != manifestTerraformResourceName {
+		if k.Namespaced {
+			return item.GetNamespace() + "/" + name
+		}
+		return name
+	}
+
+	parts := []string{
+		"apiVersion=" + k.apiVersion(),
+		"kind=" + k.Name,
+	}
+	if k.Namespaced {
+		parts = append(parts, "namespace="+item.GetNamespace())
+	}
+	parts = append(parts, "name="+name)
+	return strings.Join(parts, ",")
+}
+
+func (k *Kind) apiVersion() string {
+	if k.Group == "" {
+		return k.Version
+	}
+	return k.Group + "/" + k.Version
 }

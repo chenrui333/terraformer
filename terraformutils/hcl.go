@@ -21,7 +21,18 @@ import (
 
 const safeChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
 
-var unsafeChars = regexp.MustCompile(`[^0-9A-Za-z_\-]`)
+var (
+	unsafeChars       = regexp.MustCompile(`[^0-9A-Za-z_\-]`)
+	hclObjectKeyChars = regexp.MustCompile(`^[A-Za-z_][0-9A-Za-z_-]*$`)
+	hclReservedKeys   = map[string]struct{}{
+		"false": {},
+		"for":   {},
+		"if":    {},
+		"in":    {},
+		"null":  {},
+		"true":  {},
+	}
+)
 
 // make HCL output reproducible by sorting the AST nodes
 func sortHclTree(tree interface{}) {
@@ -231,6 +242,167 @@ func blockSyntaxAdjustments(formatted []byte, mapsObjects map[string]struct{}) [
 	return []byte(s)
 }
 
+func formatMapKey(key string) string {
+	if isSafeHCLObjectKey(key) {
+		return key
+	}
+	return quoteHCLString(key)
+}
+
+func isSafeHCLObjectKey(key string) bool {
+	if !hclObjectKeyChars.MatchString(key) {
+		return false
+	}
+	_, reserved := hclReservedKeys[key]
+	return !reserved
+}
+
+func quoteHCLLabel(key string) string {
+	raw, err := json.Marshal(key)
+	if err != nil {
+		return "\"" + key + "\""
+	}
+	return string(raw)
+}
+
+func quoteHCLString(value string) string {
+	raw, err := json.Marshal(escapeTerraformTemplateMarkers(value))
+	if err != nil {
+		return "\"" + value + "\""
+	}
+	return string(raw)
+}
+
+func escapeTerraformTemplateMarkers(value string) string {
+	value = strings.ReplaceAll(value, "${", "$${")
+	value = strings.ReplaceAll(value, "%{", "%%{")
+	return value
+}
+
+func hclPrintManifestResources(resources []Resource, sortOutput bool) ([]byte, error) {
+	if len(resources) == 0 {
+		return []byte{}, nil
+	}
+
+	resources = append([]Resource{}, resources...)
+	if sortOutput {
+		sort.Slice(resources, func(i, j int) bool {
+			return resources[i].ResourceName < resources[j].ResourceName
+		})
+	}
+
+	var b strings.Builder
+	for i, res := range resources {
+		if i > 0 {
+			b.WriteString("\n\n")
+		}
+		fmt.Fprintf(&b, "resource %s %s {\n", quoteHCLLabel(res.InstanceInfo.Type), quoteHCLLabel(res.ResourceName))
+		item := manifestConfigAttributes(res.Item)
+		for _, key := range sortedHCLKeys(item) {
+			b.WriteString("  " + formatMapKey(key) + " = ")
+			if err := hclWriteValue(&b, item[key], 2, sortOutput); err != nil {
+				return nil, err
+			}
+			b.WriteString("\n")
+		}
+		b.WriteString("}")
+	}
+	b.WriteString("\n")
+	return []byte(b.String()), nil
+}
+
+func manifestConfigAttributes(item map[string]interface{}) map[string]interface{} {
+	attributes := make(map[string]interface{}, len(item))
+	for key, value := range item {
+		if key == "object" || value == nil {
+			continue
+		}
+		attributes[key] = value
+	}
+	return attributes
+}
+
+func hclWriteValue(b *strings.Builder, value interface{}, indent int, sortOutput bool) error {
+	switch value := value.(type) {
+	case map[string]interface{}:
+		return hclWriteMap(b, value, indent, sortOutput)
+	case []interface{}:
+		return hclWriteList(b, value, indent, sortOutput)
+	case string:
+		b.WriteString(quoteHCLString(value))
+		return nil
+	default:
+		raw, err := json.Marshal(value)
+		if err != nil {
+			return err
+		}
+		b.Write(raw)
+		return nil
+	}
+}
+
+func hclWriteMap(b *strings.Builder, value map[string]interface{}, indent int, sortOutput bool) error {
+	if len(value) == 0 {
+		b.WriteString("{}")
+		return nil
+	}
+
+	b.WriteString("{\n")
+	childIndent := strings.Repeat(" ", indent+2)
+	for _, key := range sortedHCLKeys(value) {
+		b.WriteString(childIndent + formatMapKey(key) + " = ")
+		if err := hclWriteValue(b, value[key], indent+2, sortOutput); err != nil {
+			return err
+		}
+		b.WriteString("\n")
+	}
+	b.WriteString(strings.Repeat(" ", indent) + "}")
+	return nil
+}
+
+func hclWriteList(b *strings.Builder, value []interface{}, indent int, sortOutput bool) error {
+	if len(value) == 0 {
+		b.WriteString("[]")
+		return nil
+	}
+
+	b.WriteString("[\n")
+	childIndent := strings.Repeat(" ", indent+2)
+	for _, item := range value {
+		b.WriteString(childIndent)
+		if err := hclWriteValue(b, item, indent+2, sortOutput); err != nil {
+			return err
+		}
+		b.WriteString(",\n")
+	}
+	b.WriteString(strings.Repeat(" ", indent) + "]")
+	return nil
+}
+
+func sortedHCLKeys(value map[string]interface{}) []string {
+	keys := make([]string, 0, len(value))
+	for key := range value {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func appendHCLSection(base []byte, section []byte) []byte {
+	base = bytes.TrimRight(base, "\n")
+	section = bytes.TrimLeft(section, "\n")
+	if len(bytes.TrimSpace(base)) == 0 {
+		return section
+	}
+	if len(bytes.TrimSpace(section)) == 0 {
+		return base
+	}
+	out := append([]byte{}, base...)
+	out = append(out, '\n', '\n')
+	out = append(out, section...)
+	return out
+}
+
 func requiredProvidersObjectAdjustments(formatted []byte) []byte {
 	s := string(formatted)
 	requiredProvidersRe := regexp.MustCompile("required_providers \".*\" {")
@@ -270,8 +442,21 @@ func TfSanitize(name string) string {
 func HclPrintResource(resources []Resource, providerData map[string]interface{}, output string, sort bool) ([]byte, error) {
 	resourcesByType := map[string]map[string]interface{}{}
 	mapsObjects := map[string]struct{}{}
+	manifestResources := make([]Resource, 0)
+	manifestResourceNames := map[string]struct{}{}
 	indexRe := regexp.MustCompile(`\.[0-9]+`)
 	for _, res := range resources {
+		if output == "hcl" && res.InstanceInfo.Type == "kubernetes_manifest" {
+			if _, exists := manifestResourceNames[res.ResourceName]; exists {
+				log.Println(resources)
+				log.Printf("[ERR]: duplicate resource found: %s.%s", res.InstanceInfo.Type, res.ResourceName)
+				continue
+			}
+			manifestResourceNames[res.ResourceName] = struct{}{}
+			manifestResources = append(manifestResources, res)
+			continue
+		}
+
 		r := resourcesByType[res.InstanceInfo.Type]
 		if r == nil {
 			r = make(map[string]interface{})
@@ -303,7 +488,22 @@ func HclPrintResource(resources []Resource, providerData map[string]interface{},
 	}
 	var err error
 
-	hclBytes, err := Print(data, mapsObjects, output, sort)
+	var hclBytes []byte
+	if output == "hcl" && len(manifestResources) > 0 {
+		if len(data) > 0 {
+			hclBytes, err = Print(data, mapsObjects, output, sort)
+			if err != nil {
+				return []byte{}, err
+			}
+		}
+		manifestBytes, err := hclPrintManifestResources(manifestResources, sort)
+		if err != nil {
+			return []byte{}, err
+		}
+		return appendHCLSection(hclBytes, manifestBytes), nil
+	}
+
+	hclBytes, err = Print(data, mapsObjects, output, sort)
 	if err != nil {
 		return []byte{}, err
 	}

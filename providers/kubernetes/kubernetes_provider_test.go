@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/chenrui333/terraformer/terraformutils"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
@@ -59,6 +60,52 @@ func TestAddDefaultServiceAccountServiceRequiresServiceAccountAPI(t *testing.T) 
 
 	if _, ok := resources[defaultServiceAccountServiceName]; ok {
 		t.Fatalf("resources[%q] was registered without serviceaccounts API support", defaultServiceAccountServiceName)
+	}
+}
+
+func TestAddKubernetesResourceServiceDisambiguatesManifestPluralCollisions(t *testing.T) {
+	resources := map[string]terraformutils.ServiceGenerator{}
+	resource := metav1.APIResource{
+		Name:       "widgets",
+		Kind:       "Widget",
+		Namespaced: true,
+	}
+
+	addKubernetesResourceService(resources, "example.com", "v1", resource, manifestTerraformResourceName, true)
+	addKubernetesResourceService(resources, "other.example.com", "v1", resource, manifestTerraformResourceName, true)
+
+	if len(resources) != 2 {
+		t.Fatalf("resources len = %d, want 2", len(resources))
+	}
+	for _, key := range []string{"example.com/v1/widgets", "other.example.com/v1/widgets"} {
+		service, ok := resources[key]
+		if !ok {
+			t.Fatalf("resources[%q] was not registered", key)
+		}
+		kind := service.(*Kind)
+		if kind.ResourceName != "widgets" {
+			t.Fatalf("ResourceName = %q, want %q", kind.ResourceName, "widgets")
+		}
+		if kind.TerraformType != manifestTerraformResourceName {
+			t.Fatalf("TerraformType = %q, want %q", kind.TerraformType, manifestTerraformResourceName)
+		}
+	}
+}
+
+func TestAddKubernetesResourceServiceKeepsNativePluralKey(t *testing.T) {
+	resources := map[string]terraformutils.ServiceGenerator{}
+	resource := metav1.APIResource{
+		Name: "services",
+		Kind: "Service",
+	}
+
+	addKubernetesResourceService(resources, "", "v1", resource, "kubernetes_service_v1", false)
+
+	if _, ok := resources["services"]; !ok {
+		t.Fatal("native resource was not registered with its plural key")
+	}
+	if _, ok := resources["v1/services"]; ok {
+		t.Fatal("native resource was registered with a manifest-style qualified key")
 	}
 }
 
