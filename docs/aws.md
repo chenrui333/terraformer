@@ -410,6 +410,9 @@ terraformer import aws --resources=sg --regions=us-east-1
     * `aws_sns_topic_subscription`
 *   `sqs`
     * `aws_sqs_queue`
+    * `aws_sqs_queue_policy`
+    * `aws_sqs_queue_redrive_allow_policy`
+    * `aws_sqs_queue_redrive_policy`
 *   `ssm`
     * `aws_ssm_activation`
     * `aws_ssm_association`
