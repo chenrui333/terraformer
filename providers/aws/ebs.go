@@ -51,9 +51,17 @@ func (g *EbsGenerator) InitResources() error {
 			isRootDevice := false // Let's leave root device configuration to be done in ec2_instance resources
 
 			for _, attachment := range volume.Attachments {
-				instances, _ := svc.DescribeInstances(context.TODO(), &ec2.DescribeInstancesInput{
+				instances, err := svc.DescribeInstances(context.TODO(), &ec2.DescribeInstancesInput{
 					InstanceIds: []string{StringValue(attachment.InstanceId)},
 				})
+				if err != nil {
+					return fmt.Errorf(
+						"describe EC2 instance %s for EBS volume %s: %w",
+						StringValue(attachment.InstanceId),
+						StringValue(volume.VolumeId),
+						err,
+					)
+				}
 				for _, reservation := range instances.Reservations {
 					for _, instance := range reservation.Instances {
 						if StringValue(instance.RootDeviceName) == StringValue(attachment.Device) {
