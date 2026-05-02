@@ -276,7 +276,7 @@ func removeConfigMapDataDuplicates(resourcesByService map[string][]terraformutil
 	}
 	configMapIDs := map[string]struct{}{}
 	for _, resource := range configMaps {
-		if isConfigMapResource(resource) && resource.InstanceState != nil {
+		if resource.InstanceState != nil {
 			configMapIDs[resource.InstanceState.ID] = struct{}{}
 		}
 	}
@@ -316,13 +316,6 @@ func isDefaultServiceAccountDuplicate(resource terraformutils.Resource, defaultS
 	}
 	_, ok := defaultServiceAccountIDs[resource.InstanceState.ID]
 	return ok
-}
-
-func isConfigMapResource(resource terraformutils.Resource) bool {
-	if resource.InstanceInfo == nil {
-		return false
-	}
-	return resource.InstanceInfo.Type == "kubernetes_config_map" || resource.InstanceInfo.Type == "kubernetes_config_map_v1"
 }
 
 // InitClientAndConfig uses the KUBECONFIG environment variable to create

@@ -32,6 +32,19 @@ func TestConfigMapDataInitResources(t *testing.T) {
 				Name:      "no-data",
 			},
 		},
+		&corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "default",
+				Name:      "owned-config",
+				OwnerReferences: []metav1.OwnerReference{{
+					APIVersion: "v1",
+					Kind:       "Pod",
+					Name:       "owner",
+					UID:        "owner-uid",
+				}},
+			},
+			Data: map[string]string{"key": "value"},
+		},
 	)
 
 	service := &ConfigMapData{}

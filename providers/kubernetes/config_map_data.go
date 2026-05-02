@@ -51,7 +51,7 @@ func (c *ConfigMapData) initResources(clientset kubernetes.Interface) error {
 
 	for i := range configMaps.Items {
 		configMap := configMaps.Items[i]
-		if len(configMap.Data) == 0 {
+		if len(configMap.Data) == 0 || len(configMap.OwnerReferences) > 0 {
 			continue
 		}
 
