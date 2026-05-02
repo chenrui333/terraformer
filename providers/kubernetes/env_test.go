@@ -291,6 +291,7 @@ func envTestDeployment(name, namespace string) *unstructured.Unstructured {
 		map[string]interface{}{
 			"name": "app",
 			"env": []interface{}{
+				map[string]interface{}{"name": "PLAIN", "value": "ignored"},
 				map[string]interface{}{"name": "PLAIN", "value": "demo"},
 				map[string]interface{}{"name": "EMPTY", "value": ""},
 				map[string]interface{}{
@@ -336,6 +337,24 @@ func envTestCronJob(name, namespace string) *unstructured.Unstructured {
 		},
 	}, "spec", "jobTemplate", "spec", "template", "spec", "containers")
 	return cronJob
+}
+
+func TestEnvEntriesCollapsesDuplicateNamesToLastValue(t *testing.T) {
+	got := envEntries([]interface{}{
+		map[string]interface{}{"name": "DUPLICATE", "value": "first"},
+		map[string]interface{}{"name": "OTHER", "value": "middle"},
+		map[string]interface{}{"name": "DUPLICATE", "value": "last"},
+	})
+
+	if len(got) != 2 {
+		t.Fatalf("env entries len = %d, want 2", len(got))
+	}
+	if got[0]["name"] != "OTHER" || got[0]["value"] != "middle" {
+		t.Fatalf("first kept env = %#v, want OTHER=middle", got[0])
+	}
+	if got[1]["name"] != "DUPLICATE" || got[1]["value"] != "last" {
+		t.Fatalf("duplicate env = %#v, want DUPLICATE=last", got[1])
+	}
 }
 
 func envTestAPIResources() []*metav1.APIResourceList {

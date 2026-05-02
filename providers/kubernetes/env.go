@@ -212,14 +212,32 @@ func envContainers(item unstructured.Unstructured, kind string) []envContainer {
 }
 
 func envEntries(values []interface{}) []map[string]interface{} {
-	envs := []map[string]interface{}{}
-	for _, value := range values {
+	lastIndexByName := map[string]int{}
+	entries := make([]map[string]interface{}, 0, len(values))
+	for i, value := range values {
 		env, ok := value.(map[string]interface{})
 		if !ok {
+			entries = append(entries, nil)
 			continue
 		}
 		name, _ := env["name"].(string)
 		if name == "" {
+			entries = append(entries, nil)
+			continue
+		}
+		entries = append(entries, env)
+		lastIndexByName[name] = i
+	}
+
+	envs := []map[string]interface{}{}
+	for i, env := range entries {
+		if env == nil {
+			continue
+		}
+		name, _ := env["name"].(string)
+		// Kubernetes allows duplicate env names, but later entries win and the
+		// provider also reads/manages env entries by name.
+		if lastIndexByName[name] != i {
 			continue
 		}
 		envs = append(envs, env)
