@@ -64,7 +64,7 @@ func (d *cloudInventorySyncConfigResponseDataList) UnmarshalJSON(data []byte) er
 func (g *CloudInventorySyncConfigGenerator) createResource(syncConfig cloudInventorySyncConfigResponseData) terraformutils.Resource {
 	resourceName := syncConfig.ID
 	if syncConfig.Attributes.CloudProvider != "" {
-		resourceName = syncConfig.Attributes.CloudProvider
+		resourceName = fmt.Sprintf("%s_%s", syncConfig.Attributes.CloudProvider, syncConfig.ID)
 	}
 
 	return terraformutils.NewSimpleResource(

@@ -55,7 +55,7 @@ func TestCloudInventorySyncConfigCreateResource(t *testing.T) {
 				},
 			},
 			wantID:   "3526615b-4d65-4d9b-947a-d89c18faf0dc",
-			wantName: "tfer--cloud_inventory_sync_config_aws",
+			wantName: "tfer--cloud_inventory_sync_config_aws_3526615b-4d65-4d9b-947a-d89c18faf0dc",
 			wantType: "datadog_cloud_inventory_sync_config",
 		},
 		{
