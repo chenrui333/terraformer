@@ -371,6 +371,7 @@ func TestSupportsTypedClientResource(t *testing.T) {
 		want    bool
 	}{
 		{name: "core service", version: "v1", kind: "Service", want: true},
+		{name: "core endpoints", version: "v1", kind: "Endpoints", want: true},
 		{name: "apps daemon set", group: "apps", version: "v1", kind: "DaemonSet", want: true},
 		{name: "autoscaling hpa", group: "autoscaling", version: "v2", kind: "HorizontalPodAutoscaler", want: true},
 		{name: "storage csi driver", group: "storage.k8s.io", version: "v1", kind: "CSIDriver", want: true},

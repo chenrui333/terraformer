@@ -77,6 +77,10 @@ func extractClientSetFuncGroupName(group, version string) string {
 }
 
 func extractClientSetFuncTypeName(kind string) string {
+	if kind == "Endpoints" {
+		return kind
+	}
+
 	switch string(kind[len(kind)-1]) {
 	case "s":
 		return kind + "es"
