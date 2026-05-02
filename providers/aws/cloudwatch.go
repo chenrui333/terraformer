@@ -85,7 +85,7 @@ func (g *CloudWatchGenerator) createMetricAlarms(cloudwatchSvc *cloudwatch.Clien
 				cloudwatchAllowEmptyValues))
 		}
 		nextToken = output.NextToken
-		if nextToken == nil {
+		if !awsHasMorePages(nextToken) {
 			break
 		}
 	}
@@ -110,7 +110,7 @@ func (g *CloudWatchGenerator) createDashboards(cloudwatchSvc *cloudwatch.Client)
 				cloudwatchAllowEmptyValues))
 		}
 		nextToken = output.NextToken
-		if nextToken == nil {
+		if !awsHasMorePages(nextToken) {
 			break
 		}
 	}
@@ -151,7 +151,7 @@ func (g *CloudWatchGenerator) createEventBuses(eventsSvc *cloudwatchevents.Clien
 			}
 		}
 		nextToken = output.NextToken
-		if nextToken == nil {
+		if !awsHasMorePages(nextToken) {
 			break
 		}
 	}
@@ -228,13 +228,13 @@ func (g *CloudWatchGenerator) createRulesForEventBus(eventsSvc *cloudwatchevents
 						map[string]interface{}{}))
 				}
 				listTargetsNextToken = targetResponse.NextToken
-				if listTargetsNextToken == nil {
+				if !awsHasMorePages(listTargetsNextToken) {
 					break
 				}
 			}
 		}
 		listRulesNextToken = output.NextToken
-		if listRulesNextToken == nil {
+		if !awsHasMorePages(listRulesNextToken) {
 			break
 		}
 	}
@@ -264,7 +264,7 @@ func (g *CloudWatchGenerator) createArchives(eventsSvc *cloudwatchevents.Client)
 				cloudwatchAllowEmptyValues))
 		}
 		nextToken = output.NextToken
-		if nextToken == nil {
+		if !awsHasMorePages(nextToken) {
 			break
 		}
 	}
@@ -293,7 +293,7 @@ func (g *CloudWatchGenerator) createAPIDestinations(eventsSvc *cloudwatchevents.
 				cloudwatchAllowEmptyValues))
 		}
 		nextToken = output.NextToken
-		if nextToken == nil {
+		if !awsHasMorePages(nextToken) {
 			break
 		}
 	}

@@ -66,7 +66,7 @@ func (g *APIGatewayV2Generator) loadRestApis(svc *apigatewayv2.Client) error {
 	}
 	g.processRestApis(svc, output.Items)
 
-	for output.NextToken != nil {
+	for awsHasMorePages(output.NextToken) {
 		output, err = svc.GetApis(context.TODO(), &apigatewayv2.GetApisInput{
 			NextToken: output.NextToken,
 		})
@@ -114,7 +114,7 @@ func (g *APIGatewayV2Generator) loadStages(svc *apigatewayv2.Client, apiID strin
 	}
 	g.processStages(output.Items, apiID)
 
-	for output.NextToken != nil {
+	for awsHasMorePages(output.NextToken) {
 		output, err = svc.GetStages(context.TODO(), &apigatewayv2.GetStagesInput{
 			ApiId:     aws.String(apiID),
 			NextToken: output.NextToken,
@@ -162,7 +162,7 @@ func (g *APIGatewayV2Generator) loadModels(svc *apigatewayv2.Client, apiID strin
 	}
 	g.processModels(output.Items, apiID)
 
-	for output.NextToken != nil {
+	for awsHasMorePages(output.NextToken) {
 		output, err = svc.GetModels(context.TODO(), &apigatewayv2.GetModelsInput{
 			ApiId:     aws.String(apiID),
 			NextToken: output.NextToken,
@@ -208,7 +208,7 @@ func (g *APIGatewayV2Generator) loadRoutes(svc *apigatewayv2.Client, apiID strin
 	}
 	g.processRoutes(svc, output.Items, apiID)
 
-	for output.NextToken != nil {
+	for awsHasMorePages(output.NextToken) {
 		output, err = svc.GetRoutes(context.TODO(), &apigatewayv2.GetRoutesInput{
 			ApiId:     aws.String(apiID),
 			NextToken: output.NextToken,
@@ -262,7 +262,7 @@ func (g *APIGatewayV2Generator) loadRouteResponses(svc *apigatewayv2.Client, api
 	}
 	g.processRouteResponses(output.Items, apiID, routeID)
 
-	for output.NextToken != nil {
+	for awsHasMorePages(output.NextToken) {
 		output, err = svc.GetRouteResponses(context.TODO(), &apigatewayv2.GetRouteResponsesInput{
 			ApiId:     aws.String(apiID),
 			RouteId:   aws.String(routeID),
@@ -308,7 +308,7 @@ func (g *APIGatewayV2Generator) loadIntegrations(svc *apigatewayv2.Client, apiID
 	}
 	g.processIntegrations(svc, output.Items, apiID)
 
-	for output.NextToken != nil {
+	for awsHasMorePages(output.NextToken) {
 		output, err = svc.GetIntegrations(context.TODO(), &apigatewayv2.GetIntegrationsInput{
 			ApiId:     aws.String(apiID),
 			NextToken: output.NextToken,
@@ -363,7 +363,7 @@ func (g *APIGatewayV2Generator) loadIntegrationResponses(svc *apigatewayv2.Clien
 	}
 	g.processIntegrationResponses(output.Items, apiID, integrationID)
 
-	for output.NextToken != nil {
+	for awsHasMorePages(output.NextToken) {
 		output, err = svc.GetIntegrationResponses(context.TODO(), &apigatewayv2.GetIntegrationResponsesInput{
 			ApiId:         aws.String(apiID),
 			IntegrationId: aws.String(integrationID),
@@ -409,7 +409,7 @@ func (g *APIGatewayV2Generator) loadDeployments(svc *apigatewayv2.Client, apiID 
 	}
 	g.processDeployments(output.Items, apiID)
 
-	for output.NextToken != nil {
+	for awsHasMorePages(output.NextToken) {
 		output, err = svc.GetDeployments(context.TODO(), &apigatewayv2.GetDeploymentsInput{
 			ApiId:     aws.String(apiID),
 			NextToken: output.NextToken,
@@ -452,7 +452,7 @@ func (g *APIGatewayV2Generator) loadAuthorizers(svc *apigatewayv2.Client, apiID 
 	}
 	g.processAuthorizers(output.Items, apiID)
 
-	for output.NextToken != nil {
+	for awsHasMorePages(output.NextToken) {
 		output, err = svc.GetAuthorizers(context.TODO(), &apigatewayv2.GetAuthorizersInput{
 			ApiId:     aws.String(apiID),
 			NextToken: output.NextToken,
@@ -495,7 +495,7 @@ func (g *APIGatewayV2Generator) loadVpcLinks(svc *apigatewayv2.Client) error {
 	}
 	g.processVpcLinks(output.Items)
 
-	for output.NextToken != nil {
+	for awsHasMorePages(output.NextToken) {
 		output, err = svc.GetVpcLinks(context.TODO(), &apigatewayv2.GetVpcLinksInput{
 			NextToken: output.NextToken,
 		})
@@ -531,7 +531,7 @@ func (g *APIGatewayV2Generator) loadDomainNames(svc *apigatewayv2.Client) error 
 	}
 	g.processDomainNames(svc, output.Items)
 
-	for output.NextToken != nil {
+	for awsHasMorePages(output.NextToken) {
 		output, err = svc.GetDomainNames(context.TODO(), &apigatewayv2.GetDomainNamesInput{
 			NextToken: output.NextToken,
 		})
@@ -578,7 +578,7 @@ func (g *APIGatewayV2Generator) loadAPIMappings(svc *apigatewayv2.Client, domain
 	}
 	g.processAPIMappings(output.Items, domainName)
 
-	for output.NextToken != nil {
+	for awsHasMorePages(output.NextToken) {
 		output, err = svc.GetApiMappings(context.TODO(), &apigatewayv2.GetApiMappingsInput{
 			DomainName: aws.String(domainName),
 			NextToken:  output.NextToken,
