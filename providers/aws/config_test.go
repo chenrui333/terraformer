@@ -9,6 +9,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	configtypes "github.com/aws/aws-sdk-go-v2/service/configservice/types"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 func TestConfigAggregateAuthorizationID(t *testing.T) {
@@ -16,6 +17,14 @@ func TestConfigAggregateAuthorizationID(t *testing.T) {
 	want := "123456789012:us-east-1"
 	if got != want {
 		t.Fatalf("configAggregateAuthorizationID() = %q, want %q", got, want)
+	}
+}
+
+func TestConfigRuleResourceRef(t *testing.T) {
+	got := configRuleResourceRef("rule:with/slashes")
+	want := "aws_config_config_rule.tfer--rule-003A-with-002F-slashes"
+	if got != want {
+		t.Fatalf("configRuleResourceRef() = %q, want %q", got, want)
 	}
 }
 
@@ -167,5 +176,29 @@ func TestConfigOrganizationRuleResourceTypePrefersManagedShape(t *testing.T) {
 	want := "aws_config_organization_managed_rule"
 	if got != want {
 		t.Fatalf("configOrganizationRuleResourceType() = %q, want %q", got, want)
+	}
+}
+
+func TestConfigRemediationConfigurationDependencySanitizesRuleName(t *testing.T) {
+	name := "rule:with/slashes"
+	resource := terraformutils.NewResource(
+		name,
+		name,
+		"aws_config_remediation_configuration",
+		"aws",
+		map[string]string{
+			"config_rule_name": name,
+		},
+		configAllowEmptyValues,
+		map[string]interface{}{"depends_on": []string{configRuleResourceRef(name)}},
+	)
+
+	dependsOn, ok := resource.AdditionalFields["depends_on"].([]string)
+	if !ok {
+		t.Fatalf("depends_on type = %T, want []string", resource.AdditionalFields["depends_on"])
+	}
+	want := configRuleResourceRef(name)
+	if len(dependsOn) != 1 || dependsOn[0] != want {
+		t.Fatalf("depends_on = %#v, want [%q]", dependsOn, want)
 	}
 }

@@ -351,7 +351,7 @@ func (g *ConfigGenerator) addRemediationConfigurationsBatch(svc *configservice.C
 			},
 			configAllowEmptyValues,
 			map[string]interface{}{
-				"depends_on": []string{"aws_config_config_rule.tfer--" + name},
+				"depends_on": []string{configRuleResourceRef(name)},
 			},
 		))
 	}
@@ -393,6 +393,10 @@ func (g *ConfigGenerator) loadOptionalResources(loaders []configOptionalResource
 
 func configAggregateAuthorizationID(accountID, region string) string {
 	return fmt.Sprintf("%s:%s", accountID, region)
+}
+
+func configRuleResourceRef(name string) string {
+	return "aws_config_config_rule." + terraformutils.TfSanitize(name)
 }
 
 func configOrganizationRuleResourceType(rule configtypes.OrganizationConfigRule) string {
