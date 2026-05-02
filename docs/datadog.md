@@ -89,6 +89,9 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_dashboard_json`
 *   `dashboard_list`
     * `datadog_dashboard_list`
+*   `cloud_inventory_sync_config`
+    * `datadog_cloud_inventory_sync_config`
+        * **_NOTE:_** Importing resource requires resource ID's to be passed via [Filter][1] option
 *   `downtime`
     * `datadog_downtime`
 *   `integration_aws`

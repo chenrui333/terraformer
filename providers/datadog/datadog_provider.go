@@ -147,6 +147,7 @@ func (p *DatadogProvider) InitService(serviceName string, verbose bool) error {
 // GetSupportedService return map of support service for Datadog
 func (p *DatadogProvider) GetSupportedService() map[string]terraformutils.ServiceGenerator {
 	return map[string]terraformutils.ServiceGenerator{
+		"cloud_inventory_sync_config":          &CloudInventorySyncConfigGenerator{},
 		"dashboard_list":                       &DashboardListGenerator{},
 		"dashboard":                            &DashboardGenerator{},
 		"dashboard_json":                       &DashboardJSONGenerator{},
