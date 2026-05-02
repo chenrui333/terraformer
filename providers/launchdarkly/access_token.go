@@ -44,7 +44,7 @@ func getAccessTokensWithShowAll(ctx context.Context, client *ldapi.APIClient, sh
 		}
 		items := tokens.GetItems()
 		allTokens = append(allTokens, items...)
-		if tokens.TotalCount == nil || int64(len(allTokens)) >= int64(tokens.GetTotalCount()) {
+		if len(items) < pageSize {
 			break
 		}
 	}

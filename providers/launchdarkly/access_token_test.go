@@ -4,9 +4,11 @@ package launchdarkly
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 
 	ldapi "github.com/launchdarkly/api-client-go/v22"
@@ -19,9 +21,9 @@ func TestGetAccessTokensPagesAndRequestsShowAll(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Query().Get("offset") {
 		case "0":
-			_, _ = w.Write([]byte("{\"items\":[{\"_id\":\"token-1\",\"ownerId\":\"owner\",\"memberId\":\"member\",\"creationDate\":1,\"lastModified\":1,\"name\":\"duplicate\",\"_links\":{}},{\"_id\":\"token-2\",\"ownerId\":\"owner\",\"memberId\":\"member\",\"creationDate\":1,\"lastModified\":1,\"name\":\"duplicate\",\"_links\":{}}],\"totalCount\":3}"))
+			writeTokenPage(t, w, 1, pageSize, pageSize)
 		case "20":
-			_, _ = w.Write([]byte("{\"items\":[{\"_id\":\"token-3\",\"ownerId\":\"owner\",\"memberId\":\"member\",\"creationDate\":1,\"lastModified\":1,\"_links\":{}}],\"totalCount\":3}"))
+			writeTokenPage(t, w, 21, 3, 3)
 		default:
 			t.Fatalf("unexpected query %q", r.URL.RawQuery)
 		}
@@ -36,8 +38,8 @@ func TestGetAccessTokensPagesAndRequestsShowAll(t *testing.T) {
 	if err != nil {
 		t.Fatalf("getAccessTokens() error = %v", err)
 	}
-	if len(tokens) != 3 {
-		t.Fatalf("getAccessTokens() returned %d tokens, want 3", len(tokens))
+	if len(tokens) != 23 {
+		t.Fatalf("getAccessTokens() returned %d tokens, want 23", len(tokens))
 	}
 	if len(requests) != 2 {
 		t.Fatalf("requests = %v, want 2 requests", requests)
@@ -50,6 +52,23 @@ func TestGetAccessTokensPagesAndRequestsShowAll(t *testing.T) {
 		if values.Get("showAll") != "true" {
 			t.Fatalf("query %q missing showAll=true", query)
 		}
+	}
+}
+
+func writeTokenPage(t *testing.T, w http.ResponseWriter, firstID, count, totalCount int) {
+	t.Helper()
+
+	items := make([]string, count)
+	for i := range items {
+		items[i] = fmt.Sprintf(
+			"{\"_id\":\"token-%d\",\"ownerId\":\"owner\",\"memberId\":\"member\",\"creationDate\":1,\"lastModified\":1,\"name\":\"duplicate\",\"_links\":{}}",
+			firstID+i,
+		)
+	}
+
+	_, err := fmt.Fprintf(w, "{\"items\":[%s],\"totalCount\":%d}", strings.Join(items, ","), totalCount)
+	if err != nil {
+		t.Fatalf("failed to write token page: %v", err)
 	}
 }
 
