@@ -6,8 +6,8 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"go/format"
-	"log"
 	"os"
 	"strings"
 	"text/template"
@@ -124,19 +124,33 @@ var ComputeServices = map[string]terraformutils.ServiceGenerator{
 `
 
 func main() {
+	if err := run(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	computeAPIData, err := os.ReadFile(os.Getenv("GOPATH") + "/src/google.golang.org/api/compute/v1/compute-api.json") // TODO delete this hack
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("read compute API data: %w", err)
 	}
 	computeAPI := map[string]interface{}{}
-	err = json.Unmarshal(computeAPIData, &computeAPI)
-	if err != nil {
-		log.Fatal(err)
+	if err := json.Unmarshal(computeAPIData, &computeAPI); err != nil {
+		return fmt.Errorf("unmarshal compute API data: %w", err)
 	}
 	funcMap := template.FuncMap{
 		"title":   strings.Title,
 		"toLower": strings.ToLower,
 		"join":    strings.Join,
+	}
+	rootPath, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("get working directory: %w", err)
+	}
+	currentPath := rootPath + pathForGenerateFiles
+	if err := os.MkdirAll(currentPath, os.ModePerm); err != nil {
+		return fmt.Errorf("create generated GCP directory: %w", err)
 	}
 	for resource, v := range computeAPI["resources"].(map[string]interface{}) {
 		if _, exist := terraformResources[resource]; !exist {
@@ -156,8 +170,11 @@ func main() {
 			}
 			parameterOrder := strings.Join(parameters, ", ")
 			var tpl bytes.Buffer
-			t := template.Must(template.New("resource.go").Funcs(funcMap).Parse(serviceTemplate))
-			err := t.Execute(&tpl, map[string]interface{}{
+			t, err := template.New("resource.go").Funcs(funcMap).Parse(serviceTemplate)
+			if err != nil {
+				return fmt.Errorf("parse %s template: %w", resource, err)
+			}
+			err = t.Execute(&tpl, map[string]interface{}{
 				"titleResourceName":          strings.Title(resource),
 				"resource":                   resource,
 				"responseName":               value.(map[string]interface{})["response"].(map[string]interface{})["$ref"].(string),
@@ -172,44 +189,38 @@ func main() {
 				"idWithZone":                 terraformResources[resource].ifIDWithZone(strings.Contains(parameterOrder, "zone")),
 			})
 			if err != nil {
-				log.Print(resource, err)
-				continue
+				return fmt.Errorf("execute %s template: %w", resource, err)
 			}
-			rootPath, _ := os.Getwd()
-			currentPath := rootPath + pathForGenerateFiles
-			err = os.MkdirAll(currentPath, os.ModePerm)
+			code, err := codeFormat(tpl.Bytes())
 			if err != nil {
-				log.Print(resource, err)
-				continue
+				return fmt.Errorf("format %s generated code: %w", resource, err)
 			}
-			err = os.WriteFile(currentPath+"/"+resource+"_gen.go", codeFormat(tpl.Bytes()), os.ModePerm)
-			if err != nil {
-				log.Print(resource, err)
-				continue
+			if err := os.WriteFile(currentPath+"/"+resource+"_gen.go", code, os.ModePerm); err != nil {
+				return fmt.Errorf("write %s generated code: %w", resource, err)
 			}
-		} else {
-			log.Println(resource)
 		}
 	}
 	var tpl bytes.Buffer
-	t := template.Must(template.New("compute.go").Funcs(funcMap).Parse(computeTemplate))
+	t, err := template.New("compute.go").Funcs(funcMap).Parse(computeTemplate)
+	if err != nil {
+		return fmt.Errorf("parse compute services template: %w", err)
+	}
 	err = t.Execute(&tpl, map[string]interface{}{
 		"services": terraformResources,
 	})
 	if err != nil {
-		log.Print(err)
+		return fmt.Errorf("execute compute services template: %w", err)
 	}
-	rootPath, _ := os.Getwd()
-	err = os.WriteFile(rootPath+pathForGenerateFiles+"compute.go", codeFormat(tpl.Bytes()), os.ModePerm)
+	code, err := codeFormat(tpl.Bytes())
 	if err != nil {
-		log.Println(err)
+		return fmt.Errorf("format compute services code: %w", err)
 	}
+	if err := os.WriteFile(rootPath+pathForGenerateFiles+"compute.go", code, os.ModePerm); err != nil {
+		return fmt.Errorf("write compute services code: %w", err)
+	}
+	return nil
 }
 
-func codeFormat(src []byte) []byte {
-	code, err := format.Source(src)
-	if err != nil {
-		log.Println(err)
-	}
-	return code
+func codeFormat(src []byte) ([]byte, error) {
+	return format.Source(src)
 }
