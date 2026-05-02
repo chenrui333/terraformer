@@ -135,6 +135,10 @@ func (p *KubernetesProvider) GetSupportedService() map[string]terraformutils.Ser
 		_, exists := resp.ResourceTypes[name]
 		return exists
 	})
+	addConfigMapDataService(resources, clientset, listableResources, func(name string) bool {
+		_, exists := resp.ResourceTypes[name]
+		return exists
+	})
 	return resources
 }
 
@@ -211,7 +215,34 @@ func addNodeTaintService(
 	}
 }
 
+func addConfigMapDataService(
+	resources map[string]terraformutils.ServiceGenerator,
+	clientset k8sclient.Interface,
+	listableResources map[kubernetesResourceID]struct{},
+	hasResourceType func(string) bool,
+) {
+	if _, ok := listableResources[kubernetesResourceID{version: "v1", kind: "ConfigMap"}]; !ok {
+		return
+	}
+	if !supportsTypedClientResource(clientset, "", "v1", "ConfigMap") {
+		return
+	}
+	if !hasResourceType(configMapDataTerraformType) {
+		return
+	}
+
+	resources[configMapDataServiceName] = &ConfigMapData{
+		TerraformType: configMapDataTerraformType,
+	}
+}
+
 func (p KubernetesProvider) PostProcessImportResources(resourcesByService map[string][]terraformutils.Resource) map[string][]terraformutils.Resource {
+	resourcesByService = removeDefaultServiceAccountDuplicates(resourcesByService)
+	resourcesByService = removeConfigMapDataDuplicates(resourcesByService)
+	return resourcesByService
+}
+
+func removeDefaultServiceAccountDuplicates(resourcesByService map[string][]terraformutils.Resource) map[string][]terraformutils.Resource {
 	defaultServiceAccountIDs := map[string]struct{}{}
 	for _, resource := range resourcesByService[defaultServiceAccountServiceName] {
 		if resource.InstanceState == nil {
@@ -238,6 +269,44 @@ func (p KubernetesProvider) PostProcessImportResources(resourcesByService map[st
 	return resourcesByService
 }
 
+func removeConfigMapDataDuplicates(resourcesByService map[string][]terraformutils.Resource) map[string][]terraformutils.Resource {
+	configMaps, ok := resourcesByService["configmaps"]
+	if !ok {
+		return resourcesByService
+	}
+	configMapIDs := map[string]struct{}{}
+	for _, resource := range configMaps {
+		if isConfigMapResource(resource) && resource.InstanceState != nil {
+			configMapIDs[resource.InstanceState.ID] = struct{}{}
+		}
+	}
+	if len(configMapIDs) == 0 {
+		return resourcesByService
+	}
+
+	configMapData, ok := resourcesByService[configMapDataServiceName]
+	if !ok {
+		return resourcesByService
+	}
+	filtered := configMapData[:0]
+	for _, resource := range configMapData {
+		if resource.InstanceState == nil {
+			filtered = append(filtered, resource)
+			continue
+		}
+		if _, duplicate := configMapIDs[resource.InstanceState.ID]; duplicate {
+			continue
+		}
+		filtered = append(filtered, resource)
+	}
+	if len(filtered) == 0 {
+		delete(resourcesByService, configMapDataServiceName)
+		return resourcesByService
+	}
+	resourcesByService[configMapDataServiceName] = filtered
+	return resourcesByService
+}
+
 func isDefaultServiceAccountDuplicate(resource terraformutils.Resource, defaultServiceAccountIDs map[string]struct{}) bool {
 	if resource.InstanceInfo == nil || resource.InstanceState == nil {
 		return false
@@ -247,6 +316,13 @@ func isDefaultServiceAccountDuplicate(resource terraformutils.Resource, defaultS
 	}
 	_, ok := defaultServiceAccountIDs[resource.InstanceState.ID]
 	return ok
+}
+
+func isConfigMapResource(resource terraformutils.Resource) bool {
+	if resource.InstanceInfo == nil {
+		return false
+	}
+	return resource.InstanceInfo.Type == "kubernetes_config_map" || resource.InstanceInfo.Type == "kubernetes_config_map_v1"
 }
 
 // InitClientAndConfig uses the KUBECONFIG environment variable to create

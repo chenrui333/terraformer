@@ -116,6 +116,59 @@ func TestAddNodeTaintServiceRequiresNodeAPI(t *testing.T) {
 	}
 }
 
+func TestAddConfigMapDataService(t *testing.T) {
+	resources := map[string]terraformutils.ServiceGenerator{}
+	clientset := fake.NewSimpleClientset()
+	listableResources := map[kubernetesResourceID]struct{}{
+		{version: "v1", kind: "ConfigMap"}: {},
+	}
+
+	addConfigMapDataService(resources, clientset, listableResources, func(name string) bool {
+		return name == configMapDataTerraformType
+	})
+
+	service, ok := resources[configMapDataServiceName]
+	if !ok {
+		t.Fatalf("resources[%q] was not registered", configMapDataServiceName)
+	}
+	configMapData, ok := service.(*ConfigMapData)
+	if !ok {
+		t.Fatalf("service type = %T, want *ConfigMapData", service)
+	}
+	if configMapData.TerraformType != configMapDataTerraformType {
+		t.Fatalf("TerraformType = %q, want %q", configMapData.TerraformType, configMapDataTerraformType)
+	}
+}
+
+func TestAddConfigMapDataServiceRequiresProviderType(t *testing.T) {
+	resources := map[string]terraformutils.ServiceGenerator{}
+	clientset := fake.NewSimpleClientset()
+	listableResources := map[kubernetesResourceID]struct{}{
+		{version: "v1", kind: "ConfigMap"}: {},
+	}
+
+	addConfigMapDataService(resources, clientset, listableResources, func(string) bool {
+		return false
+	})
+
+	if _, ok := resources[configMapDataServiceName]; ok {
+		t.Fatalf("resources[%q] was registered without provider type support", configMapDataServiceName)
+	}
+}
+
+func TestAddConfigMapDataServiceRequiresConfigMapAPI(t *testing.T) {
+	resources := map[string]terraformutils.ServiceGenerator{}
+	clientset := fake.NewSimpleClientset()
+
+	addConfigMapDataService(resources, clientset, map[kubernetesResourceID]struct{}{}, func(name string) bool {
+		return name == configMapDataTerraformType
+	})
+
+	if _, ok := resources[configMapDataServiceName]; ok {
+		t.Fatalf("resources[%q] was registered without configmaps API support", configMapDataServiceName)
+	}
+}
+
 func TestAddKubernetesResourceServiceDisambiguatesManifestPluralCollisions(t *testing.T) {
 	resources := map[string]terraformutils.ServiceGenerator{}
 	resource := metav1.APIResource{
@@ -207,6 +260,55 @@ func TestPostProcessImportResourcesDoesNotAddServiceAccountsService(t *testing.T
 
 	if _, ok := got["serviceaccounts"]; ok {
 		t.Fatal("serviceaccounts service was added")
+	}
+}
+
+func TestPostProcessImportResourcesRemovesOverlappingConfigMapData(t *testing.T) {
+	provider := KubernetesProvider{}
+	resourcesByService := map[string][]terraformutils.Resource{
+		"configmaps": {
+			terraformutils.NewSimpleResource("default/app-config", "default/app-config", "kubernetes_config_map_v1", "kubernetes", nil),
+		},
+		configMapDataServiceName: {
+			terraformutils.NewSimpleResource("default/app-config", "default/app-config", configMapDataTerraformType, "kubernetes", nil),
+			terraformutils.NewSimpleResource("default/other-config", "default/other-config", configMapDataTerraformType, "kubernetes", nil),
+		},
+	}
+
+	got := provider.PostProcessImportResources(resourcesByService)
+
+	assertResourceIDs(t, got["configmaps"], []string{"default/app-config"})
+	assertResourceIDs(t, got[configMapDataServiceName], []string{"default/other-config"})
+}
+
+func TestPostProcessImportResourcesKeepsConfigMapDataWithoutConfigMapsImport(t *testing.T) {
+	provider := KubernetesProvider{}
+	resourcesByService := map[string][]terraformutils.Resource{
+		configMapDataServiceName: {
+			terraformutils.NewSimpleResource("default/app-config", "default/app-config", configMapDataTerraformType, "kubernetes", nil),
+		},
+	}
+
+	got := provider.PostProcessImportResources(resourcesByService)
+
+	assertResourceIDs(t, got[configMapDataServiceName], []string{"default/app-config"})
+}
+
+func TestPostProcessImportResourcesRemovesConfigMapDataServiceWhenAllOverlap(t *testing.T) {
+	provider := KubernetesProvider{}
+	resourcesByService := map[string][]terraformutils.Resource{
+		"configmaps": {
+			terraformutils.NewSimpleResource("default/app-config", "default/app-config", "kubernetes_config_map_v1", "kubernetes", nil),
+		},
+		configMapDataServiceName: {
+			terraformutils.NewSimpleResource("default/app-config", "default/app-config", configMapDataTerraformType, "kubernetes", nil),
+		},
+	}
+
+	got := provider.PostProcessImportResources(resourcesByService)
+
+	if _, ok := got[configMapDataServiceName]; ok {
+		t.Fatalf("resources[%q] was not removed after all entries overlapped configmaps", configMapDataServiceName)
 	}
 }
 
