@@ -4,10 +4,13 @@ package launchdarkly
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/chenrui333/terraformer/terraformutils"
+	"github.com/iancoleman/strcase"
 	ldapi "github.com/launchdarkly/api-client-go/v16"
 )
 
@@ -57,14 +60,39 @@ func (g *AuditLogSubscriptionGenerator) loadAuditLogSubscriptions(ctx context.Co
 			fmt.Sprintf("%s-%s", integrationKey, resourceName(subscription.GetName(), subscriptionID)),
 			"launchdarkly_audit_log_subscription",
 			"launchdarkly",
-			map[string]string{
-				"integration_key": integrationKey,
-			},
+			auditLogSubscriptionAttributes(integrationKey, subscription.Config),
 			[]string{},
 			map[string]interface{}{})
 		g.Resources = append(g.Resources, resource)
 	}
 	return nil
+}
+
+func auditLogSubscriptionAttributes(integrationKey string, config map[string]interface{}) map[string]string {
+	attributes := map[string]string{
+		"integration_key": integrationKey,
+		"config.%":        strconv.Itoa(len(config)),
+	}
+	for key, value := range config {
+		attributes["config."+strcase.ToSnake(key)] = auditLogSubscriptionConfigValue(value)
+	}
+	return attributes
+}
+
+func auditLogSubscriptionConfigValue(value interface{}) string {
+	switch v := value.(type) {
+	case nil:
+		return ""
+	case string:
+		return v
+	case bool:
+		return strconv.FormatBool(v)
+	default:
+		if data, err := json.Marshal(v); err == nil {
+			return string(data)
+		}
+		return fmt.Sprint(v)
+	}
 }
 
 func (g *AuditLogSubscriptionGenerator) InitResources() error {
