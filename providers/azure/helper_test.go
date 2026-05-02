@@ -244,6 +244,30 @@ func TestDiscoverCloudConfigFallsBackToMetadataHostResourceManager(t *testing.T)
 	}
 }
 
+func TestDiscoverCloudConfigReturnsMetadataHTTPStatusErrors(t *testing.T) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "metadata unavailable", http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+
+	oldClient := http.DefaultClient
+	http.DefaultClient = server.Client()
+	t.Cleanup(func() {
+		http.DefaultClient = oldClient
+	})
+
+	_, err := discoverCloudConfig(strings.TrimPrefix(server.URL, "https://"), "")
+	if err == nil {
+		t.Fatal("expected metadata HTTP status error")
+	}
+	if !strings.Contains(err.Error(), "503 Service Unavailable") {
+		t.Fatalf("expected status in error, got %q", err)
+	}
+	if !strings.Contains(err.Error(), "metadata unavailable") {
+		t.Fatalf("expected response body in error, got %q", err)
+	}
+}
+
 func TestAzureCLIUnavailableFallbackCredentialAllowsChainedFallback(t *testing.T) {
 	for _, errMessage := range []string{
 		"AzureCLICredential: Azure CLI not found on path",
