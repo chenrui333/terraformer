@@ -95,40 +95,29 @@ func TestCognitoResourceMissing(t *testing.T) {
 func TestCognitoOptionalResourceLoaderErrors(t *testing.T) {
 	boom := errors.New("boom")
 	tests := []struct {
-		name    string
-		filters []terraformutils.ResourceFilter
-		loader  cognitoOptionalResourceLoader
-		wantErr bool
+		name         string
+		filters      []terraformutils.ResourceFilter
+		serviceNames []string
+		required     bool
+		wantErr      bool
 	}{
 		{
-			name: "optional loader error is logged for broad discovery",
-			loader: cognitoOptionalResourceLoader{
-				name:         "user groups",
-				serviceNames: []string{cognitoUserGroupResourceType},
-				load:         func() error { return boom },
-			},
+			name:         "optional loader error is logged for broad discovery",
+			serviceNames: []string{cognitoUserGroupResourceType},
 		},
 		{
 			name: "typed child filter returns loader error",
 			filters: []terraformutils.ResourceFilter{
 				{ServiceName: cognitoUserGroupResourceType, FieldPath: "id", AcceptableValues: []string{"us-east-1_abc/admins"}},
 			},
-			loader: cognitoOptionalResourceLoader{
-				name:         "user groups",
-				serviceNames: []string{cognitoUserGroupResourceType},
-				load:         func() error { return boom },
-			},
-			wantErr: true,
+			serviceNames: []string{cognitoUserGroupResourceType},
+			wantErr:      true,
 		},
 		{
-			name: "required loader returns error without typed filter",
-			loader: cognitoOptionalResourceLoader{
-				name:         "user pool clients",
-				serviceNames: []string{cognitoUserPoolClientResourceType},
-				required:     true,
-				load:         func() error { return boom },
-			},
-			wantErr: true,
+			name:         "required loader returns error without typed filter",
+			serviceNames: []string{cognitoUserPoolClientResourceType},
+			required:     true,
+			wantErr:      true,
 		},
 	}
 
@@ -136,7 +125,21 @@ func TestCognitoOptionalResourceLoaderErrors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := CognitoGenerator{}
 			g.Filter = tt.filters
-			err := g.loadOptionalResources([]cognitoOptionalResourceLoader{tt.loader})
+			called := false
+			err := g.loadOptionalResources([]cognitoOptionalResourceLoader{
+				{
+					name:         "user groups",
+					serviceNames: tt.serviceNames,
+					required:     tt.required,
+					load: func() error {
+						called = true
+						return boom
+					},
+				},
+			})
+			if !called {
+				t.Fatal("loader was not called")
+			}
 			if tt.wantErr {
 				if !errors.Is(err, boom) {
 					t.Fatalf("loadOptionalResources() error = %v, want %v", err, boom)
