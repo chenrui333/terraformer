@@ -5,7 +5,6 @@ package azure
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/url"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -24,25 +23,31 @@ type StorageBlobGenerator struct {
 	AzureService
 }
 
-func (g StorageBlobGenerator) getAccountPrimaryKey(ctx context.Context, accountName, accountGroupName string) string {
+func (g StorageBlobGenerator) getAccountPrimaryKey(ctx context.Context, accountName, accountGroupName string) (string, error) {
 	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
 	credential := g.Args["credential"].(azcore.TokenCredential)
 	clientOptions := g.Args["clientOptions"].(*arm.ClientOptions)
 
 	storageAccountsClient, err := armstorage.NewAccountsClient(subscriptionID, credential, clientOptions)
 	if err != nil {
-		log.Fatalf("failed to create accounts client: %v", err)
+		return "", fmt.Errorf("create storage accounts client: %w", err)
 	}
 
 	response, err := storageAccountsClient.ListKeys(ctx, accountGroupName, accountName, nil)
 	if err != nil {
-		log.Fatalf("failed to list keys: %v", err)
+		return "", fmt.Errorf("list keys for storage account %q in resource group %q: %w", accountName, accountGroupName, err)
 	}
-	return *response.Keys[0].Value
+	if len(response.Keys) == 0 || response.Keys[0].Value == nil {
+		return "", fmt.Errorf("storage account %q in resource group %q returned no primary key", accountName, accountGroupName)
+	}
+	return *response.Keys[0].Value, nil
 }
 
 func (g StorageBlobGenerator) getContainerURL(ctx context.Context, accountName, accountGroupName, containerName string) (azblob.ContainerURL, error) {
-	accountPrimaryKey := g.getAccountPrimaryKey(ctx, accountName, accountGroupName)
+	accountPrimaryKey, err := g.getAccountPrimaryKey(ctx, accountName, accountGroupName)
+	if err != nil {
+		return azblob.ContainerURL{}, err
+	}
 	sharedKeyCredential, err := azblob.NewSharedKeyCredential(accountName, accountPrimaryKey)
 	if err != nil {
 		return azblob.ContainerURL{}, err
