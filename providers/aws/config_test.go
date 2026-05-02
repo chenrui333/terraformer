@@ -101,14 +101,6 @@ func TestConfigRuleMissing(t *testing.T) {
 	}
 }
 
-func TestAppendStringSlices(t *testing.T) {
-	got := appendStringSlices([]string{"recorder"}, nil, []string{"channel", "status"})
-	want := []string{"recorder", "channel", "status"}
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("appendStringSlices() = %#v, want %#v", got, want)
-	}
-}
-
 func TestChunkStrings(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -132,6 +124,12 @@ func TestChunkStrings(t *testing.T) {
 			name:   "invalid size",
 			values: []string{"a"},
 			size:   0,
+			want:   nil,
+		},
+		{
+			name:   "negative size",
+			values: []string{"a"},
+			size:   -1,
 			want:   nil,
 		},
 	}

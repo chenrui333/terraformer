@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"slices"
 
 	"github.com/aws/aws-sdk-go-v2/service/configservice"
 	configtypes "github.com/aws/aws-sdk-go-v2/service/configservice/types"
@@ -45,7 +46,7 @@ func (g *ConfigGenerator) InitResources() error {
 	if err != nil {
 		return err
 	}
-	if err := g.addConfigurationRecorderStatuses(client, appendStringSlices(configurationRecorderRefs, deliveryChannelRefs)); err != nil {
+	if err := g.addConfigurationRecorderStatuses(client, slices.Concat(configurationRecorderRefs, deliveryChannelRefs)); err != nil {
 		return err
 	}
 
@@ -395,6 +396,8 @@ func configAggregateAuthorizationID(accountID, region string) string {
 }
 
 func configOrganizationRuleResourceType(rule configtypes.OrganizationConfigRule) string {
+	// AWS returns exactly one metadata shape, but prefer the managed shape if a
+	// malformed response sets multiple fields so classification stays stable.
 	switch {
 	case rule.OrganizationManagedRuleMetadata != nil:
 		return "aws_config_organization_managed_rule"
@@ -410,14 +413,6 @@ func configOrganizationRuleResourceType(rule configtypes.OrganizationConfigRule)
 func configRuleMissing(err error) bool {
 	var notFound *configtypes.NoSuchConfigRuleException
 	return errors.As(err, &notFound)
-}
-
-func appendStringSlices(values ...[]string) []string {
-	var result []string
-	for _, value := range values {
-		result = append(result, value...)
-	}
-	return result
 }
 
 func chunkStrings(values []string, size int) [][]string {
