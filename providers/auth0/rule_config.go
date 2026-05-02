@@ -33,7 +33,10 @@ func (g RuleConfigGenerator) createResources(ruleConfigConfigs []*management.Rul
 }
 
 func (g *RuleConfigGenerator) InitResources() error {
-	m := g.generateClient()
+	m, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	ctx := context.Background()
 
 	list, err := m.RuleConfig.List(ctx)

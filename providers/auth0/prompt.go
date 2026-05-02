@@ -32,7 +32,10 @@ func (g PromptGenerator) createResources(prompt *management.Prompt) []terraformu
 }
 
 func (g *PromptGenerator) InitResources() error {
-	m := g.generateClient()
+	m, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	ctx := context.Background()
 	prompt, err := m.Prompt.Read(ctx)
 	if err != nil {

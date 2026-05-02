@@ -33,7 +33,10 @@ func (g RuleGenerator) createResources(rules []*management.Rule) []terraformutil
 }
 
 func (g *RuleGenerator) InitResources() error {
-	m := g.generateClient()
+	m, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	ctx := context.Background()
 	list := []*management.Rule{}
 

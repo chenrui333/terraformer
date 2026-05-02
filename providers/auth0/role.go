@@ -33,7 +33,10 @@ func (g RoleGenerator) createResources(roles []*management.Role) []terraformutil
 }
 
 func (g *RoleGenerator) InitResources() error {
-	m := g.generateClient()
+	m, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	ctx := context.Background()
 	list := []*management.Role{}
 

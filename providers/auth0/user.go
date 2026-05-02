@@ -33,7 +33,10 @@ func (g UserGenerator) createResources(users []*management.User) []terraformutil
 }
 
 func (g *UserGenerator) InitResources() error {
-	m := g.generateClient()
+	m, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	ctx := context.Background()
 	list := []*management.User{}
 

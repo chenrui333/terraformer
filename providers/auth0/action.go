@@ -33,7 +33,10 @@ func (g ActionGenerator) createResources(actions []*management.Action) []terrafo
 }
 
 func (g *ActionGenerator) InitResources() error {
-	m := g.generateClient()
+	m, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	ctx := context.Background()
 	list := []*management.Action{}
 

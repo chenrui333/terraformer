@@ -32,7 +32,10 @@ func (g TenantGenerator) createResources(tenant *management.Tenant) []terraformu
 }
 
 func (g *TenantGenerator) InitResources() error {
-	m := g.generateClient()
+	m, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	ctx := context.Background()
 	Tenant, err := m.Tenant.Read(ctx)
 	if err != nil {

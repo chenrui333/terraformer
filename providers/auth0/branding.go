@@ -32,7 +32,10 @@ func (g BrandingGenerator) createResources(branding *management.Branding) []terr
 }
 
 func (g *BrandingGenerator) InitResources() error {
-	m := g.generateClient()
+	m, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	ctx := context.Background()
 	branding, err := m.Branding.Read(ctx)
 	if err != nil {

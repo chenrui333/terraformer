@@ -38,7 +38,10 @@ func (g TriggerBindingGenerator) createResources(bindings map[string]*management
 }
 
 func (g *TriggerBindingGenerator) InitResources() error {
-	m := g.generateClient()
+	m, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	ctx := context.Background()
 	bindings := map[string]*management.ActionBinding{}
 
