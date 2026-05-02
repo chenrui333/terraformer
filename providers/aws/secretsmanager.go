@@ -60,7 +60,7 @@ func (g *SecretsManagerGenerator) InitResources() error {
 			if g.shouldLoadSecretChildResource("secretsmanager_secret_policy", policyResource) {
 				if err := g.addSecretPolicy(svc, secretArn, secretName); err != nil {
 					if !secretsManagerResourceMissing(err) {
-						log.Printf("Skipping Secrets Manager secret policy for %s: %v", secretArn, err)
+						log.Printf("Error adding Secrets Manager policy for %s (%s): %v", secretName, secretArn, err)
 					}
 				}
 			}
@@ -135,9 +135,6 @@ func (g *SecretsManagerGenerator) addSecretRotation(secret secretstypes.SecretLi
 	}
 	secretArn := StringValue(secret.ARN)
 	secretName := StringValue(secret.Name)
-	if secretArn == "" || secretName == "" {
-		return
-	}
 
 	resource := newSecretsManagerSecretRotationResource(secretArn, secretName)
 	if g.shouldAppendSecretChildResource("secretsmanager_secret_rotation", resource) {
