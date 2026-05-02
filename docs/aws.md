@@ -386,6 +386,8 @@ terraformer import aws --resources=sg --regions=us-east-1
     * `aws_s3_bucket_website_configuration`
 *   `secretsmanager`
     * `aws_secretsmanager_secret`
+    * `aws_secretsmanager_secret_policy`
+    * `aws_secretsmanager_secret_rotation`
 *   `securityhub`
     * `aws_securityhub_account`
     * `aws_securityhub_member`
