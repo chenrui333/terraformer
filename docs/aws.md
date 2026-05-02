@@ -382,7 +382,18 @@ terraformer import aws --resources=sg --regions=us-east-1
 *   `sqs`
     * `aws_sqs_queue`
 *   `ssm`
+    * `aws_ssm_activation`
+    * `aws_ssm_association`
+    * `aws_ssm_default_patch_baseline`
+    * `aws_ssm_document`
+    * `aws_ssm_maintenance_window`
+    * `aws_ssm_maintenance_window_target`
+    * `aws_ssm_maintenance_window_task`
     * `aws_ssm_parameter`
+    * `aws_ssm_patch_baseline`
+    * `aws_ssm_patch_group`
+    * `aws_ssm_resource_data_sync`
+    * `aws_ssm_service_setting`
 *   `subnet`
     * `aws_subnet`
 *   `swf`
