@@ -4,17 +4,33 @@ package aws
 
 import (
 	"context"
+	"fmt"
+	"log"
 	"strings"
 
-	"github.com/chenrui333/terraformer/terraformutils"
-
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/rds"
+	rdstypes "github.com/aws/aws-sdk-go-v2/service/rds/types"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 var RDSAllowEmptyValues = []string{"tags."}
 
 type RDSGenerator struct {
 	AWSService
+}
+
+type rdsOptionalResourceLoader struct {
+	name string
+	load func() error
+}
+
+func (g *RDSGenerator) loadOptionalResources(loaders []rdsOptionalResourceLoader) {
+	for _, loader := range loaders {
+		if err := loader.load(); err != nil {
+			log.Printf("Skipping RDS %s: %v", loader.name, err)
+		}
+	}
 }
 
 func (g *RDSGenerator) loadDBClusters(svc *rds.Client) error {
@@ -26,12 +42,73 @@ func (g *RDSGenerator) loadDBClusters(svc *rds.Client) error {
 		}
 		for _, cluster := range page.DBClusters {
 			resourceName := StringValue(cluster.DBClusterIdentifier)
+			if resourceName == "" {
+				continue
+			}
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
 				resourceName,
 				resourceName,
 				"aws_rds_cluster",
 				"aws",
 				RDSAllowEmptyValues,
+			))
+		}
+	}
+	return nil
+}
+
+func (g *RDSGenerator) loadDBClusterParameterGroups(svc *rds.Client) error {
+	p := rds.NewDescribeDBClusterParameterGroupsPaginator(svc, &rds.DescribeDBClusterParameterGroupsInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, parameterGroup := range page.DBClusterParameterGroups {
+			resourceName := StringValue(parameterGroup.DBClusterParameterGroupName)
+			if resourceName == "" || strings.Contains(resourceName, ".") {
+				continue // skip default parameter groups like default.aurora-mysql8.0
+			}
+			g.Resources = append(g.Resources, terraformutils.NewResource(
+				resourceName,
+				resourceName,
+				"aws_rds_cluster_parameter_group",
+				"aws",
+				map[string]string{
+					"name": resourceName,
+				},
+				RDSAllowEmptyValues,
+				map[string]interface{}{},
+			))
+		}
+	}
+	return nil
+}
+
+func (g *RDSGenerator) loadDBClusterEndpoints(svc *rds.Client) error {
+	p := rds.NewDescribeDBClusterEndpointsPaginator(svc, &rds.DescribeDBClusterEndpointsInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, endpoint := range page.DBClusterEndpoints {
+			endpointID := StringValue(endpoint.DBClusterEndpointIdentifier)
+			clusterID := StringValue(endpoint.DBClusterIdentifier)
+			if endpointID == "" || clusterID == "" || !rdsCustomClusterEndpoint(endpoint) {
+				continue
+			}
+			g.Resources = append(g.Resources, terraformutils.NewResource(
+				endpointID,
+				rdsResourceName(clusterID, endpointID),
+				"aws_rds_cluster_endpoint",
+				"aws",
+				map[string]string{
+					"cluster_endpoint_identifier": endpointID,
+					"cluster_identifier":          clusterID,
+				},
+				RDSAllowEmptyValues,
+				map[string]interface{}{},
 			))
 		}
 	}
@@ -68,6 +145,9 @@ func (g *RDSGenerator) loadDBProxies(svc *rds.Client) error {
 		}
 		for _, db := range page.DBProxies {
 			resourceName := StringValue(db.DBProxyName)
+			if resourceName == "" {
+				continue
+			}
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
 				resourceName,
 				resourceName,
@@ -75,10 +155,122 @@ func (g *RDSGenerator) loadDBProxies(svc *rds.Client) error {
 				"aws",
 				RDSAllowEmptyValues,
 			))
+			if err := g.loadDBProxyTargetGroups(svc, resourceName); err != nil {
+				log.Printf("Skipping RDS DB proxy target groups for %s: %v", resourceName, err)
+			}
+			if err := g.loadDBProxyEndpoints(svc, resourceName); err != nil {
+				log.Printf("Skipping RDS DB proxy endpoints for %s: %v", resourceName, err)
+			}
 		}
 	}
 	return nil
 }
+
+func (g *RDSGenerator) loadDBProxyTargetGroups(svc *rds.Client, proxyName string) error {
+	p := rds.NewDescribeDBProxyTargetGroupsPaginator(svc, &rds.DescribeDBProxyTargetGroupsInput{
+		DBProxyName: aws.String(proxyName),
+	})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, targetGroup := range page.TargetGroups {
+			targetGroupName := StringValue(targetGroup.TargetGroupName)
+			if targetGroupName == "" {
+				continue
+			}
+			if rdsDefaultDBProxyTargetGroup(targetGroup) {
+				g.Resources = append(g.Resources, terraformutils.NewResource(
+					proxyName,
+					rdsResourceName(proxyName, targetGroupName),
+					"aws_db_proxy_default_target_group",
+					"aws",
+					map[string]string{
+						"db_proxy_name": proxyName,
+					},
+					RDSAllowEmptyValues,
+					map[string]interface{}{},
+				))
+			}
+			if err := g.loadDBProxyTargets(svc, proxyName, targetGroupName); err != nil {
+				log.Printf("Skipping RDS DB proxy targets for %s/%s: %v", proxyName, targetGroupName, err)
+			}
+		}
+	}
+	return nil
+}
+
+func (g *RDSGenerator) loadDBProxyTargets(svc *rds.Client, proxyName, targetGroupName string) error {
+	p := rds.NewDescribeDBProxyTargetsPaginator(svc, &rds.DescribeDBProxyTargetsInput{
+		DBProxyName:     aws.String(proxyName),
+		TargetGroupName: aws.String(targetGroupName),
+	})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, target := range page.Targets {
+			rdsResourceID := StringValue(target.RdsResourceId)
+			targetType := string(target.Type)
+			if rdsResourceID == "" || targetType == "" {
+				continue
+			}
+			attributes := map[string]string{
+				"db_proxy_name":     proxyName,
+				"target_group_name": targetGroupName,
+			}
+			if target.Type == rdstypes.TargetTypeRdsInstance {
+				attributes["db_instance_identifier"] = rdsResourceID
+			} else {
+				attributes["db_cluster_identifier"] = rdsResourceID
+			}
+			g.Resources = append(g.Resources, terraformutils.NewResource(
+				rdsDBProxyTargetImportID(proxyName, targetGroupName, targetType, rdsResourceID),
+				rdsResourceName(proxyName, targetGroupName, targetType, rdsResourceID),
+				"aws_db_proxy_target",
+				"aws",
+				attributes,
+				RDSAllowEmptyValues,
+				map[string]interface{}{},
+			))
+		}
+	}
+	return nil
+}
+
+func (g *RDSGenerator) loadDBProxyEndpoints(svc *rds.Client, proxyName string) error {
+	p := rds.NewDescribeDBProxyEndpointsPaginator(svc, &rds.DescribeDBProxyEndpointsInput{
+		DBProxyName: aws.String(proxyName),
+	})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, endpoint := range page.DBProxyEndpoints {
+			endpointName := StringValue(endpoint.DBProxyEndpointName)
+			if endpointName == "" || rdsDefaultDBProxyEndpoint(endpoint) {
+				continue
+			}
+			g.Resources = append(g.Resources, terraformutils.NewResource(
+				rdsDBProxyEndpointImportID(proxyName, endpointName),
+				rdsResourceName(proxyName, endpointName),
+				"aws_db_proxy_endpoint",
+				"aws",
+				map[string]string{
+					"db_proxy_endpoint_name": endpointName,
+					"db_proxy_name":          proxyName,
+				},
+				RDSAllowEmptyValues,
+				map[string]interface{}{},
+			))
+		}
+	}
+	return nil
+}
+
 func (g *RDSGenerator) loadDBInstances(svc *rds.Client) error {
 	p := rds.NewDescribeDBInstancesPaginator(svc, &rds.DescribeDBInstancesInput{})
 	for p.HasMorePages() {
@@ -88,6 +280,9 @@ func (g *RDSGenerator) loadDBInstances(svc *rds.Client) error {
 		}
 		for _, db := range page.DBInstances {
 			resourceName := StringValue(db.DBInstanceIdentifier)
+			if resourceName == "" {
+				continue
+			}
 			r := terraformutils.NewSimpleResource(
 				resourceName,
 				resourceName,
@@ -97,6 +292,7 @@ func (g *RDSGenerator) loadDBInstances(svc *rds.Client) error {
 			)
 			r.IgnoreKeys = append(r.IgnoreKeys, "^name$")
 			g.Resources = append(g.Resources, r)
+			g.addDBInstanceRoleAssociations(resourceName, db.AssociatedRoles)
 		}
 	}
 	return nil
@@ -121,6 +317,29 @@ func (g *RDSGenerator) loadDBInstanceSnapshots(svc *rds.Client) error {
 		}
 	}
 	return nil
+}
+
+func (g *RDSGenerator) addDBInstanceRoleAssociations(instanceID string, roles []rdstypes.DBInstanceRole) {
+	for _, role := range roles {
+		roleARN := StringValue(role.RoleArn)
+		featureName := StringValue(role.FeatureName)
+		if roleARN == "" || featureName == "" {
+			continue
+		}
+		g.Resources = append(g.Resources, terraformutils.NewResource(
+			rdsRoleAssociationImportID(instanceID, roleARN),
+			rdsResourceName(instanceID, rdsIAMRoleResourceName(roleARN)),
+			"aws_db_instance_role_association",
+			"aws",
+			map[string]string{
+				"db_instance_identifier": instanceID,
+				"feature_name":           featureName,
+				"role_arn":               roleARN,
+			},
+			RDSAllowEmptyValues,
+			map[string]interface{}{},
+		))
+	}
 }
 
 func (g *RDSGenerator) loadDBParameterGroups(svc *rds.Client) error {
@@ -278,7 +497,54 @@ func (g *RDSGenerator) InitResources() error {
 		return err
 	}
 
+	g.loadOptionalResources([]rdsOptionalResourceLoader{
+		{name: "cluster parameter groups", load: func() error { return g.loadDBClusterParameterGroups(svc) }},
+		{name: "custom cluster endpoints", load: func() error { return g.loadDBClusterEndpoints(svc) }},
+	})
+
 	return nil
+}
+
+func rdsDBProxyEndpointImportID(proxyName, endpointName string) string {
+	return strings.Join([]string{proxyName, endpointName}, "/")
+}
+
+func rdsDBProxyTargetImportID(proxyName, targetGroupName, targetType, resourceID string) string {
+	return strings.Join([]string{proxyName, targetGroupName, targetType, resourceID}, "/")
+}
+
+func rdsRoleAssociationImportID(resourceID, roleARN string) string {
+	return fmt.Sprintf("%s,%s", resourceID, roleARN)
+}
+
+func rdsResourceName(parts ...string) string {
+	var cleanParts []string
+	for _, part := range parts {
+		if part != "" {
+			cleanParts = append(cleanParts, part)
+		}
+	}
+	if len(cleanParts) == 0 {
+		return "rds_resource"
+	}
+	return strings.Join(cleanParts, "_")
+}
+
+func rdsIAMRoleResourceName(roleARN string) string {
+	resource := arnLastSegment(roleARN, ":")
+	return strings.TrimPrefix(resource, "role/")
+}
+
+func rdsCustomClusterEndpoint(endpoint rdstypes.DBClusterEndpoint) bool {
+	return StringValue(endpoint.EndpointType) == "CUSTOM"
+}
+
+func rdsDefaultDBProxyEndpoint(endpoint rdstypes.DBProxyEndpoint) bool {
+	return endpoint.IsDefault != nil && *endpoint.IsDefault
+}
+
+func rdsDefaultDBProxyTargetGroup(targetGroup rdstypes.DBProxyTargetGroup) bool {
+	return targetGroup.IsDefault != nil && *targetGroup.IsDefault
 }
 
 func (g *RDSGenerator) PostConvertHook() error {
