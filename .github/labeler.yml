@@ -71,6 +71,7 @@ provider/aws:
   - changed-files:
       - any-glob-to-any-file:
           - "providers/aws/**"
+          - "tests/aws/**"
           - "docs/aws.md"
           - "cmd/provider_cmd_aws.go"
 
@@ -106,6 +107,7 @@ provider/commercetools:
   - changed-files:
       - any-glob-to-any-file:
           - "providers/commercetools/**"
+          - "tests/commercetools/**"
           - "docs/commercetools.md"
           - "cmd/provider_cmd_commercetools.go"
 
@@ -113,6 +115,7 @@ provider/datadog:
   - changed-files:
       - any-glob-to-any-file:
           - "providers/datadog/**"
+          - "tests/datadog/**"
           - "docs/datadog.md"
           - "cmd/provider_cmd_datadog.go"
 
@@ -141,6 +144,7 @@ provider/gcp:
   - changed-files:
       - any-glob-to-any-file:
           - "providers/gcp/**"
+          - "tests/gcp/**"
           - "docs/gcp.md"
           - "cmd/provider_cmd_google.go"
 
@@ -148,6 +152,7 @@ provider/github:
   - changed-files:
       - any-glob-to-any-file:
           - "providers/github/**"
+          - "tests/github/**"
           - "docs/github.md"
           - "cmd/provider_cmd_github.go"
 
@@ -274,6 +279,7 @@ provider/octopusdeploy:
   - changed-files:
       - any-glob-to-any-file:
           - "providers/octopusdeploy/**"
+          - "tests/octopusdeploy/**"
           - "docs/octopus.md"
           - "cmd/provider_cmd_octopusdeploy.go"
 
@@ -295,6 +301,7 @@ provider/openstack:
   - changed-files:
       - any-glob-to-any-file:
           - "providers/openstack/**"
+          - "tests/openstack/**"
           - "docs/openstack.md"
           - "cmd/provider_cmd_openstack.go"
 
@@ -323,6 +330,7 @@ provider/rabbitmq:
   - changed-files:
       - any-glob-to-any-file:
           - "providers/rabbitmq/**"
+          - "tests/rabbitmq/**"
           - "docs/rabbitmq.md"
           - "cmd/provider_cmd_rabbitmq.go"
 
