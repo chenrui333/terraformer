@@ -74,38 +74,11 @@ func (g *GcsGenerator) createBucketsResources(ctx context.Context, gcsService *s
 				GcsAdditionalFields,
 			))
 
-			if iam, err := gcsService.Buckets.GetIamPolicy(bucket.Name).Do(); err == nil {
-				for _, binding := range iam.Bindings {
-					resources = append(resources, terraformutils.NewResource(
-						bucket.Name,
-						bucket.Name,
-						"google_storage_bucket_iam_binding",
-						g.ProviderName,
-						map[string]string{
-							"bucket": bucket.Name,
-							"role":   binding.Role,
-						},
-						GcsAllowEmptyValues,
-						GcsAdditionalFields,
-					))
-
-					for _, member := range binding.Members {
-						resources = append(resources, terraformutils.NewResource(
-							bucket.Name,
-							bucket.Name,
-							"google_storage_bucket_iam_member",
-							g.ProviderName,
-							map[string]string{
-								"bucket": bucket.Name,
-								"role":   binding.Role,
-								"member": member,
-							},
-							GcsAllowEmptyValues,
-							GcsAdditionalFields,
-						))
-					}
-				}
+			iamResources, err := g.createBucketIAMResources(gcsService, bucket)
+			if err != nil {
+				return err
 			}
+			resources = append(resources, iamResources...)
 
 			notificationResources, err := g.createNotificationResources(gcsService, bucket)
 			if err != nil {
@@ -116,6 +89,45 @@ func (g *GcsGenerator) createBucketsResources(ctx context.Context, gcsService *s
 		return nil
 	}); err != nil {
 		return nil, fmt.Errorf("list gcs buckets: %w", err)
+	}
+	return resources, nil
+}
+
+func (g *GcsGenerator) createBucketIAMResources(gcsService *storage.Service, bucket *storage.Bucket) ([]terraformutils.Resource, error) {
+	resources := []terraformutils.Resource{}
+	iam, err := gcsService.Buckets.GetIamPolicy(bucket.Name).Do()
+	if err != nil {
+		return nil, fmt.Errorf("get gcs bucket IAM policy for %s: %w", bucket.Name, err)
+	}
+	for _, binding := range iam.Bindings {
+		resources = append(resources, terraformutils.NewResource(
+			bucket.Name,
+			bucket.Name,
+			"google_storage_bucket_iam_binding",
+			g.ProviderName,
+			map[string]string{
+				"bucket": bucket.Name,
+				"role":   binding.Role,
+			},
+			GcsAllowEmptyValues,
+			GcsAdditionalFields,
+		))
+
+		for _, member := range binding.Members {
+			resources = append(resources, terraformutils.NewResource(
+				bucket.Name,
+				bucket.Name,
+				"google_storage_bucket_iam_member",
+				g.ProviderName,
+				map[string]string{
+					"bucket": bucket.Name,
+					"role":   binding.Role,
+					"member": member,
+				},
+				GcsAllowEmptyValues,
+				GcsAdditionalFields,
+			))
+		}
 	}
 	return resources, nil
 }
