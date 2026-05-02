@@ -37,6 +37,10 @@ const (
 
 var (
 	appSyncAllowEmptyValues      = []string{"tags."}
+	appSyncTopLevelResourceTypes = []string{
+		appSyncGraphQLAPIResourceType,
+		appSyncDomainNameResourceType,
+	}
 	appSyncAPIChildResourceTypes = []string{
 		appSyncAPICacheResourceType,
 		appSyncAPIKeyResourceType,
@@ -49,6 +53,11 @@ var (
 	appSyncChildResourceTypes = append([]string{
 		appSyncDomainNameAPIAssociationResourceType,
 	}, appSyncAPIChildResourceTypes...)
+	appSyncResourceTypes         = append(appSyncTopLevelResourceTypes, appSyncChildResourceTypes...)
+	appSyncTypeDefinitionFormats = []appsynctypes.TypeDefinitionFormat{
+		appsynctypes.TypeDefinitionFormatSdl,
+		appsynctypes.TypeDefinitionFormatJson,
+	}
 )
 
 type AppSyncGenerator struct {
@@ -231,27 +240,35 @@ func (g *AppSyncGenerator) addFunctions(svc *appsync.Client, apiID string) error
 }
 
 func (g *AppSyncGenerator) addTypesAndResolvers(svc *appsync.Client, apiID string) error {
-	p := appsync.NewListTypesPaginator(svc, &appsync.ListTypesInput{
-		ApiId:  aws.String(apiID),
-		Format: appsynctypes.TypeDefinitionFormatSdl,
-	})
-	for p.HasMorePages() {
-		page, err := p.NextPage(context.TODO())
-		if err != nil {
-			return err
-		}
-		for _, graphqlType := range page.Types {
-			typeName := StringValue(graphqlType.Name)
-			if typeName == "" {
-				continue
+	seenResolverTypes := map[string]struct{}{}
+	for _, format := range appSyncTypeDefinitionFormats {
+		p := appsync.NewListTypesPaginator(svc, &appsync.ListTypesInput{
+			ApiId:  aws.String(apiID),
+			Format: format,
+		})
+		for p.HasMorePages() {
+			page, err := p.NextPage(context.TODO())
+			if err != nil {
+				return err
 			}
-			if g.shouldLoadAPIChildResourceType(appSyncTypeResourceType, apiID) {
-				resource := newAppSyncTypeResource(apiID, typeName)
-				if g.shouldAppendAppSyncChildResource(appSyncTypeResourceType, resource) {
-					g.Resources = append(g.Resources, resource)
+			for _, graphqlType := range page.Types {
+				typeName := StringValue(graphqlType.Name)
+				if typeName == "" {
+					continue
 				}
-			}
-			if g.shouldLoadAPIChildResourceType(appSyncResolverResourceType, apiID) {
+				if g.shouldLoadAPIChildResourceType(appSyncTypeResourceType, apiID) {
+					resource := newAppSyncTypeResource(apiID, string(format), typeName)
+					if g.shouldAppendAppSyncChildResource(appSyncTypeResourceType, resource) {
+						g.Resources = append(g.Resources, resource)
+					}
+				}
+				if !g.shouldLoadAPIChildResourceType(appSyncResolverResourceType, apiID) {
+					continue
+				}
+				if _, seen := seenResolverTypes[typeName]; seen {
+					continue
+				}
+				seenResolverTypes[typeName] = struct{}{}
 				if err := g.addResolvers(svc, apiID, typeName); err != nil {
 					if appSyncResourceMissing(err) {
 						continue
@@ -468,8 +485,7 @@ func newAppSyncSourceAPIAssociationResource(mergedAPIID, associationID string) t
 	)
 }
 
-func newAppSyncTypeResource(apiID, typeName string) terraformutils.Resource {
-	format := string(appsynctypes.TypeDefinitionFormatSdl)
+func newAppSyncTypeResource(apiID, format, typeName string) terraformutils.Resource {
 	return terraformutils.NewResource(
 		appSyncTypeResourceID(apiID, format, typeName),
 		appSyncResourceName(apiID, "type", format, typeName),
@@ -528,7 +544,7 @@ func (g *AppSyncGenerator) shouldAppendGraphQLAPIResource(resource terraformutil
 	if !g.resourceMatchesInitialIDFilters(appSyncGraphQLAPIResourceType, resource) {
 		return false
 	}
-	if g.hasTypedAppSyncChildFilter() && !g.hasTypedFilterFor(appSyncGraphQLAPIResourceType) && !g.hasUntypedIDFilter() {
+	if g.hasTypedAppSyncFilter() && !g.hasTypedFilterFor(appSyncGraphQLAPIResourceType) && !g.hasUntypedIDFilter() {
 		return false
 	}
 	return true
@@ -538,7 +554,7 @@ func (g *AppSyncGenerator) shouldAppendDomainNameResource(resource terraformutil
 	if !g.resourceMatchesInitialIDFilters(appSyncDomainNameResourceType, resource) {
 		return false
 	}
-	if g.hasTypedAppSyncChildFilter() && !g.hasTypedFilterFor(appSyncDomainNameResourceType) && !g.hasUntypedIDFilter() {
+	if g.hasTypedAppSyncFilter() && !g.hasTypedFilterFor(appSyncDomainNameResourceType) && !g.hasUntypedIDFilter() {
 		return false
 	}
 	return true
@@ -548,11 +564,26 @@ func (g *AppSyncGenerator) shouldAppendAppSyncChildResource(serviceName string, 
 	if g.hasTypedAppSyncChildFilter() && !g.hasTypedFilterFor(serviceName) {
 		return false
 	}
+	if g.hasTypedAppSyncFilter() && !g.hasTypedAppSyncChildFilter() && !g.hasUntypedIDFilter() {
+		switch serviceName {
+		case appSyncDomainNameAPIAssociationResourceType:
+			if !g.hasTypedFilterFor(appSyncDomainNameResourceType) {
+				return false
+			}
+		default:
+			if !g.hasTypedFilterFor(appSyncGraphQLAPIResourceType) {
+				return false
+			}
+		}
+	}
 	return g.resourceMatchesInitialIDFilters(serviceName, resource)
 }
 
 func (g *AppSyncGenerator) shouldLoadGraphQLAPIChildren(apiResource terraformutils.Resource) bool {
-	if !g.hasTypedAppSyncChildFilter() && !g.hasUntypedIDFilter() {
+	if g.hasTypedAppSyncFilter() && !g.hasTypedFilterFor(appSyncGraphQLAPIResourceType) && !g.hasTypedAppSyncAPIChildFilter() && !g.hasUntypedIDFilter() {
+		return false
+	}
+	if !g.hasTypedAppSyncAPIChildFilter() && !g.hasUntypedIDFilter() {
 		if !g.resourceMatchesInitialIDFilters(appSyncGraphQLAPIResourceType, apiResource) {
 			return false
 		}
@@ -571,7 +602,7 @@ func (g *AppSyncGenerator) shouldLoadGraphQLAPIChildren(apiResource terraformuti
 }
 
 func (g *AppSyncGenerator) shouldLoadAPIChildResourceType(serviceName, apiID string) bool {
-	if !g.hasTypedAppSyncChildFilter() && !g.hasUntypedIDFilter() {
+	if !g.hasTypedAppSyncAPIChildFilter() && !g.hasUntypedIDFilter() {
 		apiResource := newAppSyncGraphQLAPIResource(apiID, apiID)
 		if !g.resourceMatchesInitialIDFilters(appSyncGraphQLAPIResourceType, apiResource) {
 			return false
@@ -580,21 +611,31 @@ func (g *AppSyncGenerator) shouldLoadAPIChildResourceType(serviceName, apiID str
 			return false
 		}
 	}
-	if g.hasTypedAppSyncChildFilter() && !g.hasTypedFilterFor(serviceName) {
+	if g.hasTypedAppSyncAPIChildFilter() && !g.hasTypedFilterFor(serviceName) {
+		return false
+	}
+	if g.hasTypedAppSyncFilter() && !g.hasTypedFilterFor(serviceName) && !g.hasTypedFilterFor(appSyncGraphQLAPIResourceType) && !g.hasUntypedIDFilter() {
 		return false
 	}
 	return g.initialIDFiltersCanMatchAPIChild(serviceName, apiID)
 }
 
 func (g *AppSyncGenerator) shouldLoadDomainNames() bool {
-	if g.hasTypedAppSyncChildFilter() {
+	if g.hasTypedAppSyncFilter() {
 		return g.hasTypedFilterFor(appSyncDomainNameResourceType) || g.hasTypedFilterFor(appSyncDomainNameAPIAssociationResourceType)
 	}
 	return true
 }
 
 func (g *AppSyncGenerator) shouldLoadDomainNameAPIAssociation(domainName string) bool {
-	if g.hasTypedAppSyncChildFilter() && !g.hasTypedFilterFor(appSyncDomainNameAPIAssociationResourceType) {
+	if g.hasTypedFilterFor(appSyncDomainNameAPIAssociationResourceType) {
+		return g.initialIDFiltersCanMatchDomainName(appSyncDomainNameAPIAssociationResourceType, domainName)
+	}
+	if g.hasTypedFilterFor(appSyncDomainNameResourceType) {
+		domainResource := newAppSyncDomainNameResource(domainName)
+		return g.resourceMatchesInitialIDFilters(appSyncDomainNameResourceType, domainResource) && !g.hasTypedNonIDFilterFor(appSyncDomainNameResourceType)
+	}
+	if g.hasTypedAppSyncFilter() && !g.hasUntypedIDFilter() {
 		return false
 	}
 	return g.initialIDFiltersCanMatchDomainName(appSyncDomainNameAPIAssociationResourceType, domainName)
@@ -669,6 +710,24 @@ func appSyncChildIDMayBelongToAPI(serviceName, apiID, value string) bool {
 
 func (g *AppSyncGenerator) hasTypedAppSyncChildFilter() bool {
 	for _, serviceName := range appSyncChildResourceTypes {
+		if g.hasTypedFilterFor(serviceName) {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *AppSyncGenerator) hasTypedAppSyncAPIChildFilter() bool {
+	for _, serviceName := range appSyncAPIChildResourceTypes {
+		if g.hasTypedFilterFor(serviceName) {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *AppSyncGenerator) hasTypedAppSyncFilter() bool {
+	for _, serviceName := range appSyncResourceTypes {
 		if g.hasTypedFilterFor(serviceName) {
 			return true
 		}

@@ -21,7 +21,8 @@ func TestAppSyncResourceIDs(t *testing.T) {
 		{name: "function", got: appSyncFunctionResourceID("api123", "func123"), want: "api123-func123"},
 		{name: "resolver", got: appSyncResolverResourceID("api123", "Query", "getOrder"), want: "api123-Query-getOrder"},
 		{name: "source api association", got: appSyncSourceAPIAssociationResourceID("api123", "assoc123"), want: "api123,assoc123"},
-		{name: "type", got: appSyncTypeResourceID("api123", "SDL", "Order"), want: "api123:SDL:Order"},
+		{name: "SDL type", got: appSyncTypeResourceID("api123", "SDL", "Order"), want: "api123:SDL:Order"},
+		{name: "JSON type", got: appSyncTypeResourceID("api123", "JSON", "Order"), want: "api123:JSON:Order"},
 		{name: "resource name skips empty parts", got: appSyncResourceName("api123", "", "resolver", "Query"), want: "api123:resolver:Query"},
 	}
 
@@ -118,6 +119,12 @@ func TestAppSyncFilterGatesGraphQLAPIAndChildDiscovery(t *testing.T) {
 			appendAPIKey:   true,
 		},
 		{
+			name: "typed domain id filter skips APIs and API children",
+			filters: []terraformutils.ResourceFilter{
+				{ServiceName: appSyncDomainNameResourceType, FieldPath: "id", AcceptableValues: []string{"api.example.com"}},
+			},
+		},
+		{
 			name: "global id filter constrains typed child discovery",
 			filters: []terraformutils.ResourceFilter{
 				{FieldPath: "id", AcceptableValues: []string{otherAPIID}},
@@ -203,10 +210,36 @@ func TestAppSyncFilterGatesDomainNamesAndAssociations(t *testing.T) {
 			appendAssociation: true,
 		},
 		{
+			name: "typed GraphQL API filter skips domain scan",
+			filters: []terraformutils.ResourceFilter{
+				{ServiceName: appSyncGraphQLAPIResourceType, FieldPath: "id", AcceptableValues: []string{"api123"}},
+			},
+		},
+		{
 			name: "typed API child filter skips domain scan",
 			filters: []terraformutils.ResourceFilter{
 				{ServiceName: appSyncAPIKeyResourceType, FieldPath: "id", AcceptableValues: []string{"api123:key123"}},
 			},
+		},
+		{
+			name: "typed domain id filter loads matching domain and association",
+			filters: []terraformutils.ResourceFilter{
+				{ServiceName: appSyncDomainNameResourceType, FieldPath: "id", AcceptableValues: []string{domainName}},
+			},
+			loadDomains:       true,
+			appendDomain:      true,
+			loadAssociation:   true,
+			appendAssociation: true,
+		},
+		{
+			name: "typed domain non-id filter avoids association pre-load",
+			filters: []terraformutils.ResourceFilter{
+				{ServiceName: appSyncDomainNameResourceType, FieldPath: "tags.env", AcceptableValues: []string{"prod"}},
+			},
+			loadDomains:       true,
+			appendDomain:      true,
+			appendOther:       true,
+			appendAssociation: true,
 		},
 		{
 			name: "typed association filter skips parent domain resource",
