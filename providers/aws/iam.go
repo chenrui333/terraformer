@@ -4,6 +4,7 @@ package aws
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
+	"github.com/aws/smithy-go"
 )
 
 var IamAllowEmptyValues = []string{"tags."}
@@ -20,6 +22,22 @@ var IamAdditionalFields = map[string]interface{}{}
 
 type IamGenerator struct {
 	AWSService
+}
+
+type iamOptionalResourceLoader struct {
+	name string
+	load func() error
+}
+
+func (g *IamGenerator) loadOptionalResources(loaders []iamOptionalResourceLoader) {
+	for _, loader := range loaders {
+		if err := loader.load(); err != nil {
+			if iamResourceMissing(err) {
+				continue
+			}
+			log.Printf("Skipping IAM %s: %v", loader.name, err)
+		}
+	}
 }
 
 func (g *IamGenerator) InitResources() error {
@@ -54,7 +72,128 @@ func (g *IamGenerator) InitResources() error {
 		log.Println(err)
 	}
 
+	g.loadOptionalResources([]iamOptionalResourceLoader{
+		{name: "account alias", load: func() error { return g.getAccountAlias(svc) }},
+		{name: "account password policy", load: func() error { return g.getAccountPasswordPolicy(svc) }},
+		{name: "OpenID Connect providers", load: func() error { return g.getOpenIDConnectProviders(svc) }},
+		{name: "SAML providers", load: func() error { return g.getSAMLProviders(svc) }},
+	})
+
 	return nil
+}
+
+func (g *IamGenerator) getAccountAlias(svc *iam.Client) error {
+	p := iam.NewListAccountAliasesPaginator(svc, &iam.ListAccountAliasesInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, alias := range page.AccountAliases {
+			if alias == "" {
+				continue
+			}
+			g.Resources = append(g.Resources, terraformutils.NewResource(
+				alias,
+				alias,
+				"aws_iam_account_alias",
+				"aws",
+				map[string]string{"account_alias": alias},
+				IamAllowEmptyValues,
+				IamAdditionalFields,
+			))
+		}
+	}
+	return nil
+}
+
+func (g *IamGenerator) getAccountPasswordPolicy(svc *iam.Client) error {
+	if _, err := svc.GetAccountPasswordPolicy(context.TODO(), &iam.GetAccountPasswordPolicyInput{}); err != nil {
+		if iamResourceMissing(err) {
+			return nil
+		}
+		return err
+	}
+	g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
+		"iam-account-password-policy",
+		"account_password_policy",
+		"aws_iam_account_password_policy",
+		"aws",
+		IamAllowEmptyValues,
+	))
+	return nil
+}
+
+func (g *IamGenerator) getOpenIDConnectProviders(svc *iam.Client) error {
+	output, err := svc.ListOpenIDConnectProviders(context.TODO(), &iam.ListOpenIDConnectProvidersInput{})
+	if err != nil {
+		return err
+	}
+	for _, provider := range output.OpenIDConnectProviderList {
+		providerARN := StringValue(provider.Arn)
+		if providerARN == "" {
+			continue
+		}
+		g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
+			providerARN,
+			iamResourceName("oidc", iamOpenIDConnectProviderName(providerARN)),
+			"aws_iam_openid_connect_provider",
+			"aws",
+			IamAllowEmptyValues,
+		))
+	}
+	return nil
+}
+
+func (g *IamGenerator) getSAMLProviders(svc *iam.Client) error {
+	output, err := svc.ListSAMLProviders(context.TODO(), &iam.ListSAMLProvidersInput{})
+	if err != nil {
+		return err
+	}
+	for _, provider := range output.SAMLProviderList {
+		providerARN := StringValue(provider.Arn)
+		providerName := arnLastSegment(providerARN, "/")
+		if providerARN == "" || providerName == "" {
+			continue
+		}
+		g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
+			providerARN,
+			iamResourceName("saml", providerName),
+			"aws_iam_saml_provider",
+			"aws",
+			IamAllowEmptyValues,
+		))
+	}
+	return nil
+}
+
+func iamOpenIDConnectProviderName(providerARN string) string {
+	if _, providerName, ok := strings.Cut(providerARN, ":oidc-provider/"); ok {
+		return providerName
+	}
+	return arnLastSegment(providerARN, "/")
+}
+
+func iamResourceName(parts ...string) string {
+	segments := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if part != "" {
+			segments = append(segments, part)
+		}
+	}
+	if len(segments) == 0 {
+		return "iam_resource"
+	}
+	return strings.Join(segments, "/")
+}
+
+func iamResourceMissing(err error) bool {
+	var noSuchEntity *types.NoSuchEntityException
+	if errors.As(err, &noSuchEntity) {
+		return true
+	}
+	var apiErr smithy.APIError
+	return errors.As(err, &apiErr) && strings.Contains(strings.ToLower(apiErr.ErrorCode()), "nosuchentity")
 }
 
 func (g *IamGenerator) getRoles(svc *iam.Client) error {
