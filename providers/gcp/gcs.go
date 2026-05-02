@@ -21,7 +21,7 @@ type GcsGenerator struct {
 	GCPService
 }
 
-func (g *GcsGenerator) createBucketsResources(ctx context.Context, gcsService *storage.Service) []terraformutils.Resource {
+func (g *GcsGenerator) createBucketsResources(ctx context.Context, gcsService *storage.Service) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	bucketList := gcsService.Buckets.List(g.GetArgs()["project"].(string))
 	if err := bucketList.Pages(ctx, func(page *storage.Buckets) error {
@@ -112,9 +112,9 @@ func (g *GcsGenerator) createBucketsResources(ctx context.Context, gcsService *s
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list gcs buckets: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 func (g *GcsGenerator) createNotificationResources(gcsService *storage.Service, bucket *storage.Bucket) []terraformutils.Resource {
@@ -138,34 +138,6 @@ func (g *GcsGenerator) createNotificationResources(gcsService *storage.Service, 
 	return resources
 }
 
-/*
-func (g *GcsGenerator) createTransferJobsResources(ctx context.Context, storageTransferService *storagetransfer.Service) []terraformutils.Resource {
-	resources := []terraformutils.Resource{}
-	transferJobsList := storageTransferService.TransferJobs.List()
-	err := transferJobsList.Pages(ctx, func(page *storagetransfer.ListTransferJobsResponse) error {
-		log.Println(page.TransferJobs)
-		for _, transferJob := range page.TransferJobs {
-			resources = append(resources, terraformutils.NewResource(
-				transferJob.Name,
-				transferJob.Name,
-				"google_storage_transfer_job",
-				g.ProviderName,
-				map[string]string{
-					"name": transferJob.Name,
-				},
-				GcsAllowEmptyValues,
-				GcsAdditionalFields,
-			))
-		}
-		return nil
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
-	return resources
-}
-*/
-
 // Generate TerraformResources from GCP API,
 // from each bucket  create 1 TerraformResource
 // Need bucket name as ID for terraform resource
@@ -176,7 +148,11 @@ func (g *GcsGenerator) InitResources() error {
 		log.Print(err)
 		return err
 	}
-	g.Resources = g.createBucketsResources(ctx, gcsService)
+	resources, err := g.createBucketsResources(ctx, gcsService)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	// TODO find bug with storageTransferService.TransferJobs.List().Pages
 	// storageTransferService, err := storagetransfer.NewService(ctx)
