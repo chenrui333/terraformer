@@ -77,8 +77,7 @@ func (g *EcsGenerator) InitResources() error {
 			for servicePage.HasMorePages() {
 				serviceNextPage, err := servicePage.NextPage(context.TODO())
 				if err != nil {
-					fmt.Println(err.Error())
-					continue
+					return fmt.Errorf("list ecs services for cluster %s: %w", clusterName, err)
 				}
 				for _, serviceArn := range serviceNextPage.ServiceArns {
 					serviceName := arnLastSegment(serviceArn, "/")
@@ -95,10 +94,12 @@ func (g *EcsGenerator) InitResources() error {
 						Cluster: &clusterArn,
 					})
 					if err != nil {
-						fmt.Println(err.Error())
-						continue
+						return fmt.Errorf("describe ecs service %s/%s: %w", clusterName, serviceName, err)
 					}
-					serviceDetails := serResp.Services[0]
+					serviceDetails, err := ecsServiceDetails(serResp, serviceName)
+					if err != nil {
+						return fmt.Errorf("describe ecs service %s/%s: %w", clusterName, serviceName, err)
+					}
 
 					g.Resources = append(g.Resources, terraformutils.NewResource(
 						serviceArn,
@@ -130,8 +131,7 @@ func (g *EcsGenerator) InitResources() error {
 	for taskDefinitionsPage.HasMorePages() {
 		taskDefinitionsNextPage, e := taskDefinitionsPage.NextPage(context.TODO())
 		if e != nil {
-			fmt.Println(e.Error())
-			continue
+			return fmt.Errorf("list ecs task definitions: %w", e)
 		}
 		for _, taskDefinitionArn := range taskDefinitionsNextPage.TaskDefinitionArns {
 			arnParts := strings.Split(taskDefinitionArn, ":")
@@ -165,6 +165,21 @@ func (g *EcsGenerator) InitResources() error {
 	}
 
 	return nil
+}
+
+func ecsServiceDetails(output *ecs.DescribeServicesOutput, serviceName string) (ecstypes.Service, error) {
+	if output == nil {
+		return ecstypes.Service{}, errors.New("empty describe services response")
+	}
+	if len(output.Services) > 0 {
+		return output.Services[0], nil
+	}
+	for _, failure := range output.Failures {
+		if StringValue(failure.Arn) == serviceName || arnLastSegment(StringValue(failure.Arn), "/") == serviceName {
+			return ecstypes.Service{}, fmt.Errorf("service %s was not described: %s", serviceName, StringValue(failure.Reason))
+		}
+	}
+	return ecstypes.Service{}, fmt.Errorf("service %s was not described", serviceName)
 }
 
 func (g *EcsGenerator) getOptionalEcsResources(loaders ...ecsOptionalResourceLoader) {

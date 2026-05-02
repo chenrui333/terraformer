@@ -4,8 +4,11 @@ package aws
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ecs"
 	ecstypes "github.com/aws/aws-sdk-go-v2/service/ecs/types"
 )
 
@@ -94,6 +97,48 @@ func TestEcsCapacityProviderImportable(t *testing.T) {
 				t.Fatalf("ecsCapacityProviderImportable() = %t, want %t", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestEcsServiceDetails(t *testing.T) {
+	taskDefinition := "arn:aws:ecs:us-east-1:123456789012:task-definition/example:1"
+	service, err := ecsServiceDetails(&ecs.DescribeServicesOutput{
+		Services: []ecstypes.Service{
+			{TaskDefinition: &taskDefinition},
+		},
+	}, "example")
+	if err != nil {
+		t.Fatalf("ecsServiceDetails returned error: %v", err)
+	}
+	if got := aws.ToString(service.TaskDefinition); got != taskDefinition {
+		t.Fatalf("TaskDefinition = %q, want %q", got, taskDefinition)
+	}
+}
+
+func TestEcsServiceDetailsReturnsFailureReason(t *testing.T) {
+	_, err := ecsServiceDetails(&ecs.DescribeServicesOutput{
+		Failures: []ecstypes.Failure{
+			{
+				Arn:    aws.String("arn:aws:ecs:us-east-1:123456789012:service/example-cluster/example-service"),
+				Reason: aws.String("MISSING"),
+			},
+		},
+	}, "example-service")
+	if err == nil {
+		t.Fatal("expected describe services failure error")
+	}
+	if !strings.Contains(err.Error(), "service example-service was not described: MISSING") {
+		t.Fatalf("error = %q, want failure reason", err)
+	}
+}
+
+func TestEcsServiceDetailsReturnsEmptyResponseError(t *testing.T) {
+	_, err := ecsServiceDetails(nil, "example-service")
+	if err == nil {
+		t.Fatal("expected nil describe services response error")
+	}
+	if !strings.Contains(err.Error(), "empty describe services response") {
+		t.Fatalf("error = %q, want empty response context", err)
 	}
 }
 
