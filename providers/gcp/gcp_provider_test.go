@@ -37,6 +37,25 @@ func TestGCPProviderInitAllowsDefaultProviderType(t *testing.T) {
 	}
 }
 
+func TestGCPProviderInitClearsProviderTypeWhenOmitted(t *testing.T) {
+	t.Setenv("GOOGLE_CLOUD_PROJECT", "test-project")
+
+	provider := GCPProvider{}
+	if err := provider.Init([]string{"global", "test-project", "beta"}); err != nil {
+		t.Fatalf("Init with beta provider returned error: %v", err)
+	}
+	if provider.GetName() != "google-beta" {
+		t.Fatalf("GetName() = %q, want %q", provider.GetName(), "google-beta")
+	}
+
+	if err := provider.Init([]string{"global"}); err != nil {
+		t.Fatalf("Init without provider type returned error: %v", err)
+	}
+	if provider.GetName() != "google" {
+		t.Fatalf("GetName() = %q, want %q", provider.GetName(), "google")
+	}
+}
+
 func TestGCPProviderInitReturnsNonGlobalRegionLookupError(t *testing.T) {
 	t.Setenv("GOOGLE_CLOUD_PROJECT", "test-project")
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

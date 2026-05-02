@@ -76,6 +76,8 @@ func (p *GCPProvider) Init(args []string) error {
 	p.region = *region
 	if len(args) > 2 {
 		p.providerType = args[2]
+	} else {
+		p.providerType = ""
 	}
 	return nil
 }
