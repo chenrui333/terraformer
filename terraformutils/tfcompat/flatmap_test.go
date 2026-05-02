@@ -156,13 +156,45 @@ func TestHCL2ValueFromFlatmapMapOfLists(t *testing.T) {
 	if _, ok := poolMap["X"]; ok {
 		t.Fatal("pools unexpectedly contains truncated key X")
 	}
-	dotted := poolMap["X.Foo"]
+	dotted, ok := poolMap["X.Foo"]
+	if !ok {
+		t.Fatal("pools does not contain dotted key X.Foo")
+	}
 	if dotted.LengthInt() != 1 {
 		t.Errorf("pools[X.Foo] length = %d, want 1", dotted.LengthInt())
 	}
 	dottedValues := dotted.AsValueSlice()
 	if dottedValues[0].AsString() != "pool-dotted-key" {
 		t.Errorf("pools[X.Foo][0] = %q, want %q", dottedValues[0].AsString(), "pool-dotted-key")
+	}
+}
+
+func TestHCL2ValueFromFlatmapMapOfObjectsWithDottedUnknownKey(t *testing.T) {
+	m := map[string]string{
+		"headers.%":          "1",
+		"headers.X.Foo.name": UnknownVariableValue,
+	}
+	ty := cty.Object(map[string]cty.Type{
+		"headers": cty.Map(cty.Object(map[string]cty.Type{
+			"name": cty.String,
+		})),
+	})
+
+	val, err := HCL2ValueFromFlatmap(m, ty)
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+	headers := val.GetAttr("headers").AsValueMap()
+	if _, ok := headers["X.Foo.name"]; ok {
+		t.Fatal("headers unexpectedly contains nested attribute path as map key X.Foo.name")
+	}
+	dotted, ok := headers["X.Foo"]
+	if !ok {
+		t.Fatal("headers does not contain dotted key X.Foo")
+	}
+	name := dotted.GetAttr("name")
+	if name.IsKnown() {
+		t.Fatal("headers[X.Foo].name should be unknown")
 	}
 }
 

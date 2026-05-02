@@ -329,20 +329,25 @@ func hcl2ValueFromFlatmapMapKeyCandidates(key string) []string {
 }
 
 func hcl2ValueFromFlatmapValueExists(m map[string]string, key string, ty cty.Type) bool {
-	if m[key] == UnknownVariableValue {
-		return true
-	}
-
 	switch {
 	case ty.IsPrimitiveType():
+		if m[key] == UnknownVariableValue {
+			return true
+		}
 		_, exists := m[key]
 		return exists
 	case ty.IsObjectType():
 		return hcl2ValueFromFlatmapObjectValueExists(m, key+".", ty.AttributeTypes())
 	case ty.IsTupleType(), ty.IsListType(), ty.IsSetType():
+		if m[key] == UnknownVariableValue {
+			return true
+		}
 		_, exists := m[key+".#"]
 		return exists
 	case ty.IsMapType():
+		if m[key] == UnknownVariableValue {
+			return true
+		}
 		_, exists := m[key+".%"]
 		return exists
 	default:

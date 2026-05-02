@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -159,6 +160,38 @@ func TestFromFlatmapMapOfLists(t *testing.T) {
 	}
 	if dotted[0] != "pool-dotted-key" {
 		t.Errorf("pools[X.Foo][0] = %v, want %q", dotted[0], "pool-dotted-key")
+	}
+}
+
+func TestFromFlatmapMapOfObjectsWithDottedUnknownKey(t *testing.T) {
+	attributes := map[string]string{
+		"headers.%":          "1",
+		"headers.X.Foo.name": tfcompat.UnknownVariableValue,
+	}
+	parser := NewFlatmapParser(attributes, nil, nil)
+	ty := cty.Object(map[string]cty.Type{
+		"headers": cty.Map(cty.Object(map[string]cty.Type{
+			"name": cty.String,
+		})),
+	})
+
+	result, err := parser.Parse(ty)
+	if err != nil {
+		t.Fatalf("Parse error: %v", err)
+	}
+	headers, ok := result["headers"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("headers is not map[string]interface{}, got %T", result["headers"])
+	}
+	if _, ok := headers["X.Foo.name"]; ok {
+		t.Fatal("headers unexpectedly contains nested attribute path as map key X.Foo.name")
+	}
+	dotted, ok := headers["X.Foo"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("headers[X.Foo] is not map[string]interface{}, got %T", headers["X.Foo"])
+	}
+	if dotted["name"] != tfcompat.UnknownVariableValue {
+		t.Errorf("headers[X.Foo].name = %v, want %q", dotted["name"], tfcompat.UnknownVariableValue)
 	}
 }
 

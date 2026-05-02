@@ -268,20 +268,25 @@ func flatmapMapKeyCandidates(key string) []string {
 }
 
 func (p *FlatmapParser) flatmapValueExists(key string, ty cty.Type) bool {
-	if p.attributes[key] == tfcompat.UnknownVariableValue {
-		return true
-	}
-
 	switch {
 	case ty.IsPrimitiveType():
+		if p.attributes[key] == tfcompat.UnknownVariableValue {
+			return true
+		}
 		_, exists := p.attributes[key]
 		return exists
 	case ty.IsObjectType():
 		return p.flatmapObjectValueExists(key+".", ty.AttributeTypes())
 	case ty.IsTupleType(), ty.IsListType(), ty.IsSetType():
+		if p.attributes[key] == tfcompat.UnknownVariableValue {
+			return true
+		}
 		_, exists := p.attributes[key+".#"]
 		return exists
 	case ty.IsMapType():
+		if p.attributes[key] == tfcompat.UnknownVariableValue {
+			return true
+		}
 		_, exists := p.attributes[key+".%"]
 		return exists
 	default:
