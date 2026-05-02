@@ -76,13 +76,15 @@ func (g *AppSyncGenerator) InitResources() error {
 	}
 	svc := appsync.NewFromConfig(config)
 
-	if err := g.loadGraphQLAPIs(svc); err != nil {
-		return err
+	if g.shouldLoadGraphQLAPIs() {
+		if err := g.loadGraphQLAPIs(svc); err != nil {
+			return err
+		}
 	}
 	if g.shouldLoadDomainNames() {
-		g.loadOptionalResources([]appSyncOptionalResourceLoader{
-			{name: "domain names", load: func() error { return g.loadDomainNames(svc) }},
-		})
+		if err := g.loadDomainNames(svc); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -606,6 +608,16 @@ func (g *AppSyncGenerator) shouldLoadGraphQLAPIChildren(apiResource terraformuti
 	return false
 }
 
+func (g *AppSyncGenerator) shouldLoadGraphQLAPIs() bool {
+	if g.hasUntypedIDFilter() {
+		return true
+	}
+	if g.hasTypedAppSyncFilter() {
+		return g.hasTypedFilterFor(appSyncGraphQLAPIResourceType) || g.hasTypedAppSyncAPIChildFilter()
+	}
+	return true
+}
+
 func (g *AppSyncGenerator) shouldLoadAPIChildResourceType(serviceName, apiID string) bool {
 	if !g.hasTypedAppSyncAPIChildFilter() && !g.hasUntypedIDFilter() {
 		apiResource := newAppSyncGraphQLAPIResource(apiID, apiID)
@@ -626,6 +638,9 @@ func (g *AppSyncGenerator) shouldLoadAPIChildResourceType(serviceName, apiID str
 }
 
 func (g *AppSyncGenerator) shouldLoadDomainNames() bool {
+	if g.hasUntypedIDFilter() {
+		return true
+	}
 	if g.hasTypedAppSyncFilter() {
 		return g.hasTypedFilterFor(appSyncDomainNameResourceType) || g.hasTypedFilterFor(appSyncDomainNameAPIAssociationResourceType)
 	}

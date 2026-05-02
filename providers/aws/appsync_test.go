@@ -67,6 +67,7 @@ func TestAppSyncFilterGatesGraphQLAPIAndChildDiscovery(t *testing.T) {
 	tests := []struct {
 		name              string
 		filters           []terraformutils.ResourceFilter
+		loadAPIs          bool
 		appendAPI         bool
 		appendOtherAPI    bool
 		loadChildren      bool
@@ -78,6 +79,7 @@ func TestAppSyncFilterGatesGraphQLAPIAndChildDiscovery(t *testing.T) {
 	}{
 		{
 			name:              "no filters imports APIs and children",
+			loadAPIs:          true,
 			appendAPI:         true,
 			appendOtherAPI:    true,
 			loadChildren:      true,
@@ -92,6 +94,7 @@ func TestAppSyncFilterGatesGraphQLAPIAndChildDiscovery(t *testing.T) {
 			filters: []terraformutils.ResourceFilter{
 				{ServiceName: appSyncGraphQLAPIResourceType, FieldPath: "id", AcceptableValues: []string{apiID}},
 			},
+			loadAPIs:       true,
 			appendAPI:      true,
 			loadChildren:   true,
 			loadAPIKeys:    true,
@@ -103,6 +106,7 @@ func TestAppSyncFilterGatesGraphQLAPIAndChildDiscovery(t *testing.T) {
 			filters: []terraformutils.ResourceFilter{
 				{ServiceName: appSyncAPIKeyResourceType, FieldPath: "id", AcceptableValues: []string{appSyncAPIKeyResourceID(apiID, "key123")}},
 			},
+			loadAPIs:     true,
 			loadChildren: true,
 			loadAPIKeys:  true,
 			appendAPIKey: true,
@@ -113,6 +117,7 @@ func TestAppSyncFilterGatesGraphQLAPIAndChildDiscovery(t *testing.T) {
 				{ServiceName: appSyncGraphQLAPIResourceType, FieldPath: "id", AcceptableValues: []string{otherAPIID}},
 				{ServiceName: appSyncAPIKeyResourceType, FieldPath: "id", AcceptableValues: []string{appSyncAPIKeyResourceID(apiID, "key123")}},
 			},
+			loadAPIs:       true,
 			appendOtherAPI: true,
 			loadChildren:   true,
 			loadAPIKeys:    true,
@@ -130,6 +135,7 @@ func TestAppSyncFilterGatesGraphQLAPIAndChildDiscovery(t *testing.T) {
 				{FieldPath: "id", AcceptableValues: []string{otherAPIID}},
 				{ServiceName: appSyncAPIKeyResourceType, FieldPath: "id", AcceptableValues: []string{appSyncAPIKeyResourceID(apiID, "key123")}},
 			},
+			loadAPIs:       true,
 			appendOtherAPI: true,
 		},
 		{
@@ -137,6 +143,7 @@ func TestAppSyncFilterGatesGraphQLAPIAndChildDiscovery(t *testing.T) {
 			filters: []terraformutils.ResourceFilter{
 				{FieldPath: "id", AcceptableValues: []string{appSyncAPIKeyResourceID(apiID, "key123")}},
 			},
+			loadAPIs:     true,
 			loadChildren: true,
 			loadAPIKeys:  true,
 			appendAPIKey: true,
@@ -146,6 +153,7 @@ func TestAppSyncFilterGatesGraphQLAPIAndChildDiscovery(t *testing.T) {
 			filters: []terraformutils.ResourceFilter{
 				{ServiceName: appSyncGraphQLAPIResourceType, FieldPath: "tags.env", AcceptableValues: []string{"prod"}},
 			},
+			loadAPIs:       true,
 			appendAPI:      true,
 			appendOtherAPI: true,
 			appendAPIKey:   true,
@@ -157,6 +165,9 @@ func TestAppSyncFilterGatesGraphQLAPIAndChildDiscovery(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := AppSyncGenerator{}
 			g.Filter = tt.filters
+			if got := g.shouldLoadGraphQLAPIs(); got != tt.loadAPIs {
+				t.Fatalf("shouldLoadGraphQLAPIs() = %t, want %t", got, tt.loadAPIs)
+			}
 			if got := g.shouldAppendGraphQLAPIResource(api); got != tt.appendAPI {
 				t.Fatalf("shouldAppendGraphQLAPIResource(api) = %t, want %t", got, tt.appendAPI)
 			}
@@ -214,6 +225,17 @@ func TestAppSyncFilterGatesDomainNamesAndAssociations(t *testing.T) {
 			filters: []terraformutils.ResourceFilter{
 				{ServiceName: appSyncGraphQLAPIResourceType, FieldPath: "id", AcceptableValues: []string{"api123"}},
 			},
+		},
+		{
+			name: "untyped domain id filter keeps domain scan with typed API filter",
+			filters: []terraformutils.ResourceFilter{
+				{ServiceName: appSyncGraphQLAPIResourceType, FieldPath: "id", AcceptableValues: []string{"api123"}},
+				{FieldPath: "id", AcceptableValues: []string{domainName}},
+			},
+			loadDomains:       true,
+			appendDomain:      true,
+			loadAssociation:   true,
+			appendAssociation: true,
 		},
 		{
 			name: "typed API child filter skips domain scan",
