@@ -67,13 +67,20 @@ func (g *KinesisGenerator) shouldLoadStreamChildren(streamName string) bool {
 }
 
 func (g *KinesisGenerator) shouldLoadStreamConsumers(streamName string) bool {
+	return g.shouldAppendStreamConsumers(streamName) || g.shouldLoadResourcePolicies(streamName)
+}
+
+func (g *KinesisGenerator) shouldAppendStreamConsumers(streamName string) bool {
 	if g.hasUntypedIDFilters() && !g.hasUntypedChildIDFilters() {
 		return false
 	}
-	return g.streamMatchesExplicitIDFilters(streamName) ||
-		g.hasTypedFilterFor("kinesis_stream_consumer") ||
-		g.hasTypedFilterFor("kinesis_resource_policy") ||
-		g.hasUntypedChildIDFilters()
+	if g.hasUntypedChildIDFilters() || g.hasTypedFilterFor("kinesis_stream_consumer") {
+		return true
+	}
+	if g.hasTypedFilterFor("kinesis_resource_policy") {
+		return false
+	}
+	return g.streamMatchesExplicitIDFilters(streamName)
 }
 
 func (g *KinesisGenerator) shouldLoadResourcePolicies(streamName string) bool {
@@ -83,7 +90,7 @@ func (g *KinesisGenerator) shouldLoadResourcePolicies(streamName string) bool {
 	if g.hasTypedFilterFor("kinesis_resource_policy") {
 		return true
 	}
-	if g.hasTypedFilterFor("kinesis_stream_consumer") && !g.hasTypedFilterFor("kinesis_stream") {
+	if g.hasTypedFilterFor("kinesis_stream_consumer") {
 		return false
 	}
 	return g.streamMatchesExplicitIDFilters(streamName)
@@ -150,6 +157,7 @@ func (g *KinesisGenerator) loadStreamChildren(svc *kinesis.Client, streamName st
 	}
 
 	loadPolicies := g.shouldLoadResourcePolicies(streamName)
+	appendConsumers := g.shouldAppendStreamConsumers(streamName)
 	loaders := []kinesisOptionalResourceLoader{}
 	if loadPolicies {
 		loaders = append(loaders, kinesisOptionalResourceLoader{
@@ -163,14 +171,14 @@ func (g *KinesisGenerator) loadStreamChildren(svc *kinesis.Client, streamName st
 		loaders = append(loaders, kinesisOptionalResourceLoader{
 			name: fmt.Sprintf("stream consumers for %s", streamName),
 			load: func() error {
-				return g.loadStreamConsumers(svc, streamName, streamARN, loadPolicies)
+				return g.loadStreamConsumers(svc, streamName, streamARN, loadPolicies, appendConsumers)
 			},
 		})
 	}
 	g.loadOptionalResources(loaders)
 }
 
-func (g *KinesisGenerator) loadStreamConsumers(svc *kinesis.Client, streamName string, streamARN string, loadPolicies bool) error {
+func (g *KinesisGenerator) loadStreamConsumers(svc *kinesis.Client, streamName string, streamARN string, loadPolicies bool, appendConsumers bool) error {
 	p := kinesis.NewListStreamConsumersPaginator(svc, &kinesis.ListStreamConsumersInput{StreamARN: &streamARN})
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
@@ -183,18 +191,20 @@ func (g *KinesisGenerator) loadStreamConsumers(svc *kinesis.Client, streamName s
 			if consumerARN == "" || consumerName == "" || !kinesisConsumerImportable(consumer) {
 				continue
 			}
-			g.Resources = append(g.Resources, terraformutils.NewResource(
-				consumerARN,
-				kinesisResourceName(streamName, consumerName),
-				"aws_kinesis_stream_consumer",
-				"aws",
-				map[string]string{
-					"name":       consumerName,
-					"stream_arn": streamARN,
-				},
-				kinesisAllowEmptyValues,
-				map[string]interface{}{},
-			))
+			if appendConsumers {
+				g.Resources = append(g.Resources, terraformutils.NewResource(
+					consumerARN,
+					kinesisResourceName(streamName, consumerName),
+					"aws_kinesis_stream_consumer",
+					"aws",
+					map[string]string{
+						"name":       consumerName,
+						"stream_arn": streamARN,
+					},
+					kinesisAllowEmptyValues,
+					map[string]interface{}{},
+				))
+			}
 			if !loadPolicies {
 				continue
 			}
