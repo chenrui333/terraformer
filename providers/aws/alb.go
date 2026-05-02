@@ -104,6 +104,10 @@ func (g *AlbGenerator) loadLBListenerRule(svc *elasticloadbalancingv2.Client, li
 }
 
 func (g *AlbGenerator) loadLBListenerCertificate(svc *elasticloadbalancingv2.Client, loadBalancer *types.Listener) error {
+	if !listenerSupportsCertificates(loadBalancer.Protocol) {
+		return nil
+	}
+
 	lcs, err := svc.DescribeListenerCertificates(context.TODO(), &elasticloadbalancingv2.DescribeListenerCertificatesInput{
 		ListenerArn: loadBalancer.ListenerArn,
 	})
@@ -130,6 +134,10 @@ func (g *AlbGenerator) loadLBListenerCertificate(svc *elasticloadbalancingv2.Cli
 		))
 	}
 	return err
+}
+
+func listenerSupportsCertificates(protocol types.ProtocolEnum) bool {
+	return protocol == types.ProtocolEnumHttps || protocol == types.ProtocolEnumTls
 }
 
 func (g *AlbGenerator) loadLBTargetGroup(svc *elasticloadbalancingv2.Client) error {
