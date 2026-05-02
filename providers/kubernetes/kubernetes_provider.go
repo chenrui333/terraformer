@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/discovery"
+	k8sclient "k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp" // GKE support
 )
 
@@ -80,6 +81,11 @@ func (p *KubernetesProvider) GetSupportedService() map[string]terraformutils.Ser
 		log.Println(err)
 		return resources
 	}
+	clientset, err := k8sclient.NewForConfig(config)
+	if err != nil {
+		log.Println(err)
+		return resources
+	}
 	provider, err := providerwrapper.NewProviderWrapper("kubernetes", cty.Value{}, p.verbose == "true")
 	if err != nil {
 		log.Println(err)
@@ -106,16 +112,26 @@ func (p *KubernetesProvider) GetSupportedService() map[string]terraformutils.Ser
 				continue
 			}
 
-			// filter to resource that are supported by terraform kubernetes provider
-			if _, ok := resp.ResourceTypes[extractTfResourceName(resource.Kind)]; !ok {
+			// filter to resources that the Terraform Kubernetes provider can import
+			terraformResourceName, ok := selectTerraformResourceName(resource.Kind, func(name string) bool {
+				_, exists := resp.ResourceTypes[name]
+				return exists
+			})
+			if !ok {
+				continue
+			}
+
+			// filter to resources available through the typed client-go Clientset
+			if !supportsTypedClientResource(clientset, gv.Group, gv.Version, resource.Kind) {
 				continue
 			}
 
 			resources[resource.Name] = &Kind{
-				Group:      gv.Group,
-				Version:    gv.Version,
-				Name:       resource.Kind,
-				Namespaced: resource.Namespaced,
+				Group:         gv.Group,
+				Version:       gv.Version,
+				Name:          resource.Kind,
+				Namespaced:    resource.Namespaced,
+				TerraformType: terraformResourceName,
 			}
 		}
 	}

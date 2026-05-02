@@ -14,10 +14,11 @@ import (
 
 type Kind struct {
 	KubernetesService
-	Name       string
-	Group      string
-	Version    string
-	Namespaced bool
+	Name          string
+	Group         string
+	Version       string
+	Namespaced    bool
+	TerraformType string
 }
 
 // Generate TerraformResources from Kubernetes API,
@@ -54,6 +55,11 @@ func (k *Kind) InitResources() error {
 	}
 	items := reflect.Indirect(results[0]).FieldByName("Items")
 
+	terraformType := k.TerraformType
+	if terraformType == "" {
+		terraformType = extractTfResourceName(k.Name)
+	}
+
 	for i := 0; i < items.Len(); i++ {
 		item := items.Index(i)
 		// Filter to resources that aren't owned by any other resource
@@ -71,7 +77,7 @@ func (k *Kind) InitResources() error {
 		k.Resources = append(k.Resources, terraformutils.NewSimpleResource(
 			name,
 			name,
-			extractTfResourceName(k.Name),
+			terraformType,
 			"kubernetes",
 			[]string{},
 		))

@@ -4,10 +4,24 @@
 package kubernetes
 
 import (
+	"reflect"
 	"strings"
 
 	"github.com/iancoleman/strcase"
+	"k8s.io/client-go/kubernetes"
 )
+
+var preferredTerraformResourceNames = map[string][]string{
+	"CronJob":             {"kubernetes_cron_job_v1", "kubernetes_cron_job"},
+	"DaemonSet":           {"kubernetes_daemon_set_v1", "kubernetes_daemonset"},
+	"EndpointSlice":       {"kubernetes_endpoint_slice_v1"},
+	"Ingress":             {"kubernetes_ingress_v1", "kubernetes_ingress"},
+	"IngressClass":        {"kubernetes_ingress_class_v1", "kubernetes_ingress_class"},
+	"Job":                 {"kubernetes_job_v1", "kubernetes_job"},
+	"NetworkPolicy":       {"kubernetes_network_policy_v1", "kubernetes_network_policy"},
+	"PodDisruptionBudget": {"kubernetes_pod_disruption_budget_v1", "kubernetes_pod_disruption_budget"},
+	"RuntimeClass":        {"kubernetes_runtime_class_v1"},
+}
 
 func extractClientSetFuncGroupName(group, version string) string {
 	v := strings.Title(version)
@@ -29,4 +43,46 @@ func extractClientSetFuncTypeName(kind string) string {
 
 func extractTfResourceName(kind string) string {
 	return "kubernetes_" + strcase.ToSnake(kind)
+}
+
+func terraformResourceNameCandidates(kind string) []string {
+	seen := map[string]struct{}{}
+	candidates := []string{}
+	for _, name := range preferredTerraformResourceNames[kind] {
+		if _, ok := seen[name]; ok {
+			continue
+		}
+		seen[name] = struct{}{}
+		candidates = append(candidates, name)
+	}
+
+	defaultName := extractTfResourceName(kind)
+	if _, ok := seen[defaultName]; !ok {
+		candidates = append(candidates, defaultName)
+	}
+	return candidates
+}
+
+func selectTerraformResourceName(kind string, hasResourceType func(string) bool) (string, bool) {
+	for _, name := range terraformResourceNameCandidates(kind) {
+		if hasResourceType(name) {
+			return name, true
+		}
+	}
+	return "", false
+}
+
+func supportsTypedClientResource(clientset kubernetes.Interface, group, version, kind string) bool {
+	groupMethod := reflect.ValueOf(clientset).MethodByName(extractClientSetFuncGroupName(group, version))
+	if !groupMethod.IsValid() {
+		return false
+	}
+
+	groupValues := groupMethod.Call([]reflect.Value{})
+	if len(groupValues) == 0 || !groupValues[0].IsValid() {
+		return false
+	}
+
+	resourceMethod := groupValues[0].MethodByName(extractClientSetFuncTypeName(kind))
+	return resourceMethod.IsValid()
 }
