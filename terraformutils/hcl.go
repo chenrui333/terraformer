@@ -246,7 +246,7 @@ func formatMapKey(key string) string {
 	if isSafeHCLObjectKey(key) {
 		return key
 	}
-	return quoteHCLLabel(key)
+	return quoteHCLString(key)
 }
 
 func isSafeHCLObjectKey(key string) bool {
@@ -263,6 +263,20 @@ func quoteHCLLabel(key string) string {
 		return "\"" + key + "\""
 	}
 	return string(raw)
+}
+
+func quoteHCLString(value string) string {
+	raw, err := json.Marshal(escapeTerraformTemplateMarkers(value))
+	if err != nil {
+		return "\"" + value + "\""
+	}
+	return string(raw)
+}
+
+func escapeTerraformTemplateMarkers(value string) string {
+	value = strings.ReplaceAll(value, "${", "$${")
+	value = strings.ReplaceAll(value, "%{", "%%{")
+	return value
 }
 
 func hclPrintManifestResources(resources []Resource, sortOutput bool) ([]byte, error) {
@@ -314,6 +328,9 @@ func hclWriteValue(b *strings.Builder, value interface{}, indent int, sortOutput
 		return hclWriteMap(b, value, indent, sortOutput)
 	case []interface{}:
 		return hclWriteList(b, value, indent, sortOutput)
+	case string:
+		b.WriteString(quoteHCLString(value))
+		return nil
 	default:
 		raw, err := json.Marshal(value)
 		if err != nil {

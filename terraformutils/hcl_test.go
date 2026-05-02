@@ -58,6 +58,8 @@ func TestPrintManifestResourceKeepsNestedMapsRenderable(t *testing.T) {
 			"kind":       "Widget",
 			"metadata": map[string]interface{}{
 				"annotations": map[string]interface{}{
+					"${terraform.io/template}":  "literal ${FOO}",
+					"%{terraform.io/directive}": "literal %{ if true }enabled%{ endif }",
 					"if":                        "reserved",
 					"kubernetes.io/description": "sample widget",
 				},
@@ -120,6 +122,8 @@ func TestPrintManifestResourceKeepsNestedMapsRenderable(t *testing.T) {
 		"schema = {",
 		"openAPIV3Schema = {",
 		"\"123abc\" = \"numeric\"",
+		"\"$${terraform.io/template}\" = \"literal $${FOO}\"",
+		"\"%%{terraform.io/directive}\" = \"literal %%{ if true }enabled%%{ endif }\"",
 		"\"for\" = \"reserved\"",
 		"\"if\" = \"reserved\"",
 		"\"kubernetes.io/description\" = \"sample widget\"",
