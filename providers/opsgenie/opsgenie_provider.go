@@ -17,9 +17,9 @@ type OpsgenieProvider struct { //nolint
 
 func (p *OpsgenieProvider) Init(args []string) error {
 	if apiKey := os.Getenv("OPSGENIE_API_KEY"); apiKey != "" {
-		p.APIKey = os.Getenv("OPSGENIE_API_KEY")
+		p.APIKey = apiKey
 	}
-	if args[0] != "" {
+	if len(args) > 0 && args[0] != "" {
 		p.APIKey = args[0]
 	}
 	if p.APIKey == "" {
