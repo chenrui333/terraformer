@@ -4,6 +4,12 @@ package cloudflare
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"net/url"
+	"strconv"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	cf "github.com/cloudflare/cloudflare-go"
@@ -11,6 +17,69 @@ import (
 
 type StorageGenerator struct {
 	CloudflareService
+}
+
+var r2BucketJurisdictions = []string{"default", "eu", "fedramp"}
+
+type r2BucketListResult struct {
+	Buckets []cf.R2Bucket
+}
+
+func cloudflareClientSkipError(err error) bool {
+	var authErr *cf.AuthenticationError
+	if errors.As(err, &authErr) {
+		return true
+	}
+	var notFoundErr *cf.NotFoundError
+	if errors.As(err, &notFoundErr) {
+		return true
+	}
+	var requestErr *cf.RequestError
+	return errors.As(err, &requestErr)
+}
+
+func listR2BucketsInJurisdiction(
+	ctx context.Context,
+	api *cf.API,
+	accountID string,
+	jurisdiction string,
+) ([]cf.R2Bucket, error) {
+	var buckets []cf.R2Bucket
+	cursor := ""
+	for {
+		values := url.Values{}
+		values.Set("per_page", strconv.Itoa(cloudflarePageSize))
+		if cursor != "" {
+			values.Set("cursor", cursor)
+		}
+		headers := http.Header{}
+		headers.Set("cf-r2-jurisdiction", jurisdiction)
+		response, err := api.Raw(
+			ctx,
+			http.MethodGet,
+			fmt.Sprintf("/accounts/%s/r2/buckets?%s", accountID, values.Encode()),
+			nil,
+			headers,
+		)
+		if err != nil {
+			if jurisdiction != "default" && cloudflareClientSkipError(err) {
+				return buckets, nil
+			}
+			return nil, err
+		}
+
+		var result r2BucketListResult
+		if err := json.Unmarshal(response.Result, &result); err != nil {
+			return nil, err
+		}
+		buckets = append(buckets, result.Buckets...)
+
+		if len(result.Buckets) < cloudflarePageSize || response.ResultInfo == nil || response.ResultInfo.Cursors.After == "" {
+			break
+		}
+		cursor = response.ResultInfo.Cursors.After
+	}
+	return buckets, nil
 }
 
 func (g *StorageGenerator) appendWorkersKVNamespaceResources(ctx context.Context, api *cf.API, accountID string) error {
@@ -66,24 +135,26 @@ func (g *StorageGenerator) appendQueueResources(ctx context.Context, api *cf.API
 }
 
 func (g *StorageGenerator) appendR2BucketResources(ctx context.Context, api *cf.API, accountID string) error {
-	buckets, err := api.ListR2Buckets(ctx, cf.AccountIdentifier(accountID), cf.ListR2BucketsParams{PerPage: cloudflarePageSize})
-	if err != nil {
-		return err
-	}
-	for _, bucket := range buckets {
-		g.Resources = append(g.Resources, terraformutils.NewResource(
-			bucket.Name,
-			cloudflareResourceName(accountID, bucket.Name),
-			"cloudflare_r2_bucket",
-			"cloudflare",
-			map[string]string{
-				"account_id":   accountID,
-				"name":         bucket.Name,
-				"jurisdiction": "default",
-			},
-			[]string{},
-			map[string]interface{}{},
-		))
+	for _, jurisdiction := range r2BucketJurisdictions {
+		buckets, err := listR2BucketsInJurisdiction(ctx, api, accountID, jurisdiction)
+		if err != nil {
+			return err
+		}
+		for _, bucket := range buckets {
+			g.Resources = append(g.Resources, terraformutils.NewResource(
+				bucket.Name,
+				cloudflareResourceName(accountID, jurisdiction, bucket.Name),
+				"cloudflare_r2_bucket",
+				"cloudflare",
+				map[string]string{
+					"account_id":   accountID,
+					"name":         bucket.Name,
+					"jurisdiction": jurisdiction,
+				},
+				[]string{},
+				map[string]interface{}{},
+			))
+		}
 	}
 	return nil
 }

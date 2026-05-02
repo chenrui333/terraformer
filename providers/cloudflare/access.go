@@ -127,12 +127,23 @@ func (g *AccessGenerator) appendAccessMTLSCertificateResources(
 			return err
 		}
 		for _, certificate := range certificates {
+			if certificate.Certificate == "" {
+				certificate, err = api.GetAccessMutualTLSCertificate(ctx, rc, certificate.ID)
+				if err != nil {
+					return err
+				}
+			}
+			if certificate.Certificate == "" {
+				continue
+			}
+			attributes := accessScopeAttributes(scopeType, rc.Identifier)
+			attributes["certificate"] = certificate.Certificate
 			g.Resources = append(g.Resources, terraformutils.NewResource(
 				certificate.ID,
 				cloudflareResourceName(scopeType, rc.Identifier, certificate.Name, certificate.ID),
 				"cloudflare_zero_trust_access_mtls_certificate",
 				"cloudflare",
-				accessScopeAttributes(scopeType, rc.Identifier),
+				attributes,
 				[]string{},
 				map[string]interface{}{},
 			))
