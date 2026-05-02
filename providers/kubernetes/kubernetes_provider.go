@@ -80,7 +80,7 @@ func (p *KubernetesProvider) GetSupportedService() map[string]terraformutils.Ser
 		return resources
 	}
 
-	lists, err := dc.ServerPreferredResources()
+	lists, err := kubernetesPreferredResources(dc)
 	if err != nil {
 		log.Println(err)
 		return resources
@@ -143,6 +143,10 @@ func (p *KubernetesProvider) GetSupportedService() map[string]terraformutils.Ser
 		return exists
 	})
 	addSecretDataService(resources, clientset, listableResources, func(name string) bool {
+		_, exists := resp.ResourceTypes[name]
+		return exists
+	})
+	addMetadataPatchServices(resources, func(name string) bool {
 		_, exists := resp.ResourceTypes[name]
 		return exists
 	})
@@ -264,10 +268,31 @@ func addSecretDataService(
 	}
 }
 
+func addMetadataPatchServices(
+	resources map[string]terraformutils.ServiceGenerator,
+	hasResourceType func(string) bool,
+) {
+	if hasResourceType(labelsTerraformType) {
+		resources[labelsServiceName] = &MetadataPatch{
+			TerraformType:     labelsTerraformType,
+			AttributeName:     "labels",
+			AllowEmptyPattern: labelsAllowEmptyPattern,
+		}
+	}
+	if hasResourceType(annotationsTerraformType) {
+		resources[annotationsServiceName] = &MetadataPatch{
+			TerraformType:     annotationsTerraformType,
+			AttributeName:     "annotations",
+			AllowEmptyPattern: annotationsAllowEmptyPattern,
+		}
+	}
+}
+
 func (p KubernetesProvider) PostProcessImportResources(resourcesByService map[string][]terraformutils.Resource) map[string][]terraformutils.Resource {
 	resourcesByService = removeDefaultServiceAccountDuplicates(resourcesByService)
 	resourcesByService = removeConfigMapDataDuplicates(resourcesByService)
 	resourcesByService = removeSecretDataDuplicates(resourcesByService)
+	resourcesByService = removeMetadataPatchDuplicates(resourcesByService)
 	return resourcesByService
 }
 
@@ -372,6 +397,88 @@ func removeSecretDataDuplicates(resourcesByService map[string][]terraformutils.R
 	}
 	resourcesByService[secretDataServiceName] = filtered
 	return resourcesByService
+}
+
+func removeMetadataPatchDuplicates(resourcesByService map[string][]terraformutils.Resource) map[string][]terraformutils.Resource {
+	targetIDs := map[string]struct{}{}
+	targetObjectKeys := map[string]struct{}{}
+	for serviceName, resources := range resourcesByService {
+		if serviceName == labelsServiceName || serviceName == annotationsServiceName {
+			continue
+		}
+		for _, resource := range resources {
+			for _, targetID := range metadataPatchTargetIDs(resource) {
+				targetIDs[targetID] = struct{}{}
+			}
+			for _, targetKey := range metadataPatchFallbackTargetKeys(resource) {
+				targetObjectKeys[targetKey] = struct{}{}
+			}
+		}
+	}
+	if len(targetIDs) == 0 && len(targetObjectKeys) == 0 {
+		return resourcesByService
+	}
+	ambiguousObjectKeys := metadataPatchAmbiguousObjectKeys(resourcesByService)
+
+	for _, serviceName := range []string{labelsServiceName, annotationsServiceName} {
+		resources, ok := resourcesByService[serviceName]
+		if !ok {
+			continue
+		}
+		filtered := resources[:0]
+		for _, resource := range resources {
+			if resource.InstanceState == nil {
+				filtered = append(filtered, resource)
+				continue
+			}
+			if _, duplicate := targetIDs[resource.InstanceState.ID]; duplicate {
+				continue
+			}
+			if targetKey, _, ok := metadataPatchObjectKeyAndAPIVersionFromID(resource.InstanceState.ID); ok {
+				if _, ambiguous := ambiguousObjectKeys[targetKey]; ambiguous {
+					filtered = append(filtered, resource)
+					continue
+				}
+				if _, duplicate := targetObjectKeys[targetKey]; duplicate {
+					continue
+				}
+			}
+			filtered = append(filtered, resource)
+		}
+		if len(filtered) == 0 {
+			delete(resourcesByService, serviceName)
+			continue
+		}
+		resourcesByService[serviceName] = filtered
+	}
+	return resourcesByService
+}
+
+func metadataPatchAmbiguousObjectKeys(resourcesByService map[string][]terraformutils.Resource) map[string]struct{} {
+	apiVersionsByObjectKey := map[string]map[string]struct{}{}
+	for _, serviceName := range []string{labelsServiceName, annotationsServiceName} {
+		for _, resource := range resourcesByService[serviceName] {
+			if resource.InstanceState == nil {
+				continue
+			}
+			objectKey, apiVersion, ok := metadataPatchObjectKeyAndAPIVersionFromID(resource.InstanceState.ID)
+			if !ok {
+				continue
+			}
+			if _, ok := apiVersionsByObjectKey[objectKey]; !ok {
+				apiVersionsByObjectKey[objectKey] = map[string]struct{}{}
+			}
+			apiVersionsByObjectKey[objectKey][apiVersion] = struct{}{}
+		}
+	}
+
+	ambiguousObjectKeys := map[string]struct{}{}
+	for objectKey, apiVersions := range apiVersionsByObjectKey {
+		if len(apiVersions) > 1 {
+			ambiguousObjectKeys[objectKey] = struct{}{}
+		}
+	}
+	return ambiguousObjectKeys
 }
 
 func isDefaultServiceAccountDuplicate(resource terraformutils.Resource, defaultServiceAccountIDs map[string]struct{}) bool {

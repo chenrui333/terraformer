@@ -10,12 +10,15 @@ Example:
 Terraformer discovers Kubernetes API resources from the active cluster and imports resources that are available through either the typed Kubernetes client or an explicit dynamic-client import path, and the installed Terraform Kubernetes provider schema.
 Discovered CRDs and other untyped API extensions without a first-class Terraform Kubernetes provider type can be imported through `kubernetes_manifest` when the API resource is manageable and the installed provider supports that resource.
 Manifest-backed custom resources use a group/version-qualified resource selector such as `example.com/v1/widgets` to avoid collisions between CRDs that share the same plural name.
+When `labels` or `annotations` are selected with full resource imports, Terraformer keeps the full resource import and skips overlapping metadata-only resources to avoid duplicate Terraform ownership of the same object metadata.
 When `configmaps` and `configmapdata` are selected together, Terraformer keeps the full `configmaps` import and skips overlapping data-only resources to avoid duplicate Terraform ownership of the same ConfigMap data.
 When `secrets` and `secretdata` are selected together, Terraformer keeps the full `secrets` import and skips overlapping data-only resources to avoid duplicate Terraform ownership of the same Secret data.
 Because `kubernetes_secret_v1_data` only accepts string data, `secretdata` skips Secrets containing non-UTF-8 payloads instead of emitting lossy configuration.
 
 Common supported resources include:
 
+*   `annotations`
+    * `kubernetes_annotations`
 *   `apiservices`
     * `kubernetes_api_service_v1`
 *   `certificatesigningrequests`
@@ -53,6 +56,8 @@ Common supported resources include:
     * `kubernetes_ingress_v1`
 *   `jobs`
     * `kubernetes_job_v1`
+*   `labels`
+    * `kubernetes_labels`
 *   `limitranges`
     * `kubernetes_limit_range_v1`
 *   `mutatingwebhookconfigurations`
