@@ -50,6 +50,10 @@ type importResourcesPostProcessor interface {
 	PostProcessImportResources(map[string][]terraformutils.Resource) map[string][]terraformutils.Resource
 }
 
+type importValidator interface {
+	ValidateImport() error
+}
+
 const DefaultPathPattern = "{output}/{provider}/{service}/"
 const DefaultPathOutput = "generated"
 const DefaultState = "local"
@@ -112,6 +116,9 @@ func initOptionsAndWrapper(provider terraformutils.ProviderGenerator, options Im
 	if err != nil {
 		return nil, options, err
 	}
+	if err := validateImport(provider); err != nil {
+		return nil, options, err
+	}
 
 	if terraformerstring.ContainsString(options.Resources, "*") {
 		log.Println("Attempting an import of ALL resources in " + provider.GetName())
@@ -141,6 +148,13 @@ func initOptionsAndWrapper(provider terraformutils.ProviderGenerator, options Im
 	}
 
 	return providerWrapper, options, nil
+}
+
+func validateImport(provider terraformutils.ProviderGenerator) error {
+	if validator, ok := provider.(importValidator); ok {
+		return validator.ValidateImport()
+	}
+	return nil
 }
 
 func initAllServicesResources(providersMapping *terraformutils.ProvidersMapping, options ImportOptions, args []string, providerWrapper *providerwrapper.ProviderWrapper) error {

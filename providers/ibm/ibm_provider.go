@@ -25,10 +25,6 @@ type IBMProvider struct { //nolint
 }
 
 func (p *IBMProvider) Init(args []string) error {
-	if os.Getenv("IC_API_KEY") == "" {
-		return errMissingICAPIKey
-	}
-
 	p.ResourceGroup = args[0]
 	p.Region = args[1]
 	p.VPC = args[2]
@@ -42,6 +38,13 @@ func (p *IBMProvider) Init(args []string) error {
 	}
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (p *IBMProvider) ValidateImport() error {
+	if os.Getenv("IC_API_KEY") == "" {
+		return errMissingICAPIKey
 	}
 	return nil
 }

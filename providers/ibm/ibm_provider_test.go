@@ -7,11 +7,26 @@ import (
 	"testing"
 )
 
-func TestProviderInitRequiresAPIKey(t *testing.T) {
+func TestProviderInitDoesNotRequireAPIKey(t *testing.T) {
 	t.Setenv("IC_API_KEY", "")
 
 	provider := &IBMProvider{}
-	err := provider.Init([]string{"", "", ""})
+	if err := provider.Init([]string{"", "", ""}); err != nil {
+		t.Fatalf("expected provider initialization to succeed without API key: %v", err)
+	}
+	if provider.Region != DefaultRegion {
+		t.Fatalf("expected default region %q, got %q", DefaultRegion, provider.Region)
+	}
+	if err := provider.InitService("ibm_is_image", false); err != nil {
+		t.Fatalf("expected plan replay service initialization to succeed without API key: %v", err)
+	}
+}
+
+func TestProviderValidateImportRequiresAPIKey(t *testing.T) {
+	t.Setenv("IC_API_KEY", "")
+
+	provider := &IBMProvider{}
+	err := provider.ValidateImport()
 	if !errors.Is(err, errMissingICAPIKey) {
 		t.Fatalf("expected missing API key error, got %v", err)
 	}
