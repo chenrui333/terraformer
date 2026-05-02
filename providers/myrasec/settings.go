@@ -4,7 +4,6 @@ package myrasec
 import (
 	"fmt"
 	"strconv"
-	"sync"
 
 	mgo "github.com/Myra-Security-GmbH/myrasec-go/v2"
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -16,9 +15,7 @@ type SettingsGenerator struct {
 }
 
 // createSettingResources
-func (g *SettingsGenerator) createSettingResources(api *mgo.API, domainId int, vhost mgo.VHost, wg *sync.WaitGroup) error {
-	defer wg.Done()
-
+func (g *SettingsGenerator) createSettingResources(api *mgo.API, domainId int, vhost mgo.VHost) error {
 	params := map[string]string{}
 
 	s, err := api.ListSettings(domainId, vhost.Label, params)
@@ -38,29 +35,25 @@ func (g *SettingsGenerator) createSettingResources(api *mgo.API, domainId int, v
 		[]string{},
 		map[string]interface{}{},
 	)
-	g.Resources = append(g.Resources, r)
+	g.appendResource(r)
 	return nil
 }
 
 // InitResources
 func (g *SettingsGenerator) InitResources() error {
-	wg := sync.WaitGroup{}
-
 	api, err := g.initializeAPI()
 	if err != nil {
 		return err
 	}
 
-	funcs := []func(*mgo.API, int, mgo.VHost, *sync.WaitGroup) error{
+	funcs := []func(*mgo.API, int, mgo.VHost) error{
 		g.createSettingResources,
 	}
 
-	err = createResourcesPerSubDomain(api, funcs, &wg, true)
+	err = createResourcesPerSubDomain(api, funcs, true)
 	if err != nil {
 		return err
 	}
-
-	wg.Wait()
 
 	return nil
 }

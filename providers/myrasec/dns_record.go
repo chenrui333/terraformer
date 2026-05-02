@@ -4,7 +4,6 @@ package myrasec
 import (
 	"fmt"
 	"strconv"
-	"sync"
 
 	mgo "github.com/Myra-Security-GmbH/myrasec-go/v2"
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -16,9 +15,7 @@ type DNSGenerator struct {
 }
 
 // createDnsResources
-func (g *DNSGenerator) createDnsResources(api *mgo.API, domain mgo.Domain, wg *sync.WaitGroup) error {
-	defer wg.Done()
-
+func (g *DNSGenerator) createDnsResources(api *mgo.API, domain mgo.Domain) error {
 	page := 1
 	pageSize := 250
 	params := map[string]string{
@@ -48,7 +45,7 @@ func (g *DNSGenerator) createDnsResources(api *mgo.API, domain mgo.Domain, wg *s
 			)
 
 			r.IgnoreKeys = append(r.IgnoreKeys, "^metadata")
-			g.Resources = append(g.Resources, r)
+			g.appendResource(r)
 		}
 		if len(records) < pageSize {
 			break
@@ -61,23 +58,19 @@ func (g *DNSGenerator) createDnsResources(api *mgo.API, domain mgo.Domain, wg *s
 
 // InitResources
 func (g *DNSGenerator) InitResources() error {
-	wg := sync.WaitGroup{}
-
 	api, err := g.initializeAPI()
 	if err != nil {
 		return err
 	}
 
-	funcs := []func(*mgo.API, mgo.Domain, *sync.WaitGroup) error{
+	funcs := []func(*mgo.API, mgo.Domain) error{
 		g.createDnsResources,
 	}
 
-	err = createResourcesPerDomain(api, funcs, &wg)
+	err = createResourcesPerDomain(api, funcs)
 	if err != nil {
 		return err
 	}
-
-	wg.Wait()
 
 	return nil
 }

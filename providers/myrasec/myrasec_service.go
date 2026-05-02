@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 
 	mgo "github.com/Myra-Security-GmbH/myrasec-go/v2"
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -13,6 +14,14 @@ import (
 // MyrasecService ...
 type MyrasecService struct {
 	terraformutils.Service
+	resourcesMu sync.Mutex
+}
+
+func (s *MyrasecService) appendResource(resource terraformutils.Resource) {
+	s.resourcesMu.Lock()
+	defer s.resourcesMu.Unlock()
+
+	s.Resources = append(s.Resources, resource)
 }
 
 // initializeAPI ...
