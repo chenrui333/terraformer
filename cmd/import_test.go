@@ -16,6 +16,15 @@ type testProvider struct {
 	services map[string]terraformutils.ServiceGenerator
 }
 
+type selectedResourcesService struct {
+	terraformutils.Service
+	resources []string
+}
+
+func (s *selectedResourcesService) SetSelectedResources(resources []string) {
+	s.resources = append([]string{}, resources...)
+}
+
 func (p *testProvider) Init(_ []string) error              { return nil }
 func (p *testProvider) InitService(_ string, _ bool) error { return nil }
 func (p *testProvider) GetName() string                    { return p.name }
@@ -84,6 +93,26 @@ func TestProviderServices(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConfigureSelectedResources(t *testing.T) {
+	service := &selectedResourcesService{}
+	resources := []string{"serviceaccounts", "defaultserviceaccounts"}
+
+	configureSelectedResources(service, resources)
+
+	if len(service.resources) != len(resources) {
+		t.Fatalf("selected resources len = %d, want %d", len(service.resources), len(resources))
+	}
+	for i := range resources {
+		if service.resources[i] != resources[i] {
+			t.Fatalf("selected resources[%d] = %q, want %q", i, service.resources[i], resources[i])
+		}
+	}
+}
+
+func TestConfigureSelectedResourcesIgnoresRegularService(t *testing.T) {
+	configureSelectedResources(&terraformutils.Service{}, []string{"serviceaccounts"})
 }
 
 func TestBaseProviderFlags(t *testing.T) {

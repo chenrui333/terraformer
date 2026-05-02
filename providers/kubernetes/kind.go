@@ -102,6 +102,16 @@ func (k *Kind) initTypedResources(clientset kubernetes.Interface) error {
 	return nil
 }
 
+func (k *Kind) SetSelectedResources(resources []string) {
+	k.SkipDefaultServiceAccount = false
+	for _, resource := range resources {
+		if resource == defaultServiceAccountServiceName {
+			k.SkipDefaultServiceAccount = true
+			return
+		}
+	}
+}
+
 func (k *Kind) shouldSkipTypedItem(item reflect.Value) bool {
 	return k.SkipDefaultServiceAccount &&
 		k.Group == "" &&

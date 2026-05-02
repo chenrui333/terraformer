@@ -96,6 +96,24 @@ func TestDefaultServiceAccountInitResourcesDefaultTerraformType(t *testing.T) {
 	}
 }
 
+func TestKindSetSelectedResourcesControlsDefaultServiceAccountSkip(t *testing.T) {
+	kind := &Kind{Name: "ServiceAccount", Version: "v1"}
+	kind.SetSelectedResources([]string{"serviceaccounts"})
+	if kind.SkipDefaultServiceAccount {
+		t.Fatal("SkipDefaultServiceAccount = true for serviceaccounts-only import")
+	}
+
+	kind.SetSelectedResources([]string{"serviceaccounts", defaultServiceAccountServiceName})
+	if !kind.SkipDefaultServiceAccount {
+		t.Fatal("SkipDefaultServiceAccount = false when defaultserviceaccounts is selected")
+	}
+
+	kind.SetSelectedResources([]string{"serviceaccounts"})
+	if kind.SkipDefaultServiceAccount {
+		t.Fatal("SkipDefaultServiceAccount was not reset after defaultserviceaccounts was removed")
+	}
+}
+
 func TestServiceAccountKindSkipsDefaultServiceAccounts(t *testing.T) {
 	clientset := fake.NewSimpleClientset(
 		&corev1.ServiceAccount{

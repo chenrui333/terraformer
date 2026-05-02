@@ -46,6 +46,10 @@ type ImportOptions struct {
 	RetrySleepMs  int
 }
 
+type selectedResourcesAware interface {
+	SetSelectedResources([]string)
+}
+
 const DefaultPathPattern = "{output}/{provider}/{service}/"
 const DefaultPathOutput = "generated"
 const DefaultState = "local"
@@ -195,6 +199,7 @@ func initServiceResources(service string, provider terraformutils.ProviderGenera
 		return err
 	}
 	provider.GetService().ParseFilters(options.Filter)
+	configureSelectedResources(provider.GetService(), options.Resources)
 	err = provider.GetService().InitResources()
 	if err != nil {
 		log.Printf("%s error initializing resources in service %s, err: %s\n", provider.GetName(), service, err)
@@ -206,6 +211,12 @@ func initServiceResources(service string, provider terraformutils.ProviderGenera
 	log.Println(provider.GetName() + " done importing " + service)
 
 	return nil
+}
+
+func configureSelectedResources(service terraformutils.ServiceGenerator, resources []string) {
+	if service, ok := service.(selectedResourcesAware); ok {
+		service.SetSelectedResources(resources)
+	}
 }
 
 func ImportFromPlan(provider terraformutils.ProviderGenerator, plan *ImportPlan) error {
