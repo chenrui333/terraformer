@@ -263,9 +263,6 @@ func (p DatadogProvider) GetResourceConnections() map[string]map[string][]string
 			"rum_application": {
 				"application_id", "id",
 			},
-			"rum_retention_filter": {
-				"retention_filter_ids", "id",
-			},
 		},
 		"integration_aws_lambda_arn": {
 			"integration_aws": {

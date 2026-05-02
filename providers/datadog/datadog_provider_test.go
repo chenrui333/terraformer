@@ -70,14 +70,6 @@ func TestDatadogProviderRumRetentionFilterConnections(t *testing.T) {
 		"application_id",
 		"id",
 	)
-	assertDatadogConnection(
-		t,
-		connections,
-		"rum_retention_filters_order",
-		"rum_retention_filter",
-		"retention_filter_ids",
-		"id",
-	)
 }
 
 func TestDatadogProviderSensitiveDataScannerConnections(t *testing.T) {
