@@ -57,10 +57,17 @@ func (LaunchDarklyProvider) GetResourceConnections() map[string]map[string][]str
 
 func (p *LaunchDarklyProvider) GetSupportedService() map[string]terraformutils.ServiceGenerator {
 	return map[string]terraformutils.ServiceGenerator{
-		"project":     &ProjectGenerator{},
-		"environment": &EnvironmentGenerator{},
-		"featureFlag": &FeatureFlagsGenerator{},
-		"segment":     &SegmentGenerator{},
+		"customRole":              &CustomRoleGenerator{},
+		"project":                 &ProjectGenerator{},
+		"environment":             &EnvironmentGenerator{},
+		"featureFlag":             &FeatureFlagsGenerator{},
+		"flagTemplates":           &FlagTemplatesGenerator{},
+		"metric":                  &MetricGenerator{},
+		"relayProxyConfiguration": &RelayProxyConfigurationGenerator{},
+		"segment":                 &SegmentGenerator{},
+		"team":                    &TeamGenerator{},
+		"teamMember":              &TeamMemberGenerator{},
+		"webhook":                 &WebhookGenerator{},
 	}
 }
 
