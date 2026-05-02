@@ -150,13 +150,13 @@ func (g *SecretsManagerGenerator) shouldAppendSecretResource(secretResource terr
 }
 
 func (g *SecretsManagerGenerator) shouldLoadSecretChildren(secretResource terraformutils.Resource) bool {
+	if g.hasTypedSecretsManagerChildFilter() {
+		return g.secretMatchesAnyChildInitialFilter(secretResource)
+	}
 	if !g.secretMatchesInitialIDFilters(secretResource) {
 		return false
 	}
-	if !g.hasTypedSecretsManagerChildFilter() {
-		return !g.hasTypedNonIDSecretFilter()
-	}
-	return g.secretMatchesAnyChildInitialFilter(secretResource)
+	return !g.hasTypedNonIDSecretFilter()
 }
 
 func (g *SecretsManagerGenerator) shouldAppendSecretChildResource(serviceName string, resource terraformutils.Resource) bool {

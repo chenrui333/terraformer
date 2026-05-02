@@ -112,6 +112,15 @@ func TestSecretsManagerFilterGatesSecretAndChildDiscovery(t *testing.T) {
 			loadChildren: true,
 		},
 		{
+			name: "typed parent and child id filters load matching child outside parent filter",
+			filters: []terraformutils.ResourceFilter{
+				{ServiceName: "secretsmanager_secret", FieldPath: "id", AcceptableValues: []string{otherARN}},
+				{ServiceName: "secretsmanager_secret_policy", FieldPath: "id", AcceptableValues: []string{secretARN}},
+			},
+			appendOther:  true,
+			loadChildren: true,
+		},
+		{
 			name: "untyped id filter limits same-id resources",
 			filters: []terraformutils.ResourceFilter{
 				{FieldPath: "id", AcceptableValues: []string{secretARN}},
