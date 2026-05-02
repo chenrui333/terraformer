@@ -551,6 +551,22 @@ func TestSelectImportResourceName(t *testing.T) {
 			wantOK:      true,
 		},
 		{
+			name:    "falls back to manifest for service cidr",
+			group:   "networking.k8s.io",
+			version: "v1",
+			resource: metav1.APIResource{
+				Name:  "servicecidrs",
+				Kind:  "ServiceCIDR",
+				Verbs: manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				manifestTerraformResourceName: {},
+			},
+			want:        manifestTerraformResourceName,
+			wantDynamic: true,
+			wantOK:      true,
+		},
+		{
 			name:    "falls back to manifest for dynamic resource allocation resource",
 			group:   "resource.k8s.io",
 			version: "v1",
@@ -559,6 +575,38 @@ func TestSelectImportResourceName(t *testing.T) {
 				Kind:       "ResourceClaim",
 				Namespaced: true,
 				Verbs:      manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				manifestTerraformResourceName: {},
+			},
+			want:        manifestTerraformResourceName,
+			wantDynamic: true,
+			wantOK:      true,
+		},
+		{
+			name:    "falls back to manifest for cluster trust bundle",
+			group:   "certificates.k8s.io",
+			version: "v1beta1",
+			resource: metav1.APIResource{
+				Name:  "clustertrustbundles",
+				Kind:  "ClusterTrustBundle",
+				Verbs: manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				manifestTerraformResourceName: {},
+			},
+			want:        manifestTerraformResourceName,
+			wantDynamic: true,
+			wantOK:      true,
+		},
+		{
+			name:    "falls back to manifest for volume attributes class",
+			group:   "storage.k8s.io",
+			version: "v1",
+			resource: metav1.APIResource{
+				Name:  "volumeattributesclasses",
+				Kind:  "VolumeAttributesClass",
+				Verbs: manageableVerbs,
 			},
 			supportedTypes: map[string]struct{}{
 				manifestTerraformResourceName: {},

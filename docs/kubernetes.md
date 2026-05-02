@@ -10,7 +10,7 @@ Example:
 Terraformer discovers Kubernetes API resources from the active cluster and imports resources that are available through either the typed Kubernetes client or an explicit dynamic-client import path, and the installed Terraform Kubernetes provider schema.
 Discovered CRDs, other untyped API extensions, and selected native APIs without a first-class Terraform Kubernetes provider type can be imported through `kubernetes_manifest` when the API resource is manageable and the installed provider supports that resource.
 Manifest-backed resources use a group/version-qualified resource selector such as `example.com/v1/widgets` or `admissionregistration.k8s.io/v1/validatingadmissionpolicybindings` to avoid collisions between API resources that share the same plural name.
-For selected native manifest-backed resources, beta and alpha variants are supported when the cluster advertises them and they satisfy the required management verbs.
+For selected native manifest-backed resources, beta and alpha variants are supported when the cluster advertises them and they satisfy the required management verbs. For example, use selectors like `certificates.k8s.io/v1beta1/clustertrustbundles` or `storage.k8s.io/v1alpha1/volumeattributesclasses` on clusters that still serve those versions.
 When `labels` or `annotations` are selected with full resource imports, Terraformer keeps the full resource import and skips overlapping metadata-only resources to avoid duplicate Terraform ownership of the same object metadata.
 When `env` is selected with full workload imports, Terraformer keeps the full workload import and skips overlapping environment-only resources to avoid duplicate Terraform ownership of the same container environment.
 When `configmaps` and `configmapdata` are selected together, Terraformer keeps the full `configmaps` import and skips overlapping data-only resources to avoid duplicate Terraform ownership of the same ConfigMap data.
@@ -32,6 +32,8 @@ Common supported resources include:
 *   `certificatesigningrequests`
     * `kubernetes_certificate_signing_request_v1`
 *   `certificates.k8s.io/v1beta1/clustertrustbundles`
+    * `kubernetes_manifest`
+*   `certificates.k8s.io/v1alpha1/clustertrustbundles`
     * `kubernetes_manifest`
 *   `clusterroles`
     * `kubernetes_cluster_role_v1`
@@ -63,6 +65,8 @@ Common supported resources include:
     * `kubernetes_manifest`
 *   `flowcontrol.apiserver.k8s.io/v1/prioritylevelconfigurations`
     * `kubernetes_manifest`
+*   `flowcontrol.apiserver.k8s.io/v1beta3/flowschemas`
+    * `kubernetes_manifest`
 *   `horizontalpodautoscalers`
     * `kubernetes_horizontal_pod_autoscaler_v2`
     * `kubernetes_horizontal_pod_autoscaler_v2beta2`
@@ -83,6 +87,8 @@ Common supported resources include:
 *   `networkpolicies`
     * `kubernetes_network_policy_v1`
 *   `networking.k8s.io/v1/servicecidrs`
+    * `kubernetes_manifest`
+*   `networking.k8s.io/v1beta1/servicecidrs`
     * `kubernetes_manifest`
 *   `nodetaints`
     * `kubernetes_node_taint`
@@ -108,6 +114,8 @@ Common supported resources include:
     * `kubernetes_manifest`
 *   `resource.k8s.io/v1beta2/devicetaintrules`
     * `kubernetes_manifest`
+*   `resource.k8s.io/v1alpha3/devicetaintrules`
+    * `kubernetes_manifest`
 *   `resourcequotas`
     * `kubernetes_resource_quota_v1`
 *   `roles`
@@ -129,6 +137,8 @@ Common supported resources include:
 *   `storageclasses`
     * `kubernetes_storage_class_v1`
 *   `storage.k8s.io/v1/volumeattributesclasses`
+    * `kubernetes_manifest`
+*   `storage.k8s.io/v1alpha1/volumeattributesclasses`
     * `kubernetes_manifest`
 *   `validatingadmissionpolicies`
     * `kubernetes_validating_admission_policy_v1`
