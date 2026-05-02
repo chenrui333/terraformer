@@ -15,7 +15,7 @@ type OctopusDeployProvider struct { //nolint
 }
 
 func (p *OctopusDeployProvider) Init(args []string) error {
-	if args[0] != "" {
+	if len(args) > 0 && args[0] != "" {
 		p.address = args[0]
 	} else {
 		if address := os.Getenv("OCTOPUS_CLI_SERVER"); address != "" {
@@ -25,7 +25,7 @@ func (p *OctopusDeployProvider) Init(args []string) error {
 		}
 	}
 
-	if args[1] != "" {
+	if len(args) > 1 && args[1] != "" {
 		p.apiKey = args[1]
 	} else {
 		if apiKey := os.Getenv("OCTOPUS_CLI_API_KEY"); apiKey != "" {
