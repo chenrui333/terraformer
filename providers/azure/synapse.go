@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
@@ -235,12 +234,10 @@ func (az *SynapseGenerator) InitResources() error {
 		}
 		err = az.appendFirewallRule(workspace, workspaceRg)
 		if err != nil {
-			log.Println(err)
 			return err
 		}
 		err = az.appendManagedPrivateEndpoint(workspace)
 		if err != nil {
-			log.Println(err)
 			return err
 		}
 	}

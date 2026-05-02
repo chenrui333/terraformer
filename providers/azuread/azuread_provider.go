@@ -4,7 +4,6 @@ package azuread
 
 import (
 	"errors"
-	"log"
 	"os"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -39,7 +38,6 @@ func (p *AzureADProvider) setEnvConfig() error {
 func (p *AzureADProvider) Init(_ []string) error {
 	err := p.setEnvConfig()
 	if err != nil {
-		log.Println(err.Error())
 		return err
 	}
 

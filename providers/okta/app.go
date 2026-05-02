@@ -4,7 +4,6 @@ package okta
 
 import (
 	"context"
-	"log"
 
 	"github.com/okta/okta-sdk-golang/v2/okta"
 )
@@ -38,7 +37,6 @@ func getAllApplications(ctx context.Context, client *okta.Client) ([]*okta.Appli
 		var nextAppSet []*okta.Application
 		resp, err = resp.Next(ctx, &nextAppSet)
 		if err != nil {
-			log.Println("fff")
 			return nil, err
 		}
 		apps = append(apps, nextAppSet...)

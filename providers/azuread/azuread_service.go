@@ -4,8 +4,6 @@ package azuread
 
 import (
 	"context"
-	"fmt"
-	"log"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/hashicorp/go-azure-sdk/sdk/auth"
@@ -38,8 +36,6 @@ func (az *AzureADService) getAuthorizer() (auth.Authorizer, error) {
 	}
 	authorizer, err := auth.NewAuthorizerFromCredentials(ctx, credentials, environment.MicrosoftGraph)
 	if err != nil {
-		fmt.Println(err.Error())
-		log.Println(err.Error())
 		return nil, err
 	}
 	return authorizer, nil
@@ -48,8 +44,6 @@ func (az *AzureADService) getAuthorizer() (auth.Authorizer, error) {
 func (az *AzureADService) getUserClient() (*msgraph.UsersClient, error) {
 	authorizer, err := az.getAuthorizer()
 	if err != nil {
-		fmt.Println(err.Error())
-		log.Println(err.Error())
 		return nil, err
 	}
 
@@ -62,8 +56,6 @@ func (az *AzureADService) getUserClient() (*msgraph.UsersClient, error) {
 func (az *AzureADService) getApplicationsClient() (*msgraph.ApplicationsClient, error) {
 	authorizer, err := az.getAuthorizer()
 	if err != nil {
-		fmt.Println(err.Error())
-		log.Println(err.Error())
 		return nil, err
 	}
 
@@ -76,8 +68,6 @@ func (az *AzureADService) getApplicationsClient() (*msgraph.ApplicationsClient, 
 func (az *AzureADService) getGroupsClient() (*msgraph.GroupsClient, error) {
 	authorizer, err := az.getAuthorizer()
 	if err != nil {
-		fmt.Println(err.Error())
-		log.Println(err.Error())
 		return nil, err
 	}
 
@@ -90,8 +80,6 @@ func (az *AzureADService) getGroupsClient() (*msgraph.GroupsClient, error) {
 func (az *AzureADService) getServicePrincipalsClient() (*msgraph.ServicePrincipalsClient, error) {
 	authorizer, err := az.getAuthorizer()
 	if err != nil {
-		fmt.Println(err.Error())
-		log.Println(err.Error())
 		return nil, err
 	}
 
@@ -104,8 +92,6 @@ func (az *AzureADService) getServicePrincipalsClient() (*msgraph.ServicePrincipa
 func (az *AzureADService) getAppRoleAssignmentsClient() (*msgraph.AppRoleAssignedToClient, error) {
 	authorizer, err := az.getAuthorizer()
 	if err != nil {
-		fmt.Println(err.Error())
-		log.Println(err.Error())
 		return nil, err
 	}
 
