@@ -50,6 +50,9 @@ func TestEnvInitResources(t *testing.T) {
 		t.Fatalf("Resources len = %d, want 6", len(service.Resources))
 	}
 	resources := resourcesByName(service.Resources)
+	if _, ok := resources["tfer--env-002F-apps-002F-v1-002F-Deployment-002F-default-002F-app-002F-container-002F-app-002F-DUPLICATE"]; ok {
+		t.Fatalf("duplicate env name was imported")
+	}
 	app := resources["tfer--env-002F-apps-002F-v1-002F-Deployment-002F-default-002F-app-002F-container-002F-app-002F-PLAIN"]
 	if app.InstanceInfo.Type != envTerraformType {
 		t.Fatalf("resource type = %q, want %q", app.InstanceInfo.Type, envTerraformType)
@@ -188,11 +191,11 @@ func TestEnvSupportsResourceRequiresWorkloadAndManageableVerbs(t *testing.T) {
 
 func TestAddEnvService(t *testing.T) {
 	resources := map[string]terraformutils.ServiceGenerator{}
-	listableResources := map[kubernetesResourceID]struct{}{
+	envResources := map[kubernetesResourceID]struct{}{
 		{group: "apps", version: "v1", kind: "Deployment"}: {},
 	}
 
-	addEnvService(resources, listableResources, func(name string) bool {
+	addEnvService(resources, envResources, func(name string) bool {
 		return name == envTerraformType
 	})
 
@@ -211,11 +214,11 @@ func TestAddEnvService(t *testing.T) {
 
 func TestAddEnvServiceRequiresProviderType(t *testing.T) {
 	resources := map[string]terraformutils.ServiceGenerator{}
-	listableResources := map[kubernetesResourceID]struct{}{
+	envResources := map[kubernetesResourceID]struct{}{
 		{group: "apps", version: "v1", kind: "Deployment"}: {},
 	}
 
-	addEnvService(resources, listableResources, func(string) bool {
+	addEnvService(resources, envResources, func(string) bool {
 		return false
 	})
 
@@ -226,16 +229,28 @@ func TestAddEnvServiceRequiresProviderType(t *testing.T) {
 
 func TestAddEnvServiceRequiresWorkloadAPI(t *testing.T) {
 	resources := map[string]terraformutils.ServiceGenerator{}
-	listableResources := map[kubernetesResourceID]struct{}{
+	envResources := map[kubernetesResourceID]struct{}{
 		{version: "v1", kind: "ConfigMap"}: {},
 	}
 
-	addEnvService(resources, listableResources, func(name string) bool {
+	addEnvService(resources, envResources, func(name string) bool {
 		return name == envTerraformType
 	})
 
 	if _, ok := resources[envServiceName]; ok {
 		t.Fatalf("resources[%q] was registered without workload API support", envServiceName)
+	}
+}
+
+func TestAddEnvServiceRequiresManageableWorkloadAPI(t *testing.T) {
+	resources := map[string]terraformutils.ServiceGenerator{}
+
+	addEnvService(resources, map[kubernetesResourceID]struct{}{}, func(name string) bool {
+		return name == envTerraformType
+	})
+
+	if _, ok := resources[envServiceName]; ok {
+		t.Fatalf("resources[%q] was registered without manageable workload API support", envServiceName)
 	}
 }
 
@@ -291,7 +306,8 @@ func envTestDeployment(name, namespace string) *unstructured.Unstructured {
 		map[string]interface{}{
 			"name": "app",
 			"env": []interface{}{
-				map[string]interface{}{"name": "PLAIN", "value": "ignored"},
+				map[string]interface{}{"name": "DUPLICATE", "value": "ignored"},
+				map[string]interface{}{"name": "DUPLICATE", "value": "still-ignored"},
 				map[string]interface{}{"name": "PLAIN", "value": "demo"},
 				map[string]interface{}{"name": "EMPTY", "value": ""},
 				map[string]interface{}{
@@ -339,21 +355,18 @@ func envTestCronJob(name, namespace string) *unstructured.Unstructured {
 	return cronJob
 }
 
-func TestEnvEntriesCollapsesDuplicateNamesToLastValue(t *testing.T) {
+func TestEnvEntriesSkipsDuplicateNames(t *testing.T) {
 	got := envEntries([]interface{}{
 		map[string]interface{}{"name": "DUPLICATE", "value": "first"},
 		map[string]interface{}{"name": "OTHER", "value": "middle"},
 		map[string]interface{}{"name": "DUPLICATE", "value": "last"},
 	})
 
-	if len(got) != 2 {
-		t.Fatalf("env entries len = %d, want 2", len(got))
+	if len(got) != 1 {
+		t.Fatalf("env entries len = %d, want 1", len(got))
 	}
 	if got[0]["name"] != "OTHER" || got[0]["value"] != "middle" {
-		t.Fatalf("first kept env = %#v, want OTHER=middle", got[0])
-	}
-	if got[1]["name"] != "DUPLICATE" || got[1]["value"] != "last" {
-		t.Fatalf("duplicate env = %#v, want DUPLICATE=last", got[1])
+		t.Fatalf("kept env = %#v, want OTHER=middle", got[0])
 	}
 }
 

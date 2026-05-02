@@ -97,6 +97,7 @@ func (p *KubernetesProvider) GetSupportedService() map[string]terraformutils.Ser
 	}
 	resp := provider.GetSchema()
 	listableResources := map[kubernetesResourceID]struct{}{}
+	envResources := map[kubernetesResourceID]struct{}{}
 	for _, list := range lists {
 		if len(list.APIResources) == 0 {
 			continue
@@ -117,6 +118,9 @@ func (p *KubernetesProvider) GetSupportedService() map[string]terraformutils.Ser
 				continue
 			}
 			listableResources[kubernetesResourceID{group: gv.Group, version: gv.Version, kind: resource.Kind}] = struct{}{}
+			if envSupportsResource(resource) {
+				envResources[kubernetesResourceID{group: gv.Group, version: gv.Version, kind: resource.Kind}] = struct{}{}
+			}
 
 			hasResourceType := func(name string) bool {
 				_, exists := resp.ResourceTypes[name]
@@ -146,7 +150,7 @@ func (p *KubernetesProvider) GetSupportedService() map[string]terraformutils.Ser
 		_, exists := resp.ResourceTypes[name]
 		return exists
 	})
-	addEnvService(resources, listableResources, func(name string) bool {
+	addEnvService(resources, envResources, func(name string) bool {
 		_, exists := resp.ResourceTypes[name]
 		return exists
 	})
@@ -274,13 +278,13 @@ func addSecretDataService(
 
 func addEnvService(
 	resources map[string]terraformutils.ServiceGenerator,
-	listableResources map[kubernetesResourceID]struct{},
+	envResources map[kubernetesResourceID]struct{},
 	hasResourceType func(string) bool,
 ) {
 	if !hasResourceType(envTerraformType) {
 		return
 	}
-	for resourceID := range listableResources {
+	for resourceID := range envResources {
 		if envSupportsKind(resourceID.kind) {
 			resources[envServiceName] = &Env{
 				TerraformType: envTerraformType,
