@@ -137,6 +137,8 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_monitor`
 *   `monitor_config_policy`
     * `datadog_monitor_config_policy`
+*   `monitor_json`
+    * `datadog_monitor_json`
 *   `monitor_notification_rule`
     * `datadog_monitor_notification_rule`
         * **_NOTE:_** Requires DataDog/datadog provider 3.83.0 or newer.

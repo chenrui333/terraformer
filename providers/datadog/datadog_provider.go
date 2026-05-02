@@ -172,6 +172,7 @@ func (p *DatadogProvider) GetSupportedService() map[string]terraformutils.Servic
 		"metric_tag_configuration":             &MetricTagConfigurationGenerator{},
 		"monitor":                              &MonitorGenerator{},
 		"monitor_config_policy":                &MonitorConfigPolicyGenerator{},
+		"monitor_json":                         &MonitorJSONGenerator{},
 		"monitor_notification_rule":            &MonitorNotificationRuleGenerator{},
 		"security_monitoring_default_rule":     &SecurityMonitoringDefaultRuleGenerator{},
 		"security_monitoring_filter":           &SecurityMonitoringFilterGenerator{},
@@ -205,6 +206,12 @@ func (p DatadogProvider) GetResourceConnections() map[string]map[string][]string
 				"widget.alert_value_definition.alert_id", "id",
 				"widget.group_definition.widget.alert_value_definition.alert_id", "id",
 			},
+			"monitor_json": {
+				"widget.alert_graph_definition.alert_id", "id",
+				"widget.group_definition.widget.alert_graph_definition.alert_id", "id",
+				"widget.alert_value_definition.alert_id", "id",
+				"widget.group_definition.widget.alert_value_definition.alert_id", "id",
+			},
 			"service_level_objective": {
 				"widget.service_level_objective_definition.slo_id", "id",
 				"widget.group_definition.widget.service_level_objective_definition.slo_id", "id",
@@ -217,6 +224,9 @@ func (p DatadogProvider) GetResourceConnections() map[string]map[string][]string
 		},
 		"downtime": {
 			"monitor": {
+				"monitor_id", "id",
+			},
+			"monitor_json": {
 				"monitor_id", "id",
 			},
 		},
@@ -275,6 +285,9 @@ func (p DatadogProvider) GetResourceConnections() map[string]map[string][]string
 		},
 		"service_level_objective": {
 			"monitor": {
+				"monitor_ids", "id",
+			},
+			"monitor_json": {
 				"monitor_ids", "id",
 			},
 		},

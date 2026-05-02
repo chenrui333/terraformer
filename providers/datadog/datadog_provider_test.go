@@ -25,7 +25,46 @@ func TestDatadogProviderSensitiveDataScannerConnections(t *testing.T) {
 	)
 }
 
+func TestDatadogProviderMonitorJSONConnections(t *testing.T) {
+	connections := DatadogProvider{}.GetResourceConnections()
+
+	assertDatadogConnectionPairs(
+		t,
+		connections,
+		"dashboard",
+		"monitor_json",
+		[]string{
+			"widget.alert_graph_definition.alert_id", "id",
+			"widget.group_definition.widget.alert_graph_definition.alert_id", "id",
+			"widget.alert_value_definition.alert_id", "id",
+			"widget.group_definition.widget.alert_value_definition.alert_id", "id",
+		},
+	)
+	assertDatadogConnection(
+		t,
+		connections,
+		"downtime",
+		"monitor_json",
+		"monitor_id",
+		"id",
+	)
+	assertDatadogConnection(
+		t,
+		connections,
+		"service_level_objective",
+		"monitor_json",
+		"monitor_ids",
+		"id",
+	)
+}
+
 func assertDatadogConnection(t *testing.T, connections map[string]map[string][]string, source, target, sourceField, targetField string) {
+	t.Helper()
+
+	assertDatadogConnectionPairs(t, connections, source, target, []string{sourceField, targetField})
+}
+
+func assertDatadogConnectionPairs(t *testing.T, connections map[string]map[string][]string, source, target string, expected []string) {
 	t.Helper()
 
 	targets, ok := connections[source]
@@ -36,10 +75,12 @@ func assertDatadogConnection(t *testing.T, connections map[string]map[string][]s
 	if !ok {
 		t.Fatalf("connections[%q][%q] missing", source, target)
 	}
-	if len(fields) != 2 {
-		t.Fatalf("connections[%q][%q] = %v, want two fields", source, target, fields)
+	if len(fields) != len(expected) {
+		t.Fatalf("connections[%q][%q] = %v, want %v", source, target, fields, expected)
 	}
-	if fields[0] != sourceField || fields[1] != targetField {
-		t.Fatalf("connections[%q][%q] = %v, want [%q %q]", source, target, fields, sourceField, targetField)
+	for i := range expected {
+		if fields[i] != expected[i] {
+			t.Fatalf("connections[%q][%q] = %v, want %v", source, target, fields, expected)
+		}
 	}
 }
