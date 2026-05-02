@@ -4,7 +4,7 @@ Example:
 
 ```
 export LAUNCHDARKLY_ACCESS_TOKEN=[LAUNCHDARKLY_ACCESS_TOKEN]
-./terraformer import launchdarkly -r aiConfig,aiConfigVariation,aiTool,auditLogSubscription,customRole,destination,environment,featureFlag,flagTemplates,flagTrigger,metric,modelConfig,relayProxyConfiguration,segment,team,teamMember,view,webhook
+./terraformer import launchdarkly -r accessToken,aiConfig,aiConfigVariation,aiTool,auditLogSubscription,customRole,destination,environment,featureFlag,flagTemplates,flagTrigger,metric,modelConfig,relayProxyConfiguration,segment,team,teamMember,view,webhook
 ```
 
 Use `project` separately when you want LaunchDarkly environments managed as nested
@@ -19,6 +19,8 @@ same associations through `view_keys`.
 
 List of supported LaunchDarkly resources:
 
+*   `accessToken`
+    * `launchdarkly_access_token`
 *   `aiConfig`
     * `launchdarkly_ai_config`
 *   `aiConfigVariation`

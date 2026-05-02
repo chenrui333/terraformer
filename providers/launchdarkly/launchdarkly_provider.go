@@ -57,6 +57,7 @@ func (LaunchDarklyProvider) GetResourceConnections() map[string]map[string][]str
 
 func (p *LaunchDarklyProvider) GetSupportedService() map[string]terraformutils.ServiceGenerator {
 	return map[string]terraformutils.ServiceGenerator{
+		"accessToken":             &AccessTokenGenerator{},
 		"aiConfig":                &AIConfigGenerator{},
 		"aiConfigVariation":       &AIConfigVariationGenerator{},
 		"aiTool":                  &AIToolGenerator{},
