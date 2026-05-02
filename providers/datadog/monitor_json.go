@@ -5,6 +5,7 @@ package datadog
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -117,4 +118,78 @@ func (g *MonitorJSONGenerator) InitResources() error {
 
 	g.Resources = g.createResources(monitors)
 	return nil
+}
+
+// PostRefreshCleanup filters datadog_monitor_json resources after provider refresh.
+// The provider stores monitor fields inside the top-level monitor JSON string, so
+// Terraformer's generic tag filter cannot see monitor tags without parsing it.
+func (g *MonitorJSONGenerator) PostRefreshCleanup() {
+	if len(g.Filter) == 0 {
+		return
+	}
+
+	resources := []terraformutils.Resource{}
+	for _, resource := range g.Resources {
+		if g.postRefreshFiltersMatch(resource) && !terraformutils.ContainsResource(resources, resource) {
+			resources = append(resources, resource)
+		}
+	}
+	g.Resources = resources
+}
+
+func (g *MonitorJSONGenerator) postRefreshFiltersMatch(resource terraformutils.Resource) bool {
+	for _, filter := range g.Filter {
+		if filter.FieldPath == "id" {
+			continue
+		}
+		if filter.FieldPath == "tags" && filter.IsApplicable("monitor_json") {
+			if !monitorJSONTagsFilter(resource, filter) {
+				return false
+			}
+			continue
+		}
+		if !filter.Filter(resource) {
+			return false
+		}
+	}
+	return true
+}
+
+func monitorJSONTagsFilter(resource terraformutils.Resource, filter terraformutils.ResourceFilter) bool {
+	monitor, ok := monitorJSONAttributes(resource)
+	if !ok {
+		return false
+	}
+	if filter.AcceptableValues == nil {
+		return terraformutils.WalkAndCheckField("tags", monitor)
+	}
+
+	values := terraformutils.WalkAndGet("tags", monitor)
+	for _, value := range values {
+		for _, acceptableValue := range filter.AcceptableValues {
+			if value == acceptableValue {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func monitorJSONAttributes(resource terraformutils.Resource) (map[string]interface{}, bool) {
+	monitorJSON := resource.InstanceState.Attributes["monitor"]
+	if monitorJSON == "" && resource.Item != nil {
+		monitor, ok := resource.Item["monitor"].(string)
+		if ok {
+			monitorJSON = monitor
+		}
+	}
+	if monitorJSON == "" {
+		return nil, false
+	}
+
+	monitor := map[string]interface{}{}
+	if err := json.Unmarshal([]byte(monitorJSON), &monitor); err != nil {
+		return nil, false
+	}
+	return monitor, true
 }

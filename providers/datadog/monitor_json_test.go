@@ -100,3 +100,34 @@ func TestMonitorJSONInitResourcesKeepsIDFilterTerminalWhenAllMatchesAreSkipped(t
 		}
 	}
 }
+
+func TestMonitorJSONPostRefreshCleanupMatchesTagsInsideMonitorJSON(t *testing.T) {
+	matching := (&MonitorJSONGenerator{}).createResource("1001")
+	matching.InstanceState.Attributes["monitor"] = "{\"tags\":[\"env:prod\",\"team:core\"],\"query\":\"avg:system.cpu.user{*} > 10\",\"type\":\"metric alert\"}"
+
+	nonMatching := (&MonitorJSONGenerator{}).createResource("1002")
+	nonMatching.InstanceState.Attributes["monitor"] = "{\"tags\":[\"env:stage\"],\"query\":\"avg:system.cpu.user{*} > 10\",\"type\":\"metric alert\"}"
+
+	generator := &MonitorJSONGenerator{
+		DatadogService: DatadogService{
+			Service: terraformutils.Service{
+				Resources: []terraformutils.Resource{matching, nonMatching},
+				Filter: []terraformutils.ResourceFilter{
+					{
+						FieldPath:        "tags",
+						AcceptableValues: []string{"env:prod"},
+					},
+				},
+			},
+		},
+	}
+
+	generator.PostRefreshCleanup()
+
+	if len(generator.Resources) != 1 {
+		t.Fatalf("expected 1 resource, got %d", len(generator.Resources))
+	}
+	if generator.Resources[0].InstanceState.ID != "1001" {
+		t.Fatalf("expected resource ID 1001, got %s", generator.Resources[0].InstanceState.ID)
+	}
+}
