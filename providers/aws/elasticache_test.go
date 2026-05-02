@@ -35,6 +35,29 @@ func TestElastiCacheStatusImportable(t *testing.T) {
 	}
 }
 
+func TestElastiCacheGlobalReplicationGroupIDSuffix(t *testing.T) {
+	tests := []struct {
+		name string
+		id   string
+		want string
+	}{
+		{name: "generated id", id: "abcde-orders", want: "orders"},
+		{name: "generated id with hyphen suffix", id: "abcde-prod-orders", want: "prod-orders"},
+		{name: "short id", id: "orders", want: "orders"},
+		{name: "six chars without separator", id: "abcdef", want: "abcdef"},
+		{name: "empty", id: "", want: ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := elastiCacheGlobalReplicationGroupIDSuffix(tt.id)
+			if got != tt.want {
+				t.Fatalf("elastiCacheGlobalReplicationGroupIDSuffix() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestElastiCacheUserImportable(t *testing.T) {
 	tests := []struct {
 		name string

@@ -157,12 +157,16 @@ func (g *ElastiCacheGenerator) loadGlobalReplicationGroups(svc *elasticache.Clie
 			if resourceName == "" || !elastiCacheStatusImportable(StringValue(globalReplicationGroup.Status)) {
 				continue
 			}
-			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
+			g.Resources = append(g.Resources, terraformutils.NewResource(
 				resourceName,
 				resourceName,
 				"aws_elasticache_global_replication_group",
 				"aws",
+				map[string]string{
+					"global_replication_group_id_suffix": elastiCacheGlobalReplicationGroupIDSuffix(resourceName),
+				},
 				elastiCacheAllowEmptyValues,
+				map[string]interface{}{},
 			))
 		}
 	}
@@ -244,6 +248,13 @@ func (g *ElastiCacheGenerator) loadUserGroups(svc *elasticache.Client) error {
 func elastiCacheStatusImportable(status string) bool {
 	status = strings.ToLower(status)
 	return status != "" && !strings.Contains(status, "delet") && !strings.Contains(status, "fail")
+}
+
+func elastiCacheGlobalReplicationGroupIDSuffix(id string) string {
+	if len(id) > 6 && id[5] == '-' {
+		return id[6:]
+	}
+	return id
 }
 
 func elastiCacheUserImportable(user elasticachetypes.User) bool {
