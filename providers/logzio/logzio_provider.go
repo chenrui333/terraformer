@@ -40,6 +40,9 @@ func (p *LogzioProvider) GetConfig() cty.Value {
 
 // Init LogzioProvider with API apiToken
 func (p *LogzioProvider) Init(args []string) error {
+	if len(args) < 2 {
+		return errors.New("logzio: api token and base URL are required")
+	}
 	p.apiToken = args[0]
 	p.baseURL = args[1]
 	return nil
