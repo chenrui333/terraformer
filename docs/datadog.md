@@ -148,6 +148,8 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_synthetics_private_location`
 *   `synthetics_test`
     * `datadog_synthetics_test`
+*   `team`
+    * `datadog_team`
 *   `user`
     * `datadog_user`
 
