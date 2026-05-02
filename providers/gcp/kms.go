@@ -4,7 +4,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"strings"
 
 	"google.golang.org/api/cloudkms/v1"
@@ -20,7 +20,7 @@ type KmsGenerator struct {
 	GCPService
 }
 
-func (g KmsGenerator) createKmsRingResources(ctx context.Context, keyRingList *cloudkms.ProjectsLocationsKeyRingsListCall, kmsService *cloudkms.Service) []terraformutils.Resource {
+func (g KmsGenerator) createKmsRingResources(ctx context.Context, keyRingList *cloudkms.ProjectsLocationsKeyRingsListCall, kmsService *cloudkms.Service) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := keyRingList.Pages(ctx, func(page *cloudkms.ListKeyRingsResponse) error {
 		for _, obj := range page.KeyRings {
@@ -39,16 +39,20 @@ func (g KmsGenerator) createKmsRingResources(ctx context.Context, keyRingList *c
 				kmsAllowEmptyValues,
 				kmsAdditionalFields,
 			))
-			resources = append(resources, g.createKmsKeyResources(ctx, obj.Name, kmsService)...)
+			keyResources, err := g.createKmsKeyResources(ctx, obj.Name, kmsService)
+			if err != nil {
+				return err
+			}
+			resources = append(resources, keyResources...)
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list kms key rings: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
-func (g *KmsGenerator) createKmsKeyResources(ctx context.Context, keyRingName string, kmsService *cloudkms.Service) []terraformutils.Resource {
+func (g *KmsGenerator) createKmsKeyResources(ctx context.Context, keyRingName string, kmsService *cloudkms.Service) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	keyList := kmsService.Projects.Locations.KeyRings.CryptoKeys.List(keyRingName)
 	if err := keyList.Pages(ctx, func(page *cloudkms.ListCryptoKeysResponse) error {
@@ -69,9 +73,9 @@ func (g *KmsGenerator) createKmsKeyResources(ctx context.Context, keyRingName st
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list kms crypto keys for %s: %w", keyRingName, err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -84,7 +88,11 @@ func (g *KmsGenerator) InitResources() error {
 
 	keyRingList := kmsService.Projects.Locations.KeyRings.List("projects/" + g.GetArgs()["project"].(string) + "/locations/global")
 
-	g.Resources = g.createKmsRingResources(ctx, keyRingList, kmsService)
+	resources, err := g.createKmsRingResources(ctx, keyRingList, kmsService)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 	return nil
 }
 
