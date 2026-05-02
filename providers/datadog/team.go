@@ -48,6 +48,18 @@ func (g *TeamGenerator) createResource(team datadogV2.Team) terraformutils.Resou
 	)
 }
 
+func (g *TeamGenerator) PostConvertHook() error {
+	for i := range g.Resources {
+		if g.Resources[i].Item == nil {
+			g.Resources[i].Item = map[string]interface{}{}
+		}
+		if description, ok := g.Resources[i].Item["description"]; !ok || description == nil {
+			g.Resources[i].Item["description"] = ""
+		}
+	}
+	return nil
+}
+
 // InitResources Generate TerraformResources from Datadog API,
 // from each team create 1 TerraformResource.
 // Need Team ID as ID for terraform resource.

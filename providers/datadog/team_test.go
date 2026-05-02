@@ -7,11 +7,50 @@ import (
 	"testing"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 func TestTeamAllowEmptyValuesIncludesDescription(t *testing.T) {
 	if !slices.Contains(TeamAllowEmptyValues, "description") {
 		t.Fatal("TeamAllowEmptyValues must include description")
+	}
+}
+
+func TestTeamPostConvertHookCoercesMissingDescription(t *testing.T) {
+	generator := TeamGenerator{}
+	generator.Resources = []terraformutils.Resource{
+		{
+			Item: map[string]interface{}{},
+		},
+		{
+			Item: map[string]interface{}{
+				"description": nil,
+			},
+		},
+		{
+			Item: map[string]interface{}{
+				"description": "owned by platform",
+			},
+		},
+		{},
+	}
+
+	if err := generator.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook() error = %v", err)
+	}
+
+	if got := generator.Resources[0].Item["description"]; got != "" {
+		t.Fatalf("missing description = %v, want empty string", got)
+	}
+	if got := generator.Resources[1].Item["description"]; got != "" {
+		t.Fatalf("nil description = %v, want empty string", got)
+	}
+	if got := generator.Resources[2].Item["description"]; got != "owned by platform" {
+		t.Fatalf("existing description = %v, want owned by platform", got)
+	}
+	if got := generator.Resources[3].Item["description"]; got != "" {
+		t.Fatalf("nil item description = %v, want empty string", got)
 	}
 }
 
