@@ -26,6 +26,30 @@ func (g *APMRetentionFilterOrderGenerator) createResource() terraformutils.Resou
 	)
 }
 
+func (g *APMRetentionFilterOrderGenerator) PostConvertHook() error {
+	for i := range g.Resources {
+		resource := &g.Resources[i]
+		if resource.Item == nil {
+			resource.Item = map[string]interface{}{}
+		}
+		if _, ok := resource.Item["filter_ids"]; ok {
+			continue
+		}
+		if !apmRetentionFilterOrderStateHasEmptyFilterIDs(resource) {
+			continue
+		}
+		resource.Item["filter_ids"] = []interface{}{}
+	}
+	return nil
+}
+
+func apmRetentionFilterOrderStateHasEmptyFilterIDs(resource *terraformutils.Resource) bool {
+	if resource == nil || resource.InstanceState == nil || resource.InstanceState.Attributes == nil {
+		return false
+	}
+	return resource.InstanceState.Attributes["filter_ids.#"] == "0"
+}
+
 // InitResources Generate TerraformResources for the singleton APM retention filter order.
 // The Datadog provider read path ignores the import ID and stores filtersOrderID.
 func (g *APMRetentionFilterOrderGenerator) InitResources() error {

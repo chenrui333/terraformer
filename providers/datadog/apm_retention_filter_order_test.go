@@ -51,3 +51,53 @@ func TestAPMRetentionFilterOrderNormalizesIDFilter(t *testing.T) {
 		t.Fatal("expected normalized ID filter to keep singleton order resource")
 	}
 }
+
+func TestAPMRetentionFilterOrderPostConvertHookPreservesEmptyFilterIDs(t *testing.T) {
+	resource := terraformutils.NewSimpleResource(
+		apmRetentionFilterOrderID,
+		"apm_retention_filter_order",
+		"datadog_apm_retention_filter_order",
+		"datadog",
+		APMRetentionFilterOrderAllowEmptyValues,
+	)
+	resource.InstanceState.Attributes = map[string]string{
+		"filter_ids.#": "0",
+	}
+	resource.Item = map[string]interface{}{}
+
+	generator := &APMRetentionFilterOrderGenerator{}
+	generator.Resources = []terraformutils.Resource{resource}
+
+	if err := generator.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook returned error: %v", err)
+	}
+
+	filterIDs, ok := generator.Resources[0].Item["filter_ids"].([]interface{})
+	if !ok {
+		t.Fatalf("filter_ids = %T, want []interface{}", generator.Resources[0].Item["filter_ids"])
+	}
+	if len(filterIDs) != 0 {
+		t.Fatalf("filter_ids length = %d, want %d", len(filterIDs), 0)
+	}
+}
+
+func TestAPMRetentionFilterOrderPostConvertHookDoesNotInventUnknownFilterIDs(t *testing.T) {
+	resource := terraformutils.NewSimpleResource(
+		apmRetentionFilterOrderID,
+		"apm_retention_filter_order",
+		"datadog_apm_retention_filter_order",
+		"datadog",
+		APMRetentionFilterOrderAllowEmptyValues,
+	)
+	resource.Item = map[string]interface{}{}
+
+	generator := &APMRetentionFilterOrderGenerator{}
+	generator.Resources = []terraformutils.Resource{resource}
+
+	if err := generator.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook returned error: %v", err)
+	}
+	if _, ok := generator.Resources[0].Item["filter_ids"]; ok {
+		t.Fatal("PostConvertHook added filter_ids without empty filter_ids state")
+	}
+}
