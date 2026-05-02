@@ -8,8 +8,8 @@ Example:
 ```
 
 Terraformer discovers Kubernetes API resources from the active cluster and imports resources that are available through either the typed Kubernetes client or an explicit dynamic-client import path, and the installed Terraform Kubernetes provider schema.
-Discovered CRDs and other untyped API extensions without a first-class Terraform Kubernetes provider type can be imported through `kubernetes_manifest` when the API resource is manageable and the installed provider supports that resource.
-Manifest-backed custom resources use a group/version-qualified resource selector such as `example.com/v1/widgets` to avoid collisions between CRDs that share the same plural name.
+Discovered CRDs, other untyped API extensions, and selected native APIs without a first-class Terraform Kubernetes provider type can be imported through `kubernetes_manifest` when the API resource is manageable and the installed provider supports that resource.
+Manifest-backed resources use a group/version-qualified resource selector such as `example.com/v1/widgets` or `admissionregistration.k8s.io/v1/validatingadmissionpolicybindings` to avoid collisions between API resources that share the same plural name.
 When `labels` or `annotations` are selected with full resource imports, Terraformer keeps the full resource import and skips overlapping metadata-only resources to avoid duplicate Terraform ownership of the same object metadata.
 When `env` is selected with full workload imports, Terraformer keeps the full workload import and skips overlapping environment-only resources to avoid duplicate Terraform ownership of the same container environment.
 When `configmaps` and `configmapdata` are selected together, Terraformer keeps the full `configmaps` import and skips overlapping data-only resources to avoid duplicate Terraform ownership of the same ConfigMap data.
@@ -20,6 +20,12 @@ Common supported resources include:
 
 *   `annotations`
     * `kubernetes_annotations`
+*   `admissionregistration.k8s.io/v1/mutatingadmissionpolicies`
+    * `kubernetes_manifest`
+*   `admissionregistration.k8s.io/v1/mutatingadmissionpolicybindings`
+    * `kubernetes_manifest`
+*   `admissionregistration.k8s.io/v1/validatingadmissionpolicybindings`
+    * `kubernetes_manifest`
 *   `apiservices`
     * `kubernetes_api_service_v1`
 *   `certificatesigningrequests`
