@@ -147,6 +147,8 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `monitor_notification_rule`
     * `datadog_monitor_notification_rule`
         * **_NOTE:_** Requires DataDog/datadog provider 3.83.0 or newer.
+*   `rum_application`
+    * `datadog_rum_application`
 *   `rum_metric`
     * `datadog_rum_metric`
 *   `role`
