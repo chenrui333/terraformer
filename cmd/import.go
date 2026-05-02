@@ -46,6 +46,10 @@ type ImportOptions struct {
 	RetrySleepMs  int
 }
 
+type importResourcesPostProcessor interface {
+	PostProcessImportResources(map[string][]terraformutils.Resource) map[string][]terraformutils.Resource
+}
+
 const DefaultPathPattern = "{output}/{provider}/{service}/"
 const DefaultPathOutput = "generated"
 const DefaultState = "local"
@@ -174,6 +178,9 @@ func importFromPlan(providerMapping *terraformutils.ProvidersMapping, options Im
 	}
 
 	resourcesByService := providerMapping.GetResourcesByService()
+	if provider, ok := providerMapping.GetBaseProvider().(importResourcesPostProcessor); ok {
+		resourcesByService = provider.PostProcessImportResources(resourcesByService)
+	}
 	for service := range resourcesByService {
 		plan.ImportedResource[service] = append(plan.ImportedResource[service], resourcesByService[service]...)
 	}
