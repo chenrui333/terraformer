@@ -258,13 +258,7 @@ func elastiCacheGlobalReplicationGroupIDSuffix(id string) string {
 }
 
 func elastiCacheUserImportable(user elasticachetypes.User) bool {
-	if !elastiCacheStatusImportable(StringValue(user.Status)) {
-		return false
-	}
-	if user.Authentication == nil {
-		return true
-	}
-	return user.Authentication.Type != elasticachetypes.AuthenticationTypePassword
+	return elastiCacheStatusImportable(StringValue(user.Status))
 }
 
 // Generate TerraformResources from AWS API,

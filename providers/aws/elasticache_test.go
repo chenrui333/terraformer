@@ -92,7 +92,7 @@ func TestElastiCacheUserImportable(t *testing.T) {
 					Type: elasticachetypes.AuthenticationTypePassword,
 				},
 			},
-			want: false,
+			want: true,
 		},
 		{
 			name: "deleting user",
