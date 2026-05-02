@@ -149,6 +149,9 @@ func selectImportResourceName(
 		if supportsDynamicClientResource(group, version, resource.Kind) {
 			return terraformResourceName, true, true
 		}
+		if supportsManifestResource(resource, hasResourceType) {
+			return manifestTerraformResourceName, true, true
+		}
 		return "", false, false
 	}
 

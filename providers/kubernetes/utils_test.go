@@ -485,6 +485,23 @@ func TestSelectImportResourceName(t *testing.T) {
 			wantOK:      true,
 		},
 		{
+			name:    "falls back to manifest for colliding custom kind",
+			group:   "serving.knative.dev",
+			version: "v1",
+			resource: metav1.APIResource{
+				Name:  "services",
+				Kind:  "Service",
+				Verbs: manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				"kubernetes_service":          {},
+				manifestTerraformResourceName: {},
+			},
+			want:        manifestTerraformResourceName,
+			wantDynamic: true,
+			wantOK:      true,
+		},
+		{
 			name:    "skips native typed resource without first-class provider type",
 			version: "v1",
 			resource: metav1.APIResource{
