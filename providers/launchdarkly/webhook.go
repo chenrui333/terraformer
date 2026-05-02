@@ -13,28 +13,29 @@ type WebhookGenerator struct {
 	LaunchDarklyService
 }
 
-func (g *WebhookGenerator) loadWebhooks(ctx context.Context, client *ldapi.APIClient) error {
-	webhooks, _, err := client.WebhooksApi.GetAllWebhooks(ctx).Execute()
-	if err != nil {
-		return err
-	}
-	if webhooks == nil {
-		return nil
-	}
-	for _, webhook := range webhooks.Items {
-		resource := terraformutils.NewResource(
-			webhook.Id,
-			resourceName(webhook.GetName(), webhook.Id),
-			"launchdarkly_webhook",
-			"launchdarkly",
-			map[string]string{},
-			[]string{},
-			map[string]interface{}{})
-		g.Resources = append(g.Resources, resource)
+func (g *WebhookGenerator) loadWebhooks(ctx context.Context, apiKey string) error {
+	for path := "/webhooks"; path != ""; {
+		webhooks := &ldapi.Webhooks{}
+		if err := getLaunchDarklyAPI(ctx, apiKey, path, webhooks); err != nil {
+			return err
+		}
+
+		for _, webhook := range webhooks.GetItems() {
+			resource := terraformutils.NewResource(
+				webhook.Id,
+				resourceName(webhook.GetName(), webhook.Id),
+				"launchdarkly_webhook",
+				"launchdarkly",
+				map[string]string{},
+				[]string{},
+				map[string]interface{}{})
+			g.Resources = append(g.Resources, resource)
+		}
+		path = nextPagePath(webhooks.GetLinks())
 	}
 	return nil
 }
 
 func (g *WebhookGenerator) InitResources() error {
-	return g.loadWebhooks(g.GetArgs()["ctx"].(context.Context), g.GetArgs()["client"].(*ldapi.APIClient))
+	return g.loadWebhooks(g.GetArgs()["ctx"].(context.Context), g.GetArgs()["api_key"].(string))
 }
