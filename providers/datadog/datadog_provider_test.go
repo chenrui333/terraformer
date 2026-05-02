@@ -4,6 +4,19 @@ package datadog
 
 import "testing"
 
+func TestDatadogProviderAPMRetentionFilterConnections(t *testing.T) {
+	connections := DatadogProvider{}.GetResourceConnections()
+
+	assertDatadogConnection(
+		t,
+		connections,
+		"apm_retention_filter_order",
+		"apm_retention_filter",
+		"filter_ids",
+		"id",
+	)
+}
+
 func TestDatadogProviderSensitiveDataScannerConnections(t *testing.T) {
 	connections := DatadogProvider{}.GetResourceConnections()
 
