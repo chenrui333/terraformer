@@ -2,10 +2,8 @@
 package myrasec
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
-	"sync"
 
 	mgo "github.com/Myra-Security-GmbH/myrasec-go/v2"
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -17,9 +15,7 @@ type IPFilterGenerator struct {
 }
 
 // createIPFilterResources
-func (g *IPFilterGenerator) createIPFilterResources(api *mgo.API, domainId int, vhost mgo.VHost, wg *sync.WaitGroup) error {
-	defer wg.Done()
-
+func (g *IPFilterGenerator) createIPFilterResources(api *mgo.API, domainId int, vhost mgo.VHost) error {
 	page := 1
 	pageSize := 250
 	params := map[string]string{
@@ -31,7 +27,7 @@ func (g *IPFilterGenerator) createIPFilterResources(api *mgo.API, domainId int, 
 		params["page"] = strconv.Itoa(page)
 
 		filters, err := api.ListIPFilters(domainId, vhost.Label, params)
-		if !errors.Is(err, err) {
+		if err != nil {
 			return err
 		}
 
@@ -47,7 +43,7 @@ func (g *IPFilterGenerator) createIPFilterResources(api *mgo.API, domainId int, 
 				[]string{},
 				map[string]interface{}{},
 			)
-			g.Resources = append(g.Resources, r)
+			g.appendResource(r)
 		}
 		if len(filters) < pageSize {
 			break
@@ -59,23 +55,19 @@ func (g *IPFilterGenerator) createIPFilterResources(api *mgo.API, domainId int, 
 
 // InitResources
 func (g *IPFilterGenerator) InitResources() error {
-	wg := sync.WaitGroup{}
-
 	api, err := g.initializeAPI()
 	if err != nil {
 		return err
 	}
 
-	funcs := []func(*mgo.API, int, mgo.VHost, *sync.WaitGroup) error{
+	funcs := []func(*mgo.API, int, mgo.VHost) error{
 		g.createIPFilterResources,
 	}
 
-	err = createResourcesPerSubDomain(api, funcs, &wg, true)
+	err = createResourcesPerSubDomain(api, funcs, true)
 	if err != nil {
 		return err
 	}
-
-	wg.Wait()
 
 	return nil
 }

@@ -4,7 +4,6 @@ package myrasec
 import (
 	"fmt"
 	"strconv"
-	"sync"
 
 	mgo "github.com/Myra-Security-GmbH/myrasec-go/v2"
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -16,9 +15,7 @@ type MaintenanceGenerator struct {
 }
 
 // createMaintenanceResources
-func (g *MaintenanceGenerator) createMaintenanceResources(api *mgo.API, domainId int, vhost mgo.VHost, wg *sync.WaitGroup) error {
-	defer wg.Done()
-
+func (g *MaintenanceGenerator) createMaintenanceResources(api *mgo.API, domainId int, vhost mgo.VHost) error {
 	page := 1
 	pageSize := 250
 	params := map[string]string{
@@ -46,7 +43,7 @@ func (g *MaintenanceGenerator) createMaintenanceResources(api *mgo.API, domainId
 				[]string{},
 				map[string]interface{}{},
 			)
-			g.Resources = append(g.Resources, r)
+			g.appendResource(r)
 		}
 		if len(maintenance) < pageSize {
 			break
@@ -58,23 +55,19 @@ func (g *MaintenanceGenerator) createMaintenanceResources(api *mgo.API, domainId
 
 // InitResources
 func (g *MaintenanceGenerator) InitResources() error {
-	wg := sync.WaitGroup{}
-
 	api, err := g.initializeAPI()
 	if err != nil {
 		return err
 	}
 
-	funcs := []func(*mgo.API, int, mgo.VHost, *sync.WaitGroup) error{
+	funcs := []func(*mgo.API, int, mgo.VHost) error{
 		g.createMaintenanceResources,
 	}
 
-	err = createResourcesPerSubDomain(api, funcs, &wg, false)
+	err = createResourcesPerSubDomain(api, funcs, false)
 	if err != nil {
 		return err
 	}
-
-	wg.Wait()
 
 	return nil
 }

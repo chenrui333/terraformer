@@ -3,7 +3,6 @@ package myrasec
 import (
 	"fmt"
 	"strconv"
-	"sync"
 
 	mgo "github.com/Myra-Security-GmbH/myrasec-go/v2"
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -15,9 +14,7 @@ type ErrorPageGenerator struct {
 }
 
 // createErrorPageResources
-func (g *ErrorPageGenerator) createErrorPageResources(api *mgo.API, domain mgo.Domain, wg *sync.WaitGroup) error {
-	defer wg.Done()
-
+func (g *ErrorPageGenerator) createErrorPageResources(api *mgo.API, domain mgo.Domain) error {
 	page := 1
 	pageSize := 250
 	params := map[string]string{
@@ -48,7 +45,7 @@ func (g *ErrorPageGenerator) createErrorPageResources(api *mgo.API, domain mgo.D
 				map[string]interface{}{},
 			)
 			r.IgnoreKeys = append(r.IgnoreKeys, "^metadata")
-			g.Resources = append(g.Resources, r)
+			g.appendResource(r)
 		}
 		if len(pages) < pageSize {
 			break
@@ -60,21 +57,17 @@ func (g *ErrorPageGenerator) createErrorPageResources(api *mgo.API, domain mgo.D
 
 // InitResources
 func (g *ErrorPageGenerator) InitResources() error {
-	wg := sync.WaitGroup{}
-
 	api, err := g.initializeAPI()
 	if err != nil {
 		return err
 	}
 
-	funcs := []func(*mgo.API, mgo.Domain, *sync.WaitGroup) error{
+	funcs := []func(*mgo.API, mgo.Domain) error{
 		g.createErrorPageResources,
 	}
-	err = createResourcesPerDomain(api, funcs, &wg)
+	err = createResourcesPerDomain(api, funcs)
 	if err != nil {
 		return err
 	}
-	wg.Wait()
-
 	return nil
 }
