@@ -4,7 +4,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"strings"
 
 	cloudscheduler "google.golang.org/api/cloudscheduler/v1beta1"
@@ -22,7 +22,7 @@ type SchedulerJobsGenerator struct {
 }
 
 // Run on SchedulerJobsList and create for each TerraformResource
-func (g SchedulerJobsGenerator) createResources(ctx context.Context, jobsList *cloudscheduler.ProjectsLocationsJobsListCall) []terraformutils.Resource {
+func (g SchedulerJobsGenerator) createResources(ctx context.Context, jobsList *cloudscheduler.ProjectsLocationsJobsListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := jobsList.Pages(ctx, func(page *cloudscheduler.ListJobsResponse) error {
 		for _, obj := range page.Jobs {
@@ -44,9 +44,9 @@ func (g SchedulerJobsGenerator) createResources(ctx context.Context, jobsList *c
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list scheduler jobs: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -59,6 +59,10 @@ func (g *SchedulerJobsGenerator) InitResources() error {
 
 	jobsList := cloudSchedulerService.Projects.Locations.Jobs.List("projects/" + g.GetArgs()["project"].(string) + "/locations/" + g.GetArgs()["region"].(compute.Region).Name)
 
-	g.Resources = g.createResources(ctx, jobsList)
+	resources, err := g.createResources(ctx, jobsList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 	return nil
 }
