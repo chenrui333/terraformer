@@ -121,12 +121,14 @@ func TestHCL2ValueFromFlatmapMapUnknown(t *testing.T) {
 
 func TestHCL2ValueFromFlatmapMapOfLists(t *testing.T) {
 	m := map[string]string{
-		"pools.%":    "2",
-		"pools.EU.#": "1",
-		"pools.EU.0": "pool-eu",
-		"pools.US.#": "2",
-		"pools.US.0": "pool-us-a",
-		"pools.US.1": "pool-us-b",
+		"pools.%":       "3",
+		"pools.EU.#":    "1",
+		"pools.EU.0":    "pool-eu",
+		"pools.US.#":    "2",
+		"pools.US.0":    "pool-us-a",
+		"pools.US.1":    "pool-us-b",
+		"pools.X.Foo.#": "1",
+		"pools.X.Foo.0": "pool-dotted-key",
 	}
 	ty := cty.Object(map[string]cty.Type{"pools": cty.Map(cty.List(cty.String))})
 
@@ -142,14 +144,25 @@ func TestHCL2ValueFromFlatmapMapOfLists(t *testing.T) {
 		t.Fatal("pools is null")
 	}
 	poolMap := pools.AsValueMap()
-	if len(poolMap) != 2 {
-		t.Fatalf("pools length = %d, want 2", len(poolMap))
+	if len(poolMap) != 3 {
+		t.Fatalf("pools length = %d, want 3", len(poolMap))
 	}
 	if poolMap["US"].LengthInt() != 2 {
 		t.Errorf("pools[US] length = %d, want 2", poolMap["US"].LengthInt())
 	}
 	if poolMap["EU"].LengthInt() != 1 {
 		t.Errorf("pools[EU] length = %d, want 1", poolMap["EU"].LengthInt())
+	}
+	if _, ok := poolMap["X"]; ok {
+		t.Fatal("pools unexpectedly contains truncated key X")
+	}
+	dotted := poolMap["X.Foo"]
+	if dotted.LengthInt() != 1 {
+		t.Errorf("pools[X.Foo] length = %d, want 1", dotted.LengthInt())
+	}
+	dottedValues := dotted.AsValueSlice()
+	if dottedValues[0].AsString() != "pool-dotted-key" {
+		t.Errorf("pools[X.Foo][0] = %q, want %q", dottedValues[0].AsString(), "pool-dotted-key")
 	}
 }
 

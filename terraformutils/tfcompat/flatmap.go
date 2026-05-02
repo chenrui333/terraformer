@@ -284,10 +284,7 @@ func hcl2ValueFromFlatmapMap(m map[string]string, prefix string, ty cty.Type) (c
 
 		valueKey := fullKey
 		if !ety.IsPrimitiveType() {
-			if dot := strings.IndexByte(key, '.'); dot != -1 {
-				key = key[:dot]
-				valueKey = prefix + key
-			}
+			key, valueKey = hcl2ValueFromFlatmapMapElementKey(m, prefix, key, ety)
 		}
 		if _, exists := vals[key]; exists {
 			continue
@@ -304,6 +301,68 @@ func hcl2ValueFromFlatmapMap(m map[string]string, prefix string, ty cty.Type) (c
 		return cty.MapValEmpty(ety), nil
 	}
 	return cty.MapVal(vals), nil
+}
+
+func hcl2ValueFromFlatmapMapElementKey(m map[string]string, prefix, key string, ty cty.Type) (string, string) {
+	for _, candidate := range hcl2ValueFromFlatmapMapKeyCandidates(key) {
+		valueKey := prefix + candidate
+		if hcl2ValueFromFlatmapValueExists(m, valueKey, ty) {
+			return candidate, valueKey
+		}
+	}
+
+	if dot := strings.IndexByte(key, '.'); dot != -1 {
+		key = key[:dot]
+	}
+	return key, prefix + key
+}
+
+func hcl2ValueFromFlatmapMapKeyCandidates(key string) []string {
+	candidates := []string{key}
+	for dot := strings.LastIndexByte(key, '.'); dot != -1; dot = strings.LastIndexByte(key[:dot], '.') {
+		if dot == 0 {
+			continue
+		}
+		candidates = append(candidates, key[:dot])
+	}
+	return candidates
+}
+
+func hcl2ValueFromFlatmapValueExists(m map[string]string, key string, ty cty.Type) bool {
+	if m[key] == UnknownVariableValue {
+		return true
+	}
+
+	switch {
+	case ty.IsPrimitiveType():
+		_, exists := m[key]
+		return exists
+	case ty.IsObjectType():
+		return hcl2ValueFromFlatmapObjectValueExists(m, key+".", ty.AttributeTypes())
+	case ty.IsTupleType(), ty.IsListType(), ty.IsSetType():
+		_, exists := m[key+".#"]
+		return exists
+	case ty.IsMapType():
+		_, exists := m[key+".%"]
+		return exists
+	default:
+		return false
+	}
+}
+
+func hcl2ValueFromFlatmapObjectValueExists(m map[string]string, prefix string, atys map[string]cty.Type) bool {
+	for name, aty := range atys {
+		key := prefix + name
+		if hcl2ValueFromFlatmapValueExists(m, key, aty) {
+			return true
+		}
+		for attributeKey := range m {
+			if strings.HasPrefix(attributeKey, key+".") {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func hcl2ValueFromFlatmapList(m map[string]string, prefix string, ty cty.Type) (cty.Value, error) {
