@@ -121,6 +121,14 @@ func TestSecretsManagerFilterGatesSecretAndChildDiscovery(t *testing.T) {
 			loadChildren: true,
 		},
 		{
+			name: "global id filter constrains typed child discovery",
+			filters: []terraformutils.ResourceFilter{
+				{FieldPath: "id", AcceptableValues: []string{otherARN}},
+				{ServiceName: "secretsmanager_secret_policy", FieldPath: "id", AcceptableValues: []string{secretARN}},
+			},
+			appendOther: true,
+		},
+		{
 			name: "untyped id filter limits same-id resources",
 			filters: []terraformutils.ResourceFilter{
 				{FieldPath: "id", AcceptableValues: []string{secretARN}},
@@ -160,6 +168,7 @@ func TestSecretsManagerFilterGatesSecretAndChildDiscovery(t *testing.T) {
 
 func TestSecretsManagerFilterGatesChildAppend(t *testing.T) {
 	secretARN := "arn:aws:secretsmanager:us-east-1:123456789012:secret:orders-abc123"
+	otherARN := "arn:aws:secretsmanager:us-east-1:123456789012:secret:other-abc123"
 	policy := newSecretsManagerSecretPolicyResource(secretARN, "orders", "{\"Version\":\"2012-10-17\"}")
 	rotation := newSecretsManagerSecretRotationResource(secretARN, "orders")
 
@@ -197,6 +206,21 @@ func TestSecretsManagerFilterGatesChildAppend(t *testing.T) {
 			},
 			appendPolicy: true,
 		},
+		{
+			name: "global id filter constrains typed policy child",
+			filters: []terraformutils.ResourceFilter{
+				{FieldPath: "id", AcceptableValues: []string{secretARN}},
+				{ServiceName: "secretsmanager_secret_policy", FieldPath: "id", AcceptableValues: []string{secretARN}},
+			},
+			appendPolicy: true,
+		},
+		{
+			name: "global id filter rejects typed policy child outside scope",
+			filters: []terraformutils.ResourceFilter{
+				{FieldPath: "id", AcceptableValues: []string{otherARN}},
+				{ServiceName: "secretsmanager_secret_policy", FieldPath: "id", AcceptableValues: []string{secretARN}},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -208,6 +232,12 @@ func TestSecretsManagerFilterGatesChildAppend(t *testing.T) {
 			}
 			if got := g.shouldAppendSecretChildResource("secretsmanager_secret_rotation", rotation); got != tt.appendRotation {
 				t.Fatalf("shouldAppendSecretChildResource(rotation) = %t, want %t", got, tt.appendRotation)
+			}
+			if got := g.shouldLoadSecretChildResource("secretsmanager_secret_policy", policy); got != tt.appendPolicy {
+				t.Fatalf("shouldLoadSecretChildResource(policy) = %t, want %t", got, tt.appendPolicy)
+			}
+			if got := g.shouldLoadSecretChildResource("secretsmanager_secret_rotation", rotation); got != tt.appendRotation {
+				t.Fatalf("shouldLoadSecretChildResource(rotation) = %t, want %t", got, tt.appendRotation)
 			}
 		})
 	}

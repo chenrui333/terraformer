@@ -56,12 +56,18 @@ func (g *SecretsManagerGenerator) InitResources() error {
 			if !g.shouldLoadSecretChildren(secretResource) {
 				continue
 			}
-			if err := g.addSecretPolicy(svc, secretArn, secretName); err != nil {
-				if !secretsManagerResourceMissing(err) {
-					log.Printf("Skipping Secrets Manager secret policy for %s: %v", secretArn, err)
+			policyResource := newSecretsManagerSecretPolicyResource(secretArn, secretName, "")
+			if g.shouldLoadSecretChildResource("secretsmanager_secret_policy", policyResource) {
+				if err := g.addSecretPolicy(svc, secretArn, secretName); err != nil {
+					if !secretsManagerResourceMissing(err) {
+						log.Printf("Skipping Secrets Manager secret policy for %s: %v", secretArn, err)
+					}
 				}
 			}
-			g.addSecretRotation(secret)
+			rotationResource := newSecretsManagerSecretRotationResource(secretArn, secretName)
+			if g.shouldLoadSecretChildResource("secretsmanager_secret_rotation", rotationResource) {
+				g.addSecretRotation(secret)
+			}
 		}
 	}
 	return nil
@@ -160,21 +166,17 @@ func (g *SecretsManagerGenerator) shouldLoadSecretChildren(secretResource terraf
 }
 
 func (g *SecretsManagerGenerator) shouldAppendSecretChildResource(serviceName string, resource terraformutils.Resource) bool {
-	if !g.hasTypedSecretsManagerChildFilter() {
-		return true
+	if g.hasTypedSecretsManagerChildFilter() && !g.hasTypedFilterFor(serviceName) {
+		return false
 	}
+	return g.secretChildMatchesInitialIDFilters(serviceName, resource)
+}
 
-	hasTypedResourceFilter := false
-	for _, filter := range g.Filter {
-		if filter.ServiceName == "" || !filter.IsApplicable(serviceName) {
-			continue
-		}
-		hasTypedResourceFilter = true
-		if filter.FieldPath == "id" && !filter.Filter(resource) {
-			return false
-		}
+func (g *SecretsManagerGenerator) shouldLoadSecretChildResource(serviceName string, resource terraformutils.Resource) bool {
+	if g.hasTypedSecretsManagerChildFilter() && !g.hasTypedFilterFor(serviceName) {
+		return false
 	}
-	return hasTypedResourceFilter
+	return g.secretChildMatchesInitialIDFilters(serviceName, resource)
 }
 
 func (g *SecretsManagerGenerator) secretMatchesInitialIDFilters(secretResource terraformutils.Resource) bool {
@@ -201,26 +203,23 @@ func (g *SecretsManagerGenerator) secretMatchesAnyChildInitialFilter(secretResou
 			continue
 		}
 
-		childHasFilter := false
-		childMatches := true
-		for _, filter := range g.Filter {
-			if filter.ServiceName == "" || !filter.IsApplicable(child.serviceName) {
-				continue
-			}
-			childHasFilter = true
-			if filter.FieldPath != "id" {
-				return true
-			}
-			if !filter.Filter(childResource) {
-				childMatches = false
-				break
-			}
-		}
-		if childHasFilter && childMatches {
+		if g.shouldLoadSecretChildResource(child.serviceName, childResource) {
 			return true
 		}
 	}
 	return false
+}
+
+func (g *SecretsManagerGenerator) secretChildMatchesInitialIDFilters(serviceName string, resource terraformutils.Resource) bool {
+	for _, filter := range g.Filter {
+		if filter.FieldPath != "id" || !filter.IsApplicable(serviceName) {
+			continue
+		}
+		if !filter.Filter(resource) {
+			return false
+		}
+	}
+	return true
 }
 
 func (g *SecretsManagerGenerator) hasTypedSecretsManagerChildFilter() bool {
