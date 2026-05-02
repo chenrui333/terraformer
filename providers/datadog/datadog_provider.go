@@ -179,6 +179,7 @@ func (p *DatadogProvider) GetSupportedService() map[string]terraformutils.Servic
 		"team":                                 &TeamGenerator{},
 		"team_link":                            &TeamLinkGenerator{},
 		"team_membership":                      &TeamMembershipGenerator{},
+		"team_notification_rule":               &TeamNotificationRuleGenerator{},
 		"team_permission_setting":              &TeamPermissionSettingGenerator{},
 		"user":                                 &UserGenerator{},
 		"role":                                 &RoleGenerator{},
