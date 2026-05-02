@@ -202,7 +202,7 @@ func TestConvertTFstateUsesTypedManifestWhenFlatmapHasNoManifest(t *testing.T) {
 			Attributes: map[string]string{
 				"id": "apiVersion=example.com/v1,kind=Widget,name=sample",
 			},
-			TypedAttributes: json.RawMessage("{\"id\":\"apiVersion=example.com/v1,kind=Widget,name=sample\",\"manifest\":{},\"object\":{\"apiVersion\":\"example.com/v1\",\"kind\":\"Widget\",\"metadata\":{\"name\":\"sample\",\"uid\":\"uid-123\",\"resourceVersion\":\"123\",\"managedFields\":[{\"manager\":\"controller\"}]},\"status\":{\"phase\":\"Ready\"}},\"field_manager\":null,\"timeouts\":null,\"wait\":null}"),
+			TypedAttributes: json.RawMessage("{\"id\":\"apiVersion=example.com/v1,kind=Widget,name=sample\",\"manifest\":{},\"object\":{\"apiVersion\":\"example.com/v1\",\"kind\":\"Widget\",\"metadata\":{\"name\":\"sample\",\"uid\":\"uid-123\",\"resourceVersion\":\"123\",\"managedFields\":[{\"manager\":\"controller\"}]},\"spec\":{\"bigInteger\":9007199254740993},\"status\":{\"phase\":\"Ready\"}},\"field_manager\":null,\"timeouts\":null,\"wait\":null}"),
 		},
 		IgnoreKeys: []string{"^id$"},
 	}
@@ -230,6 +230,8 @@ func TestConvertTFstateUsesTypedManifestWhenFlatmapHasNoManifest(t *testing.T) {
 	if _, ok := manifest["status"]; ok {
 		t.Fatal("manifest.status was not stripped")
 	}
+	spec := manifest["spec"].(map[string]interface{})
+	assertJSONNumber(t, spec["bigInteger"], "9007199254740993")
 	if _, ok := resource.Item["id"]; ok {
 		t.Fatal("id attribute was not filtered from typed manifest fallback")
 	}
@@ -240,6 +242,17 @@ func TestConvertTFstateUsesTypedManifestWhenFlatmapHasNoManifest(t *testing.T) {
 		if _, ok := resource.Item[key]; ok {
 			t.Fatalf("%s null block attribute was not filtered from generated config item", key)
 		}
+	}
+}
+
+func assertJSONNumber(t *testing.T, value interface{}, want string) {
+	t.Helper()
+	number, ok := value.(json.Number)
+	if !ok {
+		t.Fatalf("number type = %T, want json.Number", value)
+	}
+	if number.String() != want {
+		t.Fatalf("number = %s, want %s", number.String(), want)
 	}
 }
 

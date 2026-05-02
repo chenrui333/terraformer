@@ -11,6 +11,7 @@ import (
 
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat/configschema"
+	"github.com/chenrui333/terraformer/terraformutils/typedjson"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -194,6 +195,61 @@ func TestPopulateKubernetesManifestFromObjectPreservesExistingManifest(t *testin
 	}
 	if object["kind"] != "Widget" {
 		t.Fatalf("object.kind = %v, want %q", object["kind"], "Widget")
+	}
+}
+
+func TestPopulateKubernetesManifestFromObjectPreservesJSONNumbers(t *testing.T) {
+	state := &tfcompat.InstanceState{
+		TypedAttributes: json.RawMessage("{\"manifest\":{},\"object\":{\"apiVersion\":\"example.com/v1\",\"kind\":\"Widget\",\"metadata\":{\"name\":\"sample\"},\"spec\":{\"bigInteger\":9007199254740993,\"preciseDecimal\":0.1234567890123456789}}}"),
+	}
+
+	populateKubernetesManifestFromObject(kubernetesManifestResourceType, state)
+
+	attributes, err := typedjson.UnmarshalObject(state.TypedAttributes)
+	if err != nil {
+		t.Fatalf("TypedAttributes unmarshal error = %v", err)
+	}
+	manifest := attributes["manifest"].(map[string]interface{})
+	manifestSpec := manifest["spec"].(map[string]interface{})
+	assertJSONNumber(t, manifestSpec["bigInteger"], "9007199254740993")
+	assertJSONNumber(t, manifestSpec["preciseDecimal"], "0.1234567890123456789")
+
+	object := attributes["object"].(map[string]interface{})
+	objectSpec := object["spec"].(map[string]interface{})
+	assertJSONNumber(t, objectSpec["bigInteger"], "9007199254740993")
+	assertJSONNumber(t, objectSpec["preciseDecimal"], "0.1234567890123456789")
+}
+
+func TestPreserveKubernetesManifestID(t *testing.T) {
+	previous := &tfcompat.InstanceState{ID: "apiVersion=example.com/v1,kind=Widget,name=sample"}
+	next := &tfcompat.InstanceState{}
+
+	preserveKubernetesManifestID(kubernetesManifestResourceType, next, previous)
+	if next.ID != previous.ID {
+		t.Fatalf("manifest ID = %q, want %q", next.ID, previous.ID)
+	}
+
+	next.ID = "provider-id"
+	preserveKubernetesManifestID(kubernetesManifestResourceType, next, previous)
+	if next.ID != "provider-id" {
+		t.Fatalf("manifest ID = %q, want existing provider ID", next.ID)
+	}
+
+	nonManifest := &tfcompat.InstanceState{}
+	preserveKubernetesManifestID("kubernetes_service_v1", nonManifest, previous)
+	if nonManifest.ID != "" {
+		t.Fatalf("non-manifest ID = %q, want empty", nonManifest.ID)
+	}
+}
+
+func assertJSONNumber(t *testing.T, value interface{}, want string) {
+	t.Helper()
+	number, ok := value.(json.Number)
+	if !ok {
+		t.Fatalf("number type = %T, want json.Number", value)
+	}
+	if number.String() != want {
+		t.Fatalf("number = %s, want %s", number.String(), want)
 	}
 }
 

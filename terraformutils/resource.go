@@ -14,6 +14,7 @@ import (
 	"github.com/chenrui333/terraformer/terraformutils/providerwrapper"
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat/providerproto"
+	"github.com/chenrui333/terraformer/terraformutils/typedjson"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -231,8 +232,8 @@ func typedAttributesAsMap(raw json.RawMessage, ignoreKeys []*regexp.Regexp) (map
 		return nil, fmt.Errorf("typed attributes are empty")
 	}
 
-	attributes := map[string]interface{}{}
-	if err := json.Unmarshal(raw, &attributes); err != nil {
+	attributes, err := typedjson.UnmarshalObject(raw)
+	if err != nil {
 		return nil, err
 	}
 	for key := range attributes {

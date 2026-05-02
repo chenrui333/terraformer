@@ -19,6 +19,7 @@ import (
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat/configschema"
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat/providerproto"
+	"github.com/chenrui333/terraformer/terraformutils/typedjson"
 
 	"github.com/zclconf/go-cty/cty"
 
@@ -176,7 +177,9 @@ func (p *ProviderWrapper) Refresh(info *tfcompat.InstanceInfo, state *tfcompat.I
 		return nil, errors.New(msg)
 	}
 
-	return tfcompat.NewInstanceStateShimmedFromValue(resp.NewState, int(schema.ResourceTypes[info.Type].Version)), nil
+	refreshedState := tfcompat.NewInstanceStateShimmedFromValue(resp.NewState, int(schema.ResourceTypes[info.Type].Version))
+	preserveKubernetesManifestID(info.Type, refreshedState, state)
+	return refreshedState, nil
 }
 
 func (p *ProviderWrapper) importResourceState(info *tfcompat.InstanceInfo, state *tfcompat.InstanceState, schema *providerproto.GetProviderSchemaResponse) (*tfcompat.InstanceState, error) {
@@ -195,8 +198,16 @@ func (p *ProviderWrapper) importResourceState(info *tfcompat.InstanceInfo, state
 		return nil, errors.New("not able to import resource for a given ID")
 	}
 	importedState := tfcompat.NewInstanceStateShimmedFromValue(importResponse.ImportedResources[0].State, int(schema.ResourceTypes[info.Type].Version))
+	preserveKubernetesManifestID(info.Type, importedState, state)
 	populateKubernetesManifestFromObject(info.Type, importedState)
 	return importedState, nil
+}
+
+func preserveKubernetesManifestID(resourceType string, next *tfcompat.InstanceState, previous *tfcompat.InstanceState) {
+	if resourceType != kubernetesManifestResourceType || next == nil || next.ID != "" || previous == nil {
+		return
+	}
+	next.ID = previous.ID
 }
 
 func populateKubernetesManifestFromObject(resourceType string, state *tfcompat.InstanceState) {
@@ -204,8 +215,8 @@ func populateKubernetesManifestFromObject(resourceType string, state *tfcompat.I
 		return
 	}
 
-	attributes := map[string]interface{}{}
-	if err := json.Unmarshal(state.TypedAttributes, &attributes); err != nil {
+	attributes, err := typedjson.UnmarshalObject(state.TypedAttributes)
+	if err != nil {
 		return
 	}
 
