@@ -169,6 +169,59 @@ func TestAddConfigMapDataServiceRequiresConfigMapAPI(t *testing.T) {
 	}
 }
 
+func TestAddSecretDataService(t *testing.T) {
+	resources := map[string]terraformutils.ServiceGenerator{}
+	clientset := fake.NewSimpleClientset()
+	listableResources := map[kubernetesResourceID]struct{}{
+		{version: "v1", kind: "Secret"}: {},
+	}
+
+	addSecretDataService(resources, clientset, listableResources, func(name string) bool {
+		return name == secretDataTerraformType
+	})
+
+	service, ok := resources[secretDataServiceName]
+	if !ok {
+		t.Fatalf("resources[%q] was not registered", secretDataServiceName)
+	}
+	secretData, ok := service.(*SecretData)
+	if !ok {
+		t.Fatalf("service type = %T, want *SecretData", service)
+	}
+	if secretData.TerraformType != secretDataTerraformType {
+		t.Fatalf("TerraformType = %q, want %q", secretData.TerraformType, secretDataTerraformType)
+	}
+}
+
+func TestAddSecretDataServiceRequiresProviderType(t *testing.T) {
+	resources := map[string]terraformutils.ServiceGenerator{}
+	clientset := fake.NewSimpleClientset()
+	listableResources := map[kubernetesResourceID]struct{}{
+		{version: "v1", kind: "Secret"}: {},
+	}
+
+	addSecretDataService(resources, clientset, listableResources, func(string) bool {
+		return false
+	})
+
+	if _, ok := resources[secretDataServiceName]; ok {
+		t.Fatalf("resources[%q] was registered without provider type support", secretDataServiceName)
+	}
+}
+
+func TestAddSecretDataServiceRequiresSecretAPI(t *testing.T) {
+	resources := map[string]terraformutils.ServiceGenerator{}
+	clientset := fake.NewSimpleClientset()
+
+	addSecretDataService(resources, clientset, map[kubernetesResourceID]struct{}{}, func(name string) bool {
+		return name == secretDataTerraformType
+	})
+
+	if _, ok := resources[secretDataServiceName]; ok {
+		t.Fatalf("resources[%q] was registered without secrets API support", secretDataServiceName)
+	}
+}
+
 func TestAddKubernetesResourceServiceDisambiguatesManifestPluralCollisions(t *testing.T) {
 	resources := map[string]terraformutils.ServiceGenerator{}
 	resource := metav1.APIResource{
@@ -309,6 +362,55 @@ func TestPostProcessImportResourcesRemovesConfigMapDataServiceWhenAllOverlap(t *
 
 	if _, ok := got[configMapDataServiceName]; ok {
 		t.Fatalf("resources[%q] was not removed after all entries overlapped configmaps", configMapDataServiceName)
+	}
+}
+
+func TestPostProcessImportResourcesRemovesOverlappingSecretData(t *testing.T) {
+	provider := KubernetesProvider{}
+	resourcesByService := map[string][]terraformutils.Resource{
+		"secrets": {
+			terraformutils.NewSimpleResource("default/app-secret", "default/app-secret", "kubernetes_secret_v1", "kubernetes", nil),
+		},
+		secretDataServiceName: {
+			terraformutils.NewSimpleResource("default/app-secret", "default/app-secret", secretDataTerraformType, "kubernetes", nil),
+			terraformutils.NewSimpleResource("default/other-secret", "default/other-secret", secretDataTerraformType, "kubernetes", nil),
+		},
+	}
+
+	got := provider.PostProcessImportResources(resourcesByService)
+
+	assertResourceIDs(t, got["secrets"], []string{"default/app-secret"})
+	assertResourceIDs(t, got[secretDataServiceName], []string{"default/other-secret"})
+}
+
+func TestPostProcessImportResourcesKeepsSecretDataWithoutSecretsImport(t *testing.T) {
+	provider := KubernetesProvider{}
+	resourcesByService := map[string][]terraformutils.Resource{
+		secretDataServiceName: {
+			terraformutils.NewSimpleResource("default/app-secret", "default/app-secret", secretDataTerraformType, "kubernetes", nil),
+		},
+	}
+
+	got := provider.PostProcessImportResources(resourcesByService)
+
+	assertResourceIDs(t, got[secretDataServiceName], []string{"default/app-secret"})
+}
+
+func TestPostProcessImportResourcesRemovesSecretDataServiceWhenAllOverlap(t *testing.T) {
+	provider := KubernetesProvider{}
+	resourcesByService := map[string][]terraformutils.Resource{
+		"secrets": {
+			terraformutils.NewSimpleResource("default/app-secret", "default/app-secret", "kubernetes_secret_v1", "kubernetes", nil),
+		},
+		secretDataServiceName: {
+			terraformutils.NewSimpleResource("default/app-secret", "default/app-secret", secretDataTerraformType, "kubernetes", nil),
+		},
+	}
+
+	got := provider.PostProcessImportResources(resourcesByService)
+
+	if _, ok := got[secretDataServiceName]; ok {
+		t.Fatalf("resources[%q] was not removed after all entries overlapped secrets", secretDataServiceName)
 	}
 }
 

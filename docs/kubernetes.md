@@ -11,6 +11,8 @@ Terraformer discovers Kubernetes API resources from the active cluster and impor
 Discovered CRDs and other untyped API extensions without a first-class Terraform Kubernetes provider type can be imported through `kubernetes_manifest` when the API resource is manageable and the installed provider supports that resource.
 Manifest-backed custom resources use a group/version-qualified resource selector such as `example.com/v1/widgets` to avoid collisions between CRDs that share the same plural name.
 When `configmaps` and `configmapdata` are selected together, Terraformer keeps the full `configmaps` import and skips overlapping data-only resources to avoid duplicate Terraform ownership of the same ConfigMap data.
+When `secrets` and `secretdata` are selected together, Terraformer keeps the full `secrets` import and skips overlapping data-only resources to avoid duplicate Terraform ownership of the same Secret data.
+Because `kubernetes_secret_v1_data` only accepts string data, `secretdata` skips Secrets containing non-UTF-8 payloads instead of emitting lossy configuration.
 
 Common supported resources include:
 
@@ -85,6 +87,8 @@ Common supported resources include:
     * `kubernetes_runtime_class_v1`
 *   `secrets`
     * `kubernetes_secret_v1`
+*   `secretdata`
+    * `kubernetes_secret_v1_data`
 *   `services`
     * `kubernetes_service_v1`
 *   `serviceaccounts`
