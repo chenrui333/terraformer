@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -152,8 +153,9 @@ func sendCloudInventorySyncConfigRequest(ctx context.Context, client *datadog.AP
 	if response == nil {
 		return nil, fmt.Errorf("cloud inventory sync config request failed: empty response")
 	}
+	defer response.Body.Close()
 
-	body, err := datadog.ReadBody(response)
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, err
 	}
