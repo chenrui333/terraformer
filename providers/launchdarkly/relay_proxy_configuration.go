@@ -27,7 +27,7 @@ func (g *RelayProxyConfigurationGenerator) loadRelayProxyConfigurations(ctx cont
 	for _, config := range configs.Items {
 		resource := terraformutils.NewResource(
 			config.Id,
-			resourceName(config.Name, config.Id),
+			relayProxyConfigurationResourceName(config.Name, config.Id),
 			"launchdarkly_relay_proxy_configuration",
 			"launchdarkly",
 			map[string]string{},
@@ -36,6 +36,10 @@ func (g *RelayProxyConfigurationGenerator) loadRelayProxyConfigurations(ctx cont
 		g.Resources = append(g.Resources, resource)
 	}
 	return nil
+}
+
+func relayProxyConfigurationResourceName(name, id string) string {
+	return resourceNameWithID(name, id)
 }
 
 func (g *RelayProxyConfigurationGenerator) InitResources() error {

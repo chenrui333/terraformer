@@ -21,7 +21,7 @@ func (g *EnvironmentGenerator) loadEnvironments(ctx context.Context, client *lda
 	for _, env := range envs {
 		resource := terraformutils.NewResource(
 			projectKey+"/"+env.Key,
-			projectKey+"-"+env.Name,
+			environmentResourceName(projectKey, env.Name, env.Key),
 			"launchdarkly_environment",
 			"launchdarkly",
 			map[string]string{
@@ -33,6 +33,10 @@ func (g *EnvironmentGenerator) loadEnvironments(ctx context.Context, client *lda
 		g.Resources = append(g.Resources, resource)
 	}
 	return nil
+}
+
+func environmentResourceName(projectKey, name, key string) string {
+	return launchDarklyProjectResourceName(projectKey, name, key)
 }
 
 func (g *EnvironmentGenerator) InitResources() error {

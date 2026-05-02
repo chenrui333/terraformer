@@ -23,7 +23,7 @@ func (g *WebhookGenerator) loadWebhooks(ctx context.Context, apiKey string) erro
 		for _, webhook := range webhooks.GetItems() {
 			resource := terraformutils.NewResource(
 				webhook.Id,
-				resourceName(webhook.GetName(), webhook.Id),
+				webhookResourceName(webhook.GetName(), webhook.Id),
 				"launchdarkly_webhook",
 				"launchdarkly",
 				map[string]string{},
@@ -34,6 +34,10 @@ func (g *WebhookGenerator) loadWebhooks(ctx context.Context, apiKey string) erro
 		path = nextPagePath(webhooks.GetLinks())
 	}
 	return nil
+}
+
+func webhookResourceName(name, id string) string {
+	return resourceNameWithID(name, id)
 }
 
 func (g *WebhookGenerator) InitResources() error {

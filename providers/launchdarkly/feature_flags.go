@@ -55,7 +55,7 @@ func (g *FeatureFlagsGenerator) loadFeatureFlags(ctx context.Context, client *ld
 	for _, featureFlag := range allFlags {
 		resource := terraformutils.NewResource(
 			featureFlag.Key,
-			project+"-"+featureFlag.Name,
+			featureFlagResourceName(project, featureFlag.Name, featureFlag.Key),
 			"launchdarkly_feature_flag",
 			"launchdarkly",
 			map[string]string{
@@ -72,6 +72,10 @@ func (g *FeatureFlagsGenerator) loadFeatureFlags(ctx context.Context, client *ld
 		g.Resources = append(g.Resources, resource)
 	}
 	return nil
+}
+
+func featureFlagResourceName(projectKey, name, key string) string {
+	return launchDarklyProjectResourceName(projectKey, name, key)
 }
 
 func (g *FeatureFlagsGenerator) InitResources() error {
