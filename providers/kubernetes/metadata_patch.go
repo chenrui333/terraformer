@@ -47,7 +47,7 @@ func (m *MetadataPatch) InitResources() error {
 	if err != nil {
 		return err
 	}
-	lists, err := metadataPatchPreferredResources(dc)
+	lists, err := kubernetesPreferredResources(dc)
 	if err != nil {
 		return err
 	}
@@ -60,13 +60,13 @@ func (m *MetadataPatch) InitResources() error {
 	return m.initResources(client, lists)
 }
 
-func metadataPatchPreferredResources(dc discovery.DiscoveryInterface) ([]*metav1.APIResourceList, error) {
+func kubernetesPreferredResources(dc discovery.DiscoveryInterface) ([]*metav1.APIResourceList, error) {
 	lists, err := dc.ServerPreferredResources()
 	if err != nil {
 		if !discovery.IsGroupDiscoveryFailedError(err) {
 			return nil, err
 		}
-		log.Printf("kubernetes: metadata patch discovery skipped unavailable API groups: %v", err)
+		log.Printf("kubernetes: discovery skipped unavailable API groups: %v", err)
 	}
 	return lists, nil
 }

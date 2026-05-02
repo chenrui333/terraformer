@@ -143,25 +143,25 @@ func TestMetadataPatchInitResourcesAnnotations(t *testing.T) {
 	}
 }
 
-func TestMetadataPatchPreferredResourcesKeepsPartialDiscoveryResults(t *testing.T) {
+func TestKubernetesPreferredResourcesKeepsPartialDiscoveryResults(t *testing.T) {
 	lists := metadataPatchTestAPIResources()
-	got, err := metadataPatchPreferredResources(metadataPatchDiscoveryClient{
+	got, err := kubernetesPreferredResources(metadataPatchDiscoveryClient{
 		lists: lists,
 		err: &discovery.ErrGroupDiscoveryFailed{Groups: map[schema.GroupVersion]error{
 			{Group: "broken.example.com", Version: "v1"}: errors.New("unavailable"),
 		}},
 	})
 	if err != nil {
-		t.Fatalf("metadataPatchPreferredResources() error = %v", err)
+		t.Fatalf("kubernetesPreferredResources() error = %v", err)
 	}
 	if len(got) != len(lists) {
 		t.Fatalf("lists len = %d, want %d", len(got), len(lists))
 	}
 }
 
-func TestMetadataPatchPreferredResourcesReturnsNonPartialDiscoveryErrors(t *testing.T) {
-	if _, err := metadataPatchPreferredResources(metadataPatchDiscoveryClient{err: errors.New("boom")}); err == nil {
-		t.Fatal("metadataPatchPreferredResources() error = nil, want error")
+func TestKubernetesPreferredResourcesReturnsNonPartialDiscoveryErrors(t *testing.T) {
+	if _, err := kubernetesPreferredResources(metadataPatchDiscoveryClient{err: errors.New("boom")}); err == nil {
+		t.Fatal("kubernetesPreferredResources() error = nil, want error")
 	}
 }
 
@@ -315,6 +315,57 @@ func TestPostProcessImportResourcesRemovesManifestMetadataPatchOverlap(t *testin
 
 	if _, ok := got[labelsServiceName]; ok {
 		t.Fatalf("resources[%q] was not removed after manifest overlap", labelsServiceName)
+	}
+}
+
+func TestPostProcessImportResourcesRemovesClusterScopedNativeMetadataPatchOverlap(t *testing.T) {
+	provider := KubernetesProvider{}
+	namespace := terraformutils.NewResource(
+		"team-a",
+		"team-a",
+		"kubernetes_namespace_v1",
+		"kubernetes",
+		map[string]string{
+			"metadata.#":      "1",
+			"metadata.0.name": "team-a",
+		},
+		nil,
+		nil,
+	)
+	resourcesByService := map[string][]terraformutils.Resource{
+		"namespaces": {namespace},
+		labelsServiceName: {
+			metadataPatchTestResource(labelsTerraformType, "apiVersion=v1,kind=Namespace,name=team-a"),
+		},
+	}
+
+	got := provider.PostProcessImportResources(resourcesByService)
+
+	if _, ok := got[labelsServiceName]; ok {
+		t.Fatalf("resources[%q] was not removed after cluster-scoped native overlap", labelsServiceName)
+	}
+}
+
+func TestPostProcessImportResourcesRemovesClusterScopedManifestMetadataPatchOverlap(t *testing.T) {
+	provider := KubernetesProvider{}
+	manifest := terraformutils.NewSimpleResource(
+		"apiVersion=example.com/v1,kind=Widget,name=sample",
+		"example.com/v1/Widget/sample",
+		manifestTerraformResourceName,
+		"kubernetes",
+		nil,
+	)
+	resourcesByService := map[string][]terraformutils.Resource{
+		"example.com/v1/widgets": {manifest},
+		labelsServiceName: {
+			metadataPatchTestResource(labelsTerraformType, "apiVersion=example.com/v1,kind=Widget,name=sample"),
+		},
+	}
+
+	got := provider.PostProcessImportResources(resourcesByService)
+
+	if _, ok := got[labelsServiceName]; ok {
+		t.Fatalf("resources[%q] was not removed after cluster-scoped manifest overlap", labelsServiceName)
 	}
 }
 

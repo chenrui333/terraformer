@@ -77,7 +77,7 @@ func (p *KubernetesProvider) GetSupportedService() map[string]terraformutils.Ser
 		return resources
 	}
 
-	lists, err := dc.ServerPreferredResources()
+	lists, err := kubernetesPreferredResources(dc)
 	if err != nil {
 		log.Println(err)
 		return resources
