@@ -4,7 +4,6 @@ package ibm
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"reflect"
 	"strings"
@@ -195,7 +194,6 @@ func (g *SatelliteDataPlaneGenerator) InitResources() error {
 	// VPC
 	vpcObj, err := vpcClient(region, sess)
 	if err != nil {
-		log.Println("Error building VPC object: ", err)
 		return err
 	}
 

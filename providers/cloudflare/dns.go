@@ -5,7 +5,6 @@ package cloudflare
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	cf "github.com/cloudflare/cloudflare-go"
@@ -18,7 +17,6 @@ type DNSGenerator struct {
 func (*DNSGenerator) createZonesResource(api *cf.API, zoneID, _ string) ([]terraformutils.Resource, error) {
 	zoneDetails, err := api.ZoneDetails(context.Background(), zoneID)
 	if err != nil {
-		log.Println(err)
 		return []terraformutils.Resource{}, err
 	}
 
@@ -42,7 +40,6 @@ func (*DNSGenerator) createRecordsResources(api *cf.API, zoneID, zoneName string
 	resources := []terraformutils.Resource{}
 	records, _, err := api.ListDNSRecords(context.Background(), cf.ZoneIdentifier(zoneID), cf.ListDNSRecordsParams{})
 	if err != nil {
-		log.Println(err)
 		return resources, err
 	}
 
@@ -71,13 +68,11 @@ func (*DNSGenerator) createRecordsResources(api *cf.API, zoneID, zoneName string
 func (g *DNSGenerator) InitResources() error {
 	api, err := g.initializeAPI()
 	if err != nil {
-		log.Println(err)
 		return err
 	}
 
 	zones, err := api.ListZones(context.Background())
 	if err != nil {
-		log.Println(err)
 		return err
 	}
 
@@ -90,7 +85,6 @@ func (g *DNSGenerator) InitResources() error {
 		for _, f := range funcs {
 			tmpRes, err := f(api, zone.ID, zone.Name)
 			if err != nil {
-				log.Println(err)
 				return err
 			}
 			g.Resources = append(g.Resources, tmpRes...)

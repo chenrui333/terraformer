@@ -4,7 +4,6 @@ package azure
 
 import (
 	"context"
-	"log"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerinstance/armcontainerinstance/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerregistry/armcontainerregistry/v2"
@@ -132,7 +131,6 @@ func (g *ContainerGenerator) listAndAddForContainerRegistry() ([]terraformutils.
 
 		webhooks, err := g.listRegistryWebhooks(id.ResourceGroup, *containerRegistry.Name)
 		if err != nil {
-			log.Println(err)
 			return resources, err
 		}
 		resources = append(resources, webhooks...)
