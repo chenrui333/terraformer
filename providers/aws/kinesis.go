@@ -57,6 +57,9 @@ func newKinesisStreamResource(resourceName string) terraformutils.Resource {
 }
 
 func (g *KinesisGenerator) shouldLoadStreamChildren(streamName string) bool {
+	if g.hasChildResourceFilters() {
+		return true
+	}
 	streamResource := newKinesisStreamResource(streamName)
 	for _, filter := range g.Filter {
 		if filter.ServiceName != "" && filter.FieldPath == "id" && filter.IsApplicable("kinesis_stream") && !filter.Filter(streamResource) {
@@ -64,6 +67,18 @@ func (g *KinesisGenerator) shouldLoadStreamChildren(streamName string) bool {
 		}
 	}
 	return true
+}
+
+func (g *KinesisGenerator) hasChildResourceFilters() bool {
+	for _, filter := range g.Filter {
+		if filter.ServiceName == "" {
+			return true
+		}
+		if filter.IsApplicable("kinesis_stream_consumer") || filter.IsApplicable("kinesis_resource_policy") {
+			return true
+		}
+	}
+	return false
 }
 
 func (g *KinesisGenerator) loadStreamChildren(svc *kinesis.Client, streamName string) {

@@ -84,6 +84,40 @@ func TestKinesisShouldLoadStreamChildrenHonorsStreamIDFilters(t *testing.T) {
 			want:   false,
 		},
 		{
+			name: "child id filter keeps discovery despite nonmatching stream filter",
+			filters: []terraformutils.ResourceFilter{
+				{
+					ServiceName:      "kinesis_stream",
+					FieldPath:        "id",
+					AcceptableValues: []string{"orders"},
+				},
+				{
+					ServiceName:      "kinesis_stream_consumer",
+					FieldPath:        "id",
+					AcceptableValues: []string{"arn:aws:kinesis:us-east-1:123456789012:stream/payments/consumer/app:1"},
+				},
+			},
+			stream: "payments",
+			want:   true,
+		},
+		{
+			name: "resource policy filter keeps discovery despite nonmatching stream filter",
+			filters: []terraformutils.ResourceFilter{
+				{
+					ServiceName:      "kinesis_stream",
+					FieldPath:        "id",
+					AcceptableValues: []string{"orders"},
+				},
+				{
+					ServiceName:      "kinesis_resource_policy",
+					FieldPath:        "id",
+					AcceptableValues: []string{"arn:aws:kinesis:us-east-1:123456789012:stream/payments"},
+				},
+			},
+			stream: "payments",
+			want:   true,
+		},
+		{
 			name: "child filter does not suppress stream discovery",
 			filters: []terraformutils.ResourceFilter{{
 				ServiceName:      "kinesis_stream_consumer",
