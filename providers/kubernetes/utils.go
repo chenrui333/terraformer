@@ -4,10 +4,39 @@
 package kubernetes
 
 import (
+	"reflect"
 	"strings"
 
 	"github.com/iancoleman/strcase"
+	"k8s.io/client-go/kubernetes"
 )
+
+type kubernetesResourceID struct {
+	group   string
+	version string
+	kind    string
+}
+
+var preferredTerraformResourceNames = map[kubernetesResourceID][]string{
+	{group: "apps", version: "v1", kind: "DaemonSet"}:                       {"kubernetes_daemon_set_v1", "kubernetes_daemonset"},
+	{group: "apps", version: "v1beta1", kind: "DaemonSet"}:                  {"kubernetes_daemonset"},
+	{group: "apps", version: "v1beta2", kind: "DaemonSet"}:                  {"kubernetes_daemonset"},
+	{group: "batch", version: "v1", kind: "CronJob"}:                        {"kubernetes_cron_job_v1", "kubernetes_cron_job"},
+	{group: "batch", version: "v1", kind: "Job"}:                            {"kubernetes_job_v1", "kubernetes_job"},
+	{group: "batch", version: "v1beta1", kind: "CronJob"}:                   {"kubernetes_cron_job"},
+	{group: "discovery.k8s.io", version: "v1", kind: "EndpointSlice"}:       {"kubernetes_endpoint_slice_v1"},
+	{group: "extensions", version: "v1beta1", kind: "DaemonSet"}:            {"kubernetes_daemonset"},
+	{group: "extensions", version: "v1beta1", kind: "Ingress"}:              {"kubernetes_ingress"},
+	{group: "networking.k8s.io", version: "v1", kind: "Ingress"}:            {"kubernetes_ingress_v1", "kubernetes_ingress"},
+	{group: "networking.k8s.io", version: "v1", kind: "IngressClass"}:       {"kubernetes_ingress_class_v1", "kubernetes_ingress_class"},
+	{group: "networking.k8s.io", version: "v1", kind: "NetworkPolicy"}:      {"kubernetes_network_policy_v1", "kubernetes_network_policy"},
+	{group: "networking.k8s.io", version: "v1beta1", kind: "Ingress"}:       {"kubernetes_ingress"},
+	{group: "networking.k8s.io", version: "v1beta1", kind: "IngressClass"}:  {"kubernetes_ingress_class"},
+	{group: "networking.k8s.io", version: "v1beta1", kind: "NetworkPolicy"}: {"kubernetes_network_policy"},
+	{group: "node.k8s.io", version: "v1", kind: "RuntimeClass"}:             {"kubernetes_runtime_class_v1"},
+	{group: "policy", version: "v1", kind: "PodDisruptionBudget"}:           {"kubernetes_pod_disruption_budget_v1", "kubernetes_pod_disruption_budget"},
+	{group: "policy", version: "v1beta1", kind: "PodDisruptionBudget"}:      {"kubernetes_pod_disruption_budget"},
+}
 
 func extractClientSetFuncGroupName(group, version string) string {
 	v := strings.Title(version)
@@ -29,4 +58,45 @@ func extractClientSetFuncTypeName(kind string) string {
 
 func extractTfResourceName(kind string) string {
 	return "kubernetes_" + strcase.ToSnake(kind)
+}
+
+func terraformResourceNameCandidates(group, version, kind string) []string {
+	candidates := append([]string{}, preferredTerraformResourceNames[kubernetesResourceID{group: group, version: version, kind: kind}]...)
+	defaultName := extractTfResourceName(kind)
+	for _, name := range candidates {
+		if name == defaultName {
+			return candidates
+		}
+	}
+	return append(candidates, defaultName)
+}
+
+func selectTerraformResourceName(group, version, kind string, hasResourceType func(string) bool) (string, bool) {
+	for _, name := range terraformResourceNameCandidates(group, version, kind) {
+		if hasResourceType(name) {
+			return name, true
+		}
+	}
+	return "", false
+}
+
+func supportsTypedClientResource(clientset kubernetes.Interface, group, version, kind string) (ok bool) {
+	defer func() {
+		if recover() != nil {
+			ok = false
+		}
+	}()
+
+	groupMethod := reflect.ValueOf(clientset).MethodByName(extractClientSetFuncGroupName(group, version))
+	if !groupMethod.IsValid() {
+		return false
+	}
+
+	groupValues := groupMethod.Call([]reflect.Value{})
+	if len(groupValues) == 0 || !groupValues[0].IsValid() {
+		return false
+	}
+
+	resourceMethod := groupValues[0].MethodByName(extractClientSetFuncTypeName(kind))
+	return resourceMethod.IsValid()
 }
