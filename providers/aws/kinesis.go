@@ -40,16 +40,30 @@ func (g *KinesisGenerator) loadOptionalResources(loaders []kinesisOptionalResour
 func (g *KinesisGenerator) createResources(streamNames []string) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 	for _, resourceName := range streamNames {
-		resources = append(resources, terraformutils.NewResource(
-			resourceName,
-			resourceName,
-			"aws_kinesis_stream",
-			"aws",
-			map[string]string{"name": resourceName},
-			kinesisAllowEmptyValues,
-			map[string]interface{}{}))
+		resources = append(resources, newKinesisStreamResource(resourceName))
 	}
 	return resources
+}
+
+func newKinesisStreamResource(resourceName string) terraformutils.Resource {
+	return terraformutils.NewResource(
+		resourceName,
+		resourceName,
+		"aws_kinesis_stream",
+		"aws",
+		map[string]string{"name": resourceName},
+		kinesisAllowEmptyValues,
+		map[string]interface{}{})
+}
+
+func (g *KinesisGenerator) shouldLoadStreamChildren(streamName string) bool {
+	streamResource := newKinesisStreamResource(streamName)
+	for _, filter := range g.Filter {
+		if filter.FieldPath == "id" && !filter.Filter(streamResource) {
+			return false
+		}
+	}
+	return true
 }
 
 func (g *KinesisGenerator) loadStreamChildren(svc *kinesis.Client, streamName string) {
@@ -183,7 +197,7 @@ func (g *KinesisGenerator) InitResources() error {
 
 		g.Resources = append(g.Resources, g.createResources(results.StreamNames)...)
 		for _, streamName := range results.StreamNames {
-			if streamName == "" {
+			if streamName == "" || !g.shouldLoadStreamChildren(streamName) {
 				continue
 			}
 			g.loadStreamChildren(svc, streamName)

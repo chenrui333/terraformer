@@ -55,6 +55,68 @@ func TestKinesisResourceName(t *testing.T) {
 	}
 }
 
+func TestKinesisShouldLoadStreamChildrenHonorsStreamIDFilters(t *testing.T) {
+	tests := []struct {
+		name    string
+		filters []terraformutils.ResourceFilter
+		stream  string
+		want    bool
+	}{
+		{name: "no filters", stream: "orders", want: true},
+		{
+			name: "matching stream id filter",
+			filters: []terraformutils.ResourceFilter{{
+				ServiceName:      "kinesis_stream",
+				FieldPath:        "id",
+				AcceptableValues: []string{"orders"},
+			}},
+			stream: "orders",
+			want:   true,
+		},
+		{
+			name: "nonmatching stream id filter",
+			filters: []terraformutils.ResourceFilter{{
+				ServiceName:      "kinesis_stream",
+				FieldPath:        "id",
+				AcceptableValues: []string{"orders"},
+			}},
+			stream: "payments",
+			want:   false,
+		},
+		{
+			name: "child filter does not suppress stream discovery",
+			filters: []terraformutils.ResourceFilter{{
+				ServiceName:      "kinesis_stream_consumer",
+				FieldPath:        "id",
+				AcceptableValues: []string{"arn:aws:kinesis:us-east-1:123456789012:stream/orders/consumer/app:1"},
+			}},
+			stream: "orders",
+			want:   true,
+		},
+		{
+			name: "non-id stream filter is handled by post-refresh cleanup",
+			filters: []terraformutils.ResourceFilter{{
+				ServiceName:      "kinesis_stream",
+				FieldPath:        "tags.env",
+				AcceptableValues: []string{"prod"},
+			}},
+			stream: "orders",
+			want:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := &KinesisGenerator{}
+			g.Filter = tt.filters
+			got := g.shouldLoadStreamChildren(tt.stream)
+			if got != tt.want {
+				t.Fatalf("shouldLoadStreamChildren() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestKinesisResourceMissing(t *testing.T) {
 	tests := []struct {
 		name string
