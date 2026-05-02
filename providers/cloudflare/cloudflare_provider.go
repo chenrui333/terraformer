@@ -35,6 +35,20 @@ func (p *CloudflareProvider) GetSupportedService() map[string]terraformutils.Ser
 		"firewall":       &FirewallGenerator{},
 		"page_rule":      &PageRulesGenerator{},
 		"account_member": &AccountMemberGenerator{},
+		"certificates":   &CertificatesGenerator{},
+		"lists":          &ListsGenerator{},
+		"load_balancing": &LoadBalancingGenerator{},
+		"logpush":        &LogpushGenerator{},
+		"magic_wan":      &MagicWANGenerator{},
+		"notifications":  &NotificationsGenerator{},
+		"pages":          &PagesGenerator{},
+		"ruleset":        &RulesetGenerator{},
+		"storage":        &StorageGenerator{},
+		"turnstile":      &TurnstileGenerator{},
+		"tunnel":         &TunnelGenerator{},
+		"waiting_room":   &WaitingRoomGenerator{},
+		"web_analytics":  &WebAnalyticsGenerator{},
+		"workers":        &WorkersGenerator{},
 	}
 }
 

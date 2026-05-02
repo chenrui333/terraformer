@@ -47,11 +47,10 @@ func (*DNSGenerator) createRecordsResources(api *cf.API, zoneID, zoneName string
 		r := terraformutils.NewResource(
 			record.ID,
 			fmt.Sprintf("%s_%s_%s", record.Type, zoneName, record.ID),
-			"cloudflare_record",
+			"cloudflare_dns_record",
 			"cloudflare",
 			map[string]string{
 				"zone_id": zoneID,
-				"domain":  zoneName,
 				"name":    record.Name,
 			},
 			[]string{},
@@ -97,7 +96,7 @@ func (g *DNSGenerator) PostConvertHook() error {
 	// 'record' resource have 'data' and 'value' is mutual-exclude
 	// delete which one have empty value
 	for i, resource := range g.Resources {
-		if resource.InstanceInfo.Type == "cloudflare_record" {
+		if resource.InstanceInfo.Type == "cloudflare_dns_record" {
 			if val, ok := resource.Item["data"]; ok && len(val.(map[string]interface{})) == 0 {
 				delete(g.Resources[i].Item, "data")
 			} else if val, ok := resource.Item["value"]; ok && len(val.(string)) == 0 {

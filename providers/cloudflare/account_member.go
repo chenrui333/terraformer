@@ -37,6 +37,7 @@ func (g *AccountMemberGenerator) createAccountMemberResources(api *cf.API) ([]te
 				"cloudflare_account_member",
 				"cloudflare",
 				map[string]string{
+					"account_id":    g.accountID(),
 					"email_address": member.User.Email,
 				},
 				[]string{},

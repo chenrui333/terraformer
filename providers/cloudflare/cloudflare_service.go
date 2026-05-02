@@ -4,13 +4,17 @@
 package cloudflare
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	cf "github.com/cloudflare/cloudflare-go"
 )
+
+const cloudflarePageSize = 50
 
 type CloudflareService struct { //nolint
 	terraformutils.Service
@@ -36,4 +40,26 @@ func (s *CloudflareService) initializeAPI() (*cf.API, error) {
 
 func (s *CloudflareService) accountID() string {
 	return os.Getenv("CLOUDFLARE_ACCOUNT_ID")
+}
+
+func (s *CloudflareService) accountResourceContainer() (*cf.ResourceContainer, error) {
+	accountID := s.accountID()
+	if accountID == "" {
+		return nil, errors.New("set CLOUDFLARE_ACCOUNT_ID env var")
+	}
+	return cf.AccountIdentifier(accountID), nil
+}
+
+func cloudflareResourceName(parts ...string) string {
+	filtered := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if part != "" {
+			filtered = append(filtered, part)
+		}
+	}
+	return strings.Join(filtered, "_")
+}
+
+func cloudflareZones(ctx context.Context, api *cf.API) ([]cf.Zone, error) {
+	return api.ListZones(ctx)
 }
