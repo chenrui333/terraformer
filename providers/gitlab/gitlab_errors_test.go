@@ -59,7 +59,7 @@ func newErrorGitLabClient(t *testing.T) *gitlabAPI.Client {
 	}))
 	t.Cleanup(server.Close)
 
-	client, err := gitlabAPI.NewClient("token", gitlabAPI.WithBaseURL(server.URL), gitlabAPI.WithHTTPClient(server.Client()))
+	client, err := gitlabAPI.NewClient("token", gitlabAPI.WithBaseURL(server.URL), gitlabAPI.WithHTTPClient(server.Client()), gitlabAPI.WithoutRetries())
 	if err != nil {
 		t.Fatal(err)
 	}
