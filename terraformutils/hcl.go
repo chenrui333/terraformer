@@ -21,7 +21,18 @@ import (
 
 const safeChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
 
-var unsafeChars = regexp.MustCompile(`[^0-9A-Za-z_\-]`)
+var (
+	unsafeChars       = regexp.MustCompile(`[^0-9A-Za-z_\-]`)
+	hclObjectKeyChars = regexp.MustCompile(`^[A-Za-z_][0-9A-Za-z_-]*$`)
+	hclReservedKeys   = map[string]struct{}{
+		"false": {},
+		"for":   {},
+		"if":    {},
+		"in":    {},
+		"null":  {},
+		"true":  {},
+	}
+)
 
 // make HCL output reproducible by sorting the AST nodes
 func sortHclTree(tree interface{}) {
@@ -232,10 +243,18 @@ func blockSyntaxAdjustments(formatted []byte, mapsObjects map[string]struct{}) [
 }
 
 func formatMapKey(key string) string {
-	if regexp.MustCompile("^[A-Za-z0-9_-]+$").MatchString(key) {
+	if isSafeHCLObjectKey(key) {
 		return key
 	}
 	return quoteHCLLabel(key)
+}
+
+func isSafeHCLObjectKey(key string) bool {
+	if !hclObjectKeyChars.MatchString(key) {
+		return false
+	}
+	_, reserved := hclReservedKeys[key]
+	return !reserved
 }
 
 func quoteHCLLabel(key string) string {

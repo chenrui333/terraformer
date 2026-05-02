@@ -56,10 +56,16 @@ func TestPrintManifestResourceKeepsNestedMapsRenderable(t *testing.T) {
 			"apiVersion": "example.com/v1",
 			"kind":       "Widget",
 			"metadata": map[string]interface{}{
+				"annotations": map[string]interface{}{
+					"if":                        "reserved",
+					"kubernetes.io/description": "sample widget",
+				},
 				"name":      "sample",
 				"namespace": "default",
 				"labels": map[string]interface{}{
-					"app": "sample",
+					"123abc": "numeric",
+					"app":    "sample",
+					"for":    "reserved",
 				},
 			},
 			"spec": map[string]interface{}{
@@ -110,6 +116,10 @@ func TestPrintManifestResourceKeepsNestedMapsRenderable(t *testing.T) {
 		"versions = [",
 		"schema = {",
 		"openAPIV3Schema = {",
+		"\"123abc\" = \"numeric\"",
+		"\"for\" = \"reserved\"",
+		"\"if\" = \"reserved\"",
+		"\"kubernetes.io/description\" = \"sample widget\"",
 	} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("output does not contain %q:\n%s", want, output)
