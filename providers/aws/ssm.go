@@ -203,7 +203,7 @@ func (g *SsmGenerator) addMaintenanceWindowTargets(svc *ssm.Client, windowID str
 				continue
 			}
 			g.Resources = append(g.Resources, terraformutils.NewResource(
-				targetID,
+				ssmImportID(windowID, targetID),
 				ssmResourceName(windowID, StringValue(target.Name), targetID),
 				"aws_ssm_maintenance_window_target",
 				"aws",
@@ -234,7 +234,7 @@ func (g *SsmGenerator) addMaintenanceWindowTasks(svc *ssm.Client, windowID strin
 				continue
 			}
 			g.Resources = append(g.Resources, terraformutils.NewResource(
-				taskID,
+				ssmImportID(windowID, taskID),
 				ssmResourceName(windowID, StringValue(task.Name), taskID),
 				"aws_ssm_maintenance_window_task",
 				"aws",
