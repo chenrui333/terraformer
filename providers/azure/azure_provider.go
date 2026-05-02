@@ -457,6 +457,14 @@ func discoverCloudConfig(metadataHost, environment string) (cloud.Configuration,
 		return cloud.Configuration{}, err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return cloud.Configuration{}, fmt.Errorf("metadata endpoint returned %s; reading response body: %w", resp.Status, err)
+		}
+		return cloud.Configuration{}, fmt.Errorf("metadata endpoint returned %s: %s", resp.Status, strings.TrimSpace(string(body)))
+	}
+
 	type cloudEndpoint struct {
 		Authentication struct {
 			LoginEndpoint string   `json:"loginEndpoint"`
