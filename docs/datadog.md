@@ -151,6 +151,12 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_rum_application`
 *   `rum_metric`
     * `datadog_rum_metric`
+*   `rum_retention_filter`
+    * `datadog_rum_retention_filter`
+        * **_NOTE:_** Importing a single RUM retention filter by ID requires `application_id:retention_filter_id`, for example `--filter=rum_retention_filter=app-id:filter-id`
+*   `rum_retention_filters_order`
+    * `datadog_rum_retention_filters_order`
+        * **_NOTE:_** Importing a single RUM retention filters order by ID uses the RUM application ID, for example `--filter=rum_retention_filters_order=app-id`
 *   `role`
     * `datadog_role`
 *   `security_monitoring_default_rule`
