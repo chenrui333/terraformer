@@ -4,6 +4,7 @@ package datadog
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
@@ -50,13 +51,44 @@ func (g *TeamGenerator) createResource(team datadogV2.Team) terraformutils.Resou
 
 func (g *TeamGenerator) PostConvertHook() error {
 	for i := range g.Resources {
-		if g.Resources[i].Item == nil {
-			g.Resources[i].Item = map[string]interface{}{}
+		resource := &g.Resources[i]
+		if resource.Item == nil {
+			resource.Item = map[string]interface{}{}
 		}
-		if description, ok := g.Resources[i].Item["description"]; !ok || description == nil {
-			g.Resources[i].Item["description"] = ""
+		if description, ok := resource.Item["description"]; !ok || description == nil {
+			resource.Item["description"] = ""
+			if err := defaultTeamDescriptionState(resource); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
+}
+
+func defaultTeamDescriptionState(resource *terraformutils.Resource) error {
+	if resource.InstanceState == nil {
+		return nil
+	}
+	if resource.InstanceState.Attributes == nil {
+		resource.InstanceState.Attributes = map[string]string{}
+	}
+	resource.InstanceState.Attributes["description"] = ""
+
+	if len(resource.InstanceState.TypedAttributes) == 0 {
+		return nil
+	}
+
+	typedAttributes := map[string]json.RawMessage{}
+	if err := json.Unmarshal(resource.InstanceState.TypedAttributes, &typedAttributes); err != nil {
+		return fmt.Errorf("decode team typed attributes: %w", err)
+	}
+	typedAttributes["description"] = json.RawMessage{'"', '"'}
+
+	rawTypedAttributes, err := json.Marshal(typedAttributes)
+	if err != nil {
+		return fmt.Errorf("encode team typed attributes: %w", err)
+	}
+	resource.InstanceState.SetTypedAttributes(rawTypedAttributes)
 	return nil
 }
 

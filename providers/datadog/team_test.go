@@ -3,12 +3,14 @@
 package datadog
 
 import (
+	"encoding/json"
 	"slices"
 	"testing"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 
 	"github.com/chenrui333/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 )
 
 func TestTeamAllowEmptyValuesIncludesDescription(t *testing.T) {
@@ -22,15 +24,35 @@ func TestTeamPostConvertHookCoercesMissingDescription(t *testing.T) {
 	generator.Resources = []terraformutils.Resource{
 		{
 			Item: map[string]interface{}{},
+			InstanceState: &tfcompat.InstanceState{
+				Attributes: map[string]string{},
+			},
 		},
 		{
 			Item: map[string]interface{}{
 				"description": nil,
 			},
+			InstanceState: &tfcompat.InstanceState{
+				Attributes: map[string]string{
+					"id": "team-with-null-description",
+				},
+				TypedAttributes: typedAttributes(t, map[string]interface{}{
+					"description": nil,
+					"id":          "team-with-null-description",
+				}),
+			},
 		},
 		{
 			Item: map[string]interface{}{
 				"description": "owned by platform",
+			},
+			InstanceState: &tfcompat.InstanceState{
+				Attributes: map[string]string{
+					"description": "owned by platform",
+				},
+				TypedAttributes: typedAttributes(t, map[string]interface{}{
+					"description": "owned by platform",
+				}),
 			},
 		},
 		{},
@@ -43,15 +65,50 @@ func TestTeamPostConvertHookCoercesMissingDescription(t *testing.T) {
 	if got := generator.Resources[0].Item["description"]; got != "" {
 		t.Fatalf("missing description = %v, want empty string", got)
 	}
+	if got := generator.Resources[0].InstanceState.Attributes["description"]; got != "" {
+		t.Fatalf("missing description state = %v, want empty string", got)
+	}
 	if got := generator.Resources[1].Item["description"]; got != "" {
 		t.Fatalf("nil description = %v, want empty string", got)
+	}
+	if got := generator.Resources[1].InstanceState.Attributes["description"]; got != "" {
+		t.Fatalf("nil description state = %v, want empty string", got)
+	}
+	if got := typedDescription(t, generator.Resources[1].InstanceState.TypedAttributes); got != "" {
+		t.Fatalf("typed description = %q, want empty string", got)
 	}
 	if got := generator.Resources[2].Item["description"]; got != "owned by platform" {
 		t.Fatalf("existing description = %v, want owned by platform", got)
 	}
+	if got := generator.Resources[2].InstanceState.Attributes["description"]; got != "owned by platform" {
+		t.Fatalf("existing description state = %v, want owned by platform", got)
+	}
+	if got := typedDescription(t, generator.Resources[2].InstanceState.TypedAttributes); got != "owned by platform" {
+		t.Fatalf("existing typed description = %q, want owned by platform", got)
+	}
 	if got := generator.Resources[3].Item["description"]; got != "" {
 		t.Fatalf("nil item description = %v, want empty string", got)
 	}
+}
+
+func typedAttributes(t *testing.T, attributes map[string]interface{}) json.RawMessage {
+	t.Helper()
+
+	raw, err := json.Marshal(attributes)
+	if err != nil {
+		t.Fatalf("Marshal typed attributes = %v", err)
+	}
+	return raw
+}
+
+func typedDescription(t *testing.T, raw json.RawMessage) string {
+	t.Helper()
+
+	attributes := map[string]string{}
+	if err := json.Unmarshal(raw, &attributes); err != nil {
+		t.Fatalf("Unmarshal typed attributes = %v", err)
+	}
+	return attributes["description"]
 }
 
 func TestTeamCreateResource(t *testing.T) {
