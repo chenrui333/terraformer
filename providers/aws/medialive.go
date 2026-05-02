@@ -4,7 +4,6 @@ package aws
 
 import (
 	"context"
-	"log"
 
 	"github.com/aws/aws-sdk-go-v2/service/medialive"
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -25,15 +24,15 @@ func (g *MediaLiveGenerator) InitResources() error {
 	g.Resources = []terraformutils.Resource{}
 
 	if err := g.GetChannels(svc); err != nil {
-		log.Println(err)
+		return err
 	}
 
 	if err := g.GetInputs(svc); err != nil {
-		log.Println(err)
+		return err
 	}
 
 	if err := g.GetInputSecurityGroups(svc); err != nil {
-		log.Println(err)
+		return err
 	}
 
 	return nil

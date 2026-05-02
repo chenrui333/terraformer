@@ -4,7 +4,7 @@ package aws
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -17,14 +17,13 @@ type RouteTableGenerator struct {
 	AWSService
 }
 
-func (g *RouteTableGenerator) createRouteTablesResources(svc *ec2.Client) []terraformutils.Resource {
+func (g *RouteTableGenerator) createRouteTablesResources(svc *ec2.Client) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	p := ec2.NewDescribeRouteTablesPaginator(svc, &ec2.DescribeRouteTablesInput{})
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
 		if err != nil {
-			log.Println(err)
-			return resources
+			return nil, fmt.Errorf("describe route tables: %w", err)
 		}
 		for _, table := range page.RouteTables {
 			// route table
@@ -82,7 +81,7 @@ func (g *RouteTableGenerator) createRouteTablesResources(svc *ec2.Client) []terr
 			}
 		}
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from AWS API,
@@ -94,6 +93,10 @@ func (g *RouteTableGenerator) InitResources() error {
 	}
 	svc := ec2.NewFromConfig(config)
 
-	g.Resources = g.createRouteTablesResources(svc)
+	resources, err := g.createRouteTablesResources(svc)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 	return nil
 }
