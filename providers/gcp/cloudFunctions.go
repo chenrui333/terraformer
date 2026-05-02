@@ -4,7 +4,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"strings"
 
 	"google.golang.org/api/cloudfunctions/v2"
@@ -22,7 +22,7 @@ type CloudFunctionsGenerator struct {
 }
 
 // Run on CloudFunctionsList and create for each TerraformResource
-func (g CloudFunctionsGenerator) createCloudFunctionsResources(ctx context.Context, functionsList *cloudfunctions.ProjectsLocationsFunctionsListCall) []terraformutils.Resource {
+func (g CloudFunctionsGenerator) createCloudFunctionsResources(ctx context.Context, functionsList *cloudfunctions.ProjectsLocationsFunctionsListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := functionsList.Pages(ctx, func(page *cloudfunctions.ListFunctionsResponse) error {
 		for _, functions := range page.Functions {
@@ -46,12 +46,12 @@ func (g CloudFunctionsGenerator) createCloudFunctionsResources(ctx context.Conte
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list cloud functions gen1: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
-func (g CloudFunctionsGenerator) createCloudFunctions2ndGenResources(ctx context.Context, functionsList *cloudfunctions.ProjectsLocationsFunctionsListCall) []terraformutils.Resource {
+func (g CloudFunctionsGenerator) createCloudFunctions2ndGenResources(ctx context.Context, functionsList *cloudfunctions.ProjectsLocationsFunctionsListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := functionsList.Pages(ctx, func(page *cloudfunctions.ListFunctionsResponse) error {
 		for _, functions := range page.Functions {
@@ -75,9 +75,9 @@ func (g CloudFunctionsGenerator) createCloudFunctions2ndGenResources(ctx context
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list cloud functions gen2: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -92,8 +92,18 @@ func (g *CloudFunctionsGenerator) InitResources() error {
 
 	functionsList := cloudfunctionsService.Projects.Locations.Functions.List("projects/" + g.GetArgs()["project"].(string) + "/locations/" + g.GetArgs()["region"].(compute.Region).Name)
 
-	g.Resources = append(g.Resources, g.createCloudFunctionsResources(ctx, functionsList)...)
-	g.Resources = append(g.Resources, g.createCloudFunctions2ndGenResources(ctx, functionsList)...)
+	functionResources, err := g.createCloudFunctionsResources(ctx, functionsList)
+	if err != nil {
+		return err
+	}
+	g.Resources = append(g.Resources, functionResources...)
+
+	functionsList = cloudfunctionsService.Projects.Locations.Functions.List("projects/" + g.GetArgs()["project"].(string) + "/locations/" + g.GetArgs()["region"].(compute.Region).Name)
+	function2Resources, err := g.createCloudFunctions2ndGenResources(ctx, functionsList)
+	if err != nil {
+		return err
+	}
+	g.Resources = append(g.Resources, function2Resources...)
 
 	return nil
 }

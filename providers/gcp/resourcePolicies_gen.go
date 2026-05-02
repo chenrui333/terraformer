@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type ResourcePoliciesGenerator struct {
 }
 
 // Run on resourcePoliciesList and create for each TerraformResource
-func (g ResourcePoliciesGenerator) createResources(ctx context.Context, resourcePoliciesList *compute.ResourcePoliciesListCall) []terraformutils.Resource {
+func (g ResourcePoliciesGenerator) createResources(ctx context.Context, resourcePoliciesList *compute.ResourcePoliciesListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := resourcePoliciesList.Pages(ctx, func(page *compute.ResourcePolicyList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g ResourcePoliciesGenerator) createResources(ctx context.Context, resource
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list resourcePolicies: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *ResourcePoliciesGenerator) InitResources() error {
 	}
 
 	resourcePoliciesList := computeService.ResourcePolicies.List(g.GetArgs()["project"].(string), g.GetArgs()["region"].(compute.Region).Name)
-	g.Resources = g.createResources(ctx, resourcePoliciesList)
+	resources, err := g.createResources(ctx, resourcePoliciesList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 

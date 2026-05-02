@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type InterconnectAttachmentsGenerator struct {
 }
 
 // Run on interconnectAttachmentsList and create for each TerraformResource
-func (g InterconnectAttachmentsGenerator) createResources(ctx context.Context, interconnectAttachmentsList *compute.InterconnectAttachmentsListCall) []terraformutils.Resource {
+func (g InterconnectAttachmentsGenerator) createResources(ctx context.Context, interconnectAttachmentsList *compute.InterconnectAttachmentsListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := interconnectAttachmentsList.Pages(ctx, func(page *compute.InterconnectAttachmentList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g InterconnectAttachmentsGenerator) createResources(ctx context.Context, i
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list interconnectAttachments: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *InterconnectAttachmentsGenerator) InitResources() error {
 	}
 
 	interconnectAttachmentsList := computeService.InterconnectAttachments.List(g.GetArgs()["project"].(string), g.GetArgs()["region"].(compute.Region).Name)
-	g.Resources = g.createResources(ctx, interconnectAttachmentsList)
+	resources, err := g.createResources(ctx, interconnectAttachmentsList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 

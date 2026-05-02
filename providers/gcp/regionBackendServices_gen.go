@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type RegionBackendServicesGenerator struct {
 }
 
 // Run on regionBackendServicesList and create for each TerraformResource
-func (g RegionBackendServicesGenerator) createResources(ctx context.Context, regionBackendServicesList *compute.RegionBackendServicesListCall) []terraformutils.Resource {
+func (g RegionBackendServicesGenerator) createResources(ctx context.Context, regionBackendServicesList *compute.RegionBackendServicesListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := regionBackendServicesList.Pages(ctx, func(page *compute.BackendServiceList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g RegionBackendServicesGenerator) createResources(ctx context.Context, reg
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list regionBackendServices: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *RegionBackendServicesGenerator) InitResources() error {
 	}
 
 	regionBackendServicesList := computeService.RegionBackendServices.List(g.GetArgs()["project"].(string), g.GetArgs()["region"].(compute.Region).Name)
-	g.Resources = g.createResources(ctx, regionBackendServicesList)
+	resources, err := g.createResources(ctx, regionBackendServicesList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 

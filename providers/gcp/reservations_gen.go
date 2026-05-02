@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -22,7 +22,7 @@ type ReservationsGenerator struct {
 }
 
 // Run on reservationsList and create for each TerraformResource
-func (g ReservationsGenerator) createResources(ctx context.Context, reservationsList *compute.ReservationsListCall, zone string) []terraformutils.Resource {
+func (g ReservationsGenerator) createResources(ctx context.Context, reservationsList *compute.ReservationsListCall, zone string) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := reservationsList.Pages(ctx, func(page *compute.ReservationList) error {
 		for _, obj := range page.Items {
@@ -43,9 +43,9 @@ func (g ReservationsGenerator) createResources(ctx context.Context, reservations
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list reservations: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -62,7 +62,11 @@ func (g *ReservationsGenerator) InitResources() error {
 		t := strings.Split(zoneLink, "/")
 		zone := t[len(t)-1]
 		reservationsList := computeService.Reservations.List(g.GetArgs()["project"].(string), zone)
-		g.Resources = append(g.Resources, g.createResources(ctx, reservationsList, zone)...)
+		resources, err := g.createResources(ctx, reservationsList, zone)
+		if err != nil {
+			return err
+		}
+		g.Resources = append(g.Resources, resources...)
 	}
 
 	return nil

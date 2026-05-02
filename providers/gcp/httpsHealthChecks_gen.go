@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type HttpsHealthChecksGenerator struct {
 }
 
 // Run on httpsHealthChecksList and create for each TerraformResource
-func (g HttpsHealthChecksGenerator) createResources(ctx context.Context, httpsHealthChecksList *compute.HttpsHealthChecksListCall) []terraformutils.Resource {
+func (g HttpsHealthChecksGenerator) createResources(ctx context.Context, httpsHealthChecksList *compute.HttpsHealthChecksListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := httpsHealthChecksList.Pages(ctx, func(page *compute.HttpsHealthCheckList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g HttpsHealthChecksGenerator) createResources(ctx context.Context, httpsHe
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list httpsHealthChecks: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *HttpsHealthChecksGenerator) InitResources() error {
 	}
 
 	httpsHealthChecksList := computeService.HttpsHealthChecks.List(g.GetArgs()["project"].(string))
-	g.Resources = g.createResources(ctx, httpsHealthChecksList)
+	resources, err := g.createResources(ctx, httpsHealthChecksList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 

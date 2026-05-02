@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type RegionTargetHttpsProxiesGenerator struct {
 }
 
 // Run on regionTargetHttpsProxiesList and create for each TerraformResource
-func (g RegionTargetHttpsProxiesGenerator) createResources(ctx context.Context, regionTargetHttpsProxiesList *compute.RegionTargetHttpsProxiesListCall) []terraformutils.Resource {
+func (g RegionTargetHttpsProxiesGenerator) createResources(ctx context.Context, regionTargetHttpsProxiesList *compute.RegionTargetHttpsProxiesListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := regionTargetHttpsProxiesList.Pages(ctx, func(page *compute.TargetHttpsProxyList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g RegionTargetHttpsProxiesGenerator) createResources(ctx context.Context, 
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list regionTargetHttpsProxies: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *RegionTargetHttpsProxiesGenerator) InitResources() error {
 	}
 
 	regionTargetHttpsProxiesList := computeService.RegionTargetHttpsProxies.List(g.GetArgs()["project"].(string), g.GetArgs()["region"].(compute.Region).Name)
-	g.Resources = g.createResources(ctx, regionTargetHttpsProxiesList)
+	resources, err := g.createResources(ctx, regionTargetHttpsProxiesList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 

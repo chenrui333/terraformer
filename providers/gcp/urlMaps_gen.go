@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type UrlMapsGenerator struct {
 }
 
 // Run on urlMapsList and create for each TerraformResource
-func (g UrlMapsGenerator) createResources(ctx context.Context, urlMapsList *compute.UrlMapsListCall) []terraformutils.Resource {
+func (g UrlMapsGenerator) createResources(ctx context.Context, urlMapsList *compute.UrlMapsListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := urlMapsList.Pages(ctx, func(page *compute.UrlMapList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g UrlMapsGenerator) createResources(ctx context.Context, urlMapsList *comp
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list urlMaps: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *UrlMapsGenerator) InitResources() error {
 	}
 
 	urlMapsList := computeService.UrlMaps.List(g.GetArgs()["project"].(string))
-	g.Resources = g.createResources(ctx, urlMapsList)
+	resources, err := g.createResources(ctx, urlMapsList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 

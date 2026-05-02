@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type GlobalAddressesGenerator struct {
 }
 
 // Run on globalAddressesList and create for each TerraformResource
-func (g GlobalAddressesGenerator) createResources(ctx context.Context, globalAddressesList *compute.GlobalAddressesListCall) []terraformutils.Resource {
+func (g GlobalAddressesGenerator) createResources(ctx context.Context, globalAddressesList *compute.GlobalAddressesListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := globalAddressesList.Pages(ctx, func(page *compute.AddressList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g GlobalAddressesGenerator) createResources(ctx context.Context, globalAdd
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list globalAddresses: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *GlobalAddressesGenerator) InitResources() error {
 	}
 
 	globalAddressesList := computeService.GlobalAddresses.List(g.GetArgs()["project"].(string))
-	g.Resources = g.createResources(ctx, globalAddressesList)
+	resources, err := g.createResources(ctx, globalAddressesList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 

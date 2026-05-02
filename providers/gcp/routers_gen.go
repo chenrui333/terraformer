@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type RoutersGenerator struct {
 }
 
 // Run on routersList and create for each TerraformResource
-func (g RoutersGenerator) createResources(ctx context.Context, routersList *compute.RoutersListCall) []terraformutils.Resource {
+func (g RoutersGenerator) createResources(ctx context.Context, routersList *compute.RoutersListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := routersList.Pages(ctx, func(page *compute.RouterList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g RoutersGenerator) createResources(ctx context.Context, routersList *comp
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list routers: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *RoutersGenerator) InitResources() error {
 	}
 
 	routersList := computeService.Routers.List(g.GetArgs()["project"].(string), g.GetArgs()["region"].(compute.Region).Name)
-	g.Resources = g.createResources(ctx, routersList)
+	resources, err := g.createResources(ctx, routersList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 

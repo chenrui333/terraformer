@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type RegionSslCertificatesGenerator struct {
 }
 
 // Run on regionSslCertificatesList and create for each TerraformResource
-func (g RegionSslCertificatesGenerator) createResources(ctx context.Context, regionSslCertificatesList *compute.RegionSslCertificatesListCall) []terraformutils.Resource {
+func (g RegionSslCertificatesGenerator) createResources(ctx context.Context, regionSslCertificatesList *compute.RegionSslCertificatesListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := regionSslCertificatesList.Pages(ctx, func(page *compute.SslCertificateList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g RegionSslCertificatesGenerator) createResources(ctx context.Context, reg
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list regionSslCertificates: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *RegionSslCertificatesGenerator) InitResources() error {
 	}
 
 	regionSslCertificatesList := computeService.RegionSslCertificates.List(g.GetArgs()["project"].(string), g.GetArgs()["region"].(compute.Region).Name)
-	g.Resources = g.createResources(ctx, regionSslCertificatesList)
+	resources, err := g.createResources(ctx, regionSslCertificatesList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 

@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -22,7 +22,7 @@ type NodeGroupsGenerator struct {
 }
 
 // Run on nodeGroupsList and create for each TerraformResource
-func (g NodeGroupsGenerator) createResources(ctx context.Context, nodeGroupsList *compute.NodeGroupsListCall, zone string) []terraformutils.Resource {
+func (g NodeGroupsGenerator) createResources(ctx context.Context, nodeGroupsList *compute.NodeGroupsListCall, zone string) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := nodeGroupsList.Pages(ctx, func(page *compute.NodeGroupList) error {
 		for _, obj := range page.Items {
@@ -43,9 +43,9 @@ func (g NodeGroupsGenerator) createResources(ctx context.Context, nodeGroupsList
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list nodeGroups: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -62,7 +62,11 @@ func (g *NodeGroupsGenerator) InitResources() error {
 		t := strings.Split(zoneLink, "/")
 		zone := t[len(t)-1]
 		nodeGroupsList := computeService.NodeGroups.List(g.GetArgs()["project"].(string), zone)
-		g.Resources = append(g.Resources, g.createResources(ctx, nodeGroupsList, zone)...)
+		resources, err := g.createResources(ctx, nodeGroupsList, zone)
+		if err != nil {
+			return err
+		}
+		g.Resources = append(g.Resources, resources...)
 	}
 
 	return nil

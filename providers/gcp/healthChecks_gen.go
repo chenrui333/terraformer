@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type HealthChecksGenerator struct {
 }
 
 // Run on healthChecksList and create for each TerraformResource
-func (g HealthChecksGenerator) createResources(ctx context.Context, healthChecksList *compute.HealthChecksListCall) []terraformutils.Resource {
+func (g HealthChecksGenerator) createResources(ctx context.Context, healthChecksList *compute.HealthChecksListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := healthChecksList.Pages(ctx, func(page *compute.HealthCheckList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g HealthChecksGenerator) createResources(ctx context.Context, healthChecks
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list healthChecks: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *HealthChecksGenerator) InitResources() error {
 	}
 
 	healthChecksList := computeService.HealthChecks.List(g.GetArgs()["project"].(string))
-	g.Resources = g.createResources(ctx, healthChecksList)
+	resources, err := g.createResources(ctx, healthChecksList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 

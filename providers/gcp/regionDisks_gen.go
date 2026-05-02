@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type RegionDisksGenerator struct {
 }
 
 // Run on regionDisksList and create for each TerraformResource
-func (g RegionDisksGenerator) createResources(ctx context.Context, regionDisksList *compute.RegionDisksListCall) []terraformutils.Resource {
+func (g RegionDisksGenerator) createResources(ctx context.Context, regionDisksList *compute.RegionDisksListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := regionDisksList.Pages(ctx, func(page *compute.DiskList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g RegionDisksGenerator) createResources(ctx context.Context, regionDisksLi
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list regionDisks: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *RegionDisksGenerator) InitResources() error {
 	}
 
 	regionDisksList := computeService.RegionDisks.List(g.GetArgs()["project"].(string), g.GetArgs()["region"].(compute.Region).Name)
-	g.Resources = g.createResources(ctx, regionDisksList)
+	resources, err := g.createResources(ctx, regionDisksList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 

@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type RegionAutoscalersGenerator struct {
 }
 
 // Run on regionAutoscalersList and create for each TerraformResource
-func (g RegionAutoscalersGenerator) createResources(ctx context.Context, regionAutoscalersList *compute.RegionAutoscalersListCall) []terraformutils.Resource {
+func (g RegionAutoscalersGenerator) createResources(ctx context.Context, regionAutoscalersList *compute.RegionAutoscalersListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := regionAutoscalersList.Pages(ctx, func(page *compute.RegionAutoscalerList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g RegionAutoscalersGenerator) createResources(ctx context.Context, regionA
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list regionAutoscalers: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *RegionAutoscalersGenerator) InitResources() error {
 	}
 
 	regionAutoscalersList := computeService.RegionAutoscalers.List(g.GetArgs()["project"].(string), g.GetArgs()["region"].(compute.Region).Name)
-	g.Resources = g.createResources(ctx, regionAutoscalersList)
+	resources, err := g.createResources(ctx, regionAutoscalersList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 

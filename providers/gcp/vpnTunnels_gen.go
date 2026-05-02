@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type VpnTunnelsGenerator struct {
 }
 
 // Run on vpnTunnelsList and create for each TerraformResource
-func (g VpnTunnelsGenerator) createResources(ctx context.Context, vpnTunnelsList *compute.VpnTunnelsListCall) []terraformutils.Resource {
+func (g VpnTunnelsGenerator) createResources(ctx context.Context, vpnTunnelsList *compute.VpnTunnelsListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := vpnTunnelsList.Pages(ctx, func(page *compute.VpnTunnelList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g VpnTunnelsGenerator) createResources(ctx context.Context, vpnTunnelsList
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list vpnTunnels: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *VpnTunnelsGenerator) InitResources() error {
 	}
 
 	vpnTunnelsList := computeService.VpnTunnels.List(g.GetArgs()["project"].(string), g.GetArgs()["region"].(compute.Region).Name)
-	g.Resources = g.createResources(ctx, vpnTunnelsList)
+	resources, err := g.createResources(ctx, vpnTunnelsList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 

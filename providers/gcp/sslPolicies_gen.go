@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type SslPoliciesGenerator struct {
 }
 
 // Run on sslPoliciesList and create for each TerraformResource
-func (g SslPoliciesGenerator) createResources(ctx context.Context, sslPoliciesList *compute.SslPoliciesListCall) []terraformutils.Resource {
+func (g SslPoliciesGenerator) createResources(ctx context.Context, sslPoliciesList *compute.SslPoliciesListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := sslPoliciesList.Pages(ctx, func(page *compute.SslPoliciesList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g SslPoliciesGenerator) createResources(ctx context.Context, sslPoliciesLi
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list sslPolicies: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *SslPoliciesGenerator) InitResources() error {
 	}
 
 	sslPoliciesList := computeService.SslPolicies.List(g.GetArgs()["project"].(string))
-	g.Resources = g.createResources(ctx, sslPoliciesList)
+	resources, err := g.createResources(ctx, sslPoliciesList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 

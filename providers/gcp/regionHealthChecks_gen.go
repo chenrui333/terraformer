@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type RegionHealthChecksGenerator struct {
 }
 
 // Run on regionHealthChecksList and create for each TerraformResource
-func (g RegionHealthChecksGenerator) createResources(ctx context.Context, regionHealthChecksList *compute.RegionHealthChecksListCall) []terraformutils.Resource {
+func (g RegionHealthChecksGenerator) createResources(ctx context.Context, regionHealthChecksList *compute.RegionHealthChecksListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := regionHealthChecksList.Pages(ctx, func(page *compute.HealthCheckList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g RegionHealthChecksGenerator) createResources(ctx context.Context, region
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list regionHealthChecks: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *RegionHealthChecksGenerator) InitResources() error {
 	}
 
 	regionHealthChecksList := computeService.RegionHealthChecks.List(g.GetArgs()["project"].(string), g.GetArgs()["region"].(compute.Region).Name)
-	g.Resources = g.createResources(ctx, regionHealthChecksList)
+	resources, err := g.createResources(ctx, regionHealthChecksList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 

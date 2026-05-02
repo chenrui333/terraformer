@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type TargetPoolsGenerator struct {
 }
 
 // Run on targetPoolsList and create for each TerraformResource
-func (g TargetPoolsGenerator) createResources(ctx context.Context, targetPoolsList *compute.TargetPoolsListCall) []terraformutils.Resource {
+func (g TargetPoolsGenerator) createResources(ctx context.Context, targetPoolsList *compute.TargetPoolsListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := targetPoolsList.Pages(ctx, func(page *compute.TargetPoolList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g TargetPoolsGenerator) createResources(ctx context.Context, targetPoolsLi
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list targetPools: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *TargetPoolsGenerator) InitResources() error {
 	}
 
 	targetPoolsList := computeService.TargetPools.List(g.GetArgs()["project"].(string), g.GetArgs()["region"].(compute.Region).Name)
-	g.Resources = g.createResources(ctx, targetPoolsList)
+	resources, err := g.createResources(ctx, targetPoolsList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 

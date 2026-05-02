@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type RegionInstanceGroupsGenerator struct {
 }
 
 // Run on regionInstanceGroupsList and create for each TerraformResource
-func (g RegionInstanceGroupsGenerator) createResources(ctx context.Context, regionInstanceGroupsList *compute.RegionInstanceGroupsListCall) []terraformutils.Resource {
+func (g RegionInstanceGroupsGenerator) createResources(ctx context.Context, regionInstanceGroupsList *compute.RegionInstanceGroupsListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := regionInstanceGroupsList.Pages(ctx, func(page *compute.RegionInstanceGroupList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g RegionInstanceGroupsGenerator) createResources(ctx context.Context, regi
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list regionInstanceGroups: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *RegionInstanceGroupsGenerator) InitResources() error {
 	}
 
 	regionInstanceGroupsList := computeService.RegionInstanceGroups.List(g.GetArgs()["project"].(string), g.GetArgs()["region"].(compute.Region).Name)
-	g.Resources = g.createResources(ctx, regionInstanceGroupsList)
+	resources, err := g.createResources(ctx, regionInstanceGroupsList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 

@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type PacketMirroringsGenerator struct {
 }
 
 // Run on packetMirroringsList and create for each TerraformResource
-func (g PacketMirroringsGenerator) createResources(ctx context.Context, packetMirroringsList *compute.PacketMirroringsListCall) []terraformutils.Resource {
+func (g PacketMirroringsGenerator) createResources(ctx context.Context, packetMirroringsList *compute.PacketMirroringsListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := packetMirroringsList.Pages(ctx, func(page *compute.PacketMirroringList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g PacketMirroringsGenerator) createResources(ctx context.Context, packetMi
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list packetMirrorings: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *PacketMirroringsGenerator) InitResources() error {
 	}
 
 	packetMirroringsList := computeService.PacketMirrorings.List(g.GetArgs()["project"].(string), g.GetArgs()["region"].(compute.Region).Name)
-	g.Resources = g.createResources(ctx, packetMirroringsList)
+	resources, err := g.createResources(ctx, packetMirroringsList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 
