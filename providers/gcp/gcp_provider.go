@@ -19,8 +19,12 @@ type GCPProvider struct { //nolint
 	providerType string
 }
 
+var newComputeService = func(ctx context.Context) (*compute.Service, error) {
+	return compute.NewService(ctx)
+}
+
 func GetRegions(project string) []string {
-	computeService, err := compute.NewService(context.Background())
+	computeService, err := newComputeService(context.Background())
 	if err != nil {
 		return []string{}
 	}
@@ -39,7 +43,7 @@ func getRegion(project, regionName string) (*compute.Region, error) {
 	if regionName == "global" {
 		return &compute.Region{}, nil
 	}
-	computeService, err := compute.NewService(context.Background())
+	computeService, err := newComputeService(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("initialize GCP compute service: %w", err)
 	}
