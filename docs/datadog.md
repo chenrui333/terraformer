@@ -131,6 +131,8 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `metric_metadata`
     * `datadog_metric_metadata`
         * **_NOTE:_** Importing resource requires resource ID's to be passed via [Filter][1] option
+*   `metric_tag_configuration`
+    * `datadog_metric_tag_configuration`
 *   `monitor`
     * `datadog_monitor`
 *   `monitor_config_policy`
