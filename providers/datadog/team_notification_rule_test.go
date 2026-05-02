@@ -25,6 +25,9 @@ func TestTeamNotificationRuleCreateResource(t *testing.T) {
 	if resource.InstanceState.Attributes["team_id"] != "team-id" {
 		t.Fatalf("team_id attribute = %q, want %q", resource.InstanceState.Attributes["team_id"], "team-id")
 	}
+	if resource.InstanceState.Attributes["email.enabled"] != "false" {
+		t.Fatalf("email.enabled attribute = %q, want %q", resource.InstanceState.Attributes["email.enabled"], "false")
+	}
 	if resource.ResourceName != "tfer--team_notification_rule_team-id_rule-id" {
 		t.Fatalf("resource name = %q, want %q", resource.ResourceName, "tfer--team_notification_rule_team-id_rule-id")
 	}
@@ -137,6 +140,71 @@ func TestTeamNotificationRuleFromResponse(t *testing.T) {
 			}
 			if got.GetId() != tt.wantID {
 				t.Fatalf("rule ID = %q, want %q", got.GetId(), tt.wantID)
+			}
+		})
+	}
+}
+
+func TestTeamNotificationRulesFromResponse(t *testing.T) {
+	ruleID := "rule-id"
+	teamNotificationRule := datadogV2.TeamNotificationRule{
+		Id: &ruleID,
+	}
+
+	tests := []struct {
+		name     string
+		response datadogV2.TeamNotificationRulesResponse
+		wantIDs  []string
+	}{
+		{
+			name: "parsed data",
+			response: datadogV2.TeamNotificationRulesResponse{
+				Data: []datadogV2.TeamNotificationRule{teamNotificationRule},
+			},
+			wantIDs: []string{"rule-id"},
+		},
+		{
+			name: "minimal unparsed data",
+			response: datadogV2.TeamNotificationRulesResponse{
+				UnparsedObject: map[string]interface{}{
+					"data": []interface{}{
+						map[string]interface{}{
+							"id":   "rule-id",
+							"type": "team_notification_rules",
+						},
+					},
+				},
+			},
+			wantIDs: []string{"rule-id"},
+		},
+		{
+			name: "skips unparsed entries without id",
+			response: datadogV2.TeamNotificationRulesResponse{
+				UnparsedObject: map[string]interface{}{
+					"data": []interface{}{
+						map[string]interface{}{
+							"type": "team_notification_rules",
+						},
+					},
+				},
+			},
+		},
+		{
+			name:     "no data",
+			response: datadogV2.TeamNotificationRulesResponse{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := teamNotificationRulesFromResponse(tt.response)
+			if len(got) != len(tt.wantIDs) {
+				t.Fatalf("teamNotificationRulesFromResponse() len = %d, want %d", len(got), len(tt.wantIDs))
+			}
+			for i, wantID := range tt.wantIDs {
+				if got[i].GetId() != wantID {
+					t.Fatalf("rule ID[%d] = %q, want %q", i, got[i].GetId(), wantID)
+				}
 			}
 		})
 	}

@@ -45,17 +45,25 @@ func (g *TeamNotificationRuleGenerator) createResource(teamID string, teamNotifi
 		return terraformutils.Resource{}, fmt.Errorf("team notification rule %q missing team id", ruleID)
 	}
 
+	attributes := map[string]string{
+		"team_id": teamID,
+	}
+	seedTeamNotificationRuleEmail(attributes)
+
 	return terraformutils.NewResource(
 		ruleID,
 		fmt.Sprintf("team_notification_rule_%s_%s", teamID, ruleID),
 		"datadog_team_notification_rule",
 		"datadog",
-		map[string]string{
-			"team_id": teamID,
-		},
+		attributes,
 		TeamNotificationRuleAllowEmptyValues,
 		map[string]interface{}{},
 	), nil
+}
+
+func seedTeamNotificationRuleEmail(attributes map[string]string) {
+	// The Datadog provider treats minimal notification-rule responses as email disabled.
+	attributes["email.enabled"] = "false"
 }
 
 // InitResources Generate TerraformResources from Datadog API,
@@ -201,7 +209,10 @@ func teamNotificationRuleFromResponse(teamNotificationRuleResponse datadogV2.Tea
 	if !ok {
 		return datadogV2.TeamNotificationRule{}, false
 	}
+	return teamNotificationRuleFromRawData(dataRaw, ruleID)
+}
 
+func teamNotificationRuleFromRawData(dataRaw map[string]interface{}, ruleID string) (datadogV2.TeamNotificationRule, bool) {
 	// Minimal API responses without attributes are stored as UnparsedObject by the SDK.
 	if responseRuleID, ok := dataRaw["id"].(string); ok && responseRuleID != "" {
 		ruleID = responseRuleID
@@ -223,5 +234,30 @@ func listTeamNotificationRules(auth context.Context, api *datadogV2.TeamsApi, te
 	if err != nil {
 		return nil, err
 	}
-	return teamNotificationRulesResponse.GetData(), nil
+	return teamNotificationRulesFromResponse(teamNotificationRulesResponse), nil
+}
+
+func teamNotificationRulesFromResponse(teamNotificationRulesResponse datadogV2.TeamNotificationRulesResponse) []datadogV2.TeamNotificationRule {
+	if teamNotificationRules := teamNotificationRulesResponse.GetData(); len(teamNotificationRules) > 0 {
+		return teamNotificationRules
+	}
+
+	dataRaw, ok := teamNotificationRulesResponse.UnparsedObject["data"].([]interface{})
+	if !ok {
+		return nil
+	}
+
+	teamNotificationRules := []datadogV2.TeamNotificationRule{}
+	for _, rawTeamNotificationRule := range dataRaw {
+		teamNotificationRuleRaw, ok := rawTeamNotificationRule.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		teamNotificationRule, ok := teamNotificationRuleFromRawData(teamNotificationRuleRaw, "")
+		if !ok {
+			continue
+		}
+		teamNotificationRules = append(teamNotificationRules, teamNotificationRule)
+	}
+	return teamNotificationRules
 }
