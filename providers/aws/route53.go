@@ -5,7 +5,6 @@ package aws
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -22,14 +21,13 @@ type Route53Generator struct {
 	AWSService
 }
 
-func (g *Route53Generator) createZonesResources(svc *route53.Client) []terraformutils.Resource {
+func (g *Route53Generator) createZonesResources(svc *route53.Client) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	p := route53.NewListHostedZonesPaginator(svc, &route53.ListHostedZonesInput{})
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
 		if err != nil {
-			log.Println(err)
-			return resources
+			return nil, fmt.Errorf("list Route53 hosted zones: %w", err)
 		}
 		for _, zone := range page.HostedZones {
 			zoneID := cleanZoneID(StringValue(zone.Id))
@@ -45,14 +43,17 @@ func (g *Route53Generator) createZonesResources(svc *route53.Client) []terraform
 				route53AllowEmptyValues,
 				route53AdditionalFields,
 			))
-			records := g.createRecordsResources(svc, zoneID)
+			records, err := g.createRecordsResources(svc, zoneID)
+			if err != nil {
+				return nil, err
+			}
 			resources = append(resources, records...)
 		}
 	}
-	return resources
+	return resources, nil
 }
 
-func (Route53Generator) createRecordsResources(svc *route53.Client, zoneID string) []terraformutils.Resource {
+func (Route53Generator) createRecordsResources(svc *route53.Client, zoneID string) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	var sets *route53.ListResourceRecordSetsOutput
 	var err error
@@ -63,8 +64,7 @@ func (Route53Generator) createRecordsResources(svc *route53.Client, zoneID strin
 	for {
 		sets, err = svc.ListResourceRecordSets(context.TODO(), listParams)
 		if err != nil {
-			log.Println(err)
-			return resources
+			return nil, fmt.Errorf("list Route53 records for zone %s: %w", zoneID, err)
 		}
 		for _, record := range sets.ResourceRecordSets {
 			recordName := wildcardUnescape(StringValue(record.Name))
@@ -93,18 +93,17 @@ func (Route53Generator) createRecordsResources(svc *route53.Client, zoneID strin
 			break
 		}
 	}
-	return resources
+	return resources, nil
 }
 
-func (Route53Generator) createHealthChecksResources(svc *route53.Client) []terraformutils.Resource {
+func (Route53Generator) createHealthChecksResources(svc *route53.Client) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 
 	p := route53.NewListHealthChecksPaginator(svc, &route53.ListHealthChecksInput{})
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
 		if err != nil {
-			log.Println(err)
-			return resources
+			return nil, fmt.Errorf("list Route53 health checks: %w", err)
 		}
 		for _, healthCheck := range page.HealthChecks {
 			healthCheckStringType := string(healthCheck.HealthCheckConfig.Type)
@@ -118,7 +117,7 @@ func (Route53Generator) createHealthChecksResources(svc *route53.Client) []terra
 			))
 		}
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from AWS API,
@@ -130,8 +129,15 @@ func (g *Route53Generator) InitResources() error {
 	}
 	svc := route53.NewFromConfig(config)
 
-	g.Resources = g.createZonesResources(svc)
-	healthCheckResources := g.createHealthChecksResources(svc)
+	resources, err := g.createZonesResources(svc)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
+	healthCheckResources, err := g.createHealthChecksResources(svc)
+	if err != nil {
+		return err
+	}
 	g.Resources = append(g.Resources, healthCheckResources...)
 
 	return nil

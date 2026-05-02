@@ -4,7 +4,6 @@ package aws
 
 import (
 	"context"
-	"log"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/apigateway"
@@ -147,7 +146,7 @@ func (g *APIGatewayGenerator) loadResources(svc *apigateway.Client, restAPIID *s
 			))
 			err := g.loadResourceMethods(svc, restAPIID, resource)
 			if err != nil {
-				log.Println(err)
+				return err
 			}
 		}
 	}

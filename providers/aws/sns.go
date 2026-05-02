@@ -5,7 +5,6 @@ package aws
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -51,8 +50,7 @@ func (g *SnsGenerator) InitResources() error {
 			for topicSubsPage.HasMorePages() {
 				topicSubsNextPage, err := topicSubsPage.NextPage(context.TODO())
 				if err != nil {
-					log.Println(err)
-					continue
+					return fmt.Errorf("list SNS subscriptions for topic %s: %w", StringValue(topic.TopicArn), err)
 				}
 				for _, subscription := range topicSubsNextPage.Subscriptions {
 					subscriptionID := arnLastSegment(StringValue(subscription.SubscriptionArn), ":")

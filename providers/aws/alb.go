@@ -5,7 +5,6 @@ package aws
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
@@ -37,7 +36,7 @@ func (g *AlbGenerator) loadLB(svc *elasticloadbalancingv2.Client) error {
 			))
 			err := g.loadLBListener(svc, lb.LoadBalancerArn)
 			if err != nil {
-				log.Println(err)
+				return fmt.Errorf("load listeners for load balancer %s: %w", StringValue(lb.LoadBalancerArn), err)
 			}
 		}
 	}
@@ -62,11 +61,11 @@ func (g *AlbGenerator) loadLBListener(svc *elasticloadbalancingv2.Client, loadBa
 			))
 			err := g.loadLBListenerRule(svc, ls.ListenerArn)
 			if err != nil {
-				log.Println(err)
+				return fmt.Errorf("load listener rules for listener %s: %w", StringValue(ls.ListenerArn), err)
 			}
 			err = g.loadLBListenerCertificate(svc, &ls)
 			if err != nil {
-				log.Println(err)
+				return fmt.Errorf("load listener certificates for listener %s: %w", StringValue(ls.ListenerArn), err)
 			}
 		}
 	}
@@ -151,7 +150,7 @@ func (g *AlbGenerator) loadLBTargetGroup(svc *elasticloadbalancingv2.Client) err
 			))
 			err := g.loadTargetGroupTargets(svc, tg.TargetGroupArn)
 			if err != nil {
-				log.Println(err)
+				return fmt.Errorf("load target group targets for %s: %w", StringValue(tg.TargetGroupArn), err)
 			}
 		}
 	}
