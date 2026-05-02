@@ -2,7 +2,41 @@
 
 package datadog
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
+
+func TestDatadogProviderInitHandlesShortArgs(t *testing.T) {
+	t.Setenv("DATADOG_API_KEY", "")
+	t.Setenv("DATADOG_APP_KEY", "")
+	t.Setenv("DATADOG_HOST", "")
+	t.Setenv("DATADOG_VALIDATE", "false")
+
+	var provider DatadogProvider
+	if err := provider.Init(nil); err != nil {
+		t.Fatalf("expected Init to accept missing optional args with validation disabled: %v", err)
+	}
+	if provider.validate {
+		t.Fatal("validate = true, want false")
+	}
+}
+
+func TestDatadogProviderInitReturnsCredentialErrorForShortArgs(t *testing.T) {
+	t.Setenv("DATADOG_API_KEY", "")
+	t.Setenv("DATADOG_APP_KEY", "")
+	t.Setenv("DATADOG_HOST", "")
+	t.Setenv("DATADOG_VALIDATE", "")
+
+	var provider DatadogProvider
+	err := provider.Init(nil)
+	if err == nil {
+		t.Fatal("expected missing API key error")
+	}
+	if !strings.Contains(err.Error(), "api-key requirement") {
+		t.Fatalf("Init error = %q, want missing API key", err)
+	}
+}
 
 func TestDatadogProviderSensitiveDataScannerConnections(t *testing.T) {
 	connections := DatadogProvider{}.GetResourceConnections()

@@ -28,9 +28,14 @@ type DatadogProvider struct { //nolint
 
 // Init check env params and initialize API Client
 func (p *DatadogProvider) Init(args []string) error {
+	apiKeyArg := optionalInitArg(args, 0)
+	appKeyArg := optionalInitArg(args, 1)
+	apiURLArg := optionalInitArg(args, 2)
+	validateArg := optionalInitArg(args, 3)
+
 	switch {
-	case args[3] != "":
-		validate, validateErr := strconv.ParseBool(args[3])
+	case validateArg != "":
+		validate, validateErr := strconv.ParseBool(validateArg)
 		if validateErr != nil {
 			return fmt.Errorf(`invalid validate arg : %w`, validateErr)
 		}
@@ -45,8 +50,8 @@ func (p *DatadogProvider) Init(args []string) error {
 		p.validate = true
 	}
 
-	if args[0] != "" {
-		p.apiKey = args[0]
+	if apiKeyArg != "" {
+		p.apiKey = apiKeyArg
 	} else {
 		if apiKey := os.Getenv("DATADOG_API_KEY"); apiKey != "" {
 			p.apiKey = apiKey
@@ -55,8 +60,8 @@ func (p *DatadogProvider) Init(args []string) error {
 		}
 	}
 
-	if args[1] != "" {
-		p.appKey = args[1]
+	if appKeyArg != "" {
+		p.appKey = appKeyArg
 	} else {
 		if appKey := os.Getenv("DATADOG_APP_KEY"); appKey != "" {
 			p.appKey = appKey
@@ -65,8 +70,8 @@ func (p *DatadogProvider) Init(args []string) error {
 		}
 	}
 
-	if args[2] != "" {
-		p.apiURL = args[2]
+	if apiURLArg != "" {
+		p.apiURL = apiURLArg
 	} else if v := os.Getenv("DATADOG_HOST"); v != "" {
 		p.apiURL = v
 	}
@@ -106,6 +111,13 @@ func (p *DatadogProvider) Init(args []string) error {
 	p.datadogClient = datadogClient
 
 	return nil
+}
+
+func optionalInitArg(args []string, index int) string {
+	if len(args) > index {
+		return args[index]
+	}
+	return ""
 }
 
 // GetName return string of provider name for Datadog

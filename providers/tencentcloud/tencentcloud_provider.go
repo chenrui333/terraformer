@@ -52,6 +52,10 @@ func (p *TencentCloudProvider) GetSource() string {
 }
 
 func (p *TencentCloudProvider) Init(args []string) error {
+	if len(args) < 1 {
+		return errors.New("tencentcloud: expected 1 init arg (region)")
+	}
+
 	err := p.getCredential()
 	if err != nil {
 		return err

@@ -25,6 +25,18 @@ func TestCreateGroupsReturnsGroupGetError(t *testing.T) {
 	}
 }
 
+func TestGitLabProviderInitRequiresGroup(t *testing.T) {
+	var provider GitLabProvider
+
+	err := provider.Init(nil)
+	if err == nil {
+		t.Fatal("expected missing group error")
+	}
+	if !strings.Contains(err.Error(), "group is required") {
+		t.Fatalf("Init error = %q, want missing group", err)
+	}
+}
+
 func TestCreateProjectsReturnsProjectListError(t *testing.T) {
 	ctx := context.Background()
 	client := newErrorGitLabClient(t)

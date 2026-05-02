@@ -42,7 +42,10 @@ func (p KubernetesProvider) GetProviderData(_ ...string) map[string]interface{} 
 }
 
 func (p *KubernetesProvider) Init(args []string) error {
-	p.verbose = args[0]
+	p.verbose = ""
+	if len(args) > 0 {
+		p.verbose = args[0]
+	}
 	return nil
 }
 

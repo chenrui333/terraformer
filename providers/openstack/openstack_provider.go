@@ -30,6 +30,10 @@ func (p OpenStackProvider) GetProviderData(_ ...string) map[string]interface{} {
 
 // check projectName in env params
 func (p *OpenStackProvider) Init(args []string) error {
+	if len(args) < 1 {
+		return errors.New("openstack: expected 1 init arg (region)")
+	}
+
 	p.region = args[0]
 	// terraform work with env param OS_REGION_NAME
 	err := os.Setenv("OS_REGION_NAME", p.region)

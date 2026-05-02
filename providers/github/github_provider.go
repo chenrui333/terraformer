@@ -60,6 +60,10 @@ func (p *GithubProvider) GetConfig() cty.Value {
 
 // Init GithubProvider with owner
 func (p *GithubProvider) Init(args []string) error {
+	if len(args) < 1 || args[0] == "" {
+		return errors.New("github: owner is required")
+	}
+
 	if appIDValue, ok := os.LookupEnv("GITHUB_APP_ID"); ok {
 		appID, err := strconv.ParseInt(appIDValue, 10, 64)
 		if err != nil {

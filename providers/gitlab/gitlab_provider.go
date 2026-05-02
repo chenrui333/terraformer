@@ -43,6 +43,10 @@ func (p *GitLabProvider) GetConfig() cty.Value {
 
 // Init GitLabProvider with group
 func (p *GitLabProvider) Init(args []string) error {
+	if len(args) < 1 || args[0] == "" {
+		return errors.New("gitlab: group is required")
+	}
+
 	p.group = args[0]
 	p.baseURL = gitLabDefaultURL
 	if len(args) < 2 {

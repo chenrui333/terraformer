@@ -530,6 +530,10 @@ func discoverCloudConfig(metadataHost, environment string) (cloud.Configuration,
 }
 
 func (p *AzureProvider) Init(args []string) error {
+	if len(args) < 1 {
+		return errors.New("azure: expected 1 init arg (resource group)")
+	}
+
 	err := p.setEnvConfig()
 	if err != nil {
 		return err
