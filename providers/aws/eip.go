@@ -4,7 +4,7 @@ package aws
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -17,13 +17,12 @@ type ElasticIPGenerator struct {
 	AWSService
 }
 
-func (g *ElasticIPGenerator) createElasticIpsResources(svc *ec2.Client) []terraformutils.Resource {
+func (g *ElasticIPGenerator) createElasticIpsResources(svc *ec2.Client) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	addresses, err := svc.DescribeAddresses(context.TODO(), &ec2.DescribeAddressesInput{})
 
 	if err != nil {
-		log.Println(err)
-		return resources
+		return nil, fmt.Errorf("describe elastic IP addresses: %w", err)
 	}
 
 	for _, eip := range addresses.Addresses {
@@ -36,7 +35,7 @@ func (g *ElasticIPGenerator) createElasticIpsResources(svc *ec2.Client) []terraf
 		))
 	}
 
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from AWS API,
@@ -48,6 +47,10 @@ func (g *ElasticIPGenerator) InitResources() error {
 	}
 	svc := ec2.NewFromConfig(config)
 
-	g.Resources = g.createElasticIpsResources(svc)
+	resources, err := g.createElasticIpsResources(svc)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 	return nil
 }

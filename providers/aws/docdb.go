@@ -4,7 +4,6 @@ package aws
 
 import (
 	"context"
-	"log"
 
 	"github.com/aws/aws-sdk-go-v2/service/docdb"
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -24,15 +23,15 @@ func (g *DocDBGenerator) InitResources() error {
 	svc := docdb.NewFromConfig(config)
 
 	if err := g.getClusters(svc); err != nil {
-		log.Println(err)
+		return err
 	}
 
 	if err := g.getSubnetGroups(svc); err != nil {
-		log.Println(err)
+		return err
 	}
 
 	if err := g.getParameterGroups(svc); err != nil {
-		log.Println(err)
+		return err
 	}
 
 	return nil

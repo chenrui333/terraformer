@@ -4,7 +4,7 @@ package aws
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -20,14 +20,13 @@ type ACMGenerator struct {
 	AWSService
 }
 
-func (g *ACMGenerator) createCertificatesResources(svc *acm.Client) []terraformutils.Resource {
+func (g *ACMGenerator) createCertificatesResources(svc *acm.Client) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	p := acm.NewListCertificatesPaginator(svc, &acm.ListCertificatesInput{})
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
 		if err != nil {
-			log.Println(err)
-			return resources
+			return nil, fmt.Errorf("list ACM certificates: %w", err)
 		}
 		for _, cert := range page.CertificateSummaryList {
 			certArn := *cert.CertificateArn
@@ -45,7 +44,7 @@ func (g *ACMGenerator) createCertificatesResources(svc *acm.Client) []terraformu
 			))
 		}
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from AWS API,
@@ -57,7 +56,11 @@ func (g *ACMGenerator) InitResources() error {
 	}
 	svc := acm.NewFromConfig(config)
 
-	g.Resources = g.createCertificatesResources(svc)
+	resources, err := g.createCertificatesResources(svc)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 	return nil
 }
 

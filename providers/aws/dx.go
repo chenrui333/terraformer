@@ -106,18 +106,17 @@ func (g *DirectConnectGenerator) InitResources() error {
 	}
 	svc := directconnect.NewFromConfig(config)
 	if err := g.getDirectConnectGateways(svc); err != nil {
-		log.Println(err)
 		return err
 	}
 
 	err = g.getDirectConnectVritualInterfaces(svc)
 	if err != nil {
-		log.Println(err)
+		return err
 	}
 
 	err = g.getDirectConnectConnections(svc)
 	if err != nil {
-		log.Println(err)
+		return err
 	}
 
 	return nil

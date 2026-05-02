@@ -4,7 +4,6 @@ package aws
 
 import (
 	"context"
-	"log"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -93,17 +92,17 @@ func (g *TransitGatewayGenerator) InitResources() error {
 	g.Resources = []terraformutils.Resource{}
 	err := g.getTransitGateways(svc)
 	if err != nil {
-		log.Println(err)
+		return err
 	}
 
 	err = g.getTransitGatewayRouteTables(svc)
 	if err != nil {
-		log.Println(err)
+		return err
 	}
 
 	err = g.getTransitGatewayVpcAttachments(svc)
 	if err != nil {
-		log.Println(err)
+		return err
 	}
 
 	return nil

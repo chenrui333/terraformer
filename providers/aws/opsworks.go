@@ -5,7 +5,6 @@ package aws
 
 import (
 	"context"
-	"log"
 
 	"github.com/aws/aws-sdk-go-v2/service/opsworks"
 	"github.com/aws/aws-sdk-go-v2/service/opsworks/types"
@@ -160,22 +159,22 @@ func (g *OpsworksGenerator) fetchStacks(svc *opsworks.Client) error {
 
 		e := g.fetchApps(stack.StackId, svc)
 		if e != nil {
-			log.Println(err)
+			return e
 		}
 
 		e = g.fetchInstances(stack.StackId, svc)
 		if e != nil {
-			log.Println(err)
+			return e
 		}
 
 		e = g.fetchRdsInstances(stack.StackId, svc)
 		if e != nil {
-			log.Println(err)
+			return e
 		}
 
 		e = g.fetchLayers(stack.StackId, svc)
 		if e != nil {
-			log.Println(err)
+			return e
 		}
 	}
 	return nil
