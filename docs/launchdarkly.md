@@ -4,13 +4,18 @@ Example:
 
 ```
 export LAUNCHDARKLY_ACCESS_TOKEN=[LAUNCHDARKLY_ACCESS_TOKEN]
-./terraformer import launchdarkly -r aiConfig,aiConfigVariation,aiTool,auditLogSubscription,customRole,destination,environment,featureFlag,flagTemplates,flagTrigger,metric,modelConfig,relayProxyConfiguration,segment,team,teamMember,webhook
+./terraformer import launchdarkly -r aiConfig,aiConfigVariation,aiTool,auditLogSubscription,customRole,destination,environment,featureFlag,flagTemplates,flagTrigger,metric,modelConfig,relayProxyConfiguration,segment,team,teamMember,view,webhook
 ```
 
 Use `project` separately when you want LaunchDarkly environments managed as nested
 `launchdarkly_project` blocks. Avoid importing `project` and `environment` together,
 because that can generate both nested and standalone resources for the same
 environments.
+
+Use `viewLinks` separately when you want LaunchDarkly view associations managed
+as centralized `launchdarkly_view_links` blocks. Avoid importing `viewLinks`
+together with `featureFlag` or `segment`, because those resources can manage the
+same associations through `view_keys`.
 
 List of supported LaunchDarkly resources:
 
@@ -49,5 +54,9 @@ List of supported LaunchDarkly resources:
     * `launchdarkly_team`
 *   `teamMember`
     * `launchdarkly_team_member`
+*   `view`
+    * `launchdarkly_view`
+*   `viewLinks`
+    * `launchdarkly_view_links`
 *   `webhook`
     * `launchdarkly_webhook`
