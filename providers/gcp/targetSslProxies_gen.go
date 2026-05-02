@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type TargetSslProxiesGenerator struct {
 }
 
 // Run on targetSslProxiesList and create for each TerraformResource
-func (g TargetSslProxiesGenerator) createResources(ctx context.Context, targetSslProxiesList *compute.TargetSslProxiesListCall) []terraformutils.Resource {
+func (g TargetSslProxiesGenerator) createResources(ctx context.Context, targetSslProxiesList *compute.TargetSslProxiesListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := targetSslProxiesList.Pages(ctx, func(page *compute.TargetSslProxyList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g TargetSslProxiesGenerator) createResources(ctx context.Context, targetSs
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list targetSslProxies: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *TargetSslProxiesGenerator) InitResources() error {
 	}
 
 	targetSslProxiesList := computeService.TargetSslProxies.List(g.GetArgs()["project"].(string))
-	g.Resources = g.createResources(ctx, targetSslProxiesList)
+	resources, err := g.createResources(ctx, targetSslProxiesList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 

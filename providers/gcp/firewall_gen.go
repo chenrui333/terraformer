@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type FirewallGenerator struct {
 }
 
 // Run on firewallList and create for each TerraformResource
-func (g FirewallGenerator) createResources(ctx context.Context, firewallList *compute.FirewallsListCall) []terraformutils.Resource {
+func (g FirewallGenerator) createResources(ctx context.Context, firewallList *compute.FirewallsListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := firewallList.Pages(ctx, func(page *compute.FirewallList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g FirewallGenerator) createResources(ctx context.Context, firewallList *co
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list firewall: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *FirewallGenerator) InitResources() error {
 	}
 
 	firewallList := computeService.Firewalls.List(g.GetArgs()["project"].(string))
-	g.Resources = g.createResources(ctx, firewallList)
+	resources, err := g.createResources(ctx, firewallList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 

@@ -5,7 +5,6 @@ package gcp
 import (
 	"context"
 	"fmt"
-	"log"
 	"strconv"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -108,7 +107,11 @@ func (g *GcsGenerator) createBucketsResources(ctx context.Context, gcsService *s
 				}
 			}
 
-			resources = append(resources, g.createNotificationResources(gcsService, bucket)...)
+			notificationResources, err := g.createNotificationResources(gcsService, bucket)
+			if err != nil {
+				return err
+			}
+			resources = append(resources, notificationResources...)
 		}
 		return nil
 	}); err != nil {
@@ -117,12 +120,11 @@ func (g *GcsGenerator) createBucketsResources(ctx context.Context, gcsService *s
 	return resources, nil
 }
 
-func (g *GcsGenerator) createNotificationResources(gcsService *storage.Service, bucket *storage.Bucket) []terraformutils.Resource {
+func (g *GcsGenerator) createNotificationResources(gcsService *storage.Service, bucket *storage.Bucket) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	notificationList, err := gcsService.Notifications.List(bucket.Name).Do()
 	if err != nil {
-		log.Println(err)
-		return resources
+		return nil, fmt.Errorf("list gcs notifications for %s: %w", bucket.Name, err)
 	}
 	for _, notification := range notificationList.Items {
 		resources = append(resources, terraformutils.NewResource(
@@ -135,7 +137,7 @@ func (g *GcsGenerator) createNotificationResources(gcsService *storage.Service, 
 			GcsAdditionalFields,
 		))
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -145,7 +147,6 @@ func (g *GcsGenerator) InitResources() error {
 	ctx := context.Background()
 	gcsService, err := storage.NewService(ctx)
 	if err != nil {
-		log.Print(err)
 		return err
 	}
 	resources, err := g.createBucketsResources(ctx, gcsService)

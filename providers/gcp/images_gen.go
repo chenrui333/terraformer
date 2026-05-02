@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type ImagesGenerator struct {
 }
 
 // Run on imagesList and create for each TerraformResource
-func (g ImagesGenerator) createResources(ctx context.Context, imagesList *compute.ImagesListCall) []terraformutils.Resource {
+func (g ImagesGenerator) createResources(ctx context.Context, imagesList *compute.ImagesListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := imagesList.Pages(ctx, func(page *compute.ImageList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g ImagesGenerator) createResources(ctx context.Context, imagesList *comput
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list images: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *ImagesGenerator) InitResources() error {
 	}
 
 	imagesList := computeService.Images.List(g.GetArgs()["project"].(string))
-	g.Resources = g.createResources(ctx, imagesList)
+	resources, err := g.createResources(ctx, imagesList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 

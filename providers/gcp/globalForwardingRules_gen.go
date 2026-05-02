@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type GlobalForwardingRulesGenerator struct {
 }
 
 // Run on globalForwardingRulesList and create for each TerraformResource
-func (g GlobalForwardingRulesGenerator) createResources(ctx context.Context, globalForwardingRulesList *compute.GlobalForwardingRulesListCall) []terraformutils.Resource {
+func (g GlobalForwardingRulesGenerator) createResources(ctx context.Context, globalForwardingRulesList *compute.GlobalForwardingRulesListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := globalForwardingRulesList.Pages(ctx, func(page *compute.ForwardingRuleList) error {
 		for _, obj := range page.Items {
@@ -40,9 +40,9 @@ func (g GlobalForwardingRulesGenerator) createResources(ctx context.Context, glo
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list globalForwardingRules: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -56,7 +56,11 @@ func (g *GlobalForwardingRulesGenerator) InitResources() error {
 	}
 
 	globalForwardingRulesList := computeService.GlobalForwardingRules.List(g.GetArgs()["project"].(string))
-	g.Resources = g.createResources(ctx, globalForwardingRulesList)
+	resources, err := g.createResources(ctx, globalForwardingRulesList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 

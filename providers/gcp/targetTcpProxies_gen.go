@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type TargetTcpProxiesGenerator struct {
 }
 
 // Run on targetTcpProxiesList and create for each TerraformResource
-func (g TargetTcpProxiesGenerator) createResources(ctx context.Context, targetTcpProxiesList *compute.TargetTcpProxiesListCall) []terraformutils.Resource {
+func (g TargetTcpProxiesGenerator) createResources(ctx context.Context, targetTcpProxiesList *compute.TargetTcpProxiesListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := targetTcpProxiesList.Pages(ctx, func(page *compute.TargetTcpProxyList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g TargetTcpProxiesGenerator) createResources(ctx context.Context, targetTc
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list targetTcpProxies: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *TargetTcpProxiesGenerator) InitResources() error {
 	}
 
 	targetTcpProxiesList := computeService.TargetTcpProxies.List(g.GetArgs()["project"].(string))
-	g.Resources = g.createResources(ctx, targetTcpProxiesList)
+	resources, err := g.createResources(ctx, targetTcpProxiesList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 

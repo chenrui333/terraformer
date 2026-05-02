@@ -22,7 +22,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 	{{ if .byZone  }}"strings"{{end}}
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -42,7 +42,7 @@ type {{.titleResourceName}}Generator struct {
 }
 
 // Run on {{.resource}}List and create for each TerraformResource
-func (g {{.titleResourceName}}Generator) createResources(ctx context.Context, {{.resource}}List *compute.{{.titleResourceName}}ListCall{{ if .byZone  }}, zone string{{end}}) []terraformutils.Resource {
+func (g {{.titleResourceName}}Generator) createResources(ctx context.Context, {{.resource}}List *compute.{{.titleResourceName}}ListCall{{ if .byZone  }}, zone string{{end}}) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := {{.resource}}List.Pages(ctx, func(page *compute.{{.responseName}}) error {
 		for _, obj := range page.Items {
@@ -65,9 +65,9 @@ func (g {{.titleResourceName}}Generator) createResources(ctx context.Context, {{
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list {{.resource}}: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -84,11 +84,19 @@ func (g *{{.titleResourceName}}Generator) InitResources() error {
 		t := strings.Split(zoneLink, "/")
 		zone := t[len(t)-1]
 		{{.resource}}List := computeService.{{.titleResourceName}}.List(g.GetArgs()["project"].(string), zone)
-		g.Resources = append(g.Resources, g.createResources(ctx, {{.resource}}List, zone)...)
+		resources, err := g.createResources(ctx, {{.resource}}List, zone)
+		if err != nil {
+			return err
+		}
+		g.Resources = append(g.Resources, resources...)
 	}
 	{{else}}
 		{{.resource}}List := computeService.{{.titleResourceName}}.List({{.parameterOrder}})
-		g.Resources = g.createResources(ctx, {{.resource}}List)
+		resources, err := g.createResources(ctx, {{.resource}}List)
+		if err != nil {
+			return err
+		}
+		g.Resources = resources
 	{{end}}
 
 	return nil

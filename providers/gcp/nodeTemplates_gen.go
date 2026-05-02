@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type NodeTemplatesGenerator struct {
 }
 
 // Run on nodeTemplatesList and create for each TerraformResource
-func (g NodeTemplatesGenerator) createResources(ctx context.Context, nodeTemplatesList *compute.NodeTemplatesListCall) []terraformutils.Resource {
+func (g NodeTemplatesGenerator) createResources(ctx context.Context, nodeTemplatesList *compute.NodeTemplatesListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := nodeTemplatesList.Pages(ctx, func(page *compute.NodeTemplateList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g NodeTemplatesGenerator) createResources(ctx context.Context, nodeTemplat
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list nodeTemplates: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *NodeTemplatesGenerator) InitResources() error {
 	}
 
 	nodeTemplatesList := computeService.NodeTemplates.List(g.GetArgs()["project"].(string), g.GetArgs()["region"].(compute.Region).Name)
-	g.Resources = g.createResources(ctx, nodeTemplatesList)
+	resources, err := g.createResources(ctx, nodeTemplatesList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 

@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -22,7 +22,7 @@ type TargetInstancesGenerator struct {
 }
 
 // Run on targetInstancesList and create for each TerraformResource
-func (g TargetInstancesGenerator) createResources(ctx context.Context, targetInstancesList *compute.TargetInstancesListCall, zone string) []terraformutils.Resource {
+func (g TargetInstancesGenerator) createResources(ctx context.Context, targetInstancesList *compute.TargetInstancesListCall, zone string) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := targetInstancesList.Pages(ctx, func(page *compute.TargetInstanceList) error {
 		for _, obj := range page.Items {
@@ -43,9 +43,9 @@ func (g TargetInstancesGenerator) createResources(ctx context.Context, targetIns
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list targetInstances: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -62,7 +62,11 @@ func (g *TargetInstancesGenerator) InitResources() error {
 		t := strings.Split(zoneLink, "/")
 		zone := t[len(t)-1]
 		targetInstancesList := computeService.TargetInstances.List(g.GetArgs()["project"].(string), zone)
-		g.Resources = append(g.Resources, g.createResources(ctx, targetInstancesList, zone)...)
+		resources, err := g.createResources(ctx, targetInstancesList, zone)
+		if err != nil {
+			return err
+		}
+		g.Resources = append(g.Resources, resources...)
 	}
 
 	return nil

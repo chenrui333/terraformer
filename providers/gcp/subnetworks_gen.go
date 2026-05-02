@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type SubnetworksGenerator struct {
 }
 
 // Run on subnetworksList and create for each TerraformResource
-func (g SubnetworksGenerator) createResources(ctx context.Context, subnetworksList *compute.SubnetworksListCall) []terraformutils.Resource {
+func (g SubnetworksGenerator) createResources(ctx context.Context, subnetworksList *compute.SubnetworksListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := subnetworksList.Pages(ctx, func(page *compute.SubnetworkList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g SubnetworksGenerator) createResources(ctx context.Context, subnetworksLi
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list subnetworks: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *SubnetworksGenerator) InitResources() error {
 	}
 
 	subnetworksList := computeService.Subnetworks.List(g.GetArgs()["project"].(string), g.GetArgs()["region"].(compute.Region).Name)
-	g.Resources = g.createResources(ctx, subnetworksList)
+	resources, err := g.createResources(ctx, subnetworksList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 

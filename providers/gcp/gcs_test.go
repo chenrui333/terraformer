@@ -36,3 +36,24 @@ func TestCreateBucketsResourcesReturnsBucketListError(t *testing.T) {
 		t.Fatalf("expected wrapped gcs bucket list error, got %q", err)
 	}
 }
+
+func TestCreateNotificationResourcesReturnsListError(t *testing.T) {
+	ctx := context.Background()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "{\"error\":{\"message\":\"service unavailable\"}}", http.StatusServiceUnavailable)
+	}))
+	t.Cleanup(server.Close)
+
+	gcsService, err := storage.NewService(ctx, option.WithEndpoint(server.URL+"/"), option.WithoutAuthentication())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = (&GcsGenerator{}).createNotificationResources(gcsService, &storage.Bucket{Name: "test-bucket"})
+	if err == nil {
+		t.Fatal("expected gcs notification list error")
+	}
+	if !strings.Contains(err.Error(), "list gcs notifications for test-bucket") {
+		t.Fatalf("expected wrapped gcs notification list error, got %q", err)
+	}
+}

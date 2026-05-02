@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type InstanceTemplatesGenerator struct {
 }
 
 // Run on instanceTemplatesList and create for each TerraformResource
-func (g InstanceTemplatesGenerator) createResources(ctx context.Context, instanceTemplatesList *compute.InstanceTemplatesListCall) []terraformutils.Resource {
+func (g InstanceTemplatesGenerator) createResources(ctx context.Context, instanceTemplatesList *compute.InstanceTemplatesListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := instanceTemplatesList.Pages(ctx, func(page *compute.InstanceTemplateList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g InstanceTemplatesGenerator) createResources(ctx context.Context, instanc
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list instanceTemplates: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *InstanceTemplatesGenerator) InitResources() error {
 	}
 
 	instanceTemplatesList := computeService.InstanceTemplates.List(g.GetArgs()["project"].(string))
-	g.Resources = g.createResources(ctx, instanceTemplatesList)
+	resources, err := g.createResources(ctx, instanceTemplatesList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 

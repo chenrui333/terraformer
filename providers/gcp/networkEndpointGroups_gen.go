@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -22,7 +22,7 @@ type NetworkEndpointGroupsGenerator struct {
 }
 
 // Run on networkEndpointGroupsList and create for each TerraformResource
-func (g NetworkEndpointGroupsGenerator) createResources(ctx context.Context, networkEndpointGroupsList *compute.NetworkEndpointGroupsListCall, zone string) []terraformutils.Resource {
+func (g NetworkEndpointGroupsGenerator) createResources(ctx context.Context, networkEndpointGroupsList *compute.NetworkEndpointGroupsListCall, zone string) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := networkEndpointGroupsList.Pages(ctx, func(page *compute.NetworkEndpointGroupList) error {
 		for _, obj := range page.Items {
@@ -43,9 +43,9 @@ func (g NetworkEndpointGroupsGenerator) createResources(ctx context.Context, net
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list networkEndpointGroups: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -62,7 +62,11 @@ func (g *NetworkEndpointGroupsGenerator) InitResources() error {
 		t := strings.Split(zoneLink, "/")
 		zone := t[len(t)-1]
 		networkEndpointGroupsList := computeService.NetworkEndpointGroups.List(g.GetArgs()["project"].(string), zone)
-		g.Resources = append(g.Resources, g.createResources(ctx, networkEndpointGroupsList, zone)...)
+		resources, err := g.createResources(ctx, networkEndpointGroupsList, zone)
+		if err != nil {
+			return err
+		}
+		g.Resources = append(g.Resources, resources...)
 	}
 
 	return nil

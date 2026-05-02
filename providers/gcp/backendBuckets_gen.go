@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type BackendBucketsGenerator struct {
 }
 
 // Run on backendBucketsList and create for each TerraformResource
-func (g BackendBucketsGenerator) createResources(ctx context.Context, backendBucketsList *compute.BackendBucketsListCall) []terraformutils.Resource {
+func (g BackendBucketsGenerator) createResources(ctx context.Context, backendBucketsList *compute.BackendBucketsListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := backendBucketsList.Pages(ctx, func(page *compute.BackendBucketList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g BackendBucketsGenerator) createResources(ctx context.Context, backendBuc
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list backendBuckets: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *BackendBucketsGenerator) InitResources() error {
 	}
 
 	backendBucketsList := computeService.BackendBuckets.List(g.GetArgs()["project"].(string))
-	g.Resources = g.createResources(ctx, backendBucketsList)
+	resources, err := g.createResources(ctx, backendBucketsList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 

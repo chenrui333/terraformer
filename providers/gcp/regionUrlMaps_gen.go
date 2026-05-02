@@ -5,7 +5,7 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
@@ -21,7 +21,7 @@ type RegionUrlMapsGenerator struct {
 }
 
 // Run on regionUrlMapsList and create for each TerraformResource
-func (g RegionUrlMapsGenerator) createResources(ctx context.Context, regionUrlMapsList *compute.RegionUrlMapsListCall) []terraformutils.Resource {
+func (g RegionUrlMapsGenerator) createResources(ctx context.Context, regionUrlMapsList *compute.RegionUrlMapsListCall) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if err := regionUrlMapsList.Pages(ctx, func(page *compute.UrlMapList) error {
 		for _, obj := range page.Items {
@@ -41,9 +41,9 @@ func (g RegionUrlMapsGenerator) createResources(ctx context.Context, regionUrlMa
 		}
 		return nil
 	}); err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("list regionUrlMaps: %w", err)
 	}
-	return resources
+	return resources, nil
 }
 
 // Generate TerraformResources from GCP API,
@@ -57,7 +57,11 @@ func (g *RegionUrlMapsGenerator) InitResources() error {
 	}
 
 	regionUrlMapsList := computeService.RegionUrlMaps.List(g.GetArgs()["project"].(string), g.GetArgs()["region"].(compute.Region).Name)
-	g.Resources = g.createResources(ctx, regionUrlMapsList)
+	resources, err := g.createResources(ctx, regionUrlMapsList)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 
 	return nil
 
