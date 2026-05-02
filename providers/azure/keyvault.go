@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
-//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package azure
 
 import (
 	"context"
-	"log"
 
-	"github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2018-02-14/keyvault"
-	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/keyvault/armkeyvault/v2"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -16,63 +15,52 @@ type KeyVaultGenerator struct {
 	AzureService
 }
 
-func (g KeyVaultGenerator) createResources(ctx context.Context, client keyvault.VaultsClient) ([]terraformutils.Resource, error) {
-	resourceListResultIterator, err := client.ListComplete(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	var resources []terraformutils.Resource
-	for resourceListResultIterator.NotDone() {
-		vault := resourceListResultIterator.Value()
-		resources = append(resources, terraformutils.NewSimpleResource(
-			*vault.ID,
-			*vault.Name,
-			"azurerm_key_vault",
-			"azurerm",
-			[]string{}))
-		if err := resourceListResultIterator.NextWithContext(ctx); err != nil {
-			log.Println(err)
-			return resources, err
-		}
-	}
-	return resources, nil
-}
-
-func (g KeyVaultGenerator) createResourcesByResourceGroup(ctx context.Context, rg string, client keyvault.VaultsClient) ([]terraformutils.Resource, error) {
-	iterator, err := client.ListByResourceGroupComplete(ctx, rg, nil)
-	if err != nil {
-		return nil, err
-	}
-	var resources []terraformutils.Resource
-	for iterator.NotDone() {
-		vault := iterator.Value()
-		resources = append(resources, terraformutils.NewSimpleResource(
-			*vault.ID,
-			*vault.Name,
-			"azurerm_key_vault",
-			"azurerm",
-			[]string{}))
-		if err := iterator.NextWithContext(ctx); err != nil {
-			log.Println(err)
-			return resources, err
-		}
-	}
-	return resources, nil
-}
-
 func (g *KeyVaultGenerator) InitResources() error {
 	ctx := context.Background()
 	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
-	vaultsClient := keyvault.NewVaultsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
+	credential := g.Args["credential"].(azcore.TokenCredential)
+	clientOptions := g.Args["clientOptions"].(*arm.ClientOptions)
 
-	vaultsClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
-
-	var err error
-	if rg := g.Args["resource_group"].(string); rg != "" {
-		g.Resources, err = g.createResourcesByResourceGroup(ctx, rg, vaultsClient)
+	client, err := armkeyvault.NewVaultsClient(subscriptionID, credential, clientOptions)
+	if err != nil {
 		return err
 	}
-	g.Resources, err = g.createResources(ctx, vaultsClient)
-	return err
+
+	rg := g.Args["resource_group"].(string)
+	var resources []terraformutils.Resource
+	if rg != "" {
+		pager := client.NewListByResourceGroupPager(rg, nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return err
+			}
+			for _, vault := range page.Value {
+				resources = append(resources, terraformutils.NewSimpleResource(
+					*vault.ID,
+					*vault.Name,
+					"azurerm_key_vault",
+					"azurerm",
+					[]string{}))
+			}
+		}
+	} else {
+		pager := client.NewListPager(nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return err
+			}
+			for _, vault := range page.Value {
+				resources = append(resources, terraformutils.NewSimpleResource(
+					*vault.ID,
+					*vault.Name,
+					"azurerm_key_vault",
+					"azurerm",
+					[]string{}))
+			}
+		}
+	}
+	g.Resources = resources
+	return nil
 }

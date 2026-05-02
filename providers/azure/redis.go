@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
-//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package azure
 
 import (
 	"context"
-	"log"
 
-	"github.com/Azure/azure-sdk-for-go/services/redis/mgmt/2018-03-01/redis"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/redis/armredis/v3"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -19,26 +19,46 @@ func (g *RedisGenerator) listRedisServers() ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	ctx := context.Background()
 	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
-	RedisClient := redis.NewClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
+	credential := g.Args["credential"].(azcore.TokenCredential)
+	clientOptions := g.Args["clientOptions"].(*arm.ClientOptions)
 
-	redisServersIterator, err := RedisClient.ListComplete(ctx)
+	client, err := armredis.NewClient(subscriptionID, credential, clientOptions)
 	if err != nil {
 		return nil, err
 	}
 
-	for redisServersIterator.NotDone() {
-		redisServer := redisServersIterator.Value()
-		resources = append(resources, terraformutils.NewSimpleResource(
-			*redisServer.ID,
-			*redisServer.Name,
-			"azurerm_redis_cache",
-			g.ProviderName,
-			[]string{}))
-
-		if err := redisServersIterator.Next(); err != nil {
-			log.Println(err)
-			break
+	rg := g.Args["resource_group"].(string)
+	if rg != "" {
+		pager := client.NewListByResourceGroupPager(rg, nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+			for _, redisServer := range page.Value {
+				resources = append(resources, terraformutils.NewSimpleResource(
+					*redisServer.ID,
+					*redisServer.Name,
+					"azurerm_redis_cache",
+					g.ProviderName,
+					[]string{}))
+			}
+		}
+	} else {
+		pager := client.NewListBySubscriptionPager(nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+			for _, redisServer := range page.Value {
+				resources = append(resources, terraformutils.NewSimpleResource(
+					*redisServer.ID,
+					*redisServer.Name,
+					"azurerm_redis_cache",
+					g.ProviderName,
+					[]string{}))
+			}
 		}
 	}
 

@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
-//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package azure
 
 import (
 	"context"
-	"log"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-08-01/network"
-	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v6"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -16,43 +15,48 @@ type NetworkInterfaceGenerator struct {
 	AzureService
 }
 
-func (g NetworkInterfaceGenerator) createResources(interfaceListResult network.InterfaceListResultIterator) ([]terraformutils.Resource, error) {
-	var resources []terraformutils.Resource
-	for interfaceListResult.NotDone() {
-		networkInterface := interfaceListResult.Value()
-		resources = append(resources, terraformutils.NewSimpleResource(
-			*networkInterface.ID,
-			*networkInterface.Name,
-			"azurerm_network_interface",
-			"azurerm",
-			[]string{}))
-		if err := interfaceListResult.Next(); err != nil {
-			log.Println(err)
-			return resources, err
-		}
-	}
-	return resources, nil
-}
-
 func (g *NetworkInterfaceGenerator) InitResources() error {
 	ctx := context.Background()
 	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
-	interfacesClient := network.NewInterfacesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
+	credential := g.Args["credential"].(azcore.TokenCredential)
+	clientOptions := g.Args["clientOptions"].(*arm.ClientOptions)
 
-	interfacesClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
-	var (
-		output network.InterfaceListResultIterator
-		err    error
-	)
-	if rg := g.Args["resource_group"].(string); rg != "" {
-		output, err = interfacesClient.ListComplete(ctx, rg)
-	} else {
-		output, err = interfacesClient.ListAllComplete(ctx)
-	}
+	client, err := armnetwork.NewInterfacesClient(subscriptionID, credential, clientOptions)
 	if err != nil {
 		return err
 	}
-	g.Resources, err = g.createResources(output)
-	return err
+
+	rg := g.Args["resource_group"].(string)
+	var interfaces []*armnetwork.Interface
+	if rg != "" {
+		pager := client.NewListPager(rg, nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return err
+			}
+			interfaces = append(interfaces, page.Value...)
+		}
+	} else {
+		pager := client.NewListAllPager(nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return err
+			}
+			interfaces = append(interfaces, page.Value...)
+		}
+	}
+
+	var resources []terraformutils.Resource
+	for _, iface := range interfaces {
+		resources = append(resources, terraformutils.NewSimpleResource(
+			*iface.ID,
+			*iface.Name,
+			"azurerm_network_interface",
+			"azurerm",
+			[]string{}))
+	}
+	g.Resources = resources
+	return nil
 }

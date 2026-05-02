@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
-//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package azure
 
 import (
 	"context"
-	"log"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
-	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v6"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -16,54 +15,57 @@ type VirtualNetworkGenerator struct {
 	AzureService
 }
 
-func (g VirtualNetworkGenerator) createResources(ctx context.Context, iterator network.VirtualNetworkListResultIterator) ([]terraformutils.Resource, error) {
+func (g *VirtualNetworkGenerator) InitResources() error {
+	ctx := context.Background()
+	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
+	credential := g.Args["credential"].(azcore.TokenCredential)
+	clientOptions := g.Args["clientOptions"].(*arm.ClientOptions)
+
+	client, err := armnetwork.NewVirtualNetworksClient(subscriptionID, credential, clientOptions)
+	if err != nil {
+		return err
+	}
+
+	rg := g.Args["resource_group"].(string)
+	var vnets []*armnetwork.VirtualNetwork
+	if rg != "" {
+		pager := client.NewListPager(rg, nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return err
+			}
+			vnets = append(vnets, page.Value...)
+		}
+	} else {
+		pager := client.NewListAllPager(nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return err
+			}
+			vnets = append(vnets, page.Value...)
+		}
+	}
+
 	var resources []terraformutils.Resource
-	for iterator.NotDone() {
-		virtualNetwork := iterator.Value()
-		tferName := terraformutils.TfSanitize(*virtualNetwork.Name)
+	for _, vnet := range vnets {
+		tferName := terraformutils.TfSanitize(*vnet.Name)
 		for _, resource := range resources {
 			if tferName == resource.ResourceName {
-				*virtualNetwork.Name = *virtualNetwork.Name + "_" + *virtualNetwork.ID
+				*vnet.Name = *vnet.Name + "_" + *vnet.ID
 			}
 		}
 
 		resources = append(resources, terraformutils.NewSimpleResource(
-			*virtualNetwork.ID,
-			*virtualNetwork.Name,
+			*vnet.ID,
+			*vnet.Name,
 			"azurerm_virtual_network",
 			g.ProviderName,
 			[]string{}))
-		if err := iterator.NextWithContext(ctx); err != nil {
-			log.Println(err)
-			return resources, err
-		}
 	}
-	return resources, nil
-}
-
-func (g *VirtualNetworkGenerator) InitResources() error {
-	ctx := context.Background()
-	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
-	virtualNetworkClient := network.NewVirtualNetworksClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
-
-	virtualNetworkClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
-
-	var (
-		output network.VirtualNetworkListResultIterator
-		err    error
-	)
-
-	if rg := g.Args["resource_group"].(string); rg != "" {
-		output, err = virtualNetworkClient.ListComplete(ctx, rg)
-	} else {
-		output, err = virtualNetworkClient.ListAllComplete(ctx)
-	}
-	if err != nil {
-		return err
-	}
-	g.Resources, err = g.createResources(ctx, output)
-	return err
+	g.Resources = resources
+	return nil
 }
 
 // NOTE on Virtual Networks and Subnet's:

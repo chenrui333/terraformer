@@ -1,12 +1,13 @@
-//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
+// SPDX-License-Identifier: Apache-2.0
+
 package azure
 
 import (
 	"context"
 
-	"github.com/Azure/go-autorest/autorest"
-
-	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v3.0/security"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/security/armsecurity"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -18,20 +19,25 @@ func (g SecurityCenterSubscriptionPricingGenerator) listSubscriptionPricing() ([
 	var resources []terraformutils.Resource
 	ctx := context.Background()
 	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
-
-	securityCenterPricingClient := security.NewPricingsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
-	securityCenterPricingClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
+	credential := g.Args["credential"].(azcore.TokenCredential)
+	clientOptions := g.Args["clientOptions"].(*arm.ClientOptions)
 
 	if rg := g.Args["resource_group"].(string); rg != "" {
 		return resources, nil
 	}
-	pricingList, err := securityCenterPricingClient.List(ctx)
+
+	pricingsClient, err := armsecurity.NewPricingsClient(credential, clientOptions)
 	if err != nil {
 		return resources, err
 	}
 
-	for _, pricing := range *pricingList.Value {
+	scopeID := "subscriptions/" + subscriptionID
+	pricingList, err := pricingsClient.List(ctx, scopeID, nil)
+	if err != nil {
+		return resources, err
+	}
+
+	for _, pricing := range pricingList.Value {
 		resources = append(resources, terraformutils.NewSimpleResource(
 			*pricing.ID,
 			*pricing.Name,

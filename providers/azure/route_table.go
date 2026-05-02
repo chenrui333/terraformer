@@ -1,102 +1,102 @@
 // SPDX-License-Identifier: Apache-2.0
 
-//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package azure
 
 import (
 	"context"
-	"log"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-03-01/network"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v6"
 )
 
 type RouteTableGenerator struct {
 	AzureService
 }
 
-func (az *RouteTableGenerator) listResources() ([]network.RouteTable, error) {
-	subscriptionID, resourceGroup, authorizer, resourceManagerEndpoint := az.getClientArgs()
-	client := network.NewRouteTablesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
-	client.Authorizer = authorizer
-	var (
-		iterator network.RouteTableListResultIterator
-		err      error
-	)
-	ctx := context.Background()
-	if resourceGroup != "" {
-		iterator, err = client.ListComplete(ctx, resourceGroup)
-	} else {
-		iterator, err = client.ListAllComplete(ctx)
-	}
+func (az *RouteTableGenerator) listResources() ([]*armnetwork.RouteTable, error) {
+	subscriptionID, resourceGroup, credential, clientOptions := az.getClientArgs()
+	client, err := armnetwork.NewRouteTablesClient(subscriptionID, credential, clientOptions)
 	if err != nil {
 		return nil, err
 	}
-	var resources []network.RouteTable
-	for iterator.NotDone() {
-		item := iterator.Value()
-		resources = append(resources, item)
-		if err := iterator.NextWithContext(ctx); err != nil {
-			log.Println(err)
-			return resources, err
+	ctx := context.Background()
+	var resources []*armnetwork.RouteTable
+	if resourceGroup != "" {
+		pager := client.NewListPager(resourceGroup, nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+			resources = append(resources, page.Value...)
+		}
+	} else {
+		pager := client.NewListAllPager(nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+			resources = append(resources, page.Value...)
 		}
 	}
 	return resources, nil
 }
 
-func (az *RouteTableGenerator) appendResource(resource *network.RouteTable) {
+func (az *RouteTableGenerator) appendResource(resource *armnetwork.RouteTable) {
 	az.AppendSimpleResourceWithDuplicateCheck(*resource.ID, *resource.Name, "azurerm_route_table")
 }
 
-func (az *RouteTableGenerator) appendRoutes(parent *network.RouteTable, resourceGroupID *ResourceID) error {
-	subscriptionID, _, authorizer, resourceManagerEndpoint := az.getClientArgs()
-	client := network.NewRoutesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
-	client.Authorizer = authorizer
-	ctx := context.Background()
-	iterator, err := client.ListComplete(ctx, resourceGroupID.ResourceGroup, *parent.Name)
+func (az *RouteTableGenerator) appendRoutes(parent *armnetwork.RouteTable, resourceGroupID *ResourceID) error {
+	subscriptionID, _, credential, clientOptions := az.getClientArgs()
+	client, err := armnetwork.NewRoutesClient(subscriptionID, credential, clientOptions)
 	if err != nil {
 		return err
 	}
-	for iterator.NotDone() {
-		item := iterator.Value()
-		az.AppendSimpleResourceWithDuplicateCheck(*item.ID, *item.Name, "azurerm_route")
-		if err := iterator.NextWithContext(ctx); err != nil {
-			log.Println(err)
+	ctx := context.Background()
+	pager := client.NewListPager(resourceGroupID.ResourceGroup, *parent.Name, nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
 			return err
+		}
+		for _, item := range page.Value {
+			az.AppendSimpleResourceWithDuplicateCheck(*item.ID, *item.Name, "azurerm_route")
 		}
 	}
 	return nil
 }
 
-func (az *RouteTableGenerator) listRouteFilters() ([]network.RouteFilter, error) {
-	subscriptionID, resourceGroup, authorizer, resourceManagerEndpoint := az.getClientArgs()
-	client := network.NewRouteFiltersClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
-	client.Authorizer = authorizer
-	var (
-		iterator network.RouteFilterListResultIterator
-		err      error
-	)
-	ctx := context.Background()
-	if resourceGroup != "" {
-		iterator, err = client.ListByResourceGroupComplete(ctx, resourceGroup)
-	} else {
-		iterator, err = client.ListComplete(ctx)
-	}
+func (az *RouteTableGenerator) listRouteFilters() ([]*armnetwork.RouteFilter, error) {
+	subscriptionID, resourceGroup, credential, clientOptions := az.getClientArgs()
+	client, err := armnetwork.NewRouteFiltersClient(subscriptionID, credential, clientOptions)
 	if err != nil {
 		return nil, err
 	}
-	var resources []network.RouteFilter
-	for iterator.NotDone() {
-		item := iterator.Value()
-		resources = append(resources, item)
-		if err := iterator.NextWithContext(ctx); err != nil {
-			log.Println(err)
-			return resources, err
+	ctx := context.Background()
+	var resources []*armnetwork.RouteFilter
+	if resourceGroup != "" {
+		pager := client.NewListByResourceGroupPager(resourceGroup, nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+			resources = append(resources, page.Value...)
+		}
+	} else {
+		pager := client.NewListPager(nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+			resources = append(resources, page.Value...)
 		}
 	}
 	return resources, nil
 }
 
-func (az *RouteTableGenerator) appendRouteFilters(resource *network.RouteFilter) {
+func (az *RouteTableGenerator) appendRouteFilters(resource *armnetwork.RouteFilter) {
 	az.AppendSimpleResource(*resource.ID, *resource.Name, "azurerm_route_filter")
 }
 
@@ -106,12 +106,12 @@ func (az *RouteTableGenerator) InitResources() error {
 		return err
 	}
 	for _, resource := range resources {
-		az.appendResource(&resource)
+		az.appendResource(resource)
 		resourceGroupID, err := ParseAzureResourceID(*resource.ID)
 		if err != nil {
 			return err
 		}
-		err = az.appendRoutes(&resource, resourceGroupID)
+		err = az.appendRoutes(resource, resourceGroupID)
 		if err != nil {
 			return err
 		}
@@ -122,10 +122,7 @@ func (az *RouteTableGenerator) InitResources() error {
 		return err
 	}
 	for _, resource := range filters {
-		az.appendRouteFilters(&resource)
-		if err != nil {
-			return err
-		}
+		az.appendRouteFilters(resource)
 	}
 	return nil
 }

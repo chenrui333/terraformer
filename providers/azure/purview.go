@@ -1,49 +1,48 @@
 // SPDX-License-Identifier: Apache-2.0
 
-//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package azure
 
 import (
 	"context"
-	"log"
 
-	"github.com/Azure/azure-sdk-for-go/services/purview/mgmt/2021-07-01/purview"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/purview/armpurview"
 )
 
 type PurviewGenerator struct {
 	AzureService
 }
 
-func (az *PurviewGenerator) listAccounts() ([]purview.Account, error) {
-	subscriptionID, resourceGroup, authorizer, resourceManagerEndpoint := az.getClientArgs()
-	client := purview.NewAccountsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
-	client.Authorizer = authorizer
-	var (
-		iterator purview.AccountListIterator
-		err      error
-	)
-	ctx := context.Background()
-	if resourceGroup != "" {
-		iterator, err = client.ListByResourceGroupComplete(ctx, resourceGroup, "")
-	} else {
-		iterator, err = client.ListBySubscriptionComplete(ctx, "")
-	}
+func (az *PurviewGenerator) listAccounts() ([]*armpurview.Account, error) {
+	subscriptionID, resourceGroup, credential, clientOptions := az.getClientArgs()
+	client, err := armpurview.NewAccountsClient(subscriptionID, credential, clientOptions)
 	if err != nil {
 		return nil, err
 	}
-	var resources []purview.Account
-	for iterator.NotDone() {
-		item := iterator.Value()
-		resources = append(resources, item)
-		if err := iterator.NextWithContext(ctx); err != nil {
-			log.Println(err)
-			return resources, err
+	ctx := context.Background()
+	var resources []*armpurview.Account
+	if resourceGroup != "" {
+		pager := client.NewListByResourceGroupPager(resourceGroup, nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+			resources = append(resources, page.Value...)
+		}
+	} else {
+		pager := client.NewListBySubscriptionPager(nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+			resources = append(resources, page.Value...)
 		}
 	}
 	return resources, nil
 }
 
-func (az *PurviewGenerator) AppendAccount(account *purview.Account) {
+func (az *PurviewGenerator) AppendAccount(account *armpurview.Account) {
 	az.AppendSimpleResource(*account.ID, *account.Name, "azurerm_purview_account")
 }
 
@@ -53,7 +52,7 @@ func (az *PurviewGenerator) InitResources() error {
 		return err
 	}
 	for _, account := range accounts {
-		az.AppendAccount(&account)
+		az.AppendAccount(account)
 	}
 	return nil
 }

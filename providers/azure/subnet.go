@@ -1,72 +1,74 @@
 // SPDX-License-Identifier: Apache-2.0
 
-//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package azure
 
 import (
 	"context"
-	"log"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v6"
 )
 
 type SubnetGenerator struct {
 	AzureService
 }
 
-func (az *SubnetGenerator) lisSubnets() ([]network.Subnet, error) {
-	subscriptionID, resourceGroup, authorizer, resourceManagerEndpoint := az.getClientArgs()
-	subnetClient := network.NewSubnetsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
-	subnetClient.Authorizer = authorizer
-	vnetClient := network.NewVirtualNetworksClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
-	vnetClient.Authorizer = authorizer
-	var (
-		vnetIter   network.VirtualNetworkListResultIterator
-		subnetIter network.SubnetListResultIterator
-		err        error
-	)
-	ctx := context.Background()
-	if resourceGroup != "" {
-		vnetIter, err = vnetClient.ListComplete(ctx, resourceGroup)
-	} else {
-		vnetIter, err = vnetClient.ListAllComplete(ctx)
-	}
+func (az *SubnetGenerator) lisSubnets() ([]*armnetwork.Subnet, error) {
+	subscriptionID, resourceGroup, credential, clientOptions := az.getClientArgs()
+	subnetClient, err := armnetwork.NewSubnetsClient(subscriptionID, credential, clientOptions)
 	if err != nil {
 		return nil, err
 	}
-	var resources []network.Subnet
-	for vnetIter.NotDone() {
-		vnet := vnetIter.Value()
+	vnetClient, err := armnetwork.NewVirtualNetworksClient(subscriptionID, credential, clientOptions)
+	if err != nil {
+		return nil, err
+	}
+	ctx := context.Background()
+
+	var vnets []*armnetwork.VirtualNetwork
+	if resourceGroup != "" {
+		pager := vnetClient.NewListPager(resourceGroup, nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+			vnets = append(vnets, page.Value...)
+		}
+	} else {
+		pager := vnetClient.NewListAllPager(nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+			vnets = append(vnets, page.Value...)
+		}
+	}
+
+	var resources []*armnetwork.Subnet
+	for _, vnet := range vnets {
 		vnetID, err := ParseAzureResourceID(*vnet.ID)
 		if err != nil {
 			return nil, err
 		}
-		subnetIter, err = subnetClient.ListComplete(ctx, vnetID.ResourceGroup, *vnet.Name)
-		if err != nil {
-			return nil, err
-		}
-		for subnetIter.NotDone() {
-			item := subnetIter.Value()
-			resources = append(resources, item)
-			if err := subnetIter.NextWithContext(ctx); err != nil {
-				log.Println(err)
-				return resources, err
+		pager := subnetClient.NewListPager(vnetID.ResourceGroup, *vnet.Name, nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return nil, err
 			}
-		}
-		if err := vnetIter.NextWithContext(ctx); err != nil {
-			log.Println(err)
-			return resources, err
+			resources = append(resources, page.Value...)
 		}
 	}
 	return resources, nil
 }
 
-func (az *SubnetGenerator) AppendSubnet(subnet *network.Subnet) {
+func (az *SubnetGenerator) AppendSubnet(subnet *armnetwork.Subnet) {
 	az.AppendSimpleResource(*subnet.ID, *subnet.Name, "azurerm_subnet")
 }
 
-func (az *SubnetGenerator) appendRouteTable(subnet *network.Subnet) {
-	if props := subnet.SubnetPropertiesFormat; props != nil {
+func (az *SubnetGenerator) appendRouteTable(subnet *armnetwork.Subnet) {
+	if props := subnet.Properties; props != nil {
 		if prop := props.RouteTable; prop != nil {
 			az.appendSimpleAssociation(
 				*subnet.ID, *subnet.Name, prop.Name,
@@ -79,8 +81,8 @@ func (az *SubnetGenerator) appendRouteTable(subnet *network.Subnet) {
 	}
 }
 
-func (az *SubnetGenerator) appendNetworkSecurityGroupAssociation(subnet *network.Subnet) {
-	if props := subnet.SubnetPropertiesFormat; props != nil {
+func (az *SubnetGenerator) appendNetworkSecurityGroupAssociation(subnet *armnetwork.Subnet) {
+	if props := subnet.Properties; props != nil {
 		if prop := props.NetworkSecurityGroup; prop != nil {
 			az.appendSimpleAssociation(
 				*subnet.ID, *subnet.Name, prop.Name,
@@ -93,8 +95,8 @@ func (az *SubnetGenerator) appendNetworkSecurityGroupAssociation(subnet *network
 	}
 }
 
-func (az *SubnetGenerator) appendNatGateway(subnet *network.Subnet) {
-	if props := subnet.SubnetPropertiesFormat; props != nil {
+func (az *SubnetGenerator) appendNatGateway(subnet *armnetwork.Subnet) {
+	if props := subnet.Properties; props != nil {
 		if prop := props.NatGateway; prop != nil {
 			az.appendSimpleAssociation(
 				*subnet.ID, *subnet.Name, nil,
@@ -108,29 +110,34 @@ func (az *SubnetGenerator) appendNatGateway(subnet *network.Subnet) {
 }
 
 func (az *SubnetGenerator) appendServiceEndpointPolicies() error {
-	subscriptionID, resourceGroup, authorizer, resourceManagerEndpoint := az.getClientArgs()
-	client := network.NewServiceEndpointPoliciesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
-	client.Authorizer = authorizer
-	var (
-		iterator network.ServiceEndpointPolicyListResultIterator
-		err      error
-	)
-	ctx := context.Background()
-	if resourceGroup != "" {
-		iterator, err = client.ListByResourceGroupComplete(ctx, resourceGroup)
-	} else {
-		iterator, err = client.ListComplete(ctx)
-	}
+	subscriptionID, resourceGroup, credential, clientOptions := az.getClientArgs()
+	client, err := armnetwork.NewServiceEndpointPoliciesClient(subscriptionID, credential, clientOptions)
 	if err != nil {
 		return err
 	}
+	ctx := context.Background()
 
-	for iterator.NotDone() {
-		item := iterator.Value()
-		az.AppendSimpleResource(*item.ID, *item.Name, "azurerm_subnet_service_endpoint_storage_policy")
-		if err := iterator.NextWithContext(ctx); err != nil {
-			log.Println(err)
-			return err
+	if resourceGroup != "" {
+		pager := client.NewListByResourceGroupPager(resourceGroup, nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return err
+			}
+			for _, item := range page.Value {
+				az.AppendSimpleResource(*item.ID, *item.Name, "azurerm_subnet_service_endpoint_storage_policy")
+			}
+		}
+	} else {
+		pager := client.NewListPager(nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return err
+			}
+			for _, item := range page.Value {
+				az.AppendSimpleResource(*item.ID, *item.Name, "azurerm_subnet_service_endpoint_storage_policy")
+			}
 		}
 	}
 	return nil
@@ -142,10 +149,10 @@ func (az *SubnetGenerator) InitResources() error {
 		return err
 	}
 	for _, subnet := range subnets {
-		az.AppendSubnet(&subnet)
-		az.appendRouteTable(&subnet)
-		az.appendNetworkSecurityGroupAssociation(&subnet)
-		az.appendNatGateway(&subnet)
+		az.AppendSubnet(subnet)
+		az.appendRouteTable(subnet)
+		az.appendNetworkSecurityGroupAssociation(subnet)
+		az.appendNatGateway(subnet)
 	}
 	if err := az.appendServiceEndpointPolicies(); err != nil {
 		return err

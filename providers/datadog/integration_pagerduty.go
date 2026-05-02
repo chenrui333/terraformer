@@ -3,9 +3,11 @@
 package datadog
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
-
-	datadogCommunity "github.com/zorkian/go-datadog-api"
+	"net/http"
+	"time"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 )
@@ -49,12 +51,56 @@ func (g *IntegrationPagerdutyGenerator) createResource(serviceName string) terra
 // from PD Service create 1 TerraformResource.
 // Need IntegrationPagerduty Subdomain as ID for terraform resource
 func (g *IntegrationPagerdutyGenerator) InitResources() error {
-	client := datadogCommunity.NewClient(g.Args["api-key"].(string), g.Args["app-key"].(string))
-
-	integration, err := client.GetIntegrationPD()
+	integration, err := getPagerDutyIntegration(
+		g.Args["api-key"].(string),
+		g.Args["app-key"].(string),
+		g.Args["api-url"].(string),
+	)
 	if err != nil {
 		return err
 	}
-	g.Resources = g.createResources(integration.GetSubdomain())
+	g.Resources = g.createResources(integration.Subdomain)
 	return nil
+}
+
+type pagerDutyIntegration struct {
+	Subdomain string               `json:"subdomain"`
+	Services  []pagerDutyServicePD `json:"services"`
+}
+
+type pagerDutyServicePD struct {
+	ServiceName string `json:"service_name"`
+	ServiceKey  string `json:"service_key"`
+}
+
+func getPagerDutyIntegration(apiKey, appKey, apiURL string) (*pagerDutyIntegration, error) {
+	if apiURL == "" {
+		apiURL = "https://api.datadoghq.com"
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	url := apiURL + "/api/v1/integration/pagerduty"
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("DD-API-KEY", apiKey)
+	req.Header.Set("DD-APPLICATION-KEY", appKey)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("datadog API returned %d for PagerDuty integration", resp.StatusCode)
+	}
+
+	var integration pagerDutyIntegration
+	if err := json.NewDecoder(resp.Body).Decode(&integration); err != nil {
+		return nil, err
+	}
+	return &integration, nil
 }

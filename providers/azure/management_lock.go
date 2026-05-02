@@ -1,49 +1,48 @@
 // SPDX-License-Identifier: Apache-2.0
 
-//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package azure
 
 import (
 	"context"
-	"log"
 
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2016-09-01/locks"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armlocks"
 )
 
 type ManagementLockGenerator struct {
 	AzureService
 }
 
-func (az *ManagementLockGenerator) listResources() ([]locks.ManagementLockObject, error) {
-	subscriptionID, resourceGroup, authorizer, resourceManagerEndpoint := az.getClientArgs()
-	client := locks.NewManagementLocksClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
-	client.Authorizer = authorizer
-	var (
-		iterator locks.ManagementLockListResultIterator
-		err      error
-	)
-	ctx := context.Background()
-	if resourceGroup != "" {
-		iterator, err = client.ListAtResourceGroupLevelComplete(ctx, resourceGroup, "")
-	} else {
-		iterator, err = client.ListAtSubscriptionLevelComplete(ctx, "")
-	}
+func (az *ManagementLockGenerator) listResources() ([]*armlocks.ManagementLockObject, error) {
+	subscriptionID, resourceGroup, credential, clientOptions := az.getClientArgs()
+	client, err := armlocks.NewManagementLocksClient(subscriptionID, credential, clientOptions)
 	if err != nil {
 		return nil, err
 	}
-	var resources []locks.ManagementLockObject
-	for iterator.NotDone() {
-		item := iterator.Value()
-		resources = append(resources, item)
-		if err := iterator.NextWithContext(ctx); err != nil {
-			log.Println(err)
-			return resources, err
+	ctx := context.Background()
+	var resources []*armlocks.ManagementLockObject
+	if resourceGroup != "" {
+		pager := client.NewListAtResourceGroupLevelPager(resourceGroup, nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+			resources = append(resources, page.Value...)
+		}
+	} else {
+		pager := client.NewListAtSubscriptionLevelPager(nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+			resources = append(resources, page.Value...)
 		}
 	}
 	return resources, nil
 }
 
-func (az *ManagementLockGenerator) appendResource(resource *locks.ManagementLockObject) {
+func (az *ManagementLockGenerator) appendResource(resource *armlocks.ManagementLockObject) {
 	az.AppendSimpleResource(*resource.ID, *resource.Name, "azurerm_management_lock")
 }
 
@@ -53,7 +52,7 @@ func (az *ManagementLockGenerator) InitResources() error {
 		return err
 	}
 	for _, resource := range resources {
-		az.appendResource(&resource)
+		az.appendResource(resource)
 	}
 	return nil
 }

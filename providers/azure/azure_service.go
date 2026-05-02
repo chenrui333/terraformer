@@ -5,7 +5,8 @@ package azure
 import (
 	"strings"
 
-	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -13,12 +14,12 @@ type AzureService struct { //nolint
 	terraformutils.Service
 }
 
-func (az *AzureService) getClientArgs() (subscriptionID string, resourceGroup string, authorizer autorest.Authorizer, resourceManagerEndpoint string) {
+func (az *AzureService) getClientArgs() (subscriptionID string, resourceGroup string, credential azcore.TokenCredential, clientOptions *arm.ClientOptions) {
 	subs := az.Args["config"].(providerConfig).SubscriptionID
-	auth := az.Args["authorizer"].(autorest.Authorizer)
+	cred := az.Args["credential"].(azcore.TokenCredential)
 	resg := az.Args["resource_group"].(string)
-	rEndpoint := az.Args["config"].(providerConfig).CustomResourceManagerEndpoint
-	return subs, resg, auth, rEndpoint
+	opts := az.Args["clientOptions"].(*arm.ClientOptions)
+	return subs, resg, cred, opts
 }
 
 func (az *AzureService) AppendSimpleResource(id string, resourceName string, resourceType string) {

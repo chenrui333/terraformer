@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
-//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package azure
 
 import (
 	"context"
-	"log"
 	"regexp"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-03-01/network"
-	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v6"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -17,124 +16,122 @@ type LoadBalancerGenerator struct {
 	AzureService
 }
 
-func (g *LoadBalancerGenerator) listLoadBalancerProbes(resourceGroupName string, loadBalancerName string) ([]terraformutils.Resource, error) {
-	var resources []terraformutils.Resource
-	ctx := context.Background()
+func (g *LoadBalancerGenerator) listLoadBalancerProbes(ctx context.Context, resourceGroupName string, loadBalancerName string) ([]terraformutils.Resource, error) {
 	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
+	credential := g.Args["credential"].(azcore.TokenCredential)
+	clientOptions := g.Args["clientOptions"].(*arm.ClientOptions)
 
-	LoadBalancerProbesClient := network.NewLoadBalancerProbesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
-	LoadBalancerProbesClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
-	loadBalancerProbeIterator, err := LoadBalancerProbesClient.ListComplete(ctx, resourceGroupName, loadBalancerName)
-
+	client, err := armnetwork.NewLoadBalancerProbesClient(subscriptionID, credential, clientOptions)
 	if err != nil {
 		return nil, err
 	}
-	for loadBalancerProbeIterator.NotDone() {
-		loadBalancerProbe := loadBalancerProbeIterator.Value()
-		// NOTE:
-		// This works out the loadBalancer resource id from current probe
-		// /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/group1/providers/Microsoft.Network/loadBalancers/lb1
-		// /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/group1/providers/Microsoft.Network/loadBalancers/lb1/probes/probe1
-		//
-		// As the related data_source in azurerm provider works by starting to look up with loadbalancer_id
-		// https://github.com/terraform-providers/terraform-provider-azurerm/blob/v2.18.0/azurerm/internal/services/network/lb_probe_resource.go#L186
-		re := regexp.MustCompile(`/probes/.*$`)
-		loadBalancerID := re.ReplaceAllLiteralString(*loadBalancerProbe.ID, "")
-		resources = append(resources, terraformutils.NewResource(
-			*loadBalancerProbe.ID,
-			*loadBalancerProbe.Name,
-			"azurerm_lb_probe",
-			g.ProviderName,
-			map[string]string{
-				"loadbalancer_id": loadBalancerID,
-			},
-			[]string{},
-			map[string]interface{}{},
-		))
 
-		if err := loadBalancerProbeIterator.Next(); err != nil {
-			log.Println(err)
-			break
+	var resources []terraformutils.Resource
+	pager := client.NewListPager(resourceGroupName, loadBalancerName, nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, probe := range page.Value {
+			// NOTE:
+			// This works out the loadBalancer resource id from current probe
+			// /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/group1/providers/Microsoft.Network/loadBalancers/lb1
+			// /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/group1/providers/Microsoft.Network/loadBalancers/lb1/probes/probe1
+			//
+			// As the related data_source in azurerm provider works by starting to look up with loadbalancer_id
+			// https://github.com/terraform-providers/terraform-provider-azurerm/blob/v2.18.0/azurerm/internal/services/network/lb_probe_resource.go#L186
+			re := regexp.MustCompile(`/probes/.*$`)
+			loadBalancerID := re.ReplaceAllLiteralString(*probe.ID, "")
+			resources = append(resources, terraformutils.NewResource(
+				*probe.ID,
+				*probe.Name,
+				"azurerm_lb_probe",
+				g.ProviderName,
+				map[string]string{
+					"loadbalancer_id": loadBalancerID,
+				},
+				[]string{},
+				map[string]interface{}{},
+			))
 		}
 	}
 
 	return resources, nil
 }
 
-func (g *LoadBalancerGenerator) listInboundNatRules(resourceGroupName string, loadBalancerName string) ([]terraformutils.Resource, error) {
-	var resources []terraformutils.Resource
-	ctx := context.Background()
+func (g *LoadBalancerGenerator) listInboundNatRules(ctx context.Context, resourceGroupName string, loadBalancerName string) ([]terraformutils.Resource, error) {
 	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
+	credential := g.Args["credential"].(azcore.TokenCredential)
+	clientOptions := g.Args["clientOptions"].(*arm.ClientOptions)
 
-	InboundNatRulesClient := network.NewInboundNatRulesClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
-	InboundNatRulesClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
-	InboundNatRuleIterator, err := InboundNatRulesClient.ListComplete(ctx, resourceGroupName, loadBalancerName)
-
+	client, err := armnetwork.NewInboundNatRulesClient(subscriptionID, credential, clientOptions)
 	if err != nil {
 		return nil, err
 	}
-	for InboundNatRuleIterator.NotDone() {
-		InboundNatRule := InboundNatRuleIterator.Value()
-		// NOTE:
-		// Similar to above explanation, work out loadbalancer_id for azurerm datasource impl
-		re := regexp.MustCompile(`/inboundNatRules/.*$`)
-		loadBalancerID := re.ReplaceAllLiteralString(*InboundNatRule.ID, "")
-		resources = append(resources, terraformutils.NewResource(
-			*InboundNatRule.ID,
-			*InboundNatRule.Name,
-			"azurerm_lb_nat_rule",
-			g.ProviderName,
-			map[string]string{
-				"loadbalancer_id": loadBalancerID,
-			},
-			[]string{},
-			map[string]interface{}{},
-		))
 
-		if err := InboundNatRuleIterator.Next(); err != nil {
-			log.Println(err)
-			break
+	var resources []terraformutils.Resource
+	pager := client.NewListPager(resourceGroupName, loadBalancerName, nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, rule := range page.Value {
+			// NOTE:
+			// Similar to above explanation, work out loadbalancer_id for azurerm datasource impl
+			re := regexp.MustCompile(`/inboundNatRules/.*$`)
+			loadBalancerID := re.ReplaceAllLiteralString(*rule.ID, "")
+			resources = append(resources, terraformutils.NewResource(
+				*rule.ID,
+				*rule.Name,
+				"azurerm_lb_nat_rule",
+				g.ProviderName,
+				map[string]string{
+					"loadbalancer_id": loadBalancerID,
+				},
+				[]string{},
+				map[string]interface{}{},
+			))
 		}
 	}
 
 	return resources, nil
 }
 
-func (g *LoadBalancerGenerator) listLoadBalancerBackendAddressPools(resourceGroupName string, loadBalancerName string) ([]terraformutils.Resource, error) {
-	var resources []terraformutils.Resource
-	ctx := context.Background()
+func (g *LoadBalancerGenerator) listLoadBalancerBackendAddressPools(ctx context.Context, resourceGroupName string, loadBalancerName string) ([]terraformutils.Resource, error) {
 	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
+	credential := g.Args["credential"].(azcore.TokenCredential)
+	clientOptions := g.Args["clientOptions"].(*arm.ClientOptions)
 
-	LoadBalancerBackendAddressPoolsClient := network.NewLoadBalancerBackendAddressPoolsClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
-	LoadBalancerBackendAddressPoolsClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
-	loadBalancerBackendAddressPoolIterator, err := LoadBalancerBackendAddressPoolsClient.ListComplete(ctx, resourceGroupName, loadBalancerName)
-
+	client, err := armnetwork.NewLoadBalancerBackendAddressPoolsClient(subscriptionID, credential, clientOptions)
 	if err != nil {
 		return nil, err
 	}
-	for loadBalancerBackendAddressPoolIterator.NotDone() {
-		loadBalancerBackendAddressPool := loadBalancerBackendAddressPoolIterator.Value()
-		// NOTE:
-		// Similar to above explanation, work out loadbalancer_id for azurerm datasource impl
-		re := regexp.MustCompile(`/backendAddressPools/.*$`)
-		loadBalancerID := re.ReplaceAllLiteralString(*loadBalancerBackendAddressPool.ID, "")
-		resources = append(resources, terraformutils.NewResource(
-			*loadBalancerBackendAddressPool.ID,
-			*loadBalancerBackendAddressPool.Name,
-			"azurerm_lb_backend_address_pool",
-			g.ProviderName,
-			map[string]string{
-				"loadbalancer_id": loadBalancerID,
-			},
-			[]string{},
-			map[string]interface{}{},
-		))
-		if err := loadBalancerBackendAddressPoolIterator.Next(); err != nil {
-			log.Println(err)
-			break
+
+	var resources []terraformutils.Resource
+	pager := client.NewListPager(resourceGroupName, loadBalancerName, nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, pool := range page.Value {
+			// NOTE:
+			// Similar to above explanation, work out loadbalancer_id for azurerm datasource impl
+			re := regexp.MustCompile(`/backendAddressPools/.*$`)
+			loadBalancerID := re.ReplaceAllLiteralString(*pool.ID, "")
+			resources = append(resources, terraformutils.NewResource(
+				*pool.ID,
+				*pool.Name,
+				"azurerm_lb_backend_address_pool",
+				g.ProviderName,
+				map[string]string{
+					"loadbalancer_id": loadBalancerID,
+				},
+				[]string{},
+				map[string]interface{}{},
+			))
 		}
 	}
 
@@ -142,64 +139,69 @@ func (g *LoadBalancerGenerator) listLoadBalancerBackendAddressPools(resourceGrou
 }
 
 func (g *LoadBalancerGenerator) listAndAddForLoadBalancers() ([]terraformutils.Resource, error) {
-	var resources []terraformutils.Resource
 	ctx := context.Background()
 	subscriptionID := g.Args["config"].(providerConfig).SubscriptionID
-	resourceManagerEndpoint := g.Args["config"].(providerConfig).CustomResourceManagerEndpoint
+	credential := g.Args["credential"].(azcore.TokenCredential)
+	clientOptions := g.Args["clientOptions"].(*arm.ClientOptions)
 
-	LoadBalancersClient := network.NewLoadBalancersClientWithBaseURI(resourceManagerEndpoint, subscriptionID)
-	LoadBalancersClient.Authorizer = g.Args["authorizer"].(autorest.Authorizer)
-
-	var (
-		loadBalancerIterator network.LoadBalancerListResultIterator
-		err                  error
-	)
-
-	if rg := g.Args["resource_group"].(string); rg != "" {
-		loadBalancerIterator, err = LoadBalancersClient.ListComplete(ctx, rg)
-	} else {
-		loadBalancerIterator, err = LoadBalancersClient.ListAllComplete(ctx)
-	}
-
+	client, err := armnetwork.NewLoadBalancersClient(subscriptionID, credential, clientOptions)
 	if err != nil {
 		return nil, err
 	}
-	for loadBalancerIterator.NotDone() {
-		loadBalancer := loadBalancerIterator.Value()
+
+	rg := g.Args["resource_group"].(string)
+	var loadBalancers []*armnetwork.LoadBalancer
+	if rg != "" {
+		pager := client.NewListPager(rg, nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+			loadBalancers = append(loadBalancers, page.Value...)
+		}
+	} else {
+		pager := client.NewListAllPager(nil)
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+			loadBalancers = append(loadBalancers, page.Value...)
+		}
+	}
+
+	var resources []terraformutils.Resource
+	for _, lb := range loadBalancers {
 		resources = append(resources, terraformutils.NewSimpleResource(
-			*loadBalancer.ID,
-			*loadBalancer.Name,
+			*lb.ID,
+			*lb.Name,
 			"azurerm_lb",
 			g.ProviderName,
 			[]string{}))
 
-		id, err := ParseAzureResourceID(*loadBalancer.ID)
+		id, err := ParseAzureResourceID(*lb.ID)
 		if err != nil {
 			return nil, err
 		}
 
-		probes, err := g.listLoadBalancerProbes(id.ResourceGroup, *loadBalancer.Name)
+		probes, err := g.listLoadBalancerProbes(ctx, id.ResourceGroup, *lb.Name)
 		if err != nil {
 			return nil, err
 		}
 		resources = append(resources, probes...)
 
-		inboundNatRules, err := g.listInboundNatRules(id.ResourceGroup, *loadBalancer.Name)
+		inboundNatRules, err := g.listInboundNatRules(ctx, id.ResourceGroup, *lb.Name)
 		if err != nil {
 			return nil, err
 		}
 		resources = append(resources, inboundNatRules...)
 
-		backendAddressPools, err := g.listLoadBalancerBackendAddressPools(id.ResourceGroup, *loadBalancer.Name)
+		backendAddressPools, err := g.listLoadBalancerBackendAddressPools(ctx, id.ResourceGroup, *lb.Name)
 		if err != nil {
 			return nil, err
 		}
 		resources = append(resources, backendAddressPools...)
-
-		if err := loadBalancerIterator.Next(); err != nil {
-			log.Println(err)
-			return resources, err
-		}
 	}
 
 	return resources, nil
