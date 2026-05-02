@@ -146,7 +146,7 @@ func TestAPMRetentionFilterInitResourcesListsWithoutIDFilter(t *testing.T) {
 }
 
 func TestAPMRetentionFilterInitResourcesPropagatesIDFilterError(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "fetch failed", http.StatusInternalServerError)
 	}))
 	defer server.Close()
@@ -165,7 +165,7 @@ func TestAPMRetentionFilterInitResourcesPropagatesIDFilterError(t *testing.T) {
 }
 
 func TestAPMRetentionFilterInitResourcesPropagatesListError(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "list failed", http.StatusInternalServerError)
 	}))
 	defer server.Close()
