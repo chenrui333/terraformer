@@ -4,8 +4,13 @@ Example:
 
 ```
 export LAUNCHDARKLY_ACCESS_TOKEN=[LAUNCHDARKLY_ACCESS_TOKEN]
-./terraformer import launchdarkly -r project,environment,featureFlag,segment
+./terraformer import launchdarkly -r environment,featureFlag,segment
 ```
+
+Use `project` separately when you want LaunchDarkly environments managed as nested
+`launchdarkly_project` blocks. Avoid importing `project` and `environment` together,
+because that can generate both nested and standalone resources for the same
+environments.
 
 List of supported LaunchDarkly resources:
 
