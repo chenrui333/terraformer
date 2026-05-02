@@ -46,21 +46,14 @@ func extractTfResourceName(kind string) string {
 }
 
 func terraformResourceNameCandidates(kind string) []string {
-	seen := map[string]struct{}{}
-	candidates := []string{}
-	for _, name := range preferredTerraformResourceNames[kind] {
-		if _, ok := seen[name]; ok {
-			continue
-		}
-		seen[name] = struct{}{}
-		candidates = append(candidates, name)
-	}
-
+	candidates := append([]string{}, preferredTerraformResourceNames[kind]...)
 	defaultName := extractTfResourceName(kind)
-	if _, ok := seen[defaultName]; !ok {
-		candidates = append(candidates, defaultName)
+	for _, name := range candidates {
+		if name == defaultName {
+			return candidates
+		}
 	}
-	return candidates
+	return append(candidates, defaultName)
 }
 
 func selectTerraformResourceName(kind string, hasResourceType func(string) bool) (string, bool) {
@@ -72,7 +65,13 @@ func selectTerraformResourceName(kind string, hasResourceType func(string) bool)
 	return "", false
 }
 
-func supportsTypedClientResource(clientset kubernetes.Interface, group, version, kind string) bool {
+func supportsTypedClientResource(clientset kubernetes.Interface, group, version, kind string) (ok bool) {
+	defer func() {
+		if recover() != nil {
+			ok = false
+		}
+	}()
+
 	groupMethod := reflect.ValueOf(clientset).MethodByName(extractClientSetFuncGroupName(group, version))
 	if !groupMethod.IsValid() {
 		return false

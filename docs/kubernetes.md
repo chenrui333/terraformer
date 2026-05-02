@@ -35,10 +35,10 @@ Common supported resources include:
     * `kubernetes_job_v1`
 *   `limitranges`
     * `kubernetes_limit_range`
-*   `networkpolicies`
-    * `kubernetes_network_policy_v1`
 *   `namespaces`
     * `kubernetes_namespace`
+*   `networkpolicies`
+    * `kubernetes_network_policy_v1`
 *   `persistentvolumes`
     * `kubernetes_persistent_volume`
 *   `persistentvolumeclaims`

@@ -89,6 +89,7 @@ func TestSelectTerraformResourceName(t *testing.T) {
 			supportedTypes: map[string]struct{}{
 				"kubernetes_service": {},
 			},
+			want:   "",
 			wantOK: false,
 		},
 	}
