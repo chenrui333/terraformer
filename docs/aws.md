@@ -205,9 +205,13 @@ terraformer import aws --resources=sg --regions=us-east-1
     * `aws_eks_pod_identity_association`
 *   `elasticache`
     * `aws_elasticache_cluster`
+    * `aws_elasticache_global_replication_group`
     * `aws_elasticache_parameter_group`
-    * `aws_elasticache_subnet_group`
     * `aws_elasticache_replication_group`
+    * `aws_elasticache_serverless_cache`
+    * `aws_elasticache_subnet_group`
+    * `aws_elasticache_user`
+    * `aws_elasticache_user_group`
 *   `elastic_beanstalk`
     * `aws_elastic_beanstalk_application`
     * `aws_elastic_beanstalk_environment`
