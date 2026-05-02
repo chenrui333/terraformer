@@ -19,6 +19,8 @@ Common supported resources include:
     * `kubernetes_config_map`
 *   `cronjobs`
     * `kubernetes_cron_job_v1`
+*   `csidrivers`
+    * `kubernetes_csi_driver_v1`
 *   `daemonsets`
     * `kubernetes_daemon_set_v1`
 *   `deployments`
@@ -26,7 +28,7 @@ Common supported resources include:
 *   `endpointslices`
     * `kubernetes_endpoint_slice_v1`
 *   `horizontalpodautoscalers`
-    * `kubernetes_horizontal_pod_autoscaler`
+    * `kubernetes_horizontal_pod_autoscaler_v2`
 *   `ingressclasses`
     * `kubernetes_ingress_class_v1`
 *   `ingresses`
@@ -35,6 +37,8 @@ Common supported resources include:
     * `kubernetes_job_v1`
 *   `limitranges`
     * `kubernetes_limit_range`
+*   `mutatingwebhookconfigurations`
+    * `kubernetes_mutating_webhook_configuration_v1`
 *   `namespaces`
     * `kubernetes_namespace`
 *   `networkpolicies`
@@ -47,6 +51,8 @@ Common supported resources include:
     * `kubernetes_pod`
 *   `poddisruptionbudgets`
     * `kubernetes_pod_disruption_budget_v1`
+*   `priorityclasses`
+    * `kubernetes_priority_class_v1`
 *   `replicationcontrollers`
     * `kubernetes_replication_controller`
 *   `resourcequotas`
@@ -67,6 +73,10 @@ Common supported resources include:
     * `kubernetes_stateful_set`
 *   `storageclasses`
     * `kubernetes_storage_class`
+*   `validatingadmissionpolicies`
+    * `kubernetes_validating_admission_policy_v1`
+*   `validatingwebhookconfigurations`
+    * `kubernetes_validating_webhook_configuration_v1`
     
 #### Known issues
 
