@@ -4,11 +4,14 @@ package aws
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
 	"github.com/aws/aws-sdk-go-v2/service/efs"
+	efstypes "github.com/aws/aws-sdk-go-v2/service/efs/types"
+	"github.com/aws/smithy-go"
 )
 
 var efsAllowEmptyValues = []string{"tags."}
@@ -40,9 +43,10 @@ func (g *EfsGenerator) loadFileSystem(svc *efs.Client) error {
 			return err
 		}
 		for _, fileSystem := range page.FileSystems {
+			fileSystemID := StringValue(fileSystem.FileSystemId)
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				StringValue(fileSystem.FileSystemId),
-				StringValue(fileSystem.FileSystemId),
+				fileSystemID,
+				fileSystemID,
 				"aws_efs_file_system",
 				"aws",
 				efsAllowEmptyValues))
@@ -51,8 +55,7 @@ func (g *EfsGenerator) loadFileSystem(svc *efs.Client) error {
 				FileSystemId: fileSystem.FileSystemId,
 			})
 			if err != nil {
-				fmt.Println(err.Error())
-				continue
+				return fmt.Errorf("describe efs mount targets for %s: %w", fileSystemID, err)
 			}
 			for _, mountTarget := range targetsResponse.MountTargets {
 				g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
@@ -66,17 +69,22 @@ func (g *EfsGenerator) loadFileSystem(svc *efs.Client) error {
 			policyResponse, err := svc.DescribeFileSystemPolicy(context.TODO(), &efs.DescribeFileSystemPolicyInput{
 				FileSystemId: fileSystem.FileSystemId,
 			})
+			if efsFileSystemPolicyMissing(err) {
+				continue
+			}
 			if err != nil {
-				fmt.Println(err.Error())
+				return fmt.Errorf("describe efs file system policy for %s: %w", fileSystemID, err)
+			}
+			if policyResponse == nil || StringValue(policyResponse.Policy) == "" {
 				continue
 			}
 			g.Resources = append(g.Resources, terraformutils.NewResource(
-				StringValue(fileSystem.FileSystemId),
-				StringValue(fileSystem.FileSystemId),
+				fileSystemID,
+				fileSystemID,
 				"aws_efs_file_system_policy",
 				"aws",
 				map[string]string{
-					"file_system_id": StringValue(fileSystem.FileSystemId),
+					"file_system_id": fileSystemID,
 					"policy":         StringValue(policyResponse.Policy),
 				},
 				efsAllowEmptyValues,
@@ -84,6 +92,16 @@ func (g *EfsGenerator) loadFileSystem(svc *efs.Client) error {
 		}
 	}
 	return nil
+}
+
+func efsFileSystemPolicyMissing(err error) bool {
+	var notFound *efstypes.PolicyNotFound
+	if errors.As(err, &notFound) {
+		return true
+	}
+
+	var apiErr smithy.APIError
+	return errors.As(err, &apiErr) && apiErr.ErrorCode() == "PolicyNotFound"
 }
 
 func (g *EfsGenerator) loadAccessPoint(svc *efs.Client) error {
