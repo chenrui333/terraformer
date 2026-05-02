@@ -63,6 +63,59 @@ func TestAddDefaultServiceAccountServiceRequiresServiceAccountAPI(t *testing.T) 
 	}
 }
 
+func TestAddNodeTaintService(t *testing.T) {
+	resources := map[string]terraformutils.ServiceGenerator{}
+	clientset := fake.NewSimpleClientset()
+	listableResources := map[kubernetesResourceID]struct{}{
+		{version: "v1", kind: "Node"}: {},
+	}
+
+	addNodeTaintService(resources, clientset, listableResources, func(name string) bool {
+		return name == nodeTaintTerraformType
+	})
+
+	service, ok := resources[nodeTaintServiceName]
+	if !ok {
+		t.Fatalf("resources[%q] was not registered", nodeTaintServiceName)
+	}
+	nodeTaint, ok := service.(*NodeTaint)
+	if !ok {
+		t.Fatalf("service type = %T, want *NodeTaint", service)
+	}
+	if nodeTaint.TerraformType != nodeTaintTerraformType {
+		t.Fatalf("TerraformType = %q, want %q", nodeTaint.TerraformType, nodeTaintTerraformType)
+	}
+}
+
+func TestAddNodeTaintServiceRequiresProviderType(t *testing.T) {
+	resources := map[string]terraformutils.ServiceGenerator{}
+	clientset := fake.NewSimpleClientset()
+	listableResources := map[kubernetesResourceID]struct{}{
+		{version: "v1", kind: "Node"}: {},
+	}
+
+	addNodeTaintService(resources, clientset, listableResources, func(string) bool {
+		return false
+	})
+
+	if _, ok := resources[nodeTaintServiceName]; ok {
+		t.Fatalf("resources[%q] was registered without provider type support", nodeTaintServiceName)
+	}
+}
+
+func TestAddNodeTaintServiceRequiresNodeAPI(t *testing.T) {
+	resources := map[string]terraformutils.ServiceGenerator{}
+	clientset := fake.NewSimpleClientset()
+
+	addNodeTaintService(resources, clientset, map[kubernetesResourceID]struct{}{}, func(name string) bool {
+		return name == nodeTaintTerraformType
+	})
+
+	if _, ok := resources[nodeTaintServiceName]; ok {
+		t.Fatalf("resources[%q] was registered without nodes API support", nodeTaintServiceName)
+	}
+}
+
 func TestAddKubernetesResourceServiceDisambiguatesManifestPluralCollisions(t *testing.T) {
 	resources := map[string]terraformutils.ServiceGenerator{}
 	resource := metav1.APIResource{
