@@ -32,6 +32,7 @@ Common supported resources include:
     * `kubernetes_api_service_v1`
 *   `apps/v1/replicasets`
     * `kubernetes_manifest`
+    * Standalone ReplicaSets only; Deployment-owned ReplicaSets are ignored.
 *   `certificatesigningrequests`
     * `kubernetes_certificate_signing_request_v1`
 *   `certificates.k8s.io/v1beta1/clustertrustbundles`
