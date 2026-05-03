@@ -23,10 +23,6 @@ func (g *WorkersGenerator) InitResources() error {
 	if err != nil {
 		return err
 	}
-	account, err := g.accountResourceContainer()
-	if err != nil {
-		return err
-	}
 	zones, err := cloudflareZones(ctx, api)
 	if err != nil {
 		return err
@@ -48,13 +44,18 @@ func (g *WorkersGenerator) InitResources() error {
 			))
 		}
 	}
-	if err := g.appendWorkerCustomDomainResources(ctx, api, account.Identifier); err != nil {
+	accountID := g.accountID()
+	if accountID == "" {
+		return nil
+	}
+	account := cf.AccountIdentifier(accountID)
+	if err := g.appendWorkerCustomDomainResources(ctx, api, accountID); err != nil {
 		return err
 	}
 	if err := g.appendWorkerCronTriggerResources(ctx, api, account); err != nil {
 		return err
 	}
-	if err := g.appendWorkersForPlatformsDispatchNamespaceResources(ctx, api, account.Identifier); err != nil {
+	if err := g.appendWorkersForPlatformsDispatchNamespaceResources(ctx, api, accountID); err != nil {
 		return err
 	}
 	return nil
