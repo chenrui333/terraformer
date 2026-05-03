@@ -8,10 +8,19 @@ import (
 )
 
 func TestLogzioProviderInitRequiresArgs(t *testing.T) {
-	var provider LogzioProvider
+	provider := LogzioProvider{
+		apiToken: "old-token",
+		baseURL:  "https://old.example.com",
+	}
 
 	if err := provider.Init([]string{"token"}); err == nil {
 		t.Fatal("expected missing base URL error")
+	}
+	if provider.apiToken != "" {
+		t.Fatalf("apiToken = %q, want empty after failed init", provider.apiToken)
+	}
+	if provider.baseURL != "" {
+		t.Fatalf("baseURL = %q, want empty after failed init", provider.baseURL)
 	}
 }
 

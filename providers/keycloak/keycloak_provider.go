@@ -35,6 +35,17 @@ func getArg(arg string) string {
 }
 
 func (p *KeycloakProvider) Init(args []string) error {
+	p.url = ""
+	p.basePath = ""
+	p.clientID = ""
+	p.clientSecret = ""
+	p.realm = ""
+	p.clientTimeout = 0
+	p.caCert = ""
+	p.tlsInsecureSkipVerify = false
+	p.redHatSSO = false
+	p.target = ""
+
 	if len(args) < keycloakInitArgCount {
 		return fmt.Errorf("keycloak: expected %d init args, got %d", keycloakInitArgCount, len(args))
 	}

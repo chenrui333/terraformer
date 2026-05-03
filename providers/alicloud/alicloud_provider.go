@@ -77,6 +77,9 @@ func (p AliCloudProvider) GetProviderData(_ ...string) map[string]interface{} {
 
 // Init Loads up command line arguments in the provider
 func (p *AliCloudProvider) Init(args []string) error {
+	p.region = ""
+	p.profile = ""
+
 	if len(args) < 2 {
 		return errors.New("alicloud: expected 2 init args (region, profile)")
 	}

@@ -17,6 +17,10 @@ type RBTProvider struct {
 }
 
 func (p *RBTProvider) Init(args []string) error {
+	p.endpoint = ""
+	p.username = ""
+	p.password = ""
+
 	if len(args) < 3 {
 		return errors.New("rabbitmq: endpoint, username, and password are required")
 	}

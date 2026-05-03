@@ -15,13 +15,26 @@ import (
 func TestGCPProviderInitRequiresRegion(t *testing.T) {
 	t.Setenv("GOOGLE_CLOUD_PROJECT", "test-project")
 
-	provider := GCPProvider{}
+	provider := GCPProvider{
+		projectName:  "old-project",
+		region:       compute.Region{Name: "old-region"},
+		providerType: "beta",
+	}
 	err := provider.Init(nil)
 	if err == nil {
 		t.Fatal("expected missing region error")
 	}
 	if !strings.Contains(err.Error(), "gcp region must be provided") {
 		t.Fatalf("Init error = %q, want missing region", err)
+	}
+	if provider.projectName != "" {
+		t.Fatalf("projectName = %q, want empty after failed init", provider.projectName)
+	}
+	if provider.region.Name != "" {
+		t.Fatalf("region.Name = %q, want empty after failed init", provider.region.Name)
+	}
+	if provider.providerType != "" {
+		t.Fatalf("providerType = %q, want empty after failed init", provider.providerType)
 	}
 }
 
@@ -71,7 +84,11 @@ func TestGCPProviderInitReturnsNonGlobalRegionLookupError(t *testing.T) {
 		return newTestComputeService(ctx, t, server.URL+"/"), nil
 	}
 
-	provider := GCPProvider{}
+	provider := GCPProvider{
+		projectName:  "old-project",
+		region:       compute.Region{Name: "old-region"},
+		providerType: "beta",
+	}
 	err := provider.Init([]string{"us-west1"})
 	if err == nil {
 		t.Fatal("expected region lookup error")
@@ -79,5 +96,14 @@ func TestGCPProviderInitReturnsNonGlobalRegionLookupError(t *testing.T) {
 	want := `get GCP region "us-west1" for project "test-project"`
 	if !strings.Contains(err.Error(), want) {
 		t.Fatalf("Init error = %q, want it to contain %q", err, want)
+	}
+	if provider.projectName != "" {
+		t.Fatalf("projectName = %q, want empty after failed region lookup", provider.projectName)
+	}
+	if provider.region.Name != "" {
+		t.Fatalf("region.Name = %q, want empty after failed region lookup", provider.region.Name)
+	}
+	if provider.providerType != "" {
+		t.Fatalf("providerType = %q, want empty after failed region lookup", provider.providerType)
 	}
 }

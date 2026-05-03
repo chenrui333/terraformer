@@ -3,12 +3,14 @@
 package openstack
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
 
 func TestOpenStackProviderInitRequiresRegion(t *testing.T) {
-	var provider OpenStackProvider
+	t.Setenv("OS_REGION_NAME", "old-region")
+	provider := OpenStackProvider{region: "old-region"}
 
 	err := provider.Init(nil)
 	if err == nil {
@@ -16,5 +18,11 @@ func TestOpenStackProviderInitRequiresRegion(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "expected 1 init arg") {
 		t.Fatalf("Init error = %q, want missing region", err)
+	}
+	if provider.region != "" {
+		t.Fatalf("region = %q, want empty after failed init", provider.region)
+	}
+	if value, ok := os.LookupEnv("OS_REGION_NAME"); ok {
+		t.Fatalf("OS_REGION_NAME = %q, want unset after failed init", value)
 	}
 }

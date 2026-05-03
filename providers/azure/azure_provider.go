@@ -530,25 +530,33 @@ func discoverCloudConfig(metadataHost, environment string) (cloud.Configuration,
 }
 
 func (p *AzureProvider) Init(args []string) error {
+	p.config = providerConfig{}
+	p.credential = nil
+	p.clientOptions = nil
+	p.resourceGroup = ""
+
 	if len(args) < 1 {
 		return errors.New("azure: expected 1 init arg (resource group)")
 	}
 
-	err := p.setEnvConfig()
+	staged := &AzureProvider{}
+	err := staged.setEnvConfig()
 	if err != nil {
 		return err
 	}
 
-	clientOptions, err := p.getClientOptions()
+	clientOptions, err := staged.getClientOptions()
 	if err != nil {
 		return err
 	}
+	staged.clientOptions = clientOptions
+
+	credential, err := staged.getTokenCredential()
+	if err != nil {
+		return err
+	}
+	p.config = staged.config
 	p.clientOptions = clientOptions
-
-	credential, err := p.getTokenCredential()
-	if err != nil {
-		return err
-	}
 	p.credential = credential
 	p.resourceGroup = args[0]
 

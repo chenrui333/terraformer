@@ -3,6 +3,7 @@
 package aws
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 
@@ -172,35 +173,57 @@ func (p *AWSProvider) GetBasicConfig() cty.Value {
 
 // check projectName in env params
 func (p *AWSProvider) Init(args []string) error {
+	p.region = ""
+	p.profile = ""
+
 	if len(args) < 2 {
+		if err := clearAWSEnvConfig(false); err != nil {
+			return err
+		}
 		return errors.New("aws: expected 2 init args (region, profile)")
 	}
 
-	p.region = args[0]
-	p.profile = args[1]
+	region := args[0]
+	profile := args[1]
+	if err := clearAWSEnvConfig(region == NoRegion); err != nil {
+		return err
+	}
 
 	// Terraformer accepts region and profile configuration, so we must detect what env variables to adjust to make Go SDK rely on them. AWS_SDK_LOAD_CONFIG here must be checked to determine correct variable to set.
 	enableSharedConfig, _ := strconv.ParseBool(os.Getenv("AWS_SDK_LOAD_CONFIG"))
-	var err error
-	if p.region != GlobalRegion && p.region != NoRegion {
+	if region != GlobalRegion && region != NoRegion {
+		envVar := "AWS_REGION"
 		if enableSharedConfig {
-			err = os.Setenv("AWS_DEFAULT_REGION", p.region)
-		} else {
-			err = os.Setenv("AWS_REGION", p.region)
+			envVar = "AWS_DEFAULT_REGION"
 		}
-		if err != nil {
-			return err
+		if err := os.Setenv(envVar, region); err != nil {
+			return fmt.Errorf("failed to set env %s=%q: %w", envVar, region, err)
 		}
 	}
 
-	if p.profile != "" && p.profile != "default" {
+	if profile != "" && profile != "default" {
 		envVar := "AWS_PROFILE"
 		if enableSharedConfig {
 			envVar = "AWS_DEFAULT_PROFILE"
 		}
 
-		if err := os.Setenv(envVar, p.profile); err != nil {
-			return err
+		if err := os.Setenv(envVar, profile); err != nil {
+			return fmt.Errorf("failed to set env %s=%q: %w", envVar, profile, err)
+		}
+	}
+	p.region = region
+	p.profile = profile
+	return nil
+}
+
+func clearAWSEnvConfig(preserveRegion bool) error {
+	keys := []string{"AWS_PROFILE", "AWS_DEFAULT_PROFILE"}
+	if !preserveRegion {
+		keys = append(keys, "AWS_REGION", "AWS_DEFAULT_REGION")
+	}
+	for _, key := range keys {
+		if err := os.Unsetenv(key); err != nil {
+			return fmt.Errorf("failed to unset env %s: %w", key, err)
 		}
 	}
 	return nil

@@ -30,24 +30,29 @@ type IBMProvider struct { //nolint
 }
 
 func (p *IBMProvider) Init(args []string) error {
+	p.ResourceGroup = ""
+	p.Region = ""
+	p.VPC = ""
+	if err := os.Unsetenv("IC_REGION"); err != nil {
+		return err
+	}
+
 	if len(args) < 3 {
 		return errors.New("ibm: expected 3 init args (resource group, region, vpc)")
 	}
 
-	p.ResourceGroup = args[0]
-	p.Region = args[1]
-	p.VPC = args[2]
-
-	var err error
-	if p.Region != NoRegion {
-		err = os.Setenv("IC_REGION", p.Region)
-	} else {
-		p.Region = DefaultRegion
-		err = os.Setenv("IC_REGION", DefaultRegion)
+	resourceGroup := args[0]
+	region := args[1]
+	vpc := args[2]
+	if region == NoRegion {
+		region = DefaultRegion
 	}
-	if err != nil {
+	if err := os.Setenv("IC_REGION", region); err != nil {
 		return err
 	}
+	p.ResourceGroup = resourceGroup
+	p.Region = region
+	p.VPC = vpc
 	return nil
 }
 
