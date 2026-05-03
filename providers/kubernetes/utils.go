@@ -106,6 +106,7 @@ var nativeManifestResources = map[kubernetesResourceID]struct{}{
 	{group: "certificates.k8s.io", version: "v1beta1", kind: "ClusterTrustBundle"}:                         {},
 	{group: "certificates.k8s.io", version: "v1alpha1", kind: "ClusterTrustBundle"}:                        {},
 	{group: "certificates.k8s.io", version: "v1beta1", kind: "PodCertificateRequest"}:                      {},
+	{group: "certificates.k8s.io", version: "v1alpha1", kind: "PodCertificateRequest"}:                     {},
 	{group: "flowcontrol.apiserver.k8s.io", version: "v1", kind: "FlowSchema"}:                             {},
 	{group: "flowcontrol.apiserver.k8s.io", version: "v1", kind: "PriorityLevelConfiguration"}:             {},
 	{group: "flowcontrol.apiserver.k8s.io", version: "v1beta3", kind: "FlowSchema"}:                        {},
@@ -127,11 +128,13 @@ var nativeManifestResources = map[kubernetesResourceID]struct{}{
 	{group: "resource.k8s.io", version: "v1beta1", kind: "ResourceClaim"}:                                  {},
 	{group: "resource.k8s.io", version: "v1beta1", kind: "ResourceClaimTemplate"}:                          {},
 	{group: "resource.k8s.io", version: "v1alpha3", kind: "DeviceTaintRule"}:                               {},
+	{group: "scheduling.k8s.io", version: "v1alpha2", kind: "Workload"}:                                    {},
 	{group: "scheduling.k8s.io", version: "v1alpha1", kind: "Workload"}:                                    {},
 	{group: "storage.k8s.io", version: "v1", kind: "VolumeAttributesClass"}:                                {},
 	{group: "storage.k8s.io", version: "v1beta1", kind: "VolumeAttributesClass"}:                           {},
 	{group: "storage.k8s.io", version: "v1alpha1", kind: "VolumeAttributesClass"}:                          {},
 	{group: "storagemigration.k8s.io", version: "v1beta1", kind: "StorageVersionMigration"}:                {},
+	{group: "storagemigration.k8s.io", version: "v1alpha1", kind: "StorageVersionMigration"}:               {},
 }
 
 // client-go group accessor names collapse DNS groups to their first label
