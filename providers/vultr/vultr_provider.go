@@ -15,10 +15,13 @@ type VultrProvider struct { //nolint
 }
 
 func (p *VultrProvider) Init(_ []string) error {
-	if os.Getenv("VULTR_API_KEY") == "" {
+	p.apiKey = ""
+
+	apiKey := os.Getenv("VULTR_API_KEY")
+	if apiKey == "" {
 		return errors.New("set VULTR_API_KEY env var")
 	}
-	p.apiKey = os.Getenv("VULTR_API_KEY")
+	p.apiKey = apiKey
 
 	return nil
 }

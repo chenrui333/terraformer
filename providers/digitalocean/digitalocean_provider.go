@@ -15,10 +15,13 @@ type DigitalOceanProvider struct { //nolint
 }
 
 func (p *DigitalOceanProvider) Init(_ []string) error {
-	if os.Getenv("DIGITALOCEAN_TOKEN") == "" {
+	p.token = ""
+
+	token := os.Getenv("DIGITALOCEAN_TOKEN")
+	if token == "" {
 		return errors.New("set DIGITALOCEAN_TOKEN env var")
 	}
-	p.token = os.Getenv("DIGITALOCEAN_TOKEN")
+	p.token = token
 
 	return nil
 }

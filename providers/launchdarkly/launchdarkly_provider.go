@@ -21,19 +21,26 @@ type LaunchDarklyProvider struct { //nolint
 const APIVersion = "20240415"
 
 func (p *LaunchDarklyProvider) Init(_ []string) error {
-	if os.Getenv("LAUNCHDARKLY_ACCESS_TOKEN") == "" {
+	p.apiKey = ""
+	p.client = nil
+	p.ctx = nil
+
+	apiKey := os.Getenv("LAUNCHDARKLY_ACCESS_TOKEN")
+	if apiKey == "" {
 		return errors.New("set LAUNCHDARKLY_ACCESS_TOKEN env var")
 	}
-	p.apiKey = os.Getenv("LAUNCHDARKLY_ACCESS_TOKEN")
 
 	cfg := ldapi.NewConfiguration()
 	cfg.AddDefaultHeader("LD-API-Version", APIVersion)
 
-	p.client = ldapi.NewAPIClient(cfg)
+	client := ldapi.NewAPIClient(cfg)
 
-	p.ctx = context.WithValue(context.Background(), ldapi.ContextAPIKeys, map[string]ldapi.APIKey{
-		"ApiKey": {Key: p.apiKey},
+	ctx := context.WithValue(context.Background(), ldapi.ContextAPIKeys, map[string]ldapi.APIKey{
+		"ApiKey": {Key: apiKey},
 	})
+	p.apiKey = apiKey
+	p.client = client
+	p.ctx = ctx
 	return nil
 }
 

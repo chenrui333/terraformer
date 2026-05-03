@@ -20,30 +20,33 @@ type Auth0Provider struct { //nolint
 }
 
 func (p *Auth0Provider) Init(_ []string) error {
+	p.domain = ""
+	p.clientID = ""
+	p.clientSecret = ""
 	p.client = nil
 
-	orgName := os.Getenv("AUTH0_DOMAIN")
-	if orgName == "" {
+	domain := os.Getenv("AUTH0_DOMAIN")
+	if domain == "" {
 		return errors.New("set AUTH0_DOMAIN env var")
 	}
-	p.domain = orgName
 
-	baseURL := os.Getenv("AUTH0_CLIENT_ID")
-	if baseURL == "" {
+	clientID := os.Getenv("AUTH0_CLIENT_ID")
+	if clientID == "" {
 		return errors.New("set AUTH0_CLIENT_ID env var")
 	}
-	p.clientID = baseURL
 
-	apiToken := os.Getenv("AUTH0_CLIENT_SECRET")
-	if apiToken == "" {
+	clientSecret := os.Getenv("AUTH0_CLIENT_SECRET")
+	if clientSecret == "" {
 		return errors.New("set AUTH0_CLIENT_SECRET env var")
 	}
-	p.clientSecret = apiToken
 
-	client, err := newManagementClient(p.domain, p.clientID, p.clientSecret)
+	client, err := newManagementClient(domain, clientID, clientSecret)
 	if err != nil {
 		return err
 	}
+	p.domain = domain
+	p.clientID = clientID
+	p.clientSecret = clientSecret
 	p.client = client
 
 	return nil

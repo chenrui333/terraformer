@@ -35,22 +35,26 @@ func (p *OktaProvider) GetResourceConnections() map[string]map[string][]string {
 }
 
 func (p *OktaProvider) Init(_ []string) error {
+	p.orgName = ""
+	p.baseURL = ""
+	p.apiToken = ""
+
 	orgName := os.Getenv("OKTA_ORG_NAME")
 	if orgName == "" {
 		return errors.New("set OKTA_ORG_NAME env var")
 	}
-	p.orgName = orgName
 
 	baseURL := os.Getenv("OKTA_BASE_URL")
 	if baseURL == "" {
 		return errors.New("set OKTA_BASE_URL env var")
 	}
-	p.baseURL = baseURL
 
 	apiToken := os.Getenv("OKTA_API_TOKEN")
 	if apiToken == "" {
 		return errors.New("set OKTA_API_TOKEN env var")
 	}
+	p.orgName = orgName
+	p.baseURL = baseURL
 	p.apiToken = apiToken
 
 	return nil

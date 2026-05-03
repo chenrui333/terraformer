@@ -16,15 +16,20 @@ type EquinixMetalProvider struct { //nolint
 }
 
 func (p *EquinixMetalProvider) Init(_ []string) error {
-	if os.Getenv("PACKET_AUTH_TOKEN") == "" {
+	p.authToken = ""
+	p.projectID = ""
+
+	authToken := os.Getenv("PACKET_AUTH_TOKEN")
+	if authToken == "" {
 		return errors.New("set PACKET_AUTH_TOKEN env var")
 	}
-	p.authToken = os.Getenv("PACKET_AUTH_TOKEN")
 
-	if os.Getenv("METAL_PROJECT_ID") == "" {
+	projectID := os.Getenv("METAL_PROJECT_ID")
+	if projectID == "" {
 		return errors.New("set METAL_PROJECT_ID env var")
 	}
-	p.projectID = os.Getenv("METAL_PROJECT_ID")
+	p.authToken = authToken
+	p.projectID = projectID
 
 	return nil
 }

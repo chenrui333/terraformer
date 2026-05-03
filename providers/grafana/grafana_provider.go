@@ -59,13 +59,21 @@ func (p *GrafanaProvider) GetConfig() cty.Value {
 }
 
 func (p *GrafanaProvider) Init(_ []string) error {
-	p.auth = os.Getenv("GRAFANA_AUTH")
-	if p.auth == "" {
+	p.auth = ""
+	p.url = ""
+	p.orgID = 0
+	p.tlsKey = ""
+	p.tlsCert = ""
+	p.caCert = ""
+	p.insecureSkipVerify = false
+
+	auth := os.Getenv("GRAFANA_AUTH")
+	if auth == "" {
 		return errors.New("Grafana API authentication must be set through `GRAFANA_AUTH` env var, either as an API token or as username:password for HTTP basic auth")
 	}
 
-	p.url = os.Getenv("GRAFANA_URL")
-	if p.url == "" {
+	url := os.Getenv("GRAFANA_URL")
+	if url == "" {
 		return errors.New("Grafana API URL must be set through `GRAFANA_URL` env var")
 	}
 
@@ -73,15 +81,13 @@ func (p *GrafanaProvider) Init(_ []string) error {
 	if err != nil {
 		orgID = 1
 	}
+	p.auth = auth
+	p.url = url
 	p.orgID = orgID
-
 	p.tlsKey = os.Getenv("HTTPS_TLS_KEY")
 	p.tlsCert = os.Getenv("HTTPS_TLS_CERT")
 	p.caCert = os.Getenv("HTTPS_CA_CERT")
-
-	if os.Getenv("HTTPS_INSECURE_SKIP_VERIFY") == "1" {
-		p.insecureSkipVerify = true
-	}
+	p.insecureSkipVerify = os.Getenv("HTTPS_INSECURE_SKIP_VERIFY") == "1"
 
 	return nil
 }

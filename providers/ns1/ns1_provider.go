@@ -15,10 +15,13 @@ type Ns1Provider struct { //nolint
 }
 
 func (p *Ns1Provider) Init(_ []string) error {
-	if os.Getenv("NS1_APIKEY") == "" {
+	p.apiKey = ""
+
+	apiKey := os.Getenv("NS1_APIKEY")
+	if apiKey == "" {
 		return errors.New("set NS1_APIKEY env var")
 	}
-	p.apiKey = os.Getenv("NS1_APIKEY")
+	p.apiKey = apiKey
 
 	return nil
 }
