@@ -32,7 +32,7 @@ const (
 	backupRestoreTestingSelectionResourceType = "backup_restore_testing_selection"
 )
 
-var backupAllowEmptyValues = []string{"tags."}
+var backupAllowEmptyValues = []string{"tags.", "resource_type_opt_in_preference"}
 
 var backupResourceTypes = []string{
 	backupVaultResourceType,
@@ -76,6 +76,25 @@ type backupOptionalResourceLoader struct {
 	name         string
 	serviceNames []string
 	load         func() error
+}
+
+func (g *BackupGenerator) InitialCleanup() {
+	if len(g.Filter) == 0 {
+		return
+	}
+	var filteredResources []terraformutils.Resource
+	for _, resource := range g.Resources {
+		allPredicatesTrue := true
+		for _, filter := range g.Filter {
+			if filter.FieldPath == "id" {
+				allPredicatesTrue = allPredicatesTrue && backupInitialIDFilterMatchesResource(filter, resource)
+			}
+		}
+		if allPredicatesTrue && !terraformutils.ContainsResource(filteredResources, resource) {
+			filteredResources = append(filteredResources, resource)
+		}
+	}
+	g.Resources = filteredResources
 }
 
 func (g *BackupGenerator) InitResources() error {
@@ -411,10 +430,9 @@ func newBackupSelectionResource(planID string, selection backuptypes.BackupSelec
 	if iamRoleARN := StringValue(selection.IamRoleArn); iamRoleARN != "" {
 		attributes["iam_role_arn"] = iamRoleARN
 	}
-	importID := backupSelectionImportID(planID, selectionID)
 	return terraformutils.NewResource(
-		importID,
-		importID,
+		selectionID,
+		backupSelectionImportID(planID, selectionID),
 		"aws_backup_selection",
 		"aws",
 		attributes,
@@ -580,7 +598,7 @@ func (g *BackupGenerator) addBackupRegionSettings(svc *backup.Client, region str
 	if err != nil {
 		return err
 	}
-	if region == "" || len(output.ResourceTypeOptInPreference) == 0 {
+	if region == "" || !backupRegionSettingsConfigured(output) {
 		return nil
 	}
 	attributes := backupBoolMapAttributes("resource_type_opt_in_preference", output.ResourceTypeOptInPreference)
@@ -694,7 +712,7 @@ func (g *BackupGenerator) resourceMatchesInitialIDFilters(serviceName string, re
 		if filter.FieldPath != "id" || !filter.IsApplicable(serviceName) {
 			continue
 		}
-		if !filter.Filter(resource) {
+		if !backupInitialIDFilterMatchesResource(filter, resource) {
 			return false
 		}
 	}
@@ -706,7 +724,7 @@ func (g *BackupGenerator) resourceMatchesUntypedIDFilters(resource terraformutil
 		if filter.ServiceName != "" || filter.FieldPath != "id" {
 			continue
 		}
-		if !filter.Filter(resource) {
+		if !backupInitialIDFilterMatchesResource(filter, resource) {
 			return false
 		}
 	}
@@ -780,6 +798,10 @@ func backupLogicallyAirGappedVaultImportable(vault backuptypes.BackupVaultListMe
 	return vault.VaultType == backuptypes.VaultTypeLogicallyAirGappedBackupVault && StringValue(vault.BackupVaultName) != "" && vault.MinRetentionDays != nil && vault.MaxRetentionDays != nil
 }
 
+func backupRegionSettingsConfigured(output *backup.DescribeRegionSettingsOutput) bool {
+	return output != nil && (len(output.ResourceTypeOptInPreference) > 0 || len(output.ResourceTypeManagementPreference) > 0)
+}
+
 func backupVaultEvents(events []backuptypes.BackupVaultEvent) []string {
 	values := make([]string, 0, len(events))
 	for _, event := range events {
@@ -848,10 +870,13 @@ func backupRestoreTestingSelectionImportID(selectionName, planName string) strin
 func backupSelectionIDFilterCanMatch(values []string, planID, selectionID string) bool {
 	for _, value := range values {
 		if selectionID != "" {
-			if value == backupSelectionImportID(planID, selectionID) {
+			if value == selectionID || value == backupSelectionImportID(planID, selectionID) {
 				return true
 			}
 			continue
+		}
+		if !strings.Contains(value, "|") {
+			return true
 		}
 		if strings.HasPrefix(value, planID+"|") {
 			return true
@@ -878,6 +903,17 @@ func backupRestoreTestingSelectionIDFilterCanMatch(values []string, planName, se
 func backupResourceMissing(err error) bool {
 	var resourceNotFound *backuptypes.ResourceNotFoundException
 	return errors.As(err, &resourceNotFound)
+}
+
+func backupInitialIDFilterMatchesResource(filter terraformutils.ResourceFilter, resource terraformutils.Resource) bool {
+	serviceName := strings.TrimPrefix(resource.InstanceInfo.Type, resource.Provider+"_")
+	if !filter.IsApplicable(serviceName) {
+		return true
+	}
+	if serviceName == backupSelectionResourceType {
+		return backupSelectionIDFilterCanMatch(filter.AcceptableValues, resource.InstanceState.Attributes["plan_id"], resource.InstanceState.ID)
+	}
+	return filter.Filter(resource)
 }
 
 func (g *BackupGenerator) PostConvertHook() error {

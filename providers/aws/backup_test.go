@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/backup"
 	backuptypes "github.com/aws/aws-sdk-go-v2/service/backup/types"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
@@ -45,6 +46,15 @@ func TestBackupImportIDs(t *testing.T) {
 	if got := backupSelectionImportID("plan-1", "selection-1"); got != "plan-1|selection-1" {
 		t.Fatalf("backupSelectionImportID() = %q", got)
 	}
+	if !backupSelectionIDFilterCanMatch([]string{"plan-1|selection-1"}, "plan-1", "selection-1") {
+		t.Fatal("backupSelectionIDFilterCanMatch() should match composite selection ID")
+	}
+	if !backupSelectionIDFilterCanMatch([]string{"selection-1"}, "plan-1", "selection-1") {
+		t.Fatal("backupSelectionIDFilterCanMatch() should match provider state selection ID")
+	}
+	if !backupSelectionIDFilterCanMatch([]string{"selection-1"}, "plan-1", "") {
+		t.Fatal("backupSelectionIDFilterCanMatch() should let raw selection ID filters scan candidate plans")
+	}
 	if got := backupRestoreTestingSelectionImportID("selection_1", "plan_1"); got != "selection_1:plan_1" {
 		t.Fatalf("backupRestoreTestingSelectionImportID() = %q", got)
 	}
@@ -69,6 +79,10 @@ func TestBackupAttributeHelpers(t *testing.T) {
 	if boolMap["resource_type_opt_in_preference.EBS"] != "true" {
 		t.Fatalf("resource_type_opt_in_preference.EBS = %q", boolMap["resource_type_opt_in_preference.EBS"])
 	}
+	emptyBoolMap := backupBoolMapAttributes("resource_type_opt_in_preference", nil)
+	if emptyBoolMap["resource_type_opt_in_preference.%"] != "0" {
+		t.Fatalf("empty resource_type_opt_in_preference.%% = %q, want 0", emptyBoolMap["resource_type_opt_in_preference.%"])
+	}
 
 	slice := backupStringSliceAttributes("backup_vault_events", []string{"BACKUP_JOB_COMPLETED", "RESTORE_JOB_COMPLETED"})
 	if slice["backup_vault_events.#"] != "2" {
@@ -76,6 +90,39 @@ func TestBackupAttributeHelpers(t *testing.T) {
 	}
 	if slice["backup_vault_events.1"] != "RESTORE_JOB_COMPLETED" {
 		t.Fatalf("backup_vault_events.1 = %q", slice["backup_vault_events.1"])
+	}
+}
+
+func TestBackupRegionSettingsConfigured(t *testing.T) {
+	tests := []struct {
+		name   string
+		output *backup.DescribeRegionSettingsOutput
+		want   bool
+	}{
+		{name: "nil output"},
+		{name: "empty maps", output: &backup.DescribeRegionSettingsOutput{}},
+		{
+			name: "opt-in settings",
+			output: &backup.DescribeRegionSettingsOutput{
+				ResourceTypeOptInPreference: map[string]bool{"EBS": true},
+			},
+			want: true,
+		},
+		{
+			name: "management-only settings",
+			output: &backup.DescribeRegionSettingsOutput{
+				ResourceTypeManagementPreference: map[string]bool{"DynamoDB": true},
+			},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := backupRegionSettingsConfigured(tt.output); got != tt.want {
+				t.Fatalf("backupRegionSettingsConfigured() = %t, want %t", got, tt.want)
+			}
+		})
 	}
 }
 
@@ -196,8 +243,16 @@ func TestBackupFilterGatesSelections(t *testing.T) {
 		SelectionId:   aws.String("selection-a"),
 		SelectionName: aws.String("daily"),
 	})
+	if selection.InstanceState.ID != "selection-a" {
+		t.Fatalf("selection InstanceState.ID = %q, want provider read ID selection-a", selection.InstanceState.ID)
+	}
 	if !g.shouldAppendBackupResource(backupSelectionResourceType, selection) {
 		t.Fatal("shouldAppendBackupResource(selection) = false, want true")
+	}
+	g.Resources = []terraformutils.Resource{selection}
+	g.InitialCleanup()
+	if len(g.Resources) != 1 {
+		t.Fatalf("InitialCleanup() resources len = %d, want 1", len(g.Resources))
 	}
 	plan := terraformutils.NewSimpleResource("plan-a", "plan-a", "aws_backup_plan", "aws", backupAllowEmptyValues)
 	if g.shouldAppendBackupResource(backupPlanResourceType, plan) {
