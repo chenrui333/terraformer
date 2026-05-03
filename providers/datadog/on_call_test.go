@@ -50,8 +50,8 @@ func TestOnCallCreateResources(t *testing.T) {
 	if skipped {
 		t.Fatal("createResource skipped email notification channel")
 	}
-	if channelResource.InstanceState.ID != "channel-1" {
-		t.Fatalf("notification channel resource ID = %q, want channel-1", channelResource.InstanceState.ID)
+	if channelResource.InstanceState.ID != "user-1,channel-1" {
+		t.Fatalf("notification channel resource ID = %q, want user-1,channel-1", channelResource.InstanceState.ID)
 	}
 	if channelResource.InstanceState.Attributes["user_id"] != "user-1" {
 		t.Fatalf("notification channel user_id = %q, want user-1", channelResource.InstanceState.Attributes["user_id"])
@@ -69,8 +69,8 @@ func TestOnCallCreateResources(t *testing.T) {
 	if err != nil {
 		t.Fatalf("createResource notification rule returned error: %v", err)
 	}
-	if ruleResource.InstanceState.ID != "rule-1" {
-		t.Fatalf("notification rule resource ID = %q, want rule-1", ruleResource.InstanceState.ID)
+	if ruleResource.InstanceState.ID != "user-1,rule-1" {
+		t.Fatalf("notification rule resource ID = %q, want user-1,rule-1", ruleResource.InstanceState.ID)
 	}
 	if ruleResource.InstanceState.Attributes["user_id"] != "user-1" {
 		t.Fatalf("notification rule user_id = %q, want user-1", ruleResource.InstanceState.Attributes["user_id"])
@@ -333,8 +333,39 @@ func TestOnCallUserNotificationChannelInitResourcesFiltersByUserID(t *testing.T)
 	if len(generator.Resources) != 1 {
 		t.Fatalf("expected 1 resource, got %d", len(generator.Resources))
 	}
-	if generator.Resources[0].InstanceState.ID != "channel-1" {
-		t.Fatalf("resource ID = %q, want channel-1", generator.Resources[0].InstanceState.ID)
+	if generator.Resources[0].InstanceState.ID != "user-1,channel-1" {
+		t.Fatalf("resource ID = %q, want user-1,channel-1", generator.Resources[0].InstanceState.ID)
+	}
+}
+
+func TestOnCallUserNotificationChannelInitResourcesFiltersByID(t *testing.T) {
+	pathCh := make(chan string, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		pathCh <- r.URL.Path
+		_, _ = fmt.Fprint(w, fmt.Sprintf("{\"data\":%s}", onCallEmailNotificationChannelJSON("channel-1")))
+	}))
+	defer server.Close()
+
+	generator := newOnCallUserNotificationChannelTestGenerator(server, []terraformutils.ResourceFilter{
+		{
+			ServiceName:      "on_call_user_notification_channel",
+			FieldPath:        "id",
+			AcceptableValues: []string{"user-1:channel-1"},
+		},
+	})
+	if err := generator.InitResources(); err != nil {
+		t.Fatalf("InitResources returned error: %v", err)
+	}
+	assertObservedQueryValue(t, pathCh, "path", "/api/v2/on-call/users/user-1/notification-channels/channel-1")
+	if len(generator.Resources) != 1 {
+		t.Fatalf("expected 1 resource, got %d", len(generator.Resources))
+	}
+	if generator.Resources[0].InstanceState.ID != "user-1,channel-1" {
+		t.Fatalf("resource ID = %q, want user-1,channel-1", generator.Resources[0].InstanceState.ID)
+	}
+	if generator.Filter[0].AcceptableValues[0] != "user-1,channel-1" {
+		t.Fatalf("rewritten id filter = %v, want [user-1,channel-1]", generator.Filter[0].AcceptableValues)
 	}
 }
 
@@ -361,8 +392,11 @@ func TestOnCallUserNotificationRuleInitResourcesFiltersByID(t *testing.T) {
 	if len(generator.Resources) != 1 {
 		t.Fatalf("expected 1 resource, got %d", len(generator.Resources))
 	}
-	if generator.Filter[0].AcceptableValues[0] != "rule-1" {
-		t.Fatalf("rewritten id filter = %v, want [rule-1]", generator.Filter[0].AcceptableValues)
+	if generator.Resources[0].InstanceState.ID != "user-1,rule-1" {
+		t.Fatalf("resource ID = %q, want user-1,rule-1", generator.Resources[0].InstanceState.ID)
+	}
+	if generator.Filter[0].AcceptableValues[0] != "user-1,rule-1" {
+		t.Fatalf("rewritten id filter = %v, want [user-1,rule-1]", generator.Filter[0].AcceptableValues)
 	}
 }
 

@@ -52,7 +52,7 @@ func (g *OnCallUserNotificationChannelGenerator) createResource(userID string, u
 	}
 
 	return terraformutils.NewResource(
-		notificationChannelID,
+		onCallUserChildProviderImportID(userID, notificationChannelID),
 		fmt.Sprintf("on_call_user_notification_channel_%s_%s", userID, notificationChannelID),
 		"datadog_on_call_user_notification_channel",
 		"datadog",
@@ -66,7 +66,7 @@ func (g *OnCallUserNotificationChannelGenerator) createResource(userID string, u
 
 // InitResources Generate TerraformResources from Datadog API,
 // from each On-Call user notification channel create 1 TerraformResource.
-// Need On-Call User Notification Channel ID formatted as '<user_id>:<channel_id>' for filter lookup.
+// Need On-Call User Notification Channel ID formatted as '<user_id>,<channel_id>' for provider import.
 func (g *OnCallUserNotificationChannelGenerator) InitResources() error {
 	datadogClient := g.Args["datadogClient"].(*datadog.APIClient)
 	auth := g.Args["auth"].(context.Context)
@@ -132,7 +132,7 @@ func (g *OnCallUserNotificationChannelGenerator) filteredResources(auth context.
 				}
 				resources = append(resources, resource)
 			}
-			g.Filter[filterIndex].AcceptableValues = onCallUserChildIDs(filterIDs)
+			g.Filter[filterIndex].AcceptableValues = onCallUserChildProviderImportIDs(filterIDs)
 		case "user_id":
 			filtered = true
 			for _, userID := range filter.AcceptableValues {

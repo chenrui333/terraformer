@@ -40,12 +40,16 @@ func parseOnCallUserChildImportID(importID string, childName string) (string, st
 	return parts[0], parts[1], nil
 }
 
-func onCallUserChildIDs(filterIDs []onCallUserChildImportID) []string {
+func onCallUserChildProviderImportIDs(filterIDs []onCallUserChildImportID) []string {
 	ids := []string{}
 	for _, filterID := range filterIDs {
-		ids = append(ids, filterID.childID)
+		ids = append(ids, onCallUserChildProviderImportID(filterID.userID, filterID.childID))
 	}
 	return ids
+}
+
+func onCallUserChildProviderImportID(userID string, childID string) string {
+	return fmt.Sprintf("%s,%s", userID, childID)
 }
 
 func listDatadogUserIDs(auth context.Context, api *datadogV2.UsersApi) ([]string, error) {
