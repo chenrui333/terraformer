@@ -94,6 +94,8 @@ Common supported resources include:
     * `kubernetes_manifest`
 *   `networking.k8s.io/v1beta1/servicecidrs`
     * `kubernetes_manifest`
+*   `networking.k8s.io/v1alpha1/servicecidrs`
+    * `kubernetes_manifest`
 *   `nodetaints`
     * `kubernetes_node_taint`
 *   `persistentvolumes`
@@ -118,9 +120,27 @@ Common supported resources include:
     * `kubernetes_manifest`
 *   `resource.k8s.io/v1/resourceclaimtemplates`
     * `kubernetes_manifest`
+*   `resource.k8s.io/v1beta2/deviceclasses`
+    * `kubernetes_manifest`
+*   `resource.k8s.io/v1beta2/resourceclaims`
+    * `kubernetes_manifest`
+*   `resource.k8s.io/v1beta2/resourceclaimtemplates`
+    * `kubernetes_manifest`
 *   `resource.k8s.io/v1beta2/devicetaintrules`
     * `kubernetes_manifest`
+*   `resource.k8s.io/v1beta1/deviceclasses`
+    * `kubernetes_manifest`
+*   `resource.k8s.io/v1beta1/resourceclaims`
+    * `kubernetes_manifest`
+*   `resource.k8s.io/v1beta1/resourceclaimtemplates`
+    * `kubernetes_manifest`
+*   `resource.k8s.io/v1alpha3/deviceclasses`
+    * `kubernetes_manifest`
 *   `resource.k8s.io/v1alpha3/devicetaintrules`
+    * `kubernetes_manifest`
+*   `resource.k8s.io/v1alpha3/resourceclaims`
+    * `kubernetes_manifest`
+*   `resource.k8s.io/v1alpha3/resourceclaimtemplates`
     * `kubernetes_manifest`
 *   `resourcequotas`
     * `kubernetes_resource_quota_v1`
