@@ -36,9 +36,7 @@ func (p *OpsgenieProvider) InitService(serviceName string, verbose bool) error {
 		return errors.New(p.GetName() + ": " + serviceName + " not supported service")
 	}
 	p.Service = service
-	p.Service.SetName(serviceName)
-	p.Service.SetVerbose(verbose)
-	p.Service.SetProviderName(p.GetName())
+	terraformutils.ConfigureService(p.Service, serviceName, verbose, p.GetName())
 	p.Service.SetArgs(map[string]interface{}{
 		"api-key": p.APIKey,
 	})

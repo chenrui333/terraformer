@@ -61,9 +61,7 @@ func (p *KubernetesProvider) InitService(serviceName string, verbose bool) error
 		return errors.New("kubernetes: " + serviceName + " not supported resource")
 	}
 	p.Service = service
-	p.Service.SetName(serviceName)
-	p.Service.SetVerbose(verbose)
-	p.Service.SetProviderName(p.GetName())
+	terraformutils.ConfigureService(p.Service, serviceName, verbose, p.GetName())
 	return nil
 }
 

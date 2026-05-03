@@ -49,9 +49,7 @@ func (p *PanosProvider) InitService(serviceName string, verbose bool) error {
 	}
 
 	p.Service = service
-	p.Service.SetName(serviceName)
-	p.Service.SetVerbose(verbose)
-	p.Service.SetProviderName(p.GetName())
+	terraformutils.ConfigureService(p.Service, serviceName, verbose, p.GetName())
 	p.Service.SetArgs(map[string]interface{}{
 		"vsys": p.vsys,
 	})

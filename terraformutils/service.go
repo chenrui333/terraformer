@@ -37,6 +37,12 @@ type Service struct {
 	Verbose      bool
 }
 
+func ConfigureService(service ServiceGenerator, name string, verbose bool, providerName string) {
+	service.SetName(name)
+	service.SetVerbose(verbose)
+	service.SetProviderName(providerName)
+}
+
 func (s *Service) SetProviderName(providerName string) {
 	s.ProviderName = providerName
 }

@@ -67,9 +67,7 @@ func (p *DigitalOceanProvider) InitService(serviceName string, verbose bool) err
 		return errors.New("digitalocean: " + serviceName + " not supported service")
 	}
 	p.Service = service
-	p.Service.SetName(serviceName)
-	p.Service.SetVerbose(verbose)
-	p.Service.SetProviderName(p.GetName())
+	terraformutils.ConfigureService(p.Service, serviceName, verbose, p.GetName())
 	p.Service.SetArgs(map[string]interface{}{
 		"token": p.token,
 	})

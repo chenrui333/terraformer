@@ -77,9 +77,7 @@ func (p *AzureDevOpsProvider) InitService(serviceName string, verbose bool) erro
 		return errors.New("azuredevops: " + serviceName + " not supported service")
 	}
 	p.Service = service
-	p.Service.SetName(serviceName)
-	p.Service.SetVerbose(verbose)
-	p.Service.SetProviderName(p.GetName())
+	terraformutils.ConfigureService(p.Service, serviceName, verbose, p.GetName())
 	p.Service.SetArgs(map[string]interface{}{
 		"organizationURL":     p.organizationURL,
 		"personalAccessToken": p.personalAccessToken,

@@ -64,9 +64,7 @@ func (p *HerokuProvider) InitService(serviceName string, verbose bool) error {
 		return errors.New("heroku: " + serviceName + " not supported service")
 	}
 	p.Service = service
-	p.Service.SetName(serviceName)
-	p.Service.SetVerbose(verbose)
-	p.Service.SetProviderName(p.GetName())
+	terraformutils.ConfigureService(p.Service, serviceName, verbose, p.GetName())
 	p.Service.SetArgs(map[string]interface{}{
 		"api_key": p.apiKey,
 		"team":    p.team,

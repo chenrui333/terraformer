@@ -56,9 +56,7 @@ func (p *MyrasecProvider) InitService(serviceName string, verbose bool) error {
 		return errors.New("myrasec: " + serviceName + " not supported service")
 	}
 	p.Service = service
-	p.Service.SetName(serviceName)
-	p.Service.SetVerbose(verbose)
-	p.Service.SetProviderName(p.GetName())
+	terraformutils.ConfigureService(p.Service, serviceName, verbose, p.GetName())
 
 	return nil
 }
