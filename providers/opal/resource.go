@@ -41,8 +41,7 @@ func (g *ResourceGenerator) createResources(opalResources []*opalsdk.Resource) (
 		}
 		tfname := opalResourceDisplayName(resource.Name, resourceID)
 		if resource.ResourceType != nil &&
-			*resource.ResourceType == opalsdk.RESOURCETYPEENUM_AWS_SSO_PERMISSION_SET &&
-			resource.ParentResourceId != nil {
+			*resource.ResourceType == opalsdk.RESOURCETYPEENUM_AWS_SSO_PERMISSION_SET {
 			parentResourceID, err := opalRequiredStringPtr("opal_resource", "parent_resource_id", resource.ParentResourceId)
 			if err != nil {
 				return nil, err

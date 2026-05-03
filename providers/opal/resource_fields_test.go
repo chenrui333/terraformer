@@ -158,6 +158,17 @@ func TestOpalCreateResourcesRequiresIDs(t *testing.T) {
 			},
 			wantErr: "missing resource_id",
 		},
+		{
+			name: "permission set parent resource id",
+			create: func() ([]terraformutils.Resource, error) {
+				resourceType := opalsdk.RESOURCETYPEENUM_AWS_SSO_PERMISSION_SET
+				return (&ResourceGenerator{}).createResources([]*opalsdk.Resource{{
+					ResourceId:   "permission-set-id",
+					ResourceType: &resourceType,
+				}})
+			},
+			wantErr: "missing parent_resource_id",
+		},
 	}
 
 	for _, tt := range tests {
