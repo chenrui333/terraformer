@@ -16,25 +16,41 @@ type GmailfilterProvider struct { //nolint
 }
 
 func (p *GmailfilterProvider) Init(args []string) error {
-	credentials := os.Getenv("GOOGLE_CREDENTIALS")
+	p.credentials = ""
+	p.impersonatedUserEmail = ""
+
+	previousCredentials, hadPreviousCredentials := os.LookupEnv("GOOGLE_CREDENTIALS")
+	credentials := previousCredentials
 	if len(args) > 0 && args[0] != "" {
-		credentials = args[0]
-		if err := terraformutils.SetEnv("GOOGLE_CREDENTIALS", credentials); err != nil {
+		if err := terraformutils.SetEnv("GOOGLE_CREDENTIALS", args[0]); err != nil {
 			return err
 		}
+		credentials = args[0]
 	}
 	email := os.Getenv("IMPERSONATED_USER_EMAIL")
 	if len(args) > 1 && args[1] != "" {
-		email = args[1]
-		if err := terraformutils.SetEnv("IMPERSONATED_USER_EMAIL", email); err != nil {
+		if err := terraformutils.SetEnv("IMPERSONATED_USER_EMAIL", args[1]); err != nil {
+			if len(args) > 0 && args[0] != "" {
+				if restoreErr := restoreEnv("GOOGLE_CREDENTIALS", previousCredentials, hadPreviousCredentials); restoreErr != nil {
+					return errors.Join(err, restoreErr)
+				}
+			}
 			return err
 		}
+		email = args[1]
 	}
 
 	p.credentials = credentials
 	p.impersonatedUserEmail = email
 
 	return nil
+}
+
+func restoreEnv(key, previousValue string, hadPreviousValue bool) error {
+	if hadPreviousValue {
+		return terraformutils.SetEnv(key, previousValue)
+	}
+	return terraformutils.UnsetEnv(key)
 }
 
 func (p *GmailfilterProvider) GetName() string {

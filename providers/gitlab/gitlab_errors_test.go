@@ -76,7 +76,11 @@ func TestGitLabProviderInitUsesEnvTokenForEmptyTokenArg(t *testing.T) {
 
 func TestGitLabProviderInitReturnsTokenErrorForEmptyTokenArgWithoutEnv(t *testing.T) {
 	t.Setenv("GITLAB_TOKEN", "")
-	var provider GitLabProvider
+	provider := GitLabProvider{
+		group:   "old-group",
+		token:   "old-token",
+		baseURL: "https://gitlab.example.com/api/v4/",
+	}
 
 	err := provider.Init([]string{"test-group", "", ""})
 	if err == nil {
@@ -84,6 +88,15 @@ func TestGitLabProviderInitReturnsTokenErrorForEmptyTokenArgWithoutEnv(t *testin
 	}
 	if !strings.Contains(err.Error(), "token requirement") {
 		t.Fatalf("Init error = %q, want token requirement", err)
+	}
+	if provider.group != "" {
+		t.Fatalf("group = %q, want empty after failed init", provider.group)
+	}
+	if provider.token != "" {
+		t.Fatalf("token = %q, want empty after failed init", provider.token)
+	}
+	if provider.baseURL != gitLabDefaultURL {
+		t.Fatalf("baseURL = %q, want %q after failed init", provider.baseURL, gitLabDefaultURL)
 	}
 }
 

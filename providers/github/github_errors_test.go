@@ -28,7 +28,14 @@ func TestCreateMembershipsResourcesReturnsListError(t *testing.T) {
 }
 
 func TestGithubProviderInitRequiresOwner(t *testing.T) {
-	var provider GithubProvider
+	provider := GithubProvider{
+		owner:          "old-owner",
+		token:          "old-token",
+		baseURL:        "https://github.example.com/api/v3/",
+		appID:          123,
+		installationID: 456,
+		pem:            "old-pem",
+	}
 
 	err := provider.Init(nil)
 	if err == nil {
@@ -36,6 +43,18 @@ func TestGithubProviderInitRequiresOwner(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "owner is required") {
 		t.Fatalf("Init error = %q, want missing owner", err)
+	}
+	if provider.owner != "" {
+		t.Fatalf("owner = %q, want empty after failed init", provider.owner)
+	}
+	if provider.token != "" {
+		t.Fatalf("token = %q, want empty after failed init", provider.token)
+	}
+	if provider.baseURL != githubDefaultURL {
+		t.Fatalf("baseURL = %q, want %q after failed init", provider.baseURL, githubDefaultURL)
+	}
+	if provider.appID != 0 || provider.installationID != 0 || provider.pem != "" {
+		t.Fatalf("app auth = (%d, %d, %q), want cleared after failed init", provider.appID, provider.installationID, provider.pem)
 	}
 }
 
@@ -62,7 +81,14 @@ func TestGithubProviderInitReturnsTokenErrorForEmptyTokenArgWithoutEnv(t *testin
 	t.Setenv("GITHUB_APP_ID", "")
 	t.Setenv("GITHUB_APP_INSTALLATION_ID", "")
 	t.Setenv("GITHUB_APP_PEM_FILE", "")
-	var provider GithubProvider
+	provider := GithubProvider{
+		owner:          "old-owner",
+		token:          "old-token",
+		baseURL:        "https://github.example.com/api/v3/",
+		appID:          123,
+		installationID: 456,
+		pem:            "old-pem",
+	}
 
 	err := provider.Init([]string{"test-org", "", ""})
 	if err == nil {
@@ -70,6 +96,18 @@ func TestGithubProviderInitReturnsTokenErrorForEmptyTokenArgWithoutEnv(t *testin
 	}
 	if !strings.Contains(err.Error(), "token requirement") {
 		t.Fatalf("Init error = %q, want token requirement", err)
+	}
+	if provider.owner != "" {
+		t.Fatalf("owner = %q, want empty after failed init", provider.owner)
+	}
+	if provider.token != "" {
+		t.Fatalf("token = %q, want empty after failed init", provider.token)
+	}
+	if provider.baseURL != githubDefaultURL {
+		t.Fatalf("baseURL = %q, want %q after failed init", provider.baseURL, githubDefaultURL)
+	}
+	if provider.appID != 0 || provider.installationID != 0 || provider.pem != "" {
+		t.Fatalf("app auth = (%d, %d, %q), want cleared after failed init", provider.appID, provider.installationID, provider.pem)
 	}
 }
 

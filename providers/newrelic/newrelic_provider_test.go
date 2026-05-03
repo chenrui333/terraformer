@@ -88,7 +88,31 @@ func TestNewRelicProviderInitReturnsMissingAccountIDError(t *testing.T) {
 	if provider.accountID != 0 {
 		t.Fatalf("accountID = %d, want 0", provider.accountID)
 	}
-	if provider.Region != "US" {
-		t.Fatalf("Region = %q, want US", provider.Region)
+	if provider.Region != "" {
+		t.Fatalf("Region = %q, want empty", provider.Region)
+	}
+}
+
+func TestNewRelicProviderInitClearsStateOnInvalidAccountID(t *testing.T) {
+	t.Setenv("NEW_RELIC_API_KEY", "env-key")
+	t.Setenv("NEW_RELIC_ACCOUNT_ID", "")
+	provider := NewRelicProvider{
+		APIKey:    "old-key",
+		accountID: 123,
+		Region:    "EU",
+	}
+
+	err := provider.Init([]string{"api-key", "not-a-number", "US"})
+	if err == nil {
+		t.Fatal("expected invalid account ID error")
+	}
+	if provider.APIKey != "" {
+		t.Fatalf("APIKey = %q, want empty after failed init", provider.APIKey)
+	}
+	if provider.accountID != 0 {
+		t.Fatalf("accountID = %d, want 0 after failed init", provider.accountID)
+	}
+	if provider.Region != "" {
+		t.Fatalf("Region = %q, want empty after failed init", provider.Region)
 	}
 }

@@ -70,15 +70,20 @@ func (p HoneycombProvider) GetResourceConnections() map[string]map[string][]stri
 	}
 }
 func (p *HoneycombProvider) Init(args []string) error {
-	p.apiKey = os.Getenv("HONEYCOMB_API_KEY")
-	if p.apiKey == "" {
+	p.apiKey = ""
+	p.apiURL = ""
+	p.datasets = nil
+
+	apiKey := os.Getenv("HONEYCOMB_API_KEY")
+	if apiKey == "" {
 		return errors.New("the Honeycomb API key must be set via `HONEYCOMB_API_KEY` env var")
 	}
-	p.apiURL = os.Getenv("HONEYCOMB_API_URL")
-	if p.apiURL == "" {
-		p.apiURL = honeycombDefaultURL
+	apiURL := os.Getenv("HONEYCOMB_API_URL")
+	if apiURL == "" {
+		apiURL = honeycombDefaultURL
 	}
-	// datasets are the only argument
+	p.apiKey = apiKey
+	p.apiURL = apiURL
 	p.datasets = args
 
 	return nil

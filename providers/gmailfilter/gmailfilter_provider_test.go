@@ -3,13 +3,17 @@
 package gmailfilter
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
 
 func TestGmailfilterProviderInitReturnsCredentialEnvError(t *testing.T) {
 	const probe = "REDACT_PROBE_GMAIL_CREDENTIALS"
-	var provider GmailfilterProvider
+	provider := GmailfilterProvider{
+		credentials:           "old-credentials",
+		impersonatedUserEmail: "old@example.com",
+	}
 
 	err := provider.Init([]string{probe + "\x00credentials"})
 	if err == nil {
@@ -22,11 +26,21 @@ func TestGmailfilterProviderInitReturnsCredentialEnvError(t *testing.T) {
 	if strings.Contains(msg, probe) {
 		t.Fatalf("Init error = %q, want credentials value redacted", msg)
 	}
+	if provider.credentials != "" {
+		t.Fatalf("credentials = %q, want empty after failed init", provider.credentials)
+	}
+	if provider.impersonatedUserEmail != "" {
+		t.Fatalf("impersonatedUserEmail = %q, want empty after failed init", provider.impersonatedUserEmail)
+	}
 }
 
 func TestGmailfilterProviderInitReturnsImpersonatedUserEnvError(t *testing.T) {
 	const probe = "REDACT_PROBE_GMAIL_USER"
-	var provider GmailfilterProvider
+	t.Setenv("GOOGLE_CREDENTIALS", "previous-credentials")
+	provider := GmailfilterProvider{
+		credentials:           "old-credentials",
+		impersonatedUserEmail: "old@example.com",
+	}
 
 	err := provider.Init([]string{"credentials", probe + "\x00email"})
 	if err == nil {
@@ -38,5 +52,14 @@ func TestGmailfilterProviderInitReturnsImpersonatedUserEnvError(t *testing.T) {
 	}
 	if strings.Contains(msg, probe) {
 		t.Fatalf("Init error = %q, want email value redacted", msg)
+	}
+	if provider.credentials != "" {
+		t.Fatalf("credentials = %q, want empty after failed init", provider.credentials)
+	}
+	if provider.impersonatedUserEmail != "" {
+		t.Fatalf("impersonatedUserEmail = %q, want empty after failed init", provider.impersonatedUserEmail)
+	}
+	if got := os.Getenv("GOOGLE_CREDENTIALS"); got != "previous-credentials" {
+		t.Fatalf("GOOGLE_CREDENTIALS = %q, want previous-credentials after failed init", got)
 	}
 }

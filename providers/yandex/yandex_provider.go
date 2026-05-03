@@ -25,22 +25,28 @@ func (p *YandexProvider) Init(args []string) error {
 	p.saKeyFileOrContent = ""
 	p.folderID = ""
 
+	token := ""
+	saKeyFileOrContent := ""
+	folderID := ""
 	if ycToken, ok := os.LookupEnv("YC_TOKEN"); ok {
-		p.token = ycToken
+		token = ycToken
 	}
 
-	if saKeyFileOrContent, ok := os.LookupEnv("YC_SERVICE_ACCOUNT_KEY_FILE"); ok {
-		p.saKeyFileOrContent = saKeyFileOrContent
+	if envSaKeyFileOrContent, ok := os.LookupEnv("YC_SERVICE_ACCOUNT_KEY_FILE"); ok {
+		saKeyFileOrContent = envSaKeyFileOrContent
 	}
 
 	if len(args) > 0 && args[0] != "" {
 		//  first args is target folder ID
-		p.folderID = args[0]
-	} else if folderID := os.Getenv("YC_FOLDER_ID"); folderID != "" {
-		p.folderID = folderID
+		folderID = args[0]
+	} else if envFolderID := os.Getenv("YC_FOLDER_ID"); envFolderID != "" {
+		folderID = envFolderID
 	} else {
 		return errors.New("set YC_FOLDER_ID env var")
 	}
+	p.token = token
+	p.saKeyFileOrContent = saKeyFileOrContent
+	p.folderID = folderID
 
 	return nil
 }
