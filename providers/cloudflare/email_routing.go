@@ -175,10 +175,12 @@ func (g *EmailRoutingGenerator) InitResources() error {
 		return err
 	}
 
-	if account, err := g.accountResourceContainer(); err == nil {
-		if err := g.appendEmailRoutingAddressResources(ctx, api, account); err != nil {
-			return err
-		}
+	account, err := g.accountResourceContainer()
+	if err != nil {
+		return err
+	}
+	if err := g.appendEmailRoutingAddressResources(ctx, api, account); err != nil {
+		return err
 	}
 
 	zones, err := cloudflareZones(ctx, api)
