@@ -36,6 +36,19 @@ func TestNewRelicProviderInitUsesEnvForEmptyArgs(t *testing.T) {
 	}
 }
 
+func TestNewRelicProviderInitPrefersArgAccountIDOverInvalidEnv(t *testing.T) {
+	t.Setenv("NEW_RELIC_API_KEY", "")
+	t.Setenv("NEW_RELIC_ACCOUNT_ID", "not-a-number")
+
+	var provider NewRelicProvider
+	if err := provider.Init([]string{"api-key", "123"}); err != nil {
+		t.Fatalf("expected Init to prefer arg account ID over invalid env: %v", err)
+	}
+	if provider.accountID != 123 {
+		t.Fatalf("accountID = %d, want 123", provider.accountID)
+	}
+}
+
 func TestNewRelicProviderInitClearsStaleOptionalState(t *testing.T) {
 	t.Setenv("NEW_RELIC_API_KEY", "")
 	t.Setenv("NEW_RELIC_ACCOUNT_ID", "")

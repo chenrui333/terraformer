@@ -92,10 +92,11 @@ func (p *GithubProvider) Init(args []string) error {
 	if len(args) > 1 && args[1] != "" {
 		p.token = args[1]
 	} else {
-		if os.Getenv("GITHUB_TOKEN") == "" && len(args) < 2 {
+		token := os.Getenv("GITHUB_TOKEN")
+		if token == "" && (p.appID == 0 || p.installationID == 0 || p.pem == "") {
 			return errors.New("token requirement")
 		}
-		p.token = os.Getenv("GITHUB_TOKEN")
+		p.token = token
 	}
 	if len(args) > 2 && args[2] != "" {
 		p.baseURL = args[2]

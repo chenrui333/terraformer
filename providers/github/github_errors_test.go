@@ -57,6 +57,22 @@ func TestGithubProviderInitUsesEnvTokenForEmptyTokenArg(t *testing.T) {
 	}
 }
 
+func TestGithubProviderInitReturnsTokenErrorForEmptyTokenArgWithoutEnv(t *testing.T) {
+	t.Setenv("GITHUB_TOKEN", "")
+	t.Setenv("GITHUB_APP_ID", "")
+	t.Setenv("GITHUB_APP_INSTALLATION_ID", "")
+	t.Setenv("GITHUB_APP_PEM_FILE", "")
+	var provider GithubProvider
+
+	err := provider.Init([]string{"test-org", "", ""})
+	if err == nil {
+		t.Fatal("expected missing token error")
+	}
+	if !strings.Contains(err.Error(), "token requirement") {
+		t.Fatalf("Init error = %q, want token requirement", err)
+	}
+}
+
 func TestGithubProviderInitClearsStaleOptionalAuthConfig(t *testing.T) {
 	t.Setenv("GITHUB_TOKEN", "env-token")
 	t.Setenv("GITHUB_APP_ID", "")

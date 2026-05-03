@@ -52,6 +52,19 @@ func TestGitLabProviderInitUsesEnvTokenForEmptyTokenArg(t *testing.T) {
 	}
 }
 
+func TestGitLabProviderInitReturnsTokenErrorForEmptyTokenArgWithoutEnv(t *testing.T) {
+	t.Setenv("GITLAB_TOKEN", "")
+	var provider GitLabProvider
+
+	err := provider.Init([]string{"test-group", "", ""})
+	if err == nil {
+		t.Fatal("expected missing token error")
+	}
+	if !strings.Contains(err.Error(), "token requirement") {
+		t.Fatalf("Init error = %q, want token requirement", err)
+	}
+}
+
 func TestGitLabProviderInitClearsStaleOptionalConfig(t *testing.T) {
 	t.Setenv("GITLAB_TOKEN", "env-token")
 	provider := GitLabProvider{

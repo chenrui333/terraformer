@@ -23,18 +23,17 @@ func (p *NewRelicProvider) Init(args []string) error {
 	accountID := 0
 	region := "US"
 
-	if accountIDs := os.Getenv("NEW_RELIC_ACCOUNT_ID"); accountIDs != "" {
-		parsedAccountID, err := strconv.Atoi(accountIDs)
-		if err != nil {
-			return err
-		}
-		accountID = parsedAccountID
-	}
 	if len(args) > 0 && args[0] != "" {
 		apiKey = args[0]
 	}
 	if len(args) > 1 && args[1] != "" {
 		parsedAccountID, err := strconv.Atoi(args[1])
+		if err != nil {
+			return err
+		}
+		accountID = parsedAccountID
+	} else if accountIDs := os.Getenv("NEW_RELIC_ACCOUNT_ID"); accountIDs != "" {
+		parsedAccountID, err := strconv.Atoi(accountIDs)
 		if err != nil {
 			return err
 		}
