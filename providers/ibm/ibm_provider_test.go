@@ -4,6 +4,7 @@ package ibm
 
 import (
 	"errors"
+	"os"
 	"testing"
 )
 
@@ -23,6 +24,7 @@ func TestProviderInitDoesNotRequireAPIKey(t *testing.T) {
 }
 
 func TestProviderInitRequiresArgs(t *testing.T) {
+	t.Setenv("IC_REGION", "old-region")
 	provider := &IBMProvider{
 		ResourceGroup: "old-resource-group",
 		Region:        "old-region",
@@ -43,6 +45,9 @@ func TestProviderInitRequiresArgs(t *testing.T) {
 	}
 	if provider.VPC != "" {
 		t.Fatalf("VPC = %q, want empty after failed init", provider.VPC)
+	}
+	if value, ok := os.LookupEnv("IC_REGION"); ok {
+		t.Fatalf("IC_REGION = %q, want unset after failed init", value)
 	}
 }
 
