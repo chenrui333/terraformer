@@ -81,9 +81,8 @@ func providerImporterSubcommands() []func(options ImportOptions) *cobra.Command 
 	}
 }
 
-func providerGenerators() map[string]func() terraformutils.ProviderGenerator {
-	list := make(map[string]func() terraformutils.ProviderGenerator)
-	for _, providerGen := range []func() terraformutils.ProviderGenerator{
+func providerGeneratorConstructors() []func() terraformutils.ProviderGenerator {
+	return []func() terraformutils.ProviderGenerator{
 		// Major Cloud
 		newGoogleProvider,
 		newAWSProvider,
@@ -135,7 +134,12 @@ func providerGenerators() map[string]func() terraformutils.ProviderGenerator {
 		newVaultProvider,
 		newOktaProvider,
 		newAuth0Provider,
-	} {
+	}
+}
+
+func providerGenerators() map[string]func() terraformutils.ProviderGenerator {
+	list := make(map[string]func() terraformutils.ProviderGenerator)
+	for _, providerGen := range providerGeneratorConstructors() {
 		list[providerGen().GetName()] = providerGen
 	}
 	return list
