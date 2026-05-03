@@ -18,7 +18,10 @@ type HoneycombService struct {
 }
 
 func (s *HoneycombService) newClient() (*hnyclient.Client, error) {
-	enableDebug, _ := strconv.ParseBool(os.Getenv("HONEYCOMBIO_DEBUG"))
+	enableDebug, err := honeycombDebugEnabled()
+	if err != nil {
+		return nil, err
+	}
 
 	client, err := hnyclient.NewClientWithConfig(&hnyclient.Config{
 		APIKey:    s.GetArgs()["api_key"].(string),
@@ -64,6 +67,18 @@ func (s *HoneycombService) newClient() (*hnyclient.Client, error) {
 	}
 
 	return client, nil
+}
+
+func honeycombDebugEnabled() (bool, error) {
+	value := os.Getenv("HONEYCOMBIO_DEBUG")
+	if value == "" {
+		return false, nil
+	}
+	enabled, err := strconv.ParseBool(value)
+	if err != nil {
+		return false, fmt.Errorf("parse HONEYCOMBIO_DEBUG: %w", err)
+	}
+	return enabled, nil
 }
 
 func (s *HoneycombService) isClassicEnvironment() bool {

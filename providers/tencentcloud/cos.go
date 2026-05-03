@@ -22,7 +22,10 @@ func (g *CosGenerator) InitResources() error {
 	region := args["region"].(string)
 	credential := args["credential"].(common.Credential)
 	requestURL := fmt.Sprintf("https://cos.%s.myqcloud.com", region)
-	u, _ := url.Parse(requestURL)
+	u, err := url.Parse(requestURL)
+	if err != nil {
+		return fmt.Errorf("parse Tencent COS service URL: %w", err)
+	}
 	uri := &cos.BaseURL{ServiceURL: u}
 	client := cos.NewClient(uri, &http.Client{
 		Transport: &cos.AuthorizationTransport{

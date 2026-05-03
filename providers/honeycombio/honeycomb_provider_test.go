@@ -52,3 +52,27 @@ func TestHoneycombProviderInitUsesDefaultAPIURL(t *testing.T) {
 		t.Fatalf("datasets = %v, want [dataset]", provider.datasets)
 	}
 }
+
+func TestHoneycombDebugEnabledRejectsInvalidValue(t *testing.T) {
+	t.Setenv("HONEYCOMBIO_DEBUG", "sometimes")
+
+	_, err := honeycombDebugEnabled()
+	if err == nil {
+		t.Fatal("expected invalid HONEYCOMBIO_DEBUG error")
+	}
+	if !strings.Contains(err.Error(), "HONEYCOMBIO_DEBUG") {
+		t.Fatalf("error = %q, want HONEYCOMBIO_DEBUG context", err)
+	}
+}
+
+func TestHoneycombDebugEnabledParsesValue(t *testing.T) {
+	t.Setenv("HONEYCOMBIO_DEBUG", "true")
+
+	enabled, err := honeycombDebugEnabled()
+	if err != nil {
+		t.Fatalf("expected no error: %v", err)
+	}
+	if !enabled {
+		t.Fatal("enabled = false, want true")
+	}
+}

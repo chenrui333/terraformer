@@ -4,6 +4,7 @@ package okta
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"strings"
 
@@ -62,7 +63,10 @@ func (g *UserSchemaPropertyGenerator) InitResources() error {
 	}
 
 	for _, userType := range userTypes {
-		schemaID := getUserTypeSchemaID(userType)
+		schemaID, err := getUserTypeSchemaID(userType)
+		if err != nil {
+			return err
+		}
 		if schemaID != "" {
 			schema, _, err := client.UserSchema.GetUserSchema(ctx, schemaID)
 			if err != nil {
@@ -100,17 +104,20 @@ func getUserTypes(ctx context.Context, client *okta.Client) ([]*okta.UserType, e
 	return output, nil
 }
 
-func getUserTypeSchemaID(ut *okta.UserType) string {
+func getUserTypeSchemaID(ut *okta.UserType) (string, error) {
 	fm, ok := ut.Links.(map[string]interface{})
 	if ok {
 		sm, ok := fm["schema"].(map[string]interface{})
 		if ok {
 			href, ok := sm["href"].(string)
 			if ok {
-				u, _ := url.Parse(href)
-				return strings.TrimPrefix(u.EscapedPath(), "/api/v1/meta/schemas/user/")
+				u, err := url.Parse(href)
+				if err != nil {
+					return "", fmt.Errorf("parse Okta user type %q schema link: %w", ut.Id, err)
+				}
+				return strings.TrimPrefix(u.EscapedPath(), "/api/v1/meta/schemas/user/"), nil
 			}
 		}
 	}
-	return ""
+	return "", nil
 }

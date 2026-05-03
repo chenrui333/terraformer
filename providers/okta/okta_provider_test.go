@@ -2,7 +2,12 @@
 
 package okta
 
-import "testing"
+import (
+	"strings"
+	"testing"
+
+	oktasdk "github.com/okta/okta-sdk-golang/v2/okta"
+)
 
 func TestOktaProviderInitClearsStateOnMissingAPIToken(t *testing.T) {
 	provider := &OktaProvider{}
@@ -23,5 +28,43 @@ func TestOktaProviderInitClearsStateOnMissingAPIToken(t *testing.T) {
 	}
 	if provider.orgName != "" || provider.baseURL != "" || provider.apiToken != "" {
 		t.Fatalf("expected stale provider state to be cleared, got orgName=%q baseURL=%q apiToken=%q", provider.orgName, provider.baseURL, provider.apiToken)
+	}
+}
+
+func TestGetUserTypeSchemaID(t *testing.T) {
+	userType := &oktasdk.UserType{
+		Id: "custom",
+		Links: map[string]interface{}{
+			"schema": map[string]interface{}{
+				"href": "https://example.okta.com/api/v1/meta/schemas/user/custom",
+			},
+		},
+	}
+
+	schemaID, err := getUserTypeSchemaID(userType)
+	if err != nil {
+		t.Fatalf("expected no error: %v", err)
+	}
+	if schemaID != "custom" {
+		t.Fatalf("schemaID = %q, want custom", schemaID)
+	}
+}
+
+func TestGetUserTypeSchemaIDReturnsParseError(t *testing.T) {
+	userType := &oktasdk.UserType{
+		Id: "custom",
+		Links: map[string]interface{}{
+			"schema": map[string]interface{}{
+				"href": "https://example.okta.com/%zz",
+			},
+		},
+	}
+
+	_, err := getUserTypeSchemaID(userType)
+	if err == nil {
+		t.Fatal("expected schema link parse error")
+	}
+	if !strings.Contains(err.Error(), "schema link") {
+		t.Fatalf("error = %q, want schema link context", err)
 	}
 }

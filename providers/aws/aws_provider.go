@@ -184,12 +184,15 @@ func (p *AWSProvider) Init(args []string) error {
 
 	region := args[0]
 	profile := args[1]
+	enableSharedConfig, err := awsSDKLoadConfigEnabled()
+	if err != nil {
+		return err
+	}
 	if err := clearAWSEnvConfig(region == NoRegion); err != nil {
 		return err
 	}
 
 	// Terraformer accepts region and profile configuration, so we must detect what env variables to adjust to make Go SDK rely on them. AWS_SDK_LOAD_CONFIG here must be checked to determine correct variable to set.
-	enableSharedConfig, _ := strconv.ParseBool(os.Getenv("AWS_SDK_LOAD_CONFIG"))
 	if region != GlobalRegion && region != NoRegion {
 		envVar := "AWS_REGION"
 		if enableSharedConfig {
@@ -213,6 +216,18 @@ func (p *AWSProvider) Init(args []string) error {
 	p.region = region
 	p.profile = profile
 	return nil
+}
+
+func awsSDKLoadConfigEnabled() (bool, error) {
+	value := os.Getenv("AWS_SDK_LOAD_CONFIG")
+	if value == "" {
+		return false, nil
+	}
+	enabled, err := strconv.ParseBool(value)
+	if err != nil {
+		return false, errors.Wrap(err, "parse AWS_SDK_LOAD_CONFIG")
+	}
+	return enabled, nil
 }
 
 func clearAWSEnvConfig(preserveRegion bool) error {
