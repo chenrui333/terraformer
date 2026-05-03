@@ -662,18 +662,22 @@ func (g *AppMeshGenerator) shouldLoadMeshChildResourceType(serviceName, meshName
 	if !hasTypedChildFilter && !g.hasUntypedIDFilter() {
 		return g.meshMatchesPreDiscoveryFilters(meshName)
 	}
-	if hasTypedChildFilter && !g.hasIDFilterFor(serviceName) && !g.hasUntypedIDFilter() && g.hasTypedFilterFor(appMeshMeshResourceType) {
-		return g.meshMatchesPreDiscoveryFilters(meshName)
+	if hasTypedChildFilter && !g.hasIDFilterFor(serviceName) && !g.hasUntypedIDFilter() && g.hasTypedIDFilterFor(appMeshMeshResourceType) {
+		return g.meshMatchesInitialIDFilters(meshName)
 	}
 	return true
 }
 
 func (g *AppMeshGenerator) meshMatchesPreDiscoveryFilters(meshName string) bool {
-	meshResource := newAppMeshMeshResource(meshName, "")
-	if !g.resourceMatchesInitialIDFilters(appMeshMeshResourceType, meshResource) {
+	if !g.meshMatchesInitialIDFilters(meshName) {
 		return false
 	}
 	return !g.hasTypedNonIDFilterFor(appMeshMeshResourceType)
+}
+
+func (g *AppMeshGenerator) meshMatchesInitialIDFilters(meshName string) bool {
+	meshResource := newAppMeshMeshResource(meshName, "")
+	return g.resourceMatchesInitialIDFilters(appMeshMeshResourceType, meshResource)
 }
 
 func (g *AppMeshGenerator) shouldAppendMeshResource(resource terraformutils.Resource) bool {
@@ -713,9 +717,8 @@ func (g *AppMeshGenerator) initialIDFiltersCanMatchMeshChild(serviceName, meshNa
 		if filter.FieldPath != "id" || !filter.IsApplicable(serviceName) {
 			continue
 		}
-		allowOpaqueID := filter.ServiceName != ""
 		if !appMeshAnyAcceptableIDMatches(filter.AcceptableValues, func(value string) bool {
-			return appMeshChildIDMayBelongToMesh(serviceName, meshName, value, allowOpaqueID)
+			return appMeshChildIDMayBelongToMesh(serviceName, meshName, value)
 		}) {
 			return false
 		}
@@ -728,18 +731,17 @@ func (g *AppMeshGenerator) initialIDFiltersCanMatchNestedChild(serviceName, mesh
 		if filter.FieldPath != "id" || !filter.IsApplicable(serviceName) {
 			continue
 		}
-		allowOpaqueID := filter.ServiceName != ""
 		if !appMeshAnyAcceptableIDMatches(filter.AcceptableValues, func(value string) bool {
 			parts := strings.Split(value, appMeshIDSeparator)
 			switch serviceName {
 			case appMeshRouteResourceType:
 				if len(parts) != 3 {
-					return allowOpaqueID
+					return true
 				}
 				return parts[0] == meshName && parts[1] == parentName
 			case appMeshGatewayRouteResourceType:
 				if len(parts) != 3 {
-					return allowOpaqueID
+					return true
 				}
 				return parts[0] == meshName && parts[1] == parentName
 			default:
@@ -801,17 +803,17 @@ func appMeshResourceImportID(serviceName string, resource terraformutils.Resourc
 	}
 }
 
-func appMeshChildIDMayBelongToMesh(serviceName, meshName, value string, allowOpaqueID bool) bool {
+func appMeshChildIDMayBelongToMesh(serviceName, meshName, value string) bool {
 	parts := strings.Split(value, appMeshIDSeparator)
 	switch serviceName {
 	case appMeshVirtualNodeResourceType, appMeshVirtualRouterResourceType, appMeshVirtualServiceResourceType, appMeshVirtualGatewayResourceType:
 		if len(parts) != 2 {
-			return allowOpaqueID
+			return true
 		}
 		return parts[0] == meshName
 	case appMeshRouteResourceType, appMeshGatewayRouteResourceType:
 		if len(parts) != 3 {
-			return allowOpaqueID
+			return true
 		}
 		return parts[0] == meshName
 	default:
@@ -870,6 +872,15 @@ func (g *AppMeshGenerator) hasTypedNonIDFilterFor(serviceName string) bool {
 func (g *AppMeshGenerator) hasIDFilterFor(serviceName string) bool {
 	for _, filter := range g.Filter {
 		if filter.FieldPath == "id" && filter.IsApplicable(serviceName) {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *AppMeshGenerator) hasTypedIDFilterFor(serviceName string) bool {
+	for _, filter := range g.Filter {
+		if filter.ServiceName == serviceName && filter.FieldPath == "id" {
 			return true
 		}
 	}
