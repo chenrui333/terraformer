@@ -47,7 +47,7 @@ func (az *AppRoleAssignmentServiceGenerator) listResources() ([]msgraph.AppRoleA
 			continue
 		}
 		for _, assignment := range *appRoleAssignments {
-			if *assignment.PrincipalType != "ServicePrincipal" {
+			if assignment.PrincipalType == nil || *assignment.PrincipalType != "ServicePrincipal" {
 				continue
 			}
 			if assignment.Id != nil {
@@ -59,10 +59,22 @@ func (az *AppRoleAssignmentServiceGenerator) listResources() ([]msgraph.AppRoleA
 	return resources, nil
 }
 
-func (az *AppRoleAssignmentServiceGenerator) appendResource(resource *msgraph.AppRoleAssignment) {
+func (az *AppRoleAssignmentServiceGenerator) appendResource(resource *msgraph.AppRoleAssignment) error {
+	if resource == nil {
+		return fmt.Errorf("azuread_app_role_assignment resource is nil")
+	}
 	// {objectId}/{type}/{subId}
-	id := fmt.Sprintf("%s/appRoleAssignment/%s", *resource.PrincipalId, *resource.Id)
-	az.appendSimpleResource(id, *resource.PrincipalDisplayName+"-"+id, "azuread_app_role_assignment")
+	principalID, err := azureADRequiredString("azuread_app_role_assignment", "principalId", resource.PrincipalId)
+	if err != nil {
+		return err
+	}
+	assignmentID, err := azureADRequiredString("azuread_app_role_assignment", "id", resource.Id)
+	if err != nil {
+		return err
+	}
+	id := fmt.Sprintf("%s/appRoleAssignment/%s", principalID, assignmentID)
+	az.appendSimpleResource(id, azureADQualifiedResourceName(resource.PrincipalDisplayName, id), "azuread_app_role_assignment")
+	return nil
 }
 
 func (az *AppRoleAssignmentServiceGenerator) InitResources() error {
@@ -71,8 +83,10 @@ func (az *AppRoleAssignmentServiceGenerator) InitResources() error {
 		return err
 	}
 	for _, resource := range resources {
-		log.Println(*resource.PrincipalDisplayName)
-		az.appendResource(&resource)
+		log.Println(azureADResourceName(resource.PrincipalDisplayName, azureADStringValue(resource.PrincipalId)))
+		if err := az.appendResource(&resource); err != nil {
+			return err
+		}
 	}
 	return nil
 }

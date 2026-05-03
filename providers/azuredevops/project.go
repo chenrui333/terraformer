@@ -2,6 +2,7 @@ package azuredevops
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/microsoft/azure-devops-go-api/azuredevops/core"
 )
@@ -33,9 +34,16 @@ func (az *ProjectGenerator) listResources() ([]core.TeamProjectReference, error)
 	return nil, err
 }
 
-func (az *ProjectGenerator) appendResource(resource *core.TeamProjectReference) {
-	id := *resource.Id
-	az.appendSimpleResource(id.String(), *resource.Name, "azuredevops_project")
+func (az *ProjectGenerator) appendResource(resource *core.TeamProjectReference) error {
+	if resource == nil {
+		return fmt.Errorf("azuredevops_project resource is nil")
+	}
+	id, err := azureDevOpsRequiredUUID("azuredevops_project", "id", resource.Id)
+	if err != nil {
+		return err
+	}
+	az.appendSimpleResource(id, azureDevOpsResourceName(resource.Name, id), "azuredevops_project")
+	return nil
 }
 
 func (az *ProjectGenerator) InitResources() error {
@@ -44,7 +52,9 @@ func (az *ProjectGenerator) InitResources() error {
 		return err
 	}
 	for _, resource := range resources {
-		az.appendResource(&resource)
+		if err := az.appendResource(&resource); err != nil {
+			return err
+		}
 	}
 	return nil
 }

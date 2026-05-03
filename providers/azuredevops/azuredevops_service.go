@@ -5,7 +5,9 @@ package azuredevops
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/microsoft/azure-devops-go-api/azuredevops"
 	"github.com/microsoft/azure-devops-go-api/azuredevops/core"
 	"github.com/microsoft/azure-devops-go-api/azuredevops/git"
@@ -63,4 +65,18 @@ func (az *AzureDevOpsService) getGitClient() (git.Client, error) {
 func (az *AzureDevOpsService) appendSimpleResource(id string, resourceName string, resourceType string) {
 	newResource := terraformutils.NewSimpleResource(id, resourceName, resourceType, az.ProviderName, []string{})
 	az.Resources = append(az.Resources, newResource)
+}
+
+func azureDevOpsRequiredUUID(resourceType, field string, value *uuid.UUID) (string, error) {
+	if value == nil || *value == uuid.Nil {
+		return "", fmt.Errorf("%s resource is missing %s", resourceType, field)
+	}
+	return value.String(), nil
+}
+
+func azureDevOpsResourceName(name *string, fallback string) string {
+	if name != nil && *name != "" {
+		return *name
+	}
+	return fallback
 }

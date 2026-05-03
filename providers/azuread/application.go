@@ -3,6 +3,7 @@ package azuread
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/hashicorp/go-azure-sdk/sdk/odata"
@@ -34,9 +35,16 @@ func (az *ApplicationServiceGenerator) listResources() ([]msgraph.Application, e
 	return resources, nil
 }
 
-func (az *ApplicationServiceGenerator) appendResource(resource *msgraph.Application) {
-	id := resource.ID()
-	az.appendSimpleResource(*id, *resource.DisplayName, "azuread_application")
+func (az *ApplicationServiceGenerator) appendResource(resource *msgraph.Application) error {
+	if resource == nil {
+		return fmt.Errorf("azuread_application resource is nil")
+	}
+	id, err := azureADRequiredString("azuread_application", "id", resource.ID())
+	if err != nil {
+		return err
+	}
+	az.appendSimpleResource(id, azureADResourceName(resource.DisplayName, id), "azuread_application")
+	return nil
 }
 
 func (az *ApplicationServiceGenerator) InitResources() error {
@@ -45,8 +53,10 @@ func (az *ApplicationServiceGenerator) InitResources() error {
 		return err
 	}
 	for _, resource := range resources {
-		log.Println(*resource.DisplayName)
-		az.appendResource(&resource)
+		log.Println(azureADResourceName(resource.DisplayName, azureADStringValue(resource.ID())))
+		if err := az.appendResource(&resource); err != nil {
+			return err
+		}
 	}
 	return nil
 }
