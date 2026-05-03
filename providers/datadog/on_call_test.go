@@ -135,7 +135,7 @@ func TestListDatadogUserIDsUsesSupportedPageSize(t *testing.T) {
 		pathCh <- r.URL.Path
 		pageSizeCh <- r.URL.Query().Get("page[size]")
 		pageNumberCh <- r.URL.Query().Get("page[number]")
-		_, _ = fmt.Fprint(w, onCallUserListResponseJSON("user-1", 1))
+		_, _ = fmt.Fprint(w, onCallUserListResponseJSON(1, "user-1"))
 	}))
 	defer server.Close()
 
@@ -152,6 +152,48 @@ func TestListDatadogUserIDsUsesSupportedPageSize(t *testing.T) {
 	}
 	if userIDs[0] != "user-1" {
 		t.Fatalf("user id = %q, want user-1", userIDs[0])
+	}
+}
+
+func TestListDatadogUserIDsPaginates(t *testing.T) {
+	pathCh := make(chan string, 2)
+	pageSizeCh := make(chan string, 2)
+	pageNumberCh := make(chan string, 2)
+	requestCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		pathCh <- r.URL.Path
+		pageSizeCh <- r.URL.Query().Get("page[size]")
+		pageNumberCh <- r.URL.Query().Get("page[number]")
+		requestCount++
+		switch requestCount {
+		case 1:
+			_, _ = fmt.Fprint(w, onCallUserListResponseJSON(101, "user-1"))
+		default:
+			_, _ = fmt.Fprint(w, onCallUserListResponseJSON(101, "user-2"))
+		}
+	}))
+	defer server.Close()
+
+	api := datadogV2.NewUsersApi(newTeamRelationshipTestClient(server))
+	userIDs, err := listDatadogUserIDs(context.Background(), api)
+	if err != nil {
+		t.Fatalf("listDatadogUserIDs returned error: %v", err)
+	}
+	assertObservedQueryValue(t, pathCh, "path", "/api/v2/users")
+	assertObservedQueryValue(t, pageSizeCh, "page[size]", "100")
+	assertObservedQueryValue(t, pageNumberCh, "page[number]", "0")
+	assertObservedQueryValue(t, pathCh, "path", "/api/v2/users")
+	assertObservedQueryValue(t, pageSizeCh, "page[size]", "100")
+	assertObservedQueryValue(t, pageNumberCh, "page[number]", "1")
+	if len(userIDs) != 2 {
+		t.Fatalf("expected 2 user ids, got %d", len(userIDs))
+	}
+	if userIDs[0] != "user-1" {
+		t.Fatalf("first user id = %q, want user-1", userIDs[0])
+	}
+	if userIDs[1] != "user-2" {
+		t.Fatalf("second user id = %q, want user-2", userIDs[1])
 	}
 }
 
@@ -450,8 +492,12 @@ func onCallNotificationChannelListResponseJSON(channels ...string) string {
 	return fmt.Sprintf("{\"data\":[%s]}", strings.Join(channels, ","))
 }
 
-func onCallUserListResponseJSON(id string, totalCount int) string {
-	return fmt.Sprintf("{\"data\":[{\"id\":%q,\"type\":\"users\"}],\"meta\":{\"page\":{\"total_count\":%d}}}", id, totalCount)
+func onCallUserListResponseJSON(totalCount int, ids ...string) string {
+	users := []string{}
+	for _, id := range ids {
+		users = append(users, fmt.Sprintf("{\"id\":%q,\"type\":\"users\"}", id))
+	}
+	return fmt.Sprintf("{\"data\":[%s],\"meta\":{\"page\":{\"total_count\":%d}}}", strings.Join(users, ","), totalCount)
 }
 
 func onCallEmailNotificationChannelJSON(id string) string {
