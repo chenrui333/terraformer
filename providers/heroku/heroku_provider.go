@@ -16,6 +16,9 @@ type HerokuProvider struct { //nolint
 
 // Init the Provider for imports. args are defined in cmd/provider_cmd_heroku.go
 func (p *HerokuProvider) Init(args []string) error {
+	p.apiKey = ""
+	p.team = ""
+
 	if len(args) > 0 {
 		p.apiKey = args[0]
 	}

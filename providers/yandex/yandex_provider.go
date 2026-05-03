@@ -21,6 +21,10 @@ type YandexProvider struct { //nolint
 }
 
 func (p *YandexProvider) Init(args []string) error {
+	p.token = ""
+	p.saKeyFileOrContent = ""
+	p.folderID = ""
+
 	if ycToken, ok := os.LookupEnv("YC_TOKEN"); ok {
 		p.token = ycToken
 	}
@@ -29,14 +33,13 @@ func (p *YandexProvider) Init(args []string) error {
 		p.saKeyFileOrContent = saKeyFileOrContent
 	}
 
-	if len(args) > 0 {
+	if len(args) > 0 && args[0] != "" {
 		//  first args is target folder ID
 		p.folderID = args[0]
+	} else if folderID := os.Getenv("YC_FOLDER_ID"); folderID != "" {
+		p.folderID = folderID
 	} else {
-		if os.Getenv("YC_FOLDER_ID") == "" {
-			return errors.New("set YC_FOLDER_ID env var")
-		}
-		p.folderID = os.Getenv("YC_FOLDER_ID")
+		return errors.New("set YC_FOLDER_ID env var")
 	}
 
 	return nil

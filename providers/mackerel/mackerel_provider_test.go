@@ -5,6 +5,8 @@ package mackerel
 import (
 	"strings"
 	"testing"
+
+	mackerelapi "github.com/mackerelio/mackerel-client-go"
 )
 
 func TestMackerelProviderInitReturnsMissingAPIKeyWithNoArgs(t *testing.T) {
@@ -17,6 +19,25 @@ func TestMackerelProviderInitReturnsMissingAPIKeyWithNoArgs(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "api-key requirement") {
 		t.Fatalf("expected missing API key error, got %q", err)
+	}
+}
+
+func TestMackerelProviderInitClearsStateOnMissingAPIKey(t *testing.T) {
+	t.Setenv("MACKEREL_API_KEY", "")
+	provider := MackerelProvider{
+		apiKey:         "old-key",
+		mackerelClient: mackerelapi.NewClient("old-key"),
+	}
+
+	err := provider.Init(nil)
+	if err == nil {
+		t.Fatal("expected missing API key error")
+	}
+	if provider.apiKey != "" {
+		t.Fatalf("apiKey = %q, want empty", provider.apiKey)
+	}
+	if provider.mackerelClient != nil {
+		t.Fatal("mackerelClient should be nil after failed init")
 	}
 }
 

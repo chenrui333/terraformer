@@ -21,6 +21,26 @@ func TestOctopusDeployProviderInitReturnsMissingServerWithNoArgs(t *testing.T) {
 	}
 }
 
+func TestOctopusDeployProviderInitClearsStateOnMissingServer(t *testing.T) {
+	t.Setenv("OCTOPUS_CLI_SERVER", "")
+	t.Setenv("OCTOPUS_CLI_API_KEY", "")
+	provider := OctopusDeployProvider{
+		address: "https://old.example.com",
+		apiKey:  "old-key",
+	}
+
+	err := provider.Init(nil)
+	if err == nil {
+		t.Fatal("expected missing server error")
+	}
+	if provider.address != "" {
+		t.Fatalf("address = %q, want empty", provider.address)
+	}
+	if provider.apiKey != "" {
+		t.Fatalf("apiKey = %q, want empty", provider.apiKey)
+	}
+}
+
 func TestOctopusDeployProviderInitUsesEnvCredentials(t *testing.T) {
 	t.Setenv("OCTOPUS_CLI_SERVER", "https://octopus.example.com")
 	t.Setenv("OCTOPUS_CLI_API_KEY", "env-key")

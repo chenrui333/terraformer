@@ -19,15 +19,17 @@ type MackerelProvider struct { //nolint
 
 // Init check env params and initialize API Client
 func (p *MackerelProvider) Init(args []string) error {
+	p.apiKey = ""
+	p.mackerelClient = nil
+
+	apiKey := os.Getenv("MACKEREL_API_KEY")
 	if len(args) > 0 && args[0] != "" {
-		p.apiKey = args[0]
-	} else {
-		if apiKey := os.Getenv("MACKEREL_API_KEY"); apiKey != "" {
-			p.apiKey = apiKey
-		} else {
-			return errors.New("api-key requirement")
-		}
+		apiKey = args[0]
 	}
+	if apiKey == "" {
+		return errors.New("api-key requirement")
+	}
+	p.apiKey = apiKey
 	// Initialize the Mackerel API client
 	p.mackerelClient = mackerel.NewClient(p.apiKey)
 	return nil
