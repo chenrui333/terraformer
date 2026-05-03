@@ -724,6 +724,36 @@ func TestSelectImportResourceName(t *testing.T) {
 			wantOK: false,
 		},
 		{
+			name:    "skips historical alpha pod scheduling contexts",
+			group:   "resource.k8s.io",
+			version: "v1alpha3",
+			resource: metav1.APIResource{
+				Name:       "podschedulingcontexts",
+				Kind:       "PodSchedulingContext",
+				Namespaced: true,
+				Verbs:      manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				manifestTerraformResourceName: {},
+			},
+			wantOK: false,
+		},
+		{
+			name:    "skips older pod scheduling contexts",
+			group:   "resource.k8s.io",
+			version: "v1alpha2",
+			resource: metav1.APIResource{
+				Name:       "podschedulingcontexts",
+				Kind:       "PodSchedulingContext",
+				Namespaced: true,
+				Verbs:      manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				manifestTerraformResourceName: {},
+			},
+			wantOK: false,
+		},
+		{
 			name:    "skips allocator-managed alpha ip addresses",
 			group:   "networking.k8s.io",
 			version: "v1alpha1",
@@ -907,6 +937,8 @@ func TestSkipsImportResource(t *testing.T) {
 		{name: "resource slice", group: "resource.k8s.io", version: "v1", kind: "ResourceSlice", want: true},
 		{name: "old resource slice", group: "resource.k8s.io", version: "v1alpha3", kind: "ResourceSlice", want: true},
 		{name: "historical resource slice", group: "resource.k8s.io", version: "v1alpha2", kind: "ResourceSlice", want: true},
+		{name: "pod scheduling context", group: "resource.k8s.io", version: "v1alpha3", kind: "PodSchedulingContext", want: true},
+		{name: "old pod scheduling context", group: "resource.k8s.io", version: "v1alpha2", kind: "PodSchedulingContext", want: true},
 		{name: "resource pool status request", group: "resource.k8s.io", version: "v1alpha3", kind: "ResourcePoolStatusRequest", want: true},
 		{name: "ip address", group: "networking.k8s.io", version: "v1", kind: "IPAddress", want: true},
 		{name: "old ip address", group: "networking.k8s.io", version: "v1alpha1", kind: "IPAddress", want: true},
