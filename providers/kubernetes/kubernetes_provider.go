@@ -54,14 +54,9 @@ func (p *KubernetesProvider) GetName() string {
 }
 
 func (p *KubernetesProvider) InitService(serviceName string, verbose bool) error {
-	p.Service = nil
-
-	service, isSupported := p.GetSupportedService()[serviceName]
-	if !isSupported {
+	if !terraformutils.SelectProviderService(&p.Provider, p.GetSupportedService(), serviceName, verbose, p.GetName()) {
 		return errors.New("kubernetes: " + serviceName + " not supported resource")
 	}
-	p.Service = service
-	terraformutils.ConfigureService(p.Service, serviceName, verbose, p.GetName())
 	return nil
 }
 

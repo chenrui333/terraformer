@@ -151,14 +151,9 @@ func (p *IonosCloudProvider) GetSupportedService() map[string]terraformutils.Ser
 }
 
 func (p *IonosCloudProvider) InitService(serviceName string, verbose bool) error {
-	p.Service = nil
-
-	service, isSupported := p.GetSupportedService()[serviceName]
-	if !isSupported {
+	if !terraformutils.SelectProviderService(&p.Provider, p.GetSupportedService(), serviceName, verbose, p.GetName()) {
 		return errors.New(helpers.Ionos + ": " + serviceName + " not supported service")
 	}
-	p.Service = service
-	terraformutils.ConfigureService(p.Service, serviceName, verbose, p.GetName())
 	p.Service.SetArgs(map[string]interface{}{
 		"username": p.username,
 		"password": p.password,

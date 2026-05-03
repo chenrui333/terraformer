@@ -64,14 +64,9 @@ func (p *YandexProvider) GetSupportedService() map[string]terraformutils.Service
 }
 
 func (p *YandexProvider) InitService(serviceName string, verbose bool) error {
-	p.Service = nil
-
-	service, isSupported := p.GetSupportedService()[serviceName]
-	if !isSupported {
+	if !terraformutils.SelectProviderService(&p.Provider, p.GetSupportedService(), serviceName, verbose, p.GetName()) {
 		return errors.New("yandex: " + serviceName + " not supported service")
 	}
-	p.Service = service
-	terraformutils.ConfigureService(p.Service, serviceName, verbose, p.GetName())
 	p.Service.SetArgs(map[string]interface{}{
 		KeyFolderID:           p.folderID,
 		KeyToken:              p.token,

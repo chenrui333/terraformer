@@ -92,14 +92,9 @@ func (p *OpalProvider) GetConfig() cty.Value {
 }
 
 func (p *OpalProvider) InitService(serviceName string, verbose bool) error {
-	p.Service = nil
-
-	service, isSupported := p.GetSupportedService()[serviceName]
-	if !isSupported {
+	if !terraformutils.SelectProviderService(&p.Provider, p.GetSupportedService(), serviceName, verbose, p.GetName()) {
 		return errors.New("opal: " + serviceName + " is not a supported resource type")
 	}
-	p.Service = service
-	terraformutils.ConfigureService(p.Service, serviceName, verbose, p.GetName())
 	p.Service.SetArgs(map[string]interface{}{
 		"token":    p.token,
 		"base_url": p.baseURL,

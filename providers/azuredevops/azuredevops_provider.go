@@ -70,14 +70,9 @@ func (p *AzureDevOpsProvider) GetSupportedService() map[string]terraformutils.Se
 }
 
 func (p *AzureDevOpsProvider) InitService(serviceName string, verbose bool) error {
-	p.Service = nil
-
-	service, isSupported := p.GetSupportedService()[serviceName]
-	if !isSupported {
+	if !terraformutils.SelectProviderService(&p.Provider, p.GetSupportedService(), serviceName, verbose, p.GetName()) {
 		return errors.New("azuredevops: " + serviceName + " not supported service")
 	}
-	p.Service = service
-	terraformutils.ConfigureService(p.Service, serviceName, verbose, p.GetName())
 	p.Service.SetArgs(map[string]interface{}{
 		"organizationURL":     p.organizationURL,
 		"personalAccessToken": p.personalAccessToken,

@@ -32,6 +32,30 @@ func TestProviderGetBasicConfig(t *testing.T) {
 	}
 }
 
+func TestSelectProviderService(t *testing.T) {
+	service := &Service{}
+	provider := &Provider{Service: &Service{Name: "stale"}}
+
+	if ok := SelectProviderService(provider, map[string]ServiceGenerator{
+		"vpc": service,
+	}, "vpc", true, "aws"); !ok {
+		t.Fatal("expected service selection to succeed")
+	}
+	if provider.Service != service {
+		t.Fatalf("expected selected service to be stored, got %T", provider.Service)
+	}
+	if service.GetName() != "vpc" || service.GetProviderName() != "aws" || !service.Verbose {
+		t.Fatalf("expected service metadata to be configured, got name=%q provider=%q verbose=%t", service.GetName(), service.GetProviderName(), service.Verbose)
+	}
+
+	if ok := SelectProviderService(provider, map[string]ServiceGenerator{}, "missing", false, "aws"); ok {
+		t.Fatal("expected missing service selection to fail")
+	}
+	if provider.Service != nil {
+		t.Fatalf("expected missing service to clear stale provider service, got %T", provider.Service)
+	}
+}
+
 func TestProviderInitPanics(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
