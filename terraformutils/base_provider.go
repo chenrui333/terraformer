@@ -29,6 +29,17 @@ type Provider struct {
 	Config  cty.Value
 }
 
+func SelectProviderService(provider *Provider, services map[string]ServiceGenerator, name string, verbose bool, providerName string) bool {
+	provider.Service = nil
+	service, ok := services[name]
+	if !ok {
+		return false
+	}
+	provider.Service = service
+	ConfigureService(service, name, verbose, providerName)
+	return true
+}
+
 func (p *Provider) Init(_ []string) error {
 	panic("implement me")
 }

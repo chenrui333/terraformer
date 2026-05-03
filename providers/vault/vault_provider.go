@@ -47,16 +47,12 @@ func (p *Provider) GetName() string {
 }
 
 func (p *Provider) InitService(serviceName string, verbose bool) error {
-	p.Service = nil
-
-	if service, ok := p.GetSupportedService()[serviceName]; ok {
-		p.Service = service
-		terraformutils.ConfigureService(p.Service, serviceName, verbose, p.GetName())
+	if terraformutils.SelectProviderService(&p.Provider, p.GetSupportedService(), serviceName, verbose, p.GetName()) {
 		p.Service.SetArgs(map[string]interface{}{
 			"token":   p.token,
 			"address": p.address,
 		})
-		if err := service.(*ServiceGenerator).setVaultClient(); err != nil {
+		if err := p.Service.(*ServiceGenerator).setVaultClient(); err != nil {
 			return err
 		}
 		return nil

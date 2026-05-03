@@ -61,14 +61,9 @@ func (p *FastlyProvider) GetSupportedService() map[string]terraformutils.Service
 }
 
 func (p *FastlyProvider) InitService(serviceName string, verbose bool) error {
-	p.Service = nil
-
-	service, isSupported := p.GetSupportedService()[serviceName]
-	if !isSupported {
+	if !terraformutils.SelectProviderService(&p.Provider, p.GetSupportedService(), serviceName, verbose, p.GetName()) {
 		return errors.New("fastly: " + serviceName + " not supported service")
 	}
-	p.Service = service
-	terraformutils.ConfigureService(p.Service, serviceName, verbose, p.GetName())
 	p.Service.SetArgs(map[string]interface{}{
 		"customer_id": p.customerID,
 		"api_key":     p.apiKey,

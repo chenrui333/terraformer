@@ -89,14 +89,9 @@ func (p *LaunchDarklyProvider) GetSupportedService() map[string]terraformutils.S
 }
 
 func (p *LaunchDarklyProvider) InitService(serviceName string, verbose bool) error {
-	p.Service = nil
-
-	service, isSupported := p.GetSupportedService()[serviceName]
-	if !isSupported {
+	if !terraformutils.SelectProviderService(&p.Provider, p.GetSupportedService(), serviceName, verbose, p.GetName()) {
 		return errors.New("launchdarkly: " + serviceName + " not supported service")
 	}
-	p.Service = service
-	terraformutils.ConfigureService(p.Service, serviceName, verbose, p.GetName())
 	p.Service.SetArgs(map[string]interface{}{
 		"api_key": p.apiKey,
 		"client":  p.client,

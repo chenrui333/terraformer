@@ -201,14 +201,9 @@ func (p *IBMProvider) GetSupportedService() map[string]terraformutils.ServiceGen
 }
 
 func (p *IBMProvider) InitService(serviceName string, verbose bool) error {
-	p.Service = nil
-
-	service, isSupported := p.GetSupportedService()[serviceName]
-	if !isSupported {
+	if !terraformutils.SelectProviderService(&p.Provider, p.GetSupportedService(), serviceName, verbose, p.GetName()) {
 		return errors.New("IBM: " + serviceName + " not supported service")
 	}
-	p.Service = service
-	terraformutils.ConfigureService(p.Service, serviceName, verbose, p.GetName())
 
 	p.Service.SetArgs(map[string]interface{}{
 		"resource_group": p.ResourceGroup,
