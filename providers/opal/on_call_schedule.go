@@ -5,10 +5,34 @@ import (
 	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
+	opalsdk "github.com/opalsecurity/opal-go"
 )
 
 type OnCallScheduleGenerator struct {
 	OpalService
+}
+
+func (g *OnCallScheduleGenerator) createResources(onCallSchedules []opalsdk.OnCallSchedule) ([]terraformutils.Resource, error) {
+	resources := []terraformutils.Resource{}
+	countByName := make(map[string]int)
+
+	for _, onCallSchedule := range onCallSchedules {
+		resourceID, err := opalRequiredStringPtr("opal_on_call_schedule", "on_call_schedule_id", onCallSchedule.OnCallScheduleId)
+		if err != nil {
+			return nil, err
+		}
+		name := opalUniqueResourceName(opalResourceDisplayName(onCallSchedule.Name, resourceID), countByName)
+
+		resources = append(resources, terraformutils.NewSimpleResource(
+			resourceID,
+			name,
+			"opal_on_call_schedule",
+			"opal",
+			[]string{},
+		))
+	}
+
+	return resources, nil
 }
 
 func (g *OnCallScheduleGenerator) InitResources() error {
@@ -22,25 +46,11 @@ func (g *OnCallScheduleGenerator) InitResources() error {
 		return fmt.Errorf("unable to list opal on call schedules: %w", err)
 	}
 
-	countByName := make(map[string]int)
-
-	for _, onCallSchedule := range onCallSchedules.OnCallSchedules {
-		name := normalizeResourceName(*onCallSchedule.Name)
-		if count, ok := countByName[name]; ok {
-			countByName[name] = count + 1
-			name = normalizeResourceName(fmt.Sprintf("%s_%d", *onCallSchedule.Name, count+1))
-		} else {
-			countByName[name] = 1
-		}
-
-		g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-			*onCallSchedule.OnCallScheduleId,
-			name,
-			"opal_on_call_schedule",
-			"opal",
-			[]string{},
-		))
+	resources, err := g.createResources(onCallSchedules.OnCallSchedules)
+	if err != nil {
+		return err
 	}
+	g.Resources = append(g.Resources, resources...)
 
 	return nil
 }

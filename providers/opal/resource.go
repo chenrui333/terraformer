@@ -5,11 +5,75 @@ import (
 	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/opalsecurity/opal-go"
+	opalsdk "github.com/opalsecurity/opal-go"
 )
 
 type ResourceGenerator struct {
 	OpalService
+}
+
+func opalResourceNameSuffix(resourceID string) string {
+	if len(resourceID) > 8 {
+		return resourceID[:8]
+	}
+	return resourceID
+}
+
+func (g *ResourceGenerator) createResources(opalResources []*opalsdk.Resource) ([]terraformutils.Resource, error) {
+	resources := []terraformutils.Resource{}
+	opalResourceByID := make(map[string]*opalsdk.Resource)
+	for _, resource := range opalResources {
+		if resource == nil {
+			return nil, fmt.Errorf("opal_resource resource is nil")
+		}
+		resourceID, err := opalRequiredString("opal_resource", "resource_id", resource.ResourceId)
+		if err != nil {
+			return nil, err
+		}
+		opalResourceByID[resourceID] = resource
+	}
+
+	seenNames := make(map[string]bool)
+	for _, resource := range opalResources {
+		resourceID, err := opalRequiredString("opal_resource", "resource_id", resource.ResourceId)
+		if err != nil {
+			return nil, err
+		}
+		tfname := opalResourceDisplayName(resource.Name, resourceID)
+		if resource.ResourceType != nil &&
+			*resource.ResourceType == opalsdk.RESOURCETYPEENUM_AWS_SSO_PERMISSION_SET &&
+			resource.ParentResourceId != nil {
+			parentResourceID, err := opalRequiredStringPtr("opal_resource", "parent_resource_id", resource.ParentResourceId)
+			if err != nil {
+				return nil, err
+			}
+			parentAccount, ok := opalResourceByID[parentResourceID]
+			if !ok {
+				return nil, fmt.Errorf("could not find account for permission set %q: parent resource %q", resourceID, parentResourceID)
+			}
+			parentID, err := opalRequiredString("opal_resource parent", "resource_id", parentAccount.ResourceId)
+			if err != nil {
+				return nil, err
+			}
+			tfname = fmt.Sprintf("%s_%s", opalResourceDisplayName(parentAccount.Name, parentID), tfname)
+		}
+
+		if seenNames[tfname] {
+			tfname = tfname + "_" + opalResourceNameSuffix(resourceID)
+		} else {
+			seenNames[tfname] = true
+		}
+
+		resources = append(resources, terraformutils.NewSimpleResource(
+			resourceID,
+			normalizeResourceName(tfname),
+			"opal_resource",
+			"opal",
+			[]string{},
+		))
+	}
+
+	return resources, nil
 }
 
 func (g *ResourceGenerator) InitResources() error {
@@ -23,7 +87,7 @@ func (g *ResourceGenerator) InitResources() error {
 		return fmt.Errorf("unable to list opal resources: %w", err)
 	}
 
-	var opalResources []*opal.Resource
+	var opalResources []*opalsdk.Resource
 	for {
 		for _, resource := range resources.Results {
 			resourceRef := resource
@@ -40,39 +104,11 @@ func (g *ResourceGenerator) InitResources() error {
 		}
 	}
 
-	opalResourceByID := make(map[string]*opal.Resource)
-	for _, resource := range opalResources {
-		opalResourceByID[resource.ResourceId] = resource
+	resourcesList, err := g.createResources(opalResources)
+	if err != nil {
+		return err
 	}
-
-	seenNames := make(map[string]bool)
-	for _, resource := range opalResources {
-		tfname := *resource.Name
-		if resource.ResourceType != nil &&
-			*resource.ResourceType == opal.RESOURCETYPEENUM_AWS_SSO_PERMISSION_SET &&
-			resource.ParentResourceId != nil {
-			parentAccount, ok := opalResourceByID[*resource.ParentResourceId]
-			if !ok {
-				return fmt.Errorf("could not find account for permission set: %#v", resource)
-			}
-			tfname = fmt.Sprintf("%s_%s", *parentAccount.Name, *resource.Name)
-		}
-
-		if seenNames[tfname] {
-			tfname = tfname + "_" + resource.ResourceId[:8]
-		} else {
-			seenNames[tfname] = true
-		}
-
-		tfname = normalizeResourceName(tfname)
-		g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-			resource.ResourceId,
-			tfname,
-			"opal_resource",
-			"opal",
-			[]string{},
-		))
-	}
+	g.Resources = append(g.Resources, resourcesList...)
 
 	return nil
 }

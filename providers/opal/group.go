@@ -5,10 +5,33 @@ import (
 	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
+	opalsdk "github.com/opalsecurity/opal-go"
 )
 
 type GroupGenerator struct {
 	OpalService
+}
+
+func (g *GroupGenerator) createResources(groups []opalsdk.Group, countByName map[string]int) ([]terraformutils.Resource, error) {
+	resources := []terraformutils.Resource{}
+
+	for _, group := range groups {
+		resourceID, err := opalRequiredString("opal_group", "group_id", group.GroupId)
+		if err != nil {
+			return nil, err
+		}
+		name := opalUniqueResourceName(opalResourceDisplayName(group.Name, resourceID), countByName)
+
+		resources = append(resources, terraformutils.NewSimpleResource(
+			resourceID,
+			name,
+			"opal_group",
+			"opal",
+			[]string{},
+		))
+	}
+
+	return resources, nil
 }
 
 func (g *GroupGenerator) InitResources() error {
@@ -25,23 +48,11 @@ func (g *GroupGenerator) InitResources() error {
 	countByName := make(map[string]int)
 
 	for {
-		for _, group := range groups.Results {
-			name := normalizeResourceName(*group.Name)
-			if count, ok := countByName[name]; ok {
-				countByName[name] = count + 1
-				name = normalizeResourceName(fmt.Sprintf("%s_%d", *group.Name, count+1))
-			} else {
-				countByName[name] = 1
-			}
-
-			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				group.GroupId,
-				name,
-				"opal_group",
-				"opal",
-				[]string{},
-			))
+		resources, err := g.createResources(groups.Results, countByName)
+		if err != nil {
+			return err
 		}
+		g.Resources = append(g.Resources, resources...)
 
 		if !groups.HasNext() || groups.Next == nil {
 			break

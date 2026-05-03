@@ -5,10 +5,33 @@ import (
 	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
+	opalsdk "github.com/opalsecurity/opal-go"
 )
 
 type OwnerGenerator struct {
 	OpalService
+}
+
+func (g *OwnerGenerator) createResources(owners []opalsdk.Owner, countByName map[string]int) ([]terraformutils.Resource, error) {
+	resources := []terraformutils.Resource{}
+
+	for _, owner := range owners {
+		resourceID, err := opalRequiredString("opal_owner", "owner_id", owner.OwnerId)
+		if err != nil {
+			return nil, err
+		}
+		name := opalUniqueResourceName(opalResourceDisplayName(owner.Name, resourceID), countByName)
+
+		resources = append(resources, terraformutils.NewSimpleResource(
+			resourceID,
+			name,
+			"opal_owner",
+			"opal",
+			[]string{},
+		))
+	}
+
+	return resources, nil
 }
 
 func (g *OwnerGenerator) InitResources() error {
@@ -25,23 +48,11 @@ func (g *OwnerGenerator) InitResources() error {
 	countByName := make(map[string]int)
 
 	for {
-		for _, owner := range owners.Results {
-			name := normalizeResourceName(*owner.Name)
-			if count, ok := countByName[name]; ok {
-				countByName[name] = count + 1
-				name = normalizeResourceName(fmt.Sprintf("%s_%d", *owner.Name, count+1))
-			} else {
-				countByName[name] = 1
-			}
-
-			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				owner.OwnerId,
-				name,
-				"opal_owner",
-				"opal",
-				[]string{},
-			))
+		resources, err := g.createResources(owners.Results, countByName)
+		if err != nil {
+			return err
 		}
+		g.Resources = append(g.Resources, resources...)
 
 		if !owners.HasNext() || owners.Next == nil {
 			break
