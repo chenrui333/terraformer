@@ -12,6 +12,8 @@ import (
 	"github.com/okta/okta-sdk-golang/v2/okta"
 )
 
+const oktaUserSchemaPathPrefix = "/api/v1/meta/schemas/user/"
+
 type UserSchemaPropertyGenerator struct {
 	OktaService
 }
@@ -115,7 +117,15 @@ func getUserTypeSchemaID(ut *okta.UserType) (string, error) {
 				if err != nil {
 					return "", fmt.Errorf("parse Okta user type %q schema link: %w", ut.Id, err)
 				}
-				return strings.TrimPrefix(u.EscapedPath(), "/api/v1/meta/schemas/user/"), nil
+				path := u.EscapedPath()
+				if !strings.HasPrefix(path, oktaUserSchemaPathPrefix) {
+					return "", fmt.Errorf("parse Okta user type %q schema link %q: unexpected path %q", ut.Id, href, path)
+				}
+				schemaID := strings.TrimPrefix(path, oktaUserSchemaPathPrefix)
+				if schemaID == "" {
+					return "", fmt.Errorf("parse Okta user type %q schema link %q: missing schema ID", ut.Id, href)
+				}
+				return schemaID, nil
 			}
 		}
 	}

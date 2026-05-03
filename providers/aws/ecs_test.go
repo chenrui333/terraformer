@@ -88,6 +88,16 @@ func TestEcsTaskDefinitionRevision(t *testing.T) {
 			arn:     "arn:aws:ecs:us-east-1:123456789012:task-definition/example:not-a-number",
 			wantErr: "parse ecs task definition revision",
 		},
+		{
+			name:    "empty family",
+			arn:     "arn:aws:ecs:us-east-1:123456789012:task-definition/:1",
+			wantErr: "missing family",
+		},
+		{
+			name:    "zero revision",
+			arn:     "arn:aws:ecs:us-east-1:123456789012:task-definition/example:0",
+			wantErr: "revision must be positive",
+		},
 	}
 
 	for _, tt := range tests {

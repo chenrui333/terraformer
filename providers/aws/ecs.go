@@ -178,9 +178,15 @@ func ecsTaskDefinitionRevision(taskDefinitionArn string) (string, int, error) {
 	if definitionWithFamily == "" || revisionValue == "" {
 		return "", 0, fmt.Errorf("parse ecs task definition %q: missing family or revision", taskDefinitionArn)
 	}
+	if arnLastSegment(definitionWithFamily, "/") == "" {
+		return "", 0, fmt.Errorf("parse ecs task definition %q: missing family", taskDefinitionArn)
+	}
 	revision, err := strconv.Atoi(revisionValue)
 	if err != nil {
 		return "", 0, fmt.Errorf("parse ecs task definition revision for %q: %w", taskDefinitionArn, err)
+	}
+	if revision <= 0 {
+		return "", 0, fmt.Errorf("parse ecs task definition %q: revision must be positive", taskDefinitionArn)
 	}
 	return definitionWithFamily, revision, nil
 }

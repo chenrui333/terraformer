@@ -68,3 +68,41 @@ func TestGetUserTypeSchemaIDReturnsParseError(t *testing.T) {
 		t.Fatalf("error = %q, want schema link context", err)
 	}
 }
+
+func TestGetUserTypeSchemaIDRejectsUnexpectedPath(t *testing.T) {
+	userType := &oktasdk.UserType{
+		Id: "custom",
+		Links: map[string]interface{}{
+			"schema": map[string]interface{}{
+				"href": "https://example.okta.com/api/v1/users/custom",
+			},
+		},
+	}
+
+	_, err := getUserTypeSchemaID(userType)
+	if err == nil {
+		t.Fatal("expected unexpected schema path error")
+	}
+	if !strings.Contains(err.Error(), "unexpected path") {
+		t.Fatalf("error = %q, want unexpected path context", err)
+	}
+}
+
+func TestGetUserTypeSchemaIDRejectsMissingSchemaID(t *testing.T) {
+	userType := &oktasdk.UserType{
+		Id: "custom",
+		Links: map[string]interface{}{
+			"schema": map[string]interface{}{
+				"href": "https://example.okta.com/api/v1/meta/schemas/user/",
+			},
+		},
+	}
+
+	_, err := getUserTypeSchemaID(userType)
+	if err == nil {
+		t.Fatal("expected missing schema ID error")
+	}
+	if !strings.Contains(err.Error(), "missing schema ID") {
+		t.Fatalf("error = %q, want missing schema ID context", err)
+	}
+}

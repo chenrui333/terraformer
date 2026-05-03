@@ -90,6 +90,8 @@ func TestAWSProviderInitRejectsInvalidSDKLoadConfig(t *testing.T) {
 
 func TestAWSProviderInitUsesSharedConfigEnvVars(t *testing.T) {
 	t.Setenv("AWS_SDK_LOAD_CONFIG", "true")
+	t.Setenv("AWS_REGION", "old-region")
+	t.Setenv("AWS_PROFILE", "old-profile")
 	var provider AWSProvider
 
 	if err := provider.Init([]string{MainRegionPublicPartition, "ops"}); err != nil {
