@@ -16,15 +16,20 @@ type FastlyProvider struct { //nolint
 }
 
 func (p *FastlyProvider) Init(_ []string) error {
-	if os.Getenv("FASTLY_API_KEY") == "" {
+	p.apiKey = ""
+	p.customerID = ""
+
+	apiKey := os.Getenv("FASTLY_API_KEY")
+	if apiKey == "" {
 		return errors.New("set FASTLY_API_KEY env var")
 	}
-	p.apiKey = os.Getenv("FASTLY_API_KEY")
 
-	if os.Getenv("FASTLY_CUSTOMER_ID") == "" {
+	customerID := os.Getenv("FASTLY_CUSTOMER_ID")
+	if customerID == "" {
 		return errors.New("set FASTLY_CUSTOMER_ID env var")
 	}
-	p.customerID = os.Getenv("FASTLY_CUSTOMER_ID")
+	p.apiKey = apiKey
+	p.customerID = customerID
 
 	return nil
 }

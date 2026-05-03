@@ -21,6 +21,11 @@ type IonosCloudProvider struct { //nolint
 }
 
 func (p *IonosCloudProvider) Init(_ []string) error {
+	p.username = ""
+	p.password = ""
+	p.token = ""
+	p.url = ""
+
 	username := os.Getenv(ionoscloud.IonosUsernameEnvVar)
 	password := os.Getenv(ionoscloud.IonosPasswordEnvVar)
 	token := os.Getenv(ionoscloud.IonosTokenEnvVar)

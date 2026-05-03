@@ -42,3 +42,25 @@ func TestProviderInitServiceUsesInitializedClient(t *testing.T) {
 		t.Fatal("expected service to reuse provider-level management client")
 	}
 }
+
+func TestProviderInitClearsStateOnMissingClientSecret(t *testing.T) {
+	t.Setenv("AUTH0_DOMAIN", "example.auth0.com")
+	t.Setenv("AUTH0_CLIENT_ID", "client-id")
+	t.Setenv("AUTH0_CLIENT_SECRET", "client-secret")
+
+	provider := &Auth0Provider{}
+	if err := provider.Init(nil); err != nil {
+		t.Fatalf("expected provider initialization to succeed: %v", err)
+	}
+	if provider.domain != "example.auth0.com" || provider.clientID != "client-id" || provider.clientSecret != "client-secret" || provider.client == nil {
+		t.Fatalf("expected provider state to be initialized, got domain=%q clientID=%q clientSecret=%q client=%v", provider.domain, provider.clientID, provider.clientSecret, provider.client)
+	}
+
+	t.Setenv("AUTH0_CLIENT_SECRET", "")
+	if err := provider.Init(nil); err == nil {
+		t.Fatal("expected provider initialization to fail without AUTH0_CLIENT_SECRET")
+	}
+	if provider.domain != "" || provider.clientID != "" || provider.clientSecret != "" || provider.client != nil {
+		t.Fatalf("expected stale provider state to be cleared, got domain=%q clientID=%q clientSecret=%q client=%v", provider.domain, provider.clientID, provider.clientSecret, provider.client)
+	}
+}

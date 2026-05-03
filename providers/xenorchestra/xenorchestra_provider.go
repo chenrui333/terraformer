@@ -17,20 +17,27 @@ type XenorchestraProvider struct { //nolint
 }
 
 func (p *XenorchestraProvider) Init(_ []string) error {
-	if os.Getenv("XOA_URL") == "" {
+	p.url = ""
+	p.user = ""
+	p.password = ""
+
+	url := os.Getenv("XOA_URL")
+	if url == "" {
 		return errors.New("set XOA_URL env var")
 	}
-	p.url = os.Getenv("XOA_URL")
 
-	if os.Getenv("XOA_USER") == "" {
+	user := os.Getenv("XOA_USER")
+	if user == "" {
 		return errors.New("set XOA_USER env var")
 	}
-	p.user = os.Getenv("XOA_USER")
 
-	if os.Getenv("XOA_PASSWORD") == "" {
+	password := os.Getenv("XOA_PASSWORD")
+	if password == "" {
 		return errors.New("set XOA_PASSWORD env var")
 	}
-	p.password = os.Getenv("XOA_PASSWORD")
+	p.url = url
+	p.user = user
+	p.password = password
 
 	return nil
 }

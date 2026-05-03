@@ -67,14 +67,19 @@ func (p OpalProvider) GetResourceConnections() map[string]map[string][]string {
 }
 
 func (p *OpalProvider) Init(_ []string) error {
-	p.token = os.Getenv("OPAL_AUTH_TOKEN")
-	if p.token == "" {
+	p.token = ""
+	p.baseURL = ""
+
+	token := os.Getenv("OPAL_AUTH_TOKEN")
+	if token == "" {
 		return errors.New("the Opal API key must be set via `OPAL_AUTH_TOKEN` env var")
 	}
-	p.baseURL = os.Getenv("OPAL_BASE_URL")
-	if p.baseURL == "" {
-		p.baseURL = opalDefaultURL
+	baseURL := os.Getenv("OPAL_BASE_URL")
+	if baseURL == "" {
+		baseURL = opalDefaultURL
 	}
+	p.token = token
+	p.baseURL = baseURL
 
 	return nil
 }

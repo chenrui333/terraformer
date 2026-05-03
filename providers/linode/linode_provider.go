@@ -15,10 +15,13 @@ type LinodeProvider struct { //nolint
 }
 
 func (p *LinodeProvider) Init(_ []string) error {
-	if os.Getenv("LINODE_TOKEN") == "" {
+	p.token = ""
+
+	token := os.Getenv("LINODE_TOKEN")
+	if token == "" {
 		return errors.New("set LINODE_TOKEN env var")
 	}
-	p.token = os.Getenv("LINODE_TOKEN")
+	p.token = token
 
 	return nil
 }
