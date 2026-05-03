@@ -72,6 +72,15 @@ terraformer import aws --resources=sg --regions=us-east-1
     * `aws_apigatewayv2_route_response`
     * `aws_apigatewayv2_stage`
     * `aws_apigatewayv2_vpc_link`
+*   `appconfig`
+    * `aws_appconfig_application`
+    * `aws_appconfig_configuration_profile`
+    * `aws_appconfig_deployment`
+    * `aws_appconfig_deployment_strategy`
+    * `aws_appconfig_environment`
+    * `aws_appconfig_extension`
+    * `aws_appconfig_extension_association`
+    * `aws_appconfig_hosted_configuration_version`
 *   `appsync`
     * `aws_appsync_api_cache`
     * `aws_appsync_api_key`
