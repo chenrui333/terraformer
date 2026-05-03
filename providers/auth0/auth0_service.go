@@ -37,3 +37,21 @@ func (s *Auth0Service) generateClient() (*management.Management, error) {
 
 	return newManagementClient(s.Args["domain"].(string), s.Args["client_id"].(string), s.Args["client_secret"].(string))
 }
+
+func auth0MissingResource(resourceType string) error {
+	return fmt.Errorf("%s resource is nil", resourceType)
+}
+
+func auth0RequiredString(resourceType, field string, value *string) (string, error) {
+	if value == nil || *value == "" {
+		return "", fmt.Errorf("%s resource is missing %s", resourceType, field)
+	}
+	return *value, nil
+}
+
+func auth0ResourceName(name *string, fallback string) string {
+	if name != nil && *name != "" && *name != fallback {
+		return fallback + "_" + *name
+	}
+	return fallback
+}

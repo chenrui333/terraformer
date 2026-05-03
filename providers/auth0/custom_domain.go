@@ -17,19 +17,25 @@ type CustomDomainGenerator struct {
 	Auth0Service
 }
 
-func (g CustomDomainGenerator) createResources(customDomains []*management.CustomDomain) []terraformutils.Resource {
+func (g CustomDomainGenerator) createResources(customDomains []*management.CustomDomain) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
-	for _, CustomDomain := range customDomains {
-		resourceName := *CustomDomain.ID
+	for _, customDomain := range customDomains {
+		if customDomain == nil {
+			return nil, auth0MissingResource("auth0_custom_domain")
+		}
+		resourceName, err := auth0RequiredString("auth0_custom_domain", "id", customDomain.ID)
+		if err != nil {
+			return nil, err
+		}
 		resources = append(resources, terraformutils.NewSimpleResource(
 			resourceName,
-			resourceName+"_"+*CustomDomain.Domain,
+			auth0ResourceName(customDomain.Domain, resourceName),
 			"auth0_custom_domain",
 			"auth0",
 			CustomDomainAllowEmptyValues,
 		))
 	}
-	return resources
+	return resources, nil
 }
 
 func (g *CustomDomainGenerator) InitResources() error {
@@ -43,6 +49,10 @@ func (g *CustomDomainGenerator) InitResources() error {
 		return err
 	}
 
-	g.Resources = g.createResources(list)
+	resources, err := g.createResources(list)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 	return nil
 }

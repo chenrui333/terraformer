@@ -17,19 +17,25 @@ type LogStreamGenerator struct {
 	Auth0Service
 }
 
-func (g LogStreamGenerator) createResources(logStreams []*management.LogStream) []terraformutils.Resource {
+func (g LogStreamGenerator) createResources(logStreams []*management.LogStream) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
-	for _, LogStream := range logStreams {
-		resourceName := *LogStream.ID
+	for _, logStream := range logStreams {
+		if logStream == nil {
+			return nil, auth0MissingResource("auth0_log_stream")
+		}
+		resourceName, err := auth0RequiredString("auth0_log_stream", "id", logStream.ID)
+		if err != nil {
+			return nil, err
+		}
 		resources = append(resources, terraformutils.NewSimpleResource(
 			resourceName,
-			resourceName+"_"+*LogStream.Name,
+			auth0ResourceName(logStream.Name, resourceName),
 			"auth0_log_stream",
 			"auth0",
 			LogStreamAllowEmptyValues,
 		))
 	}
-	return resources
+	return resources, nil
 }
 
 func (g *LogStreamGenerator) InitResources() error {
@@ -43,6 +49,10 @@ func (g *LogStreamGenerator) InitResources() error {
 		return err
 	}
 
-	g.Resources = g.createResources(list)
+	resources, err := g.createResources(list)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 	return nil
 }

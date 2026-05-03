@@ -17,9 +17,15 @@ type EmailGenerator struct {
 	Auth0Service
 }
 
-func (g EmailGenerator) createResources(email *management.EmailProvider) []terraformutils.Resource {
+func (g EmailGenerator) createResources(email *management.EmailProvider) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
-	resourceName := *email.Name
+	if email == nil {
+		return nil, auth0MissingResource("auth0_email")
+	}
+	resourceName, err := auth0RequiredString("auth0_email", "name", email.Name)
+	if err != nil {
+		return nil, err
+	}
 	resources = append(resources, terraformutils.NewSimpleResource(
 		resourceName,
 		resourceName,
@@ -27,7 +33,7 @@ func (g EmailGenerator) createResources(email *management.EmailProvider) []terra
 		"auth0",
 		EmailAllowEmptyValues,
 	))
-	return resources
+	return resources, nil
 }
 
 func (g *EmailGenerator) InitResources() error {
@@ -40,6 +46,10 @@ func (g *EmailGenerator) InitResources() error {
 	if err != nil {
 		return err
 	}
-	g.Resources = g.createResources(email)
+	resources, err := g.createResources(email)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 	return nil
 }

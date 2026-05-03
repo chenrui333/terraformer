@@ -17,19 +17,25 @@ type HookGenerator struct {
 	Auth0Service
 }
 
-func (g HookGenerator) createResources(hooks []*management.Hook) []terraformutils.Resource {
+func (g HookGenerator) createResources(hooks []*management.Hook) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	for _, hook := range hooks {
-		resourceName := *hook.ID
+		if hook == nil {
+			return nil, auth0MissingResource("auth0_hook")
+		}
+		resourceName, err := auth0RequiredString("auth0_hook", "id", hook.ID)
+		if err != nil {
+			return nil, err
+		}
 		resources = append(resources, terraformutils.NewSimpleResource(
 			resourceName,
-			resourceName+"_"+*hook.Name,
+			auth0ResourceName(hook.Name, resourceName),
 			"auth0_hook",
 			"auth0",
 			HookAllowEmptyValues,
 		))
 	}
-	return resources
+	return resources, nil
 }
 
 func (g *HookGenerator) InitResources() error {
@@ -53,6 +59,10 @@ func (g *HookGenerator) InitResources() error {
 		page++
 	}
 
-	g.Resources = g.createResources(list)
+	resources, err := g.createResources(list)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 	return nil
 }

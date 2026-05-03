@@ -17,19 +17,25 @@ type RoleGenerator struct {
 	Auth0Service
 }
 
-func (g RoleGenerator) createResources(roles []*management.Role) []terraformutils.Resource {
+func (g RoleGenerator) createResources(roles []*management.Role) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	for _, role := range roles {
-		resourceName := *role.ID
+		if role == nil {
+			return nil, auth0MissingResource("auth0_role")
+		}
+		resourceName, err := auth0RequiredString("auth0_role", "id", role.ID)
+		if err != nil {
+			return nil, err
+		}
 		resources = append(resources, terraformutils.NewSimpleResource(
 			resourceName,
-			resourceName+"_"+*role.Name,
+			auth0ResourceName(role.Name, resourceName),
 			"auth0_role",
 			"auth0",
 			RoleAllowEmptyValues,
 		))
 	}
-	return resources
+	return resources, nil
 }
 
 func (g *RoleGenerator) InitResources() error {
@@ -53,6 +59,10 @@ func (g *RoleGenerator) InitResources() error {
 		page++
 	}
 
-	g.Resources = g.createResources(list)
+	resources, err := g.createResources(list)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 	return nil
 }
