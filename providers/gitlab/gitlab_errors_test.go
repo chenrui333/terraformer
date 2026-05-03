@@ -37,6 +37,28 @@ func TestGitLabProviderInitRequiresGroup(t *testing.T) {
 	}
 }
 
+func TestGitLabProviderInitClearsStaleStateOnMissingGroup(t *testing.T) {
+	provider := GitLabProvider{
+		group:   "old-group",
+		token:   "old-token",
+		baseURL: "https://gitlab.example.com/api/v4/",
+	}
+
+	err := provider.Init(nil)
+	if err == nil {
+		t.Fatal("expected missing group error")
+	}
+	if provider.group != "" {
+		t.Fatalf("group = %q, want empty", provider.group)
+	}
+	if provider.token != "" {
+		t.Fatalf("token = %q, want empty", provider.token)
+	}
+	if provider.baseURL != gitLabDefaultURL {
+		t.Fatalf("baseURL = %q, want %q", provider.baseURL, gitLabDefaultURL)
+	}
+}
+
 func TestGitLabProviderInitUsesEnvTokenForEmptyTokenArg(t *testing.T) {
 	t.Setenv("GITLAB_TOKEN", "env-token")
 	var provider GitLabProvider
