@@ -710,6 +710,20 @@ func TestSelectImportResourceName(t *testing.T) {
 			wantOK: false,
 		},
 		{
+			name:    "skips historical alpha resource slices",
+			group:   "resource.k8s.io",
+			version: "v1alpha2",
+			resource: metav1.APIResource{
+				Name:  "resourceslices",
+				Kind:  "ResourceSlice",
+				Verbs: manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				manifestTerraformResourceName: {},
+			},
+			wantOK: false,
+		},
+		{
 			name:    "skips allocator-managed alpha ip addresses",
 			group:   "networking.k8s.io",
 			version: "v1alpha1",
@@ -730,6 +744,21 @@ func TestSelectImportResourceName(t *testing.T) {
 			resource: metav1.APIResource{
 				Name:       "podgroups",
 				Kind:       "PodGroup",
+				Namespaced: true,
+				Verbs:      manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				manifestTerraformResourceName: {},
+			},
+			wantOK: false,
+		},
+		{
+			name:    "skips historical alpha lease candidates",
+			group:   "coordination.k8s.io",
+			version: "v1alpha1",
+			resource: metav1.APIResource{
+				Name:       "leasecandidates",
+				Kind:       "LeaseCandidate",
 				Namespaced: true,
 				Verbs:      manageableVerbs,
 			},
@@ -877,12 +906,14 @@ func TestSkipsImportResource(t *testing.T) {
 		{name: "old pod certificate request", group: "certificates.k8s.io", version: "v1alpha1", kind: "PodCertificateRequest", want: true},
 		{name: "resource slice", group: "resource.k8s.io", version: "v1", kind: "ResourceSlice", want: true},
 		{name: "old resource slice", group: "resource.k8s.io", version: "v1alpha3", kind: "ResourceSlice", want: true},
+		{name: "historical resource slice", group: "resource.k8s.io", version: "v1alpha2", kind: "ResourceSlice", want: true},
 		{name: "resource pool status request", group: "resource.k8s.io", version: "v1alpha3", kind: "ResourcePoolStatusRequest", want: true},
 		{name: "ip address", group: "networking.k8s.io", version: "v1", kind: "IPAddress", want: true},
 		{name: "old ip address", group: "networking.k8s.io", version: "v1alpha1", kind: "IPAddress", want: true},
 		{name: "pod group", group: "scheduling.k8s.io", version: "v1alpha2", kind: "PodGroup", want: true},
 		{name: "controller revision", group: "apps", version: "v1", kind: "ControllerRevision", want: true},
 		{name: "lease candidate", group: "coordination.k8s.io", version: "v1alpha2", kind: "LeaseCandidate", want: true},
+		{name: "historical lease candidate", group: "coordination.k8s.io", version: "v1alpha1", kind: "LeaseCandidate", want: true},
 		{name: "storage version", group: "internal.apiserver.k8s.io", version: "v1alpha1", kind: "StorageVersion", want: true},
 		{name: "csi node", group: "storage.k8s.io", version: "v1", kind: "CSINode", want: true},
 		{name: "csi storage capacity", group: "storage.k8s.io", version: "v1alpha1", kind: "CSIStorageCapacity", want: true},
