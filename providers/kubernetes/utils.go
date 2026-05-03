@@ -126,9 +126,20 @@ var nativeManifestResources = map[kubernetesResourceID]struct{}{
 	{group: "resource.k8s.io", version: "v1beta1", kind: "ResourceClaim"}:                                  {},
 	{group: "resource.k8s.io", version: "v1beta1", kind: "ResourceClaimTemplate"}:                          {},
 	{group: "resource.k8s.io", version: "v1alpha3", kind: "DeviceTaintRule"}:                               {},
+	{group: "scheduling.k8s.io", version: "v1alpha2", kind: "Workload"}:                                    {},
+	{group: "scheduling.k8s.io", version: "v1alpha1", kind: "Workload"}:                                    {},
 	{group: "storage.k8s.io", version: "v1", kind: "VolumeAttributesClass"}:                                {},
 	{group: "storage.k8s.io", version: "v1beta1", kind: "VolumeAttributesClass"}:                           {},
 	{group: "storage.k8s.io", version: "v1alpha1", kind: "VolumeAttributesClass"}:                          {},
+	{group: "storagemigration.k8s.io", version: "v1beta1", kind: "StorageVersionMigration"}:                {},
+	{group: "storagemigration.k8s.io", version: "v1alpha1", kind: "StorageVersionMigration"}:               {},
+}
+
+// These native APIs may be listable and manageable, but importing them as
+// Terraform-owned manifests would capture runtime/controller generated state.
+var skippedImportResources = map[kubernetesResourceID]struct{}{
+	{group: "certificates.k8s.io", version: "v1beta1", kind: "PodCertificateRequest"}:  {},
+	{group: "certificates.k8s.io", version: "v1alpha1", kind: "PodCertificateRequest"}: {},
 }
 
 // client-go group accessor names collapse DNS groups to their first label
@@ -217,6 +228,10 @@ func selectImportResourceName(
 	resource metav1.APIResource,
 	hasResourceType func(string) bool,
 ) (string, bool, bool) {
+	if skipsImportResource(group, version, resource.Kind) {
+		return "", false, false
+	}
+
 	terraformResourceName, ok := selectTerraformResourceName(group, version, resource.Kind, hasResourceType)
 	if ok {
 		if supportsTypedClientResource(clientset, group, version, resource.Kind) {
@@ -253,6 +268,11 @@ func supportsDynamicClientResource(group, version, kind string) bool {
 
 func supportsNativeManifestResource(group, version, kind string) bool {
 	_, ok := nativeManifestResources[kubernetesResourceID{group: group, version: version, kind: kind}]
+	return ok
+}
+
+func skipsImportResource(group, version, kind string) bool {
+	_, ok := skippedImportResources[kubernetesResourceID{group: group, version: version, kind: kind}]
 	return ok
 }
 
