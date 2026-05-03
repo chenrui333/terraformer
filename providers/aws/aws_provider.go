@@ -230,6 +230,7 @@ func (p *AWSProvider) GetSupportedService() map[string]terraformutils.ServiceGen
 		"alb":               &AwsFacade{service: &AlbGenerator{}},
 		"api_gateway":       &AwsFacade{service: &APIGatewayGenerator{}},
 		"api_gatewayv2":     &AwsFacade{service: &APIGatewayV2Generator{}},
+		"appconfig":         &AwsFacade{service: &AppConfigGenerator{}},
 		"appsync":           &AwsFacade{service: &AppSyncGenerator{}},
 		"auto_scaling":      &AwsFacade{service: &AutoScalingGenerator{}},
 		"backup":            &AwsFacade{service: &BackupGenerator{}},
