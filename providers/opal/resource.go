@@ -33,7 +33,7 @@ func (g *ResourceGenerator) createResources(opalResources []*opalsdk.Resource) (
 		opalResourceByID[resourceID] = resource
 	}
 
-	seenNames := make(map[string]bool)
+	seenNames := make(map[string]int)
 	for _, resource := range opalResources {
 		resourceID, err := opalRequiredString("opal_resource", "resource_id", resource.ResourceId)
 		if err != nil {
@@ -58,15 +58,11 @@ func (g *ResourceGenerator) createResources(opalResources []*opalsdk.Resource) (
 			tfname = fmt.Sprintf("%s_%s", opalResourceDisplayName(parentAccount.Name, parentID), tfname)
 		}
 
-		if seenNames[tfname] {
-			tfname = tfname + "_" + opalResourceNameSuffix(resourceID)
-		} else {
-			seenNames[tfname] = true
-		}
+		tfname = opalUniqueResourceNameWithSuffix(tfname, opalResourceNameSuffix(resourceID), seenNames)
 
 		resources = append(resources, terraformutils.NewSimpleResource(
 			resourceID,
-			normalizeResourceName(tfname),
+			tfname,
 			"opal_resource",
 			"opal",
 			[]string{},

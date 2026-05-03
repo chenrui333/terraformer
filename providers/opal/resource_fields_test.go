@@ -194,6 +194,24 @@ func TestOpalUniqueResourceNameDeduplicatesFallbackNames(t *testing.T) {
 	}
 }
 
+func TestOpalUniqueResourceNameAvoidsGeneratedNameCollision(t *testing.T) {
+	resources, err := (&GroupGenerator{}).createResources([]opalsdk.Group{
+		{GroupId: "first-group", Name: opalStringPtr("Engineering")},
+		{GroupId: "second-group", Name: opalStringPtr("Engineering 2")},
+		{GroupId: "third-group", Name: opalStringPtr("Engineering")},
+	}, map[string]int{})
+	if err != nil {
+		t.Fatalf("expected no error: %v", err)
+	}
+	if len(resources) != 3 {
+		t.Fatalf("resources len = %d, want 3", len(resources))
+	}
+	wantName := terraformutils.TfSanitize("engineering_3")
+	if resources[2].ResourceName != wantName {
+		t.Fatalf("third resource name = %q, want %q", resources[2].ResourceName, wantName)
+	}
+}
+
 func TestOpalResourcePermissionSetUsesParentFallbackName(t *testing.T) {
 	resourceType := opalsdk.RESOURCETYPEENUM_AWS_SSO_PERMISSION_SET
 	resources, err := (&ResourceGenerator{}).createResources([]*opalsdk.Resource{
@@ -214,6 +232,23 @@ func TestOpalResourcePermissionSetUsesParentFallbackName(t *testing.T) {
 	wantName := terraformutils.TfSanitize("account_id_admin_access")
 	if resources[1].ResourceName != wantName {
 		t.Fatalf("permission set name = %q, want %q", resources[1].ResourceName, wantName)
+	}
+}
+
+func TestOpalResourceDeduplicatesAfterNormalization(t *testing.T) {
+	resources, err := (&ResourceGenerator{}).createResources([]*opalsdk.Resource{
+		{ResourceId: "abc", Name: opalStringPtr("Shared Name")},
+		{ResourceId: "def", Name: opalStringPtr("Shared-Name")},
+	})
+	if err != nil {
+		t.Fatalf("expected no error: %v", err)
+	}
+	if len(resources) != 2 {
+		t.Fatalf("resources len = %d, want 2", len(resources))
+	}
+	wantName := terraformutils.TfSanitize("shared_name_def")
+	if resources[1].ResourceName != wantName {
+		t.Fatalf("second resource name = %q, want %q", resources[1].ResourceName, wantName)
 	}
 }
 

@@ -35,12 +35,29 @@ func opalResourceDisplayName(name *string, fallback string) string {
 
 func opalUniqueResourceName(name string, countByName map[string]int) string {
 	normalizedName := normalizeResourceName(name)
-	if count, ok := countByName[normalizedName]; ok {
-		countByName[normalizedName] = count + 1
-		return normalizeResourceName(fmt.Sprintf("%s_%d", name, count+1))
+	if _, ok := countByName[normalizedName]; !ok {
+		countByName[normalizedName] = 1
+		return normalizedName
 	}
-	countByName[normalizedName] = 1
-	return normalizedName
+	next := countByName[normalizedName] + 1
+	for {
+		candidate := normalizeResourceName(fmt.Sprintf("%s_%d", name, next))
+		if _, exists := countByName[candidate]; !exists {
+			countByName[normalizedName] = next
+			countByName[candidate] = 1
+			return candidate
+		}
+		next++
+	}
+}
+
+func opalUniqueResourceNameWithSuffix(name, suffix string, countByName map[string]int) string {
+	normalizedName := normalizeResourceName(name)
+	if _, ok := countByName[normalizedName]; !ok {
+		countByName[normalizedName] = 1
+		return normalizedName
+	}
+	return opalUniqueResourceName(fmt.Sprintf("%s_%s", name, suffix), countByName)
 }
 
 func normalizeResourceName(s string) string {
