@@ -8,7 +8,14 @@ import (
 )
 
 func TestCommercetoolsProviderInitRequiresArgs(t *testing.T) {
-	var provider CommercetoolsProvider
+	provider := CommercetoolsProvider{
+		clientID:     "old-client-id",
+		clientScope:  "old-scope",
+		clientSecret: "old-secret",
+		projectKey:   "old-project",
+		baseURL:      "https://old-api.example.com",
+		tokenURL:     "https://old-auth.example.com",
+	}
 
 	err := provider.Init([]string{"client-id", "scope", "secret", "project", "https://api.example.com"})
 	if err == nil {
@@ -16,6 +23,10 @@ func TestCommercetoolsProviderInitRequiresArgs(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "client id, client scope, client secret, project key, base URL, and token URL are required") {
 		t.Fatalf("Init error = %q, want missing Commercetools args", err)
+	}
+	if provider.clientID != "" || provider.clientScope != "" || provider.clientSecret != "" ||
+		provider.projectKey != "" || provider.baseURL != "" || provider.tokenURL != "" {
+		t.Fatalf("provider state was not cleared after failed init: %#v", provider)
 	}
 }
 

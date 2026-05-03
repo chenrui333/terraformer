@@ -8,7 +8,11 @@ import (
 )
 
 func TestRBTProviderInitRequiresArgs(t *testing.T) {
-	var provider RBTProvider
+	provider := RBTProvider{
+		endpoint: "https://old.example.com",
+		username: "old-user",
+		password: "old-password",
+	}
 
 	err := provider.Init([]string{"https://rabbitmq.example.com", "guest"})
 	if err == nil {
@@ -16,6 +20,15 @@ func TestRBTProviderInitRequiresArgs(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "endpoint, username, and password are required") {
 		t.Fatalf("Init error = %q, want missing RabbitMQ args", err)
+	}
+	if provider.endpoint != "" {
+		t.Fatalf("endpoint = %q, want empty after failed init", provider.endpoint)
+	}
+	if provider.username != "" {
+		t.Fatalf("username = %q, want empty after failed init", provider.username)
+	}
+	if provider.password != "" {
+		t.Fatalf("password = %q, want empty after failed init", provider.password)
 	}
 }
 

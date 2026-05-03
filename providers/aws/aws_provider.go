@@ -172,6 +172,9 @@ func (p *AWSProvider) GetBasicConfig() cty.Value {
 
 // check projectName in env params
 func (p *AWSProvider) Init(args []string) error {
+	p.region = ""
+	p.profile = ""
+
 	if len(args) < 2 {
 		return errors.New("aws: expected 2 init args (region, profile)")
 	}

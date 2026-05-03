@@ -8,7 +8,10 @@ import (
 )
 
 func TestAWSProviderInitRequiresArgs(t *testing.T) {
-	var provider AWSProvider
+	provider := AWSProvider{
+		region:  MainRegionPublicPartition,
+		profile: "old-profile",
+	}
 
 	err := provider.Init([]string{MainRegionPublicPartition})
 	if err == nil {
@@ -16,5 +19,11 @@ func TestAWSProviderInitRequiresArgs(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "expected 2 init args") {
 		t.Fatalf("Init error = %q, want missing AWS args", err)
+	}
+	if provider.region != "" {
+		t.Fatalf("region = %q, want empty after failed init", provider.region)
+	}
+	if provider.profile != "" {
+		t.Fatalf("profile = %q, want empty after failed init", provider.profile)
 	}
 }

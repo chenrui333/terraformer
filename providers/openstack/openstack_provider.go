@@ -30,6 +30,8 @@ func (p OpenStackProvider) GetProviderData(_ ...string) map[string]interface{} {
 
 // check projectName in env params
 func (p *OpenStackProvider) Init(args []string) error {
+	p.region = ""
+
 	if len(args) < 1 {
 		return errors.New("openstack: expected 1 init arg (region)")
 	}

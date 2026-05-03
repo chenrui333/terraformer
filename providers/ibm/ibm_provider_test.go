@@ -23,13 +23,26 @@ func TestProviderInitDoesNotRequireAPIKey(t *testing.T) {
 }
 
 func TestProviderInitRequiresArgs(t *testing.T) {
-	provider := &IBMProvider{}
+	provider := &IBMProvider{
+		ResourceGroup: "old-resource-group",
+		Region:        "old-region",
+		VPC:           "old-vpc",
+	}
 	err := provider.Init([]string{"", ""})
 	if err == nil {
 		t.Fatal("expected missing args error")
 	}
 	if err.Error() != "ibm: expected 3 init args (resource group, region, vpc)" {
 		t.Fatalf("Init error = %q, want missing IBM args", err)
+	}
+	if provider.ResourceGroup != "" {
+		t.Fatalf("ResourceGroup = %q, want empty after failed init", provider.ResourceGroup)
+	}
+	if provider.Region != "" {
+		t.Fatalf("Region = %q, want empty after failed init", provider.Region)
+	}
+	if provider.VPC != "" {
+		t.Fatalf("VPC = %q, want empty after failed init", provider.VPC)
 	}
 }
 

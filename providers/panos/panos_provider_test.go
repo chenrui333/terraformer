@@ -8,7 +8,7 @@ import (
 )
 
 func TestPanosProviderInitRequiresArgs(t *testing.T) {
-	var provider PanosProvider
+	provider := PanosProvider{vsys: "old-vsys"}
 
 	err := provider.Init(nil)
 	if err == nil {
@@ -16,6 +16,9 @@ func TestPanosProviderInitRequiresArgs(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "vsys is required") {
 		t.Fatalf("Init error = %q, want missing PAN-OS args", err)
+	}
+	if provider.vsys != "" {
+		t.Fatalf("vsys = %q, want empty after failed init", provider.vsys)
 	}
 }
 

@@ -30,6 +30,10 @@ type IBMProvider struct { //nolint
 }
 
 func (p *IBMProvider) Init(args []string) error {
+	p.ResourceGroup = ""
+	p.Region = ""
+	p.VPC = ""
+
 	if len(args) < 3 {
 		return errors.New("ibm: expected 3 init args (resource group, region, vpc)")
 	}

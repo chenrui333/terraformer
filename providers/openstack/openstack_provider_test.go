@@ -8,7 +8,7 @@ import (
 )
 
 func TestOpenStackProviderInitRequiresRegion(t *testing.T) {
-	var provider OpenStackProvider
+	provider := OpenStackProvider{region: "old-region"}
 
 	err := provider.Init(nil)
 	if err == nil {
@@ -16,5 +16,8 @@ func TestOpenStackProviderInitRequiresRegion(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "expected 1 init arg") {
 		t.Fatalf("Init error = %q, want missing region", err)
+	}
+	if provider.region != "" {
+		t.Fatalf("region = %q, want empty after failed init", provider.region)
 	}
 }
