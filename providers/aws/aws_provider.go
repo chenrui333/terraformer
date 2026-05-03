@@ -3,6 +3,7 @@
 package aws
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 
@@ -190,15 +191,13 @@ func (p *AWSProvider) Init(args []string) error {
 
 	// Terraformer accepts region and profile configuration, so we must detect what env variables to adjust to make Go SDK rely on them. AWS_SDK_LOAD_CONFIG here must be checked to determine correct variable to set.
 	enableSharedConfig, _ := strconv.ParseBool(os.Getenv("AWS_SDK_LOAD_CONFIG"))
-	var err error
 	if region != GlobalRegion && region != NoRegion {
+		envVar := "AWS_REGION"
 		if enableSharedConfig {
-			err = os.Setenv("AWS_DEFAULT_REGION", region)
-		} else {
-			err = os.Setenv("AWS_REGION", region)
+			envVar = "AWS_DEFAULT_REGION"
 		}
-		if err != nil {
-			return err
+		if err := os.Setenv(envVar, region); err != nil {
+			return fmt.Errorf("failed to set env %s=%q: %w", envVar, region, err)
 		}
 	}
 
@@ -209,7 +208,7 @@ func (p *AWSProvider) Init(args []string) error {
 		}
 
 		if err := os.Setenv(envVar, profile); err != nil {
-			return err
+			return fmt.Errorf("failed to set env %s=%q: %w", envVar, profile, err)
 		}
 	}
 	p.region = region
@@ -224,7 +223,7 @@ func clearAWSEnvConfig(preserveRegion bool) error {
 	}
 	for _, key := range keys {
 		if err := os.Unsetenv(key); err != nil {
-			return err
+			return fmt.Errorf("failed to unset env %s: %w", key, err)
 		}
 	}
 	return nil
