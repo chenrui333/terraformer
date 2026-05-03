@@ -26,24 +26,20 @@ func (g *AccountMemberGenerator) createAccountMemberResources(api *cf.API) ([]te
 		}
 
 		for _, member := range members {
-			var roleIDs []string
-			for _, role := range member.Roles {
-				roleIDs = append(roleIDs, role.ID)
-			}
-
-			resources = append(resources, terraformutils.NewResource(
+			resource := terraformutils.NewResource(
 				member.ID,
 				member.ID,
 				"cloudflare_account_member",
 				"cloudflare",
 				map[string]string{
-					"email_address": member.User.Email,
+					"account_id": g.accountID(),
+					"email":      member.User.Email,
 				},
 				[]string{},
-				map[string]interface{}{
-					"role_ids": roleIDs,
-				},
-			))
+				accountMemberAdditionalFields(member),
+			)
+			setCloudflareImportID(&resource, g.accountID()+"/"+member.ID)
+			resources = append(resources, resource)
 		}
 
 		if pageOpt.Page < info.TotalPages {
@@ -54,6 +50,59 @@ func (g *AccountMemberGenerator) createAccountMemberResources(api *cf.API) ([]te
 	}
 
 	return resources, nil
+}
+
+func accountMemberAdditionalFields(member cf.AccountMember) map[string]interface{} {
+	if len(member.Policies) > 0 {
+		return map[string]interface{}{
+			"policies": accountMemberPolicyAdditionalFields(member.Policies),
+		}
+	}
+
+	roleIDs := make([]string, 0, len(member.Roles))
+	for _, role := range member.Roles {
+		roleIDs = append(roleIDs, role.ID)
+	}
+	if len(roleIDs) == 0 {
+		return map[string]interface{}{}
+	}
+
+	return map[string]interface{}{
+		"roles": roleIDs,
+	}
+}
+
+func accountMemberPolicyAdditionalFields(policies []cf.Policy) []map[string]interface{} {
+	fields := make([]map[string]interface{}, 0, len(policies))
+	for _, policy := range policies {
+		field := map[string]interface{}{
+			"access":            policy.Access,
+			"permission_groups": accountMemberPermissionGroupAdditionalFields(policy.PermissionGroups),
+			"resource_groups":   accountMemberResourceGroupAdditionalFields(policy.ResourceGroups),
+		}
+		fields = append(fields, field)
+	}
+	return fields
+}
+
+func accountMemberPermissionGroupAdditionalFields(permissionGroups []cf.PermissionGroup) []map[string]interface{} {
+	fields := make([]map[string]interface{}, 0, len(permissionGroups))
+	for _, group := range permissionGroups {
+		fields = append(fields, map[string]interface{}{
+			"id": group.ID,
+		})
+	}
+	return fields
+}
+
+func accountMemberResourceGroupAdditionalFields(resourceGroups []cf.ResourceGroup) []map[string]interface{} {
+	fields := make([]map[string]interface{}, 0, len(resourceGroups))
+	for _, group := range resourceGroups {
+		fields = append(fields, map[string]interface{}{
+			"id": group.ID,
+		})
+	}
+	return fields
 }
 
 func (g *AccountMemberGenerator) InitResources() error {

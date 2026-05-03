@@ -35,7 +35,7 @@ A CLI tool that generates `tf`/`json` and `tfstate` files based on existing infr
         * [OctopusDeploy](/docs/octopus.md)
         * [RabbitMQ](/docs/rabbitmq.md)
     * Network
-        * [Cloudflare](/docs/cloudflare.md) (broken, see #1761)
+        * [Cloudflare](/docs/cloudflare.md)
         * [Myrasec](/docs/myrasec.md)
         * [PAN-OS](/docs/panos.md)
     * VCS
@@ -275,7 +275,7 @@ Links to download Terraform provider plugins:
     * RabbitMQ provider >=1.1.0 - [here](https://releases.hashicorp.com/terraform-provider-rabbitmq/)
 * Network
     * Myrasec provider >1.44 - [here](https://github.com/Myra-Security-GmbH/terraform-provider-myrasec)
-    * Cloudflare provider >1.16 - [here](https://releases.hashicorp.com/terraform-provider-cloudflare/)
+    * Cloudflare provider >=5.19.1 - [Cloudflare provider releases](https://github.com/cloudflare/terraform-provider-cloudflare/releases)
     * Fastly provider >0.16.1 - [here](https://releases.hashicorp.com/terraform-provider-fastly/)
     * NS1 provider >1.8.3 - [here](https://releases.hashicorp.com/terraform-provider-ns1/)
     * PAN-OS provider >= 1.8.3 - [here](https://github.com/PaloAltoNetworks/terraform-provider-panos)

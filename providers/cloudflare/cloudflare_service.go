@@ -4,13 +4,19 @@
 package cloudflare
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	cf "github.com/cloudflare/cloudflare-go"
 )
+
+const cloudflarePageSize = 50
 
 type CloudflareService struct { //nolint
 	terraformutils.Service
@@ -36,4 +42,69 @@ func (s *CloudflareService) initializeAPI() (*cf.API, error) {
 
 func (s *CloudflareService) accountID() string {
 	return os.Getenv("CLOUDFLARE_ACCOUNT_ID")
+}
+
+func (s *CloudflareService) accountResourceContainer() (*cf.ResourceContainer, error) {
+	accountID := s.accountID()
+	if accountID == "" {
+		return nil, errors.New("set CLOUDFLARE_ACCOUNT_ID env var")
+	}
+	return cf.AccountIdentifier(accountID), nil
+}
+
+func cloudflareResourceName(parts ...string) string {
+	filtered := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if part != "" {
+			filtered = append(filtered, part)
+		}
+	}
+	return strings.Join(filtered, "_")
+}
+
+func setCloudflareImportID(resource *terraformutils.Resource, importID string) {
+	if resource.InstanceState.Meta == nil {
+		resource.InstanceState.Meta = map[string]interface{}{}
+	}
+	resource.InstanceState.Meta["import_id"] = importID
+}
+
+func cloudflarePaginationQuery(page int, cursor string) string {
+	values := url.Values{}
+	values.Set("per_page", strconv.Itoa(cloudflarePageSize))
+	if cursor != "" {
+		values.Set("cursor", cursor)
+	} else {
+		values.Set("page", strconv.Itoa(page))
+	}
+	return values.Encode()
+}
+
+func cloudflareAdvancePagination(info *cf.ResultInfo, page *int, cursor *string) bool {
+	if info == nil {
+		return false
+	}
+	if info.Cursors.After != "" {
+		if info.Cursors.After == *cursor {
+			return false
+		}
+		*cursor = info.Cursors.After
+		return true
+	}
+	if info.Cursor != "" {
+		if info.Cursor == *cursor {
+			return false
+		}
+		*cursor = info.Cursor
+		return true
+	}
+	if info.HasMorePages() {
+		*page++
+		return true
+	}
+	return false
+}
+
+func cloudflareZones(ctx context.Context, api *cf.API) ([]cf.Zone, error) {
+	return api.ListZones(ctx)
 }

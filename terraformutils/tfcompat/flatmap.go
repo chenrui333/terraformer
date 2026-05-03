@@ -276,18 +276,21 @@ func hcl2ValueFromFlatmapMap(m map[string]string, prefix string, ty cty.Type) (c
 			continue
 		}
 
-		// The flatmap format doesn't allow us to distinguish between keys
-		// that contain periods and nested objects, so by convention a
-		// map is only ever of primitive type in flatmap, and we just assume
-		// that the remainder of the raw key (dots and all) is the key we
-		// want in the result value.
 		key := fullKey[len(prefix):]
 		if key == "%" {
 			// Ignore the "count" key
 			continue
 		}
 
-		val, err := hcl2ValueFromFlatmapValue(m, fullKey, ety)
+		valueKey := fullKey
+		if !ety.IsPrimitiveType() {
+			key, valueKey = hcl2ValueFromFlatmapMapElementKey(m, prefix, key, ety)
+		}
+		if _, exists := vals[key]; exists {
+			continue
+		}
+
+		val, err := hcl2ValueFromFlatmapValue(m, valueKey, ety)
 		if err != nil {
 			return cty.DynamicVal, err
 		}
@@ -298,6 +301,193 @@ func hcl2ValueFromFlatmapMap(m map[string]string, prefix string, ty cty.Type) (c
 		return cty.MapValEmpty(ety), nil
 	}
 	return cty.MapVal(vals), nil
+}
+
+func hcl2ValueFromFlatmapMapElementKey(m map[string]string, prefix, key string, ty cty.Type) (string, string) {
+	candidates := hcl2ValueFromFlatmapMapKeyCandidates(key)
+	if ty.IsObjectType() {
+		candidates = hcl2ValueFromFlatmapObjectMapKeyCandidates(key)
+	}
+	for _, candidate := range candidates {
+		valueKey := prefix + candidate
+		if !hcl2ValueFromFlatmapMapElementPathMatches(key, candidate, ty) {
+			continue
+		}
+		if hcl2ValueFromFlatmapValueExists(m, valueKey, ty) {
+			return candidate, valueKey
+		}
+	}
+
+	if dot := strings.IndexByte(key, '.'); dot != -1 {
+		key = key[:dot]
+	}
+	return key, prefix + key
+}
+
+func hcl2ValueFromFlatmapMapKeyCandidates(key string) []string {
+	candidates := []string{key}
+	for dot := strings.LastIndexByte(key, '.'); dot != -1; dot = strings.LastIndexByte(key[:dot], '.') {
+		if dot == 0 {
+			continue
+		}
+		candidates = append(candidates, key[:dot])
+	}
+	return candidates
+}
+
+func hcl2ValueFromFlatmapObjectMapKeyCandidates(key string) []string {
+	var candidates []string
+	for dot := strings.IndexByte(key, '.'); dot != -1; {
+		candidates = append(candidates, key[:dot])
+		next := strings.IndexByte(key[dot+1:], '.')
+		if next == -1 {
+			break
+		}
+		dot += next + 1
+	}
+	candidates = append(candidates, key)
+	return candidates
+}
+
+func hcl2ValueFromFlatmapMapElementPathMatches(key, candidate string, ty cty.Type) bool {
+	if ty.IsObjectType() {
+		return hcl2ValueFromFlatmapMapObjectElementPathMatches(key, candidate, ty.AttributeTypes())
+	}
+	if !strings.HasPrefix(key, candidate+".") {
+		return false
+	}
+	return hcl2ValueFromFlatmapMapValuePathMatches(key[len(candidate)+1:], ty)
+}
+
+func hcl2ValueFromFlatmapMapObjectElementPathMatches(key, candidate string, atys map[string]cty.Type) bool {
+	if !strings.HasPrefix(key, candidate+".") {
+		return false
+	}
+	return hcl2ValueFromFlatmapObjectAttributePathMatches(key[len(candidate)+1:], atys)
+}
+
+func hcl2ValueFromFlatmapObjectAttributePathMatches(path string, atys map[string]cty.Type) bool {
+	for name, aty := range atys {
+		if path == name {
+			return true
+		}
+		if strings.HasPrefix(path, name+".") {
+			return hcl2ValueFromFlatmapMapValuePathMatches(path[len(name)+1:], aty)
+		}
+	}
+	return false
+}
+
+func hcl2ValueFromFlatmapMapValuePathMatches(path string, ty cty.Type) bool {
+	switch {
+	case ty.IsPrimitiveType(), ty == cty.DynamicPseudoType:
+		return path == ""
+	case ty.IsObjectType():
+		return hcl2ValueFromFlatmapObjectAttributePathMatches(path, ty.AttributeTypes())
+	case ty.IsTupleType():
+		return hcl2ValueFromFlatmapTuplePathMatches(path, ty.TupleElementTypes())
+	case ty.IsListType():
+		return hcl2ValueFromFlatmapSeqPathMatches(path, ty.ElementType(), true)
+	case ty.IsSetType():
+		return hcl2ValueFromFlatmapSeqPathMatches(path, ty.ElementType(), false)
+	case ty.IsMapType():
+		return hcl2ValueFromFlatmapNestedMapPathMatches(path, ty.ElementType())
+	default:
+		return false
+	}
+}
+
+func hcl2ValueFromFlatmapTuplePathMatches(path string, etys []cty.Type) bool {
+	if path == "#" {
+		return true
+	}
+	segment, rest, hasRest := strings.Cut(path, ".")
+	index, err := strconv.Atoi(segment)
+	if err != nil || index < 0 || index >= len(etys) {
+		return false
+	}
+	if !hasRest {
+		return etys[index].IsPrimitiveType() || etys[index] == cty.DynamicPseudoType
+	}
+	return hcl2ValueFromFlatmapMapValuePathMatches(rest, etys[index])
+}
+
+func hcl2ValueFromFlatmapSeqPathMatches(path string, ety cty.Type, requireIndex bool) bool {
+	if path == "#" {
+		return true
+	}
+	segment, rest, hasRest := strings.Cut(path, ".")
+	if segment == "" {
+		return false
+	}
+	if requireIndex {
+		if _, err := strconv.Atoi(segment); err != nil {
+			return false
+		}
+	}
+	if !hasRest {
+		return ety.IsPrimitiveType() || ety == cty.DynamicPseudoType
+	}
+	return hcl2ValueFromFlatmapMapValuePathMatches(rest, ety)
+}
+
+func hcl2ValueFromFlatmapNestedMapPathMatches(path string, ety cty.Type) bool {
+	if path == "%" {
+		return true
+	}
+	if path == "" {
+		return false
+	}
+	if ety.IsPrimitiveType() || ety == cty.DynamicPseudoType {
+		return true
+	}
+	_, rest, hasRest := strings.Cut(path, ".")
+	if !hasRest {
+		return false
+	}
+	return hcl2ValueFromFlatmapMapValuePathMatches(rest, ety)
+}
+
+func hcl2ValueFromFlatmapValueExists(m map[string]string, key string, ty cty.Type) bool {
+	switch {
+	case ty.IsPrimitiveType():
+		if m[key] == UnknownVariableValue {
+			return true
+		}
+		_, exists := m[key]
+		return exists
+	case ty.IsObjectType():
+		return hcl2ValueFromFlatmapObjectValueExists(m, key+".", ty.AttributeTypes())
+	case ty.IsTupleType(), ty.IsListType(), ty.IsSetType():
+		if m[key] == UnknownVariableValue {
+			return true
+		}
+		_, exists := m[key+".#"]
+		return exists
+	case ty.IsMapType():
+		if m[key] == UnknownVariableValue {
+			return true
+		}
+		_, exists := m[key+".%"]
+		return exists
+	default:
+		return false
+	}
+}
+
+func hcl2ValueFromFlatmapObjectValueExists(m map[string]string, prefix string, atys map[string]cty.Type) bool {
+	for name, aty := range atys {
+		key := prefix + name
+		if hcl2ValueFromFlatmapValueExists(m, key, aty) {
+			return true
+		}
+		for attributeKey := range m {
+			if strings.HasPrefix(attributeKey, key+".") {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func hcl2ValueFromFlatmapList(m map[string]string, prefix string, ty cty.Type) (cty.Value, error) {

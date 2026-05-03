@@ -219,7 +219,16 @@ func (p *FlatmapParser) fromFlatmapMap(prefix string, ty cty.Type) (map[string]i
 		if p.isAttributeIgnored(fullKey) {
 			continue
 		}
-		value, err := p.fromFlatmapValue(fullKey, ty)
+
+		valueKey := fullKey
+		if !ty.IsPrimitiveType() {
+			key, valueKey = p.fromFlatmapMapElementKey(prefix, key, ty)
+		}
+		if _, exists := values[key]; exists {
+			continue
+		}
+
+		value, err := p.fromFlatmapValue(valueKey, ty)
 		if err != nil {
 			return nil, err
 		}
@@ -231,6 +240,193 @@ func (p *FlatmapParser) fromFlatmapMap(prefix string, ty cty.Type) (map[string]i
 		return nil, nil
 	}
 	return values, nil
+}
+
+func (p *FlatmapParser) fromFlatmapMapElementKey(prefix, key string, ty cty.Type) (string, string) {
+	candidates := flatmapMapKeyCandidates(key)
+	if ty.IsObjectType() {
+		candidates = flatmapObjectMapKeyCandidates(key)
+	}
+	for _, candidate := range candidates {
+		valueKey := prefix + candidate
+		if !flatmapMapElementPathMatches(key, candidate, ty) {
+			continue
+		}
+		if p.flatmapValueExists(valueKey, ty) {
+			return candidate, valueKey
+		}
+	}
+
+	if dot := strings.IndexByte(key, '.'); dot != -1 {
+		key = key[:dot]
+	}
+	return key, prefix + key
+}
+
+func flatmapMapKeyCandidates(key string) []string {
+	candidates := []string{key}
+	for dot := strings.LastIndexByte(key, '.'); dot != -1; dot = strings.LastIndexByte(key[:dot], '.') {
+		if dot == 0 {
+			continue
+		}
+		candidates = append(candidates, key[:dot])
+	}
+	return candidates
+}
+
+func flatmapObjectMapKeyCandidates(key string) []string {
+	var candidates []string
+	for dot := strings.IndexByte(key, '.'); dot != -1; {
+		candidates = append(candidates, key[:dot])
+		next := strings.IndexByte(key[dot+1:], '.')
+		if next == -1 {
+			break
+		}
+		dot += next + 1
+	}
+	candidates = append(candidates, key)
+	return candidates
+}
+
+func flatmapMapElementPathMatches(key, candidate string, ty cty.Type) bool {
+	if ty.IsObjectType() {
+		return flatmapMapObjectElementPathMatches(key, candidate, ty.AttributeTypes())
+	}
+	if !strings.HasPrefix(key, candidate+".") {
+		return false
+	}
+	return flatmapMapValuePathMatches(key[len(candidate)+1:], ty)
+}
+
+func flatmapMapObjectElementPathMatches(key, candidate string, tys map[string]cty.Type) bool {
+	if !strings.HasPrefix(key, candidate+".") {
+		return false
+	}
+	return flatmapObjectAttributePathMatches(key[len(candidate)+1:], tys)
+}
+
+func flatmapObjectAttributePathMatches(path string, tys map[string]cty.Type) bool {
+	for name, ty := range tys {
+		if path == name {
+			return true
+		}
+		if strings.HasPrefix(path, name+".") {
+			return flatmapMapValuePathMatches(path[len(name)+1:], ty)
+		}
+	}
+	return false
+}
+
+func flatmapMapValuePathMatches(path string, ty cty.Type) bool {
+	switch {
+	case ty.IsPrimitiveType(), ty == cty.DynamicPseudoType:
+		return path == ""
+	case ty.IsObjectType():
+		return flatmapObjectAttributePathMatches(path, ty.AttributeTypes())
+	case ty.IsTupleType():
+		return flatmapTuplePathMatches(path, ty.TupleElementTypes())
+	case ty.IsListType():
+		return flatmapSeqPathMatches(path, ty.ElementType(), true)
+	case ty.IsSetType():
+		return flatmapSeqPathMatches(path, ty.ElementType(), false)
+	case ty.IsMapType():
+		return flatmapNestedMapPathMatches(path, ty.ElementType())
+	default:
+		return false
+	}
+}
+
+func flatmapTuplePathMatches(path string, tys []cty.Type) bool {
+	if path == "#" {
+		return true
+	}
+	segment, rest, hasRest := strings.Cut(path, ".")
+	index, err := strconv.Atoi(segment)
+	if err != nil || index < 0 || index >= len(tys) {
+		return false
+	}
+	if !hasRest {
+		return tys[index].IsPrimitiveType() || tys[index] == cty.DynamicPseudoType
+	}
+	return flatmapMapValuePathMatches(rest, tys[index])
+}
+
+func flatmapSeqPathMatches(path string, ty cty.Type, requireIndex bool) bool {
+	if path == "#" {
+		return true
+	}
+	segment, rest, hasRest := strings.Cut(path, ".")
+	if segment == "" {
+		return false
+	}
+	if requireIndex {
+		if _, err := strconv.Atoi(segment); err != nil {
+			return false
+		}
+	}
+	if !hasRest {
+		return ty.IsPrimitiveType() || ty == cty.DynamicPseudoType
+	}
+	return flatmapMapValuePathMatches(rest, ty)
+}
+
+func flatmapNestedMapPathMatches(path string, ty cty.Type) bool {
+	if path == "%" {
+		return true
+	}
+	if path == "" {
+		return false
+	}
+	if ty.IsPrimitiveType() || ty == cty.DynamicPseudoType {
+		return true
+	}
+	_, rest, hasRest := strings.Cut(path, ".")
+	if !hasRest {
+		return false
+	}
+	return flatmapMapValuePathMatches(rest, ty)
+}
+
+func (p *FlatmapParser) flatmapValueExists(key string, ty cty.Type) bool {
+	switch {
+	case ty.IsPrimitiveType():
+		if p.attributes[key] == tfcompat.UnknownVariableValue {
+			return true
+		}
+		_, exists := p.attributes[key]
+		return exists
+	case ty.IsObjectType():
+		return p.flatmapObjectValueExists(key+".", ty.AttributeTypes())
+	case ty.IsTupleType(), ty.IsListType(), ty.IsSetType():
+		if p.attributes[key] == tfcompat.UnknownVariableValue {
+			return true
+		}
+		_, exists := p.attributes[key+".#"]
+		return exists
+	case ty.IsMapType():
+		if p.attributes[key] == tfcompat.UnknownVariableValue {
+			return true
+		}
+		_, exists := p.attributes[key+".%"]
+		return exists
+	default:
+		return false
+	}
+}
+
+func (p *FlatmapParser) flatmapObjectValueExists(prefix string, tys map[string]cty.Type) bool {
+	for name, ty := range tys {
+		key := prefix + name
+		if p.flatmapValueExists(key, ty) {
+			return true
+		}
+		for attributeKey := range p.attributes {
+			if strings.HasPrefix(attributeKey, key+".") {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (p *FlatmapParser) fromFlatmapList(prefix string, ty cty.Type) ([]interface{}, error) {

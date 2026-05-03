@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -109,6 +110,162 @@ func TestFromFlatmapMap(t *testing.T) {
 	}
 	if labels["team"] != "platform" {
 		t.Errorf("labels[team] = %v, want %q", labels["team"], "platform")
+	}
+}
+
+func TestFromFlatmapMapOfLists(t *testing.T) {
+	attributes := map[string]string{
+		"pools.%":       "3",
+		"pools.EU.#":    "1",
+		"pools.EU.0":    "pool-eu",
+		"pools.US.#":    "2",
+		"pools.US.0":    "pool-us-a",
+		"pools.US.1":    "pool-us-b",
+		"pools.X.Foo.#": "1",
+		"pools.X.Foo.0": "pool-dotted-key",
+	}
+	parser := NewFlatmapParser(attributes, nil, nil)
+	ty := cty.Object(map[string]cty.Type{
+		"pools": cty.Map(cty.List(cty.String)),
+	})
+
+	result, err := parser.Parse(ty)
+	if err != nil {
+		t.Fatalf("Parse error: %v", err)
+	}
+	pools, ok := result["pools"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("pools is not map[string]interface{}, got %T", result["pools"])
+	}
+	us, ok := pools["US"].([]interface{})
+	if !ok {
+		t.Fatalf("pools[US] is not []interface{}, got %T", pools["US"])
+	}
+	if len(us) != 2 {
+		t.Errorf("pools[US] length = %d, want 2", len(us))
+	}
+	eu, ok := pools["EU"].([]interface{})
+	if !ok {
+		t.Fatalf("pools[EU] is not []interface{}, got %T", pools["EU"])
+	}
+	if len(eu) != 1 {
+		t.Errorf("pools[EU] length = %d, want 1", len(eu))
+	}
+	dotted, ok := pools["X.Foo"].([]interface{})
+	if !ok {
+		t.Fatalf("pools[X.Foo] is not []interface{}, got %T", pools["X.Foo"])
+	}
+	if len(dotted) != 1 {
+		t.Errorf("pools[X.Foo] length = %d, want 1", len(dotted))
+	}
+	if dotted[0] != "pool-dotted-key" {
+		t.Errorf("pools[X.Foo][0] = %v, want %q", dotted[0], "pool-dotted-key")
+	}
+}
+
+func TestFromFlatmapMapOfListsWithUnknownElement(t *testing.T) {
+	attributes := map[string]string{
+		"pools.%":       "1",
+		"pools.X.Foo.#": "1",
+		"pools.X.Foo.0": tfcompat.UnknownVariableValue,
+	}
+	parser := NewFlatmapParser(attributes, nil, nil)
+	ty := cty.Object(map[string]cty.Type{
+		"pools": cty.Map(cty.List(cty.String)),
+	})
+
+	result, err := parser.Parse(ty)
+	if err != nil {
+		t.Fatalf("Parse error: %v", err)
+	}
+	pools, ok := result["pools"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("pools is not map[string]interface{}, got %T", result["pools"])
+	}
+	if _, ok := pools["X.Foo.0"]; ok {
+		t.Fatal("pools unexpectedly contains unknown list element as map key X.Foo.0")
+	}
+	dotted, ok := pools["X.Foo"].([]interface{})
+	if !ok {
+		t.Fatalf("pools[X.Foo] is not []interface{}, got %T", pools["X.Foo"])
+	}
+	if len(dotted) != 1 {
+		t.Fatalf("pools[X.Foo] length = %d, want 1", len(dotted))
+	}
+	if dotted[0] != tfcompat.UnknownVariableValue {
+		t.Errorf("pools[X.Foo][0] = %v, want %q", dotted[0], tfcompat.UnknownVariableValue)
+	}
+}
+
+func TestFromFlatmapMapOfObjectsWithDottedUnknownKey(t *testing.T) {
+	attributes := map[string]string{
+		"headers.%":          "1",
+		"headers.X.Foo.name": tfcompat.UnknownVariableValue,
+	}
+	parser := NewFlatmapParser(attributes, nil, nil)
+	ty := cty.Object(map[string]cty.Type{
+		"headers": cty.Map(cty.Object(map[string]cty.Type{
+			"name": cty.String,
+		})),
+	})
+
+	result, err := parser.Parse(ty)
+	if err != nil {
+		t.Fatalf("Parse error: %v", err)
+	}
+	headers, ok := result["headers"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("headers is not map[string]interface{}, got %T", result["headers"])
+	}
+	if _, ok := headers["X.Foo.name"]; ok {
+		t.Fatal("headers unexpectedly contains nested attribute path as map key X.Foo.name")
+	}
+	dotted, ok := headers["X.Foo"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("headers[X.Foo] is not map[string]interface{}, got %T", headers["X.Foo"])
+	}
+	if dotted["name"] != tfcompat.UnknownVariableValue {
+		t.Errorf("headers[X.Foo].name = %v, want %q", dotted["name"], tfcompat.UnknownVariableValue)
+	}
+}
+
+func TestFromFlatmapMapOfObjectsWithPrefixCollidingDottedKeys(t *testing.T) {
+	attributes := map[string]string{
+		"headers.%":           "2",
+		"headers.X.name":      "short",
+		"headers.X.name.name": "long",
+	}
+	parser := NewFlatmapParser(attributes, nil, nil)
+	ty := cty.Object(map[string]cty.Type{
+		"headers": cty.Map(cty.Object(map[string]cty.Type{
+			"name": cty.String,
+		})),
+	})
+
+	result, err := parser.Parse(ty)
+	if err != nil {
+		t.Fatalf("Parse error: %v", err)
+	}
+	headers, ok := result["headers"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("headers is not map[string]interface{}, got %T", result["headers"])
+	}
+	if len(headers) != 2 {
+		t.Fatalf("headers length = %d, want 2: %#v", len(headers), headers)
+	}
+	short, ok := headers["X"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("headers[X] is not map[string]interface{}, got %T", headers["X"])
+	}
+	if short["name"] != "short" {
+		t.Errorf("headers[X].name = %v, want %q", short["name"], "short")
+	}
+	dotted, ok := headers["X.name"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("headers[X.name] is not map[string]interface{}, got %T", headers["X.name"])
+	}
+	if dotted["name"] != "long" {
+		t.Errorf("headers[X.name].name = %v, want %q", dotted["name"], "long")
 	}
 }
 
