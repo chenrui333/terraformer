@@ -206,8 +206,13 @@ var typedClientSetAPIGroups = map[string]struct{}{
 	"storage.k8s.io":               {},
 }
 
+func isNativeAPIGroup(group string) bool {
+	_, ok := typedClientSetAPIGroups[group]
+	return ok
+}
+
 func extractClientSetFuncGroupName(group, version string) string {
-	if _, ok := typedClientSetAPIGroups[group]; !ok {
+	if !isNativeAPIGroup(group) {
 		return ""
 	}
 
@@ -275,7 +280,8 @@ func selectImportResourceName(
 		if supportsDynamicClientResource(group, version, resource.Kind) {
 			return terraformResourceName, true, true
 		}
-		if supportsManifestResource(resource, hasResourceType) {
+		if supportsManifestResource(resource, hasResourceType) &&
+			(supportsNativeManifestResource(group, version, resource.Kind) || !isNativeAPIGroup(group)) {
 			return manifestTerraformResourceName, true, true
 		}
 		return "", false, false
@@ -290,10 +296,44 @@ func selectImportResourceName(
 	if supportsTypedClientResource(clientset, group, version, resource.Kind) {
 		return "", false, false
 	}
+	if isNativeAPIGroup(group) {
+		return "", false, false
+	}
 	if !supportsManifestResource(resource, hasResourceType) {
 		return "", false, false
 	}
 	return manifestTerraformResourceName, true, true
+}
+
+func importSkipPolicyReason(
+	clientset kubernetes.Interface,
+	group string,
+	version string,
+	resource metav1.APIResource,
+	hasResourceType func(string) bool,
+) string {
+	if skipsImportResource(group, version, resource.Kind) {
+		return "runtime/controller-generated native API is not importable as Terraform-managed configuration"
+	}
+	if !isNativeAPIGroup(group) {
+		return ""
+	}
+	if supportsNativeManifestResource(group, version, resource.Kind) ||
+		supportsTypedClientResource(clientset, group, version, resource.Kind) ||
+		supportsDynamicClientResource(group, version, resource.Kind) {
+		return ""
+	}
+	if !supportsManifestResource(resource, hasResourceType) {
+		return ""
+	}
+	return "native API is outside the explicit manifest import policy"
+}
+
+func kubernetesResourceLogName(group, version, resourceName string) string {
+	if group == "" {
+		return version + "/" + resourceName
+	}
+	return group + "/" + version + "/" + resourceName
 }
 
 func supportsDynamicClientResource(group, version, kind string) bool {

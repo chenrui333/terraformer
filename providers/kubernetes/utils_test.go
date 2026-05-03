@@ -519,6 +519,20 @@ func TestSelectImportResourceName(t *testing.T) {
 			wantOK:      true,
 		},
 		{
+			name:    "skips unallowlisted native API group instead of generic manifest fallback",
+			group:   "events.k8s.io",
+			version: "v1beta1",
+			resource: metav1.APIResource{
+				Name:  "events",
+				Kind:  "Event",
+				Verbs: manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				manifestTerraformResourceName: {},
+			},
+			wantOK: false,
+		},
+		{
 			name:    "falls back to manifest for native admission policy binding",
 			group:   "admissionregistration.k8s.io",
 			version: "v1",
@@ -648,6 +662,20 @@ func TestSelectImportResourceName(t *testing.T) {
 			want:        manifestTerraformResourceName,
 			wantDynamic: true,
 			wantOK:      true,
+		},
+		{
+			name:    "skips legacy dynamic resource allocation resource outside supported policy",
+			group:   "resource.k8s.io",
+			version: "v1alpha2",
+			resource: metav1.APIResource{
+				Name:  "resourceclasses",
+				Kind:  "ResourceClass",
+				Verbs: manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				manifestTerraformResourceName: {},
+			},
+			wantOK: false,
 		},
 		{
 			name:    "falls back to manifest for cluster trust bundle",
@@ -1066,6 +1094,111 @@ func TestSupportsDynamicClientResource(t *testing.T) {
 	}
 }
 
+func TestIsNativeAPIGroup(t *testing.T) {
+	tests := []struct {
+		name  string
+		group string
+		want  bool
+	}{
+		{name: "core", want: true},
+		{name: "resource API", group: "resource.k8s.io", want: true},
+		{name: "custom group sharing native prefix", group: "apps.example.com", want: false},
+		{name: "custom group", group: "example.com", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isNativeAPIGroup(tt.group)
+			if got != tt.want {
+				t.Fatalf("isNativeAPIGroup(%q) = %t, want %t", tt.group, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestImportSkipPolicyReason(t *testing.T) {
+	clientset := fake.NewSimpleClientset()
+	manageableVerbs := []string{"create", "delete", "get", "list", "patch", "update"}
+	hasManifestType := func(name string) bool {
+		return name == manifestTerraformResourceName
+	}
+
+	tests := []struct {
+		name     string
+		group    string
+		version  string
+		resource metav1.APIResource
+		want     string
+	}{
+		{
+			name:    "generated native API",
+			group:   "resource.k8s.io",
+			version: "v1",
+			resource: metav1.APIResource{
+				Name:  "resourceslices",
+				Kind:  "ResourceSlice",
+				Verbs: manageableVerbs,
+			},
+			want: "runtime/controller-generated native API is not importable as Terraform-managed configuration",
+		},
+		{
+			name:    "legacy native API outside supported manifest policy",
+			group:   "resource.k8s.io",
+			version: "v1alpha2",
+			resource: metav1.APIResource{
+				Name:  "resourceclasses",
+				Kind:  "ResourceClass",
+				Verbs: manageableVerbs,
+			},
+			want: "native API is outside the explicit manifest import policy",
+		},
+		{
+			name:    "custom resource keeps generic manifest fallback",
+			group:   "example.com",
+			version: "v1",
+			resource: metav1.APIResource{
+				Name:  "widgets",
+				Kind:  "Widget",
+				Verbs: manageableVerbs,
+			},
+		},
+		{
+			name:    "allowlisted native manifest resource",
+			group:   "resource.k8s.io",
+			version: "v1",
+			resource: metav1.APIResource{
+				Name:       "resourceclaims",
+				Kind:       "ResourceClaim",
+				Namespaced: true,
+				Verbs:      manageableVerbs,
+			},
+		},
+		{
+			name:    "native resource without manifest type",
+			group:   "resource.k8s.io",
+			version: "v1alpha2",
+			resource: metav1.APIResource{
+				Name:  "resourceclasses",
+				Kind:  "ResourceClass",
+				Verbs: manageableVerbs,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hasResourceType := hasManifestType
+			if tt.name == "native resource without manifest type" {
+				hasResourceType = func(string) bool { return false }
+			}
+			got := importSkipPolicyReason(clientset, tt.group, tt.version, tt.resource, hasResourceType)
+			if got != tt.want {
+				t.Fatalf("importSkipPolicyReason() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestSupportsNativeManifestResource(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -1091,6 +1224,7 @@ func TestSupportsNativeManifestResource(t *testing.T) {
 		{name: "device taint rule alpha", group: "resource.k8s.io", version: "v1alpha3", kind: "DeviceTaintRule", want: true},
 		{name: "resource claim alpha", group: "resource.k8s.io", version: "v1alpha3", kind: "ResourceClaim", want: true},
 		{name: "resource claim template alpha", group: "resource.k8s.io", version: "v1alpha3", kind: "ResourceClaimTemplate", want: true},
+		{name: "legacy resource class is outside supported policy", group: "resource.k8s.io", version: "v1alpha2", kind: "ResourceClass", want: false},
 		{name: "scheduling workload preferred alpha", group: "scheduling.k8s.io", version: "v1alpha2", kind: "Workload", want: true},
 		{name: "scheduling workload alpha", group: "scheduling.k8s.io", version: "v1alpha1", kind: "Workload", want: true},
 		{name: "volume attributes class v1", group: "storage.k8s.io", version: "v1", kind: "VolumeAttributesClass", want: true},
@@ -1103,6 +1237,8 @@ func TestSupportsNativeManifestResource(t *testing.T) {
 		{name: "token review is not manifest-backed", group: "authentication.k8s.io", version: "v1", kind: "TokenReview", want: false},
 		{name: "pod certificate request is kubelet-generated", group: "certificates.k8s.io", version: "v1beta1", kind: "PodCertificateRequest", want: false},
 		{name: "resource slice is generated by drivers", group: "resource.k8s.io", version: "v1", kind: "ResourceSlice", want: false},
+		{name: "pod scheduling context is generated scheduling state", group: "resource.k8s.io", version: "v1alpha2", kind: "PodSchedulingContext", want: false},
+		{name: "pod scheduling is generated scheduling state", group: "resource.k8s.io", version: "v1alpha1", kind: "PodScheduling", want: false},
 		{name: "volume attachment is controller-managed", group: "storage.k8s.io", version: "v1", kind: "VolumeAttachment", want: false},
 		{name: "ip address is allocator-managed", group: "networking.k8s.io", version: "v1", kind: "IPAddress", want: false},
 		{name: "custom resource is handled by general manifest fallback", group: "example.com", version: "v1", kind: "Widget", want: false},

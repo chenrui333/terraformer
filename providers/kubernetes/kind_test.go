@@ -3,6 +3,7 @@
 package kubernetes
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -12,7 +13,39 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
+	"k8s.io/client-go/kubernetes/fake"
 )
+
+func TestInitTypedResourcesUnsupportedGroup(t *testing.T) {
+	kind := &Kind{
+		Group:   "example.com",
+		Version: "v1",
+		Name:    "Widget",
+	}
+
+	err := kind.initTypedResources(fake.NewSimpleClientset())
+	if err == nil {
+		t.Fatal("initTypedResources() error = nil, want error")
+	}
+	if !strings.Contains(err.Error(), "typed client group example.com/v1/Widget is not supported") {
+		t.Fatalf("initTypedResources() error = %q, want unsupported group error", err)
+	}
+}
+
+func TestInitTypedResourcesUnsupportedResource(t *testing.T) {
+	kind := &Kind{
+		Version: "v1",
+		Name:    "NotAResource",
+	}
+
+	err := kind.initTypedResources(fake.NewSimpleClientset())
+	if err == nil {
+		t.Fatal("initTypedResources() error = nil, want error")
+	}
+	if !strings.Contains(err.Error(), "typed client resource v1/NotAResource is not supported") {
+		t.Fatalf("initTypedResources() error = %q, want unsupported resource error", err)
+	}
+}
 
 func TestInitDynamicResources(t *testing.T) {
 	gvr := schema.GroupVersionResource{

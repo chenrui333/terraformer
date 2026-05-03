@@ -54,9 +54,15 @@ func (k *Kind) InitResources() error {
 }
 
 func (k *Kind) initTypedResources(clientset kubernetes.Interface) error {
-	group := reflect.ValueOf(clientset).MethodByName(
-		extractClientSetFuncGroupName(k.Group, k.Version)).Call(
-		[]reflect.Value{})[0]
+	groupMethod := reflect.ValueOf(clientset).MethodByName(extractClientSetFuncGroupName(k.Group, k.Version))
+	if !groupMethod.IsValid() {
+		return fmt.Errorf("kubernetes: typed client group %s is not supported", kubernetesResourceLogName(k.Group, k.Version, k.Name))
+	}
+	groupValues := groupMethod.Call([]reflect.Value{})
+	if len(groupValues) == 0 || !groupValues[0].IsValid() {
+		return fmt.Errorf("kubernetes: typed client group %s is not supported", kubernetesResourceLogName(k.Group, k.Version, k.Name))
+	}
+	group := groupValues[0]
 
 	param := []reflect.Value{}
 	namespace := ""
@@ -64,7 +70,15 @@ func (k *Kind) initTypedResources(clientset kubernetes.Interface) error {
 		param = append(param, reflect.ValueOf(namespace))
 	}
 
-	resource := group.MethodByName(extractClientSetFuncTypeName(k.Name)).Call(param)[0]
+	resourceMethod := group.MethodByName(extractClientSetFuncTypeName(k.Name))
+	if !resourceMethod.IsValid() {
+		return fmt.Errorf("kubernetes: typed client resource %s is not supported", kubernetesResourceLogName(k.Group, k.Version, k.Name))
+	}
+	resourceValues := resourceMethod.Call(param)
+	if len(resourceValues) == 0 || !resourceValues[0].IsValid() {
+		return fmt.Errorf("kubernetes: typed client resource %s is not supported", kubernetesResourceLogName(k.Group, k.Version, k.Name))
+	}
+	resource := resourceValues[0]
 
 	results := resource.MethodByName("List").Call([]reflect.Value{reflect.ValueOf(context.Background()),
 		reflect.ValueOf(metav1.ListOptions{})})
