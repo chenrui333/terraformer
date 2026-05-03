@@ -4,6 +4,7 @@ package azuread
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/hashicorp/go-azure-sdk/sdk/auth"
@@ -110,4 +111,33 @@ func (az *AzureADService) appendSimpleResource(id string, resourceName string, r
 		"id": id,
 	}, []string{}, map[string]interface{}{})
 	az.Resources = append(az.Resources, newResource)
+}
+
+func azureADRequiredString(resourceType, field string, value *string) (string, error) {
+	if value == nil || *value == "" {
+		return "", fmt.Errorf("%s resource is missing %s", resourceType, field)
+	}
+	return *value, nil
+}
+
+func azureADStringValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
+}
+
+func azureADResourceName(displayName *string, fallback string) string {
+	if displayName != nil && *displayName != "" {
+		return *displayName
+	}
+	return fallback
+}
+
+func azureADQualifiedResourceName(displayName *string, id string) string {
+	name := azureADResourceName(displayName, id)
+	if name == id {
+		return id
+	}
+	return name + "-" + id
 }

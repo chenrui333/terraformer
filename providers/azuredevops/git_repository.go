@@ -2,6 +2,7 @@ package azuredevops
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/microsoft/azure-devops-go-api/azuredevops/git"
 )
@@ -23,9 +24,16 @@ func (az *GitRepositoryGenerator) listResources() ([]git.GitRepository, error) {
 	return *resources, nil
 }
 
-func (az *GitRepositoryGenerator) appendResource(resource *git.GitRepository) {
-	id := *resource.Id
-	az.appendSimpleResource(id.String(), *resource.Name, "azuredevops_git_repository")
+func (az *GitRepositoryGenerator) appendResource(resource *git.GitRepository) error {
+	if resource == nil {
+		return fmt.Errorf("azuredevops_git_repository resource is nil")
+	}
+	id, err := azureDevOpsRequiredUUID("azuredevops_git_repository", "id", resource.Id)
+	if err != nil {
+		return err
+	}
+	az.appendSimpleResource(id, azureDevOpsResourceName(resource.Name, id), "azuredevops_git_repository")
+	return nil
 }
 
 func (az *GitRepositoryGenerator) InitResources() error {
@@ -34,7 +42,9 @@ func (az *GitRepositoryGenerator) InitResources() error {
 		return err
 	}
 	for _, resource := range resources {
-		az.appendResource(&resource)
+		if err := az.appendResource(&resource); err != nil {
+			return err
+		}
 	}
 	return nil
 }
