@@ -90,6 +90,8 @@ func (p *GCPProvider) GetName() string {
 }
 
 func (p *GCPProvider) InitService(serviceName string, verbose bool) error {
+	p.Service = nil
+
 	var isSupported bool
 	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
 		return errors.New("gcp: " + serviceName + " not supported service")

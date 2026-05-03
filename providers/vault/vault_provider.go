@@ -47,6 +47,8 @@ func (p *Provider) GetName() string {
 }
 
 func (p *Provider) InitService(serviceName string, verbose bool) error {
+	p.Service = nil
+
 	if service, ok := p.GetSupportedService()[serviceName]; ok {
 		p.Service = service
 		p.Service.SetName(serviceName)

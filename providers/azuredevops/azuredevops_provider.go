@@ -70,6 +70,8 @@ func (p *AzureDevOpsProvider) GetSupportedService() map[string]terraformutils.Se
 }
 
 func (p *AzureDevOpsProvider) InitService(serviceName string, verbose bool) error {
+	p.Service = nil
+
 	var isSupported bool
 	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
 		return errors.New("azuredevops: " + serviceName + " not supported service")

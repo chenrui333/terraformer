@@ -71,6 +71,8 @@ func (p *AzureADProvider) GetSupportedService() map[string]terraformutils.Servic
 }
 
 func (p *AzureADProvider) InitService(serviceName string, verbose bool) error {
+	p.Service = nil
+
 	var isSupported bool
 	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
 		return errors.New("azuread: " + serviceName + " not supported service")

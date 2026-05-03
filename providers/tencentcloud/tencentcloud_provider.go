@@ -65,6 +65,8 @@ func (p *TencentCloudProvider) Init(args []string) error {
 }
 
 func (p *TencentCloudProvider) InitService(serviceName string, verbose bool) error {
+	p.Service = nil
+
 	var isSupported bool
 	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
 		return errors.New("tencentcloud: " + serviceName + " not supported service")

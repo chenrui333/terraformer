@@ -56,6 +56,8 @@ func (p *EquinixMetalProvider) GetSupportedService() map[string]terraformutils.S
 }
 
 func (p *EquinixMetalProvider) InitService(serviceName string, verbose bool) error {
+	p.Service = nil
+
 	var isSupported bool
 	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
 		return errors.New("equinixmetal: " + serviceName + " not supported service")

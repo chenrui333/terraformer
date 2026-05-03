@@ -64,6 +64,8 @@ func (p *YandexProvider) GetSupportedService() map[string]terraformutils.Service
 }
 
 func (p *YandexProvider) InitService(serviceName string, verbose bool) error {
+	p.Service = nil
+
 	var isSupported bool
 	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
 		return errors.New("yandex: " + serviceName + " not supported service")

@@ -93,6 +93,8 @@ func (p *AliCloudProvider) GetName() string {
 
 // InitService Initializes the AliCloud service
 func (p *AliCloudProvider) InitService(serviceName string, verbose bool) error {
+	p.Service = nil
+
 	var isSupported bool
 	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
 		return errors.New("alicloud: " + serviceName + " not supported service")

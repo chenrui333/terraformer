@@ -48,6 +48,8 @@ func (p *OpenStackProvider) GetName() string {
 }
 
 func (p *OpenStackProvider) InitService(serviceName string, verbose bool) error {
+	p.Service = nil
+
 	var isSupported bool
 	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
 		return errors.New("openstack: " + serviceName + " not supported service")

@@ -29,6 +29,8 @@ func (p *OpsgenieProvider) Init(args []string) error {
 }
 
 func (p *OpsgenieProvider) InitService(serviceName string, verbose bool) error {
+	p.Service = nil
+
 	var isSupported bool
 	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
 		return errors.New(p.GetName() + ": " + serviceName + " not supported service")

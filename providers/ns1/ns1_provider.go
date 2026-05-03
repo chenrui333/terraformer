@@ -47,6 +47,8 @@ func (p *Ns1Provider) GetSupportedService() map[string]terraformutils.ServiceGen
 }
 
 func (p *Ns1Provider) InitService(serviceName string, verbose bool) error {
+	p.Service = nil
+
 	var isSupported bool
 	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
 		return errors.New("ns1: " + serviceName + " not supported service")

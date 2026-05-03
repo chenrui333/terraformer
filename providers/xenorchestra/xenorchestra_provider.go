@@ -70,6 +70,8 @@ func (p *XenorchestraProvider) GetSupportedService() map[string]terraformutils.S
 }
 
 func (p *XenorchestraProvider) InitService(serviceName string, verbose bool) error {
+	p.Service = nil
+
 	var isSupported bool
 	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
 		return errors.New("xenorchestra: " + serviceName + " not supported service")
