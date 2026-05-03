@@ -696,6 +696,123 @@ func TestSelectImportResourceName(t *testing.T) {
 			wantOK: false,
 		},
 		{
+			name:    "skips driver-generated alpha resource slices",
+			group:   "resource.k8s.io",
+			version: "v1alpha3",
+			resource: metav1.APIResource{
+				Name:  "resourceslices",
+				Kind:  "ResourceSlice",
+				Verbs: manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				manifestTerraformResourceName: {},
+			},
+			wantOK: false,
+		},
+		{
+			name:    "skips historical alpha resource slices",
+			group:   "resource.k8s.io",
+			version: "v1alpha2",
+			resource: metav1.APIResource{
+				Name:  "resourceslices",
+				Kind:  "ResourceSlice",
+				Verbs: manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				manifestTerraformResourceName: {},
+			},
+			wantOK: false,
+		},
+		{
+			name:    "skips historical alpha pod scheduling contexts",
+			group:   "resource.k8s.io",
+			version: "v1alpha3",
+			resource: metav1.APIResource{
+				Name:       "podschedulingcontexts",
+				Kind:       "PodSchedulingContext",
+				Namespaced: true,
+				Verbs:      manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				manifestTerraformResourceName: {},
+			},
+			wantOK: false,
+		},
+		{
+			name:    "skips older pod scheduling contexts",
+			group:   "resource.k8s.io",
+			version: "v1alpha2",
+			resource: metav1.APIResource{
+				Name:       "podschedulingcontexts",
+				Kind:       "PodSchedulingContext",
+				Namespaced: true,
+				Verbs:      manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				manifestTerraformResourceName: {},
+			},
+			wantOK: false,
+		},
+		{
+			name:    "skips original alpha pod schedulings",
+			group:   "resource.k8s.io",
+			version: "v1alpha1",
+			resource: metav1.APIResource{
+				Name:       "podschedulings",
+				Kind:       "PodScheduling",
+				Namespaced: true,
+				Verbs:      manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				manifestTerraformResourceName: {},
+			},
+			wantOK: false,
+		},
+		{
+			name:    "skips allocator-managed alpha ip addresses",
+			group:   "networking.k8s.io",
+			version: "v1alpha1",
+			resource: metav1.APIResource{
+				Name:  "ipaddresses",
+				Kind:  "IPAddress",
+				Verbs: manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				manifestTerraformResourceName: {},
+			},
+			wantOK: false,
+		},
+		{
+			name:    "skips controller-created alpha pod groups",
+			group:   "scheduling.k8s.io",
+			version: "v1alpha1",
+			resource: metav1.APIResource{
+				Name:       "podgroups",
+				Kind:       "PodGroup",
+				Namespaced: true,
+				Verbs:      manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				manifestTerraformResourceName: {},
+			},
+			wantOK: false,
+		},
+		{
+			name:    "skips historical alpha lease candidates",
+			group:   "coordination.k8s.io",
+			version: "v1alpha1",
+			resource: metav1.APIResource{
+				Name:       "leasecandidates",
+				Kind:       "LeaseCandidate",
+				Namespaced: true,
+				Verbs:      manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				manifestTerraformResourceName: {},
+			},
+			wantOK: false,
+		},
+		{
 			name:    "falls back to manifest for scheduling workload",
 			group:   "scheduling.k8s.io",
 			version: "v1alpha1",
@@ -817,6 +934,47 @@ func TestSelectImportResourceName(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Fatalf("selectImportResourceName() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSkipsImportResource(t *testing.T) {
+	tests := []struct {
+		name    string
+		group   string
+		version string
+		kind    string
+		want    bool
+	}{
+		{name: "pod certificate request", group: "certificates.k8s.io", version: "v1beta1", kind: "PodCertificateRequest", want: true},
+		{name: "old pod certificate request", group: "certificates.k8s.io", version: "v1alpha1", kind: "PodCertificateRequest", want: true},
+		{name: "resource slice", group: "resource.k8s.io", version: "v1", kind: "ResourceSlice", want: true},
+		{name: "old resource slice", group: "resource.k8s.io", version: "v1alpha3", kind: "ResourceSlice", want: true},
+		{name: "historical resource slice", group: "resource.k8s.io", version: "v1alpha2", kind: "ResourceSlice", want: true},
+		{name: "pod scheduling context", group: "resource.k8s.io", version: "v1alpha3", kind: "PodSchedulingContext", want: true},
+		{name: "old pod scheduling context", group: "resource.k8s.io", version: "v1alpha2", kind: "PodSchedulingContext", want: true},
+		{name: "original pod scheduling", group: "resource.k8s.io", version: "v1alpha1", kind: "PodScheduling", want: true},
+		{name: "resource pool status request", group: "resource.k8s.io", version: "v1alpha3", kind: "ResourcePoolStatusRequest", want: true},
+		{name: "ip address", group: "networking.k8s.io", version: "v1", kind: "IPAddress", want: true},
+		{name: "old ip address", group: "networking.k8s.io", version: "v1alpha1", kind: "IPAddress", want: true},
+		{name: "pod group", group: "scheduling.k8s.io", version: "v1alpha2", kind: "PodGroup", want: true},
+		{name: "controller revision", group: "apps", version: "v1", kind: "ControllerRevision", want: true},
+		{name: "lease candidate", group: "coordination.k8s.io", version: "v1alpha2", kind: "LeaseCandidate", want: true},
+		{name: "historical lease candidate", group: "coordination.k8s.io", version: "v1alpha1", kind: "LeaseCandidate", want: true},
+		{name: "storage version", group: "internal.apiserver.k8s.io", version: "v1alpha1", kind: "StorageVersion", want: true},
+		{name: "csi node", group: "storage.k8s.io", version: "v1", kind: "CSINode", want: true},
+		{name: "csi storage capacity", group: "storage.k8s.io", version: "v1alpha1", kind: "CSIStorageCapacity", want: true},
+		{name: "volume attachment", group: "storage.k8s.io", version: "v1", kind: "VolumeAttachment", want: true},
+		{name: "custom resource is not skipped", group: "example.com", version: "v1", kind: "Widget", want: false},
+		{name: "declarative native manifest is not skipped", group: "resource.k8s.io", version: "v1alpha3", kind: "ResourceClaim", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := skipsImportResource(tt.group, tt.version, tt.kind)
+			if got != tt.want {
+				t.Fatalf("skipsImportResource(%q, %q, %q) = %t, want %t", tt.group, tt.version, tt.kind, got, tt.want)
 			}
 		})
 	}

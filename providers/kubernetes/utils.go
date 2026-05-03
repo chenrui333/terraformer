@@ -142,10 +142,39 @@ var nativeManifestResources = map[kubernetesResourceID]struct{}{
 }
 
 // These native APIs may be listable and manageable, but importing them as
-// Terraform-owned manifests would capture runtime/controller generated state.
+// Terraform-owned resources would capture runtime/controller generated state.
 var skippedImportResources = map[kubernetesResourceID]struct{}{
+	{group: "internal.apiserver.k8s.io", version: "v1alpha1", kind: "StorageVersion"}:  {},
+	{group: "apps", version: "v1", kind: "ControllerRevision"}:                         {},
+	{group: "apps", version: "v1beta2", kind: "ControllerRevision"}:                    {},
+	{group: "apps", version: "v1beta1", kind: "ControllerRevision"}:                    {},
 	{group: "certificates.k8s.io", version: "v1beta1", kind: "PodCertificateRequest"}:  {},
 	{group: "certificates.k8s.io", version: "v1alpha1", kind: "PodCertificateRequest"}: {},
+	{group: "coordination.k8s.io", version: "v1beta1", kind: "LeaseCandidate"}:         {},
+	{group: "coordination.k8s.io", version: "v1alpha2", kind: "LeaseCandidate"}:        {},
+	{group: "coordination.k8s.io", version: "v1alpha1", kind: "LeaseCandidate"}:        {},
+	{group: "networking.k8s.io", version: "v1", kind: "IPAddress"}:                     {},
+	{group: "networking.k8s.io", version: "v1beta1", kind: "IPAddress"}:                {},
+	{group: "networking.k8s.io", version: "v1alpha1", kind: "IPAddress"}:               {},
+	{group: "resource.k8s.io", version: "v1", kind: "ResourceSlice"}:                   {},
+	{group: "resource.k8s.io", version: "v1beta2", kind: "ResourceSlice"}:              {},
+	{group: "resource.k8s.io", version: "v1beta1", kind: "ResourceSlice"}:              {},
+	{group: "resource.k8s.io", version: "v1alpha3", kind: "PodSchedulingContext"}:      {},
+	{group: "resource.k8s.io", version: "v1alpha3", kind: "ResourcePoolStatusRequest"}: {},
+	{group: "resource.k8s.io", version: "v1alpha3", kind: "ResourceSlice"}:             {},
+	{group: "resource.k8s.io", version: "v1alpha2", kind: "PodSchedulingContext"}:      {},
+	{group: "resource.k8s.io", version: "v1alpha2", kind: "ResourceSlice"}:             {},
+	{group: "resource.k8s.io", version: "v1alpha1", kind: "PodScheduling"}:             {},
+	{group: "scheduling.k8s.io", version: "v1alpha2", kind: "PodGroup"}:                {},
+	{group: "scheduling.k8s.io", version: "v1alpha1", kind: "PodGroup"}:                {},
+	{group: "storage.k8s.io", version: "v1", kind: "CSINode"}:                          {},
+	{group: "storage.k8s.io", version: "v1beta1", kind: "CSINode"}:                     {},
+	{group: "storage.k8s.io", version: "v1", kind: "CSIStorageCapacity"}:               {},
+	{group: "storage.k8s.io", version: "v1beta1", kind: "CSIStorageCapacity"}:          {},
+	{group: "storage.k8s.io", version: "v1alpha1", kind: "CSIStorageCapacity"}:         {},
+	{group: "storage.k8s.io", version: "v1", kind: "VolumeAttachment"}:                 {},
+	{group: "storage.k8s.io", version: "v1beta1", kind: "VolumeAttachment"}:            {},
+	{group: "storage.k8s.io", version: "v1alpha1", kind: "VolumeAttachment"}:           {},
 }
 
 // client-go group accessor names collapse DNS groups to their first label
