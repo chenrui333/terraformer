@@ -103,6 +103,7 @@ var nativeManifestResources = map[kubernetesResourceID]struct{}{
 	{group: "admissionregistration.k8s.io", version: "v1alpha1", kind: "MutatingAdmissionPolicyBinding"}:   {},
 	{group: "admissionregistration.k8s.io", version: "v1alpha1", kind: "ValidatingAdmissionPolicy"}:        {},
 	{group: "admissionregistration.k8s.io", version: "v1alpha1", kind: "ValidatingAdmissionPolicyBinding"}: {},
+	{group: "apps", version: "v1", kind: "ReplicaSet"}:                                                     {},
 	{group: "certificates.k8s.io", version: "v1beta1", kind: "ClusterTrustBundle"}:                         {},
 	{group: "certificates.k8s.io", version: "v1alpha1", kind: "ClusterTrustBundle"}:                        {},
 	{group: "flowcontrol.apiserver.k8s.io", version: "v1", kind: "FlowSchema"}:                             {},
@@ -133,6 +134,7 @@ var nativeManifestResources = map[kubernetesResourceID]struct{}{
 	{group: "storage.k8s.io", version: "v1alpha1", kind: "VolumeAttributesClass"}:                          {},
 	{group: "storagemigration.k8s.io", version: "v1beta1", kind: "StorageVersionMigration"}:                {},
 	{group: "storagemigration.k8s.io", version: "v1alpha1", kind: "StorageVersionMigration"}:               {},
+	{version: "v1", kind: "PodTemplate"}:                                                                   {},
 }
 
 // These native APIs may be listable and manageable, but importing them as

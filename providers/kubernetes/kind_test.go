@@ -136,6 +136,48 @@ func TestInitDynamicResourcesManifestImportID(t *testing.T) {
 	}
 }
 
+func TestInitDynamicResourcesManifestSkipsOwnedResources(t *testing.T) {
+	gvr := schema.GroupVersionResource{
+		Group:    "apps",
+		Version:  "v1",
+		Resource: "replicasets",
+	}
+	replicaSet := newUnstructured("apps/v1", "ReplicaSet", "standalone", "default")
+	ownedReplicaSet := newUnstructured("apps/v1", "ReplicaSet", "deployment-owned", "default")
+	ownedReplicaSet.SetOwnerReferences([]metav1.OwnerReference{{
+		APIVersion: "apps/v1",
+		Kind:       "Deployment",
+		Name:       "app",
+		UID:        "owner-uid",
+	}})
+	client := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(
+		runtime.NewScheme(),
+		map[schema.GroupVersionResource]string{gvr: "ReplicaSetList"},
+		replicaSet,
+		ownedReplicaSet,
+	)
+
+	kind := &Kind{
+		Group:         "apps",
+		Version:       "v1",
+		Name:          "ReplicaSet",
+		ResourceName:  "replicasets",
+		Namespaced:    true,
+		TerraformType: manifestTerraformResourceName,
+	}
+	if err := kind.initDynamicResources(client); err != nil {
+		t.Fatalf("initDynamicResources() error = %v", err)
+	}
+
+	if len(kind.Resources) != 1 {
+		t.Fatalf("Resources len = %d, want 1", len(kind.Resources))
+	}
+	resource := kind.Resources[0]
+	if resource.InstanceState.ID != "apiVersion=apps/v1,kind=ReplicaSet,namespace=default,name=standalone" {
+		t.Fatalf("resource ID = %q, want %q", resource.InstanceState.ID, "apiVersion=apps/v1,kind=ReplicaSet,namespace=default,name=standalone")
+	}
+}
+
 func TestInitDynamicResourcesManifestImportIDClusterScoped(t *testing.T) {
 	gvr := schema.GroupVersionResource{
 		Group:    "apiextensions.k8s.io",
