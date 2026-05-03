@@ -2,7 +2,10 @@
 
 package newrelic
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestNewRelicProviderInitHandlesMissingRegionArg(t *testing.T) {
 	t.Setenv("NEW_RELIC_API_KEY", "")
@@ -49,7 +52,21 @@ func TestNewRelicProviderInitPrefersArgAccountIDOverInvalidEnv(t *testing.T) {
 	}
 }
 
-func TestNewRelicProviderInitClearsStaleOptionalState(t *testing.T) {
+func TestNewRelicProviderInitRejectsZeroAccountID(t *testing.T) {
+	t.Setenv("NEW_RELIC_API_KEY", "")
+	t.Setenv("NEW_RELIC_ACCOUNT_ID", "")
+
+	var provider NewRelicProvider
+	err := provider.Init([]string{"api-key", "0"})
+	if err == nil {
+		t.Fatal("expected invalid account ID error")
+	}
+	if !strings.Contains(err.Error(), "account id must be greater than 0") {
+		t.Fatalf("Init error = %q, want positive account ID requirement", err)
+	}
+}
+
+func TestNewRelicProviderInitReturnsMissingAccountIDError(t *testing.T) {
 	t.Setenv("NEW_RELIC_API_KEY", "")
 	t.Setenv("NEW_RELIC_ACCOUNT_ID", "")
 	provider := NewRelicProvider{
@@ -58,8 +75,12 @@ func TestNewRelicProviderInitClearsStaleOptionalState(t *testing.T) {
 		Region:    "EU",
 	}
 
-	if err := provider.Init([]string{"", "", ""}); err != nil {
-		t.Fatalf("expected Init to accept empty args: %v", err)
+	err := provider.Init([]string{"", "", ""})
+	if err == nil {
+		t.Fatal("expected missing account ID error")
+	}
+	if !strings.Contains(err.Error(), "account id is required") {
+		t.Fatalf("Init error = %q, want account ID requirement", err)
 	}
 	if provider.APIKey != "" {
 		t.Fatalf("APIKey = %q, want empty", provider.APIKey)

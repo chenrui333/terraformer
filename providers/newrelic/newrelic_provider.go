@@ -21,6 +21,7 @@ type NewRelicProvider struct { //nolint
 func (p *NewRelicProvider) Init(args []string) error {
 	apiKey := os.Getenv("NEW_RELIC_API_KEY")
 	accountID := 0
+	accountIDSet := false
 	region := "US"
 
 	if len(args) > 0 && args[0] != "" {
@@ -32,12 +33,14 @@ func (p *NewRelicProvider) Init(args []string) error {
 			return err
 		}
 		accountID = parsedAccountID
+		accountIDSet = true
 	} else if accountIDs := os.Getenv("NEW_RELIC_ACCOUNT_ID"); accountIDs != "" {
 		parsedAccountID, err := strconv.Atoi(accountIDs)
 		if err != nil {
 			return err
 		}
 		accountID = parsedAccountID
+		accountIDSet = true
 	}
 	if len(args) > 2 && args[2] != "" {
 		region = args[2]
@@ -45,6 +48,12 @@ func (p *NewRelicProvider) Init(args []string) error {
 	p.APIKey = apiKey
 	p.accountID = accountID
 	p.Region = region
+	if !accountIDSet {
+		return errors.New("newrelic: account id is required")
+	}
+	if accountID <= 0 {
+		return errors.New("newrelic: account id must be greater than 0")
+	}
 	return nil
 }
 
