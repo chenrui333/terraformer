@@ -53,6 +53,8 @@ func (p *LinodeProvider) GetSupportedService() map[string]terraformutils.Service
 }
 
 func (p *LinodeProvider) InitService(serviceName string, verbose bool) error {
+	p.Service = nil
+
 	var isSupported bool
 	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
 		return errors.New("linode: " + serviceName + " not supported service")

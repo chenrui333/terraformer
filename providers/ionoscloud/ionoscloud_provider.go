@@ -151,6 +151,8 @@ func (p *IonosCloudProvider) GetSupportedService() map[string]terraformutils.Ser
 }
 
 func (p *IonosCloudProvider) InitService(serviceName string, verbose bool) error {
+	p.Service = nil
+
 	var isSupported bool
 	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
 		return errors.New(helpers.Ionos + ": " + serviceName + " not supported service")

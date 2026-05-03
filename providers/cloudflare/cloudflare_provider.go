@@ -39,6 +39,8 @@ func (p *CloudflareProvider) GetSupportedService() map[string]terraformutils.Ser
 }
 
 func (p *CloudflareProvider) InitService(serviceName string, verbose bool) error {
+	p.Service = nil
+
 	var isSupported bool
 	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
 		return errors.New("cloudflare: " + serviceName + " not supported service")

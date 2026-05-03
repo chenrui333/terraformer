@@ -92,6 +92,8 @@ func (p *HoneycombProvider) GetConfig() cty.Value {
 }
 
 func (p *HoneycombProvider) InitService(serviceName string, verbose bool) error {
+	p.Service = nil
+
 	var isSupported bool
 	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
 		return errors.New("honeycombio: " + serviceName + " is not a supported resource type")

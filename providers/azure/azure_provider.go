@@ -805,6 +805,8 @@ func (p *AzureProvider) GetSupportedService() map[string]terraformutils.ServiceG
 }
 
 func (p *AzureProvider) InitService(serviceName string, verbose bool) error {
+	p.Service = nil
+
 	var isSupported bool
 	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
 		return errors.New("azurerm: " + serviceName + " not supported service")

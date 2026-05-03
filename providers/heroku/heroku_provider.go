@@ -57,6 +57,8 @@ func (p *HerokuProvider) GetSupportedService() map[string]terraformutils.Service
 }
 
 func (p *HerokuProvider) InitService(serviceName string, verbose bool) error {
+	p.Service = nil
+
 	var isSupported bool
 	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
 		return errors.New("heroku: " + serviceName + " not supported service")

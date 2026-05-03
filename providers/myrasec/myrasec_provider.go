@@ -49,6 +49,8 @@ func (p *MyrasecProvider) GetSupportedService() map[string]terraformutils.Servic
 
 // InitService
 func (p *MyrasecProvider) InitService(serviceName string, verbose bool) error {
+	p.Service = nil
+
 	var isSupported bool
 	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
 		return errors.New("myrasec: " + serviceName + " not supported service")

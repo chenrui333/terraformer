@@ -74,6 +74,8 @@ func (p *OctopusDeployProvider) GetSupportedService() map[string]terraformutils.
 }
 
 func (p *OctopusDeployProvider) InitService(serviceName string, verbose bool) error {
+	p.Service = nil
+
 	var isSupported bool
 	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
 		return errors.New("octopusdeploy: " + serviceName + " not supported service, see list sub-command")

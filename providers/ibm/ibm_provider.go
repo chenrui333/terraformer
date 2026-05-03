@@ -201,6 +201,8 @@ func (p *IBMProvider) GetSupportedService() map[string]terraformutils.ServiceGen
 }
 
 func (p *IBMProvider) InitService(serviceName string, verbose bool) error {
+	p.Service = nil
+
 	var isSupported bool
 	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
 		return errors.New("IBM: " + serviceName + " not supported service")

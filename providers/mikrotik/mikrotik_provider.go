@@ -46,6 +46,8 @@ func (p *MikrotikProvider) GetSupportedService() map[string]terraformutils.Servi
 }
 
 func (p *MikrotikProvider) InitService(serviceName string, verbose bool) error {
+	p.Service = nil
+
 	var isSupported bool
 	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
 		return errors.New("mikrotik: " + serviceName + " not supported service")

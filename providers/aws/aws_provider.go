@@ -211,6 +211,8 @@ func (p *AWSProvider) GetName() string {
 }
 
 func (p *AWSProvider) InitService(serviceName string, verbose bool) error {
+	p.Service = nil
+
 	var isSupported bool
 	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
 		return errors.New("aws: " + serviceName + " not supported service")

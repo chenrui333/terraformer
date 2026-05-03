@@ -41,6 +41,8 @@ func (p *PanosProvider) GetBasicConfig() cty.Value {
 }
 
 func (p *PanosProvider) InitService(serviceName string, verbose bool) error {
+	p.Service = nil
+
 	var isSupported bool
 	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
 		return errors.New(p.GetName() + ": " + serviceName + " not supported service")
