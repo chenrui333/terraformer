@@ -10,6 +10,8 @@ import (
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 )
 
+const datadogListUsersMaxPageSize = int64(500)
+
 type onCallUserChildImportID struct {
 	userID  string
 	childID string
@@ -28,9 +30,12 @@ func parseOnCallUserChildImportIDs(importIDs []string, childName string) ([]onCa
 }
 
 func parseOnCallUserChildImportID(importID string, childName string) (string, string, error) {
-	parts := strings.SplitN(importID, ",", 2)
+	parts := strings.SplitN(importID, ":", 2)
+	if len(parts) != 2 {
+		parts = strings.SplitN(importID, ",", 2)
+	}
 	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		return "", "", fmt.Errorf("On-Call user %s import ID %q must be formatted as user_id,%s_id", childName, importID, childName)
+		return "", "", fmt.Errorf("On-Call user %s import ID %q must be formatted as user_id:%s_id or user_id,%s_id", childName, importID, childName, childName)
 	}
 	return parts[0], parts[1], nil
 }
@@ -44,7 +49,7 @@ func onCallUserChildIDs(filterIDs []onCallUserChildImportID) []string {
 }
 
 func listDatadogUserIDs(auth context.Context, api *datadogV2.UsersApi) ([]string, error) {
-	pageSize := int64(1000)
+	pageSize := datadogListUsersMaxPageSize
 	pageNumber := int64(0)
 	remaining := int64(1)
 	optionalParams := datadogV2.NewListUsersOptionalParameters()

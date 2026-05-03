@@ -77,6 +77,84 @@ func TestOnCallCreateResources(t *testing.T) {
 	}
 }
 
+func TestParseOnCallUserChildImportID(t *testing.T) {
+	testCases := []struct {
+		name      string
+		importID  string
+		wantUser  string
+		wantChild string
+		wantErr   bool
+	}{
+		{
+			name:      "colon delimiter",
+			importID:  "user-1:channel-1",
+			wantUser:  "user-1",
+			wantChild: "channel-1",
+		},
+		{
+			name:      "comma delimiter",
+			importID:  "user-1,channel-1",
+			wantUser:  "user-1",
+			wantChild: "channel-1",
+		},
+		{
+			name:     "missing delimiter",
+			importID: "user-1",
+			wantErr:  true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			gotUser, gotChild, err := parseOnCallUserChildImportID(tc.importID, "channel")
+			if tc.wantErr {
+				if err == nil {
+					t.Fatal("parseOnCallUserChildImportID returned nil error, want error")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("parseOnCallUserChildImportID returned error: %v", err)
+			}
+			if gotUser != tc.wantUser {
+				t.Fatalf("user id = %q, want %q", gotUser, tc.wantUser)
+			}
+			if gotChild != tc.wantChild {
+				t.Fatalf("child id = %q, want %q", gotChild, tc.wantChild)
+			}
+		})
+	}
+}
+
+func TestListDatadogUserIDsUsesSupportedPageSize(t *testing.T) {
+	pathCh := make(chan string, 1)
+	pageSizeCh := make(chan string, 1)
+	pageNumberCh := make(chan string, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		pathCh <- r.URL.Path
+		pageSizeCh <- r.URL.Query().Get("page[size]")
+		pageNumberCh <- r.URL.Query().Get("page[number]")
+		_, _ = fmt.Fprint(w, onCallUserListResponseJSON("user-1", 1))
+	}))
+	defer server.Close()
+
+	api := datadogV2.NewUsersApi(newTeamRelationshipTestClient(server))
+	userIDs, err := listDatadogUserIDs(context.Background(), api)
+	if err != nil {
+		t.Fatalf("listDatadogUserIDs returned error: %v", err)
+	}
+	assertObservedQueryValue(t, pathCh, "path", "/api/v2/users")
+	assertObservedQueryValue(t, pageSizeCh, "page[size]", "500")
+	assertObservedQueryValue(t, pageNumberCh, "page[number]", "0")
+	if len(userIDs) != 1 {
+		t.Fatalf("expected 1 user id, got %d", len(userIDs))
+	}
+	if userIDs[0] != "user-1" {
+		t.Fatalf("user id = %q, want user-1", userIDs[0])
+	}
+}
+
 func TestOnCallEscalationPolicyInitResourcesFiltersByID(t *testing.T) {
 	pathCh := make(chan string, 1)
 	includeCh := make(chan string, 1)
@@ -335,6 +413,10 @@ func onCallTeamRoutingRulesResponseJSON(id string) string {
 
 func onCallNotificationChannelListResponseJSON(channels ...string) string {
 	return fmt.Sprintf("{\"data\":[%s]}", strings.Join(channels, ","))
+}
+
+func onCallUserListResponseJSON(id string, totalCount int) string {
+	return fmt.Sprintf("{\"data\":[{\"id\":%q,\"type\":\"users\"}],\"meta\":{\"page\":{\"total_count\":%d}}}", id, totalCount)
 }
 
 func onCallEmailNotificationChannelJSON(id string) string {

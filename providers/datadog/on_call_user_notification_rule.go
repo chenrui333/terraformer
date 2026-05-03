@@ -60,7 +60,7 @@ func (g *OnCallUserNotificationRuleGenerator) createResource(userID string, user
 
 // InitResources Generate TerraformResources from Datadog API,
 // from each On-Call user notification rule create 1 TerraformResource.
-// Need On-Call User Notification Rule ID formatted as '<user_id>,<rule_id>' for filter lookup.
+// Need On-Call User Notification Rule ID formatted as '<user_id>:<rule_id>' for filter lookup.
 func (g *OnCallUserNotificationRuleGenerator) InitResources() error {
 	datadogClient := g.Args["datadogClient"].(*datadog.APIClient)
 	auth := g.Args["auth"].(context.Context)
