@@ -129,6 +129,35 @@ func TestTeamHierarchyLinksInitResourcesFiltersByParentTeam(t *testing.T) {
 	}
 }
 
+func TestTeamHierarchyLinksInitResourcesFiltersBySubTeam(t *testing.T) {
+	filterCh := make(chan string, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path != "/api/v2/team-hierarchy-links" {
+			http.NotFound(w, r)
+			return
+		}
+		filterCh <- r.URL.Query().Get("filter[sub_team]")
+		_, _ = fmt.Fprint(w, teamHierarchyLinksListResponseJSON(teamHierarchyLinkJSON("link-1", "parent-1", "sub-1")))
+	}))
+	defer server.Close()
+
+	generator := newTeamHierarchyLinksTestGenerator(server, []terraformutils.ResourceFilter{
+		{
+			ServiceName:      "team_hierarchy_links",
+			FieldPath:        "sub_team_id",
+			AcceptableValues: []string{"sub-1"},
+		},
+	})
+	if err := generator.InitResources(); err != nil {
+		t.Fatalf("InitResources returned error: %v", err)
+	}
+	assertObservedQueryValue(t, filterCh, "filter[sub_team]", "sub-1")
+	if len(generator.Resources) != 1 {
+		t.Fatalf("expected 1 resource, got %d", len(generator.Resources))
+	}
+}
+
 func newTeamHierarchyLinksTestGenerator(server *httptest.Server, filter []terraformutils.ResourceFilter) *TeamHierarchyLinksGenerator {
 	return &TeamHierarchyLinksGenerator{
 		DatadogService: DatadogService{
