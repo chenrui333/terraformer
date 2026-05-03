@@ -8,10 +8,11 @@ import (
 )
 
 func TestAWSServiceBuildBaseConfigReturnsRegionEnvError(t *testing.T) {
+	const probe = "REDACT_PROBE_AWS_REGION"
 	service := &AWSService{}
 	service.SetArgs(map[string]interface{}{
 		"profile": "",
-		"region":  "bad\x00region",
+		"region":  probe + "\x00region",
 	})
 
 	_, err := service.buildBaseConfig()
@@ -22,7 +23,7 @@ func TestAWSServiceBuildBaseConfigReturnsRegionEnvError(t *testing.T) {
 	if !strings.Contains(msg, "failed to set env AWS_REGION") {
 		t.Fatalf("buildBaseConfig error = %q, want AWS_REGION context", msg)
 	}
-	if strings.Contains(msg, "bad") {
+	if strings.Contains(msg, probe) {
 		t.Fatalf("buildBaseConfig error = %q, want env value redacted", msg)
 	}
 }

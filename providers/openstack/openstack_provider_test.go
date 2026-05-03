@@ -28,9 +28,10 @@ func TestOpenStackProviderInitRequiresRegion(t *testing.T) {
 }
 
 func TestOpenStackProviderInitReturnsRegionEnvError(t *testing.T) {
+	const probe = "REDACT_PROBE_OPENSTACK_REGION"
 	var provider OpenStackProvider
 
-	err := provider.Init([]string{"bad\x00region"})
+	err := provider.Init([]string{probe + "\x00region"})
 	if err == nil {
 		t.Fatal("expected region env error")
 	}
@@ -38,7 +39,7 @@ func TestOpenStackProviderInitReturnsRegionEnvError(t *testing.T) {
 	if !strings.Contains(msg, "failed to set env OS_REGION_NAME") {
 		t.Fatalf("Init error = %q, want OS_REGION_NAME context", err)
 	}
-	if strings.Contains(msg, "bad") {
+	if strings.Contains(msg, probe) {
 		t.Fatalf("Init error = %q, want env value redacted", err)
 	}
 }

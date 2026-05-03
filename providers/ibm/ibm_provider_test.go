@@ -53,9 +53,10 @@ func TestProviderInitRequiresArgs(t *testing.T) {
 }
 
 func TestProviderInitReturnsRegionEnvError(t *testing.T) {
+	const probe = "REDACT_PROBE_IBM_REGION"
 	provider := &IBMProvider{}
 
-	err := provider.Init([]string{"resource-group", "bad\x00region", "vpc"})
+	err := provider.Init([]string{"resource-group", probe + "\x00region", "vpc"})
 	if err == nil {
 		t.Fatal("expected region env error")
 	}
@@ -63,7 +64,7 @@ func TestProviderInitReturnsRegionEnvError(t *testing.T) {
 	if !strings.Contains(msg, "failed to set env IC_REGION") {
 		t.Fatalf("Init error = %q, want IC_REGION context", err)
 	}
-	if strings.Contains(msg, "bad") {
+	if strings.Contains(msg, probe) {
 		t.Fatalf("Init error = %q, want env value redacted", err)
 	}
 }
