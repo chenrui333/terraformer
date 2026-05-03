@@ -192,6 +192,11 @@ func (p *DatadogProvider) GetSupportedService() map[string]terraformutils.Servic
 		"monitor_config_policy":                &MonitorConfigPolicyGenerator{},
 		"monitor_json":                         &MonitorJSONGenerator{},
 		"monitor_notification_rule":            &MonitorNotificationRuleGenerator{},
+		"on_call_escalation_policy":            &OnCallEscalationPolicyGenerator{},
+		"on_call_schedule":                     &OnCallScheduleGenerator{},
+		"on_call_team_routing_rules":           &OnCallTeamRoutingRulesGenerator{},
+		"on_call_user_notification_channel":    &OnCallUserNotificationChannelGenerator{},
+		"on_call_user_notification_rule":       &OnCallUserNotificationRuleGenerator{},
 		"rum_application":                      &RumApplicationGenerator{},
 		"rum_metric":                           &RumMetricGenerator{},
 		"rum_retention_filter":                 &RumRetentionFilterGenerator{},
@@ -259,6 +264,46 @@ func (p DatadogProvider) GetResourceConnections() map[string]map[string][]string
 			},
 			"monitor_json": {
 				"monitor_id", "id",
+			},
+		},
+		"on_call_escalation_policy": {
+			"on_call_schedule": {
+				"step.target.schedule", "id",
+			},
+			"team": {
+				"teams", "id",
+			},
+			"user": {
+				"step.target.user", "id",
+			},
+		},
+		"on_call_schedule": {
+			"team": {
+				"teams", "id",
+			},
+			"user": {
+				"layer.users", "id",
+			},
+		},
+		"on_call_team_routing_rules": {
+			"on_call_escalation_policy": {
+				"rule.escalation_policy", "id",
+			},
+			"team": {
+				"id", "id",
+			},
+		},
+		"on_call_user_notification_channel": {
+			"user": {
+				"user_id", "id",
+			},
+		},
+		"on_call_user_notification_rule": {
+			"on_call_user_notification_channel": {
+				"channel_id", "id",
+			},
+			"user": {
+				"user_id", "id",
 			},
 		},
 		"rum_retention_filter": {

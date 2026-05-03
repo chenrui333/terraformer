@@ -147,6 +147,24 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `monitor_notification_rule`
     * `datadog_monitor_notification_rule`
         * **_NOTE:_** Requires DataDog/datadog provider 3.83.0 or newer.
+*   `on_call_escalation_policy`
+    * `datadog_on_call_escalation_policy`
+        * **_NOTE:_** The Datadog API does not expose a list endpoint for On-Call escalation policies; pass IDs explicitly, for example `--filter=on_call_escalation_policy=policy-id`
+*   `on_call_schedule`
+    * `datadog_on_call_schedule`
+        * **_NOTE:_** The Datadog API does not expose a list endpoint for On-Call schedules; pass IDs explicitly, for example `--filter=on_call_schedule=schedule-id`
+*   `on_call_team_routing_rules`
+    * `datadog_on_call_team_routing_rules`
+        * **_NOTE:_** On-Call team routing rules are keyed by Datadog team ID, for example `--filter=on_call_team_routing_rules=team-id`
+*   `on_call_user_notification_channel`
+    * `datadog_on_call_user_notification_channel`
+        * **_NOTE:_** Importing a single On-Call user notification channel by ID requires `user_id,channel_id`, for example `--filter=on_call_user_notification_channel=user-id,channel-id`
+        * **_NOTE:_** To import channels for one user, filter by `user_id`, for example `--filter="Type=on_call_user_notification_channel;Name=user_id;Value=user-id"`
+        * **_NOTE:_** Push notification channels are skipped because the Datadog provider resource supports email and phone channels.
+*   `on_call_user_notification_rule`
+    * `datadog_on_call_user_notification_rule`
+        * **_NOTE:_** Importing a single On-Call user notification rule by ID requires `user_id,rule_id`, for example `--filter=on_call_user_notification_rule=user-id,rule-id`
+        * **_NOTE:_** To import notification rules for one user, filter by `user_id`, for example `--filter="Type=on_call_user_notification_rule;Name=user_id;Value=user-id"`
 *   `rum_application`
     * `datadog_rum_application`
 *   `rum_metric`
