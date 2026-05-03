@@ -22,12 +22,16 @@ func (g *TunnelGenerator) appendTunnelResources(ctx context.Context, api *cf.API
 			return err
 		}
 		for _, tunnel := range tunnels {
+			attributes := map[string]string{
+				"account_id": accountID,
+				"config_src": tunnelConfigSource(tunnel.RemoteConfig),
+			}
 			g.Resources = append(g.Resources, terraformutils.NewResource(
 				tunnel.ID,
 				cloudflareResourceName(accountID, tunnel.Name, tunnel.ID),
 				"cloudflare_zero_trust_tunnel_cloudflared",
 				"cloudflare",
-				map[string]string{"account_id": accountID},
+				attributes,
 				[]string{},
 				map[string]interface{}{},
 			))
@@ -38,6 +42,13 @@ func (g *TunnelGenerator) appendTunnelResources(ctx context.Context, api *cf.API
 		params.ResultInfo = info.Next()
 	}
 	return nil
+}
+
+func tunnelConfigSource(remoteConfig bool) string {
+	if remoteConfig {
+		return "cloudflare"
+	}
+	return "local"
 }
 
 func (g *TunnelGenerator) appendTunnelVirtualNetworkResources(ctx context.Context, api *cf.API, accountID string) error {
