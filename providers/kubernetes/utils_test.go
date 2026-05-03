@@ -664,7 +664,7 @@ func TestSelectImportResourceName(t *testing.T) {
 			wantOK:      true,
 		},
 		{
-			name:    "falls back to manifest for legacy dynamic resource class",
+			name:    "skips legacy dynamic resource allocation resource outside supported policy",
 			group:   "resource.k8s.io",
 			version: "v1alpha2",
 			resource: metav1.APIResource{
@@ -675,43 +675,7 @@ func TestSelectImportResourceName(t *testing.T) {
 			supportedTypes: map[string]struct{}{
 				manifestTerraformResourceName: {},
 			},
-			want:        manifestTerraformResourceName,
-			wantDynamic: true,
-			wantOK:      true,
-		},
-		{
-			name:    "falls back to manifest for legacy dynamic resource parameters",
-			group:   "resource.k8s.io",
-			version: "v1alpha2",
-			resource: metav1.APIResource{
-				Name:       "resourceclaimparameters",
-				Kind:       "ResourceClaimParameters",
-				Namespaced: true,
-				Verbs:      manageableVerbs,
-			},
-			supportedTypes: map[string]struct{}{
-				manifestTerraformResourceName: {},
-			},
-			want:        manifestTerraformResourceName,
-			wantDynamic: true,
-			wantOK:      true,
-		},
-		{
-			name:    "falls back to manifest for original dynamic resource claim template",
-			group:   "resource.k8s.io",
-			version: "v1alpha1",
-			resource: metav1.APIResource{
-				Name:       "resourceclaimtemplates",
-				Kind:       "ResourceClaimTemplate",
-				Namespaced: true,
-				Verbs:      manageableVerbs,
-			},
-			supportedTypes: map[string]struct{}{
-				manifestTerraformResourceName: {},
-			},
-			want:        manifestTerraformResourceName,
-			wantDynamic: true,
-			wantOK:      true,
+			wantOK: false,
 		},
 		{
 			name:    "falls back to manifest for cluster trust bundle",
@@ -1152,6 +1116,89 @@ func TestIsNativeAPIGroup(t *testing.T) {
 	}
 }
 
+func TestImportSkipPolicyReason(t *testing.T) {
+	clientset := fake.NewSimpleClientset()
+	manageableVerbs := []string{"create", "delete", "get", "list", "patch", "update"}
+	hasManifestType := func(name string) bool {
+		return name == manifestTerraformResourceName
+	}
+
+	tests := []struct {
+		name     string
+		group    string
+		version  string
+		resource metav1.APIResource
+		want     string
+	}{
+		{
+			name:    "generated native API",
+			group:   "resource.k8s.io",
+			version: "v1",
+			resource: metav1.APIResource{
+				Name:  "resourceslices",
+				Kind:  "ResourceSlice",
+				Verbs: manageableVerbs,
+			},
+			want: "runtime/controller-generated native API is not importable as Terraform-managed configuration",
+		},
+		{
+			name:    "legacy native API outside supported manifest policy",
+			group:   "resource.k8s.io",
+			version: "v1alpha2",
+			resource: metav1.APIResource{
+				Name:  "resourceclasses",
+				Kind:  "ResourceClass",
+				Verbs: manageableVerbs,
+			},
+			want: "native API is outside the explicit manifest import policy",
+		},
+		{
+			name:    "custom resource keeps generic manifest fallback",
+			group:   "example.com",
+			version: "v1",
+			resource: metav1.APIResource{
+				Name:  "widgets",
+				Kind:  "Widget",
+				Verbs: manageableVerbs,
+			},
+		},
+		{
+			name:    "allowlisted native manifest resource",
+			group:   "resource.k8s.io",
+			version: "v1",
+			resource: metav1.APIResource{
+				Name:       "resourceclaims",
+				Kind:       "ResourceClaim",
+				Namespaced: true,
+				Verbs:      manageableVerbs,
+			},
+		},
+		{
+			name:    "native resource without manifest type",
+			group:   "resource.k8s.io",
+			version: "v1alpha2",
+			resource: metav1.APIResource{
+				Name:  "resourceclasses",
+				Kind:  "ResourceClass",
+				Verbs: manageableVerbs,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hasResourceType := hasManifestType
+			if tt.name == "native resource without manifest type" {
+				hasResourceType = func(string) bool { return false }
+			}
+			got := importSkipPolicyReason(clientset, tt.group, tt.version, tt.resource, hasResourceType)
+			if got != tt.want {
+				t.Fatalf("importSkipPolicyReason() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestSupportsNativeManifestResource(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -1177,14 +1224,7 @@ func TestSupportsNativeManifestResource(t *testing.T) {
 		{name: "device taint rule alpha", group: "resource.k8s.io", version: "v1alpha3", kind: "DeviceTaintRule", want: true},
 		{name: "resource claim alpha", group: "resource.k8s.io", version: "v1alpha3", kind: "ResourceClaim", want: true},
 		{name: "resource claim template alpha", group: "resource.k8s.io", version: "v1alpha3", kind: "ResourceClaimTemplate", want: true},
-		{name: "legacy resource class alpha", group: "resource.k8s.io", version: "v1alpha2", kind: "ResourceClass", want: true},
-		{name: "legacy resource class parameters alpha", group: "resource.k8s.io", version: "v1alpha2", kind: "ResourceClassParameters", want: true},
-		{name: "legacy resource claim alpha", group: "resource.k8s.io", version: "v1alpha2", kind: "ResourceClaim", want: true},
-		{name: "legacy resource claim parameters alpha", group: "resource.k8s.io", version: "v1alpha2", kind: "ResourceClaimParameters", want: true},
-		{name: "legacy resource claim template alpha", group: "resource.k8s.io", version: "v1alpha2", kind: "ResourceClaimTemplate", want: true},
-		{name: "original resource class alpha", group: "resource.k8s.io", version: "v1alpha1", kind: "ResourceClass", want: true},
-		{name: "original resource claim alpha", group: "resource.k8s.io", version: "v1alpha1", kind: "ResourceClaim", want: true},
-		{name: "original resource claim template alpha", group: "resource.k8s.io", version: "v1alpha1", kind: "ResourceClaimTemplate", want: true},
+		{name: "legacy resource class is outside supported policy", group: "resource.k8s.io", version: "v1alpha2", kind: "ResourceClass", want: false},
 		{name: "scheduling workload preferred alpha", group: "scheduling.k8s.io", version: "v1alpha2", kind: "Workload", want: true},
 		{name: "scheduling workload alpha", group: "scheduling.k8s.io", version: "v1alpha1", kind: "Workload", want: true},
 		{name: "volume attributes class v1", group: "storage.k8s.io", version: "v1", kind: "VolumeAttributesClass", want: true},

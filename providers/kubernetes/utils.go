@@ -131,14 +131,6 @@ var nativeManifestResources = map[kubernetesResourceID]struct{}{
 	{group: "resource.k8s.io", version: "v1alpha3", kind: "DeviceTaintRule"}:                               {},
 	{group: "resource.k8s.io", version: "v1alpha3", kind: "ResourceClaim"}:                                 {},
 	{group: "resource.k8s.io", version: "v1alpha3", kind: "ResourceClaimTemplate"}:                         {},
-	{group: "resource.k8s.io", version: "v1alpha2", kind: "ResourceClass"}:                                 {},
-	{group: "resource.k8s.io", version: "v1alpha2", kind: "ResourceClassParameters"}:                       {},
-	{group: "resource.k8s.io", version: "v1alpha2", kind: "ResourceClaim"}:                                 {},
-	{group: "resource.k8s.io", version: "v1alpha2", kind: "ResourceClaimParameters"}:                       {},
-	{group: "resource.k8s.io", version: "v1alpha2", kind: "ResourceClaimTemplate"}:                         {},
-	{group: "resource.k8s.io", version: "v1alpha1", kind: "ResourceClass"}:                                 {},
-	{group: "resource.k8s.io", version: "v1alpha1", kind: "ResourceClaim"}:                                 {},
-	{group: "resource.k8s.io", version: "v1alpha1", kind: "ResourceClaimTemplate"}:                         {},
 	{group: "scheduling.k8s.io", version: "v1alpha2", kind: "Workload"}:                                    {},
 	{group: "scheduling.k8s.io", version: "v1alpha1", kind: "Workload"}:                                    {},
 	{group: "storage.k8s.io", version: "v1", kind: "VolumeAttributesClass"}:                                {},
@@ -311,6 +303,37 @@ func selectImportResourceName(
 		return "", false, false
 	}
 	return manifestTerraformResourceName, true, true
+}
+
+func importSkipPolicyReason(
+	clientset kubernetes.Interface,
+	group string,
+	version string,
+	resource metav1.APIResource,
+	hasResourceType func(string) bool,
+) string {
+	if skipsImportResource(group, version, resource.Kind) {
+		return "runtime/controller-generated native API is not importable as Terraform-managed configuration"
+	}
+	if !isNativeAPIGroup(group) {
+		return ""
+	}
+	if supportsNativeManifestResource(group, version, resource.Kind) ||
+		supportsTypedClientResource(clientset, group, version, resource.Kind) ||
+		supportsDynamicClientResource(group, version, resource.Kind) {
+		return ""
+	}
+	if !supportsManifestResource(resource, hasResourceType) {
+		return ""
+	}
+	return "native API is outside the explicit manifest import policy"
+}
+
+func kubernetesResourceLogName(group, version, resourceName string) string {
+	if group == "" {
+		return version + "/" + resourceName
+	}
+	return group + "/" + version + "/" + resourceName
 }
 
 func supportsDynamicClientResource(group, version, kind string) bool {

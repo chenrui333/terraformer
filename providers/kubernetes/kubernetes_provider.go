@@ -123,6 +123,11 @@ func (p *KubernetesProvider) GetSupportedService() map[string]terraformutils.Ser
 			}
 			terraformResourceName, useDynamicClient, ok := selectImportResourceName(clientset, gv.Group, gv.Version, resource, hasResourceType)
 			if !ok {
+				if p.verbose == "true" {
+					if reason := importSkipPolicyReason(clientset, gv.Group, gv.Version, resource, hasResourceType); reason != "" {
+						log.Printf("kubernetes: skipping %s (%s): %s", kubernetesResourceLogName(gv.Group, gv.Version, resource.Name), resource.Kind, reason)
+					}
+				}
 				continue
 			}
 
