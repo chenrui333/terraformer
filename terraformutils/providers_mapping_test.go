@@ -109,11 +109,15 @@ func TestGetServices(t *testing.T) {
 	pm.AddServiceToProvider("ec2")
 
 	services := pm.GetServices()
+	if len(services) != 2 {
+		t.Fatalf("expected 2 services, got %d: %v", len(services), services)
+	}
 	found := map[string]bool{}
 	for _, s := range services {
-		if s != "" {
-			found[s] = true
+		if s == "" {
+			t.Fatalf("GetServices returned empty service: %v", services)
 		}
+		found[s] = true
 	}
 	if !found["vpc"] || !found["ec2"] {
 		t.Errorf("GetServices missing expected services, got %v", services)
@@ -311,21 +315,15 @@ func TestGetServicesSorted(t *testing.T) {
 	pm.AddServiceToProvider("vpc")
 
 	services := pm.GetServices()
-	nonEmpty := []string{}
-	for _, s := range services {
-		if s != "" {
-			nonEmpty = append(nonEmpty, s)
-		}
-	}
-	sort.Strings(nonEmpty)
+	sort.Strings(services)
 
 	want := []string{"ec2", "s3", "vpc"}
-	if len(nonEmpty) != len(want) {
-		t.Fatalf("expected %d services, got %d: %v", len(want), len(nonEmpty), nonEmpty)
+	if len(services) != len(want) {
+		t.Fatalf("expected %d services, got %d: %v", len(want), len(services), services)
 	}
 	for i, s := range want {
-		if nonEmpty[i] != s {
-			t.Errorf("sorted service[%d] = %q, want %q", i, nonEmpty[i], s)
+		if services[i] != s {
+			t.Errorf("sorted service[%d] = %q, want %q", i, services[i], s)
 		}
 	}
 }

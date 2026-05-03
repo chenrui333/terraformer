@@ -53,7 +53,7 @@ func (p *ProvidersMapping) AddServiceToProvider(service string) ProviderGenerato
 }
 
 func (p *ProvidersMapping) GetServices() []string {
-	services := make([]string, len(p.Services))
+	services := make([]string, 0, len(p.Services))
 	for service := range p.Services {
 		services = append(services, service)
 	}
