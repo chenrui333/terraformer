@@ -35,6 +35,8 @@ Common supported resources include:
     * `kubernetes_manifest`
 *   `certificates.k8s.io/v1alpha1/clustertrustbundles`
     * `kubernetes_manifest`
+*   `certificates.k8s.io/v1beta1/podcertificaterequests`
+    * `kubernetes_manifest`
 *   `clusterroles`
     * `kubernetes_cluster_role_v1`
 *   `clusterrolebindings`
@@ -124,6 +126,8 @@ Common supported resources include:
     * `kubernetes_role_binding_v1`
 *   `runtimeclasses`
     * `kubernetes_runtime_class_v1`
+*   `scheduling.k8s.io/v1alpha1/workloads`
+    * `kubernetes_manifest`
 *   `secrets`
     * `kubernetes_secret_v1`
 *   `secretdata`
@@ -139,6 +143,8 @@ Common supported resources include:
 *   `storage.k8s.io/v1/volumeattributesclasses`
     * `kubernetes_manifest`
 *   `storage.k8s.io/v1alpha1/volumeattributesclasses`
+    * `kubernetes_manifest`
+*   `storagemigration.k8s.io/v1beta1/storageversionmigrations`
     * `kubernetes_manifest`
 *   `validatingadmissionpolicies`
     * `kubernetes_validating_admission_policy_v1`
