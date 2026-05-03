@@ -67,11 +67,11 @@ func (p *OktaProvider) GetName() string {
 func (p *OktaProvider) InitService(serviceName string, verbose bool) error {
 	p.Service = nil
 
-	var isSupported bool
-	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
+	service, isSupported := p.GetSupportedService()[serviceName]
+	if !isSupported {
 		return errors.New(p.GetName() + ": " + serviceName + " is not a supported service")
 	}
-	p.Service = p.GetSupportedService()[serviceName]
+	p.Service = service
 	p.Service.SetName(serviceName)
 	p.Service.SetProviderName(p.GetName())
 	p.Service.SetVerbose(verbose)
