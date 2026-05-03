@@ -64,6 +64,67 @@ func TestEcsResourceName(t *testing.T) {
 	}
 }
 
+func TestEcsTaskDefinitionRevision(t *testing.T) {
+	tests := []struct {
+		name           string
+		arn            string
+		wantDefinition string
+		wantRevision   int
+		wantErr        string
+	}{
+		{
+			name:           "valid",
+			arn:            "arn:aws:ecs:us-east-1:123456789012:task-definition/example:42",
+			wantDefinition: "task-definition/example",
+			wantRevision:   42,
+		},
+		{
+			name:    "missing revision",
+			arn:     "task-definition/example",
+			wantErr: "missing revision",
+		},
+		{
+			name:    "non numeric revision",
+			arn:     "arn:aws:ecs:us-east-1:123456789012:task-definition/example:not-a-number",
+			wantErr: "parse ecs task definition revision",
+		},
+		{
+			name:    "empty family",
+			arn:     "arn:aws:ecs:us-east-1:123456789012:task-definition/:1",
+			wantErr: "missing family",
+		},
+		{
+			name:    "zero revision",
+			arn:     "arn:aws:ecs:us-east-1:123456789012:task-definition/example:0",
+			wantErr: "revision must be positive",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			definition, revision, err := ecsTaskDefinitionRevision(tt.arn)
+			if tt.wantErr != "" {
+				if err == nil {
+					t.Fatal("expected error")
+				}
+				if !strings.Contains(err.Error(), tt.wantErr) {
+					t.Fatalf("error = %q, want %q", err, tt.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("expected no error: %v", err)
+			}
+			if definition != tt.wantDefinition {
+				t.Fatalf("definition = %q, want %q", definition, tt.wantDefinition)
+			}
+			if revision != tt.wantRevision {
+				t.Fatalf("revision = %d, want %d", revision, tt.wantRevision)
+			}
+		})
+	}
+}
+
 func TestEcsCapacityProviderImportable(t *testing.T) {
 	tests := []struct {
 		name             string

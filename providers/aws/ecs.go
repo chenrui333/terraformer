@@ -134,9 +134,10 @@ func (g *EcsGenerator) InitResources() error {
 			return fmt.Errorf("list ecs task definitions: %w", e)
 		}
 		for _, taskDefinitionArn := range taskDefinitionsNextPage.TaskDefinitionArns {
-			arnParts := strings.Split(taskDefinitionArn, ":")
-			definitionWithFamily := arnParts[len(arnParts)-2]
-			revision, _ := strconv.Atoi(arnParts[len(arnParts)-1])
+			definitionWithFamily, revision, err := ecsTaskDefinitionRevision(taskDefinitionArn)
+			if err != nil {
+				return err
+			}
 
 			// fetch only latest revision of task definitions
 			if val, ok := taskDefinitionsMap[definitionWithFamily]; !ok || val.AdditionalFields["revision"].(int) < revision {
@@ -165,6 +166,29 @@ func (g *EcsGenerator) InitResources() error {
 	}
 
 	return nil
+}
+
+func ecsTaskDefinitionRevision(taskDefinitionArn string) (string, int, error) {
+	arnParts := strings.Split(taskDefinitionArn, ":")
+	if len(arnParts) < 2 {
+		return "", 0, fmt.Errorf("parse ecs task definition %q: missing revision", taskDefinitionArn)
+	}
+	definitionWithFamily := arnParts[len(arnParts)-2]
+	revisionValue := arnParts[len(arnParts)-1]
+	if definitionWithFamily == "" || revisionValue == "" {
+		return "", 0, fmt.Errorf("parse ecs task definition %q: missing family or revision", taskDefinitionArn)
+	}
+	if arnLastSegment(definitionWithFamily, "/") == "" {
+		return "", 0, fmt.Errorf("parse ecs task definition %q: missing family", taskDefinitionArn)
+	}
+	revision, err := strconv.Atoi(revisionValue)
+	if err != nil {
+		return "", 0, fmt.Errorf("parse ecs task definition revision for %q: %w", taskDefinitionArn, err)
+	}
+	if revision <= 0 {
+		return "", 0, fmt.Errorf("parse ecs task definition %q: revision must be positive", taskDefinitionArn)
+	}
+	return definitionWithFamily, revision, nil
 }
 
 func ecsServiceDetails(output *ecs.DescribeServicesOutput, serviceName string) (ecstypes.Service, error) {

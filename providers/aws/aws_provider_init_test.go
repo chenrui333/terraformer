@@ -64,3 +64,49 @@ func TestAWSProviderInitPreservesAmbientRegionForNoRegion(t *testing.T) {
 		t.Fatalf("AWS_DEFAULT_PROFILE = %q, want unset", value)
 	}
 }
+
+func TestAWSProviderInitRejectsInvalidSDKLoadConfig(t *testing.T) {
+	t.Setenv("AWS_SDK_LOAD_CONFIG", "not-bool")
+	t.Setenv("AWS_REGION", "old-region")
+	var provider AWSProvider
+
+	err := provider.Init([]string{MainRegionPublicPartition, "default"})
+	if err == nil {
+		t.Fatal("expected invalid AWS_SDK_LOAD_CONFIG error")
+	}
+	if !strings.Contains(err.Error(), "AWS_SDK_LOAD_CONFIG") {
+		t.Fatalf("Init error = %q, want AWS_SDK_LOAD_CONFIG context", err)
+	}
+	if provider.region != "" {
+		t.Fatalf("region = %q, want empty after failed init", provider.region)
+	}
+	if provider.profile != "" {
+		t.Fatalf("profile = %q, want empty after failed init", provider.profile)
+	}
+	if got := os.Getenv("AWS_REGION"); got != "old-region" {
+		t.Fatalf("AWS_REGION = %q, want old-region after failed init", got)
+	}
+}
+
+func TestAWSProviderInitUsesSharedConfigEnvVars(t *testing.T) {
+	t.Setenv("AWS_SDK_LOAD_CONFIG", "true")
+	t.Setenv("AWS_REGION", "old-region")
+	t.Setenv("AWS_PROFILE", "old-profile")
+	var provider AWSProvider
+
+	if err := provider.Init([]string{MainRegionPublicPartition, "ops"}); err != nil {
+		t.Fatalf("expected Init to succeed: %v", err)
+	}
+	if got := os.Getenv("AWS_DEFAULT_REGION"); got != MainRegionPublicPartition {
+		t.Fatalf("AWS_DEFAULT_REGION = %q, want %q", got, MainRegionPublicPartition)
+	}
+	if got := os.Getenv("AWS_DEFAULT_PROFILE"); got != "ops" {
+		t.Fatalf("AWS_DEFAULT_PROFILE = %q, want ops", got)
+	}
+	if value, ok := os.LookupEnv("AWS_REGION"); ok {
+		t.Fatalf("AWS_REGION = %q, want unset", value)
+	}
+	if value, ok := os.LookupEnv("AWS_PROFILE"); ok {
+		t.Fatalf("AWS_PROFILE = %q, want unset", value)
+	}
+}
