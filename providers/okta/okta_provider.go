@@ -72,9 +72,7 @@ func (p *OktaProvider) InitService(serviceName string, verbose bool) error {
 		return errors.New(p.GetName() + ": " + serviceName + " is not a supported service")
 	}
 	p.Service = service
-	p.Service.SetName(serviceName)
-	p.Service.SetProviderName(p.GetName())
-	p.Service.SetVerbose(verbose)
+	terraformutils.ConfigureService(p.Service, serviceName, verbose, p.GetName())
 	p.Service.SetArgs(map[string]interface{}{
 		"org_name":  p.orgName,
 		"base_url":  p.baseURL,

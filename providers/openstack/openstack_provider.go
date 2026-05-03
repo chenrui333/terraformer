@@ -55,9 +55,7 @@ func (p *OpenStackProvider) InitService(serviceName string, verbose bool) error 
 		return errors.New("openstack: " + serviceName + " not supported service")
 	}
 	p.Service = service
-	p.Service.SetName(serviceName)
-	p.Service.SetVerbose(verbose)
-	p.Service.SetProviderName(p.GetName())
+	terraformutils.ConfigureService(p.Service, serviceName, verbose, p.GetName())
 	p.Service.SetArgs(map[string]interface{}{
 		"region": p.region,
 	})

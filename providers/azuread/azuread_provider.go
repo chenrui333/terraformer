@@ -78,9 +78,7 @@ func (p *AzureADProvider) InitService(serviceName string, verbose bool) error {
 		return errors.New("azuread: " + serviceName + " not supported service")
 	}
 	p.Service = service
-	p.Service.SetName(serviceName)
-	p.Service.SetVerbose(verbose)
-	p.Service.SetProviderName(p.GetName())
+	terraformutils.ConfigureService(p.Service, serviceName, verbose, p.GetName())
 	p.Service.SetArgs(map[string]interface{}{
 		"tenant_id":     p.tenantID,
 		"client_id":     p.clientID,

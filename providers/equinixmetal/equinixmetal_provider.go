@@ -63,9 +63,7 @@ func (p *EquinixMetalProvider) InitService(serviceName string, verbose bool) err
 		return errors.New("equinixmetal: " + serviceName + " not supported service")
 	}
 	p.Service = service
-	p.Service.SetName(serviceName)
-	p.Service.SetVerbose(verbose)
-	p.Service.SetProviderName(p.GetName())
+	terraformutils.ConfigureService(p.Service, serviceName, verbose, p.GetName())
 	p.Service.SetArgs(map[string]interface{}{
 		"auth_token": p.authToken,
 		"project_id": p.projectID,

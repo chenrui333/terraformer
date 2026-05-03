@@ -81,9 +81,7 @@ func (p *OctopusDeployProvider) InitService(serviceName string, verbose bool) er
 		return errors.New("octopusdeploy: " + serviceName + " not supported service, see list sub-command")
 	}
 	p.Service = service
-	p.Service.SetName(serviceName)
-	p.Service.SetVerbose(verbose)
-	p.Service.SetProviderName(p.GetName())
+	terraformutils.ConfigureService(p.Service, serviceName, verbose, p.GetName())
 	p.Service.SetArgs(map[string]interface{}{
 		"api_key": p.apiKey,
 		"address": p.address,

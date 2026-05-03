@@ -45,9 +45,7 @@ func (p *GmailfilterProvider) InitService(serviceName string, verbose bool) erro
 		return errors.New("gmailfilter: " + serviceName + " not supported service")
 	}
 	p.Service = service
-	p.Service.SetName(serviceName)
-	p.Service.SetVerbose(verbose)
-	p.Service.SetProviderName(p.GetName())
+	terraformutils.ConfigureService(p.Service, serviceName, verbose, p.GetName())
 	p.Service.SetArgs(map[string]interface{}{
 		"credentials":           p.credentials,
 		"impersonatedUserEmail": p.impersonatedUserEmail,

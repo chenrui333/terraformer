@@ -105,9 +105,7 @@ func (p *GrafanaProvider) InitService(serviceName string, verbose bool) error {
 	}
 
 	p.Service = service
-	p.Service.SetName(serviceName)
-	p.Service.SetVerbose(verbose)
-	p.Service.SetProviderName(p.GetName())
+	terraformutils.ConfigureService(p.Service, serviceName, verbose, p.GetName())
 	p.Service.SetArgs(map[string]interface{}{
 		"org_id":               p.orgID,
 		"url":                  p.url,

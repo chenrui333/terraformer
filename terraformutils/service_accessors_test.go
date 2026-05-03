@@ -24,6 +24,22 @@ func TestServiceSetGetProviderName(t *testing.T) {
 	}
 }
 
+func TestConfigureService(t *testing.T) {
+	s := &Service{}
+
+	ConfigureService(s, "vpc", true, "aws")
+
+	if got := s.GetName(); got != "vpc" {
+		t.Errorf("GetName() = %q, want %q", got, "vpc")
+	}
+	if got := s.GetProviderName(); got != "aws" {
+		t.Errorf("GetProviderName() = %q, want %q", got, "aws")
+	}
+	if !s.Verbose {
+		t.Error("Verbose should be true")
+	}
+}
+
 func TestServiceSetGetArgs(t *testing.T) {
 	s := &Service{}
 	args := map[string]interface{}{"region": "us-east-1"}

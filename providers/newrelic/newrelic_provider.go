@@ -97,10 +97,8 @@ func (p *NewRelicProvider) InitService(serviceName string, verbose bool) error {
 		return errors.New("newrelic: " + serviceName + " not supported service")
 	}
 	p.Service = service
-	p.Service.SetName(serviceName)
-	p.Service.SetVerbose(verbose)
+	terraformutils.ConfigureService(p.Service, serviceName, verbose, p.GetName())
 	p.Service.SetArgs(map[string]interface{}{"apiKey": p.APIKey})
-	p.Service.SetProviderName(p.GetName())
 
 	return nil
 }
