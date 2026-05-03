@@ -5,6 +5,7 @@ package ibm
 import (
 	"errors"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -48,6 +49,23 @@ func TestProviderInitRequiresArgs(t *testing.T) {
 	}
 	if value, ok := os.LookupEnv("IC_REGION"); ok {
 		t.Fatalf("IC_REGION = %q, want unset after failed init", value)
+	}
+}
+
+func TestProviderInitReturnsRegionEnvError(t *testing.T) {
+	const probe = "REDACT_PROBE_IBM_REGION"
+	provider := &IBMProvider{}
+
+	err := provider.Init([]string{"resource-group", probe + "\x00region", "vpc"})
+	if err == nil {
+		t.Fatal("expected region env error")
+	}
+	msg := err.Error()
+	if !strings.Contains(msg, "failed to set env IC_REGION") {
+		t.Fatalf("Init error = %q, want IC_REGION context", err)
+	}
+	if strings.Contains(msg, probe) {
+		t.Fatalf("Init error = %q, want env value redacted", err)
 	}
 }
 

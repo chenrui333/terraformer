@@ -3,8 +3,6 @@
 package openstack
 
 import (
-	"os"
-
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/pkg/errors"
 )
@@ -31,7 +29,7 @@ func (p OpenStackProvider) GetProviderData(_ ...string) map[string]interface{} {
 // check projectName in env params
 func (p *OpenStackProvider) Init(args []string) error {
 	p.region = ""
-	if err := os.Unsetenv("OS_REGION_NAME"); err != nil {
+	if err := terraformutils.UnsetEnv("OS_REGION_NAME"); err != nil {
 		return err
 	}
 
@@ -41,7 +39,7 @@ func (p *OpenStackProvider) Init(args []string) error {
 
 	region := args[0]
 	// terraform work with env param OS_REGION_NAME
-	if err := os.Setenv("OS_REGION_NAME", region); err != nil {
+	if err := terraformutils.SetEnv("OS_REGION_NAME", region); err != nil {
 		return err
 	}
 	p.region = region
