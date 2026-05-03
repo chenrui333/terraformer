@@ -90,4 +90,7 @@ List of supported Cloudflare services:
 * `web_analytics`
   * `cloudflare_web_analytics_site`
 * `workers`
+  * `cloudflare_workers_cron_trigger`
+  * `cloudflare_workers_custom_domain`
+  * `cloudflare_workers_for_platforms_dispatch_namespace`
   * `cloudflare_workers_route`
