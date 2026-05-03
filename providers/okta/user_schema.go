@@ -108,26 +108,39 @@ func getUserTypes(ctx context.Context, client *okta.Client) ([]*okta.UserType, e
 
 func getUserTypeSchemaID(ut *okta.UserType) (string, error) {
 	fm, ok := ut.Links.(map[string]interface{})
-	if ok {
-		sm, ok := fm["schema"].(map[string]interface{})
-		if ok {
-			href, ok := sm["href"].(string)
-			if ok {
-				u, err := url.Parse(href)
-				if err != nil {
-					return "", fmt.Errorf("parse Okta user type %q schema link: %w", ut.Id, err)
-				}
-				path := u.EscapedPath()
-				if !strings.HasPrefix(path, oktaUserSchemaPathPrefix) {
-					return "", fmt.Errorf("parse Okta user type %q schema link %q: unexpected path %q", ut.Id, href, path)
-				}
-				schemaID := strings.TrimPrefix(path, oktaUserSchemaPathPrefix)
-				if schemaID == "" {
-					return "", fmt.Errorf("parse Okta user type %q schema link %q: missing schema ID", ut.Id, href)
-				}
-				return schemaID, nil
-			}
+	if !ok {
+		if ut.Links == nil {
+			return "", nil
 		}
+		return "", fmt.Errorf("parse Okta user type %q schema link: links has type %T, want map[string]interface{}", ut.Id, ut.Links)
 	}
-	return "", nil
+	schemaValue, ok := fm["schema"]
+	if !ok {
+		return "", nil
+	}
+	sm, ok := schemaValue.(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("parse Okta user type %q schema link: schema has type %T, want map[string]interface{}", ut.Id, schemaValue)
+	}
+	hrefValue, ok := sm["href"]
+	if !ok {
+		return "", nil
+	}
+	href, ok := hrefValue.(string)
+	if !ok {
+		return "", fmt.Errorf("parse Okta user type %q schema link: href has type %T, want string", ut.Id, hrefValue)
+	}
+	u, err := url.Parse(href)
+	if err != nil {
+		return "", fmt.Errorf("parse Okta user type %q schema link: %w", ut.Id, err)
+	}
+	path := u.EscapedPath()
+	if !strings.HasPrefix(path, oktaUserSchemaPathPrefix) {
+		return "", fmt.Errorf("parse Okta user type %q schema link %q: unexpected path %q", ut.Id, href, path)
+	}
+	schemaID := strings.TrimPrefix(path, oktaUserSchemaPathPrefix)
+	if schemaID == "" {
+		return "", fmt.Errorf("parse Okta user type %q schema link %q: missing schema ID", ut.Id, href)
+	}
+	return schemaID, nil
 }
