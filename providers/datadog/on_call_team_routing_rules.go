@@ -95,6 +95,9 @@ func (g *OnCallTeamRoutingRulesGenerator) filteredResources(auth context.Context
 		for _, value := range filter.AcceptableValues {
 			teamRoutingRules, err := getOnCallTeamRoutingRules(auth, api, value)
 			if err != nil {
+				if errors.Is(err, errOnCallTeamRoutingRulesNotFound) {
+					continue
+				}
 				return nil, true, err
 			}
 			resource, err := g.createResource(teamRoutingRules)

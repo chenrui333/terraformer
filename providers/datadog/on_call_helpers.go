@@ -10,7 +10,7 @@ import (
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 )
 
-const datadogListUsersMaxPageSize = int64(500)
+const datadogListUsersMaxPageSize = int64(100)
 
 type onCallUserChildImportID struct {
 	userID  string

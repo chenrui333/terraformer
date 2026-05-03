@@ -145,7 +145,7 @@ func TestListDatadogUserIDsUsesSupportedPageSize(t *testing.T) {
 		t.Fatalf("listDatadogUserIDs returned error: %v", err)
 	}
 	assertObservedQueryValue(t, pathCh, "path", "/api/v2/users")
-	assertObservedQueryValue(t, pageSizeCh, "page[size]", "500")
+	assertObservedQueryValue(t, pageSizeCh, "page[size]", "100")
 	assertObservedQueryValue(t, pageNumberCh, "page[number]", "0")
 	if len(userIDs) != 1 {
 		t.Fatalf("expected 1 user id, got %d", len(userIDs))
@@ -239,6 +239,32 @@ func TestOnCallTeamRoutingRulesInitResourcesFiltersByID(t *testing.T) {
 	}
 }
 
+func TestOnCallTeamRoutingRulesInitResourcesSkipsMissingFilteredID(t *testing.T) {
+	pathCh := make(chan string, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		pathCh <- r.URL.Path
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = fmt.Fprint(w, `{"errors":["not found"]}`)
+	}))
+	defer server.Close()
+
+	generator := newOnCallTeamRoutingRulesTestGenerator(server, []terraformutils.ResourceFilter{
+		{
+			ServiceName:      "on_call_team_routing_rules",
+			FieldPath:        "id",
+			AcceptableValues: []string{"team-1"},
+		},
+	})
+	if err := generator.InitResources(); err != nil {
+		t.Fatalf("InitResources returned error: %v", err)
+	}
+	assertObservedQueryValue(t, pathCh, "path", "/api/v2/on-call/teams/team-1/routing-rules")
+	if len(generator.Resources) != 0 {
+		t.Fatalf("expected 0 resources, got %d", len(generator.Resources))
+	}
+}
+
 func TestOnCallUserNotificationChannelInitResourcesFiltersByUserID(t *testing.T) {
 	pathCh := make(chan string, 1)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -308,7 +334,16 @@ func TestDatadogProviderOnCallConnections(t *testing.T) {
 	assertDatadogConnection(t, connections, "on_call_user_notification_channel", "user", "user_id", "id")
 	assertDatadogConnection(t, connections, "on_call_user_notification_rule", "on_call_user_notification_channel", "channel_id", "id")
 	assertDatadogConnection(t, connections, "on_call_user_notification_rule", "user", "user_id", "id")
-	assertDatadogConnection(t, connections, "on_call_escalation_policy", "team", "teams", "id")
+	assertDatadogConnectionPairs(
+		t,
+		connections,
+		"on_call_escalation_policy",
+		"team",
+		[]string{
+			"teams", "id",
+			"step.target.team", "id",
+		},
+	)
 	assertDatadogConnection(t, connections, "on_call_escalation_policy", "user", "step.target.user", "id")
 	assertDatadogConnectionPairs(
 		t,

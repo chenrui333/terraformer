@@ -272,6 +272,7 @@ func (p DatadogProvider) GetResourceConnections() map[string]map[string][]string
 			},
 			"team": {
 				"teams", "id",
+				"step.target.team", "id",
 			},
 			"user": {
 				"step.target.user", "id",
