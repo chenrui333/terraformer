@@ -33,7 +33,7 @@ func (p *IBMProvider) Init(args []string) error {
 	p.ResourceGroup = ""
 	p.Region = ""
 	p.VPC = ""
-	if err := os.Unsetenv("IC_REGION"); err != nil {
+	if err := terraformutils.UnsetEnv("IC_REGION"); err != nil {
 		return err
 	}
 
@@ -47,7 +47,7 @@ func (p *IBMProvider) Init(args []string) error {
 	if region == NoRegion {
 		region = DefaultRegion
 	}
-	if err := os.Setenv("IC_REGION", region); err != nil {
+	if err := terraformutils.SetEnv("IC_REGION", region); err != nil {
 		return err
 	}
 	p.ResourceGroup = resourceGroup

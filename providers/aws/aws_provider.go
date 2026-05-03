@@ -3,7 +3,6 @@
 package aws
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 
@@ -196,8 +195,8 @@ func (p *AWSProvider) Init(args []string) error {
 		if enableSharedConfig {
 			envVar = "AWS_DEFAULT_REGION"
 		}
-		if err := os.Setenv(envVar, region); err != nil {
-			return fmt.Errorf("failed to set env %s=%q: %w", envVar, region, err)
+		if err := terraformutils.SetEnv(envVar, region); err != nil {
+			return err
 		}
 	}
 
@@ -207,8 +206,8 @@ func (p *AWSProvider) Init(args []string) error {
 			envVar = "AWS_DEFAULT_PROFILE"
 		}
 
-		if err := os.Setenv(envVar, profile); err != nil {
-			return fmt.Errorf("failed to set env %s=%q: %w", envVar, profile, err)
+		if err := terraformutils.SetEnv(envVar, profile); err != nil {
+			return err
 		}
 	}
 	p.region = region
@@ -222,8 +221,8 @@ func clearAWSEnvConfig(preserveRegion bool) error {
 		keys = append(keys, "AWS_REGION", "AWS_DEFAULT_REGION")
 	}
 	for _, key := range keys {
-		if err := os.Unsetenv(key); err != nil {
-			return fmt.Errorf("failed to unset env %s: %w", key, err)
+		if err := terraformutils.UnsetEnv(key); err != nil {
+			return err
 		}
 	}
 	return nil

@@ -48,11 +48,17 @@ func (s *AWSService) generateConfig() (aws.Config, error) {
 	// terraform cannot ask for MFA token, so we need to pass STS session token, which might contain credentials with MFA requirement
 	accessKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
 	if accessKey == "" {
-		os.Setenv("AWS_ACCESS_KEY_ID", creds.AccessKeyID)
-		os.Setenv("AWS_SECRET_ACCESS_KEY", creds.SecretAccessKey)
+		if err := terraformutils.SetEnv("AWS_ACCESS_KEY_ID", creds.AccessKeyID); err != nil {
+			return baseConfig, err
+		}
+		if err := terraformutils.SetEnv("AWS_SECRET_ACCESS_KEY", creds.SecretAccessKey); err != nil {
+			return baseConfig, err
+		}
 
 		if creds.SessionToken != "" {
-			os.Setenv("AWS_SESSION_TOKEN", creds.SessionToken)
+			if err := terraformutils.SetEnv("AWS_SESSION_TOKEN", creds.SessionToken); err != nil {
+				return baseConfig, err
+			}
 		}
 	}
 	configCache = &baseConfig
@@ -65,7 +71,9 @@ func (s *AWSService) buildBaseConfig() (aws.Config, error) {
 		loadOptions = append(loadOptions, config.WithSharedConfigProfile(s.GetArgs()["profile"].(string)))
 	}
 	if s.GetArgs()["region"].(string) != "" {
-		os.Setenv("AWS_REGION", s.GetArgs()["region"].(string))
+		if err := terraformutils.SetEnv("AWS_REGION", s.GetArgs()["region"].(string)); err != nil {
+			return aws.Config{}, err
+		}
 	}
 	loadOptions = append(loadOptions, config.WithAssumeRoleCredentialOptions(func(options *stscreds.AssumeRoleOptions) {
 		options.TokenProvider = stscreds.StdinTokenProvider

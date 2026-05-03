@@ -26,3 +26,15 @@ func TestOpenStackProviderInitRequiresRegion(t *testing.T) {
 		t.Fatalf("OS_REGION_NAME = %q, want unset after failed init", value)
 	}
 }
+
+func TestOpenStackProviderInitReturnsRegionEnvError(t *testing.T) {
+	var provider OpenStackProvider
+
+	err := provider.Init([]string{"bad\x00region"})
+	if err == nil {
+		t.Fatal("expected region env error")
+	}
+	if !strings.Contains(err.Error(), `failed to set env OS_REGION_NAME="bad\x00region"`) {
+		t.Fatalf("Init error = %q, want OS_REGION_NAME context", err)
+	}
+}

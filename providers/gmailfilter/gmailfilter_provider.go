@@ -19,12 +19,16 @@ func (p *GmailfilterProvider) Init(args []string) error {
 	credentials := os.Getenv("GOOGLE_CREDENTIALS")
 	if len(args) > 0 && args[0] != "" {
 		credentials = args[0]
-		os.Setenv("GOOGLE_CREDENTIALS", credentials)
+		if err := terraformutils.SetEnv("GOOGLE_CREDENTIALS", credentials); err != nil {
+			return err
+		}
 	}
 	email := os.Getenv("IMPERSONATED_USER_EMAIL")
 	if len(args) > 1 && args[1] != "" {
 		email = args[1]
-		os.Setenv("IMPERSONATED_USER_EMAIL", email)
+		if err := terraformutils.SetEnv("IMPERSONATED_USER_EMAIL", email); err != nil {
+			return err
+		}
 	}
 
 	p.credentials = credentials
