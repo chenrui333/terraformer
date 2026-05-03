@@ -164,6 +164,7 @@ var skippedImportResources = map[kubernetesResourceID]struct{}{
 	{group: "resource.k8s.io", version: "v1alpha3", kind: "ResourceSlice"}:             {},
 	{group: "resource.k8s.io", version: "v1alpha2", kind: "PodSchedulingContext"}:      {},
 	{group: "resource.k8s.io", version: "v1alpha2", kind: "ResourceSlice"}:             {},
+	{group: "resource.k8s.io", version: "v1alpha1", kind: "PodScheduling"}:             {},
 	{group: "scheduling.k8s.io", version: "v1alpha2", kind: "PodGroup"}:                {},
 	{group: "scheduling.k8s.io", version: "v1alpha1", kind: "PodGroup"}:                {},
 	{group: "storage.k8s.io", version: "v1", kind: "CSINode"}:                          {},
