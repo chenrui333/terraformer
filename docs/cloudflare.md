@@ -35,6 +35,15 @@ List of supported Cloudflare services:
 * `dns`
   * `cloudflare_dns_record`
   * `cloudflare_zone`
+* `email_routing`
+  * `cloudflare_email_routing_address`
+  * `cloudflare_email_routing_catch_all`
+  * `cloudflare_email_routing_dns`
+  * `cloudflare_email_routing_rule`
+  * `cloudflare_email_routing_settings`
+
+  Avoid importing `email_routing` with `dns` when you intend to manage Email Routing DNS records
+  through `cloudflare_email_routing_dns`.
 * `firewall`
   * `cloudflare_access_rule`
   * `cloudflare_filter`
