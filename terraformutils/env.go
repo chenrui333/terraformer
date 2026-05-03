@@ -9,7 +9,7 @@ import (
 
 func SetEnv(key, value string) error {
 	if err := os.Setenv(key, value); err != nil {
-		return fmt.Errorf("failed to set env %s=%q: %w", key, value, err)
+		return fmt.Errorf("failed to set env %s: %w", key, err)
 	}
 	return nil
 }

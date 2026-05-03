@@ -18,7 +18,11 @@ func TestAWSServiceBuildBaseConfigReturnsRegionEnvError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected region env error")
 	}
-	if msg := err.Error(); !strings.Contains(msg, `failed to set env AWS_REGION="bad\x00region"`) {
+	msg := err.Error()
+	if !strings.Contains(msg, "failed to set env AWS_REGION") {
 		t.Fatalf("buildBaseConfig error = %q, want AWS_REGION context", msg)
+	}
+	if strings.Contains(msg, "bad") {
+		t.Fatalf("buildBaseConfig error = %q, want env value redacted", msg)
 	}
 }

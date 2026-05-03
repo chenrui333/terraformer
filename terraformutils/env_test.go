@@ -12,7 +12,11 @@ func TestSetEnvWrapsMutationError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected SetEnv to fail")
 	}
-	if msg := err.Error(); !strings.Contains(msg, "failed to set env BAD=KEY=\"value\"") {
-		t.Fatalf("error = %q, want env key and value context", msg)
+	msg := err.Error()
+	if !strings.Contains(msg, "failed to set env BAD=KEY") {
+		t.Fatalf("error = %q, want env key context", msg)
+	}
+	if strings.Contains(msg, "value") {
+		t.Fatalf("error = %q, want env value redacted", msg)
 	}
 }

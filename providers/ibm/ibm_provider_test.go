@@ -59,8 +59,12 @@ func TestProviderInitReturnsRegionEnvError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected region env error")
 	}
-	if !strings.Contains(err.Error(), `failed to set env IC_REGION="bad\x00region"`) {
+	msg := err.Error()
+	if !strings.Contains(msg, "failed to set env IC_REGION") {
 		t.Fatalf("Init error = %q, want IC_REGION context", err)
+	}
+	if strings.Contains(msg, "bad") {
+		t.Fatalf("Init error = %q, want env value redacted", err)
 	}
 }
 

@@ -14,8 +14,12 @@ func TestGmailfilterProviderInitReturnsCredentialEnvError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected credentials env error")
 	}
-	if msg := err.Error(); !strings.Contains(msg, `failed to set env GOOGLE_CREDENTIALS="bad\x00credentials"`) {
+	msg := err.Error()
+	if !strings.Contains(msg, "failed to set env GOOGLE_CREDENTIALS") {
 		t.Fatalf("Init error = %q, want GOOGLE_CREDENTIALS context", msg)
+	}
+	if strings.Contains(msg, "credentials") {
+		t.Fatalf("Init error = %q, want credentials value redacted", msg)
 	}
 }
 
@@ -26,7 +30,11 @@ func TestGmailfilterProviderInitReturnsImpersonatedUserEnvError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected impersonated user env error")
 	}
-	if msg := err.Error(); !strings.Contains(msg, `failed to set env IMPERSONATED_USER_EMAIL="bad\x00email"`) {
+	msg := err.Error()
+	if !strings.Contains(msg, "failed to set env IMPERSONATED_USER_EMAIL") {
 		t.Fatalf("Init error = %q, want IMPERSONATED_USER_EMAIL context", msg)
+	}
+	if strings.Contains(msg, "email") {
+		t.Fatalf("Init error = %q, want email value redacted", msg)
 	}
 }
