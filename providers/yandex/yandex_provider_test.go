@@ -8,8 +8,8 @@ import (
 )
 
 func TestYandexProviderInitClearsStateOnMissingFolderID(t *testing.T) {
-	t.Setenv("YC_TOKEN", "")
-	t.Setenv("YC_SERVICE_ACCOUNT_KEY_FILE", "")
+	t.Setenv("YC_TOKEN", "env-token")
+	t.Setenv("YC_SERVICE_ACCOUNT_KEY_FILE", "env-key")
 	t.Setenv("YC_FOLDER_ID", "")
 	provider := YandexProvider{
 		token:              "old-token",

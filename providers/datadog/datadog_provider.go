@@ -28,6 +28,13 @@ type DatadogProvider struct { //nolint
 
 // Init check env params and initialize API Client
 func (p *DatadogProvider) Init(args []string) error {
+	p.apiKey = ""
+	p.appKey = ""
+	p.apiURL = ""
+	p.validate = false
+	p.auth = nil
+	p.datadogClient = nil
+
 	apiKeyArg := optionalInitArg(args, 0)
 	appKeyArg := optionalInitArg(args, 1)
 	apiURLArg := optionalInitArg(args, 2)

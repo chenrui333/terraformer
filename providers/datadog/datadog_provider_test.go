@@ -67,6 +67,45 @@ func TestDatadogProviderInitReturnsCredentialErrorForShortArgs(t *testing.T) {
 	}
 }
 
+func TestDatadogProviderInitClearsStateOnValidateError(t *testing.T) {
+	t.Setenv("DATADOG_API_KEY", "env-api-key")
+	t.Setenv("DATADOG_APP_KEY", "env-app-key")
+	t.Setenv("DATADOG_HOST", "https://old.example.com")
+	t.Setenv("DATADOG_VALIDATE", "not-bool")
+	provider := DatadogProvider{
+		apiKey:   "old-api-key",
+		appKey:   "old-app-key",
+		apiURL:   "https://stale.example.com",
+		validate: true,
+	}
+
+	err := provider.Init(nil)
+	if err == nil {
+		t.Fatal("expected invalid validate error")
+	}
+	if !strings.Contains(err.Error(), "invalid DATADOG_VALIDATE") {
+		t.Fatalf("Init error = %q, want validate parse error", err)
+	}
+	if provider.apiKey != "" {
+		t.Fatalf("apiKey = %q, want empty after failed init", provider.apiKey)
+	}
+	if provider.appKey != "" {
+		t.Fatalf("appKey = %q, want empty after failed init", provider.appKey)
+	}
+	if provider.apiURL != "" {
+		t.Fatalf("apiURL = %q, want empty after failed init", provider.apiURL)
+	}
+	if provider.validate {
+		t.Fatal("validate = true, want false after failed init")
+	}
+	if provider.auth != nil {
+		t.Fatal("auth is set, want nil after failed init")
+	}
+	if provider.datadogClient != nil {
+		t.Fatal("datadogClient is set, want nil after failed init")
+	}
+}
+
 func TestDatadogProviderAPMRetentionFilterConnections(t *testing.T) {
 	connections := DatadogProvider{}.GetResourceConnections()
 

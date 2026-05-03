@@ -60,47 +60,58 @@ func (p *GithubProvider) GetConfig() cty.Value {
 
 // Init GithubProvider with owner
 func (p *GithubProvider) Init(args []string) error {
-	if len(args) < 1 || args[0] == "" {
-		return errors.New("github: owner is required")
-	}
-
-	p.owner = args[0]
+	p.owner = ""
 	p.token = ""
 	p.baseURL = githubDefaultURL
 	p.appID = 0
 	p.installationID = 0
 	p.pem = ""
 
+	if len(args) < 1 || args[0] == "" {
+		return errors.New("github: owner is required")
+	}
+
+	owner := args[0]
+	token := ""
+	baseURL := githubDefaultURL
+	var appID int64
+	var installationID int64
+	pem := ""
 	if appIDValue := os.Getenv("GITHUB_APP_ID"); appIDValue != "" {
-		appID, err := strconv.ParseInt(appIDValue, 10, 64)
+		parsedAppID, err := strconv.ParseInt(appIDValue, 10, 64)
 		if err != nil {
 			return err
 		}
-		p.appID = appID
+		appID = parsedAppID
 	}
 	if installationIDValue := os.Getenv("GITHUB_APP_INSTALLATION_ID"); installationIDValue != "" {
-		installationID, err := strconv.ParseInt(installationIDValue, 10, 64)
+		parsedInstallationID, err := strconv.ParseInt(installationIDValue, 10, 64)
 		if err != nil {
 			return err
 		}
-		p.installationID = installationID
+		installationID = parsedInstallationID
 	}
-	if pem := os.Getenv("GITHUB_APP_PEM_FILE"); pem != "" {
-		p.pem = strings.ReplaceAll(pem, `\n`, "\n")
+	if pemValue := os.Getenv("GITHUB_APP_PEM_FILE"); pemValue != "" {
+		pem = strings.ReplaceAll(pemValue, `\n`, "\n")
 	}
 
 	if len(args) > 1 && args[1] != "" {
-		p.token = args[1]
+		token = args[1]
 	} else {
-		token := os.Getenv("GITHUB_TOKEN")
-		if token == "" && (p.appID == 0 || p.installationID == 0 || p.pem == "") {
+		token = os.Getenv("GITHUB_TOKEN")
+		if token == "" && (appID == 0 || installationID == 0 || pem == "") {
 			return errors.New("token requirement")
 		}
-		p.token = token
 	}
 	if len(args) > 2 && args[2] != "" {
-		p.baseURL = args[2]
+		baseURL = args[2]
 	}
+	p.owner = owner
+	p.token = token
+	p.baseURL = baseURL
+	p.appID = appID
+	p.installationID = installationID
+	p.pem = pem
 	return nil
 }
 

@@ -51,19 +51,23 @@ func (p *GitLabProvider) Init(args []string) error {
 		return errors.New("gitlab: group is required")
 	}
 
-	p.group = args[0]
+	group := args[0]
+	token := ""
+	baseURL := gitLabDefaultURL
 	if len(args) > 1 && args[1] != "" {
-		p.token = args[1]
+		token = args[1]
 	} else {
-		token := os.Getenv("GITLAB_TOKEN")
+		token = os.Getenv("GITLAB_TOKEN")
 		if token == "" {
 			return errors.New("token requirement")
 		}
-		p.token = token
 	}
 	if len(args) > 2 && args[2] != "" {
-		p.baseURL = args[2]
+		baseURL = args[2]
 	}
+	p.group = group
+	p.token = token
+	p.baseURL = baseURL
 	return nil
 }
 

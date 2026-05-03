@@ -19,6 +19,10 @@ type NewRelicProvider struct { //nolint
 }
 
 func (p *NewRelicProvider) Init(args []string) error {
+	p.APIKey = ""
+	p.accountID = 0
+	p.Region = ""
+
 	apiKey := os.Getenv("NEW_RELIC_API_KEY")
 	accountID := 0
 	accountIDSet := false
@@ -45,15 +49,15 @@ func (p *NewRelicProvider) Init(args []string) error {
 	if len(args) > 2 && args[2] != "" {
 		region = args[2]
 	}
-	p.APIKey = apiKey
-	p.accountID = accountID
-	p.Region = region
 	if !accountIDSet {
 		return errors.New("newrelic: account id is required")
 	}
 	if accountID <= 0 {
 		return errors.New("newrelic: account id must be greater than 0")
 	}
+	p.APIKey = apiKey
+	p.accountID = accountID
+	p.Region = region
 	return nil
 }
 
