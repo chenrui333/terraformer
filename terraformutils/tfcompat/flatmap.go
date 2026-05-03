@@ -304,8 +304,18 @@ func hcl2ValueFromFlatmapMap(m map[string]string, prefix string, ty cty.Type) (c
 }
 
 func hcl2ValueFromFlatmapMapElementKey(m map[string]string, prefix, key string, ty cty.Type) (string, string) {
-	for _, candidate := range hcl2ValueFromFlatmapMapKeyCandidates(key) {
+	candidates := hcl2ValueFromFlatmapMapKeyCandidates(key)
+	if ty.IsObjectType() {
+		candidates = hcl2ValueFromFlatmapObjectMapKeyCandidates(key)
+	}
+	for _, candidate := range candidates {
 		valueKey := prefix + candidate
+		if m[valueKey] == UnknownVariableValue {
+			return candidate, valueKey
+		}
+		if ty.IsObjectType() && !hcl2ValueFromFlatmapMapObjectElementPathMatches(key, candidate, ty.AttributeTypes()) {
+			continue
+		}
 		if hcl2ValueFromFlatmapValueExists(m, valueKey, ty) {
 			return candidate, valueKey
 		}
@@ -326,6 +336,49 @@ func hcl2ValueFromFlatmapMapKeyCandidates(key string) []string {
 		candidates = append(candidates, key[:dot])
 	}
 	return candidates
+}
+
+func hcl2ValueFromFlatmapObjectMapKeyCandidates(key string) []string {
+	var candidates []string
+	for dot := strings.IndexByte(key, '.'); dot != -1; {
+		candidates = append(candidates, key[:dot])
+		next := strings.IndexByte(key[dot+1:], '.')
+		if next == -1 {
+			break
+		}
+		dot += next + 1
+	}
+	candidates = append(candidates, key)
+	return candidates
+}
+
+func hcl2ValueFromFlatmapMapObjectElementPathMatches(key, candidate string, atys map[string]cty.Type) bool {
+	if !strings.HasPrefix(key, candidate+".") {
+		return false
+	}
+	return hcl2ValueFromFlatmapObjectAttributePathMatches(key[len(candidate)+1:], atys)
+}
+
+func hcl2ValueFromFlatmapObjectAttributePathMatches(path string, atys map[string]cty.Type) bool {
+	for name, aty := range atys {
+		if path == name {
+			return true
+		}
+		if strings.HasPrefix(path, name+".") {
+			return hcl2ValueFromFlatmapNestedObjectAttributePathMatches(path[len(name)+1:], aty)
+		}
+	}
+	return false
+}
+
+func hcl2ValueFromFlatmapNestedObjectAttributePathMatches(path string, aty cty.Type) bool {
+	if aty.IsPrimitiveType() {
+		return false
+	}
+	if aty.IsObjectType() {
+		return hcl2ValueFromFlatmapObjectAttributePathMatches(path, aty.AttributeTypes())
+	}
+	return true
 }
 
 func hcl2ValueFromFlatmapValueExists(m map[string]string, key string, ty cty.Type) bool {

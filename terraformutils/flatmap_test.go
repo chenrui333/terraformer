@@ -195,6 +195,46 @@ func TestFromFlatmapMapOfObjectsWithDottedUnknownKey(t *testing.T) {
 	}
 }
 
+func TestFromFlatmapMapOfObjectsWithPrefixCollidingDottedKeys(t *testing.T) {
+	attributes := map[string]string{
+		"headers.%":           "2",
+		"headers.X.name":      "short",
+		"headers.X.name.name": "long",
+	}
+	parser := NewFlatmapParser(attributes, nil, nil)
+	ty := cty.Object(map[string]cty.Type{
+		"headers": cty.Map(cty.Object(map[string]cty.Type{
+			"name": cty.String,
+		})),
+	})
+
+	result, err := parser.Parse(ty)
+	if err != nil {
+		t.Fatalf("Parse error: %v", err)
+	}
+	headers, ok := result["headers"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("headers is not map[string]interface{}, got %T", result["headers"])
+	}
+	if len(headers) != 2 {
+		t.Fatalf("headers length = %d, want 2: %#v", len(headers), headers)
+	}
+	short, ok := headers["X"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("headers[X] is not map[string]interface{}, got %T", headers["X"])
+	}
+	if short["name"] != "short" {
+		t.Errorf("headers[X].name = %v, want %q", short["name"], "short")
+	}
+	dotted, ok := headers["X.name"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("headers[X.name] is not map[string]interface{}, got %T", headers["X.name"])
+	}
+	if dotted["name"] != "long" {
+		t.Errorf("headers[X.name].name = %v, want %q", dotted["name"], "long")
+	}
+}
+
 func TestFromFlatmapSet(t *testing.T) {
 	attributes := map[string]string{
 		"ingress.#":               "1",

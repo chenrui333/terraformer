@@ -243,8 +243,18 @@ func (p *FlatmapParser) fromFlatmapMap(prefix string, ty cty.Type) (map[string]i
 }
 
 func (p *FlatmapParser) fromFlatmapMapElementKey(prefix, key string, ty cty.Type) (string, string) {
-	for _, candidate := range flatmapMapKeyCandidates(key) {
+	candidates := flatmapMapKeyCandidates(key)
+	if ty.IsObjectType() {
+		candidates = flatmapObjectMapKeyCandidates(key)
+	}
+	for _, candidate := range candidates {
 		valueKey := prefix + candidate
+		if p.attributes[valueKey] == tfcompat.UnknownVariableValue {
+			return candidate, valueKey
+		}
+		if ty.IsObjectType() && !flatmapMapObjectElementPathMatches(key, candidate, ty.AttributeTypes()) {
+			continue
+		}
 		if p.flatmapValueExists(valueKey, ty) {
 			return candidate, valueKey
 		}
@@ -265,6 +275,49 @@ func flatmapMapKeyCandidates(key string) []string {
 		candidates = append(candidates, key[:dot])
 	}
 	return candidates
+}
+
+func flatmapObjectMapKeyCandidates(key string) []string {
+	var candidates []string
+	for dot := strings.IndexByte(key, '.'); dot != -1; {
+		candidates = append(candidates, key[:dot])
+		next := strings.IndexByte(key[dot+1:], '.')
+		if next == -1 {
+			break
+		}
+		dot += next + 1
+	}
+	candidates = append(candidates, key)
+	return candidates
+}
+
+func flatmapMapObjectElementPathMatches(key, candidate string, tys map[string]cty.Type) bool {
+	if !strings.HasPrefix(key, candidate+".") {
+		return false
+	}
+	return flatmapObjectAttributePathMatches(key[len(candidate)+1:], tys)
+}
+
+func flatmapObjectAttributePathMatches(path string, tys map[string]cty.Type) bool {
+	for name, ty := range tys {
+		if path == name {
+			return true
+		}
+		if strings.HasPrefix(path, name+".") {
+			return flatmapNestedObjectAttributePathMatches(path[len(name)+1:], ty)
+		}
+	}
+	return false
+}
+
+func flatmapNestedObjectAttributePathMatches(path string, ty cty.Type) bool {
+	if ty.IsPrimitiveType() {
+		return false
+	}
+	if ty.IsObjectType() {
+		return flatmapObjectAttributePathMatches(path, ty.AttributeTypes())
+	}
+	return true
 }
 
 func (p *FlatmapParser) flatmapValueExists(key string, ty cty.Type) bool {

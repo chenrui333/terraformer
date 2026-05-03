@@ -198,6 +198,42 @@ func TestHCL2ValueFromFlatmapMapOfObjectsWithDottedUnknownKey(t *testing.T) {
 	}
 }
 
+func TestHCL2ValueFromFlatmapMapOfObjectsWithPrefixCollidingDottedKeys(t *testing.T) {
+	m := map[string]string{
+		"headers.%":           "2",
+		"headers.X.name":      "short",
+		"headers.X.name.name": "long",
+	}
+	ty := cty.Object(map[string]cty.Type{
+		"headers": cty.Map(cty.Object(map[string]cty.Type{
+			"name": cty.String,
+		})),
+	})
+
+	val, err := HCL2ValueFromFlatmap(m, ty)
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+	headers := val.GetAttr("headers").AsValueMap()
+	if len(headers) != 2 {
+		t.Fatalf("headers length = %d, want 2", len(headers))
+	}
+	short, ok := headers["X"]
+	if !ok {
+		t.Fatal("headers does not contain key X")
+	}
+	if name := short.GetAttr("name").AsString(); name != "short" {
+		t.Errorf("headers[X].name = %q, want %q", name, "short")
+	}
+	dotted, ok := headers["X.name"]
+	if !ok {
+		t.Fatal("headers does not contain dotted key X.name")
+	}
+	if name := dotted.GetAttr("name").AsString(); name != "long" {
+		t.Errorf("headers[X.name].name = %q, want %q", name, "long")
+	}
+}
+
 func TestHCL2ValueFromFlatmapSet(t *testing.T) {
 	m := map[string]string{"ids.#": "2", "ids.12345": "a", "ids.67890": "b"}
 	ty := cty.Object(map[string]cty.Type{"ids": cty.Set(cty.String)})
