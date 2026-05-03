@@ -94,11 +94,11 @@ func (p *OpalProvider) GetConfig() cty.Value {
 func (p *OpalProvider) InitService(serviceName string, verbose bool) error {
 	p.Service = nil
 
-	var isSupported bool
-	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
+	service, isSupported := p.GetSupportedService()[serviceName]
+	if !isSupported {
 		return errors.New("opal: " + serviceName + " is not a supported resource type")
 	}
-	p.Service = p.GetSupportedService()[serviceName]
+	p.Service = service
 	p.Service.SetName(serviceName)
 	p.Service.SetVerbose(verbose)
 	p.Service.SetProviderName(p.GetName())

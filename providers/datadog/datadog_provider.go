@@ -143,11 +143,11 @@ func (p *DatadogProvider) GetConfig() cty.Value {
 func (p *DatadogProvider) InitService(serviceName string, verbose bool) error {
 	p.Service = nil
 
-	var isSupported bool
-	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
+	service, isSupported := p.GetSupportedService()[serviceName]
+	if !isSupported {
 		return errors.New(p.GetName() + ": " + serviceName + " not supported service")
 	}
-	p.Service = p.GetSupportedService()[serviceName]
+	p.Service = service
 	p.Service.SetName(serviceName)
 	p.Service.SetVerbose(verbose)
 	p.Service.SetProviderName(p.GetName())

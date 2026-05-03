@@ -40,11 +40,11 @@ func (p *GmailfilterProvider) GetName() string {
 func (p *GmailfilterProvider) InitService(serviceName string, verbose bool) error {
 	p.Service = nil
 
-	var isSupported bool
-	if _, isSupported = p.GetSupportedService()[serviceName]; !isSupported {
+	service, isSupported := p.GetSupportedService()[serviceName]
+	if !isSupported {
 		return errors.New("gmailfilter: " + serviceName + " not supported service")
 	}
-	p.Service = p.GetSupportedService()[serviceName]
+	p.Service = service
 	p.Service.SetName(serviceName)
 	p.Service.SetVerbose(verbose)
 	p.Service.SetProviderName(p.GetName())
