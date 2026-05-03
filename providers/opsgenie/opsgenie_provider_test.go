@@ -20,6 +20,19 @@ func TestOpsgenieProviderInitReturnsMissingAPIKeyWithNoArgs(t *testing.T) {
 	}
 }
 
+func TestOpsgenieProviderInitDoesNotReuseStaleAPIKey(t *testing.T) {
+	t.Setenv("OPSGENIE_API_KEY", "")
+	provider := OpsgenieProvider{APIKey: "old-key"}
+
+	err := provider.Init(nil)
+	if err == nil {
+		t.Fatal("expected missing API key error")
+	}
+	if provider.APIKey != "" {
+		t.Fatalf("APIKey = %q, want empty after failed init", provider.APIKey)
+	}
+}
+
 func TestOpsgenieProviderInitUsesEnvAPIKey(t *testing.T) {
 	t.Setenv("OPSGENIE_API_KEY", "env-key")
 	var provider OpsgenieProvider

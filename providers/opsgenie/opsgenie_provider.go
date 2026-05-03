@@ -16,13 +16,12 @@ type OpsgenieProvider struct { //nolint
 }
 
 func (p *OpsgenieProvider) Init(args []string) error {
-	if apiKey := os.Getenv("OPSGENIE_API_KEY"); apiKey != "" {
-		p.APIKey = apiKey
-	}
+	apiKey := os.Getenv("OPSGENIE_API_KEY")
 	if len(args) > 0 && args[0] != "" {
-		p.APIKey = args[0]
+		apiKey = args[0]
 	}
-	if p.APIKey == "" {
+	p.APIKey = apiKey
+	if apiKey == "" {
 		return errors.New("required API Key missing")
 	}
 

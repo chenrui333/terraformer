@@ -22,6 +22,35 @@ func TestDatadogProviderInitHandlesShortArgs(t *testing.T) {
 	}
 }
 
+func TestDatadogProviderInitClearsStaleOptionalState(t *testing.T) {
+	t.Setenv("DATADOG_API_KEY", "")
+	t.Setenv("DATADOG_APP_KEY", "")
+	t.Setenv("DATADOG_HOST", "")
+	t.Setenv("DATADOG_VALIDATE", "false")
+	provider := DatadogProvider{
+		apiKey:   "old-api-key",
+		appKey:   "old-app-key",
+		apiURL:   "https://old.example.com",
+		validate: true,
+	}
+
+	if err := provider.Init([]string{"", "", "", ""}); err != nil {
+		t.Fatalf("expected Init to accept empty args with validation disabled: %v", err)
+	}
+	if provider.apiKey != "" {
+		t.Fatalf("apiKey = %q, want empty", provider.apiKey)
+	}
+	if provider.appKey != "" {
+		t.Fatalf("appKey = %q, want empty", provider.appKey)
+	}
+	if provider.apiURL != "" {
+		t.Fatalf("apiURL = %q, want empty", provider.apiURL)
+	}
+	if provider.validate {
+		t.Fatal("validate = true, want false")
+	}
+}
+
 func TestDatadogProviderInitReturnsCredentialErrorForShortArgs(t *testing.T) {
 	t.Setenv("DATADOG_API_KEY", "")
 	t.Setenv("DATADOG_APP_KEY", "")

@@ -37,6 +37,74 @@ func TestGitLabProviderInitRequiresGroup(t *testing.T) {
 	}
 }
 
+func TestGitLabProviderInitClearsStaleStateOnMissingGroup(t *testing.T) {
+	provider := GitLabProvider{
+		group:   "old-group",
+		token:   "old-token",
+		baseURL: "https://gitlab.example.com/api/v4/",
+	}
+
+	err := provider.Init(nil)
+	if err == nil {
+		t.Fatal("expected missing group error")
+	}
+	if provider.group != "" {
+		t.Fatalf("group = %q, want empty", provider.group)
+	}
+	if provider.token != "" {
+		t.Fatalf("token = %q, want empty", provider.token)
+	}
+	if provider.baseURL != gitLabDefaultURL {
+		t.Fatalf("baseURL = %q, want %q", provider.baseURL, gitLabDefaultURL)
+	}
+}
+
+func TestGitLabProviderInitUsesEnvTokenForEmptyTokenArg(t *testing.T) {
+	t.Setenv("GITLAB_TOKEN", "env-token")
+	var provider GitLabProvider
+
+	if err := provider.Init([]string{"test-group", "", ""}); err != nil {
+		t.Fatalf("Init returned error: %v", err)
+	}
+	if provider.token != "env-token" {
+		t.Fatalf("token = %q, want env-token", provider.token)
+	}
+	if provider.baseURL != gitLabDefaultURL {
+		t.Fatalf("baseURL = %q, want %q", provider.baseURL, gitLabDefaultURL)
+	}
+}
+
+func TestGitLabProviderInitReturnsTokenErrorForEmptyTokenArgWithoutEnv(t *testing.T) {
+	t.Setenv("GITLAB_TOKEN", "")
+	var provider GitLabProvider
+
+	err := provider.Init([]string{"test-group", "", ""})
+	if err == nil {
+		t.Fatal("expected missing token error")
+	}
+	if !strings.Contains(err.Error(), "token requirement") {
+		t.Fatalf("Init error = %q, want token requirement", err)
+	}
+}
+
+func TestGitLabProviderInitClearsStaleOptionalConfig(t *testing.T) {
+	t.Setenv("GITLAB_TOKEN", "env-token")
+	provider := GitLabProvider{
+		token:   "old-token",
+		baseURL: "https://gitlab.example.com/api/v4/",
+	}
+
+	if err := provider.Init([]string{"test-group"}); err != nil {
+		t.Fatalf("Init returned error: %v", err)
+	}
+	if provider.token != "env-token" {
+		t.Fatalf("token = %q, want env-token", provider.token)
+	}
+	if provider.baseURL != gitLabDefaultURL {
+		t.Fatalf("baseURL = %q, want %q", provider.baseURL, gitLabDefaultURL)
+	}
+}
+
 func TestCreateProjectsReturnsProjectListError(t *testing.T) {
 	ctx := context.Background()
 	client := newErrorGitLabClient(t)
