@@ -11,6 +11,7 @@ Terraformer discovers Kubernetes API resources from the active cluster and impor
 Discovered CRDs, other untyped API extensions, and selected native APIs without a first-class Terraform Kubernetes provider type can be imported through `kubernetes_manifest` when the API resource is manageable and the installed provider supports that resource.
 Manifest-backed resources use a group/version-qualified resource selector such as `example.com/v1/widgets`, `apps/v1/replicasets`, `v1/podtemplates`, or `admissionregistration.k8s.io/v1/validatingadmissionpolicybindings` to avoid collisions between API resources that share the same plural name.
 For selected native manifest-backed resources, beta and alpha variants are supported when the cluster advertises them and they satisfy the required management verbs. For example, use selectors like `certificates.k8s.io/v1beta1/clustertrustbundles`, `scheduling.k8s.io/v1alpha2/workloads`, or `storagemigration.k8s.io/v1alpha1/storageversionmigrations` on clusters that still serve those versions.
+Native Kubernetes API groups only use `kubernetes_manifest` when the resource kind is explicitly selected for manifest-backed import; unselected native kinds are skipped instead of falling through the generic CRD import path.
 Terraformer intentionally skips `PodCertificateRequest` (`podcertificaterequests`) even when served, because kubelets generate these runtime certificate request objects and their specs include pod, node, service account, and proof material that should not become Terraform-owned configuration.
 Terraformer also skips native runtime or controller-generated APIs such as `ResourceSlice`, `PodScheduling`/`PodSchedulingContext`, `IPAddress`, `PodGroup`, `ControllerRevision`, `LeaseCandidate`, `CSINode`, `CSIStorageCapacity`, and `VolumeAttachment`, even when an older served version is not recognized by the pinned typed client.
 When `labels` or `annotations` are selected with full resource imports, Terraformer keeps the full resource import and skips overlapping metadata-only resources to avoid duplicate Terraform ownership of the same object metadata.
@@ -142,6 +143,22 @@ Common supported resources include:
 *   `resource.k8s.io/v1alpha3/resourceclaims`
     * `kubernetes_manifest`
 *   `resource.k8s.io/v1alpha3/resourceclaimtemplates`
+    * `kubernetes_manifest`
+*   `resource.k8s.io/v1alpha2/resourceclasses`
+    * `kubernetes_manifest`
+*   `resource.k8s.io/v1alpha2/resourceclassparameters`
+    * `kubernetes_manifest`
+*   `resource.k8s.io/v1alpha2/resourceclaims`
+    * `kubernetes_manifest`
+*   `resource.k8s.io/v1alpha2/resourceclaimparameters`
+    * `kubernetes_manifest`
+*   `resource.k8s.io/v1alpha2/resourceclaimtemplates`
+    * `kubernetes_manifest`
+*   `resource.k8s.io/v1alpha1/resourceclasses`
+    * `kubernetes_manifest`
+*   `resource.k8s.io/v1alpha1/resourceclaims`
+    * `kubernetes_manifest`
+*   `resource.k8s.io/v1alpha1/resourceclaimtemplates`
     * `kubernetes_manifest`
 *   `resourcequotas`
     * `kubernetes_resource_quota_v1`

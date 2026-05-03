@@ -131,6 +131,14 @@ var nativeManifestResources = map[kubernetesResourceID]struct{}{
 	{group: "resource.k8s.io", version: "v1alpha3", kind: "DeviceTaintRule"}:                               {},
 	{group: "resource.k8s.io", version: "v1alpha3", kind: "ResourceClaim"}:                                 {},
 	{group: "resource.k8s.io", version: "v1alpha3", kind: "ResourceClaimTemplate"}:                         {},
+	{group: "resource.k8s.io", version: "v1alpha2", kind: "ResourceClass"}:                                 {},
+	{group: "resource.k8s.io", version: "v1alpha2", kind: "ResourceClassParameters"}:                       {},
+	{group: "resource.k8s.io", version: "v1alpha2", kind: "ResourceClaim"}:                                 {},
+	{group: "resource.k8s.io", version: "v1alpha2", kind: "ResourceClaimParameters"}:                       {},
+	{group: "resource.k8s.io", version: "v1alpha2", kind: "ResourceClaimTemplate"}:                         {},
+	{group: "resource.k8s.io", version: "v1alpha1", kind: "ResourceClass"}:                                 {},
+	{group: "resource.k8s.io", version: "v1alpha1", kind: "ResourceClaim"}:                                 {},
+	{group: "resource.k8s.io", version: "v1alpha1", kind: "ResourceClaimTemplate"}:                         {},
 	{group: "scheduling.k8s.io", version: "v1alpha2", kind: "Workload"}:                                    {},
 	{group: "scheduling.k8s.io", version: "v1alpha1", kind: "Workload"}:                                    {},
 	{group: "storage.k8s.io", version: "v1", kind: "VolumeAttributesClass"}:                                {},
@@ -206,8 +214,13 @@ var typedClientSetAPIGroups = map[string]struct{}{
 	"storage.k8s.io":               {},
 }
 
+func isNativeAPIGroup(group string) bool {
+	_, ok := typedClientSetAPIGroups[group]
+	return ok
+}
+
 func extractClientSetFuncGroupName(group, version string) string {
-	if _, ok := typedClientSetAPIGroups[group]; !ok {
+	if !isNativeAPIGroup(group) {
 		return ""
 	}
 
@@ -275,7 +288,8 @@ func selectImportResourceName(
 		if supportsDynamicClientResource(group, version, resource.Kind) {
 			return terraformResourceName, true, true
 		}
-		if supportsManifestResource(resource, hasResourceType) {
+		if supportsManifestResource(resource, hasResourceType) &&
+			(supportsNativeManifestResource(group, version, resource.Kind) || !isNativeAPIGroup(group)) {
 			return manifestTerraformResourceName, true, true
 		}
 		return "", false, false
@@ -288,6 +302,9 @@ func selectImportResourceName(
 		return manifestTerraformResourceName, true, true
 	}
 	if supportsTypedClientResource(clientset, group, version, resource.Kind) {
+		return "", false, false
+	}
+	if isNativeAPIGroup(group) {
 		return "", false, false
 	}
 	if !supportsManifestResource(resource, hasResourceType) {
