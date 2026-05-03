@@ -184,11 +184,13 @@ func TestPlanReplayCoversAllImportProviders(t *testing.T) {
 
 	importers := providerImporterSubcommands()
 	if len(generators) != len(importers) {
-		t.Errorf("providerGenerators has %d entries but providerImporterSubcommands has %d — "+
+		t.Errorf("providerGenerators has %d entries but providerImporterSubcommands has %d; "+
 			"every importer needs a matching generator for plan replay",
 			len(generators), len(importers))
 	}
 
+	importerNames := map[string]bool{}
+	matchedGenerators := map[string]bool{}
 	for name, genFn := range generators {
 		t.Run("generator/"+name, func(t *testing.T) {
 			prov := genFn()
@@ -198,16 +200,34 @@ func TestPlanReplayCoversAllImportProviders(t *testing.T) {
 		})
 	}
 
-	seen := map[string]bool{}
 	for _, fn := range importers {
 		options := ImportOptions{}
 		cmd := fn(options)
 		name := cmd.Use
 		t.Run("importer/"+name, func(t *testing.T) {
-			if seen[name] {
+			if importerNames[name] {
 				t.Errorf("duplicate import subcommand %q", name)
 			}
-			seen[name] = true
+			importerNames[name] = true
+			providerName := planReplayProviderName(name)
+			if _, ok := generators[providerName]; !ok {
+				t.Errorf("import subcommand %q maps to missing provider generator %q for plan replay", name, providerName)
+			}
+			matchedGenerators[providerName] = true
 		})
+	}
+	for name := range generators {
+		if !matchedGenerators[name] {
+			t.Errorf("provider generator %q has no import subcommand", name)
+		}
+	}
+}
+
+func planReplayProviderName(importCommand string) string {
+	switch importCommand {
+	case "azure":
+		return "azurerm"
+	default:
+		return importCommand
 	}
 }

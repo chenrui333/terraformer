@@ -81,52 +81,7 @@ func TestProviderRegistryCompatibility(t *testing.T) {
 // provider GetName values that Terraformer uses during imports.
 func registryAuditProviderSources() map[string]string {
 	providers := map[string]string{}
-	for _, providerGen := range []func() terraformutils.ProviderGenerator{
-		newGoogleProvider,
-		newAWSProvider,
-		newAzureProvider,
-		newAliCloudProvider,
-		newIbmProvider,
-		newDigitalOceanProvider,
-		newEquinixMetalProvider,
-		newFastlyProvider,
-		newHerokuProvider,
-		newLaunchDarklyProvider,
-		newLinodeProvider,
-		newNs1Provider,
-		newOpenStackProvider,
-		newTencentCloudProvider,
-		newVultrProvider,
-		newYandexProvider,
-		newIonosCloudProvider,
-		newKubernetesProvider,
-		newOctopusDeployProvider,
-		newRabbitMQProvider,
-		newMyrasecProvider,
-		newCloudflareProvider,
-		newPanosProvider,
-		newAzureDevOpsProvider,
-		newAzureADProvider,
-		newGitHubProvider,
-		newGitLabProvider,
-		newDataDogProvider,
-		newNewRelicProvider,
-		newMackerelProvider,
-		newGrafanaProvider,
-		newPagerDutyProvider,
-		newOpsgenieProvider,
-		newHoneycombioProvider,
-		newOpalProvider,
-		newKeycloakProvider,
-		newLogzioProvider,
-		newCommercetoolsProvider,
-		newMikrotikProvider,
-		newXenorchestraProvider,
-		newGmailfilterProvider,
-		newVaultProvider,
-		newOktaProvider,
-		newAuth0Provider,
-	} {
+	for _, providerGen := range providerGeneratorConstructors() {
 		provider := providerGen()
 		providers[provider.GetName()] = terraformutils.ProviderSource(provider.GetName())
 	}
