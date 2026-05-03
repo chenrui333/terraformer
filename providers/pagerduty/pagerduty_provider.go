@@ -16,8 +16,10 @@ type PagerDutyProvider struct { //nolint
 }
 
 func (p *PagerDutyProvider) Init(args []string) error {
+	p.token = ""
+
 	if token := os.Getenv("PAGERDUTY_TOKEN"); token != "" {
-		p.token = os.Getenv("PAGERDUTY_TOKEN")
+		p.token = token
 	}
 	if len(args) > 0 && args[0] != "" {
 		p.token = args[0]

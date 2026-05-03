@@ -16,12 +16,15 @@ type Provider struct {
 }
 
 func (p *Provider) Init(args []string) error {
+	p.address = ""
+	p.token = ""
+
 	if address := os.Getenv("VAULT_ADDR"); address != "" {
-		p.address = os.Getenv("VAULT_ADDR")
+		p.address = address
 	}
 
 	if token := os.Getenv("VAULT_TOKEN"); token != "" {
-		p.token = os.Getenv("VAULT_TOKEN")
+		p.token = token
 	}
 
 	if len(args) > 0 && args[0] != "" {

@@ -15,26 +15,27 @@ type OctopusDeployProvider struct { //nolint
 }
 
 func (p *OctopusDeployProvider) Init(args []string) error {
+	p.address = ""
+	p.apiKey = ""
+
+	address := os.Getenv("OCTOPUS_CLI_SERVER")
 	if len(args) > 0 && args[0] != "" {
-		p.address = args[0]
-	} else {
-		if address := os.Getenv("OCTOPUS_CLI_SERVER"); address != "" {
-			p.address = address
-		} else {
-			return errors.New("server requirement")
-		}
+		address = args[0]
+	}
+	if address == "" {
+		return errors.New("server requirement")
 	}
 
+	apiKey := os.Getenv("OCTOPUS_CLI_API_KEY")
 	if len(args) > 1 && args[1] != "" {
-		p.apiKey = args[1]
-	} else {
-		if apiKey := os.Getenv("OCTOPUS_CLI_API_KEY"); apiKey != "" {
-			p.apiKey = apiKey
-		} else {
-			return errors.New("api-key requirement")
-		}
+		apiKey = args[1]
+	}
+	if apiKey == "" {
+		return errors.New("api-key requirement")
 	}
 
+	p.address = address
+	p.apiKey = apiKey
 	return nil
 }
 
