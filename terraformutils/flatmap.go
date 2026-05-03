@@ -249,10 +249,7 @@ func (p *FlatmapParser) fromFlatmapMapElementKey(prefix, key string, ty cty.Type
 	}
 	for _, candidate := range candidates {
 		valueKey := prefix + candidate
-		if p.attributes[valueKey] == tfcompat.UnknownVariableValue {
-			return candidate, valueKey
-		}
-		if ty.IsObjectType() && !flatmapMapObjectElementPathMatches(key, candidate, ty.AttributeTypes()) {
+		if !flatmapMapElementPathMatches(key, candidate, ty) {
 			continue
 		}
 		if p.flatmapValueExists(valueKey, ty) {
@@ -291,6 +288,16 @@ func flatmapObjectMapKeyCandidates(key string) []string {
 	return candidates
 }
 
+func flatmapMapElementPathMatches(key, candidate string, ty cty.Type) bool {
+	if ty.IsObjectType() {
+		return flatmapMapObjectElementPathMatches(key, candidate, ty.AttributeTypes())
+	}
+	if !strings.HasPrefix(key, candidate+".") {
+		return false
+	}
+	return flatmapMapValuePathMatches(key[len(candidate)+1:], ty)
+}
+
 func flatmapMapObjectElementPathMatches(key, candidate string, tys map[string]cty.Type) bool {
 	if !strings.HasPrefix(key, candidate+".") {
 		return false
@@ -304,20 +311,80 @@ func flatmapObjectAttributePathMatches(path string, tys map[string]cty.Type) boo
 			return true
 		}
 		if strings.HasPrefix(path, name+".") {
-			return flatmapNestedObjectAttributePathMatches(path[len(name)+1:], ty)
+			return flatmapMapValuePathMatches(path[len(name)+1:], ty)
 		}
 	}
 	return false
 }
 
-func flatmapNestedObjectAttributePathMatches(path string, ty cty.Type) bool {
-	if ty.IsPrimitiveType() {
+func flatmapMapValuePathMatches(path string, ty cty.Type) bool {
+	switch {
+	case ty.IsPrimitiveType(), ty == cty.DynamicPseudoType:
+		return path == ""
+	case ty.IsObjectType():
+		return flatmapObjectAttributePathMatches(path, ty.AttributeTypes())
+	case ty.IsTupleType():
+		return flatmapTuplePathMatches(path, ty.TupleElementTypes())
+	case ty.IsListType():
+		return flatmapSeqPathMatches(path, ty.ElementType(), true)
+	case ty.IsSetType():
+		return flatmapSeqPathMatches(path, ty.ElementType(), false)
+	case ty.IsMapType():
+		return flatmapNestedMapPathMatches(path, ty.ElementType())
+	default:
 		return false
 	}
-	if ty.IsObjectType() {
-		return flatmapObjectAttributePathMatches(path, ty.AttributeTypes())
+}
+
+func flatmapTuplePathMatches(path string, tys []cty.Type) bool {
+	if path == "#" {
+		return true
 	}
-	return true
+	segment, rest, hasRest := strings.Cut(path, ".")
+	index, err := strconv.Atoi(segment)
+	if err != nil || index < 0 || index >= len(tys) {
+		return false
+	}
+	if !hasRest {
+		return tys[index].IsPrimitiveType() || tys[index] == cty.DynamicPseudoType
+	}
+	return flatmapMapValuePathMatches(rest, tys[index])
+}
+
+func flatmapSeqPathMatches(path string, ty cty.Type, requireIndex bool) bool {
+	if path == "#" {
+		return true
+	}
+	segment, rest, hasRest := strings.Cut(path, ".")
+	if segment == "" {
+		return false
+	}
+	if requireIndex {
+		if _, err := strconv.Atoi(segment); err != nil {
+			return false
+		}
+	}
+	if !hasRest {
+		return ty.IsPrimitiveType() || ty == cty.DynamicPseudoType
+	}
+	return flatmapMapValuePathMatches(rest, ty)
+}
+
+func flatmapNestedMapPathMatches(path string, ty cty.Type) bool {
+	if path == "%" {
+		return true
+	}
+	if path == "" {
+		return false
+	}
+	if ty.IsPrimitiveType() || ty == cty.DynamicPseudoType {
+		return true
+	}
+	_, rest, hasRest := strings.Cut(path, ".")
+	if !hasRest {
+		return false
+	}
+	return flatmapMapValuePathMatches(rest, ty)
 }
 
 func (p *FlatmapParser) flatmapValueExists(key string, ty cty.Type) bool {

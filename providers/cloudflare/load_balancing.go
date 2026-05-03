@@ -257,6 +257,11 @@ func (g *LoadBalancingGenerator) appendLoadBalancerResources(ctx context.Context
 			return err
 		}
 		for _, loadBalancer := range loadBalancers {
+			loadBalancerDetails, err := api.GetLoadBalancer(ctx, cf.ZoneIdentifier(zone.ID), loadBalancer.ID)
+			if err != nil {
+				return fmt.Errorf("get load balancer %q in zone %q: %w", loadBalancer.ID, zone.ID, err)
+			}
+			loadBalancer = loadBalancerDetails
 			attributes := map[string]string{"zone_id": zone.ID}
 			addLoadBalancerRulesAttributes(attributes, loadBalancer.Rules)
 			additionalFields := map[string]interface{}{}

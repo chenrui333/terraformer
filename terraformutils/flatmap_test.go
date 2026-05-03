@@ -163,6 +163,40 @@ func TestFromFlatmapMapOfLists(t *testing.T) {
 	}
 }
 
+func TestFromFlatmapMapOfListsWithUnknownElement(t *testing.T) {
+	attributes := map[string]string{
+		"pools.%":       "1",
+		"pools.X.Foo.#": "1",
+		"pools.X.Foo.0": tfcompat.UnknownVariableValue,
+	}
+	parser := NewFlatmapParser(attributes, nil, nil)
+	ty := cty.Object(map[string]cty.Type{
+		"pools": cty.Map(cty.List(cty.String)),
+	})
+
+	result, err := parser.Parse(ty)
+	if err != nil {
+		t.Fatalf("Parse error: %v", err)
+	}
+	pools, ok := result["pools"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("pools is not map[string]interface{}, got %T", result["pools"])
+	}
+	if _, ok := pools["X.Foo.0"]; ok {
+		t.Fatal("pools unexpectedly contains unknown list element as map key X.Foo.0")
+	}
+	dotted, ok := pools["X.Foo"].([]interface{})
+	if !ok {
+		t.Fatalf("pools[X.Foo] is not []interface{}, got %T", pools["X.Foo"])
+	}
+	if len(dotted) != 1 {
+		t.Fatalf("pools[X.Foo] length = %d, want 1", len(dotted))
+	}
+	if dotted[0] != tfcompat.UnknownVariableValue {
+		t.Errorf("pools[X.Foo][0] = %v, want %q", dotted[0], tfcompat.UnknownVariableValue)
+	}
+}
+
 func TestFromFlatmapMapOfObjectsWithDottedUnknownKey(t *testing.T) {
 	attributes := map[string]string{
 		"headers.%":          "1",

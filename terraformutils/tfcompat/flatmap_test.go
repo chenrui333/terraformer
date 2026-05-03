@@ -169,6 +169,35 @@ func TestHCL2ValueFromFlatmapMapOfLists(t *testing.T) {
 	}
 }
 
+func TestHCL2ValueFromFlatmapMapOfListsWithUnknownElement(t *testing.T) {
+	m := map[string]string{
+		"pools.%":       "1",
+		"pools.X.Foo.#": "1",
+		"pools.X.Foo.0": UnknownVariableValue,
+	}
+	ty := cty.Object(map[string]cty.Type{"pools": cty.Map(cty.List(cty.String))})
+
+	val, err := HCL2ValueFromFlatmap(m, ty)
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+	pools := val.GetAttr("pools").AsValueMap()
+	if _, ok := pools["X.Foo.0"]; ok {
+		t.Fatal("pools unexpectedly contains unknown list element as map key X.Foo.0")
+	}
+	dotted, ok := pools["X.Foo"]
+	if !ok {
+		t.Fatal("pools does not contain dotted key X.Foo")
+	}
+	if dotted.LengthInt() != 1 {
+		t.Fatalf("pools[X.Foo] length = %d, want 1", dotted.LengthInt())
+	}
+	values := dotted.AsValueSlice()
+	if values[0].IsKnown() {
+		t.Fatal("pools[X.Foo][0] should be unknown")
+	}
+}
+
 func TestHCL2ValueFromFlatmapMapOfObjectsWithDottedUnknownKey(t *testing.T) {
 	m := map[string]string{
 		"headers.%":          "1",
