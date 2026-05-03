@@ -9,7 +9,7 @@ Example:
 
 Terraformer discovers Kubernetes API resources from the active cluster and imports resources that are available through either the typed Kubernetes client or an explicit dynamic-client import path, and the installed Terraform Kubernetes provider schema.
 Discovered CRDs, other untyped API extensions, and selected native APIs without a first-class Terraform Kubernetes provider type can be imported through `kubernetes_manifest` when the API resource is manageable and the installed provider supports that resource.
-Manifest-backed resources use a group/version-qualified resource selector such as `example.com/v1/widgets` or `admissionregistration.k8s.io/v1/validatingadmissionpolicybindings` to avoid collisions between API resources that share the same plural name.
+Manifest-backed resources use a group/version-qualified resource selector such as `example.com/v1/widgets`, `apps/v1/replicasets`, `v1/podtemplates`, or `admissionregistration.k8s.io/v1/validatingadmissionpolicybindings` to avoid collisions between API resources that share the same plural name.
 For selected native manifest-backed resources, beta and alpha variants are supported when the cluster advertises them and they satisfy the required management verbs. For example, use selectors like `certificates.k8s.io/v1beta1/clustertrustbundles`, `scheduling.k8s.io/v1alpha2/workloads`, or `storagemigration.k8s.io/v1alpha1/storageversionmigrations` on clusters that still serve those versions.
 Terraformer intentionally skips `PodCertificateRequest` (`podcertificaterequests`) even when served, because kubelets generate these runtime certificate request objects and their specs include pod, node, service account, and proof material that should not become Terraform-owned configuration.
 When `labels` or `annotations` are selected with full resource imports, Terraformer keeps the full resource import and skips overlapping metadata-only resources to avoid duplicate Terraform ownership of the same object metadata.
@@ -30,6 +30,8 @@ Common supported resources include:
     * `kubernetes_manifest`
 *   `apiservices`
     * `kubernetes_api_service_v1`
+*   `apps/v1/replicasets`
+    * `kubernetes_manifest`
 *   `certificatesigningrequests`
     * `kubernetes_certificate_signing_request_v1`
 *   `certificates.k8s.io/v1beta1/clustertrustbundles`
@@ -99,6 +101,8 @@ Common supported resources include:
     * `kubernetes_persistent_volume_claim_v1`
 *   `pods`
     * `kubernetes_pod_v1`
+*   `v1/podtemplates`
+    * `kubernetes_manifest`
 *   `podsecuritypolicies`
     * `kubernetes_pod_security_policy`
 *   `poddisruptionbudgets`
