@@ -158,12 +158,12 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
         * **_NOTE:_** On-Call team routing rules are keyed by Datadog team ID, for example `--filter=on_call_team_routing_rules=team-id`
 *   `on_call_user_notification_channel`
     * `datadog_on_call_user_notification_channel`
-        * **_NOTE:_** Importing a single On-Call user notification channel by ID requires `user_id,channel_id`, for example `--filter=on_call_user_notification_channel=user-id,channel-id`
+        * **_NOTE:_** Importing a single On-Call user notification channel by ID requires quoting the full `user_id,channel_id` filter value, for example `--filter='"on_call_user_notification_channel=user-id,channel-id"'`
         * **_NOTE:_** To import channels for one user, filter by `user_id`, for example `--filter="Type=on_call_user_notification_channel;Name=user_id;Value=user-id"`
         * **_NOTE:_** Push notification channels are skipped because the Datadog provider resource supports email and phone channels.
 *   `on_call_user_notification_rule`
     * `datadog_on_call_user_notification_rule`
-        * **_NOTE:_** Importing a single On-Call user notification rule by ID requires `user_id,rule_id`, for example `--filter=on_call_user_notification_rule=user-id,rule-id`
+        * **_NOTE:_** Importing a single On-Call user notification rule by ID requires quoting the full `user_id,rule_id` filter value, for example `--filter='"on_call_user_notification_rule=user-id,rule-id"'`
         * **_NOTE:_** To import notification rules for one user, filter by `user_id`, for example `--filter="Type=on_call_user_notification_rule;Name=user_id;Value=user-id"`
 *   `rum_application`
     * `datadog_rum_application`
