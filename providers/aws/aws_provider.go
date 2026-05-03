@@ -174,16 +174,19 @@ func (p *AWSProvider) GetBasicConfig() cty.Value {
 func (p *AWSProvider) Init(args []string) error {
 	p.region = ""
 	p.profile = ""
-	if err := clearAWSEnvConfig(); err != nil {
-		return err
-	}
 
 	if len(args) < 2 {
+		if err := clearAWSEnvConfig(false); err != nil {
+			return err
+		}
 		return errors.New("aws: expected 2 init args (region, profile)")
 	}
 
 	region := args[0]
 	profile := args[1]
+	if err := clearAWSEnvConfig(region == NoRegion); err != nil {
+		return err
+	}
 
 	// Terraformer accepts region and profile configuration, so we must detect what env variables to adjust to make Go SDK rely on them. AWS_SDK_LOAD_CONFIG here must be checked to determine correct variable to set.
 	enableSharedConfig, _ := strconv.ParseBool(os.Getenv("AWS_SDK_LOAD_CONFIG"))
@@ -214,8 +217,12 @@ func (p *AWSProvider) Init(args []string) error {
 	return nil
 }
 
-func clearAWSEnvConfig() error {
-	for _, key := range []string{"AWS_REGION", "AWS_DEFAULT_REGION", "AWS_PROFILE", "AWS_DEFAULT_PROFILE"} {
+func clearAWSEnvConfig(preserveRegion bool) error {
+	keys := []string{"AWS_PROFILE", "AWS_DEFAULT_PROFILE"}
+	if !preserveRegion {
+		keys = append(keys, "AWS_REGION", "AWS_DEFAULT_REGION")
+	}
+	for _, key := range keys {
 		if err := os.Unsetenv(key); err != nil {
 			return err
 		}

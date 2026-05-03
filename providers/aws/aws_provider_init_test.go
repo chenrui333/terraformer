@@ -37,3 +37,30 @@ func TestAWSProviderInitRequiresArgs(t *testing.T) {
 		}
 	}
 }
+
+func TestAWSProviderInitPreservesAmbientRegionForNoRegion(t *testing.T) {
+	t.Setenv("AWS_REGION", "env-region")
+	t.Setenv("AWS_DEFAULT_REGION", "env-default-region")
+	t.Setenv("AWS_PROFILE", "old-profile")
+	t.Setenv("AWS_DEFAULT_PROFILE", "old-default-profile")
+	var provider AWSProvider
+
+	if err := provider.Init([]string{NoRegion, "default"}); err != nil {
+		t.Fatalf("expected Init to succeed: %v", err)
+	}
+	if provider.region != NoRegion {
+		t.Fatalf("region = %q, want NoRegion", provider.region)
+	}
+	if got := os.Getenv("AWS_REGION"); got != "env-region" {
+		t.Fatalf("AWS_REGION = %q, want env-region", got)
+	}
+	if got := os.Getenv("AWS_DEFAULT_REGION"); got != "env-default-region" {
+		t.Fatalf("AWS_DEFAULT_REGION = %q, want env-default-region", got)
+	}
+	if value, ok := os.LookupEnv("AWS_PROFILE"); ok {
+		t.Fatalf("AWS_PROFILE = %q, want unset", value)
+	}
+	if value, ok := os.LookupEnv("AWS_DEFAULT_PROFILE"); ok {
+		t.Fatalf("AWS_DEFAULT_PROFILE = %q, want unset", value)
+	}
+}
