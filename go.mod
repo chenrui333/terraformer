@@ -401,6 +401,7 @@ require (
 	github.com/IBM/continuous-delivery-go-sdk/v2 v2.0.8
 	github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.34.3
 	github.com/aws/aws-sdk-go-v2/service/appconfig v1.43.15
+	github.com/aws/aws-sdk-go-v2/service/appmesh v1.35.14
 	github.com/aws/aws-sdk-go-v2/service/backup v1.55.2
 	github.com/aws/aws-sdk-go-v2/service/directconnect v1.38.17
 	github.com/gofrs/uuid/v3 v3.1.2

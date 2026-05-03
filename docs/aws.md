@@ -81,6 +81,14 @@ terraformer import aws --resources=sg --regions=us-east-1
     * `aws_appconfig_extension`
     * `aws_appconfig_extension_association`
     * `aws_appconfig_hosted_configuration_version`
+*   `appmesh`
+    * `aws_appmesh_gateway_route`
+    * `aws_appmesh_mesh`
+    * `aws_appmesh_route`
+    * `aws_appmesh_virtual_gateway`
+    * `aws_appmesh_virtual_node`
+    * `aws_appmesh_virtual_router`
+    * `aws_appmesh_virtual_service`
 *   `appsync`
     * `aws_appsync_api_cache`
     * `aws_appsync_api_key`
