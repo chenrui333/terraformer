@@ -17,19 +17,25 @@ type ClientGrantGenerator struct {
 	Auth0Service
 }
 
-func (g ClientGrantGenerator) createResources(clientGrantGrants []*management.ClientGrant) []terraformutils.Resource {
+func (g ClientGrantGenerator) createResources(clientGrantGrants []*management.ClientGrant) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	for _, clientGrant := range clientGrantGrants {
-		resourceName := *clientGrant.ID
+		if clientGrant == nil {
+			return nil, auth0MissingResource("auth0_client_grant")
+		}
+		resourceName, err := auth0RequiredString("auth0_client_grant", "id", clientGrant.ID)
+		if err != nil {
+			return nil, err
+		}
 		resources = append(resources, terraformutils.NewSimpleResource(
 			resourceName,
-			resourceName+"_"+*clientGrant.ClientID,
+			auth0ResourceName(clientGrant.ClientID, resourceName),
 			"auth0_client_grant",
 			"auth0",
 			ClientGrantAllowEmptyValues,
 		))
 	}
-	return resources
+	return resources, nil
 }
 
 func (g *ClientGrantGenerator) InitResources() error {
@@ -53,6 +59,10 @@ func (g *ClientGrantGenerator) InitResources() error {
 		page++
 	}
 
-	g.Resources = g.createResources(list)
+	resources, err := g.createResources(list)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 	return nil
 }

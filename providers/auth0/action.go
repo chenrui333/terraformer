@@ -17,19 +17,25 @@ type ActionGenerator struct {
 	Auth0Service
 }
 
-func (g ActionGenerator) createResources(actions []*management.Action) []terraformutils.Resource {
+func (g ActionGenerator) createResources(actions []*management.Action) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	for _, action := range actions {
-		resourceName := *action.ID
+		if action == nil {
+			return nil, auth0MissingResource("auth0_action")
+		}
+		resourceName, err := auth0RequiredString("auth0_action", "id", action.ID)
+		if err != nil {
+			return nil, err
+		}
 		resources = append(resources, terraformutils.NewSimpleResource(
 			resourceName,
-			resourceName+"_"+*action.Name,
+			auth0ResourceName(action.Name, resourceName),
 			"auth0_action",
 			"auth0",
 			ActionAllowEmptyValues,
 		))
 	}
-	return resources
+	return resources, nil
 }
 
 func (g *ActionGenerator) InitResources() error {
@@ -53,6 +59,10 @@ func (g *ActionGenerator) InitResources() error {
 		page++
 	}
 
-	g.Resources = g.createResources(list)
+	resources, err := g.createResources(list)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 	return nil
 }

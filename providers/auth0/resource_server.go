@@ -17,19 +17,25 @@ type ResourceServerGenerator struct {
 	Auth0Service
 }
 
-func (g ResourceServerGenerator) createResources(resourceServers []*management.ResourceServer) []terraformutils.Resource {
+func (g ResourceServerGenerator) createResources(resourceServers []*management.ResourceServer) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	for _, resourceServer := range resourceServers {
-		resourceName := *resourceServer.ID
+		if resourceServer == nil {
+			return nil, auth0MissingResource("auth0_resource_server")
+		}
+		resourceName, err := auth0RequiredString("auth0_resource_server", "id", resourceServer.ID)
+		if err != nil {
+			return nil, err
+		}
 		resources = append(resources, terraformutils.NewSimpleResource(
 			resourceName,
-			resourceName+"_"+*resourceServer.Name,
+			auth0ResourceName(resourceServer.Name, resourceName),
 			"auth0_resource_server",
 			"auth0",
 			ResourceServerAllowEmptyValues,
 		))
 	}
-	return resources
+	return resources, nil
 }
 
 func (g *ResourceServerGenerator) InitResources() error {
@@ -53,6 +59,10 @@ func (g *ResourceServerGenerator) InitResources() error {
 		page++
 	}
 
-	g.Resources = g.createResources(list)
+	resources, err := g.createResources(list)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 	return nil
 }
