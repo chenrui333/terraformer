@@ -284,9 +284,8 @@ func (g *WorkersGenerator) appendWorkersForPlatformsDispatchNamespaceResources(
 			"cloudflare_workers_for_platforms_dispatch_namespace",
 			"cloudflare",
 			map[string]string{
-				"account_id":     accountID,
-				"namespace_name": namespace.NamespaceName,
-				"name":           namespace.NamespaceName,
+				"account_id": accountID,
+				"name":       namespace.NamespaceName,
 			},
 			[]string{},
 			map[string]interface{}{},
