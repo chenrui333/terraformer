@@ -1,5 +1,101 @@
 # Changelog
 
+## 0.11.0
+
+`0.11.0` is a large provider-coverage and Terraform compatibility release. It
+adds broad import support across AWS, Kubernetes, Datadog, Cloudflare, and
+LaunchDarkly, moves generated state onto Terraform 1.x-compatible provider
+source addresses, and hardens provider discovery so failures surface as returned
+errors instead of silent skips or process exits.
+
+## What's Changed
+
+### Compatibility And Release Notes
+
+* Add a Terraform 1.x state compatibility bridge, emit typed state attributes,
+  and document support for Terraform CLI 1.9 through 1.14.
+* Decouple Terraform compatibility code into `terraformutils/tfcompat` and add
+  scheduled compatibility checks for Terraform state and provider registry
+  behavior.
+* Adopt `v`-prefixed release tags starting with `v0.11.0` so Go module version
+  discovery works correctly. Earlier releases used plain tags such as `0.10.0`.
+* Update MyraSec to the current provider client line and remove the obsolete
+  `myrasec_ratelimit` resource from the documented support list.
+
+### Provider Import Coverage
+
+* Expand AWS coverage across API Gateway v2, AppConfig, App Mesh, AppSync,
+  Backup, CloudFront, CloudWatch Logs/EventBridge, Cognito, Config, DynamoDB,
+  ECR, ECS/Lambda, EKS, ElastiCache, Glue, IAM federation/account settings,
+  Kinesis, MSK, RDS, S3 bucket configuration, Secrets Manager, SQS, and SSM.
+* Expand Kubernetes coverage with modern typed resources, stable `v1` mappings,
+  default service accounts, labels, node taints, ConfigMap and Secret data,
+  workload environment variables, CRDs, and manifest-backed native API support
+  for the Kubernetes 1.33 through 1.35 support window.
+* Expand Datadog coverage with cloud inventory sync config, monitor JSON and
+  notification/config policies, metric tag configuration, SLO corrections, spans
+  and RUM metrics, RUM applications/retention filters, security monitoring
+  filters and suppressions, sensitive data scanner resources, team resources,
+  and On-Call resources.
+* Expand Cloudflare coverage for Access/Zero Trust, certificates, DNS records,
+  Email Routing, lists, load balancing, Logpush, Magic WAN, notifications,
+  Pages, rulesets, storage resources, Turnstile, tunnels, waiting rooms, web
+  analytics, and Workers resources.
+* Expand LaunchDarkly coverage from project-only support to standalone
+  environments, access tokens, AI/model resources, custom roles, destinations,
+  feature flag related resources, metrics, relay proxy configuration, segments,
+  teams, team members, views, view links, webhooks, and integrations.
+
+### Discovery And Error Handling
+
+* Return discovery/list/read errors from AWS, GCP, GitHub, GitLab, Okta, Logz.io,
+  Keycloak, Azure, IBM, RabbitMQ, MyraSec, Datadog, Auth0, Opal, and shared
+  provider paths instead of dropping failures during import discovery.
+* Harden provider initialization by validating required and optional init args,
+  clearing stale init/service state before retry and selection paths, staging
+  optional state only after success, and surfacing ignored parse errors.
+* Stop AWS pagination loops on empty continuation tokens and propagate nested
+  AWS discovery errors for ECS, EFS children, and Organizations.
+* Close Datadog and LaunchDarkly API response bodies and include stable IDs in
+  LaunchDarkly generated resource names.
+* Refactor shared provider setup and command generator registry code so provider
+  metadata, service lookup, and selection behavior stay consistent.
+
+### Dependencies, CI, And Repository Maintenance
+
+* Refresh a large dependency set, including AWS SDK v2 service modules,
+  Cloudflare, Datadog, LaunchDarkly, Auth0, GitLab, Azure helpers, Honeycomb,
+  IBM SDKs, OctopusDeploy, MyraSec, CommerceTools, Alicloud TableStore, Okta,
+  TencentCloud, Google APIs, and shared HashiCorp modules.
+* Remove unused or incompatible dependency paths, including the old Terraform
+  module dependency and several direct `+incompatible` module edges.
+* Add command, terraformutils, provider name/ID extraction, low-coverage package,
+  state compatibility, and provider registry compatibility tests.
+* Clear the legacy lint baseline, suppress test-only gosec noise, add changed
+  line lint behavior, cancel stale PR workflow runs, add provider PR labeling,
+  and wire the release workflow to GoReleaser with draft releases.
+* Replace legacy license boilerplate with SPDX headers and document the MPL-2.0
+  boundary for Terraform compatibility code.
+
+### Follow-Up Tracking
+
+* Continue AWS provider parity work in #338. The current tracking snapshot has
+  Terraformer importing about 407 AWS resource types against roughly 1,645
+  Terraform AWS provider resources, with the remaining work split into
+  practical service-family PRs.
+* Continue Kubernetes close-out work in #337, including the Kubernetes 1.33
+  through 1.35 native manifest policy, provider schema audit, intentionally
+  unsupported resource documentation, and matrix fixtures for expected discovery
+  behavior.
+* Continue Datadog coverage work in #336. After the recent expansion, Terraformer
+  has 61 registered Datadog services against about 130 upstream resources, with
+  the remaining high-confidence importable gap tracked as follow-up waves.
+* Continue Cloudflare coverage work in #335. The tracker separates useful
+  importable resources from Cloudflare-managed, singleton, request-style, or
+  write-only resources so parity work does not produce unusable generated HCL.
+
+**Full Changelog**: https://github.com/chenrui333/terraformer/compare/0.10.0...v0.11.0
+
 ## 0.10.0
 
 `0.10.0` is a minor maintenance release that continues Terraformer's post-fork
