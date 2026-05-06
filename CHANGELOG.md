@@ -43,7 +43,7 @@ errors instead of silent skips or process exits.
   analytics, and Workers resources.
 * Expand LaunchDarkly coverage from project-only support to standalone
   environments, access tokens, AI/model resources, custom roles, destinations,
-  feature flag related resources, metrics, relay proxy configuration, segments,
+  feature-flag-related resources, metrics, relay proxy configuration, segments,
   teams, team members, views, view links, webhooks, and integrations.
 
 ### Discovery And Error Handling
