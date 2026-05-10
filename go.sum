@@ -251,6 +251,8 @@ github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.60.2 h1:pZxE29WA
 github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.60.2/go.mod h1:nbe4Nf/HOY+e54Dl+yjv04scYTGTC+4ZthbfOuPTXQs=
 github.com/aws/aws-sdk-go-v2/service/configservice v1.62.3 h1:8rcAUMhCUuQe7kVBTBLPqMsJWFSVDPSFdpFexVQEEdU=
 github.com/aws/aws-sdk-go-v2/service/configservice v1.62.3/go.mod h1:PvCpYWzh0/jwa8v3jYJOaDobKiKQzFm1hI7+4Ms3J90=
+github.com/aws/aws-sdk-go-v2/service/databasemigrationservice v1.62.2 h1:+vWChWbLMrEzHuKtm2koCaGoZo6Cnu8OpYH0fsdSLEI=
+github.com/aws/aws-sdk-go-v2/service/databasemigrationservice v1.62.2/go.mod h1:Qa7SOwwtaE9VticcY52FgDIXJZLS1jz+Y6fiCdLUdRU=
 github.com/aws/aws-sdk-go-v2/service/datapipeline v1.30.22 h1:th7UIseI06gZDd/7ntsyUJmVVbbowq4ypEUh8gf5+OU=
 github.com/aws/aws-sdk-go-v2/service/datapipeline v1.30.22/go.mod h1:vNpeL80rYCglcJXUOeCbC8/qQ9vMclvff5kFMNf7iI0=
 github.com/aws/aws-sdk-go-v2/service/devicefarm v1.38.10 h1:57LpTN6FaBV417EbwvNC0/rdFRhZm/nrf01XEXPy+nI=
