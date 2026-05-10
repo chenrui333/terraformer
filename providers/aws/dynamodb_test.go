@@ -123,6 +123,22 @@ func TestDynamoDBTableExportImportable(t *testing.T) {
 	}
 }
 
+func TestDynamoDBGlobalTableStatusImportable(t *testing.T) {
+	if !dynamodbGlobalTableStatusImportable(dynamodbtypes.GlobalTableStatusActive) {
+		t.Fatal("active global table should be importable")
+	}
+	for _, status := range []dynamodbtypes.GlobalTableStatus{
+		dynamodbtypes.GlobalTableStatusCreating,
+		dynamodbtypes.GlobalTableStatusDeleting,
+		dynamodbtypes.GlobalTableStatusUpdating,
+		"",
+	} {
+		if dynamodbGlobalTableStatusImportable(status) {
+			t.Fatalf("global table status %q should not be importable", status)
+		}
+	}
+}
+
 func TestDynamoDBResourcePolicyTargets(t *testing.T) {
 	table := dynamodbTableReference{
 		name:      "events",

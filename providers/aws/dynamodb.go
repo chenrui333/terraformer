@@ -52,6 +52,7 @@ func (g *DynamoDbGenerator) InitResources() error {
 	}
 
 	loaders := []dynamodbOptionalResourceLoader{
+		{name: "global tables", load: func() error { return g.loadGlobalTables(svc) }},
 		{name: "Kinesis streaming destinations", load: func() error { return g.loadKinesisStreamingDestinations(svc, tables) }},
 		{name: "resource policies", load: func() error { return g.loadResourcePolicies(svc, tables) }},
 		{name: "table exports", load: func() error { return g.loadTableExports(svc) }},
@@ -92,6 +93,46 @@ func (g *DynamoDbGenerator) loadTables(svc *dynamodb.Client) ([]dynamodbTableRef
 		}
 	}
 	return tables, nil
+}
+
+func (g *DynamoDbGenerator) loadGlobalTables(svc *dynamodb.Client) error {
+	input := &dynamodb.ListGlobalTablesInput{}
+	for {
+		output, err := svc.ListGlobalTables(context.TODO(), input)
+		if err != nil {
+			return err
+		}
+		for _, table := range output.GlobalTables {
+			tableName := StringValue(table.GlobalTableName)
+			if tableName == "" || !g.dynamodbGlobalTableImportable(svc, tableName) {
+				continue
+			}
+			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
+				tableName,
+				tableName,
+				"aws_dynamodb_global_table",
+				"aws",
+				dynamodbAllowEmptyValues,
+			))
+		}
+		input.ExclusiveStartGlobalTableName = output.LastEvaluatedGlobalTableName
+		if !awsHasMorePages(input.ExclusiveStartGlobalTableName) {
+			break
+		}
+	}
+	return nil
+}
+
+func (g *DynamoDbGenerator) dynamodbGlobalTableImportable(svc *dynamodb.Client, tableName string) bool {
+	output, err := svc.DescribeGlobalTable(context.TODO(), &dynamodb.DescribeGlobalTableInput{GlobalTableName: &tableName})
+	if err != nil {
+		log.Printf("Skipping DynamoDB global table %s: %v", tableName, err)
+		return false
+	}
+	if output == nil || output.GlobalTableDescription == nil {
+		return false
+	}
+	return dynamodbGlobalTableStatusImportable(output.GlobalTableDescription.GlobalTableStatus)
 }
 
 func (g *DynamoDbGenerator) tableReference(svc *dynamodb.Client, tableName string) dynamodbTableReference {
@@ -303,6 +344,10 @@ func dynamodbKinesisStreamingDestinationImportable(destination dynamodbtypes.Kin
 
 func dynamodbTableExportImportable(export dynamodbtypes.ExportSummary) bool {
 	return export.ExportStatus != ""
+}
+
+func dynamodbGlobalTableStatusImportable(status dynamodbtypes.GlobalTableStatus) bool {
+	return status == dynamodbtypes.GlobalTableStatusActive
 }
 
 func dynamodbResourcePolicyMissing(err error) bool {
