@@ -424,12 +424,12 @@ require (
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cdn v1.3.90
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cfs v1.3.85
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/clb v1.3.83
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.90
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.93
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cvm v1.3.89
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.3.78
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/es v1.3.89
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/gaap v1.3.34
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/mongodb v1.3.88
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/mongodb v1.3.93
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/pts v1.3.29
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/redis v1.3.79
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/scf v1.3.29
