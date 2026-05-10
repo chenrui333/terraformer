@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "resources": [
+    {
+      "resource": "aws_cloudwatch_event_connection",
+      "service_family": "cloudwatch",
+      "reason": "EventBridge connection credentials are write-only secrets; Terraformer cannot discover the required auth_parameters values from EventBridge APIs.",
+      "evidence": "Terraform AWS provider marks auth_parameters as required and reuses prior state for sensitive values during Read; EventBridge DescribeConnection does not return the secret values needed to seed an imported resource.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_event_connection"
+      ]
+    }
+  ]
+}
