@@ -85,7 +85,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.100.1
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.41.7
 	github.com/aws/aws-sdk-go-v2/service/securityhub v1.69.2
-	github.com/aws/aws-sdk-go-v2/service/servicecatalog v1.39.14
+	github.com/aws/aws-sdk-go-v2/service/servicecatalog v1.39.15
 	github.com/aws/aws-sdk-go-v2/service/ses v1.34.24
 	github.com/aws/aws-sdk-go-v2/service/sfn v1.40.12
 	github.com/aws/aws-sdk-go-v2/service/sns v1.39.17
