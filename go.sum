@@ -420,8 +420,8 @@ github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace h1:1SnCTPFh2AA
 github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace/go.mod h1:TK05uvk4XXfK2kdvRwfcZ1NaxjDxmm7H3aQLko0mJxA=
 github.com/dghubble/sling v1.4.2 h1:vs1HIGBbSl2SEALyU+irpYFLZMfc49Fp+jYryFebQjM=
 github.com/dghubble/sling v1.4.2/go.mod h1:o0arCOz0HwfqYQJLrRtqunaWOn4X6jxE/6ORKRpVTD4=
-github.com/digitalocean/godo v1.188.0 h1:QDxgjWnJYRf3JStAY9KM0xUqPC1YfXkPQWUMRRzraCk=
-github.com/digitalocean/godo v1.188.0/go.mod h1:xQsWpVCCbkDrWisHA72hPzPlnC+4W5w/McZY5ij9uvU=
+github.com/digitalocean/godo v1.189.0 h1:93hHWsZdbJdkMsfZ21lMkOmd+BPMCTzu/+FIJ5FvAL4=
+github.com/digitalocean/godo v1.189.0/go.mod h1:xQsWpVCCbkDrWisHA72hPzPlnC+4W5w/McZY5ij9uvU=
 github.com/dnaeon/go-vcr v1.2.0 h1:zHCHvJYTMh1N7xnV7zf1m1GPBF9Ad0Jk/whtQ1663qI=
 github.com/dnaeon/go-vcr v1.2.0/go.mod h1:R4UdLID7HZT3taECzJs4YgbbH6PIGXB6W/sc5OLb6RQ=
 github.com/dunglas/httpsfv v1.1.0 h1:Jw76nAyKWKZKFrpMMcL76y35tOpYHqQPzHQiwDvpe54=
