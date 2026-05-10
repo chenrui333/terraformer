@@ -93,8 +93,8 @@ func TestIdentityStoreUserResource(t *testing.T) {
 }
 
 func TestIdentityStoreResourceNamesDoNotCollapseJoinedParts(t *testing.T) {
-	left := newIdentityStoreGroupMembershipResource("store", "a_b", "c", "membership-left")
-	right := newIdentityStoreGroupMembershipResource("store", "a", "b_c", "membership-right")
+	left := newIdentityStoreGroupMembershipResource("store", "a_b", "c", "membership")
+	right := newIdentityStoreGroupMembershipResource("store", "a", "b_c", "membership")
 	if left.ResourceName == right.ResourceName {
 		t.Fatalf("group membership resource names collide: %q", left.ResourceName)
 	}

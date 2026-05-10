@@ -107,28 +107,66 @@ func TestSSOAdminManagedPolicyAttachmentResource(t *testing.T) {
 }
 
 func TestSSOAdminCustomerManagedPolicyAttachmentResource(t *testing.T) {
-	resource := newSSOAdminCustomerManagedPolicyAttachmentResource(testSSOAdminInstanceARN, testSSOAdminPermissionSetARN, ssotypes.CustomerManagedPolicyReference{
-		Name: aws.String("Boundary"),
-		Path: aws.String("/service/"),
-	})
+	tests := []struct {
+		name       string
+		policy     ssotypes.CustomerManagedPolicyReference
+		policyPath string
+	}{
+		{
+			name:       "explicit path",
+			policy:     ssotypes.CustomerManagedPolicyReference{Name: aws.String("Boundary"), Path: aws.String("/service/")},
+			policyPath: "/service/",
+		},
+		{
+			name:       "default path",
+			policy:     ssotypes.CustomerManagedPolicyReference{Name: aws.String("Boundary")},
+			policyPath: "/",
+		},
+	}
 
-	if got, want := resource.InstanceState.ID, "Boundary,/service/,"+testSSOAdminPermissionSetARN+","+testSSOAdminInstanceARN; got != want {
-		t.Fatalf("resource ID = %q, want %q", got, want)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resource := newSSOAdminCustomerManagedPolicyAttachmentResource(testSSOAdminInstanceARN, testSSOAdminPermissionSetARN, tt.policy)
+
+			if got, want := resource.InstanceState.ID, "Boundary,"+tt.policyPath+","+testSSOAdminPermissionSetARN+","+testSSOAdminInstanceARN; got != want {
+				t.Fatalf("resource ID = %q, want %q", got, want)
+			}
+			if got, want := resource.InstanceInfo.Type, ssoAdminCustomerManagedPolicyAttachmentResourceType; got != want {
+				t.Fatalf("resource type = %q, want %q", got, want)
+			}
+			attributes := resource.InstanceState.Attributes
+			for key, want := range map[string]string{
+				"customer_managed_policy_reference.#":      "1",
+				"customer_managed_policy_reference.0.name": "Boundary",
+				"customer_managed_policy_reference.0.path": tt.policyPath,
+				"instance_arn":       testSSOAdminInstanceARN,
+				"permission_set_arn": testSSOAdminPermissionSetARN,
+			} {
+				if got := attributes[key]; got != want {
+					t.Fatalf("%s = %q, want %q", key, got, want)
+				}
+			}
+		})
 	}
-	if got, want := resource.InstanceInfo.Type, ssoAdminCustomerManagedPolicyAttachmentResourceType; got != want {
-		t.Fatalf("resource type = %q, want %q", got, want)
+}
+
+func TestSSOAdminCustomerManagedPolicyPath(t *testing.T) {
+	tests := []struct {
+		name string
+		path *string
+		want string
+	}{
+		{name: "nil", want: "/"},
+		{name: "empty", path: aws.String(""), want: "/"},
+		{name: "explicit", path: aws.String("/service/"), want: "/service/"},
 	}
-	attributes := resource.InstanceState.Attributes
-	for key, want := range map[string]string{
-		"customer_managed_policy_reference.#":      "1",
-		"customer_managed_policy_reference.0.name": "Boundary",
-		"customer_managed_policy_reference.0.path": "/service/",
-		"instance_arn":       testSSOAdminInstanceARN,
-		"permission_set_arn": testSSOAdminPermissionSetARN,
-	} {
-		if got := attributes[key]; got != want {
-			t.Fatalf("%s = %q, want %q", key, got, want)
-		}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ssoAdminCustomerManagedPolicyPath(tt.path); got != tt.want {
+				t.Fatalf("ssoAdminCustomerManagedPolicyPath() = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }
 
@@ -181,6 +219,19 @@ func TestSSOAdminPermissionsBoundaryAttachmentResource(t *testing.T) {
 				"permissions_boundary.0.customer_managed_policy_reference.#":      "1",
 				"permissions_boundary.0.customer_managed_policy_reference.0.name": "Boundary",
 				"permissions_boundary.0.customer_managed_policy_reference.0.path": "/service/",
+			},
+		},
+		{
+			name: "customer managed policy default path",
+			boundary: &ssotypes.PermissionsBoundary{
+				CustomerManagedPolicyReference: &ssotypes.CustomerManagedPolicyReference{
+					Name: aws.String("Boundary"),
+				},
+			},
+			attributes: map[string]string{
+				"permissions_boundary.0.customer_managed_policy_reference.#":      "1",
+				"permissions_boundary.0.customer_managed_policy_reference.0.name": "Boundary",
+				"permissions_boundary.0.customer_managed_policy_reference.0.path": "/",
 			},
 		},
 	}
@@ -243,7 +294,7 @@ func TestSSOAdminPermissionsBoundaryConfigured(t *testing.T) {
 			boundary: &ssotypes.PermissionsBoundary{
 				CustomerManagedPolicyReference: &ssotypes.CustomerManagedPolicyReference{Name: aws.String("Boundary")},
 			},
-			want: false,
+			want: true,
 		},
 	}
 

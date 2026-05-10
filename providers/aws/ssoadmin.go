@@ -22,6 +22,7 @@ const (
 	ssoAdminCustomerManagedPolicyAttachmentResourceType   = "aws_ssoadmin_customer_managed_policy_attachment"
 	ssoAdminPermissionSetInlinePolicyResourceType         = "aws_ssoadmin_permission_set_inline_policy"
 	ssoAdminPermissionsBoundaryAttachmentResourceType     = "aws_ssoadmin_permissions_boundary_attachment"
+	ssoAdminDefaultCustomerManagedPolicyPath              = "/"
 	ssoAdminResourceIDSeparator                           = ","
 	ssoAdminResourceNameSeparator                         = ":"
 	ssoAdminNestedPermissionsBoundaryAttributePrefix      = "permissions_boundary.0"
@@ -165,7 +166,7 @@ func (g *SSOAdminGenerator) loadCustomerManagedPolicyAttachments(svc *ssoadmin.C
 			return err
 		}
 		for _, policy := range page.CustomerManagedPolicyReferences {
-			if StringValue(policy.Name) == "" || StringValue(policy.Path) == "" {
+			if StringValue(policy.Name) == "" {
 				continue
 			}
 			g.Resources = append(g.Resources, newSSOAdminCustomerManagedPolicyAttachmentResource(instanceARN, permissionSetARN, policy))
@@ -269,7 +270,7 @@ func newSSOAdminManagedPolicyAttachmentResource(instanceARN, permissionSetARN st
 
 func newSSOAdminCustomerManagedPolicyAttachmentResource(instanceARN, permissionSetARN string, policy ssotypes.CustomerManagedPolicyReference) terraformutils.Resource {
 	policyName := StringValue(policy.Name)
-	policyPath := StringValue(policy.Path)
+	policyPath := ssoAdminCustomerManagedPolicyPath(policy.Path)
 	attributes := map[string]string{
 		"customer_managed_policy_reference.#":      "1",
 		"customer_managed_policy_reference.0.name": policyName,
@@ -315,7 +316,7 @@ func newSSOAdminPermissionsBoundaryAttachmentResource(instanceARN, permissionSet
 	} else if policy := boundary.CustomerManagedPolicyReference; policy != nil {
 		attributes[ssoAdminNestedPermissionsBoundaryAttributePrefix+".customer_managed_policy_reference.#"] = "1"
 		attributes[ssoAdminNestedCustomerManagedPolicyReferenceAttribute+".name"] = StringValue(policy.Name)
-		attributes[ssoAdminNestedCustomerManagedPolicyReferenceAttribute+".path"] = StringValue(policy.Path)
+		attributes[ssoAdminNestedCustomerManagedPolicyReferenceAttribute+".path"] = ssoAdminCustomerManagedPolicyPath(policy.Path)
 	}
 	return terraformutils.NewResource(
 		ssoAdminPermissionSetResourceID(permissionSetARN, instanceARN),
@@ -360,8 +361,14 @@ func ssoAdminPermissionsBoundaryConfigured(boundary *ssotypes.PermissionsBoundar
 	if boundary.CustomerManagedPolicyReference == nil {
 		return false
 	}
-	return StringValue(boundary.CustomerManagedPolicyReference.Name) != "" &&
-		StringValue(boundary.CustomerManagedPolicyReference.Path) != ""
+	return StringValue(boundary.CustomerManagedPolicyReference.Name) != ""
+}
+
+func ssoAdminCustomerManagedPolicyPath(path *string) string {
+	if p := StringValue(path); p != "" {
+		return p
+	}
+	return ssoAdminDefaultCustomerManagedPolicyPath
 }
 
 func ssoAdminResourceNotFound(err error) bool {

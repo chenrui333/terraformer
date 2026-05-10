@@ -152,9 +152,12 @@ func (g *IdentityStoreGenerator) InitResources() error {
 	}
 
 	for _, identityStoreId := range identityStoreIds {
+		resourceStart := len(g.Resources)
+
 		e = g.InitUserResources(identityStoreId)
 		if e != nil {
 			if identityStoreResourceNotFound(e) {
+				g.Resources = g.Resources[:resourceStart]
 				continue
 			}
 			return e
@@ -163,6 +166,7 @@ func (g *IdentityStoreGenerator) InitResources() error {
 		e = g.InitGroupResources(identityStoreId)
 		if e != nil {
 			if identityStoreResourceNotFound(e) {
+				g.Resources = g.Resources[:resourceStart]
 				continue
 			}
 			return e
