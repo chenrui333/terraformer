@@ -9,8 +9,9 @@
   "enabledManagers": ["github-actions", "gomod"],
   "internalChecksFilter": "strict",
   "labels": ["dependencies"],
-  "minimumReleaseAge": "2 days",
-  "platformAutomerge": false,
+  "minimumReleaseAge": "7 days",
+  "platformAutomerge": true,
+  "automergeStrategy": "squash",
   "prConcurrentLimit": 8,
   "prHourlyLimit": 2,
   "rebaseWhen": "conflicted",
@@ -25,12 +26,19 @@
       "groupSlug": "github-actions",
       "automerge": true,
       "automergeType": "pr",
-      "matchUpdateTypes": ["minor", "patch", "digest"]
+      "matchUpdateTypes": ["patch", "digest"]
     },
     {
       "description": "Run go mod tidy after Go module updates.",
       "matchManagers": ["gomod"],
       "postUpdateOptions": ["gomodTidy"]
+    },
+    {
+      "description": "Allow conservative automerge for Go patch and digest updates after release cooldown.",
+      "matchManagers": ["gomod"],
+      "matchUpdateTypes": ["patch", "digest"],
+      "automerge": true,
+      "automergeType": "pr"
     },
     {
       "description": "Do not auto-bump the Go directive; handle Go version changes manually.",
@@ -54,7 +62,8 @@
       ],
       "groupName": "terraform core dependencies",
       "groupSlug": "go-terraform-core",
-      "dependencyDashboardApproval": true
+      "dependencyDashboardApproval": true,
+      "automerge": false
     },
     {
       "description": "AWS provider dependency family.",
