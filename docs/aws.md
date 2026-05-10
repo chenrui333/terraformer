@@ -380,6 +380,8 @@ terraformer import aws --resources=sg --regions=us-east-1
     * `aws_organizations_organizational_unit`
     * `aws_organizations_policy`
     * `aws_organizations_policy_attachment`
+*   `pipes`
+    * `aws_pipes_pipe`
 *   `qldb`
     * `aws_qldb_ledger`
 *   `rds`
@@ -432,6 +434,9 @@ terraformer import aws --resources=sg --regions=us-east-1
     * `aws_s3_bucket_server_side_encryption_configuration`
     * `aws_s3_bucket_versioning`
     * `aws_s3_bucket_website_configuration`
+*   `scheduler`
+    * `aws_scheduler_schedule`
+    * `aws_scheduler_schedule_group`
 *   `secretsmanager`
     * `aws_secretsmanager_secret`
     * `aws_secretsmanager_secret_policy`
