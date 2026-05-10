@@ -412,8 +412,8 @@ github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/ddelnano/terraform-provider-mikrotik/client v0.0.0-20250110092516-5bc3b68c6245 h1:oBHYsaA+FhJ6oAQ3rnwXfiDnyBlOZOxUWCMjlf4O+lg=
 github.com/ddelnano/terraform-provider-mikrotik/client v0.0.0-20250110092516-5bc3b68c6245/go.mod h1:vaZFVX0yJUj06ARcZ8EbgV9K3I6rZdls3rm7GI2onlc=
-github.com/ddelnano/terraform-provider-xenorchestra/client v0.0.0-20210401070256-0d721c6762ef h1:q/XC0MjIz8cl/NtyKKewDns6mNd2cUzLQ5Xnh+jGoRg=
-github.com/ddelnano/terraform-provider-xenorchestra/client v0.0.0-20210401070256-0d721c6762ef/go.mod h1:1T10mQuoIeT4CXsvyc1G1m/+L7mWv6p7cBwmAut/uB0=
+github.com/ddelnano/terraform-provider-xenorchestra/client v0.18.0-alpha1 h1:P0a6ZVjbOqzOYqsSSWWF19dHaxX2AuHcv9kQafNVC+Y=
+github.com/ddelnano/terraform-provider-xenorchestra/client v0.18.0-alpha1/go.mod h1:1T10mQuoIeT4CXsvyc1G1m/+L7mWv6p7cBwmAut/uB0=
 github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.1 h1:5RVFMOWjMyRy8cARdy79nAmgYw3hK/4HUq48LQ6Wwqo=
 github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.1/go.mod h1:ZXNYxsqcloTdSy/rNShjYzMhyjf0LaoftYK0p+A3h40=
 github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace h1:1SnCTPFh2AADpm7ti864EYaugexyiDFt55BW188+d6k=
