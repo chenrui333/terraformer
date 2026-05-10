@@ -429,7 +429,7 @@ require (
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.3.78
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/es v1.3.89
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/gaap v1.3.34
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/mongodb v1.3.88
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/mongodb v1.3.93
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/pts v1.3.29
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/redis v1.3.79
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/scf v1.3.29
