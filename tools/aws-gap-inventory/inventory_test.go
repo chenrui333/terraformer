@@ -119,6 +119,64 @@ func TestReadSkipListValidatesRequiredFields(t *testing.T) {
 	}
 }
 
+func TestBuildInventoryPreservesDuplicateDocsResourceFamilies(t *testing.T) {
+	root := t.TempDir()
+	awsDir := filepath.Join(root, "providers", "aws")
+	if err := os.MkdirAll(awsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	writeFile(t, filepath.Join(awsDir, "aws_provider.go"),
+		"package aws\n\n"+
+			"func (p *AWSProvider) GetSupportedService() map[string]terraformutils.ServiceGenerator {\n"+
+			"\treturn map[string]terraformutils.ServiceGenerator{\n"+
+			"\t\t\"wafv2_cloudfront\": &AwsFacade{service: NewWafv2CloudfrontGenerator()},\n"+
+			"\t\t\"wafv2_regional\": &AwsFacade{service: NewWafv2RegionalGenerator()},\n"+
+			"\t}\n"+
+			"}\n")
+	writeFile(t, filepath.Join(awsDir, "wafv2.go"),
+		"package aws\n\n"+
+			"type Wafv2Generator struct{}\n\n"+
+			"func NewWafv2CloudfrontGenerator() *Wafv2Generator { return &Wafv2Generator{} }\n"+
+			"func NewWafv2RegionalGenerator() *Wafv2Generator { return &Wafv2Generator{} }\n"+
+			"func (g *Wafv2Generator) InitResources() {\n"+
+			"\t_ = \"aws_wafv2_web_acl\"\n"+
+			"\t_ = \"aws_wafv2_web_acl_association\"\n"+
+			"}\n")
+
+	tick := string(rune(96))
+	docsPath := filepath.Join(root, "docs", "aws.md")
+	writeFile(t, docsPath,
+		"#### Supported services\n\n"+
+			"*   "+tick+"wafv2_cloudfront"+tick+"\n"+
+			"    * "+tick+"aws_wafv2_web_acl"+tick+"\n"+
+			"*   "+tick+"wafv2_regional"+tick+"\n"+
+			"    * "+tick+"aws_wafv2_web_acl"+tick+"\n"+
+			"    * "+tick+"aws_wafv2_web_acl_association"+tick+"\n")
+	skipListPath := filepath.Join(awsDir, "unsupported_resources.json")
+	writeFile(t, skipListPath, "{\n  \"version\": 1,\n  \"resources\": []\n}\n")
+
+	inv, err := buildInventory(options{
+		awsDir:       awsDir,
+		docsPath:     docsPath,
+		skipListPath: skipListPath,
+	})
+	if err != nil {
+		t.Fatalf("buildInventory() error = %v", err)
+	}
+	assertRecords(t, inv.DocsAudit.DocumentedButNotDetected, nil)
+	assertRecords(t, inv.DocsAudit.DetectedButNotDocumented, nil)
+	assertStrings(t, familyByName(t, inv, "wafv2_cloudfront").TerraformerResources, []string{"aws_wafv2_web_acl"})
+	assertStrings(t, familyByName(t, inv, "wafv2_regional").TerraformerResources, []string{"aws_wafv2_web_acl", "aws_wafv2_web_acl_association"})
+}
+
+func TestFallbackServiceFamilyPreservesUnderscores(t *testing.T) {
+	got := fallbackServiceFamily(filepath.Join("providers", "aws", "transit_gateway.go"))
+	if got != "transit_gateway" {
+		t.Fatalf("fallbackServiceFamily() = %q, want transit_gateway", got)
+	}
+}
+
 func TestWriteMarkdownOmitsProviderCountsWithoutSchema(t *testing.T) {
 	var output bytes.Buffer
 	err := writeMarkdown(&output, inventory{
@@ -139,6 +197,17 @@ func TestWriteMarkdownOmitsProviderCountsWithoutSchema(t *testing.T) {
 	if strings.Contains(output.String(), "Terraform provider gaps") {
 		t.Fatalf("markdown output included provider gap section without schema:\n%s", output.String())
 	}
+}
+
+func familyByName(t *testing.T, inv inventory, name string) familyInventory {
+	t.Helper()
+	for _, family := range inv.Families {
+		if family.ServiceFamily == name {
+			return family
+		}
+	}
+	t.Fatalf("family %q not found in %#v", name, inv.Families)
+	return familyInventory{}
 }
 
 func writeFile(t *testing.T, path string, contents string) {

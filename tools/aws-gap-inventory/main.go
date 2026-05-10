@@ -17,6 +17,11 @@ func main() {
 	flag.StringVar(&opts.skipListPath, "skip-list", "providers/aws/unsupported_resources.json", "path to the AWS unsupported resource skip-list")
 	flag.Parse()
 
+	if opts.format != "json" && opts.format != "markdown" {
+		fmt.Fprintf(os.Stderr, "unsupported format %q\n", opts.format)
+		os.Exit(1)
+	}
+
 	inv, err := buildInventory(opts)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

@@ -31,6 +31,11 @@ var (
 		"unsupported":      true,
 		"unsafe-discovery": true,
 	}
+	resourceServiceOverrides = map[string]map[string][]string{
+		"wafv2.go": {
+			"aws_wafv2_web_acl_association": {"wafv2_regional"},
+		},
+	}
 )
 
 type options struct {
@@ -83,13 +88,62 @@ type skipListEntry struct {
 	References    []string `json:"references,omitempty"`
 }
 
+type resourceFamilySet map[string]map[string]bool
+
+func newResourceFamilySet() resourceFamilySet {
+	return resourceFamilySet{}
+}
+
+func (s resourceFamilySet) add(resource string, serviceFamily string) {
+	if s[resource] == nil {
+		s[resource] = map[string]bool{}
+	}
+	s[resource][serviceFamily] = true
+}
+
+func (s resourceFamilySet) has(resource string, serviceFamily string) bool {
+	return s[resource][serviceFamily]
+}
+
+func (s resourceFamilySet) hasResource(resource string) bool {
+	return len(s[resource]) > 0
+}
+
+func (s resourceFamilySet) records() []resourceRecord {
+	records := []resourceRecord{}
+	for resource, serviceFamilies := range s {
+		for serviceFamily := range serviceFamilies {
+			records = append(records, resourceRecord{Resource: resource, ServiceFamily: serviceFamily})
+		}
+	}
+	sortRecords(records)
+	return records
+}
+
+func (s resourceFamilySet) resourceSet() map[string]bool {
+	resources := map[string]bool{}
+	for resource := range s {
+		resources[resource] = true
+	}
+	return resources
+}
+
+func (s resourceFamilySet) serviceFamilies(resource string) []string {
+	serviceFamilies := []string{}
+	for serviceFamily := range s[resource] {
+		serviceFamilies = append(serviceFamilies, serviceFamily)
+	}
+	sort.Strings(serviceFamilies)
+	return serviceFamilies
+}
+
 func buildInventory(opts options) (inventory, error) {
 	docsResources, err := parseDocsResources(opts.docsPath)
 	if err != nil {
 		return inventory{}, err
 	}
 
-	terraformerResources, err := scanTerraformerResources(opts.awsDir, docsResources)
+	terraformerResources, err := scanTerraformerResources(opts.awsDir)
 	if err != nil {
 		return inventory{}, err
 	}
@@ -109,8 +163,8 @@ func buildInventory(opts options) (inventory, error) {
 
 	inv := inventory{
 		ProviderResources:    providerResources,
-		TerraformerResources: recordsFromMap(terraformerResources),
-		DocsResources:        recordsFromMap(docsResources),
+		TerraformerResources: terraformerResources.records(),
+		DocsResources:        docsResources.records(),
 		SkippedResources:     skippedResources,
 		DocsAudit:            compareDocs(terraformerResources, docsResources),
 	}
@@ -118,14 +172,14 @@ func buildInventory(opts options) (inventory, error) {
 	return inv, nil
 }
 
-func parseDocsResources(path string) (map[string]string, error) {
+func parseDocsResources(path string) (resourceFamilySet, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("open docs: %w", err)
 	}
 	defer file.Close()
 
-	resources := map[string]string{}
+	resources := newResourceFamilySet()
 	service := ""
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -135,7 +189,7 @@ func parseDocsResources(path string) (map[string]string, error) {
 			continue
 		}
 		if match := docsResourceRe.FindStringSubmatch(line); len(match) == 2 && service != "" {
-			resources[match[1]] = service
+			resources.add(match[1], service)
 		}
 	}
 	if err := scanner.Err(); err != nil {
@@ -144,13 +198,13 @@ func parseDocsResources(path string) (map[string]string, error) {
 	return resources, nil
 }
 
-func scanTerraformerResources(awsDir string, docsResources map[string]string) (map[string]string, error) {
+func scanTerraformerResources(awsDir string) (resourceFamilySet, error) {
 	serviceByFile, err := servicesByFile(awsDir)
 	if err != nil {
 		return nil, err
 	}
 
-	resources := map[string]string{}
+	resources := newResourceFamilySet()
 	err = filepath.WalkDir(awsDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -168,9 +222,9 @@ func scanTerraformerResources(awsDir string, docsResources map[string]string) (m
 			return fmt.Errorf("parse %s: %w", path, err)
 		}
 
-		serviceFamily := serviceByFile[path]
-		if serviceFamily == "" {
-			serviceFamily = fallbackServiceFamily(path)
+		serviceFamilies := serviceByFile[path]
+		if len(serviceFamilies) == 0 {
+			serviceFamilies = []string{fallbackServiceFamily(path)}
 		}
 		ast.Inspect(file, func(node ast.Node) bool {
 			literal, ok := node.(*ast.BasicLit)
@@ -181,11 +235,9 @@ func scanTerraformerResources(awsDir string, docsResources map[string]string) (m
 			if err != nil || !awsResourceRe.MatchString(value) {
 				return true
 			}
-			if docsFamily := docsResources[value]; docsFamily != "" {
-				resources[value] = docsFamily
-				return true
+			for _, family := range resourceServices(path, value, serviceFamilies) {
+				resources.add(value, family)
 			}
-			resources[value] = serviceFamily
 			return true
 		})
 		return nil
@@ -196,7 +248,7 @@ func scanTerraformerResources(awsDir string, docsResources map[string]string) (m
 	return resources, nil
 }
 
-func servicesByFile(awsDir string) (map[string]string, error) {
+func servicesByFile(awsDir string) (map[string][]string, error) {
 	providerPath := filepath.Join(awsDir, "aws_provider.go")
 	fileSet := token.NewFileSet()
 	file, err := parser.ParseFile(fileSet, providerPath, nil, 0)
@@ -204,7 +256,7 @@ func servicesByFile(awsDir string) (map[string]string, error) {
 		return nil, fmt.Errorf("parse aws provider: %w", err)
 	}
 
-	serviceByGenerator := map[string]string{}
+	serviceByGenerator := map[string][]string{}
 	ast.Inspect(file, func(node ast.Node) bool {
 		kv, ok := node.(*ast.KeyValueExpr)
 		if !ok {
@@ -219,12 +271,12 @@ func servicesByFile(awsDir string) (map[string]string, error) {
 			return true
 		}
 		for _, generator := range generatorNames(kv.Value) {
-			serviceByGenerator[generator] = service
+			serviceByGenerator[generator] = appendStringUnique(serviceByGenerator[generator], service)
 		}
 		return true
 	})
 
-	serviceByFile := map[string]string{}
+	serviceByFile := map[string][]string{}
 	err = filepath.WalkDir(awsDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -238,19 +290,22 @@ func servicesByFile(awsDir string) (map[string]string, error) {
 			return fmt.Errorf("parse %s: %w", path, err)
 		}
 		for _, declaration := range file.Decls {
-			genericDeclaration, ok := declaration.(*ast.GenDecl)
-			if !ok || genericDeclaration.Tok != token.TYPE {
-				continue
-			}
-			for _, spec := range genericDeclaration.Specs {
-				typeSpec, ok := spec.(*ast.TypeSpec)
-				if !ok {
+			switch declaration := declaration.(type) {
+			case *ast.GenDecl:
+				if declaration.Tok != token.TYPE {
 					continue
 				}
-				if service := serviceByGenerator[typeSpec.Name.Name]; service != "" {
-					serviceByFile[path] = service
-					return nil
+				for _, spec := range declaration.Specs {
+					typeSpec, ok := spec.(*ast.TypeSpec)
+					if !ok {
+						continue
+					}
+					serviceByFile[path] = appendStringsUnique(serviceByFile[path], serviceByGenerator[typeSpec.Name.Name]...)
 				}
+			case *ast.FuncDecl:
+				serviceByFile[path] = appendStringsUnique(serviceByFile[path], serviceByGenerator[declaration.Name.Name]...)
+			default:
+				continue
 			}
 		}
 		return nil
@@ -279,9 +334,36 @@ func generatorNames(expr ast.Expr) []string {
 	return names
 }
 
+func resourceServices(path string, resource string, serviceFamilies []string) []string {
+	if overrides := resourceServiceOverrides[filepath.Base(path)]; len(overrides) > 0 {
+		if services := overrides[resource]; len(services) > 0 {
+			return services
+		}
+	}
+	return serviceFamilies
+}
+
+func appendStringsUnique(values []string, additions ...string) []string {
+	for _, addition := range additions {
+		values = appendStringUnique(values, addition)
+	}
+	return values
+}
+
+func appendStringUnique(values []string, addition string) []string {
+	if addition == "" {
+		return values
+	}
+	for _, value := range values {
+		if value == addition {
+			return values
+		}
+	}
+	return append(values, addition)
+}
+
 func fallbackServiceFamily(path string) string {
-	base := strings.TrimSuffix(filepath.Base(path), ".go")
-	return strings.ReplaceAll(base, "_", "-")
+	return strings.TrimSuffix(filepath.Base(path), ".go")
 }
 
 func parseProviderSchema(path string) ([]string, error) {
@@ -352,16 +434,16 @@ func readSkipList(path string) ([]skipListEntry, error) {
 	return list.Resources, nil
 }
 
-func compareDocs(terraformerResources, docsResources map[string]string) docsAudit {
+func compareDocs(terraformerResources, docsResources resourceFamilySet) docsAudit {
 	audit := docsAudit{}
-	for resource, service := range docsResources {
-		if _, ok := terraformerResources[resource]; !ok {
-			audit.DocumentedButNotDetected = append(audit.DocumentedButNotDetected, resourceRecord{Resource: resource, ServiceFamily: service})
+	for _, record := range docsResources.records() {
+		if !terraformerResources.has(record.Resource, record.ServiceFamily) {
+			audit.DocumentedButNotDetected = append(audit.DocumentedButNotDetected, record)
 		}
 	}
-	for resource, service := range terraformerResources {
-		if _, ok := docsResources[resource]; !ok {
-			audit.DetectedButNotDocumented = append(audit.DetectedButNotDocumented, resourceRecord{Resource: resource, ServiceFamily: service})
+	for _, record := range terraformerResources.records() {
+		if !docsResources.has(record.Resource, record.ServiceFamily) {
+			audit.DetectedButNotDocumented = append(audit.DetectedButNotDocumented, record)
 		}
 	}
 	sortRecords(audit.DocumentedButNotDetected)
@@ -369,27 +451,25 @@ func compareDocs(terraformerResources, docsResources map[string]string) docsAudi
 	return audit
 }
 
-func groupFamilies(providerResources []string, terraformerResources, docsResources map[string]string, skippedResources []skipListEntry) []familyInventory {
-	terraformerSet := map[string]bool{}
-	for resource := range terraformerResources {
-		terraformerSet[resource] = true
-	}
+func groupFamilies(providerResources []string, terraformerResources, docsResources resourceFamilySet, skippedResources []skipListEntry) []familyInventory {
+	terraformerSet := terraformerResources.resourceSet()
 	skipSet := map[string]skipListEntry{}
 	for _, resource := range skippedResources {
 		skipSet[resource.Resource] = resource
 	}
 
 	families := map[string]*familyInventory{}
-	for resource, service := range terraformerResources {
-		family := familyEntry(families, service)
-		family.TerraformerResources = append(family.TerraformerResources, resource)
+	for _, record := range terraformerResources.records() {
+		family := familyEntry(families, record.ServiceFamily)
+		family.TerraformerResources = append(family.TerraformerResources, record.Resource)
 	}
 	for _, resource := range providerResources {
-		service := serviceFamily(resource, docsResources, terraformerResources, skipSet)
-		family := familyEntry(families, service)
-		family.ProviderResources = append(family.ProviderResources, resource)
-		if !terraformerSet[resource] && skipSet[resource].Resource == "" {
-			family.ProviderGaps = append(family.ProviderGaps, resource)
+		for _, service := range serviceFamilies(resource, docsResources, terraformerResources, skipSet) {
+			family := familyEntry(families, service)
+			family.ProviderResources = append(family.ProviderResources, resource)
+			if !terraformerSet[resource] && skipSet[resource].Resource == "" {
+				family.ProviderGaps = append(family.ProviderGaps, resource)
+			}
 		}
 	}
 	for _, resource := range skippedResources {
@@ -423,17 +503,17 @@ func familyEntry(families map[string]*familyInventory, service string) *familyIn
 	return families[service]
 }
 
-func serviceFamily(resource string, docsResources, terraformerResources map[string]string, skipSet map[string]skipListEntry) string {
-	if service := docsResources[resource]; service != "" {
-		return service
+func serviceFamilies(resource string, docsResources, terraformerResources resourceFamilySet, skipSet map[string]skipListEntry) []string {
+	if services := terraformerResources.serviceFamilies(resource); len(services) > 0 {
+		return services
 	}
-	if service := terraformerResources[resource]; service != "" {
-		return service
+	if services := docsResources.serviceFamilies(resource); len(services) > 0 {
+		return services
 	}
 	if skip := skipSet[resource]; skip.ServiceFamily != "" {
-		return skip.ServiceFamily
+		return []string{skip.ServiceFamily}
 	}
-	return guessAWSService(resource)
+	return []string{guessAWSService(resource)}
 }
 
 func guessAWSService(resource string) string {
