@@ -16,6 +16,11 @@ import (
 
 var logsAllowEmptyValues = []string{"tags."}
 
+const (
+	logsDestinationPolicyResourceType = "aws_cloudwatch_log_destination_policy"
+	logsIndexPolicyResourceType       = "aws_cloudwatch_log_index_policy"
+)
+
 var logsAccountPolicyTypes = []types.PolicyType{
 	types.PolicyTypeDataProtectionPolicy,
 	types.PolicyTypeSubscriptionFilterPolicy,
@@ -87,6 +92,7 @@ func (g *LogsGenerator) InitResources() error {
 		logsOptionalResourceLoader{name: "subscription filters", load: func() error { return g.addSubscriptionFilters(svc, logGroupNames) }},
 		logsOptionalResourceLoader{name: "data protection policies", load: func() error { return g.addDataProtectionPolicies(svc, logGroupNames) }},
 		logsOptionalResourceLoader{name: "destinations", load: func() error { return g.addDestinations(svc) }},
+		logsOptionalResourceLoader{name: "index policies", load: func() error { return g.addIndexPolicies(svc, logGroupNames) }},
 		logsOptionalResourceLoader{name: "resource policies", load: func() error { return g.addResourcePolicies(svc) }},
 		logsOptionalResourceLoader{name: "account policies", load: func() error { return g.addAccountPolicies(svc) }},
 		logsOptionalResourceLoader{name: "query definitions", load: func() error { return g.addQueryDefinitions(svc) }},
@@ -215,6 +221,37 @@ func (g *LogsGenerator) addDestinations(svc *cloudwatchlogs.Client) error {
 				"aws_cloudwatch_log_destination",
 				"aws",
 				logsAllowEmptyValues))
+			if resource, ok := newLogsDestinationPolicyResource(destination); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+	}
+	return nil
+}
+
+func (g *LogsGenerator) addIndexPolicies(svc *cloudwatchlogs.Client, logGroupNames []string) error {
+	for _, logGroupName := range logGroupNames {
+		var nextToken *string
+		for {
+			output, err := svc.DescribeIndexPolicies(context.TODO(), &cloudwatchlogs.DescribeIndexPoliciesInput{
+				LogGroupIdentifiers: []string{logGroupName},
+				NextToken:           nextToken,
+			})
+			if err != nil {
+				if logsResourceNotFound(err) {
+					break
+				}
+				return err
+			}
+			for _, policy := range output.IndexPolicies {
+				if resource, ok := newLogsIndexPolicyResource(logGroupName, policy); ok {
+					g.Resources = append(g.Resources, resource)
+				}
+			}
+			nextToken = output.NextToken
+			if !awsHasMorePages(nextToken) {
+				break
+			}
 		}
 	}
 	return nil
@@ -370,4 +407,42 @@ func logsResourcePolicyResource(policy types.ResourcePolicy) (string, string, ma
 	return policyName, policyName, map[string]string{
 		"policy_name": policyName,
 	}
+}
+
+func newLogsDestinationPolicyResource(destination types.Destination) (terraformutils.Resource, bool) {
+	destinationName := StringValue(destination.DestinationName)
+	if destinationName == "" || StringValue(destination.AccessPolicy) == "" {
+		return terraformutils.Resource{}, false
+	}
+
+	return terraformutils.NewResource(
+		destinationName,
+		destinationName,
+		logsDestinationPolicyResourceType,
+		"aws",
+		map[string]string{
+			"destination_name": destinationName,
+		},
+		logsAllowEmptyValues,
+		map[string]interface{}{}), true
+}
+
+func newLogsIndexPolicyResource(logGroupName string, policy types.IndexPolicy) (terraformutils.Resource, bool) {
+	if logGroupName == "" || StringValue(policy.PolicyDocument) == "" {
+		return terraformutils.Resource{}, false
+	}
+	if policy.Source != "" && policy.Source != types.IndexSourceLogGroup {
+		return terraformutils.Resource{}, false
+	}
+
+	return terraformutils.NewResource(
+		logGroupName,
+		logGroupName,
+		logsIndexPolicyResourceType,
+		"aws",
+		map[string]string{
+			"log_group_name": logGroupName,
+		},
+		logsAllowEmptyValues,
+		map[string]interface{}{}), true
 }

@@ -135,3 +135,129 @@ func TestLogsResourcePolicyResource(t *testing.T) {
 		})
 	}
 }
+
+func TestNewLogsDestinationPolicyResource(t *testing.T) {
+	destinationName := "central-logs"
+	accessPolicy := "{}"
+
+	tests := []struct {
+		name        string
+		destination types.Destination
+		wantOK      bool
+	}{
+		{
+			name: "destination with access policy",
+			destination: types.Destination{
+				AccessPolicy:    &accessPolicy,
+				DestinationName: &destinationName,
+			},
+			wantOK: true,
+		},
+		{
+			name: "destination without access policy is skipped",
+			destination: types.Destination{
+				DestinationName: &destinationName,
+			},
+		},
+		{
+			name: "destination without name is skipped",
+			destination: types.Destination{
+				AccessPolicy: &accessPolicy,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resource, ok := newLogsDestinationPolicyResource(tt.destination)
+			if ok != tt.wantOK {
+				t.Fatalf("newLogsDestinationPolicyResource() ok = %t, want %t", ok, tt.wantOK)
+			}
+			if !ok {
+				return
+			}
+			if got := resource.InstanceState.ID; got != destinationName {
+				t.Fatalf("resource ID = %q, want %q", got, destinationName)
+			}
+			if got := resource.InstanceInfo.Type; got != logsDestinationPolicyResourceType {
+				t.Fatalf("resource type = %q, want %q", got, logsDestinationPolicyResourceType)
+			}
+			if got := resource.InstanceState.Attributes["destination_name"]; got != destinationName {
+				t.Fatalf("destination_name = %q, want %q", got, destinationName)
+			}
+		})
+	}
+}
+
+func TestNewLogsIndexPolicyResource(t *testing.T) {
+	logGroupName := "/aws/lambda/example"
+	policyDocument := "{}"
+
+	tests := []struct {
+		name         string
+		logGroupName string
+		policy       types.IndexPolicy
+		wantOK       bool
+	}{
+		{
+			name:         "log group policy",
+			logGroupName: logGroupName,
+			policy: types.IndexPolicy{
+				PolicyDocument: &policyDocument,
+				Source:         types.IndexSourceLogGroup,
+			},
+			wantOK: true,
+		},
+		{
+			name:         "policy without source is accepted",
+			logGroupName: logGroupName,
+			policy: types.IndexPolicy{
+				PolicyDocument: &policyDocument,
+			},
+			wantOK: true,
+		},
+		{
+			name:         "account policy is skipped",
+			logGroupName: logGroupName,
+			policy: types.IndexPolicy{
+				PolicyDocument: &policyDocument,
+				Source:         types.IndexSourceAccount,
+			},
+		},
+		{
+			name: "empty log group is skipped",
+			policy: types.IndexPolicy{
+				PolicyDocument: &policyDocument,
+				Source:         types.IndexSourceLogGroup,
+			},
+		},
+		{
+			name:         "policy without document is skipped",
+			logGroupName: logGroupName,
+			policy: types.IndexPolicy{
+				Source: types.IndexSourceLogGroup,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resource, ok := newLogsIndexPolicyResource(tt.logGroupName, tt.policy)
+			if ok != tt.wantOK {
+				t.Fatalf("newLogsIndexPolicyResource() ok = %t, want %t", ok, tt.wantOK)
+			}
+			if !ok {
+				return
+			}
+			if got := resource.InstanceState.ID; got != tt.logGroupName {
+				t.Fatalf("resource ID = %q, want %q", got, tt.logGroupName)
+			}
+			if got := resource.InstanceInfo.Type; got != logsIndexPolicyResourceType {
+				t.Fatalf("resource type = %q, want %q", got, logsIndexPolicyResourceType)
+			}
+			if got := resource.InstanceState.Attributes["log_group_name"]; got != tt.logGroupName {
+				t.Fatalf("log_group_name = %q, want %q", got, tt.logGroupName)
+			}
+		})
+	}
+}
