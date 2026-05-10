@@ -20,10 +20,14 @@
   "timezone": "America/New_York",
   "packageRules": [
     {
-      "description": "Keep GitHub Actions updates together and allow safe automerge.",
+      "description": "Keep GitHub Actions updates together.",
       "matchManagers": ["github-actions"],
       "groupName": "GitHub Actions",
-      "groupSlug": "github-actions",
+      "groupSlug": "github-actions"
+    },
+    {
+      "description": "Allow conservative automerge for GitHub Actions patch and digest updates after release cooldown.",
+      "matchManagers": ["github-actions"],
       "automerge": true,
       "automergeType": "pr",
       "matchUpdateTypes": ["patch", "digest"]
