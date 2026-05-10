@@ -73,16 +73,22 @@ func TestNewSchedulerScheduleResource(t *testing.T) {
 }
 
 func TestSchedulerScheduleResourceNamesPreserveParentScope(t *testing.T) {
-	resourceA, ok := newSchedulerScheduleResource("a_b", "c")
+	resourceA, ok := newSchedulerScheduleResource("a-002F-b", "c")
 	if !ok {
 		t.Fatal("newSchedulerScheduleResource() should create resourceA")
 	}
-	resourceB, ok := newSchedulerScheduleResource("a", "b_c")
+	resourceB, ok := newSchedulerScheduleResource("a", "b-002F-c")
 	if !ok {
 		t.Fatal("newSchedulerScheduleResource() should create resourceB")
 	}
 	if resourceA.ResourceName == resourceB.ResourceName {
 		t.Fatalf("resource names collide: %q", resourceA.ResourceName)
+	}
+	if resourceA.InstanceState.ID != "a-002F-b/c" {
+		t.Fatalf("resourceA ID = %q, want a-002F-b/c", resourceA.InstanceState.ID)
+	}
+	if resourceB.InstanceState.ID != "a/b-002F-c" {
+		t.Fatalf("resourceB ID = %q, want a/b-002F-c", resourceB.InstanceState.ID)
 	}
 }
 

@@ -4,6 +4,7 @@ package aws
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/scheduler"
@@ -117,7 +118,7 @@ func newSchedulerScheduleResource(groupName, scheduleName string) (terraformutil
 	resourceID := schedulerScheduleImportID(groupName, scheduleName)
 	return terraformutils.NewSimpleResource(
 		resourceID,
-		resourceID,
+		schedulerScheduleResourceName(groupName, scheduleName),
 		"aws_scheduler_schedule",
 		"aws",
 		schedulerAllowEmptyValues), true
@@ -125,6 +126,10 @@ func newSchedulerScheduleResource(groupName, scheduleName string) (terraformutil
 
 func schedulerScheduleImportID(groupName, scheduleName string) string {
 	return groupName + "/" + scheduleName
+}
+
+func schedulerScheduleResourceName(groupName, scheduleName string) string {
+	return fmt.Sprintf("group_%d_%s_schedule_%d_%s", len(groupName), groupName, len(scheduleName), scheduleName)
 }
 
 func (g *SchedulerGenerator) hasTypedSchedulerFilter() bool {
