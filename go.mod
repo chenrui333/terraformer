@@ -4,7 +4,7 @@ go 1.26.2
 
 require (
 	cloud.google.com/go v0.123.0 // indirect
-	cloud.google.com/go/logging v1.17.0
+	cloud.google.com/go/logging v1.18.0
 	cloud.google.com/go/storage v1.62.1
 	github.com/Azure/azure-storage-blob-go v0.15.0
 	github.com/IBM-Cloud/bluemix-go v0.0.0-20260424100510-275dcc5549eb
@@ -144,8 +144,8 @@ require (
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/text v0.36.0
 	gonum.org/v1/gonum v0.17.0
-	google.golang.org/api v0.277.0
-	google.golang.org/genproto v0.0.0-20260427160629-7cedc36a6bc4
+	google.golang.org/api v0.278.0
+	google.golang.org/genproto v0.0.0-20260504160031-60b97b32f348
 	k8s.io/apimachinery v0.36.0
 	k8s.io/client-go v0.36.0
 )
@@ -242,7 +242,7 @@ require (
 	golang.org/x/sys v0.43.0 // indirect
 	golang.org/x/term v0.42.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
-	google.golang.org/grpc v1.80.0
+	google.golang.org/grpc v1.81.0
 	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af
 	gopkg.in/go-playground/validator.v9 v9.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
@@ -278,10 +278,10 @@ require (
 )
 
 require (
-	cloud.google.com/go/cloudbuild v1.29.0
-	cloud.google.com/go/cloudtasks v1.17.0
-	cloud.google.com/go/iam v1.10.0
-	cloud.google.com/go/monitoring v1.28.0
+	cloud.google.com/go/cloudbuild v1.30.0
+	cloud.google.com/go/cloudtasks v1.18.0
+	cloud.google.com/go/iam v1.11.0
+	cloud.google.com/go/monitoring v1.29.0
 	github.com/DataDog/datadog-api-client-go/v2 v2.59.0
 	github.com/Myra-Security-GmbH/myrasec-go/v2 v2.51.0
 	github.com/bradleyfalzon/ghinstallation/v2 v2.18.0
