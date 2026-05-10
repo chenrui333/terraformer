@@ -33,6 +33,8 @@ terraformer import aws --resources=sg --regions=us-east-1
 
 #### Supported services
 
+For AWS provider gap audits and unsupported-resource skip-list maintenance, see [aws-gap-inventory.md](aws-gap-inventory.md).
+
 *   `accessanalyzer`
     * `aws_accessanalyzer_analyzer`
     * `aws_accessanalyzer_archive_rule`
@@ -165,6 +167,7 @@ terraformer import aws --resources=sg --regions=us-east-1
 *   `codebuild`
     * `aws_codebuild_project`
 *   `codecommit`
+    * `aws_codecommit_approval_rule_template`
     * `aws_codecommit_repository`
 *   `codedeploy`
     * `aws_codedeploy_app`
@@ -204,6 +207,11 @@ terraformer import aws --resources=sg --regions=us-east-1
     * `aws_docdb_cluster_instance`
     * `aws_docdb_cluster_parameter_group`
     * `aws_docdb_subnet_group`
+*   `dx`
+    * `aws_dx_connection`
+    * `aws_dx_gateway`
+    * `aws_dx_private_virtual_interface`
+    * `aws_dx_public_virtual_interface`
 *   `dynamodb`
     * `aws_dynamodb_contributor_insights`
     * `aws_dynamodb_global_table`
@@ -308,6 +316,10 @@ terraformer import aws --resources=sg --regions=us-east-1
     * `aws_iam_user_group_membership`
     * `aws_iam_user_policy`
     * `aws_iam_user_policy_attachment`
+*   `identitystore`
+    * `aws_identitystore_group`
+    * `aws_identitystore_group_membership`
+    * `aws_identitystore_user`
 *   `igw`
     * `aws_internet_gateway`
 *   `iot`
@@ -362,6 +374,7 @@ terraformer import aws --resources=sg --regions=us-east-1
     * `aws_msk_single_scram_secret_association`
     * `aws_msk_vpc_connection`
 *   `nacl`
+    * `aws_default_network_acl`
     * `aws_network_acl`
 *   `nat`
     * `aws_nat_gateway`
@@ -371,7 +384,6 @@ terraformer import aws --resources=sg --regions=us-east-1
     * `aws_opsworks_instance`
     * `aws_opsworks_java_app_layer`
     * `aws_opsworks_php_app_layer`
-    * `aws_opsworks_rds_db_instance`
     * `aws_opsworks_stack`
     * `aws_opsworks_static_web_layer`
     * `aws_opsworks_user_profile`
@@ -392,13 +404,13 @@ terraformer import aws --resources=sg --regions=us-east-1
     * `aws_db_proxy_default_target_group`
     * `aws_db_proxy_endpoint`
     * `aws_db_proxy_target`
-    * `aws_db_cluster`
     * `aws_db_cluster_snapshot`
     * `aws_db_parameter_group`
     * `aws_db_snapshot`
     * `aws_db_subnet_group`
     * `aws_db_option_group`
     * `aws_db_event_subscription`
+    * `aws_rds_cluster`
     * `aws_rds_cluster_endpoint`
     * `aws_rds_cluster_parameter_group`
     * `aws_rds_global_cluster`
@@ -487,6 +499,7 @@ terraformer import aws --resources=sg --regions=us-east-1
 *   `swf`
     * `aws_swf_domain`
 *   `transit_gateway`
+    * `aws_ec2_transit_gateway`
     * `aws_ec2_transit_gateway_route_table`
     * `aws_ec2_transit_gateway_vpc_attachment`
 *   `vpc`
