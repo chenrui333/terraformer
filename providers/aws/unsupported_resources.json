@@ -215,6 +215,28 @@
       ]
     },
     {
+      "resource": "aws_elastic_beanstalk_application_version",
+      "service_family": "elastic_beanstalk",
+      "reason": "Elastic Beanstalk application versions are not importable by the Terraform AWS provider in the audited v6.44.0 source.",
+      "evidence": "The provider resource has no ResourceImporter and the read path depends on application and source bundle state that is not represented by an import ID.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/elastic_beanstalk_application_version"
+      ]
+    },
+    {
+      "resource": "aws_elastic_beanstalk_configuration_template",
+      "service_family": "elastic_beanstalk",
+      "reason": "Elastic Beanstalk configuration templates are not importable by the Terraform AWS provider in the audited v6.44.0 source.",
+      "evidence": "The provider resource has no ResourceImporter and its read path requires application and template-name state rather than a standalone import ID.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/elastic_beanstalk_configuration_template"
+      ]
+    },
+    {
       "resource": "aws_glue_partition",
       "service_family": "glue",
       "reason": "Glue partitions are high-cardinality table data objects; broad account discovery can produce very large Terraform output and needs an explicit filtered follow-up design.",

@@ -190,6 +190,7 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_chimesdkvoice_voice_profile_domain`
 *   `cloud9`
     * `aws_cloud9_environment_ec2`
+    * `aws_cloud9_environment_membership`
 *   `cloudformation`
     * `aws_cloudformation_stack`
     * `aws_cloudformation_stack_set`
@@ -280,8 +281,14 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_customerprofiles_domain`
 *   `datapipeline`
     * `aws_datapipeline_pipeline`
+    * `aws_datapipeline_pipeline_definition`
 *   `devicefarm`
+    * `aws_devicefarm_device_pool`
+    * `aws_devicefarm_instance_profile`
+    * `aws_devicefarm_network_profile`
     * `aws_devicefarm_project`
+    * `aws_devicefarm_test_grid_project`
+    * `aws_devicefarm_upload`
 *   `detective`
     * `aws_detective_graph`
     * `aws_detective_member`
@@ -520,6 +527,8 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_cloudwatch_log_subscription_filter`
     * `aws_cloudwatch_log_transformer`
     * `aws_cloudwatch_query_definition`
+*   `media_convert`
+    * `aws_media_convert_queue`
 *   `media_package`
     * `aws_media_package_channel`
 *   `media_packagev2`
@@ -535,6 +544,7 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_medialive_multiplex_program`
 *   `mq`
     * `aws_mq_broker`
+    * `aws_mq_configuration`
 *   `msk`
     * `aws_msk_cluster`
     * `aws_msk_cluster_policy`

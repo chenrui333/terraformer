@@ -24,8 +24,14 @@ func TestMediaUnsupportedResourceEntries(t *testing.T) {
 		t.Fatal("unsupported resources file is missing resources list")
 	}
 
+	wantEntries := map[string]string{
+		"aws_elastic_beanstalk_application_version":    "elastic_beanstalk",
+		"aws_elastic_beanstalk_configuration_template": "elastic_beanstalk",
+		"aws_ivs_playback_key_pair":                    "ivs",
+		"aws_qldb_stream":                              "qldb",
+	}
+	foundEntries := map[string]bool{}
 	resources := make([]string, 0, len(entries))
-	foundPlaybackKeyPair := false
 	for _, rawEntry := range entries {
 		entry, ok := rawEntry.(map[string]interface{})
 		if !ok {
@@ -33,24 +39,26 @@ func TestMediaUnsupportedResourceEntries(t *testing.T) {
 		}
 		resource, _ := entry["resource"].(string)
 		resources = append(resources, resource)
-		if resource == "aws_ivs_playback_key_pair" {
-			foundPlaybackKeyPair = true
-			if serviceFamily, _ := entry["service_family"].(string); serviceFamily != "ivs" {
-				t.Fatalf("playback key pair service family = %q, want ivs", serviceFamily)
+		if wantServiceFamily, ok := wantEntries[resource]; ok {
+			foundEntries[resource] = true
+			if serviceFamily, _ := entry["service_family"].(string); serviceFamily != wantServiceFamily {
+				t.Fatalf("%s service family = %q, want %s", resource, serviceFamily, wantServiceFamily)
 			}
 			if status, _ := entry["status"].(string); status != "unsupported" {
-				t.Fatalf("playback key pair status = %q, want unsupported", status)
+				t.Fatalf("%s status = %q, want unsupported", resource, status)
 			}
 			references, _ := entry["references"].([]interface{})
 			reason, _ := entry["reason"].(string)
 			evidence, _ := entry["evidence"].(string)
 			if reason == "" || evidence == "" || len(references) == 0 {
-				t.Fatal("playback key pair unsupported entry is missing reason, evidence, or references")
+				t.Fatalf("%s unsupported entry is missing reason, evidence, or references", resource)
 			}
 		}
 	}
-	if !foundPlaybackKeyPair {
-		t.Fatal("aws_ivs_playback_key_pair unsupported entry was not found")
+	for resource := range wantEntries {
+		if !foundEntries[resource] {
+			t.Fatalf("%s unsupported entry was not found", resource)
+		}
 	}
 	if !sort.StringsAreSorted(resources) {
 		t.Fatalf("unsupported resources are not sorted by resource: %v", resources)

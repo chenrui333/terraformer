@@ -351,6 +351,8 @@ github.com/aws/aws-sdk-go-v2/service/lakeformation v1.47.8 h1:BtZujlNIGZJpz/6Zbh
 github.com/aws/aws-sdk-go-v2/service/lakeformation v1.47.8/go.mod h1:8ztA+uewolt+oJ2VEVUPIxhK5IW+4AVuDou6ju6wAAE=
 github.com/aws/aws-sdk-go-v2/service/lambda v1.90.1 h1:odCeJgHXfQoXEWQUIzPkKvsJTWcLMsaOWowNpovPFFw=
 github.com/aws/aws-sdk-go-v2/service/lambda v1.90.1/go.mod h1:NbtJVztitG7JkuoI4GSrDUlsB32zeXqKBvXj6bUxcMo=
+github.com/aws/aws-sdk-go-v2/service/mediaconvert v1.91.2 h1:h466gQU4HNXHgTdz7a45mGudKsB+NeyPVYr6hf9F4gM=
+github.com/aws/aws-sdk-go-v2/service/mediaconvert v1.91.2/go.mod h1:r/qoOppQk/ZTUHNBdj9S8R8k0JCV2iApiKfyxDyU42s=
 github.com/aws/aws-sdk-go-v2/service/medialive v1.96.0 h1:2A2YYpr3IDLZ9y2WRg/oXSmlrmDQA+KNvgcFGOWr+PY=
 github.com/aws/aws-sdk-go-v2/service/medialive v1.96.0/go.mod h1:YtEXuL0GNGkAeeFSs2wT/KTnaqykXJ52d+4MefPwJKg=
 github.com/aws/aws-sdk-go-v2/service/mediapackage v1.39.23 h1:ztbUtcql2vd65yqnEz/k+bTX8PBP1J4to32/ck5hLAA=
