@@ -315,22 +315,63 @@ func newLambdaFunctionRecursionConfigResource(functionName string, config *lambd
 
 func (g *LambdaGenerator) addRuntimeManagementConfigs(svc *lambda.Client, functions []lambdaFunctionReference) error {
 	for _, function := range functions {
-		config, err := svc.GetRuntimeManagementConfig(context.TODO(), &lambda.GetRuntimeManagementConfigInput{
-			FunctionName: &function.name,
-		})
-		if err != nil {
-			if lambdaResourceNotFound(err) {
-				continue
-			}
+		if err := g.addRuntimeManagementConfig(svc, function.name, ""); err != nil {
 			return err
 		}
-		resource, ok := newLambdaRuntimeManagementConfigResource(function.name, "", config)
-		if !ok {
-			continue
+
+		p := lambda.NewListVersionsByFunctionPaginator(svc, &lambda.ListVersionsByFunctionInput{
+			FunctionName: &function.name,
+		})
+		for p.HasMorePages() {
+			page, err := p.NextPage(context.TODO())
+			if err != nil {
+				if lambdaResourceNotFound(err) {
+					break
+				}
+				return err
+			}
+			for _, version := range page.Versions {
+				qualifier, ok := lambdaRuntimeManagementConfigQualifier(version)
+				if !ok {
+					continue
+				}
+				if err := g.addRuntimeManagementConfig(svc, function.name, qualifier); err != nil {
+					return err
+				}
+			}
 		}
-		g.Resources = append(g.Resources, resource)
 	}
 	return nil
+}
+
+func (g *LambdaGenerator) addRuntimeManagementConfig(svc *lambda.Client, functionName, qualifier string) error {
+	input := &lambda.GetRuntimeManagementConfigInput{
+		FunctionName: &functionName,
+	}
+	if qualifier != "" {
+		input.Qualifier = &qualifier
+	}
+	config, err := svc.GetRuntimeManagementConfig(context.TODO(), input)
+	if err != nil {
+		if lambdaResourceNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	resource, ok := newLambdaRuntimeManagementConfigResource(functionName, qualifier, config)
+	if !ok {
+		return nil
+	}
+	g.Resources = append(g.Resources, resource)
+	return nil
+}
+
+func lambdaRuntimeManagementConfigQualifier(version lambdatypes.FunctionConfiguration) (string, bool) {
+	qualifier := StringValue(version.Version)
+	if qualifier == "" || qualifier == "$LATEST" {
+		return "", false
+	}
+	return qualifier, true
 }
 
 func newLambdaRuntimeManagementConfigResource(functionName, qualifier string, config *lambda.GetRuntimeManagementConfigOutput) (terraformutils.Resource, bool) {

@@ -58,13 +58,37 @@ func TestLambdaRuntimeManagementConfigImportID(t *testing.T) {
 		want         string
 	}{
 		{name: "unqualified", functionName: "my-function", want: "my-function,"},
-		{name: "qualified", functionName: "my-function", qualifier: "prod", want: "my-function,prod"},
+		{name: "qualified version", functionName: "my-function", qualifier: "1", want: "my-function,1"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := lambdaRuntimeManagementConfigImportID(tt.functionName, tt.qualifier); got != tt.want {
 				t.Fatalf("lambdaRuntimeManagementConfigImportID() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestLambdaRuntimeManagementConfigQualifier(t *testing.T) {
+	tests := []struct {
+		name    string
+		version string
+		want    string
+		wantOK  bool
+	}{
+		{name: "published version", version: "1", want: "1", wantOK: true},
+		{name: "latest version", version: "$LATEST"},
+		{name: "empty version"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := lambdaRuntimeManagementConfigQualifier(lambdatypes.FunctionConfiguration{
+				Version: aws.String(tt.version),
+			})
+			if got != tt.want || ok != tt.wantOK {
+				t.Fatalf("lambdaRuntimeManagementConfigQualifier() = %q, %t, want %q, %t", got, ok, tt.want, tt.wantOK)
 			}
 		})
 	}
@@ -237,6 +261,18 @@ func TestNewLambdaRuntimeManagementConfigResource(t *testing.T) {
 		if got := resource.InstanceState.Attributes[key]; got != want {
 			t.Fatalf("attribute %q = %q, want %q", key, got, want)
 		}
+	}
+	qualifiedResource, ok := newLambdaRuntimeManagementConfigResource("my-function", "1", &lambda.GetRuntimeManagementConfigOutput{
+		UpdateRuntimeOn: lambdatypes.UpdateRuntimeOnAuto,
+	})
+	if !ok {
+		t.Fatal("newLambdaRuntimeManagementConfigResource() ok = false for qualified version, want true")
+	}
+	if qualifiedResource.InstanceState.ID != "my-function,1" {
+		t.Fatalf("qualified resource ID = %q, want %q", qualifiedResource.InstanceState.ID, "my-function,1")
+	}
+	if got := qualifiedResource.InstanceState.Attributes["qualifier"]; got != "1" {
+		t.Fatalf("qualified resource qualifier = %q, want %q", got, "1")
 	}
 	if _, ok := newLambdaRuntimeManagementConfigResource("", "", &lambda.GetRuntimeManagementConfigOutput{
 		UpdateRuntimeOn: lambdatypes.UpdateRuntimeOnAuto,
