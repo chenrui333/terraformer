@@ -407,6 +407,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/directconnect v1.38.17
 	github.com/aws/aws-sdk-go-v2/service/pipes v1.23.22
 	github.com/aws/aws-sdk-go-v2/service/scheduler v1.17.24
+	github.com/aws/aws-sdk-go-v2/service/sesv2 v1.60.4
 	github.com/gofrs/uuid/v3 v3.1.2
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/hashicorp/go-azure-sdk/sdk v0.20260507.1215246
