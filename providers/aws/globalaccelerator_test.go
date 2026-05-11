@@ -8,6 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/globalaccelerator/types"
+	"github.com/aws/smithy-go"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -27,15 +28,15 @@ func TestGlobalAcceleratorImportID(t *testing.T) {
 	}
 }
 
-func TestGlobalAcceleratorClientConfigUsesConcreteRegionForGlobalImport(t *testing.T) {
+func TestGlobalAcceleratorClientConfigUsesControlPlaneRegion(t *testing.T) {
 	config := globalAcceleratorClientConfig(aws.Config{Region: GlobalRegion})
-	if got := config.Region; got != MainRegionPublicPartition {
-		t.Fatalf("Region = %q, want %q", got, MainRegionPublicPartition)
+	if got := config.Region; got != globalAcceleratorControlPlaneRegion {
+		t.Fatalf("Region = %q, want %q", got, globalAcceleratorControlPlaneRegion)
 	}
 
-	config = globalAcceleratorClientConfig(aws.Config{Region: "us-west-2"})
-	if got := config.Region; got != "us-west-2" {
-		t.Fatalf("Region = %q, want us-west-2", got)
+	config = globalAcceleratorClientConfig(aws.Config{Region: "eu-west-1"})
+	if got := config.Region; got != globalAcceleratorControlPlaneRegion {
+		t.Fatalf("Region = %q, want %q", got, globalAcceleratorControlPlaneRegion)
 	}
 }
 
@@ -313,8 +314,8 @@ func TestNewGlobalAcceleratorCrossAccountAttachmentResource(t *testing.T) {
 	if got, want := attrs["resource.0.region"], "us-east-1"; got != want {
 		t.Fatalf("resource.0.region = %q, want %q", got, want)
 	}
-	if got, want := attrs["resource.1.cidr"], "203.0.113.0/24"; got != want {
-		t.Fatalf("resource.1.cidr = %q, want %q", got, want)
+	if got, want := attrs["resource.1.cidr_block"], "203.0.113.0/24"; got != want {
+		t.Fatalf("resource.1.cidr_block = %q, want %q", got, want)
 	}
 }
 
@@ -337,6 +338,7 @@ func TestGlobalAcceleratorResourceNotFound(t *testing.T) {
 		{name: "listener", err: &types.ListenerNotFoundException{}, want: true},
 		{name: "endpoint group", err: &types.EndpointGroupNotFoundException{}, want: true},
 		{name: "attachment", err: &types.AttachmentNotFoundException{}, want: true},
+		{name: "api error fallback", err: &smithy.GenericAPIError{Code: "AcceleratorNotFoundException"}, want: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

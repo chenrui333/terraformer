@@ -24,6 +24,7 @@ const (
 	globalAcceleratorCustomRoutingListenerResourceType      = "aws_globalaccelerator_custom_routing_listener"
 	globalAcceleratorCustomRoutingEndpointGroupResourceType = "aws_globalaccelerator_custom_routing_endpoint_group"
 	globalAcceleratorCrossAccountAttachmentResourceType     = "aws_globalaccelerator_cross_account_attachment"
+	globalAcceleratorControlPlaneRegion                     = "us-west-2"
 	globalAcceleratorListenerARNPart                        = "/listener/"
 	globalAcceleratorEndpointGroupARNPart                   = "/endpoint-group/"
 )
@@ -71,9 +72,7 @@ func (g *GlobalAcceleratorGenerator) loadOptionalResources(loaders []globalAccel
 
 func globalAcceleratorClientConfig(config aws.Config) aws.Config {
 	globalAcceleratorConfig := config.Copy()
-	if globalAcceleratorConfig.Region == "" || globalAcceleratorConfig.Region == GlobalRegion {
-		globalAcceleratorConfig.Region = MainRegionPublicPartition
-	}
+	globalAcceleratorConfig.Region = globalAcceleratorControlPlaneRegion
 	return globalAcceleratorConfig
 }
 
@@ -719,7 +718,7 @@ func globalAcceleratorPutCrossAccountResources(attributes map[string]string, res
 		prefix := "resource." + strconv.Itoa(i)
 		globalAcceleratorPutString(attributes, prefix+".endpoint_id", StringValue(resource.EndpointId))
 		globalAcceleratorPutString(attributes, prefix+".region", StringValue(resource.Region))
-		globalAcceleratorPutString(attributes, prefix+".cidr", StringValue(resource.Cidr))
+		globalAcceleratorPutString(attributes, prefix+".cidr_block", StringValue(resource.Cidr))
 	}
 }
 
