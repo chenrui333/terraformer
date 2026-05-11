@@ -107,6 +107,9 @@ func (g *SageMakerGenerator) InitialCleanup() {
 			if filter.FieldPath != "id" {
 				continue
 			}
+			if filter.ServiceName != "" && filter.ServiceName != serviceName {
+				continue
+			}
 			allPredicatesTrue = allPredicatesTrue && filter.Filter(resource)
 		}
 		if allPredicatesTrue && !terraformutils.ContainsResource(filteredResources, resource) {

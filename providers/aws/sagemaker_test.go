@@ -533,6 +533,46 @@ func TestSageMakerInitialCleanupHonorsTypedFilters(t *testing.T) {
 	}
 }
 
+func TestSageMakerInitialCleanupScopesTypedIDFilters(t *testing.T) {
+	resources := sageMakerTestResources(t)
+	g := SageMakerGenerator{}
+	g.Resources = resources
+	g.Filter = []terraformutils.ResourceFilter{
+		{
+			ServiceName:      "sagemaker_model",
+			FieldPath:        "id",
+			AcceptableValues: []string{"fraud-model"},
+		},
+		{
+			ServiceName:      "sagemaker_endpoint",
+			FieldPath:        "id",
+			AcceptableValues: []string{"prod-endpoint"},
+		},
+		{
+			ServiceName:      "bedrock_guardrail",
+			FieldPath:        "id",
+			AcceptableValues: []string{"gr-123,DRAFT"},
+		},
+	}
+
+	g.InitialCleanup()
+
+	gotTypes := make([]string, 0, len(g.Resources))
+	for _, resource := range g.Resources {
+		gotTypes = append(gotTypes, resource.InstanceInfo.Type)
+	}
+	sort.Strings(gotTypes)
+	wantTypes := []string{sageMakerEndpointResourceType, sageMakerModelResourceType}
+	if len(gotTypes) != len(wantTypes) {
+		t.Fatalf("InitialCleanup() kept resource types = %v, want %v", gotTypes, wantTypes)
+	}
+	for i, want := range wantTypes {
+		if gotTypes[i] != want {
+			t.Fatalf("InitialCleanup() kept resource types = %v, want %v", gotTypes, wantTypes)
+		}
+	}
+}
+
 func TestSageMakerInitialCleanupPreservesGlobalFilters(t *testing.T) {
 	resources := sageMakerTestResources(t)
 	g := SageMakerGenerator{}
