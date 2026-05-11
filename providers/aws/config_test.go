@@ -233,3 +233,44 @@ func TestConfigRemediationConfigurationDependencySanitizesRuleName(t *testing.T)
 		t.Fatalf("depends_on = %#v, want [%q]", dependsOn, want)
 	}
 }
+
+func TestConfigConformancePackResourceShape(t *testing.T) {
+	name := "pack:with/slashes"
+	resource := terraformutils.NewResource(
+		name,
+		name,
+		"aws_config_conformance_pack",
+		"aws",
+		map[string]string{"name": name},
+		configAllowEmptyValues,
+		map[string]interface{}{},
+	)
+	if got := resource.InstanceInfo.Type; got != "aws_config_conformance_pack" {
+		t.Fatalf("resource type = %q", got)
+	}
+	if got := resource.InstanceState.Attributes["name"]; got != name {
+		t.Fatalf("name = %q, want %q", got, name)
+	}
+	if got, want := resource.ResourceName, "tfer--pack-003A-with-002F-slashes"; got != want {
+		t.Fatalf("resource name = %q, want %q", got, want)
+	}
+}
+
+func TestConfigOrganizationConformancePackResourceShape(t *testing.T) {
+	name := "org-pack"
+	resource := terraformutils.NewResource(
+		name,
+		name,
+		"aws_config_organization_conformance_pack",
+		"aws",
+		map[string]string{"name": name},
+		configAllowEmptyValues,
+		map[string]interface{}{},
+	)
+	if got := resource.InstanceInfo.Type; got != "aws_config_organization_conformance_pack" {
+		t.Fatalf("resource type = %q", got)
+	}
+	if got := resource.InstanceState.Attributes["name"]; got != name {
+		t.Fatalf("name = %q, want %q", got, name)
+	}
+}

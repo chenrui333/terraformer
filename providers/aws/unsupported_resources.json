@@ -25,6 +25,19 @@
       ]
     },
     {
+      "resource": "aws_detective_invitation_accepter",
+      "service_family": "detective",
+      "reason": "The resource represents accepting a Detective invitation in a member account; discovery can see invitations or membership, but cannot safely infer Terraform ownership of the acceptance/disassociation lifecycle.",
+      "evidence": "Terraform AWS provider imports by graph ARN and reads ListInvitations, while create calls AcceptInvitation. Emitting this from an existing invitation or membership would assume ownership of side-effectful account association state.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/detective_invitation_accepter",
+        "https://docs.aws.amazon.com/detective/latest/APIReference/API_AcceptInvitation.html",
+        "https://docs.aws.amazon.com/detective/latest/APIReference/API_ListInvitations.html"
+      ]
+    },
+    {
       "resource": "aws_ebs_snapshot_block_public_access",
       "service_family": "ebs",
       "reason": "The current Terraform AWS provider resource does not expose an import path for this regional singleton setting, so Terraformer cannot seed it through provider import/refresh.",
@@ -268,6 +281,19 @@
         "https://github.com/chenrui333/terraformer/issues/338",
         "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sagemaker_human_task_ui",
         "https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribeHumanTaskUi.html"
+      ]
+    },
+    {
+      "resource": "aws_securityhub_invite_accepter",
+      "service_family": "securityhub",
+      "reason": "The resource represents accepting a Security Hub administrator invitation in a member account; discovery can see an administrator relationship but cannot safely infer Terraform ownership of the acceptance/disassociation lifecycle.",
+      "evidence": "Terraform AWS provider imports by account ID and reads GetMasterAccount, while create calls AcceptInvitation with invitation context. Emitting this from an existing relationship would assume ownership of side-effectful account association state.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/securityhub_invite_accepter",
+        "https://docs.aws.amazon.com/securityhub/1.0/APIReference/API_AcceptInvitation.html",
+        "https://docs.aws.amazon.com/securityhub/1.0/APIReference/API_GetMasterAccount.html"
       ]
     },
     {

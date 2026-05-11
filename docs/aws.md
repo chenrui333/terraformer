@@ -245,7 +245,9 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_config_configuration_aggregator`
     * `aws_config_configuration_recorder`
     * `aws_config_configuration_recorder_status`
+    * `aws_config_conformance_pack`
     * `aws_config_delivery_channel`
+    * `aws_config_organization_conformance_pack`
     * `aws_config_organization_custom_policy_rule`
     * `aws_config_organization_custom_rule`
     * `aws_config_organization_managed_rule`
@@ -257,6 +259,10 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_datapipeline_pipeline`
 *   `devicefarm`
     * `aws_devicefarm_project`
+*   `detective`
+    * `aws_detective_graph`
+    * `aws_detective_member`
+    * `aws_detective_organization_admin_account`
 *   `dms`
     * `aws_dms_certificate`
     * `aws_dms_endpoint`
@@ -674,8 +680,17 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_secretsmanager_secret_policy`
     * `aws_secretsmanager_secret_rotation`
 *   `securityhub`
+    * `aws_securityhub_action_target`
     * `aws_securityhub_account`
+    * `aws_securityhub_automation_rule`
+    * `aws_securityhub_configuration_policy`
+    * `aws_securityhub_configuration_policy_association`
+    * `aws_securityhub_finding_aggregator`
+    * `aws_securityhub_insight`
     * `aws_securityhub_member`
+    * `aws_securityhub_organization_admin_account`
+    * `aws_securityhub_organization_configuration`
+    * `aws_securityhub_product_subscription`
     * `aws_securityhub_standards_subscription`
 *   `servicecatalog`
     * `aws_servicecatalog_portfolio`
