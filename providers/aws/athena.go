@@ -29,7 +29,10 @@ const (
 	athenaPreparedStatementIDSeparator    = "/"
 )
 
-var athenaAllowEmptyValues = []string{"tags.", "parameters.", "^description$", "^configuration\\.\\d+\\.enforce_workgroup_configuration$"}
+var (
+	athenaAllowEmptyValues                  = []string{"tags.", "parameters.", "^description$", "^configuration\\.\\d+\\.enforce_workgroup_configuration$"}
+	athenaPreparedStatementAllowEmptyValues = []string{}
+)
 
 type AthenaGenerator struct {
 	AWSService
@@ -206,7 +209,7 @@ func (g *AthenaGenerator) loadPreparedStatements(svc *athena.Client, workGroupNa
 				athenaResourceName(workGroupName, statementName),
 				athenaPreparedStatementResourceType,
 				"aws",
-				athenaAllowEmptyValues,
+				athenaPreparedStatementAllowEmptyValues,
 			))
 		}
 	}

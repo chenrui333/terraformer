@@ -159,6 +159,11 @@ func TestAthenaAllowEmptyValuesPreserveRequiredAndDefaultedFields(t *testing.T) 
 	assertAllowEmptyValue(t, resource, `^configuration\.\d+\.enforce_workgroup_configuration$`)
 }
 
+func TestAthenaPreparedStatementAllowEmptyValuesDropsEmptyDescription(t *testing.T) {
+	resource := terraformutils.NewSimpleResource("primary/report", "primary/report", athenaPreparedStatementResourceType, "aws", athenaPreparedStatementAllowEmptyValues)
+	assertAllowEmptyValueMissing(t, resource, "^description$")
+}
+
 func TestAthenaPostConvertHookWrapsQueries(t *testing.T) {
 	resource := terraformutils.NewSimpleResource("query-id", "daily", athenaNamedQueryResourceType, "aws", athenaAllowEmptyValues)
 	resource.Item = map[string]interface{}{"query": "select '$" + "{value}'"}
@@ -182,6 +187,15 @@ func assertAllowEmptyValue(t *testing.T, resource terraformutils.Resource, want 
 		}
 	}
 	t.Fatalf("AllowEmptyValues = %v, want %q", resource.AllowEmptyValues, want)
+}
+
+func assertAllowEmptyValueMissing(t *testing.T, resource terraformutils.Resource, forbidden string) {
+	t.Helper()
+	for _, value := range resource.AllowEmptyValues {
+		if value == forbidden {
+			t.Fatalf("AllowEmptyValues = %v, did not want %q", resource.AllowEmptyValues, forbidden)
+		}
+	}
 }
 
 func assertAwsFrameworkResourcePreserveIDAfterRefresh(t *testing.T, resource terraformutils.Resource) {
