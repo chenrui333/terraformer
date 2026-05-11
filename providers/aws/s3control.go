@@ -161,6 +161,19 @@ func (g *S3ControlGenerator) loadObjectLambdaAccessPoints(svc *s3control.Client,
 			if err != nil {
 				return err
 			}
+			details, err := svc.GetAccessPointForObjectLambda(context.TODO(), &s3control.GetAccessPointForObjectLambdaInput{
+				AccountId: aws.String(accountID),
+				Name:      aws.String(name),
+			})
+			if s3ControlResourceNotFound(err) {
+				continue
+			}
+			if err != nil {
+				return err
+			}
+			if !s3ControlObjectLambdaAccessPointReadable(details) {
+				continue
+			}
 			if resource, ok := newS3ControlObjectLambdaAccessPointResource(accountID, accessPoint, configuration); ok {
 				g.Resources = append(g.Resources, resource)
 			}
@@ -385,6 +398,10 @@ func s3ControlObjectLambdaAccessPointImportable(configuration *s3control.GetAcce
 	}
 	return StringValue(configuration.Configuration.SupportingAccessPoint) != "" &&
 		len(configuration.Configuration.TransformationConfigurations) > 0
+}
+
+func s3ControlObjectLambdaAccessPointReadable(accessPoint *s3control.GetAccessPointForObjectLambdaOutput) bool {
+	return accessPoint != nil && accessPoint.Alias != nil
 }
 
 func s3ControlResourceName(parts ...string) string {

@@ -215,6 +215,26 @@ func TestS3ControlObjectLambdaAccessPointImportable(t *testing.T) {
 	}
 }
 
+func TestS3ControlObjectLambdaAccessPointReadable(t *testing.T) {
+	tests := []struct {
+		name        string
+		accessPoint *s3control.GetAccessPointForObjectLambdaOutput
+		want        bool
+	}{
+		{name: "valid", accessPoint: &s3control.GetAccessPointForObjectLambdaOutput{Alias: &s3controltypes.ObjectLambdaAccessPointAlias{}}, want: true},
+		{name: "nil output", want: false},
+		{name: "nil alias", accessPoint: &s3control.GetAccessPointForObjectLambdaOutput{}, want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := s3ControlObjectLambdaAccessPointReadable(tt.accessPoint); got != tt.want {
+				t.Fatalf("readable = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestS3ControlResourceNameAvoidsSanitizedCollisions(t *testing.T) {
 	left := terraformutils.TfSanitize(s3ControlResourceName("access_point", testS3ControlAccountID, "a_b", "c"))
 	right := terraformutils.TfSanitize(s3ControlResourceName("access_point", testS3ControlAccountID, "a", "b_c"))
