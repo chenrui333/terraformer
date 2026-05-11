@@ -132,8 +132,19 @@ func TestNewRoute53HostedZoneDNSSECResource(t *testing.T) {
 			"signing_status": "SIGNING",
 		})
 
+	disabledResource, ok := newRoute53HostedZoneDNSSECResource(testRoute53ZoneID, &route53.GetDNSSECOutput{
+		KeySigningKeys: []route53types.KeySigningKey{{Name: aws.String("core-key")}},
+		Status:         &route53types.DNSSECStatus{ServeSignature: aws.String("NOT_SIGNING")},
+	})
+	assertRoute53ResourceAttributes(t, disabledResource, ok, route53HostedZoneDNSSECResourceType, testRoute53ZoneID,
+		[]string{"hosted_zone_dnssec", testRoute53ZoneID},
+		map[string]string{
+			"hosted_zone_id": testRoute53ZoneID,
+			"signing_status": "NOT_SIGNING",
+		})
+
 	if _, ok := newRoute53HostedZoneDNSSECResource(testRoute53ZoneID, &route53.GetDNSSECOutput{Status: &route53types.DNSSECStatus{ServeSignature: aws.String("NOT_SIGNING")}}); ok {
-		t.Fatal("DNSSEC resource should skip non-signing hosted zones")
+		t.Fatal("DNSSEC resource should skip non-signing hosted zones without key-signing keys")
 	}
 	if _, ok := newRoute53HostedZoneDNSSECResource("", &route53.GetDNSSECOutput{Status: &route53types.DNSSECStatus{ServeSignature: aws.String("SIGNING")}}); ok {
 		t.Fatal("DNSSEC resource with empty zone ID should be skipped")

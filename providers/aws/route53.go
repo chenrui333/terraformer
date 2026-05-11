@@ -383,7 +383,9 @@ func route53HostedZoneDNSSECImportable(output *route53.GetDNSSECOutput) bool {
 	if output == nil || output.Status == nil {
 		return false
 	}
-	return StringValue(output.Status.ServeSignature) == "SIGNING"
+	signingStatus := StringValue(output.Status.ServeSignature)
+	return signingStatus == "SIGNING" ||
+		(signingStatus == "NOT_SIGNING" && len(output.KeySigningKeys) > 0)
 }
 
 func route53KeySigningKeyImportable(keySigningKey route53types.KeySigningKey) bool {
