@@ -3,6 +3,7 @@
 package aws
 
 import (
+	"errors"
 	"testing"
 
 	dmstypes "github.com/aws/aws-sdk-go-v2/service/databasemigrationservice/types"
@@ -37,6 +38,61 @@ func TestDMSResourceNamesAvoidTypeCollisions(t *testing.T) {
 	}
 }
 
+func TestDMSOptionalResourceLoaderErrors(t *testing.T) {
+	t.Run("skips resource not found", func(t *testing.T) {
+		g := DmsGenerator{}
+		calledNext := false
+		err := g.loadOptionalResources([]dmsOptionalResourceLoader{
+			{
+				name: "certificates",
+				load: func() error {
+					return &dmstypes.ResourceNotFoundFault{}
+				},
+			},
+			{
+				name: "event subscriptions",
+				load: func() error {
+					calledNext = true
+					return nil
+				},
+			},
+		})
+		if err != nil {
+			t.Fatalf("loadOptionalResources() error = %v, want nil", err)
+		}
+		if !calledNext {
+			t.Fatal("loadOptionalResources() should continue after skippable error")
+		}
+	})
+
+	t.Run("returns unexpected error", func(t *testing.T) {
+		g := DmsGenerator{}
+		boom := errors.New("boom")
+		calledNext := false
+		err := g.loadOptionalResources([]dmsOptionalResourceLoader{
+			{
+				name: "certificates",
+				load: func() error {
+					return boom
+				},
+			},
+			{
+				name: "event subscriptions",
+				load: func() error {
+					calledNext = true
+					return nil
+				},
+			},
+		})
+		if !errors.Is(err, boom) {
+			t.Fatalf("loadOptionalResources() error = %v, want %v", err, boom)
+		}
+		if calledNext {
+			t.Fatal("loadOptionalResources() should stop after unexpected error")
+		}
+	})
+}
+
 func TestNewDMSCertificateResource(t *testing.T) {
 	resource, ok := newDMSCertificateResource(dmstypes.Certificate{
 		CertificateIdentifier: dmsString("dms-cert"),
@@ -61,6 +117,14 @@ func TestNewDMSEventSubscriptionResource(t *testing.T) {
 		Status:              dmsString("active"),
 	})
 	assertDMSResource(t, resource, ok, "dms-events", dmsResourceName("event-subscription", "dms-events"), dmsEventSubscriptionResourceType)
+
+	resource, ok = newDMSEventSubscriptionResource(dmstypes.EventSubscription{
+		CustSubscriptionId: dmsString("dms-all-events"),
+		SnsTopicArn:        dmsString("arn:aws:sns:us-east-1:123456789012:dms-events"),
+		SourceType:         dmsString("replication-instance"),
+		Status:             dmsString("active"),
+	})
+	assertDMSResource(t, resource, ok, "dms-all-events", dmsResourceName("event-subscription", "dms-all-events"), dmsEventSubscriptionResourceType)
 
 	if _, ok := newDMSEventSubscriptionResource(dmstypes.EventSubscription{
 		EventCategoriesList: []string{"creation"},
@@ -193,6 +257,17 @@ func TestDMSEventSubscriptionImportable(t *testing.T) {
 	if !dmsEventSubscriptionImportable(base) {
 		t.Fatal("active event subscription with supported source type and required fields should be importable")
 	}
+	allCategories := base
+	allCategories.EventCategoriesList = nil
+	if !dmsEventSubscriptionImportable(allCategories) {
+		t.Fatal("active event subscription without event categories should import all categories")
+	}
+	caseVariant := base
+	caseVariant.SourceType = dmsString("REPLICATION-TASK")
+	caseVariant.Status = dmsString("ACTIVE")
+	if !dmsEventSubscriptionImportable(caseVariant) {
+		t.Fatal("event subscription importability should be case-insensitive for status and source type")
+	}
 
 	tests := []struct {
 		name         string
@@ -226,11 +301,6 @@ func TestDMSEventSubscriptionImportable(t *testing.T) {
 			SourceType:          dmsString("replication-instance"),
 			Status:              dmsString("active"),
 		}},
-		{name: "empty event categories", subscription: dmstypes.EventSubscription{
-			SnsTopicArn: dmsString("arn:aws:sns:us-east-1:123456789012:dms-events"),
-			SourceType:  dmsString("replication-instance"),
-			Status:      dmsString("active"),
-		}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -242,7 +312,7 @@ func TestDMSEventSubscriptionImportable(t *testing.T) {
 }
 
 func TestDMSEventSubscriptionSourceTypeImportable(t *testing.T) {
-	for _, sourceType := range []string{"replication-instance", "replication-task"} {
+	for _, sourceType := range []string{"replication-instance", "replication-task", "REPLICATION-INSTANCE", "RePlIcAtIoN-TaSk"} {
 		if !dmsEventSubscriptionSourceTypeImportable(sourceType) {
 			t.Fatalf("source type %q should be importable", sourceType)
 		}

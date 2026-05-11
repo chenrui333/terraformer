@@ -4,6 +4,8 @@ package aws
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log"
 	"strings"
 
@@ -44,12 +46,23 @@ type dmsOptionalResourceLoader struct {
 	load func() error
 }
 
-func (g *DmsGenerator) loadOptionalResources(loaders []dmsOptionalResourceLoader) {
+func (g *DmsGenerator) loadOptionalResources(loaders []dmsOptionalResourceLoader) error {
 	for _, loader := range loaders {
 		if err := loader.load(); err != nil {
-			log.Printf("Skipping DMS %s: %v", loader.name, err)
+			if dmsOptionalResourceErrorSkippable(err) {
+				log.Printf("Skipping DMS %s: %v", loader.name, err)
+				continue
+			}
+			log.Printf("Failed DMS %s discovery: %v", loader.name, err)
+			return fmt.Errorf("loading DMS %s: %w", loader.name, err)
 		}
 	}
+	return nil
+}
+
+func dmsOptionalResourceErrorSkippable(err error) bool {
+	var notFound *dmstypes.ResourceNotFoundFault
+	return errors.As(err, &notFound)
 }
 
 func (g *DmsGenerator) InitResources() error {
@@ -71,10 +84,12 @@ func (g *DmsGenerator) InitResources() error {
 	if err := g.loadReplicationTasks(svc); err != nil {
 		return err
 	}
-	g.loadOptionalResources([]dmsOptionalResourceLoader{
+	if err := g.loadOptionalResources([]dmsOptionalResourceLoader{
 		{name: "certificates", load: func() error { return g.loadCertificates(svc) }},
 		{name: "event subscriptions", load: func() error { return g.loadEventSubscriptions(svc) }},
-	})
+	}); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -279,8 +294,7 @@ func dmsCertificateImportable(certificate dmstypes.Certificate) bool {
 func dmsEventSubscriptionImportable(subscription dmstypes.EventSubscription) bool {
 	return strings.EqualFold(StringValue(subscription.Status), dmsEventSubscriptionStatusActive) &&
 		dmsEventSubscriptionSourceTypeImportable(StringValue(subscription.SourceType)) &&
-		StringValue(subscription.SnsTopicArn) != "" &&
-		len(subscription.EventCategoriesList) > 0
+		StringValue(subscription.SnsTopicArn) != ""
 }
 
 func dmsEventSubscriptionSourceTypeImportable(sourceType string) bool {
