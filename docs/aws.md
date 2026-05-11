@@ -281,8 +281,22 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_dynamodb_table`
     * `aws_dynamodb_table_export`
 *   `ebs`
+    * `aws_ebs_default_kms_key`
+    * `aws_ebs_encryption_by_default`
+    * `aws_ebs_fast_snapshot_restore`
+    * `aws_ebs_snapshot`
     * `aws_ebs_volume`
     * `aws_volume_attachment`
+*   `ec2`
+    * `aws_ec2_capacity_reservation`
+    * `aws_ec2_host`
+    * `aws_ec2_instance_connect_endpoint`
+    * `aws_ec2_network_insights_path`
+    * `aws_ec2_traffic_mirror_filter`
+    * `aws_ec2_traffic_mirror_filter_rule`
+    * `aws_ec2_traffic_mirror_session`
+    * `aws_ec2_traffic_mirror_target`
+    * `aws_placement_group`
 *   `ec2_instance`
     * `aws_instance`
 *   `ecr`
@@ -401,6 +415,13 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_identitystore_user`
 *   `igw`
     * `aws_internet_gateway`
+*   `ipam`
+    * `aws_vpc_ipam`
+    * `aws_vpc_ipam_pool`
+    * `aws_vpc_ipam_pool_cidr`
+    * `aws_vpc_ipam_resource_discovery`
+    * `aws_vpc_ipam_resource_discovery_association`
+    * `aws_vpc_ipam_scope`
 *   `iot`
     * `aws_iot_thing`
     * `aws_iot_thing_type`

@@ -25,6 +25,90 @@
       ]
     },
     {
+      "resource": "aws_ebs_snapshot_block_public_access",
+      "service_family": "ebs",
+      "reason": "The current Terraform AWS provider resource does not expose an import path for this regional singleton setting, so Terraformer cannot seed it through provider import/refresh.",
+      "evidence": "Terraform AWS provider v6.44.0 defines aws_ebs_snapshot_block_public_access without ResourceImporter support; broad discovery through GetSnapshotBlockPublicAccessState would produce a resource the provider cannot import.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ebs_snapshot_block_public_access",
+        "https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_GetSnapshotBlockPublicAccessState.html"
+      ]
+    },
+    {
+      "resource": "aws_ebs_snapshot_copy",
+      "service_family": "ebs",
+      "reason": "Snapshot copies are action-style resources; DescribeSnapshots returns the resulting snapshot but not the original copy operation configuration needed to manage aws_ebs_snapshot_copy safely.",
+      "evidence": "Terraform AWS provider models snapshot copy with source_snapshot_id/source_region and copy-time options. EC2 DescribeSnapshots can discover the destination snapshot ID, but it does not reconstruct the copy request as stable infrastructure inventory.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ebs_snapshot_copy",
+        "https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeSnapshots.html"
+      ]
+    },
+    {
+      "resource": "aws_ebs_snapshot_import",
+      "service_family": "ebs",
+      "reason": "Snapshot imports are stateful import jobs, not stable inventory; EC2 snapshot discovery cannot reconstruct the original disk container, role, or import options.",
+      "evidence": "Terraform AWS provider models the import request configuration for aws_ebs_snapshot_import. DescribeSnapshots only returns the resulting snapshot state and metadata after the import job has run.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ebs_snapshot_import",
+        "https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeSnapshots.html"
+      ]
+    },
+    {
+      "resource": "aws_ebs_volume_copy",
+      "service_family": "ebs",
+      "reason": "Volume copies are action-style resources; broad EC2 volume discovery can find the destination volume but not reconstruct the original copy operation as managed Terraform.",
+      "evidence": "Terraform AWS provider models copy-time source_volume_id, source_region, and operation options for aws_ebs_volume_copy, while DescribeVolumes returns the resulting volume rather than the copy request.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ebs_volume_copy",
+        "https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeVolumes.html"
+      ]
+    },
+    {
+      "resource": "aws_ec2_instance_state",
+      "service_family": "ec2",
+      "reason": "Instance state is a mutating control resource for start/stop behavior rather than durable infrastructure inventory; importing it from every EC2 instance would create side-effect-prone management.",
+      "evidence": "Terraform AWS provider documents aws_ec2_instance_state as a resource that changes instance state. EC2 DescribeInstances can discover current state, but managing it would cause Terraform to enforce runtime power state.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ec2_instance_state",
+        "https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html"
+      ]
+    },
+    {
+      "resource": "aws_ec2_serial_console_access",
+      "service_family": "ec2",
+      "reason": "The current Terraform AWS provider resource does not expose an import path for this account-level setting, so Terraformer cannot seed it through provider import/refresh.",
+      "evidence": "Terraform AWS provider v6.44.0 defines aws_ec2_serial_console_access without ResourceImporter support; GetSerialConsoleAccessStatus can read the setting, but provider import is unavailable.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ec2_serial_console_access",
+        "https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_GetSerialConsoleAccessStatus.html"
+      ]
+    },
+    {
+      "resource": "aws_ec2_tag",
+      "service_family": "ec2",
+      "reason": "Standalone EC2 tag resources duplicate tag ownership already handled by resource-specific tag attributes and would emit redundant Terraform for every tagged EC2-family resource.",
+      "evidence": "EC2 DescribeTags can enumerate tags globally, but importing each tag as aws_ec2_tag would overlap with normal tags/tags_all import behavior on the owning resources.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ec2_tag",
+        "https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeTags.html"
+      ]
+    },
+    {
       "resource": "aws_ecs_account_setting_default",
       "service_family": "ecs",
       "reason": "ECS account setting defaults are not safely discoverable without importing inherited or AWS-managed defaults as explicitly managed Terraform resources.",
