@@ -98,6 +98,14 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_appmesh_virtual_node`
     * `aws_appmesh_virtual_router`
     * `aws_appmesh_virtual_service`
+*   `apprunner`
+    * `aws_apprunner_auto_scaling_configuration_version`
+    * `aws_apprunner_connection`
+    * `aws_apprunner_custom_domain_association`
+    * `aws_apprunner_observability_configuration`
+    * `aws_apprunner_service`
+    * `aws_apprunner_vpc_connector`
+    * `aws_apprunner_vpc_ingress_connection`
 *   `appstream`
     * `aws_appstream_fleet`
     * `aws_appstream_fleet_stack_association`
@@ -138,6 +146,7 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_batch_compute_environment`
     * `aws_batch_job_definition`
     * `aws_batch_job_queue`
+    * `aws_batch_scheduling_policy`
 *   `bedrock`
     * `aws_bedrock_guardrail`
     * `aws_bedrock_guardrail_version`
@@ -321,6 +330,14 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_elasticsearch_domain`
 *   `firehose`
     * `aws_kinesis_firehose_delivery_stream`
+*   `globalaccelerator`
+    * `aws_globalaccelerator_accelerator`
+    * `aws_globalaccelerator_cross_account_attachment`
+    * `aws_globalaccelerator_custom_routing_accelerator`
+    * `aws_globalaccelerator_custom_routing_endpoint_group`
+    * `aws_globalaccelerator_custom_routing_listener`
+    * `aws_globalaccelerator_endpoint_group`
+    * `aws_globalaccelerator_listener`
 *   `glue`
     * `aws_glue_catalog_database`
     * `aws_glue_catalog_table`
@@ -340,6 +357,11 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_guardduty_detector`
     * `aws_guardduty_filter`
     * `aws_guardduty_ipset`
+    * `aws_guardduty_malware_protection_plan`
+    * `aws_guardduty_member`
+    * `aws_guardduty_organization_admin_account`
+    * `aws_guardduty_organization_configuration`
+    * `aws_guardduty_publishing_destination`
     * `aws_guardduty_threatintelset`
 *   `iam`
     * `aws_iam_access_key`
@@ -415,6 +437,8 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_cloudwatch_query_definition`
 *   `media_package`
     * `aws_media_package_channel`
+*   `media_packagev2`
+    * `aws_media_packagev2_channel_group`
 *   `media_store`
     * `aws_media_store_container`
     * `aws_media_store_container_policy`
@@ -422,6 +446,8 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_medialive_channel`
     * `aws_medialive_input`
     * `aws_medialive_input_security_group`
+    * `aws_medialive_multiplex`
+    * `aws_medialive_multiplex_program`
 *   `mq`
     * `aws_mq_broker`
 *   `msk`
@@ -455,6 +481,21 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_organizations_organizational_unit`
     * `aws_organizations_policy`
     * `aws_organizations_policy_attachment`
+*   `opensearch`
+    * `aws_opensearch_domain`
+    * `aws_opensearch_domain_policy`
+    * `aws_opensearch_domain_saml_options`
+    * `aws_opensearch_inbound_connection_accepter`
+    * `aws_opensearch_outbound_connection`
+    * `aws_opensearch_package_association`
+    * `aws_opensearch_vpc_endpoint`
+*   `opensearchserverless`
+    * `aws_opensearchserverless_access_policy`
+    * `aws_opensearchserverless_collection`
+    * `aws_opensearchserverless_lifecycle_policy`
+    * `aws_opensearchserverless_security_config`
+    * `aws_opensearchserverless_security_policy`
+    * `aws_opensearchserverless_vpc_endpoint`
 *   `pipes`
     * `aws_pipes_pipe`
 *   `qldb`
@@ -706,6 +747,7 @@ List of global AWS services:
 *   `budgets`
 *   `cloudfront`
 *   `ecrpublic`
+*   `globalaccelerator`
 *   `iam`
 *   `organization`
 *   `route53`

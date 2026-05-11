@@ -403,15 +403,20 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.34.3
 	github.com/aws/aws-sdk-go-v2/service/appconfig v1.43.15
 	github.com/aws/aws-sdk-go-v2/service/appmesh v1.35.14
+	github.com/aws/aws-sdk-go-v2/service/apprunner v1.39.16
 	github.com/aws/aws-sdk-go-v2/service/appstream v1.58.0
 	github.com/aws/aws-sdk-go-v2/service/backup v1.55.2
 	github.com/aws/aws-sdk-go-v2/service/bedrock v1.59.2
 	github.com/aws/aws-sdk-go-v2/service/bedrockagent v1.53.2
 	github.com/aws/aws-sdk-go-v2/service/directconnect v1.38.17
+	github.com/aws/aws-sdk-go-v2/service/globalaccelerator v1.35.18
 	github.com/aws/aws-sdk-go-v2/service/guardduty v1.75.4
 	github.com/aws/aws-sdk-go-v2/service/ivs v1.50.1
 	github.com/aws/aws-sdk-go-v2/service/ivschat v1.21.22
+	github.com/aws/aws-sdk-go-v2/service/mediapackagev2 v1.37.0
 	github.com/aws/aws-sdk-go-v2/service/mwaa v1.40.0
+	github.com/aws/aws-sdk-go-v2/service/opensearch v1.68.0
+	github.com/aws/aws-sdk-go-v2/service/opensearchserverless v1.30.3
 	github.com/aws/aws-sdk-go-v2/service/pipes v1.23.22
 	github.com/aws/aws-sdk-go-v2/service/redshiftserverless v1.34.6
 	github.com/aws/aws-sdk-go-v2/service/route53resolver v1.43.0

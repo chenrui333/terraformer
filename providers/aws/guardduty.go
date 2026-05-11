@@ -20,16 +20,27 @@ import (
 )
 
 const (
-	guardDutyDetectorResourceType       = "aws_guardduty_detector"
-	guardDutyFilterResourceType         = "aws_guardduty_filter"
-	guardDutyIPSetResourceType          = "aws_guardduty_ipset"
-	guardDutyThreatIntelSetResourceType = "aws_guardduty_threatintelset"
+	guardDutyDetectorResourceType                  = "aws_guardduty_detector"
+	guardDutyFilterResourceType                    = "aws_guardduty_filter"
+	guardDutyIPSetResourceType                     = "aws_guardduty_ipset"
+	guardDutyMalwareProtectionPlanResourceType     = "aws_guardduty_malware_protection_plan"
+	guardDutyMemberResourceType                    = "aws_guardduty_member"
+	guardDutyOrganizationAdminAccountResourceType  = "aws_guardduty_organization_admin_account"
+	guardDutyOrganizationConfigurationResourceType = "aws_guardduty_organization_configuration"
+	guardDutyPublishingDestinationResourceType     = "aws_guardduty_publishing_destination"
+	guardDutyThreatIntelSetResourceType            = "aws_guardduty_threatintelset"
 
 	guardDutyResourceIDSeparator   = ":"
 	guardDutyResourceNameSeparator = ":"
 	guardDutyUpdatedAtField        = "updatedAt"
 
 	guardDutyFilterUpdatedAtCriteriaAdditionalField = "__guardduty_filter_updated_at_criteria"
+
+	guardDutyMemberRelationshipStatusCreated                     = "Created"
+	guardDutyMemberRelationshipStatusDisabled                    = "Disabled"
+	guardDutyMemberRelationshipStatusEnabled                     = "Enabled"
+	guardDutyMemberRelationshipStatusEmailVerificationInProgress = "EmailVerificationInProgress"
+	guardDutyMemberRelationshipStatusInvited                     = "Invited"
 )
 
 var guardDutyAllowEmptyValues = []string{"tags."}
@@ -46,6 +57,16 @@ func (g *GuardDutyGenerator) InitResources() error {
 		return e
 	}
 	svc := guardduty.NewFromConfig(config)
+	if err := g.loadOrganizationAdminAccounts(svc); err != nil {
+		if !guardDutyOrganizationResourceUnavailable(err) {
+			return err
+		}
+	}
+	if err := g.loadMalwareProtectionPlans(svc); err != nil {
+		if !guardDutyMalwareProtectionPlansUnavailable(err) {
+			return err
+		}
+	}
 	detectors, e := listGuardDutyDetectors(svc)
 	if e != nil {
 		return e
@@ -102,7 +123,42 @@ func (g *GuardDutyGenerator) loadDetectorChildren(svc *guardduty.Client, detecto
 	if err := g.loadIPSets(svc, detectorID); err != nil {
 		return err
 	}
-	return g.loadThreatIntelSets(svc, detectorID)
+	if err := g.loadThreatIntelSets(svc, detectorID); err != nil {
+		return err
+	}
+	if err := g.loadMembers(svc, detectorID); err != nil {
+		return err
+	}
+	if err := g.loadOrganizationConfiguration(svc, detectorID); err != nil {
+		if guardDutyResourceNotFound(err) {
+			return err
+		}
+		if !guardDutyOrganizationResourceUnavailable(err) {
+			return err
+		}
+	}
+	return g.loadPublishingDestinations(svc, detectorID)
+}
+
+func (g *GuardDutyGenerator) loadOrganizationAdminAccounts(svc *guardduty.Client) error {
+	paginator := guardduty.NewListOrganizationAdminAccountsPaginator(svc, &guardduty.ListOrganizationAdminAccountsInput{})
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(context.TODO())
+		if guardDutyOrganizationResourceUnavailable(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		for _, adminAccount := range page.AdminAccounts {
+			resource, ok := newGuardDutyOrganizationAdminAccountResource(adminAccount)
+			if !ok {
+				continue
+			}
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
 }
 
 func (g *GuardDutyGenerator) loadFilters(svc *guardduty.Client, detectorID string) error {
@@ -204,6 +260,120 @@ func (g *GuardDutyGenerator) loadThreatIntelSets(svc *guardduty.Client, detector
 	return nil
 }
 
+func (g *GuardDutyGenerator) loadMembers(svc *guardduty.Client, detectorID string) error {
+	paginator := guardduty.NewListMembersPaginator(svc, &guardduty.ListMembersInput{
+		DetectorId:     aws.String(detectorID),
+		OnlyAssociated: aws.String("false"),
+	})
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(context.TODO())
+		if guardDutyMemberListingUnavailable(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		for _, memberSummary := range page.Members {
+			accountID := StringValue(memberSummary.AccountId)
+			if accountID == "" {
+				continue
+			}
+			member, err := getGuardDutyMember(svc, detectorID, accountID)
+			if guardDutyResourceNotFound(err) {
+				continue
+			}
+			if err != nil {
+				return err
+			}
+			resource, ok := newGuardDutyMemberResource(detectorID, accountID, member)
+			if !ok {
+				continue
+			}
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
+func (g *GuardDutyGenerator) loadOrganizationConfiguration(svc *guardduty.Client, detectorID string) error {
+	configuration, err := svc.DescribeOrganizationConfiguration(context.TODO(), &guardduty.DescribeOrganizationConfigurationInput{
+		DetectorId: aws.String(detectorID),
+	})
+	if err != nil {
+		return err
+	}
+	resource, ok := newGuardDutyOrganizationConfigurationResource(detectorID, configuration)
+	if !ok {
+		return nil
+	}
+	g.Resources = append(g.Resources, resource)
+	return nil
+}
+
+func (g *GuardDutyGenerator) loadPublishingDestinations(svc *guardduty.Client, detectorID string) error {
+	paginator := guardduty.NewListPublishingDestinationsPaginator(svc, &guardduty.ListPublishingDestinationsInput{
+		DetectorId: aws.String(detectorID),
+	})
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, destinationSummary := range page.Destinations {
+			destinationID := StringValue(destinationSummary.DestinationId)
+			if destinationID == "" {
+				continue
+			}
+			destination, err := svc.DescribePublishingDestination(context.TODO(), &guardduty.DescribePublishingDestinationInput{
+				DestinationId: aws.String(destinationID),
+				DetectorId:    aws.String(detectorID),
+			})
+			if guardDutyPublishingDestinationNotFound(err) {
+				continue
+			}
+			if err != nil {
+				return err
+			}
+			resource, ok := newGuardDutyPublishingDestinationResource(detectorID, destinationID, destination)
+			if !ok {
+				continue
+			}
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
+func (g *GuardDutyGenerator) loadMalwareProtectionPlans(svc *guardduty.Client) error {
+	planIDs, err := listGuardDutyMalwareProtectionPlans(svc)
+	if err != nil {
+		return err
+	}
+	for _, planID := range planIDs {
+		if planID == "" {
+			continue
+		}
+		plan, err := svc.GetMalwareProtectionPlan(context.TODO(), &guardduty.GetMalwareProtectionPlanInput{
+			MalwareProtectionPlanId: aws.String(planID),
+		})
+		if guardDutyResourceNotFound(err) {
+			continue
+		}
+		if guardDutyMalwareProtectionPlansUnavailable(err) {
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		resource, ok := newGuardDutyMalwareProtectionPlanResource(planID, plan)
+		if !ok {
+			continue
+		}
+		g.Resources = append(g.Resources, resource)
+	}
+	return nil
+}
+
 func listGuardDutyDetectors(svc *guardduty.Client) ([]string, error) {
 	var detectors []string
 	paginator := guardduty.NewListDetectorsPaginator(svc, &guardduty.ListDetectorsInput{})
@@ -215,6 +385,39 @@ func listGuardDutyDetectors(svc *guardduty.Client) ([]string, error) {
 		detectors = append(detectors, page.DetectorIds...)
 	}
 	return detectors, nil
+}
+
+func listGuardDutyMalwareProtectionPlans(svc *guardduty.Client) ([]string, error) {
+	var planIDs []string
+	input := &guardduty.ListMalwareProtectionPlansInput{}
+	for {
+		page, err := svc.ListMalwareProtectionPlans(context.TODO(), input)
+		if err != nil {
+			return nil, err
+		}
+		for _, plan := range page.MalwareProtectionPlans {
+			planIDs = append(planIDs, StringValue(plan.MalwareProtectionPlanId))
+		}
+		if page.NextToken == nil {
+			break
+		}
+		input.NextToken = page.NextToken
+	}
+	return planIDs, nil
+}
+
+func getGuardDutyMember(svc *guardduty.Client, detectorID, accountID string) (*guarddutytypes.Member, error) {
+	output, err := svc.GetMembers(context.TODO(), &guardduty.GetMembersInput{
+		AccountIds: []string{accountID},
+		DetectorId: aws.String(detectorID),
+	})
+	if err != nil {
+		return nil, err
+	}
+	if output == nil || len(output.Members) == 0 {
+		return nil, nil
+	}
+	return &output.Members[0], nil
 }
 
 func newGuardDutyDetectorResource(detectorID string, detector *guardduty.GetDetectorOutput) (terraformutils.Resource, bool) {
@@ -306,6 +509,143 @@ func newGuardDutyIPSetResource(detectorID, ipSetID string, ipSet *guardduty.GetI
 	), true
 }
 
+func newGuardDutyMalwareProtectionPlanResource(planID string, plan *guardduty.GetMalwareProtectionPlanOutput) (terraformutils.Resource, bool) {
+	if planID == "" || plan == nil || !guardDutyMalwareProtectionPlanStatusImportable(plan.Status) {
+		return terraformutils.Resource{}, false
+	}
+	role := StringValue(plan.Role)
+	bucket := guardDutyMalwareProtectionPlanBucket(plan)
+	if bucket == nil {
+		return terraformutils.Resource{}, false
+	}
+	bucketName := StringValue(bucket.BucketName)
+	if role == "" || bucketName == "" {
+		return terraformutils.Resource{}, false
+	}
+
+	attributes := map[string]string{
+		"protected_resource.#":                         "1",
+		"protected_resource.0.s3_bucket.#":             "1",
+		"protected_resource.0.s3_bucket.0.bucket_name": bucketName,
+		"role": role,
+	}
+	if arn := StringValue(plan.Arn); arn != "" {
+		attributes["arn"] = arn
+	}
+	if plan.CreatedAt != nil {
+		attributes["created_at"] = plan.CreatedAt.UTC().Format(time.RFC3339)
+	}
+	if plan.Status != "" {
+		attributes["status"] = string(plan.Status)
+	}
+	guardDutyListAttributes(attributes, "protected_resource.0.s3_bucket.0.object_prefixes", bucket.ObjectPrefixes)
+	addGuardDutyMalwareProtectionPlanActions(attributes, plan.Actions)
+
+	return terraformutils.NewResource(
+		guardDutyMalwareProtectionPlanResourceID(planID),
+		guardDutyResourceName("malware_protection_plan", bucketName, planID),
+		guardDutyMalwareProtectionPlanResourceType,
+		"aws",
+		attributes,
+		guardDutyAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
+func newGuardDutyMemberResource(detectorID, accountID string, member *guarddutytypes.Member) (terraformutils.Resource, bool) {
+	if detectorID == "" || accountID == "" || member == nil || !guardDutyMemberImportable(member) {
+		return terraformutils.Resource{}, false
+	}
+	if StringValue(member.AccountId) != accountID {
+		return terraformutils.Resource{}, false
+	}
+	status := StringValue(member.RelationshipStatus)
+	attributes := map[string]string{
+		"account_id":  accountID,
+		"detector_id": detectorID,
+		"email":       StringValue(member.Email),
+		"invite":      strconv.FormatBool(guardDutyMemberInviteEnabled(status)),
+	}
+
+	return terraformutils.NewResource(
+		guardDutyMemberResourceID(detectorID, accountID),
+		guardDutyResourceName("member", detectorID, accountID),
+		guardDutyMemberResourceType,
+		"aws",
+		attributes,
+		guardDutyAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
+func newGuardDutyOrganizationAdminAccountResource(adminAccount guarddutytypes.AdminAccount) (terraformutils.Resource, bool) {
+	accountID := StringValue(adminAccount.AdminAccountId)
+	if accountID == "" || !guardDutyOrganizationAdminAccountImportable(adminAccount) {
+		return terraformutils.Resource{}, false
+	}
+
+	return terraformutils.NewResource(
+		guardDutyOrganizationAdminAccountResourceID(accountID),
+		guardDutyResourceName("organization_admin_account", accountID),
+		guardDutyOrganizationAdminAccountResourceType,
+		"aws",
+		map[string]string{"admin_account_id": accountID},
+		guardDutyAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
+func newGuardDutyOrganizationConfigurationResource(detectorID string, configuration *guardduty.DescribeOrganizationConfigurationOutput) (terraformutils.Resource, bool) {
+	if detectorID == "" || configuration == nil || configuration.AutoEnableOrganizationMembers == "" {
+		return terraformutils.Resource{}, false
+	}
+	attributes := map[string]string{
+		"auto_enable_organization_members": string(configuration.AutoEnableOrganizationMembers),
+		"detector_id":                      detectorID,
+	}
+	addGuardDutyOrganizationDataSources(attributes, configuration.DataSources) //nolint:staticcheck // DataSources backs Terraform's deprecated datasources block.
+
+	return terraformutils.NewResource(
+		guardDutyOrganizationConfigurationResourceID(detectorID),
+		guardDutyResourceName("organization_configuration", detectorID),
+		guardDutyOrganizationConfigurationResourceType,
+		"aws",
+		attributes,
+		guardDutyAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
+func newGuardDutyPublishingDestinationResource(detectorID, destinationID string, destination *guardduty.DescribePublishingDestinationOutput) (terraformutils.Resource, bool) {
+	if detectorID == "" || destinationID == "" || destination == nil {
+		return terraformutils.Resource{}, false
+	}
+	properties := destination.DestinationProperties
+	if properties == nil || StringValue(properties.DestinationArn) == "" || StringValue(properties.KmsKeyArn) == "" || destination.DestinationType == "" {
+		return terraformutils.Resource{}, false
+	}
+	attributes := map[string]string{
+		"destination_arn":  StringValue(properties.DestinationArn),
+		"destination_type": string(destination.DestinationType),
+		"detector_id":      detectorID,
+		"kms_key_arn":      StringValue(properties.KmsKeyArn),
+	}
+	if id := StringValue(destination.DestinationId); id != "" {
+		destinationID = id
+		attributes["destination_id"] = id
+	}
+
+	return terraformutils.NewResource(
+		guardDutyPublishingDestinationResourceID(detectorID, destinationID),
+		guardDutyResourceName("publishing_destination", detectorID, destinationID),
+		guardDutyPublishingDestinationResourceType,
+		"aws",
+		attributes,
+		guardDutyAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
 func newGuardDutyThreatIntelSetResource(detectorID, threatIntelSetID string, threatIntelSet *guardduty.GetThreatIntelSetOutput) (terraformutils.Resource, bool) {
 	if detectorID == "" || threatIntelSetID == "" || threatIntelSet == nil || threatIntelSet.Status == guarddutytypes.ThreatIntelSetStatusDeleted {
 		return terraformutils.Resource{}, false
@@ -333,6 +673,15 @@ func newGuardDutyThreatIntelSetResource(detectorID, threatIntelSetID string, thr
 	), true
 }
 
+func addGuardDutyMalwareProtectionPlanActions(attributes map[string]string, actions *guarddutytypes.MalwareProtectionPlanActions) {
+	if actions == nil || actions.Tagging == nil || actions.Tagging.Status == "" {
+		return
+	}
+	attributes["actions.#"] = "1"
+	attributes["actions.0.tagging.#"] = "1"
+	attributes["actions.0.tagging.0.status"] = string(actions.Tagging.Status)
+}
+
 func addGuardDutyDataSources(attributes map[string]string, dataSources *guarddutytypes.DataSourceConfigurationsResult) {
 	if dataSources == nil {
 		return
@@ -352,6 +701,28 @@ func addGuardDutyDataSources(attributes map[string]string, dataSources *guarddut
 		attributes["datasources.0.malware_protection.0.scan_ec2_instance_with_findings.#"] = "1"
 		attributes["datasources.0.malware_protection.0.scan_ec2_instance_with_findings.0.ebs_volumes.#"] = "1"
 		attributes["datasources.0.malware_protection.0.scan_ec2_instance_with_findings.0.ebs_volumes.0.enable"] = strconv.FormatBool(dataSources.MalwareProtection.ScanEc2InstanceWithFindings.EbsVolumes.Status == guarddutytypes.DataSourceStatusEnabled)
+	}
+}
+
+func addGuardDutyOrganizationDataSources(attributes map[string]string, dataSources *guarddutytypes.OrganizationDataSourceConfigurationsResult) {
+	if dataSources == nil {
+		return
+	}
+	attributes["datasources.#"] = "1"
+	if dataSources.S3Logs != nil && dataSources.S3Logs.AutoEnable != nil {
+		attributes["datasources.0.s3_logs.#"] = "1"
+		attributes["datasources.0.s3_logs.0.auto_enable"] = strconv.FormatBool(aws.ToBool(dataSources.S3Logs.AutoEnable))
+	}
+	if dataSources.Kubernetes != nil && dataSources.Kubernetes.AuditLogs != nil && dataSources.Kubernetes.AuditLogs.AutoEnable != nil {
+		attributes["datasources.0.kubernetes.#"] = "1"
+		attributes["datasources.0.kubernetes.0.audit_logs.#"] = "1"
+		attributes["datasources.0.kubernetes.0.audit_logs.0.enable"] = strconv.FormatBool(aws.ToBool(dataSources.Kubernetes.AuditLogs.AutoEnable))
+	}
+	if dataSources.MalwareProtection != nil && dataSources.MalwareProtection.ScanEc2InstanceWithFindings != nil && dataSources.MalwareProtection.ScanEc2InstanceWithFindings.EbsVolumes != nil && dataSources.MalwareProtection.ScanEc2InstanceWithFindings.EbsVolumes.AutoEnable != nil {
+		attributes["datasources.0.malware_protection.#"] = "1"
+		attributes["datasources.0.malware_protection.0.scan_ec2_instance_with_findings.#"] = "1"
+		attributes["datasources.0.malware_protection.0.scan_ec2_instance_with_findings.0.ebs_volumes.#"] = "1"
+		attributes["datasources.0.malware_protection.0.scan_ec2_instance_with_findings.0.ebs_volumes.0.auto_enable"] = strconv.FormatBool(aws.ToBool(dataSources.MalwareProtection.ScanEc2InstanceWithFindings.EbsVolumes.AutoEnable))
 	}
 }
 
@@ -563,13 +934,132 @@ func guardDutyChildResourceID(detectorID, resourceID string) string {
 	return strings.Join([]string{detectorID, resourceID}, guardDutyResourceIDSeparator)
 }
 
+func guardDutyMalwareProtectionPlanResourceID(planID string) string {
+	return planID
+}
+
+func guardDutyMemberResourceID(detectorID, accountID string) string {
+	return guardDutyChildResourceID(detectorID, accountID)
+}
+
+func guardDutyOrganizationAdminAccountResourceID(accountID string) string {
+	return accountID
+}
+
+func guardDutyOrganizationConfigurationResourceID(detectorID string) string {
+	return detectorID
+}
+
+func guardDutyPublishingDestinationResourceID(detectorID, destinationID string) string {
+	return guardDutyChildResourceID(detectorID, destinationID)
+}
+
 func guardDutyResourceName(parts ...string) string {
 	return strings.Join(parts, guardDutyResourceNameSeparator)
+}
+
+func guardDutyMalwareProtectionPlanBucket(plan *guardduty.GetMalwareProtectionPlanOutput) *guarddutytypes.CreateS3BucketResource {
+	if plan == nil || plan.ProtectedResource == nil {
+		return nil
+	}
+	return plan.ProtectedResource.S3Bucket
+}
+
+func guardDutyMalwareProtectionPlanStatusImportable(status guarddutytypes.MalwareProtectionPlanStatus) bool {
+	return status == guarddutytypes.MalwareProtectionPlanStatusActive ||
+		status == guarddutytypes.MalwareProtectionPlanStatusWarning ||
+		status == guarddutytypes.MalwareProtectionPlanStatusError
+}
+
+func guardDutyMemberImportable(member *guarddutytypes.Member) bool {
+	if member == nil || StringValue(member.AccountId) == "" || StringValue(member.Email) == "" {
+		return false
+	}
+	return guardDutyMemberRelationshipImportable(StringValue(member.RelationshipStatus))
+}
+
+func guardDutyMemberRelationshipImportable(status string) bool {
+	switch status {
+	case guardDutyMemberRelationshipStatusCreated,
+		guardDutyMemberRelationshipStatusDisabled,
+		guardDutyMemberRelationshipStatusEnabled,
+		guardDutyMemberRelationshipStatusEmailVerificationInProgress,
+		guardDutyMemberRelationshipStatusInvited:
+		return true
+	default:
+		return false
+	}
+}
+
+func guardDutyMemberInviteEnabled(status string) bool {
+	switch status {
+	case guardDutyMemberRelationshipStatusDisabled,
+		guardDutyMemberRelationshipStatusEnabled,
+		guardDutyMemberRelationshipStatusEmailVerificationInProgress,
+		guardDutyMemberRelationshipStatusInvited:
+		return true
+	default:
+		return false
+	}
+}
+
+func guardDutyOrganizationAdminAccountImportable(adminAccount guarddutytypes.AdminAccount) bool {
+	return StringValue(adminAccount.AdminAccountId) != "" && adminAccount.AdminStatus == guarddutytypes.AdminStatusEnabled
+}
+
+func guardDutyMalwareProtectionPlansUnavailable(err error) bool {
+	if err == nil {
+		return false
+	}
+	var accessDenied *guarddutytypes.AccessDeniedException
+	if errors.As(err, &accessDenied) {
+		return true
+	}
+	var badRequest *guarddutytypes.BadRequestException
+	if !errors.As(err, &badRequest) {
+		return false
+	}
+	message := strings.ToLower(badRequest.ErrorMessage())
+	return strings.Contains(message, "malware") ||
+		strings.Contains(message, "protection plan") ||
+		strings.Contains(message, "permission") ||
+		strings.Contains(message, "not authorized") ||
+		strings.Contains(message, "not supported") ||
+		strings.Contains(message, "not enabled") ||
+		strings.Contains(message, "not available")
+}
+
+func guardDutyMemberListingUnavailable(err error) bool {
+	if err == nil {
+		return false
+	}
+	var accessDenied *guarddutytypes.AccessDeniedException
+	if errors.As(err, &accessDenied) {
+		return true
+	}
+	var badRequest *guarddutytypes.BadRequestException
+	if !errors.As(err, &badRequest) {
+		return false
+	}
+	message := strings.ToLower(badRequest.ErrorMessage())
+	if strings.Contains(message, "member account") && strings.Contains(message, "cannot") {
+		return true
+	}
+	if !strings.Contains(message, "administrator") && !strings.Contains(message, "master") {
+		return false
+	}
+	return strings.Contains(message, "not") ||
+		strings.Contains(message, "only") ||
+		strings.Contains(message, "must")
 }
 
 func guardDutyResourceNotFound(err error) bool {
 	if err == nil {
 		return false
+	}
+	var notFound *guarddutytypes.ResourceNotFoundException
+	if errors.As(err, &notFound) {
+		return true
 	}
 	var badRequest *guarddutytypes.BadRequestException
 	if !errors.As(err, &badRequest) {
@@ -579,4 +1069,39 @@ func guardDutyResourceNotFound(err error) bool {
 	return strings.Contains(message, "no such resource found") ||
 		strings.Contains(message, "input detectorid is not owned by the current account") ||
 		strings.Contains(message, "input detectorid is not owned by current account")
+}
+
+func guardDutyPublishingDestinationNotFound(err error) bool {
+	if guardDutyResourceNotFound(err) {
+		return true
+	}
+	var badRequest *guarddutytypes.BadRequestException
+	if !errors.As(err, &badRequest) {
+		return false
+	}
+	return strings.Contains(strings.ToLower(badRequest.ErrorMessage()), "one or more input parameters have invalid values")
+}
+
+func guardDutyOrganizationResourceUnavailable(err error) bool {
+	if err == nil {
+		return false
+	}
+	var accessDenied *guarddutytypes.AccessDeniedException
+	if errors.As(err, &accessDenied) {
+		return true
+	}
+	var badRequest *guarddutytypes.BadRequestException
+	if !errors.As(err, &badRequest) {
+		return false
+	}
+	message := strings.ToLower(badRequest.ErrorMessage())
+	if strings.Contains(message, "delegated administrator") && strings.Contains(message, "not been enabled") {
+		return true
+	}
+	return strings.Contains(message, "organization") &&
+		(strings.Contains(message, "administrator") ||
+			strings.Contains(message, "delegated") ||
+			strings.Contains(message, "management") ||
+			strings.Contains(message, "master") ||
+			strings.Contains(message, "member"))
 }
