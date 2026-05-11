@@ -8,6 +8,31 @@ import (
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
+func TestAWSServiceParseFiltersNormalizesAWSResourceTypes(t *testing.T) {
+	s := AWSService{}
+	s.ParseFilters([]string{"Type=aws_ebs_snapshot;Name=id;Value=snap-123"})
+
+	if len(s.Filter) != 1 {
+		t.Fatalf("filters length = %d, want 1", len(s.Filter))
+	}
+	if got := s.Filter[0].ServiceName; got != "ebs_snapshot" {
+		t.Fatalf("filter service name = %q, want ebs_snapshot", got)
+	}
+
+	s.Resources = []terraformutils.Resource{
+		terraformutils.NewSimpleResource("snap-123", "snap-123", "aws_ebs_snapshot", "aws", nil),
+		terraformutils.NewSimpleResource("snap-456", "snap-456", "aws_ebs_snapshot", "aws", nil),
+	}
+	s.InitialCleanup()
+
+	if len(s.Resources) != 1 {
+		t.Fatalf("resources length after cleanup = %d, want 1", len(s.Resources))
+	}
+	if got := s.Resources[0].InstanceState.ID; got != "snap-123" {
+		t.Fatalf("kept resource ID = %q, want snap-123", got)
+	}
+}
+
 func TestShouldLoadAWSResourceForTypedFilters(t *testing.T) {
 	tests := []struct {
 		name         string
