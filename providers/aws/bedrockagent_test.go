@@ -127,6 +127,19 @@ func TestNewBedrockAgentAgentResource(t *testing.T) {
 	if got := resource.InstanceState.Attributes["agent_name"]; got != "support-agent" {
 		t.Fatalf("agent_name attribute = %q, want support-agent", got)
 	}
+	if _, ok := resource.InstanceState.Attributes["prepare_agent"]; ok {
+		t.Fatal("prepared agent should not force prepare_agent")
+	}
+
+	unprepared, ok := newBedrockAgentAgentResource(bedrockagenttypes.AgentSummary{
+		AgentId:     aws.String("ABCDEFGHIJ"),
+		AgentName:   aws.String("draft-agent"),
+		AgentStatus: bedrockagenttypes.AgentStatusNotPrepared,
+	})
+	assertBedrockAgentResource(t, unprepared, ok, "ABCDEFGHIJ", bedrockAgentAgentResourceType)
+	if got := unprepared.InstanceState.Attributes["prepare_agent"]; got != "false" {
+		t.Fatalf("prepare_agent attribute = %q, want false", got)
+	}
 
 	if _, ok := newBedrockAgentAgentResource(bedrockagenttypes.AgentSummary{
 		AgentName:   aws.String("support-agent"),
@@ -165,6 +178,13 @@ func TestNewBedrockAgentAgentAliasResource(t *testing.T) {
 	if got := resource.InstanceState.Attributes["agent_id"]; got != "GGRRAED6JP" {
 		t.Fatalf("agent_id attribute = %q, want GGRRAED6JP", got)
 	}
+
+	dissociated, ok := newBedrockAgentAgentAliasResource("GGRRAED6JP", bedrockagenttypes.AgentAliasSummary{
+		AgentAliasId:     aws.String("11AA22BB33"),
+		AgentAliasName:   aws.String("offline"),
+		AgentAliasStatus: bedrockagenttypes.AgentAliasStatusDissociated,
+	})
+	assertBedrockAgentResource(t, dissociated, ok, "11AA22BB33,GGRRAED6JP", bedrockAgentAgentAliasResourceType)
 
 	if _, ok := newBedrockAgentAgentAliasResource("", bedrockagenttypes.AgentAliasSummary{
 		AgentAliasId:     aws.String("66IVY0GUTF"),
@@ -216,15 +236,19 @@ func TestBedrockAgentImportableStatuses(t *testing.T) {
 		}
 	}
 
-	if !bedrockAgentAgentAliasImportable(bedrockagenttypes.AgentAliasStatusPrepared) {
-		t.Fatal("PREPARED agent alias should be importable")
+	for _, status := range []bedrockagenttypes.AgentAliasStatus{
+		bedrockagenttypes.AgentAliasStatusPrepared,
+		bedrockagenttypes.AgentAliasStatusDissociated,
+	} {
+		if !bedrockAgentAgentAliasImportable(status) {
+			t.Fatalf("%s agent alias should be importable", status)
+		}
 	}
 	for _, status := range []bedrockagenttypes.AgentAliasStatus{
 		bedrockagenttypes.AgentAliasStatusCreating,
 		bedrockagenttypes.AgentAliasStatusUpdating,
 		bedrockagenttypes.AgentAliasStatusDeleting,
 		bedrockagenttypes.AgentAliasStatusFailed,
-		bedrockagenttypes.AgentAliasStatusDissociated,
 	} {
 		if bedrockAgentAgentAliasImportable(status) {
 			t.Fatalf("%s agent alias should not be importable", status)

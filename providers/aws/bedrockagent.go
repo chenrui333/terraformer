@@ -175,15 +175,19 @@ func newBedrockAgentAgentResource(agent bedrockagenttypes.AgentSummary) (terrafo
 	if agentID == "" || agentName == "" || !bedrockAgentAgentImportable(agent.AgentStatus) {
 		return terraformutils.Resource{}, false
 	}
+	attributes := map[string]string{
+		"agent_id":   agentID,
+		"agent_name": agentName,
+	}
+	if agent.AgentStatus == bedrockagenttypes.AgentStatusNotPrepared {
+		attributes["prepare_agent"] = "false"
+	}
 	return terraformutils.NewResource(
 		agentID,
 		bedrockAgentResourceName("agent", agentName, agentID),
 		bedrockAgentAgentResourceType,
 		"aws",
-		map[string]string{
-			"agent_id":   agentID,
-			"agent_name": agentName,
-		},
+		attributes,
 		bedrockAgentAllowEmptyValues,
 		map[string]interface{}{},
 	), true
@@ -232,7 +236,7 @@ func bedrockAgentAgentImportable(status bedrockagenttypes.AgentStatus) bool {
 }
 
 func bedrockAgentAgentAliasImportable(status bedrockagenttypes.AgentAliasStatus) bool {
-	return status == bedrockagenttypes.AgentAliasStatusPrepared
+	return status == bedrockagenttypes.AgentAliasStatusPrepared || status == bedrockagenttypes.AgentAliasStatusDissociated
 }
 
 func bedrockAgentResourceNotFound(err error) bool {
