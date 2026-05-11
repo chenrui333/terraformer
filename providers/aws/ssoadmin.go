@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -21,6 +22,7 @@ var ssoAdminAllowEmptyValues = []string{"tags."}
 const (
 	ssoAdminPermissionSetResourceType                     = "aws_ssoadmin_permission_set"
 	ssoAdminAccountAssignmentResourceType                 = "aws_ssoadmin_account_assignment"
+	ssoAdminInstanceAccessControlAttributesResourceType   = "aws_ssoadmin_instance_access_control_attributes"
 	ssoAdminManagedPolicyAttachmentResourceType           = "aws_ssoadmin_managed_policy_attachment"
 	ssoAdminCustomerManagedPolicyAttachmentResourceType   = "aws_ssoadmin_customer_managed_policy_attachment"
 	ssoAdminPermissionSetInlinePolicyResourceType         = "aws_ssoadmin_permission_set_inline_policy"
@@ -51,8 +53,13 @@ func (g *SSOAdminGenerator) InitResources() error {
 		if instanceARN == "" {
 			continue
 		}
+		resourceStart := len(g.Resources)
+		if err := g.loadInstanceAccessControlAttributes(svc, instanceARN); err != nil {
+			return err
+		}
 		if err := g.loadPermissionSets(svc, instanceARN); err != nil {
 			if ssoAdminResourceNotFound(err) {
+				g.Resources = g.Resources[:resourceStart]
 				continue
 			}
 			return err
@@ -154,6 +161,23 @@ func describeSSOAdminPermissionSet(svc *ssoadmin.Client, instanceARN, permission
 		return nil, nil
 	}
 	return output.PermissionSet, nil
+}
+
+func (g *SSOAdminGenerator) loadInstanceAccessControlAttributes(svc *ssoadmin.Client, instanceARN string) error {
+	output, err := svc.DescribeInstanceAccessControlAttributeConfiguration(context.TODO(), &ssoadmin.DescribeInstanceAccessControlAttributeConfigurationInput{
+		InstanceArn: aws.String(instanceARN),
+	})
+	if err != nil {
+		if ssoAdminInstanceAccessControlAttributesNotConfigured(err) {
+			return nil
+		}
+		return err
+	}
+	if output == nil || !ssoAdminInstanceAccessControlAttributesConfigured(output.InstanceAccessControlAttributeConfiguration) {
+		return nil
+	}
+	g.Resources = append(g.Resources, newSSOAdminInstanceAccessControlAttributesResource(instanceARN, output.InstanceAccessControlAttributeConfiguration))
+	return nil
 }
 
 func (g *SSOAdminGenerator) loadManagedPolicyAttachments(svc *ssoadmin.Client, instanceARN, permissionSetARN string) error {
@@ -338,6 +362,34 @@ func newSSOAdminAccountAssignmentResource(instanceARN, permissionSetARN, targetI
 	)
 }
 
+func newSSOAdminInstanceAccessControlAttributesResource(instanceARN string, config *ssotypes.InstanceAccessControlAttributeConfiguration) terraformutils.Resource {
+	accessControlAttributes := ssoAdminAccessControlAttributes(config)
+	attributes := map[string]string{
+		"attribute.#":  strconv.Itoa(len(accessControlAttributes)),
+		"instance_arn": instanceARN,
+	}
+	for i, attribute := range accessControlAttributes {
+		attributePrefix := fmt.Sprintf("attribute.%d", i)
+		valuePrefix := attributePrefix + ".value.0"
+		sourcePrefix := valuePrefix + ".source"
+		attributes[attributePrefix+".key"] = attribute.key
+		attributes[attributePrefix+".value.#"] = "1"
+		attributes[sourcePrefix+".#"] = strconv.Itoa(len(attribute.sources))
+		for j, source := range attribute.sources {
+			attributes[fmt.Sprintf("%s.%d", sourcePrefix, j)] = source
+		}
+	}
+	return terraformutils.NewResource(
+		ssoAdminInstanceAccessControlAttributesResourceID(instanceARN),
+		ssoAdminInstanceAccessControlAttributesResourceName(instanceARN),
+		ssoAdminInstanceAccessControlAttributesResourceType,
+		"aws",
+		attributes,
+		ssoAdminAllowEmptyValues,
+		map[string]interface{}{},
+	)
+}
+
 func newSSOAdminManagedPolicyAttachmentResource(instanceARN, permissionSetARN string, policy ssotypes.AttachedManagedPolicy) terraformutils.Resource {
 	policyARN := StringValue(policy.Arn)
 	attributes := map[string]string{
@@ -428,6 +480,10 @@ func ssoAdminAccountAssignmentResourceID(principalID, principalType, targetID, t
 	return strings.Join([]string{principalID, principalType, targetID, targetType, permissionSetARN, instanceARN}, ssoAdminResourceIDSeparator)
 }
 
+func ssoAdminInstanceAccessControlAttributesResourceID(instanceARN string) string {
+	return instanceARN
+}
+
 func ssoAdminManagedPolicyAttachmentResourceID(managedPolicyARN, permissionSetARN, instanceARN string) string {
 	return strings.Join([]string{managedPolicyARN, permissionSetARN, instanceARN}, ssoAdminResourceIDSeparator)
 }
@@ -438,6 +494,10 @@ func ssoAdminCustomerManagedPolicyAttachmentResourceID(policyName, policyPath, p
 
 func ssoAdminAccountAssignmentResourceName(instanceARN, permissionSetARN, principalID, principalType, targetID, targetType string) string {
 	return ssoAdminResourceName(permissionSetARN, targetID, targetType, principalType, principalID, instanceARN)
+}
+
+func ssoAdminInstanceAccessControlAttributesResourceName(instanceARN string) string {
+	return ssoAdminResourceName("access-control-attributes", instanceARN)
 }
 
 func ssoAdminResourceName(parts ...string) string {
@@ -546,6 +606,50 @@ func ssoAdminPermissionsBoundaryConfigured(boundary *ssotypes.PermissionsBoundar
 
 func ssoAdminAccountAssignmentConfigured(targetID string, assignment ssotypes.AccountAssignment) bool {
 	return targetID != "" && StringValue(assignment.PrincipalId) != "" && string(assignment.PrincipalType) != ""
+}
+
+type ssoAdminAccessControlAttribute struct {
+	key     string
+	sources []string
+}
+
+func ssoAdminInstanceAccessControlAttributesConfigured(config *ssotypes.InstanceAccessControlAttributeConfiguration) bool {
+	return len(ssoAdminAccessControlAttributes(config)) > 0
+}
+
+func ssoAdminAccessControlAttributes(config *ssotypes.InstanceAccessControlAttributeConfiguration) []ssoAdminAccessControlAttribute {
+	if config == nil {
+		return nil
+	}
+	attributes := make([]ssoAdminAccessControlAttribute, 0, len(config.AccessControlAttributes))
+	for _, attribute := range config.AccessControlAttributes {
+		key := StringValue(attribute.Key)
+		if key == "" || attribute.Value == nil {
+			continue
+		}
+		sources := make([]string, 0, len(attribute.Value.Source))
+		for _, source := range attribute.Value.Source {
+			if source != "" {
+				sources = append(sources, source)
+			}
+		}
+		if len(sources) == 0 {
+			continue
+		}
+		sort.Strings(sources)
+		attributes = append(attributes, ssoAdminAccessControlAttribute{key: key, sources: sources})
+	}
+	sort.Slice(attributes, func(i, j int) bool {
+		if attributes[i].key != attributes[j].key {
+			return attributes[i].key < attributes[j].key
+		}
+		return strings.Join(attributes[i].sources, "\x00") < strings.Join(attributes[j].sources, "\x00")
+	})
+	return attributes
+}
+
+func ssoAdminInstanceAccessControlAttributesNotConfigured(err error) bool {
+	return ssoAdminResourceNotFound(err)
 }
 
 func ssoAdminCustomerManagedPolicyPath(path *string) string {
