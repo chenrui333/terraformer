@@ -12,12 +12,14 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/databasemigrationservice"
 	dmstypes "github.com/aws/aws-sdk-go-v2/service/databasemigrationservice/types"
+	"github.com/aws/smithy-go"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 const (
 	dmsCertificateResourceType            = "aws_dms_certificate"
 	dmsEventSubscriptionResourceType      = "aws_dms_event_subscription"
+	dmsReplicationConfigResourceType      = "aws_dms_replication_config"
 	dmsReplicationInstanceResourceType    = "aws_dms_replication_instance"
 	dmsReplicationSubnetGroupResourceType = "aws_dms_replication_subnet_group"
 	dmsEndpointResourceType               = "aws_dms_endpoint"
@@ -63,7 +65,15 @@ func (g *DmsGenerator) loadOptionalResources(loaders []dmsOptionalResourceLoader
 
 func dmsOptionalResourceErrorSkippable(err error) bool {
 	var notFound *dmstypes.ResourceNotFoundFault
-	return errors.As(err, &notFound)
+	if errors.As(err, &notFound) {
+		return true
+	}
+	var accessDenied *dmstypes.AccessDeniedFault
+	if errors.As(err, &accessDenied) {
+		return true
+	}
+	var apiErr smithy.APIError
+	return errors.As(err, &apiErr) && strings.Contains(strings.ToLower(apiErr.ErrorCode()), "accessdenied")
 }
 
 func (g *DmsGenerator) InitResources() error {
@@ -88,6 +98,7 @@ func (g *DmsGenerator) InitResources() error {
 	if err := g.loadOptionalResources([]dmsOptionalResourceLoader{
 		{name: "certificates", load: func() error { return g.loadCertificates(svc) }},
 		{name: "event subscriptions", load: func() error { return g.loadEventSubscriptions(svc) }},
+		{name: "replication configs", load: func() error { return g.loadReplicationConfigs(svc) }},
 	}); err != nil {
 		return err
 	}
@@ -191,6 +202,22 @@ func (g *DmsGenerator) loadEventSubscriptions(svc *databasemigrationservice.Clie
 	return nil
 }
 
+func (g *DmsGenerator) loadReplicationConfigs(svc *databasemigrationservice.Client) error {
+	p := databasemigrationservice.NewDescribeReplicationConfigsPaginator(svc, &databasemigrationservice.DescribeReplicationConfigsInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, config := range page.ReplicationConfigs {
+			if resource, ok := newDMSReplicationConfigResource(config); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+	}
+	return nil
+}
+
 func newDMSCertificateResource(certificate dmstypes.Certificate) (terraformutils.Resource, bool) {
 	identifier := StringValue(certificate.CertificateIdentifier)
 	if identifier == "" || !dmsCertificateImportable(certificate) {
@@ -227,6 +254,22 @@ func newDMSEventSubscriptionResource(subscription dmstypes.EventSubscription) (t
 		attributes,
 		dmsAllowEmptyValues,
 		additionalFields,
+	), true
+}
+
+func newDMSReplicationConfigResource(config dmstypes.ReplicationConfig) (terraformutils.Resource, bool) {
+	importID := dmsReplicationConfigImportID(config)
+	if importID == "" || !dmsReplicationConfigImportable(config) {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewResource(
+		importID,
+		dmsReplicationConfigResourceName(config),
+		dmsReplicationConfigResourceType,
+		"aws",
+		dmsReplicationConfigAttributes(config),
+		dmsAllowEmptyValues,
+		map[string]interface{}{},
 	), true
 }
 
@@ -299,6 +342,15 @@ func dmsResourceName(parts ...string) string {
 	return strings.Join(cleanParts, "/")
 }
 
+func dmsReplicationConfigImportID(config dmstypes.ReplicationConfig) string {
+	return StringValue(config.ReplicationConfigArn)
+}
+
+func dmsReplicationConfigResourceName(config dmstypes.ReplicationConfig) string {
+	arnSuffix := arnLastSegment(dmsReplicationConfigImportID(config), ":")
+	return dmsResourceName("replication-config", StringValue(config.ReplicationConfigIdentifier), arnSuffix)
+}
+
 func dmsCertificateImportable(certificate dmstypes.Certificate) bool {
 	return StringValue(certificate.CertificatePem) != "" || len(certificate.CertificateWallet) > 0
 }
@@ -326,6 +378,72 @@ func dmsEventSubscriptionSourceTypeImportable(sourceType string) bool {
 	default:
 		return false
 	}
+}
+
+func dmsReplicationConfigImportable(config dmstypes.ReplicationConfig) bool {
+	if config.IsReadOnly != nil && *config.IsReadOnly {
+		return false
+	}
+	return StringValue(config.ReplicationConfigArn) != "" &&
+		StringValue(config.ReplicationConfigIdentifier) != "" &&
+		config.ReplicationType != "" &&
+		StringValue(config.SourceEndpointArn) != "" &&
+		StringValue(config.TargetEndpointArn) != "" &&
+		StringValue(config.TableMappings) != "" &&
+		dmsReplicationConfigComputeConfigImportable(config.ComputeConfig)
+}
+
+func dmsReplicationConfigComputeConfigImportable(computeConfig *dmstypes.ComputeConfig) bool {
+	return computeConfig != nil &&
+		StringValue(computeConfig.ReplicationSubnetGroupId) != "" &&
+		computeConfig.MaxCapacityUnits != nil &&
+		*computeConfig.MaxCapacityUnits > 0
+}
+
+func dmsReplicationConfigAttributes(config dmstypes.ReplicationConfig) map[string]string {
+	attributes := map[string]string{
+		"compute_config.#":              "1",
+		"replication_config_identifier": StringValue(config.ReplicationConfigIdentifier),
+		"replication_type":              string(config.ReplicationType),
+		"source_endpoint_arn":           StringValue(config.SourceEndpointArn),
+		"table_mappings":                StringValue(config.TableMappings),
+		"target_endpoint_arn":           StringValue(config.TargetEndpointArn),
+	}
+	if settings := StringValue(config.ReplicationSettings); settings != "" {
+		attributes["replication_settings"] = settings
+	}
+	if settings := StringValue(config.SupplementalSettings); settings != "" {
+		attributes["supplemental_settings"] = settings
+	}
+	if config.ComputeConfig == nil {
+		return attributes
+	}
+
+	computeConfig := config.ComputeConfig
+	attributes["compute_config.0.replication_subnet_group_id"] = StringValue(computeConfig.ReplicationSubnetGroupId)
+	attributes["compute_config.0.max_capacity_units"] = strconv.Itoa(int(*computeConfig.MaxCapacityUnits))
+	if value := StringValue(computeConfig.AvailabilityZone); value != "" {
+		attributes["compute_config.0.availability_zone"] = value
+	}
+	if value := StringValue(computeConfig.DnsNameServers); value != "" {
+		attributes["compute_config.0.dns_name_servers"] = value
+	}
+	if value := StringValue(computeConfig.KmsKeyId); value != "" {
+		attributes["compute_config.0.kms_key_id"] = value
+	}
+	if computeConfig.MinCapacityUnits != nil {
+		attributes["compute_config.0.min_capacity_units"] = strconv.Itoa(int(*computeConfig.MinCapacityUnits))
+	}
+	if computeConfig.MultiAZ != nil {
+		attributes["compute_config.0.multi_az"] = strconv.FormatBool(*computeConfig.MultiAZ)
+	}
+	if value := StringValue(computeConfig.PreferredMaintenanceWindow); value != "" {
+		attributes["compute_config.0.preferred_maintenance_window"] = value
+	}
+	for key, value := range dmsStringSliceAttributes("compute_config.0.vpc_security_group_ids", computeConfig.VpcSecurityGroupIds) {
+		attributes[key] = value
+	}
+	return attributes
 }
 
 func dmsReplicationInstanceImportable(instance dmstypes.ReplicationInstance) bool {
