@@ -477,6 +477,11 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_s3_bucket_server_side_encryption_configuration`
     * `aws_s3_bucket_versioning`
     * `aws_s3_bucket_website_configuration`
+*   `s3control`
+    * `aws_s3_access_point`
+    * `aws_s3control_access_point_policy`
+    * `aws_s3control_object_lambda_access_point`
+    * `aws_s3control_object_lambda_access_point_policy`
 *   `scheduler`
     * `aws_scheduler_schedule`
     * `aws_scheduler_schedule_group`
