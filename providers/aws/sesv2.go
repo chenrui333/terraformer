@@ -4,6 +4,7 @@ package aws
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"strings"
 
@@ -84,7 +85,20 @@ func (g *SesV2Generator) loadEmailIdentities(svc *sesv2.Client) error {
 			return err
 		}
 		for _, identity := range page.EmailIdentities {
-			if resource, ok := newSESV2EmailIdentityResource(identity); ok {
+			identityName := StringValue(identity.IdentityName)
+			if identityName == "" {
+				continue
+			}
+			output, err := svc.GetEmailIdentity(context.TODO(), &sesv2.GetEmailIdentityInput{
+				EmailIdentity: &identityName,
+			})
+			if err != nil {
+				if sesv2NotFound(err) {
+					continue
+				}
+				return err
+			}
+			if resource, ok := newSESV2EmailIdentityResource(identityName, output); ok {
 				g.Resources = append(g.Resources, resource)
 			}
 		}
@@ -126,9 +140,8 @@ func newSESV2DedicatedIPPoolResource(poolName string) (terraformutils.Resource, 
 	), true
 }
 
-func newSESV2EmailIdentityResource(identity sesv2types.IdentityInfo) (terraformutils.Resource, bool) {
-	identityName := StringValue(identity.IdentityName)
-	if identityName == "" {
+func newSESV2EmailIdentityResource(identityName string, output *sesv2.GetEmailIdentityOutput) (terraformutils.Resource, bool) {
+	if identityName == "" || !sesv2EmailIdentityImportable(output) {
 		return terraformutils.Resource{}, false
 	}
 	return terraformutils.NewResource(
@@ -142,6 +155,20 @@ func newSESV2EmailIdentityResource(identity sesv2types.IdentityInfo) (terraformu
 		sesv2AllowEmptyValues,
 		map[string]interface{}{},
 	), true
+}
+
+func sesv2EmailIdentityImportable(output *sesv2.GetEmailIdentityOutput) bool {
+	if output == nil || output.DkimAttributes == nil {
+		return true
+	}
+	// BYODKIM private keys are sensitive and are not returned by SESv2, so importing
+	// external-signing identities would generate Terraform that can reset DKIM mode.
+	return output.DkimAttributes.SigningAttributesOrigin != sesv2types.DkimSigningAttributesOriginExternal
+}
+
+func sesv2NotFound(err error) bool {
+	var notFound *sesv2types.NotFoundException
+	return errors.As(err, &notFound)
 }
 
 func sesv2ConfigurationSetImportID(configurationSetName string) string {

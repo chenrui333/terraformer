@@ -3,9 +3,10 @@
 package aws
 
 import (
+	"errors"
 	"testing"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/sesv2"
 	sesv2types "github.com/aws/aws-sdk-go-v2/service/sesv2/types"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
@@ -55,16 +56,63 @@ func TestNewSESV2DedicatedIPPoolResource(t *testing.T) {
 }
 
 func TestNewSESV2EmailIdentityResource(t *testing.T) {
-	resource, ok := newSESV2EmailIdentityResource(sesv2types.IdentityInfo{
-		IdentityName: aws.String("sender@example.com"),
-	})
+	resource, ok := newSESV2EmailIdentityResource("sender@example.com", &sesv2.GetEmailIdentityOutput{})
 	if !ok {
 		t.Fatal("newSESV2EmailIdentityResource() ok = false, want true")
 	}
 	assertSESV2Resource(t, resource, sesv2EmailIdentityResourceType, "sender@example.com", "email_identity", "sender@example.com")
 
-	if _, ok := newSESV2EmailIdentityResource(sesv2types.IdentityInfo{}); ok {
+	if _, ok := newSESV2EmailIdentityResource("", &sesv2.GetEmailIdentityOutput{}); ok {
 		t.Fatal("newSESV2EmailIdentityResource() ok = true for empty identity name, want false")
+	}
+
+	if _, ok := newSESV2EmailIdentityResource("example.com", &sesv2.GetEmailIdentityOutput{
+		DkimAttributes: &sesv2types.DkimAttributes{
+			SigningAttributesOrigin: sesv2types.DkimSigningAttributesOriginExternal,
+		},
+	}); ok {
+		t.Fatal("newSESV2EmailIdentityResource() ok = true for BYODKIM identity, want false")
+	}
+}
+
+func TestSESV2EmailIdentityImportable(t *testing.T) {
+	tests := []struct {
+		name   string
+		output *sesv2.GetEmailIdentityOutput
+		want   bool
+	}{
+		{name: "nil output", output: nil, want: true},
+		{name: "no DKIM attributes", output: &sesv2.GetEmailIdentityOutput{}, want: true},
+		{name: "easy DKIM", output: &sesv2.GetEmailIdentityOutput{
+			DkimAttributes: &sesv2types.DkimAttributes{
+				SigningAttributesOrigin: sesv2types.DkimSigningAttributesOriginAwsSes,
+			},
+		}, want: true},
+		{name: "BYODKIM", output: &sesv2.GetEmailIdentityOutput{
+			DkimAttributes: &sesv2types.DkimAttributes{
+				SigningAttributesOrigin: sesv2types.DkimSigningAttributesOriginExternal,
+			},
+		}, want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := sesv2EmailIdentityImportable(tt.output); got != tt.want {
+				t.Fatalf("sesv2EmailIdentityImportable() = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSESV2NotFound(t *testing.T) {
+	if !sesv2NotFound(&sesv2types.NotFoundException{}) {
+		t.Fatal("sesv2NotFound() = false for NotFoundException, want true")
+	}
+	if sesv2NotFound(errors.New("boom")) {
+		t.Fatal("sesv2NotFound() = true for generic error, want false")
+	}
+	if sesv2NotFound(nil) {
+		t.Fatal("sesv2NotFound() = true for nil error, want false")
 	}
 }
 
