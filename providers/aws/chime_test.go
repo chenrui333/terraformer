@@ -90,7 +90,7 @@ func TestNewChimeVoiceConnectorOptionalResources(t *testing.T) {
 			Disabled: aws.Bool(false),
 			Routes: []chimetypes.OriginationRoute{
 				{
-					Host:     aws.String("sip.example.com"),
+					Host:     aws.String("203.0.113.10"),
 					Port:     aws.Int32(5060),
 					Priority: aws.Int32(1),
 					Protocol: chimetypes.OriginationRouteProtocolTcp,
@@ -120,7 +120,7 @@ func TestNewChimeVoiceConnectorOptionalResources(t *testing.T) {
 	termination, ok := newChimeVoiceConnectorTerminationResource("vc-123", &chimesdkvoice.GetVoiceConnectorTerminationOutput{
 		Termination: &chimetypes.Termination{
 			CallingRegions:     []string{"US"},
-			CidrAllowedList:    []string{"203.0.113.0/24"},
+			CidrAllowedList:    []string{"203.0.113.0/27"},
 			CpsLimit:           aws.Int32(2),
 			DefaultPhoneNumber: aws.String("+12065550100"),
 			Disabled:           aws.Bool(false),
@@ -149,9 +149,31 @@ func TestChimeOptionalResourceSkips(t *testing.T) {
 	}); ok {
 		t.Fatal("origination without complete route fields should be skipped")
 	}
+	if _, ok := newChimeVoiceConnectorOriginationResource("vc-123", &chimesdkvoice.GetVoiceConnectorOriginationOutput{
+		Origination: &chimetypes.Origination{
+			Routes: []chimetypes.OriginationRoute{
+				{
+					Host:     aws.String("sip.example.com"),
+					Priority: aws.Int32(1),
+					Protocol: chimetypes.OriginationRouteProtocolTcp,
+					Weight:   aws.Int32(10),
+				},
+			},
+		},
+	}); ok {
+		t.Fatal("origination with provider-invalid FQDN host should be skipped")
+	}
 	if _, ok := newChimeVoiceConnectorTerminationResource("vc-123", &chimesdkvoice.GetVoiceConnectorTerminationOutput{
 		Termination: &chimetypes.Termination{CallingRegions: []string{"US"}},
 	}); ok {
 		t.Fatal("termination without CIDR allow list should be skipped")
+	}
+	if _, ok := newChimeVoiceConnectorTerminationResource("vc-123", &chimesdkvoice.GetVoiceConnectorTerminationOutput{
+		Termination: &chimetypes.Termination{
+			CallingRegions:  []string{"US"},
+			CidrAllowedList: []string{"203.0.113.0/24"},
+		},
+	}); ok {
+		t.Fatal("termination with provider-invalid broad CIDR should be skipped")
 	}
 }

@@ -6,7 +6,9 @@ import (
 	"context"
 	"errors"
 	"log"
+	"net"
 	"strconv"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/chimesdkvoice"
 	chimetypes "github.com/aws/aws-sdk-go-v2/service/chimesdkvoice/types"
@@ -235,8 +237,8 @@ func newChimeVoiceConnectorOriginationResource(connectorID string, output *chime
 	if connectorID == "" || output == nil || output.Origination == nil || len(output.Origination.Routes) == 0 {
 		return terraformutils.Resource{}, false
 	}
-	routes := chimeOriginationRouteAdditionalFields(output.Origination.Routes)
-	if len(routes) == 0 {
+	routes, ok := chimeOriginationRouteAdditionalFields(output.Origination.Routes)
+	if !ok || len(routes) == 0 {
 		return terraformutils.Resource{}, false
 	}
 	attributes := map[string]string{"voice_connector_id": connectorID}
@@ -290,6 +292,10 @@ func newChimeVoiceConnectorTerminationResource(connectorID string, output *chime
 	if output.Termination.Disabled != nil {
 		attributes["disabled"] = strconv.FormatBool(*output.Termination.Disabled)
 	}
+	cidrAllowList, ok := chimeTerminationCIDRAllowList(output.Termination.CidrAllowedList)
+	if !ok || len(cidrAllowList) == 0 {
+		return terraformutils.Resource{}, false
+	}
 	return terraformutils.NewResource(
 		chimeVoiceConnectorTerminationImportID(connectorID),
 		chimeResourceName("voice_connector_termination", connectorID),
@@ -299,7 +305,7 @@ func newChimeVoiceConnectorTerminationResource(connectorID string, output *chime
 		chimeAllowEmptyValues,
 		map[string]interface{}{
 			"calling_regions": stringSliceToInterfaceSlice(output.Termination.CallingRegions),
-			"cidr_allow_list": stringSliceToInterfaceSlice(output.Termination.CidrAllowedList),
+			"cidr_allow_list": cidrAllowList,
 		},
 	), true
 }
@@ -322,12 +328,15 @@ func chimeVoiceConnectorGroupAdditionalFields(group chimetypes.VoiceConnectorGro
 	return map[string]interface{}{"connector": connectors}
 }
 
-func chimeOriginationRouteAdditionalFields(routes []chimetypes.OriginationRoute) []interface{} {
+func chimeOriginationRouteAdditionalFields(routes []chimetypes.OriginationRoute) ([]interface{}, bool) {
 	result := make([]interface{}, 0, len(routes))
 	for _, route := range routes {
 		host := StringValue(route.Host)
 		if host == "" || route.Priority == nil || route.Protocol == "" || route.Weight == nil {
 			continue
+		}
+		if net.ParseIP(host) == nil {
+			return nil, false
 		}
 		item := map[string]interface{}{
 			"host":     host,
@@ -340,7 +349,30 @@ func chimeOriginationRouteAdditionalFields(routes []chimetypes.OriginationRoute)
 		}
 		result = append(result, item)
 	}
-	return result
+	return result, true
+}
+
+func chimeTerminationCIDRAllowList(cidrList []string) ([]interface{}, bool) {
+	result := make([]interface{}, 0, len(cidrList))
+	for _, cidr := range cidrList {
+		if !chimeProviderValidCIDRNetwork(cidr) {
+			return nil, false
+		}
+		result = append(result, cidr)
+	}
+	return result, true
+}
+
+func chimeProviderValidCIDRNetwork(cidr string) bool {
+	address, network, err := net.ParseCIDR(cidr)
+	if err != nil {
+		return false
+	}
+	ones, bits := network.Mask.Size()
+	if bits != 32 || ones < 27 || ones > 32 {
+		return false
+	}
+	return strings.Split(cidr, "/")[0] == address.String() && address.Equal(network.IP)
 }
 
 func chimeVoiceConnectorImportID(connectorID string) string {
