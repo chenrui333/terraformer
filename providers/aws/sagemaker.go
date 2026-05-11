@@ -851,14 +851,20 @@ func newSageMakerAppResource(app *sagemaker.DescribeAppOutput) (terraformutils.R
 		"app_type":  string(app.AppType),
 		"domain_id": domainID,
 	}
+	ownerKind := ""
+	ownerName := ""
 	if spaceName := StringValue(app.SpaceName); spaceName != "" {
 		attributes["space_name"] = spaceName
+		ownerKind = "space"
+		ownerName = spaceName
 	} else if userProfileName := StringValue(app.UserProfileName); userProfileName != "" {
 		attributes["user_profile_name"] = userProfileName
+		ownerKind = "user-profile"
+		ownerName = userProfileName
 	} else {
 		return terraformutils.Resource{}, false
 	}
-	return sageMakerResource(appArn, sageMakerResourceName("app", domainID, attributes["space_name"], attributes["user_profile_name"], string(app.AppType), appName), sageMakerAppResourceType, attributes)
+	return sageMakerResource(appArn, sageMakerResourceName("app", domainID, ownerKind, ownerName, string(app.AppType), appName), sageMakerAppResourceType, attributes)
 }
 
 func newSageMakerAppImageConfigResource(config sagemakertypes.AppImageConfigDetails) (terraformutils.Resource, bool) {

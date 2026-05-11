@@ -195,6 +195,18 @@ func TestNewSageMakerStudioResources(t *testing.T) {
 	if got := spaceApp.InstanceState.Attributes["space_name"]; got != "team" {
 		t.Fatalf("space_name attribute = %q, want team", got)
 	}
+	userProfileOwnedApp, ok := newSageMakerAppResource(&sagemaker.DescribeAppOutput{
+		AppArn:          aws.String("arn:aws:sagemaker:us-east-1:123456789012:app/d-abc123/team/JupyterLab/default"),
+		AppName:         aws.String("default"),
+		AppType:         sagemakertypes.AppTypeJupyterLab,
+		DomainId:        aws.String("d-abc123"),
+		Status:          sagemakertypes.AppStatusInService,
+		UserProfileName: aws.String("team"),
+	})
+	assertSageMakerResource(t, userProfileOwnedApp, ok, "arn:aws:sagemaker:us-east-1:123456789012:app/d-abc123/team/JupyterLab/default", sageMakerAppResourceType)
+	if spaceApp.ResourceName == userProfileOwnedApp.ResourceName {
+		t.Fatalf("space-owned and user-profile-owned apps should have distinct resource names: %q", spaceApp.ResourceName)
+	}
 
 	if _, ok := newSageMakerDomainResource(sagemakertypes.DomainDetails{
 		DomainId:   aws.String("d-abc123"),
