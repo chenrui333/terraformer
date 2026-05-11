@@ -3,16 +3,20 @@ package aws
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/batch"
+	batchtypes "github.com/aws/aws-sdk-go-v2/service/batch/types"
 )
 
 var BatchAllowEmptyValues = []string{"tags."}
 
 var BatchAdditionalFields = map[string]interface{}{}
+
+const batchSchedulingPolicyResourceType = "aws_batch_scheduling_policy"
 
 type BatchGenerator struct {
 	AWSService
@@ -32,6 +36,9 @@ func (g *BatchGenerator) InitResources() error {
 		return err
 	}
 	if err := g.loadJobQueues(batchClient); err != nil {
+		return err
+	}
+	if err := g.loadSchedulingPolicies(batchClient); err != nil {
 		return err
 	}
 
@@ -61,6 +68,50 @@ func (g *BatchGenerator) loadComputeEnvironments(batchClient *batch.Client) erro
 		}
 	}
 	return nil
+}
+
+func (g *BatchGenerator) loadSchedulingPolicies(batchClient *batch.Client) error {
+	p := batch.NewListSchedulingPoliciesPaginator(batchClient, &batch.ListSchedulingPoliciesInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, schedulingPolicy := range page.SchedulingPolicies {
+			if resource, ok := newBatchSchedulingPolicyResource(schedulingPolicy); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+	}
+	return nil
+}
+
+func newBatchSchedulingPolicyResource(schedulingPolicy batchtypes.SchedulingPolicyListingDetail) (terraformutils.Resource, bool) {
+	arn := StringValue(schedulingPolicy.Arn)
+	name := arnLastSegment(arn, "/")
+	if arn == "" || name == "" {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewResource(
+		batchSchedulingPolicyImportID(arn),
+		batchResourceName("scheduling_policy", name),
+		batchSchedulingPolicyResourceType,
+		"aws",
+		map[string]string{
+			"arn":  arn,
+			"name": name,
+		},
+		BatchAllowEmptyValues,
+		BatchAdditionalFields,
+	), true
+}
+
+func batchSchedulingPolicyImportID(arn string) string {
+	return arn
+}
+
+func batchResourceName(parts ...string) string {
+	return strings.Join(parts, "_")
 }
 
 func (g *BatchGenerator) loadJobDefinitions(batchClient *batch.Client) error {

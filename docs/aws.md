@@ -98,6 +98,14 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_appmesh_virtual_node`
     * `aws_appmesh_virtual_router`
     * `aws_appmesh_virtual_service`
+*   `apprunner`
+    * `aws_apprunner_auto_scaling_configuration_version`
+    * `aws_apprunner_connection`
+    * `aws_apprunner_custom_domain_association`
+    * `aws_apprunner_observability_configuration`
+    * `aws_apprunner_service`
+    * `aws_apprunner_vpc_connector`
+    * `aws_apprunner_vpc_ingress_connection`
 *   `appstream`
     * `aws_appstream_fleet`
     * `aws_appstream_fleet_stack_association`
@@ -138,6 +146,7 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_batch_compute_environment`
     * `aws_batch_job_definition`
     * `aws_batch_job_queue`
+    * `aws_batch_scheduling_policy`
 *   `bedrock`
     * `aws_bedrock_guardrail`
     * `aws_bedrock_guardrail_version`
