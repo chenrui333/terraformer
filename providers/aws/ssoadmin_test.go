@@ -4,6 +4,7 @@ package aws
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -394,6 +395,81 @@ func TestSSOAdminPostConvertHookWrapsInlinePolicy(t *testing.T) {
 	want := "<<POLICY\n{\"Resource\":\"$" + "$" + "{aws:username}\"}\nPOLICY"
 	if got := g.Resources[0].Item["inline_policy"]; got != want {
 		t.Fatalf("inline_policy = %q, want %q", got, want)
+	}
+}
+
+func TestSSOAdminPostConvertHookEscapesInstanceAccessControlAttributeSources(t *testing.T) {
+	rawGivenNameSource := "$" + "{path:name.givenName}"
+	escapedGivenNameSource := "$" + "$" + "{path:name.givenName}"
+	escapedFamilyNameSource := "$" + "$" + "{path:name.familyName}"
+	rawDirectiveSource := "%" + "{if true}"
+	escapedDirectiveSource := "%" + "%" + "{if true}"
+	resource := newSSOAdminInstanceAccessControlAttributesResource(
+		testSSOAdminInstanceARN,
+		&ssotypes.InstanceAccessControlAttributeConfiguration{
+			AccessControlAttributes: []ssotypes.AccessControlAttribute{
+				{
+					Key: aws.String("name"),
+					Value: &ssotypes.AccessControlAttributeValue{
+						Source: []string{rawGivenNameSource},
+					},
+				},
+			},
+		},
+	)
+	resource.Item = map[string]interface{}{
+		"attribute": []interface{}{
+			map[string]interface{}{
+				"key": "name",
+				"value": []interface{}{
+					map[string]interface{}{
+						"source": []interface{}{
+							rawGivenNameSource,
+							escapedFamilyNameSource,
+							rawDirectiveSource,
+						},
+					},
+				},
+			},
+		},
+		"instance_arn": testSSOAdminInstanceARN,
+	}
+	g := &SSOAdminGenerator{}
+	g.Resources = append(g.Resources, resource)
+
+	if err := g.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook() error = %v", err)
+	}
+
+	attribute := g.Resources[0].Item["attribute"].([]interface{})[0].(map[string]interface{})
+	value := attribute["value"].([]interface{})[0].(map[string]interface{})
+	sources := value["source"].([]interface{})
+	for i, want := range []string{
+		escapedGivenNameSource,
+		escapedFamilyNameSource,
+		escapedDirectiveSource,
+	} {
+		if got := sources[i]; got != want {
+			t.Fatalf("source[%d] = %q, want %q", i, got, want)
+		}
+	}
+
+	data, err := terraformutils.HclPrintResource(g.Resources, map[string]interface{}{}, "hcl", true)
+	if err != nil {
+		t.Fatalf("HclPrintResource() error = %v", err)
+	}
+	output := string(data)
+	for _, want := range []string{
+		"\"" + escapedGivenNameSource + "\"",
+		"\"" + escapedFamilyNameSource + "\"",
+		"\"" + escapedDirectiveSource + "\"",
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("output does not contain %q:\n%s", want, output)
+		}
+	}
+	if strings.Contains(output, "\""+rawGivenNameSource+"\"") || strings.Contains(output, "\""+rawDirectiveSource+"\"") {
+		t.Fatalf("output contains unescaped Terraform template markers:\n%s", output)
 	}
 }
 

@@ -71,14 +71,19 @@ func (g *SSOAdminGenerator) InitResources() error {
 func (g *SSOAdminGenerator) PostConvertHook() error {
 	g.updateManagedPolicyAttachmentDependencies()
 	for i, resource := range g.Resources {
-		if resource.InstanceInfo.Type != ssoAdminPermissionSetInlinePolicyResourceType {
+		if resource.InstanceInfo == nil {
 			continue
 		}
-		inlinePolicy, ok := resource.Item["inline_policy"].(string)
-		if !ok || inlinePolicy == "" {
-			continue
+		switch resource.InstanceInfo.Type {
+		case ssoAdminPermissionSetInlinePolicyResourceType:
+			inlinePolicy, ok := resource.Item["inline_policy"].(string)
+			if !ok || inlinePolicy == "" {
+				continue
+			}
+			g.Resources[i].Item["inline_policy"] = fmt.Sprintf("<<POLICY\n%s\nPOLICY", g.escapeAwsInterpolation(inlinePolicy))
+		case ssoAdminInstanceAccessControlAttributesResourceType:
+			ssoAdminEscapeInstanceAccessControlAttributeSources(g.Resources[i].Item)
 		}
-		g.Resources[i].Item["inline_policy"] = fmt.Sprintf("<<POLICY\n%s\nPOLICY", g.escapeAwsInterpolation(inlinePolicy))
 	}
 	return nil
 }
@@ -650,6 +655,66 @@ func ssoAdminAccessControlAttributes(config *ssotypes.InstanceAccessControlAttri
 
 func ssoAdminInstanceAccessControlAttributesNotConfigured(err error) bool {
 	return ssoAdminResourceNotFound(err)
+}
+
+func ssoAdminEscapeInstanceAccessControlAttributeSources(item map[string]interface{}) {
+	attributes, ok := item["attribute"].([]interface{})
+	if !ok {
+		return
+	}
+	for _, attribute := range attributes {
+		attributeMap, ok := attribute.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		values, ok := attributeMap["value"].([]interface{})
+		if !ok {
+			continue
+		}
+		for _, value := range values {
+			valueMap, ok := value.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			ssoAdminEscapeAccessControlAttributeSourceValues(valueMap)
+		}
+	}
+}
+
+func ssoAdminEscapeAccessControlAttributeSourceValues(valueMap map[string]interface{}) {
+	switch sources := valueMap["source"].(type) {
+	case []interface{}:
+		for i, source := range sources {
+			sourceString, ok := source.(string)
+			if !ok || sourceString == "" {
+				continue
+			}
+			sources[i] = ssoAdminEscapeTerraformTemplateMarkers(sourceString)
+		}
+	case []string:
+		for i, source := range sources {
+			if source == "" {
+				continue
+			}
+			sources[i] = ssoAdminEscapeTerraformTemplateMarkers(source)
+		}
+	}
+}
+
+func ssoAdminEscapeTerraformTemplateMarkers(value string) string {
+	value = ssoAdminEscapeTerraformTemplateMarker(value, "${", '$')
+	return ssoAdminEscapeTerraformTemplateMarker(value, "%{", '%')
+}
+
+func ssoAdminEscapeTerraformTemplateMarker(value, marker string, escape byte) string {
+	var escaped strings.Builder
+	for i := 0; i < len(value); i++ {
+		if strings.HasPrefix(value[i:], marker) && (i == 0 || value[i-1] != escape) {
+			escaped.WriteByte(escape)
+		}
+		escaped.WriteByte(value[i])
+	}
+	return escaped.String()
 }
 
 func ssoAdminCustomerManagedPolicyPath(path *string) string {
