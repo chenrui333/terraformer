@@ -721,7 +721,9 @@ func newBedrockAgentAgentCollaboratorResource(collaborator *bedrockagenttypes.Ag
 		"collaboration_instruction":    collaborationInstruction,
 		"collaborator_id":              collaboratorID,
 		"collaborator_name":            collaboratorName,
-		"relay_conversation_history":   string(collaborator.RelayConversationHistory),
+	}
+	if collaborator.RelayConversationHistory != "" {
+		attributes["relay_conversation_history"] = string(collaborator.RelayConversationHistory)
 	}
 	bedrockAgentAddPrepareAgentAttribute(attributes, agentStatus)
 	return terraformutils.NewResource(
@@ -942,7 +944,8 @@ func bedrockAgentActionGroupImportable(state bedrockagenttypes.ActionGroupState)
 }
 
 func bedrockAgentRelayConversationHistoryImportable(history bedrockagenttypes.RelayConversationHistory) bool {
-	return history == bedrockagenttypes.RelayConversationHistoryToCollaborator ||
+	return history == "" ||
+		history == bedrockagenttypes.RelayConversationHistoryToCollaborator ||
 		history == bedrockagenttypes.RelayConversationHistoryDisabled
 }
 

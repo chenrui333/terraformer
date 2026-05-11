@@ -411,8 +411,16 @@ func TestNewBedrockAgentAgentCollaboratorResource(t *testing.T) {
 
 	unknownHistory := bedrockAgentTestAgentCollaborator()
 	unknownHistory.RelayConversationHistory = ""
-	if _, ok := newBedrockAgentAgentCollaboratorResource(unknownHistory, bedrockagenttypes.AgentStatusPrepared); ok {
-		t.Fatal("collaborator with empty relay conversation history should be skipped")
+	resource, ok = newBedrockAgentAgentCollaboratorResource(unknownHistory, bedrockagenttypes.AgentStatusPrepared)
+	assertBedrockAgentResource(t, resource, ok, "GGRRAED6JP,DRAFT,COLLAB1234", bedrockAgentAgentCollaboratorResourceType)
+	if _, ok := resource.InstanceState.Attributes["relay_conversation_history"]; ok {
+		t.Fatal("collaborator with empty relay conversation history should omit relay_conversation_history attribute")
+	}
+
+	invalidHistory := bedrockAgentTestAgentCollaborator()
+	invalidHistory.RelayConversationHistory = bedrockagenttypes.RelayConversationHistory("UNKNOWN")
+	if _, ok := newBedrockAgentAgentCollaboratorResource(invalidHistory, bedrockagenttypes.AgentStatusPrepared); ok {
+		t.Fatal("collaborator with unknown relay conversation history should be skipped")
 	}
 }
 
@@ -720,8 +728,11 @@ func TestBedrockAgentImportableStatuses(t *testing.T) {
 			t.Fatalf("%s collaborator relay history should be importable", history)
 		}
 	}
-	if bedrockAgentRelayConversationHistoryImportable("") {
-		t.Fatal("collaborator with empty relay history should not be importable")
+	if !bedrockAgentRelayConversationHistoryImportable("") {
+		t.Fatal("collaborator with empty relay history should be importable")
+	}
+	if bedrockAgentRelayConversationHistoryImportable(bedrockagenttypes.RelayConversationHistory("UNKNOWN")) {
+		t.Fatal("collaborator with unknown relay history should not be importable")
 	}
 
 	for _, state := range []bedrockagenttypes.KnowledgeBaseState{
