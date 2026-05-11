@@ -3,6 +3,7 @@
 package aws
 
 import (
+	"errors"
 	"testing"
 
 	dmstypes "github.com/aws/aws-sdk-go-v2/service/databasemigrationservice/types"
@@ -34,6 +35,160 @@ func TestDMSResourceNamesAvoidTypeCollisions(t *testing.T) {
 	task := dmsResourceName("replication-task", "shared")
 	if endpoint == task {
 		t.Fatalf("resource names collide: %q", endpoint)
+	}
+}
+
+func TestDMSOptionalResourceLoaderErrors(t *testing.T) {
+	t.Run("skips resource not found", func(t *testing.T) {
+		g := DmsGenerator{}
+		calledNext := false
+		err := g.loadOptionalResources([]dmsOptionalResourceLoader{
+			{
+				name: "certificates",
+				load: func() error {
+					return &dmstypes.ResourceNotFoundFault{}
+				},
+			},
+			{
+				name: "event subscriptions",
+				load: func() error {
+					calledNext = true
+					return nil
+				},
+			},
+		})
+		if err != nil {
+			t.Fatalf("loadOptionalResources() error = %v, want nil", err)
+		}
+		if !calledNext {
+			t.Fatal("loadOptionalResources() should continue after skippable error")
+		}
+	})
+
+	t.Run("returns unexpected error", func(t *testing.T) {
+		g := DmsGenerator{}
+		boom := errors.New("boom")
+		calledNext := false
+		err := g.loadOptionalResources([]dmsOptionalResourceLoader{
+			{
+				name: "certificates",
+				load: func() error {
+					return boom
+				},
+			},
+			{
+				name: "event subscriptions",
+				load: func() error {
+					calledNext = true
+					return nil
+				},
+			},
+		})
+		if !errors.Is(err, boom) {
+			t.Fatalf("loadOptionalResources() error = %v, want %v", err, boom)
+		}
+		if calledNext {
+			t.Fatal("loadOptionalResources() should stop after unexpected error")
+		}
+	})
+}
+
+func TestNewDMSCertificateResource(t *testing.T) {
+	resource, ok := newDMSCertificateResource(dmstypes.Certificate{
+		CertificateIdentifier: dmsString("dms-cert"),
+		CertificatePem:        dmsString("-----BEGIN CERTIFICATE-----"),
+	})
+	assertDMSResource(t, resource, ok, "dms-cert", dmsResourceName("certificate", "dms-cert"), dmsCertificateResourceType)
+
+	if _, ok := newDMSCertificateResource(dmstypes.Certificate{CertificatePem: dmsString("-----BEGIN CERTIFICATE-----")}); ok {
+		t.Fatal("certificate with empty identifier should be skipped")
+	}
+	if _, ok := newDMSCertificateResource(dmstypes.Certificate{CertificateIdentifier: dmsString("dms-cert")}); ok {
+		t.Fatal("certificate without PEM or wallet material should be skipped")
+	}
+}
+
+func TestNewDMSEventSubscriptionResource(t *testing.T) {
+	resource, ok := newDMSEventSubscriptionResource(dmstypes.EventSubscription{
+		CustSubscriptionId:  dmsString("dms-events"),
+		Enabled:             true,
+		EventCategoriesList: []string{"creation", "failure"},
+		SnsTopicArn:         dmsString("arn:aws:sns:us-east-1:123456789012:dms-events"),
+		SourceType:          dmsString("replication-task"),
+		Status:              dmsString("active"),
+	})
+	assertDMSResource(t, resource, ok, "dms-events", dmsResourceName("event-subscription", "dms-events"), dmsEventSubscriptionResourceType)
+	if got := resource.InstanceState.Attributes["event_categories.#"]; got != "2" {
+		t.Fatalf("event_categories.# = %q, want 2", got)
+	}
+	if got := resource.InstanceState.Attributes["event_categories.1"]; got != "failure" {
+		t.Fatalf("event_categories.1 = %q, want failure", got)
+	}
+	if _, ok := resource.AdditionalFields["event_categories"]; ok {
+		t.Fatal("non-empty event categories should be read from refreshed state")
+	}
+	if _, ok := resource.InstanceState.Attributes["enabled"]; ok {
+		t.Fatal("enabled=true event subscription should use the provider default")
+	}
+
+	resource, ok = newDMSEventSubscriptionResource(dmstypes.EventSubscription{
+		CustSubscriptionId: dmsString("dms-all-events"),
+		Enabled:            true,
+		SnsTopicArn:        dmsString("arn:aws:sns:us-east-1:123456789012:dms-events"),
+		SourceType:         dmsString("replication-instance"),
+		Status:             dmsString("active"),
+	})
+	assertDMSResource(t, resource, ok, "dms-all-events", dmsResourceName("event-subscription", "dms-all-events"), dmsEventSubscriptionResourceType)
+	if got := resource.InstanceState.Attributes["event_categories.#"]; got != "0" {
+		t.Fatalf("all-category event_categories.# = %q, want 0", got)
+	}
+	emptyCategories, ok := resource.AdditionalFields["event_categories"].([]interface{})
+	if !ok {
+		t.Fatalf("all-category event_categories additional field type = %T, want []interface{}", resource.AdditionalFields["event_categories"])
+	}
+	if len(emptyCategories) != 0 {
+		t.Fatalf("all-category event_categories length = %d, want 0", len(emptyCategories))
+	}
+
+	resource, ok = newDMSEventSubscriptionResource(dmstypes.EventSubscription{
+		CustSubscriptionId:  dmsString("dms-disabled-events"),
+		Enabled:             false,
+		EventCategoriesList: []string{"creation"},
+		SnsTopicArn:         dmsString("arn:aws:sns:us-east-1:123456789012:dms-events"),
+		SourceType:          dmsString("replication-task"),
+		Status:              dmsString("active"),
+	})
+	assertDMSResource(t, resource, ok, "dms-disabled-events", dmsResourceName("event-subscription", "dms-disabled-events"), dmsEventSubscriptionResourceType)
+	if got := resource.InstanceState.Attributes["enabled"]; got != "false" {
+		t.Fatalf("disabled event subscription enabled = %q, want false", got)
+	}
+	assertDMSAllowEmptyValue(t, resource, "enabled")
+
+	if _, ok := newDMSEventSubscriptionResource(dmstypes.EventSubscription{
+		EventCategoriesList: []string{"creation"},
+		SnsTopicArn:         dmsString("arn:aws:sns:us-east-1:123456789012:dms-events"),
+		SourceType:          dmsString("replication-task"),
+		Status:              dmsString("active"),
+	}); ok {
+		t.Fatal("event subscription with empty name should be skipped")
+	}
+	if _, ok := newDMSEventSubscriptionResource(dmstypes.EventSubscription{
+		CustSubscriptionId:  dmsString("dms-events"),
+		EventCategoriesList: []string{"creation"},
+		SnsTopicArn:         dmsString("arn:aws:sns:us-east-1:123456789012:dms-events"),
+		SourceType:          dmsString("replication-task"),
+		Status:              dmsString("creating"),
+	}); ok {
+		t.Fatal("creating event subscription should be skipped")
+	}
+	if _, ok := newDMSEventSubscriptionResource(dmstypes.EventSubscription{
+		CustSubscriptionId:  dmsString("dms-events"),
+		EventCategoriesList: []string{"creation"},
+		SnsTopicArn:         dmsString("arn:aws:sns:us-east-1:123456789012:dms-events"),
+		SourceType:          dmsString("security-group"),
+		Status:              dmsString("active"),
+	}); ok {
+		t.Fatal("event subscription with unsupported source type should be skipped")
 	}
 }
 
@@ -118,6 +273,117 @@ func TestNewDMSReplicationTaskResource(t *testing.T) {
 	}
 }
 
+func TestDMSCertificateImportable(t *testing.T) {
+	if !dmsCertificateImportable(dmstypes.Certificate{CertificatePem: dmsString("pem")}) {
+		t.Fatal("certificate with PEM material should be importable")
+	}
+	if !dmsCertificateImportable(dmstypes.Certificate{CertificateWallet: []byte("wallet")}) {
+		t.Fatal("certificate with wallet material should be importable")
+	}
+	if dmsCertificateImportable(dmstypes.Certificate{}) {
+		t.Fatal("certificate without PEM or wallet material should not be importable")
+	}
+}
+
+func TestDMSStringSliceAttributes(t *testing.T) {
+	attributes := dmsStringSliceAttributes("event_categories", []string{"creation", "failure"})
+	if got := attributes["event_categories.#"]; got != "2" {
+		t.Fatalf("event_categories.# = %q, want 2", got)
+	}
+	if got := attributes["event_categories.0"]; got != "creation" {
+		t.Fatalf("event_categories.0 = %q, want creation", got)
+	}
+	if got := attributes["event_categories.1"]; got != "failure" {
+		t.Fatalf("event_categories.1 = %q, want failure", got)
+	}
+
+	emptyAttributes := dmsStringSliceAttributes("event_categories", nil)
+	if got := emptyAttributes["event_categories.#"]; got != "0" {
+		t.Fatalf("empty event_categories.# = %q, want 0", got)
+	}
+	if len(emptyAttributes) != 1 {
+		t.Fatalf("empty attributes length = %d, want 1", len(emptyAttributes))
+	}
+}
+
+func TestDMSEventSubscriptionImportable(t *testing.T) {
+	base := dmstypes.EventSubscription{
+		EventCategoriesList: []string{"creation"},
+		SnsTopicArn:         dmsString("arn:aws:sns:us-east-1:123456789012:dms-events"),
+		SourceType:          dmsString("replication-instance"),
+		Status:              dmsString("active"),
+	}
+	if !dmsEventSubscriptionImportable(base) {
+		t.Fatal("active event subscription with supported source type and required fields should be importable")
+	}
+	allCategories := base
+	allCategories.EventCategoriesList = nil
+	if !dmsEventSubscriptionImportable(allCategories) {
+		t.Fatal("active event subscription without event categories should import all categories")
+	}
+	caseVariant := base
+	caseVariant.SnsTopicArn = dmsString("arn:aws:sns:us-east-1:123456789012:DmS-EvEnTs")
+	caseVariant.SourceType = dmsString("RePlIcAtIoN-InStAnCe")
+	caseVariant.Status = dmsString("AcTiVe")
+	if !dmsEventSubscriptionImportable(caseVariant) {
+		t.Fatal("event subscription importability should be case-insensitive for status and source type")
+	}
+
+	tests := []struct {
+		name         string
+		subscription dmstypes.EventSubscription
+	}{
+		{name: "empty status", subscription: dmstypes.EventSubscription{
+			EventCategoriesList: []string{"creation"},
+			SnsTopicArn:         dmsString("arn:aws:sns:us-east-1:123456789012:dms-events"),
+			SourceType:          dmsString("replication-instance"),
+		}},
+		{name: "creating status", subscription: dmstypes.EventSubscription{
+			EventCategoriesList: []string{"creation"},
+			SnsTopicArn:         dmsString("arn:aws:sns:us-east-1:123456789012:dms-events"),
+			SourceType:          dmsString("replication-instance"),
+			Status:              dmsString("creating"),
+		}},
+		{name: "no permission status", subscription: dmstypes.EventSubscription{
+			EventCategoriesList: []string{"creation"},
+			SnsTopicArn:         dmsString("arn:aws:sns:us-east-1:123456789012:dms-events"),
+			SourceType:          dmsString("replication-instance"),
+			Status:              dmsString("no-permission"),
+		}},
+		{name: "unsupported source type", subscription: dmstypes.EventSubscription{
+			EventCategoriesList: []string{"creation"},
+			SnsTopicArn:         dmsString("arn:aws:sns:us-east-1:123456789012:dms-events"),
+			SourceType:          dmsString("security-group"),
+			Status:              dmsString("active"),
+		}},
+		{name: "empty sns topic arn", subscription: dmstypes.EventSubscription{
+			EventCategoriesList: []string{"creation"},
+			SourceType:          dmsString("replication-instance"),
+			Status:              dmsString("active"),
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if dmsEventSubscriptionImportable(tt.subscription) {
+				t.Fatal("event subscription should not be importable")
+			}
+		})
+	}
+}
+
+func TestDMSEventSubscriptionSourceTypeImportable(t *testing.T) {
+	for _, sourceType := range []string{"replication-instance", "replication-task", "REPLICATION-INSTANCE", "RePlIcAtIoN-TaSk"} {
+		if !dmsEventSubscriptionSourceTypeImportable(sourceType) {
+			t.Fatalf("source type %q should be importable", sourceType)
+		}
+	}
+	for _, sourceType := range []string{"", "replication-server", "security-group", "SeCuRiTy-GrOuP"} {
+		if dmsEventSubscriptionSourceTypeImportable(sourceType) {
+			t.Fatalf("source type %q should not be importable", sourceType)
+		}
+	}
+}
+
 func TestDMSReplicationInstanceImportable(t *testing.T) {
 	if !dmsReplicationInstanceImportable(dmstypes.ReplicationInstance{ReplicationInstanceStatus: dmsString("available")}) {
 		t.Fatal("available replication instance should be importable")
@@ -184,6 +450,16 @@ func assertDMSResource(t *testing.T, resource terraformutils.Resource, ok bool, 
 	if got := resource.InstanceInfo.Type; got != wantType {
 		t.Fatalf("resource type = %q, want %q", got, wantType)
 	}
+}
+
+func assertDMSAllowEmptyValue(t *testing.T, resource terraformutils.Resource, want string) {
+	t.Helper()
+	for _, value := range resource.AllowEmptyValues {
+		if value == "^"+want+"$" {
+			return
+		}
+	}
+	t.Fatalf("AllowEmptyValues = %v, want anchored %q", resource.AllowEmptyValues, want)
 }
 
 func dmsString(value string) *string {
