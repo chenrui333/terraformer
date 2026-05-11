@@ -209,6 +209,8 @@ github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.34.3 h1:JqFmDekar5Ije9SKKBU
 github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.34.3/go.mod h1:+ONaMzn4bVIQwVsamP28xDWWZuYO+6cWupJpZOSlUNE=
 github.com/aws/aws-sdk-go-v2/service/appconfig v1.43.15 h1:PwZaY+AGC6L7bGde+ESiRWUlcWgqqrtuAORV1UtNWJU=
 github.com/aws/aws-sdk-go-v2/service/appconfig v1.43.15/go.mod h1:rvo3cSBQ0Qgt6mF6ITZTZ0ssHQJ0kBcaUpIWCaldJVQ=
+github.com/aws/aws-sdk-go-v2/service/appintegrations v1.37.9 h1:e51YjJHGLC86GPxLox3PNwnlbgMbLPJ7Ph4vcTeM4GY=
+github.com/aws/aws-sdk-go-v2/service/appintegrations v1.37.9/go.mod h1:EhPRMWYqp8CDlJ/EEYNegsBOTTJRN6HbNaUCQ9J7JGw=
 github.com/aws/aws-sdk-go-v2/service/appmesh v1.35.14 h1:31mnzduRd3FyuGCwgdMfPAu6MG1XnQf4zJrPjpZvnbM=
 github.com/aws/aws-sdk-go-v2/service/appmesh v1.35.14/go.mod h1:u/RTn1872BcpTxDnsQXi0AO8nxMch/46nlr3/loCpu8=
 github.com/aws/aws-sdk-go-v2/service/apprunner v1.39.16 h1:fqfppotMvz3HCWi7vdL84uEk29lYeMqNwLH025r1k6A=
@@ -231,6 +233,10 @@ github.com/aws/aws-sdk-go-v2/service/bedrockagent v1.53.2 h1:5WfuuVf0Mie5g3ibps8
 github.com/aws/aws-sdk-go-v2/service/bedrockagent v1.53.2/go.mod h1:zue4MN4ji6nlKYQYwVLmaPXJ66wB9JnIePX1e1yg5MU=
 github.com/aws/aws-sdk-go-v2/service/budgets v1.43.6 h1:2C1Fx5PAPB+8Se7nwnxAElSMW5KxuDVwzBu6t2qtlfg=
 github.com/aws/aws-sdk-go-v2/service/budgets v1.43.6/go.mod h1:W/ACxHO2V65T11t9KLLG+pQytcYk206Ff5b5lbGeMF8=
+github.com/aws/aws-sdk-go-v2/service/chatbot v1.14.23 h1:eVFe0spV/qN307E9M7EWomXBx20d6iSCRU9uhZnbbEM=
+github.com/aws/aws-sdk-go-v2/service/chatbot v1.14.23/go.mod h1:gDe8Q0Jr8+z3yoGmU38eVPCWGA3iBR9hJF8osx2Th5A=
+github.com/aws/aws-sdk-go-v2/service/chimesdkvoice v1.28.15 h1:21vkPfPLTrzWnp3c+d5NJu9om1sLHg2tS1p72bxU+3A=
+github.com/aws/aws-sdk-go-v2/service/chimesdkvoice v1.28.15/go.mod h1:C6UVSmolomJa9uw9VAgIBVKx92I5jZ+vW24yeVvyXqs=
 github.com/aws/aws-sdk-go-v2/service/cloud9 v1.33.22 h1:NiWafOOhAC6Wcnj9L/xd371nvXMuoSqblNzRJ2vB2nE=
 github.com/aws/aws-sdk-go-v2/service/cloud9 v1.33.22/go.mod h1:2NzxPvL0r5xpfRQJgQLsc5m7drkG0cvFeowbibC2Qcg=
 github.com/aws/aws-sdk-go-v2/service/cloudformation v1.71.11 h1:gIRdzLv98ugE0nvMkub5yp4uziPFHF66ERrQ9JN+D54=
@@ -265,6 +271,8 @@ github.com/aws/aws-sdk-go-v2/service/configservice v1.62.3 h1:8rcAUMhCUuQe7kVBTB
 github.com/aws/aws-sdk-go-v2/service/configservice v1.62.3/go.mod h1:PvCpYWzh0/jwa8v3jYJOaDobKiKQzFm1hI7+4Ms3J90=
 github.com/aws/aws-sdk-go-v2/service/connect v1.172.1 h1:aHqy/dANNJHJlgjDs/8exwtHMeHDWCVG+L1T/0+7hps=
 github.com/aws/aws-sdk-go-v2/service/connect v1.172.1/go.mod h1:Du5pBjluSAHkGpEiz8aCfk9NdndzEeGpCqARDWAlGGQ=
+github.com/aws/aws-sdk-go-v2/service/customerprofiles v1.59.2 h1:pQ1ewsM//YsNuPA3ctSS9jLSl4+/zn3RCWvWeEQdRIM=
+github.com/aws/aws-sdk-go-v2/service/customerprofiles v1.59.2/go.mod h1:P8xXL2qstcrbxBXjHnL3VVBIWqGrHIn6YA+XSd4S8rA=
 github.com/aws/aws-sdk-go-v2/service/databasemigrationservice v1.62.2 h1:+vWChWbLMrEzHuKtm2koCaGoZo6Cnu8OpYH0fsdSLEI=
 github.com/aws/aws-sdk-go-v2/service/databasemigrationservice v1.62.2/go.mod h1:Qa7SOwwtaE9VticcY52FgDIXJZLS1jz+Y6fiCdLUdRU=
 github.com/aws/aws-sdk-go-v2/service/datapipeline v1.30.22 h1:th7UIseI06gZDd/7ntsyUJmVVbbowq4ypEUh8gf5+OU=
@@ -355,6 +363,10 @@ github.com/aws/aws-sdk-go-v2/service/mq v1.34.22 h1:l7nzDTuFH15cvRIFo5cFokN5g+9s
 github.com/aws/aws-sdk-go-v2/service/mq v1.34.22/go.mod h1:aWvcRNyk/LFb3R6xIJE1o4MDwJcLjXhpdlg8X4kW57k=
 github.com/aws/aws-sdk-go-v2/service/mwaa v1.40.0 h1:q5IvCkBGEnLV6lBBSFNxpZ3y0kqjF2HmY7cnKWtW2p8=
 github.com/aws/aws-sdk-go-v2/service/mwaa v1.40.0/go.mod h1:O2kdYrYDkdHdUpvYcrWQoYaJgPJCGHdaLF06ep3HzKI=
+github.com/aws/aws-sdk-go-v2/service/notifications v1.7.22 h1:oraTweag1UyJwch3PWrfkkHiOzMZSGuqnLA7+yuFPWI=
+github.com/aws/aws-sdk-go-v2/service/notifications v1.7.22/go.mod h1:2ShOanXPWp9GRHTHQP4gV2+YCrfiXL5gpchgRJzfdf4=
+github.com/aws/aws-sdk-go-v2/service/notificationscontacts v1.5.25 h1:VzqadovDs6JCtH+pIzFiRrMfxfwiRCxcyIE584L68EI=
+github.com/aws/aws-sdk-go-v2/service/notificationscontacts v1.5.25/go.mod h1:OC9ulnk7D/U4pJ8aF5yc5E5UDNTUYeVYNorOytuPL+g=
 github.com/aws/aws-sdk-go-v2/service/opensearch v1.68.0 h1:kdz3yWtPKBCwm+CjPXeanhoSm48s2252Lo+za6BQgFo=
 github.com/aws/aws-sdk-go-v2/service/opensearch v1.68.0/go.mod h1:m6jcW6ksKQtM4f/AsUbYdfbyM9xv4jjrBnRWWh1q0VQ=
 github.com/aws/aws-sdk-go-v2/service/opensearchserverless v1.30.3 h1:47FPswEE4RKBY0sUivfFCqBS5PVAfg2iiNaSl9rHOX4=
