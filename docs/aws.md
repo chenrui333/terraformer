@@ -352,6 +352,12 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_iot_thing_type`
     * `aws_iot_topic_rule`
     * `aws_iot_role_alias`
+*   `ivs`
+    * `aws_ivs_channel`
+    * `aws_ivs_recording_configuration`
+*   `ivschat`
+    * `aws_ivschat_logging_configuration`
+    * `aws_ivschat_room`
 *   `kinesis`
     * `aws_kinesis_resource_policy`
     * `aws_kinesis_stream`
@@ -393,6 +399,7 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_media_package_channel`
 *   `media_store`
     * `aws_media_store_container`
+    * `aws_media_store_container_policy`
 *   `medialive`
     * `aws_medialive_channel`
     * `aws_medialive_input`
