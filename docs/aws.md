@@ -424,6 +424,8 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_cloudwatch_query_definition`
 *   `media_package`
     * `aws_media_package_channel`
+*   `media_packagev2`
+    * `aws_media_packagev2_channel_group`
 *   `media_store`
     * `aws_media_store_container`
     * `aws_media_store_container_policy`
@@ -431,6 +433,8 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_medialive_channel`
     * `aws_medialive_input`
     * `aws_medialive_input_security_group`
+    * `aws_medialive_multiplex`
+    * `aws_medialive_multiplex_program`
 *   `mq`
     * `aws_mq_broker`
 *   `msk`
