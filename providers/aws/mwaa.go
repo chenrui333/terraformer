@@ -97,8 +97,7 @@ func mwaaEnvironmentImportable(environment *mwaatypes.Environment) bool {
 	if StringValue(environment.Name) == "" ||
 		StringValue(environment.DagS3Path) == "" ||
 		StringValue(environment.ExecutionRoleArn) == "" ||
-		StringValue(environment.SourceBucketArn) == "" ||
-		environment.LastUpdate == nil {
+		StringValue(environment.SourceBucketArn) == "" {
 		return false
 	}
 	return mwaaEnvironmentNetworkConfigurationComplete(environment.NetworkConfiguration)
