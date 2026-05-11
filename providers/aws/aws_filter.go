@@ -30,3 +30,16 @@ func awsTypedIDFilterValues(filters []terraformutils.ResourceFilter, serviceName
 func awsIDFilterAllows(values map[string]bool, value string) bool {
 	return len(values) == 0 || values[value]
 }
+
+func awsMergeIDFilterValues(filters ...map[string]bool) map[string]bool {
+	values := map[string]bool{}
+	for _, filter := range filters {
+		for value := range filter {
+			values[value] = true
+		}
+	}
+	if len(values) == 0 {
+		return nil
+	}
+	return values
+}

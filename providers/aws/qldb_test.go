@@ -88,6 +88,32 @@ func TestQLDBResourceNamesPreserveSegmentBoundaries(t *testing.T) {
 	}
 }
 
+func TestQLDBLedgerIDFilterAllowsAllWhenStreamIDsAreRequested(t *testing.T) {
+	service := terraformutils.Service{}
+	service.ParseFilters([]string{
+		"qldb_ledger=ledger-a",
+		"qldb_stream=stream-b",
+	})
+
+	filter := qldbLedgerIDFilter(service.Filter)
+	if !awsIDFilterAllows(filter, "ledger-b") {
+		t.Fatalf("QLDB stream ID filter should disable ledger prefilter: %#v", filter)
+	}
+}
+
+func TestQLDBLedgerIDFilterRestrictsLedgerOnlyFilters(t *testing.T) {
+	service := terraformutils.Service{}
+	service.ParseFilters([]string{"qldb_ledger=ledger-a"})
+
+	filter := qldbLedgerIDFilter(service.Filter)
+	if !awsIDFilterAllows(filter, "ledger-a") {
+		t.Fatalf("QLDB ledger filter should allow ledger-a: %#v", filter)
+	}
+	if awsIDFilterAllows(filter, "ledger-b") {
+		t.Fatalf("QLDB ledger filter allowed unrelated ledger: %#v", filter)
+	}
+}
+
 func TestQLDBStreamNotFound(t *testing.T) {
 	tests := []struct {
 		name string

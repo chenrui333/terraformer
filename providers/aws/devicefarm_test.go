@@ -137,6 +137,44 @@ func TestDeviceFarmARNImportID(t *testing.T) {
 	}
 }
 
+func TestDeviceFarmProjectIDFilterIncludesProjectScopedChildParents(t *testing.T) {
+	service := terraformutils.Service{}
+	service.ParseFilters([]string{
+		"devicefarm_project='arn:aws:devicefarm:us-west-2:123456789012:project:project-parent'",
+		"devicefarm_device_pool='arn:aws:devicefarm:us-west-2:123456789012:devicepool:project-child/device-pool-id'",
+		"devicefarm_network_profile='arn:aws:devicefarm:us-west-2:123456789012:networkprofile:project-network/profile-id'",
+		"devicefarm_upload='arn:aws:devicefarm:us-west-2:123456789012:upload:project-upload/upload-id'",
+	})
+
+	filter := deviceFarmProjectIDFilter(service.Filter)
+	for _, projectARN := range []string{
+		"arn:aws:devicefarm:us-west-2:123456789012:project:project-parent",
+		"arn:aws:devicefarm:us-west-2:123456789012:project:project-child",
+		"arn:aws:devicefarm:us-west-2:123456789012:project:project-network",
+		"arn:aws:devicefarm:us-west-2:123456789012:project:project-upload",
+	} {
+		if !awsIDFilterAllows(filter, projectARN) {
+			t.Fatalf("Device Farm project filter should allow %q: %#v", projectARN, filter)
+		}
+	}
+	if awsIDFilterAllows(filter, "arn:aws:devicefarm:us-west-2:123456789012:project:project-other") {
+		t.Fatalf("Device Farm project filter allowed unrelated project: %#v", filter)
+	}
+}
+
+func TestDeviceFarmProjectIDFilterAllowsAllForUnparseableChildID(t *testing.T) {
+	service := terraformutils.Service{}
+	service.ParseFilters([]string{
+		"devicefarm_project='arn:aws:devicefarm:us-west-2:123456789012:project:project-parent'",
+		"devicefarm_device_pool=malformed",
+	})
+
+	filter := deviceFarmProjectIDFilter(service.Filter)
+	if !awsIDFilterAllows(filter, "arn:aws:devicefarm:us-west-2:123456789012:project:project-other") {
+		t.Fatalf("unparseable Device Farm child ID should disable project prefilter: %#v", filter)
+	}
+}
+
 func TestDeviceFarmResourceNamesPreserveSegmentBoundaries(t *testing.T) {
 	left := terraformutils.TfSanitize(deviceFarmResourceName("device-pool", "a/b_c"))
 	right := terraformutils.TfSanitize(deviceFarmResourceName("device", "pool/a_b_c"))

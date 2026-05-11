@@ -36,7 +36,7 @@ func (g *QLDBGenerator) InitResources() error {
 }
 
 func (g *QLDBGenerator) loadLedgers(svc *qldb.Client) error {
-	ledgerIDFilter := awsTypedIDFilterValues(g.Filter, qldbLedgerResourceType)
+	ledgerIDFilter := qldbLedgerIDFilter(g.Filter)
 	p := qldb.NewListLedgersPaginator(svc, &qldb.ListLedgersInput{})
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
@@ -125,6 +125,13 @@ func qldbStreamImportable(status qldbtypes.StreamStatus) bool {
 	default:
 		return true
 	}
+}
+
+func qldbLedgerIDFilter(filters []terraformutils.ResourceFilter) map[string]bool {
+	if len(awsTypedIDFilterValues(filters, qldbStreamResourceType)) > 0 {
+		return nil
+	}
+	return awsTypedIDFilterValues(filters, qldbLedgerResourceType)
 }
 
 func qldbLedgerImportID(ledgerName string) string {

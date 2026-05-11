@@ -40,3 +40,22 @@ func TestAWSTypedIDFilterValues(t *testing.T) {
 		t.Fatal("missing typed ID filters should allow discovery")
 	}
 }
+
+func TestAWSMergeIDFilterValues(t *testing.T) {
+	merged := awsMergeIDFilterValues(
+		map[string]bool{"first": true},
+		nil,
+		map[string]bool{"second": true},
+	)
+	for _, value := range []string{"first", "second"} {
+		if !awsIDFilterAllows(merged, value) {
+			t.Fatalf("merged ID filter should allow %q: %#v", value, merged)
+		}
+	}
+	if awsIDFilterAllows(merged, "third") {
+		t.Fatalf("merged ID filter allowed unrelated value: %#v", merged)
+	}
+	if got := awsMergeIDFilterValues(nil, map[string]bool{}); got != nil {
+		t.Fatalf("empty merged ID filters = %#v, want nil", got)
+	}
+}

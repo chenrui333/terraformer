@@ -66,6 +66,24 @@ func TestDataPipelineResourceNamesPreserveSegmentBoundaries(t *testing.T) {
 	}
 }
 
+func TestDataPipelinePipelineIDFilterIncludesDefinitionIDs(t *testing.T) {
+	service := terraformutils.Service{}
+	service.ParseFilters([]string{
+		"datapipeline_pipeline=df-parent",
+		"datapipeline_pipeline_definition=df-child",
+	})
+
+	filter := dataPipelinePipelineIDFilter(service.Filter)
+	for _, pipelineID := range []string{"df-parent", "df-child"} {
+		if !awsIDFilterAllows(filter, pipelineID) {
+			t.Fatalf("Data Pipeline filter should allow %q: %#v", pipelineID, filter)
+		}
+	}
+	if awsIDFilterAllows(filter, "df-other") {
+		t.Fatalf("Data Pipeline filter allowed unrelated pipeline: %#v", filter)
+	}
+}
+
 func TestDataPipelinePostRefreshCleanupKeepsDefinitionForMatchedPipelineName(t *testing.T) {
 	pipeline := dataPipelinePipelineResourceForCleanup("df-123", "daily-import")
 	otherPipeline := dataPipelinePipelineResourceForCleanup("df-456", "hourly-import")

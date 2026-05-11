@@ -35,15 +35,18 @@ func (g *DeviceFarmGenerator) InitResources() error {
 		return e
 	}
 	svc := devicefarm.NewFromConfig(config)
-	projectIDFilter := awsTypedIDFilterValues(g.Filter, deviceFarmProjectResourceType)
+	projectIDFilter := deviceFarmProjectIDFilter(g.Filter)
+	explicitProjectIDFilter := awsTypedIDFilterValues(g.Filter, deviceFarmProjectResourceType)
 
 	if err := g.loadProjects(svc, projectIDFilter); err != nil {
 		return err
 	}
-	if len(projectIDFilter) == 0 {
+	if len(explicitProjectIDFilter) == 0 || len(awsTypedIDFilterValues(g.Filter, deviceFarmTestGridProjectResourceType)) > 0 {
 		if err := g.loadTestGridProjects(svc); err != nil {
 			log.Printf("[WARN] Skipping Device Farm test grid projects: %v", err)
 		}
+	}
+	if len(explicitProjectIDFilter) == 0 || len(awsTypedIDFilterValues(g.Filter, deviceFarmInstanceProfileResourceType)) > 0 {
 		if err := g.loadInstanceProfiles(svc); err != nil {
 			log.Printf("[WARN] Skipping Device Farm instance profiles: %v", err)
 		}
@@ -184,6 +187,56 @@ func (g *DeviceFarmGenerator) loadInstanceProfiles(svc *devicefarm.Client) error
 	}
 
 	return nil
+}
+
+func deviceFarmProjectIDFilter(filters []terraformutils.ResourceFilter) map[string]bool {
+	projectARNs, ok := deviceFarmProjectARNsFromChildFilterValues(filters)
+	if !ok {
+		return nil
+	}
+	return awsMergeIDFilterValues(awsTypedIDFilterValues(filters, deviceFarmProjectResourceType), projectARNs)
+}
+
+func deviceFarmProjectARNsFromChildFilterValues(filters []terraformutils.ResourceFilter) (map[string]bool, bool) {
+	projectARNs := map[string]bool{}
+	for _, resourceType := range []string{
+		deviceFarmDevicePoolResourceType,
+		deviceFarmNetworkProfileResourceType,
+		deviceFarmUploadResourceType,
+	} {
+		for childARN := range awsTypedIDFilterValues(filters, resourceType) {
+			projectARN := deviceFarmProjectARNFromProjectScopedARN(childARN)
+			if projectARN == "" {
+				return nil, false
+			}
+			projectARNs[projectARN] = true
+		}
+	}
+	if len(projectARNs) == 0 {
+		return nil, true
+	}
+	return projectARNs, true
+}
+
+func deviceFarmProjectARNFromProjectScopedARN(childARN string) string {
+	parts := strings.SplitN(childARN, ":", 6)
+	if len(parts) != 6 {
+		return ""
+	}
+	resourceType, resourcePath, ok := strings.Cut(parts[5], ":")
+	if !ok {
+		return ""
+	}
+	switch resourceType {
+	case "devicepool", "networkprofile", "upload":
+	default:
+		return ""
+	}
+	projectID, _, ok := strings.Cut(resourcePath, "/")
+	if !ok || projectID == "" {
+		return ""
+	}
+	return strings.Join(parts[:5], ":") + ":project:" + projectID
 }
 
 func newDeviceFarmProjectResource(project devicefarmtypes.Project) (terraformutils.Resource, bool) {

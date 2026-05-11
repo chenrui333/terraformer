@@ -29,7 +29,7 @@ func (g *DataPipelineGenerator) InitResources() error {
 		return e
 	}
 	svc := datapipeline.NewFromConfig(config)
-	pipelineIDFilter := awsTypedIDFilterValues(g.Filter, dataPipelinePipelineResourceType)
+	pipelineIDFilter := dataPipelinePipelineIDFilter(g.Filter)
 	p := datapipeline.NewListPipelinesPaginator(svc, &datapipeline.ListPipelinesInput{})
 	var resources []terraformutils.Resource
 	for p.HasMorePages() {
@@ -161,6 +161,13 @@ func dataPipelineDefinitionPipelineID(resource terraformutils.Resource) string {
 		return ""
 	}
 	return resource.InstanceState.Attributes["pipeline_id"]
+}
+
+func dataPipelinePipelineIDFilter(filters []terraformutils.ResourceFilter) map[string]bool {
+	return awsMergeIDFilterValues(
+		awsTypedIDFilterValues(filters, dataPipelinePipelineResourceType),
+		awsTypedIDFilterValues(filters, dataPipelinePipelineDefinitionResourceType),
+	)
 }
 
 func dataPipelinePipelineImportID(pipelineID string) string {

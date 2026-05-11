@@ -57,6 +57,37 @@ func TestCloud9EnvironmentMembershipImportable(t *testing.T) {
 	}
 }
 
+func TestCloud9EnvironmentIDFilterIncludesMembershipParents(t *testing.T) {
+	service := terraformutils.Service{}
+	service.ParseFilters([]string{
+		"cloud9_environment_ec2=env-parent",
+		"cloud9_environment_membership='env-child#arn:aws:iam::123456789012:user/alice'",
+	})
+
+	filter := cloud9EnvironmentIDFilter(service.Filter)
+	for _, environmentID := range []string{"env-parent", "env-child"} {
+		if !awsIDFilterAllows(filter, environmentID) {
+			t.Fatalf("Cloud9 environment filter should allow %q: %#v", environmentID, filter)
+		}
+	}
+	if awsIDFilterAllows(filter, "env-other") {
+		t.Fatalf("Cloud9 environment filter allowed unrelated environment: %#v", filter)
+	}
+}
+
+func TestCloud9EnvironmentIDFilterAllowsAllForUnparseableMembershipID(t *testing.T) {
+	service := terraformutils.Service{}
+	service.ParseFilters([]string{
+		"cloud9_environment_ec2=env-parent",
+		"cloud9_environment_membership=missing-separator",
+	})
+
+	filter := cloud9EnvironmentIDFilter(service.Filter)
+	if !awsIDFilterAllows(filter, "env-other") {
+		t.Fatalf("unparseable Cloud9 membership ID should disable parent prefilter: %#v", filter)
+	}
+}
+
 func TestCloud9MembershipSkipsEmptyIdentifiers(t *testing.T) {
 	if _, ok := newCloud9EnvironmentMembershipResource(types.EnvironmentMember{
 		Permissions: types.PermissionsReadOnly,

@@ -30,7 +30,7 @@ func (g *Cloud9Generator) InitResources() error {
 		return e
 	}
 	svc := cloud9.NewFromConfig(config)
-	environmentIDFilter := awsTypedIDFilterValues(g.Filter, cloud9EnvironmentEC2ResourceType)
+	environmentIDFilter := cloud9EnvironmentIDFilter(g.Filter)
 	p := cloud9.NewListEnvironmentsPaginator(svc, &cloud9.ListEnvironmentsInput{})
 	for p.HasMorePages() {
 		output, err := p.NextPage(context.TODO())
@@ -133,6 +133,29 @@ func newCloud9EnvironmentMembershipResource(membership types.EnvironmentMember) 
 func cloud9EnvironmentMembershipImportable(permissions types.Permissions) bool {
 	// Owner memberships are created by AWS for environment creators and are not independently managed by Terraform.
 	return permissions == types.PermissionsReadOnly || permissions == types.PermissionsReadWrite
+}
+
+func cloud9EnvironmentIDFilter(filters []terraformutils.ResourceFilter) map[string]bool {
+	membershipEnvironmentIDs, ok := cloud9EnvironmentIDsFromMembershipFilterValues(awsTypedIDFilterValues(filters, cloud9EnvironmentMembershipResourceType))
+	if !ok {
+		return nil
+	}
+	return awsMergeIDFilterValues(awsTypedIDFilterValues(filters, cloud9EnvironmentEC2ResourceType), membershipEnvironmentIDs)
+}
+
+func cloud9EnvironmentIDsFromMembershipFilterValues(membershipIDs map[string]bool) (map[string]bool, bool) {
+	if len(membershipIDs) == 0 {
+		return nil, true
+	}
+	environmentIDs := map[string]bool{}
+	for membershipID := range membershipIDs {
+		environmentID, _, ok := strings.Cut(membershipID, "#")
+		if !ok || environmentID == "" {
+			return nil, false
+		}
+		environmentIDs[environmentID] = true
+	}
+	return environmentIDs, true
 }
 
 func cloud9EnvironmentMembershipImportID(environmentID, userArn string) string {
