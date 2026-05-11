@@ -309,9 +309,19 @@ func TestOpenSearchUnsupportedResourceEntries(t *testing.T) {
 	if err := json.Unmarshal(data, &unsupported); err != nil {
 		t.Fatalf("decode unsupported resources: %v", err)
 	}
-	entries := unsupported["resources"].([]interface{})
+	resources, ok := unsupported["resources"]
+	if !ok {
+		t.Fatal("unsupported resources JSON missing resources field")
+	}
+	entries, ok := resources.([]interface{})
+	if !ok {
+		t.Fatalf("unsupported resources JSON resources field has type %T, want []interface{}", resources)
+	}
 	for _, rawEntry := range entries {
-		entry := rawEntry.(map[string]interface{})
+		entry, ok := rawEntry.(map[string]interface{})
+		if !ok {
+			t.Fatalf("unsupported resources JSON entry has type %T, want map[string]interface{}", rawEntry)
+		}
 		if entry["resource"] != "aws_opensearch_package" {
 			continue
 		}
