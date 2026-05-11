@@ -78,6 +78,20 @@ type SageMakerGenerator struct {
 	AWSService
 }
 
+func (g *SageMakerGenerator) PostConvertHook() error {
+	for resourceIndex, resource := range g.Resources {
+		if resource.InstanceInfo.Type != sageMakerModelPackageGroupPolicyResourceType || resource.Item == nil {
+			continue
+		}
+		policy, ok := resource.Item["resource_policy"].(string)
+		if !ok || policy == "" {
+			continue
+		}
+		g.Resources[resourceIndex].Item["resource_policy"] = fmt.Sprintf("<<POLICY\n%s\nPOLICY", g.escapeAwsInterpolation(policy))
+	}
+	return nil
+}
+
 func (g *SageMakerGenerator) InitialCleanup() {
 	if len(g.Filter) == 0 {
 		return
@@ -780,7 +794,12 @@ func newSageMakerEndpointConfigurationResource(config sagemakertypes.EndpointCon
 	if name == "" {
 		return terraformutils.Resource{}, false
 	}
-	return sageMakerResource(name, sageMakerResourceName("endpoint-configuration", name), sageMakerEndpointConfigurationResourceType, map[string]string{"name": name})
+	resource, ok := sageMakerResource(name, sageMakerResourceName("endpoint-configuration", name), sageMakerEndpointConfigurationResourceType, map[string]string{"name": name})
+	if !ok {
+		return terraformutils.Resource{}, false
+	}
+	resource.IgnoreKeys = append(resource.IgnoreKeys, "^name_prefix$")
+	return resource, true
 }
 
 func newSageMakerEndpointResource(endpoint sagemakertypes.EndpointSummary) (terraformutils.Resource, bool) {

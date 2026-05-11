@@ -118,6 +118,9 @@ func TestNewSageMakerModelServingResources(t *testing.T) {
 
 	endpointConfig, ok := newSageMakerEndpointConfigurationResource(sagemakertypes.EndpointConfigSummary{EndpointConfigName: aws.String("prod-config")})
 	assertSageMakerResource(t, endpointConfig, ok, "prod-config", sageMakerEndpointConfigurationResourceType)
+	if !sageMakerTestStringSliceContains(endpointConfig.IgnoreKeys, "^name_prefix$") {
+		t.Fatalf("endpoint configuration IgnoreKeys = %v, want ^name_prefix$", endpointConfig.IgnoreKeys)
+	}
 
 	endpoint, ok := newSageMakerEndpointResource(sagemakertypes.EndpointSummary{
 		EndpointName:   aws.String("prod-endpoint"),
@@ -132,6 +135,38 @@ func TestNewSageMakerModelServingResources(t *testing.T) {
 	}
 	if _, ok := newSageMakerModelResource(sagemakertypes.ModelSummary{}); ok {
 		t.Fatal("model without name should be skipped")
+	}
+}
+
+func TestSageMakerPostConvertHookWrapsModelPackageGroupPolicy(t *testing.T) {
+	policyText := "{\"Resource\":\"$" + "{aws:PrincipalArn}\"}"
+	policy, ok := newSageMakerModelPackageGroupPolicyResource("fraud-packages", aws.String(policyText))
+	assertSageMakerResource(t, policy, ok, "fraud-packages", sageMakerModelPackageGroupPolicyResourceType)
+	policy.Item = map[string]interface{}{
+		"resource_policy": policyText,
+	}
+	model, ok := newSageMakerModelResource(sagemakertypes.ModelSummary{ModelName: aws.String("fraud-model")})
+	assertSageMakerResource(t, model, ok, "fraud-model", sageMakerModelResourceType)
+	model.Item = map[string]interface{}{
+		"name": "fraud-model",
+	}
+
+	generator := SageMakerGenerator{
+		AWSService: AWSService{
+			Service: terraformutils.Service{
+				Resources: []terraformutils.Resource{policy, model},
+			},
+		},
+	}
+	if err := generator.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook() error = %v", err)
+	}
+	want := "<<POLICY\n{\"Resource\":\"$" + "$" + "{aws:PrincipalArn}\"}\nPOLICY"
+	if got := generator.Resources[0].Item["resource_policy"]; got != want {
+		t.Fatalf("resource_policy = %q, want %q", got, want)
+	}
+	if got := generator.Resources[1].Item["name"]; got != "fraud-model" {
+		t.Fatalf("non-policy resource was modified: %q", got)
 	}
 }
 
@@ -678,4 +713,13 @@ func sageMakerTestResources(t *testing.T) []terraformutils.Resource {
 		resources = append(resources, resource)
 	}
 	return resources
+}
+
+func sageMakerTestStringSliceContains(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
 }
