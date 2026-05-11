@@ -91,7 +91,7 @@ func (g *APIGatewayGenerator) loadRestApis(svc *apigateway.Client) error {
 			return err
 		}
 		for _, restAPI := range page.Items {
-			if g.shouldFilterRestAPI(restAPI.Tags) {
+			if g.shouldFilterRestAPI(restAPI) {
 				continue
 			}
 			restAPIID := StringValue(restAPI.Id)
@@ -138,22 +138,32 @@ func (g *APIGatewayGenerator) loadRestApis(svc *apigateway.Client) error {
 	return nil
 }
 
-func (g *APIGatewayGenerator) shouldFilterRestAPI(tags map[string]string) bool {
+func (g *APIGatewayGenerator) shouldFilterRestAPI(restAPI types.RestApi) bool {
 	for _, filter := range g.Filter {
+		if filter.FieldPath == "id" && filter.IsApplicable("api_gateway_rest_api") {
+			if !terraformerstring.ContainsString(filter.AcceptableValues, StringValue(restAPI.Id)) {
+				return true
+			}
+			continue
+		}
 		if strings.HasPrefix(filter.FieldPath, "tags.") && filter.IsApplicable("api_gateway_rest_api") {
 			tagName := strings.Replace(filter.FieldPath, "tags.", "", 1)
-			if val, ok := tags[tagName]; ok {
-				return !terraformerstring.ContainsString(filter.AcceptableValues, val)
+			if val, ok := restAPI.Tags[tagName]; ok {
+				if !terraformerstring.ContainsString(filter.AcceptableValues, val) {
+					return true
+				}
+			} else {
+				return true
 			}
-			return true
 		}
 	}
 	return false
 }
 
-func (g *APIGatewayGenerator) hasRestAPITagFilter() bool {
+func (g *APIGatewayGenerator) hasRestAPIFilter() bool {
 	for _, filter := range g.Filter {
-		if strings.HasPrefix(filter.FieldPath, "tags.") && filter.IsApplicable("api_gateway_rest_api") {
+		if filter.IsApplicable("api_gateway_rest_api") &&
+			(filter.FieldPath == "id" || strings.HasPrefix(filter.FieldPath, "tags.")) {
 			return true
 		}
 	}
@@ -171,7 +181,7 @@ func (g *APIGatewayGenerator) rememberAcceptedRestAPIID(restAPIID string) {
 }
 
 func (g *APIGatewayGenerator) shouldFilterBasePathMapping(mapping types.BasePathMapping) bool {
-	if !g.hasRestAPITagFilter() {
+	if !g.hasRestAPIFilter() {
 		return false
 	}
 	restAPIID := StringValue(mapping.RestApiId)

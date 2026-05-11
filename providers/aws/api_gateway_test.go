@@ -158,28 +158,52 @@ func TestNewAPIGatewayBasePathMappingResource(t *testing.T) {
 	}
 }
 
-func TestAPIGatewayBasePathMappingsRespectRestAPITagFilters(t *testing.T) {
+func TestAPIGatewayBasePathMappingsRespectRestAPIFilters(t *testing.T) {
 	noFilter := &APIGatewayGenerator{}
 	if noFilter.shouldFilterBasePathMapping(types.BasePathMapping{RestApiId: aws.String("api-excluded")}) {
-		t.Fatal("shouldFilterBasePathMapping() = true without REST API tag filter, want false")
+		t.Fatal("shouldFilterBasePathMapping() = true without REST API filter, want false")
 	}
 
-	filtered := &APIGatewayGenerator{}
-	filtered.Filter = []terraformutils.ResourceFilter{{
+	tagFiltered := &APIGatewayGenerator{}
+	tagFiltered.Filter = []terraformutils.ResourceFilter{{
 		ServiceName:      "api_gateway_rest_api",
 		FieldPath:        "tags.Environment",
 		AcceptableValues: []string{"prod"},
 	}}
-	filtered.rememberAcceptedRestAPIID("api-allowed")
+	tagFiltered.rememberAcceptedRestAPIID("api-allowed")
 
-	if filtered.shouldFilterBasePathMapping(types.BasePathMapping{RestApiId: aws.String("api-allowed")}) {
-		t.Fatal("shouldFilterBasePathMapping() = true for accepted REST API, want false")
+	if tagFiltered.shouldFilterBasePathMapping(types.BasePathMapping{RestApiId: aws.String("api-allowed")}) {
+		t.Fatal("shouldFilterBasePathMapping() = true for tag-accepted REST API, want false")
 	}
-	if !filtered.shouldFilterBasePathMapping(types.BasePathMapping{RestApiId: aws.String("api-excluded")}) {
-		t.Fatal("shouldFilterBasePathMapping() = false for filtered REST API, want true")
+	if !tagFiltered.shouldFilterBasePathMapping(types.BasePathMapping{RestApiId: aws.String("api-excluded")}) {
+		t.Fatal("shouldFilterBasePathMapping() = false for tag-filtered REST API, want true")
 	}
-	if !filtered.shouldFilterBasePathMapping(types.BasePathMapping{}) {
+	if !tagFiltered.shouldFilterBasePathMapping(types.BasePathMapping{}) {
 		t.Fatal("shouldFilterBasePathMapping() = false for empty REST API ID under tag filter, want true")
+	}
+
+	idFiltered := &APIGatewayGenerator{}
+	idFiltered.Filter = []terraformutils.ResourceFilter{{
+		ServiceName:      "api_gateway_rest_api",
+		FieldPath:        "id",
+		AcceptableValues: []string{"api-allowed"},
+	}}
+	idFiltered.rememberAcceptedRestAPIID("api-allowed")
+
+	if idFiltered.shouldFilterRestAPI(types.RestApi{Id: aws.String("api-allowed")}) {
+		t.Fatal("shouldFilterRestAPI() = true for accepted REST API ID, want false")
+	}
+	if !idFiltered.shouldFilterRestAPI(types.RestApi{Id: aws.String("api-excluded")}) {
+		t.Fatal("shouldFilterRestAPI() = false for excluded REST API ID, want true")
+	}
+	if idFiltered.shouldFilterBasePathMapping(types.BasePathMapping{RestApiId: aws.String("api-allowed")}) {
+		t.Fatal("shouldFilterBasePathMapping() = true for ID-accepted REST API, want false")
+	}
+	if !idFiltered.shouldFilterBasePathMapping(types.BasePathMapping{RestApiId: aws.String("api-excluded")}) {
+		t.Fatal("shouldFilterBasePathMapping() = false for ID-filtered REST API, want true")
+	}
+	if !idFiltered.shouldFilterBasePathMapping(types.BasePathMapping{}) {
+		t.Fatal("shouldFilterBasePathMapping() = false for empty REST API ID under ID filter, want true")
 	}
 }
 
