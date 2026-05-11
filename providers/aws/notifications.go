@@ -21,7 +21,7 @@ const (
 	notificationsResourceIDSeparator                   = ","
 )
 
-var notificationsAllowEmptyValues = []string{"tags."}
+var notificationsAllowEmptyValues = []string{"description", "tags."}
 
 type NotificationsGenerator struct {
 	AWSService
@@ -65,7 +65,7 @@ func (g *NotificationsGenerator) InitResources() error {
 
 func (g *NotificationsGenerator) loadNotificationConfigurations(svc *notifications.Client) ([]notificationsConfigurationReference, error) {
 	configurations := []notificationsConfigurationReference{}
-	p := notifications.NewListNotificationConfigurationsPaginator(svc, &notifications.ListNotificationConfigurationsInput{})
+	p := notifications.NewListNotificationConfigurationsPaginator(svc, notificationsListNotificationConfigurationsInput())
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
 		if err != nil {
@@ -162,7 +162,7 @@ func newNotificationsNotificationConfigurationResource(configuration notificatio
 	arn := StringValue(configuration.Arn)
 	name := StringValue(configuration.Name)
 	description := StringValue(configuration.Description)
-	if arn == "" || name == "" || description == "" || !notificationsConfigurationImportable(configuration) {
+	if arn == "" || name == "" || configuration.Description == nil || !notificationsConfigurationImportable(configuration) {
 		return terraformutils.Resource{}, false
 	}
 	attributes := map[string]string{
@@ -248,7 +248,13 @@ func newNotificationsNotificationHubResource(hub notificationstypes.Notification
 }
 
 func notificationsConfigurationImportable(configuration notificationstypes.NotificationConfigurationStructure) bool {
-	return configuration.Status != notificationstypes.NotificationConfigurationStatusDeleting
+	return configuration.Subtype == notificationstypes.NotificationConfigurationSubtypeAccount && configuration.Status != notificationstypes.NotificationConfigurationStatusDeleting
+}
+
+func notificationsListNotificationConfigurationsInput() *notifications.ListNotificationConfigurationsInput {
+	return &notifications.ListNotificationConfigurationsInput{
+		Subtype: notificationstypes.NotificationConfigurationSubtypeAccount,
+	}
 }
 
 func notificationsHubImportable(hub notificationstypes.NotificationHubOverview) bool {

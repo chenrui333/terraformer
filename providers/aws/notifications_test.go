@@ -39,6 +39,7 @@ func TestNewNotificationsResources(t *testing.T) {
 		Description:         aws.String("primary notifications"),
 		Name:                aws.String("primary"),
 		Status:              notificationstypes.NotificationConfigurationStatusActive,
+		Subtype:             notificationstypes.NotificationConfigurationSubtypeAccount,
 	})
 	assertMessagingResource(t, configuration, ok, notificationsNotificationConfigurationResourceType, configurationARN, map[string]string{
 		"aggregation_duration": "SHORT",
@@ -82,14 +83,51 @@ func TestNewNotificationsResources(t *testing.T) {
 	})
 }
 
+func TestNewNotificationsNotificationConfigurationResourceAllowsEmptyDescription(t *testing.T) {
+	configurationARN := "arn:aws:notifications::123456789012:configuration/config-blank-description"
+	resource, ok := newNotificationsNotificationConfigurationResource(notificationstypes.NotificationConfigurationStructure{
+		Arn:         aws.String(configurationARN),
+		Description: aws.String(""),
+		Name:        aws.String("blank-description"),
+		Status:      notificationstypes.NotificationConfigurationStatusActive,
+		Subtype:     notificationstypes.NotificationConfigurationSubtypeAccount,
+	})
+	assertMessagingResource(t, resource, ok, notificationsNotificationConfigurationResourceType, configurationARN, map[string]string{
+		"arn":         configurationARN,
+		"description": "",
+		"name":        "blank-description",
+	})
+	if !notificationAllowsEmptyDescription(resource.AllowEmptyValues) {
+		t.Fatalf("AllowEmptyValues = %#v, want description allowed", resource.AllowEmptyValues)
+	}
+}
+
 func TestNotificationsResourceSkips(t *testing.T) {
 	if _, ok := newNotificationsNotificationConfigurationResource(notificationstypes.NotificationConfigurationStructure{
 		Arn:         aws.String("arn"),
 		Description: aws.String("deleting"),
 		Name:        aws.String("deleting"),
 		Status:      notificationstypes.NotificationConfigurationStatusDeleting,
+		Subtype:     notificationstypes.NotificationConfigurationSubtypeAccount,
 	}); ok {
 		t.Fatal("deleting notification configuration should be skipped")
+	}
+	if _, ok := newNotificationsNotificationConfigurationResource(notificationstypes.NotificationConfigurationStructure{
+		Arn:         aws.String("arn"),
+		Description: aws.String("admin-managed"),
+		Name:        aws.String("admin-managed"),
+		Status:      notificationstypes.NotificationConfigurationStatusActive,
+		Subtype:     notificationstypes.NotificationConfigurationSubtypeAdminManaged,
+	}); ok {
+		t.Fatal("admin-managed notification configuration should be skipped")
+	}
+	if _, ok := newNotificationsNotificationConfigurationResource(notificationstypes.NotificationConfigurationStructure{
+		Arn:     aws.String("arn"),
+		Name:    aws.String("nil-description"),
+		Status:  notificationstypes.NotificationConfigurationStatusActive,
+		Subtype: notificationstypes.NotificationConfigurationSubtypeAccount,
+	}); ok {
+		t.Fatal("notification configuration with nil description should be skipped")
 	}
 	if _, ok := newNotificationsEventRuleResource(notificationsConfigurationReference{arn: "arn"}, notificationstypes.EventRuleStructure{
 		Arn:       aws.String("rule"),
@@ -107,4 +145,20 @@ func TestNotificationsResourceSkips(t *testing.T) {
 	}); ok {
 		t.Fatal("inactive notification hub should be skipped")
 	}
+}
+
+func TestNotificationsListNotificationConfigurationsInputFiltersAccountOwned(t *testing.T) {
+	input := notificationsListNotificationConfigurationsInput()
+	if input.Subtype != notificationstypes.NotificationConfigurationSubtypeAccount {
+		t.Fatalf("Subtype = %q, want %q", input.Subtype, notificationstypes.NotificationConfigurationSubtypeAccount)
+	}
+}
+
+func notificationAllowsEmptyDescription(allowEmptyValues []string) bool {
+	for _, value := range allowEmptyValues {
+		if value == "description" {
+			return true
+		}
+	}
+	return false
 }
