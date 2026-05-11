@@ -5,6 +5,8 @@ package aws
 import (
 	"context"
 	"errors"
+	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -14,9 +16,14 @@ import (
 )
 
 const (
-	sesv2ConfigurationSetResourceType = "aws_sesv2_configuration_set"
-	sesv2DedicatedIPPoolResourceType  = "aws_sesv2_dedicated_ip_pool"
-	sesv2EmailIdentityResourceType    = "aws_sesv2_email_identity"
+	sesv2ConfigurationSetResourceType                 = "aws_sesv2_configuration_set"
+	sesv2ConfigurationSetEventDestinationResourceType = "aws_sesv2_configuration_set_event_destination"
+	sesv2DedicatedIPPoolResourceType                  = "aws_sesv2_dedicated_ip_pool"
+	sesv2EmailIdentityResourceType                    = "aws_sesv2_email_identity"
+	sesv2EmailIdentityFeedbackAttributesResourceType  = "aws_sesv2_email_identity_feedback_attributes"
+	sesv2EmailIdentityMailFromAttributesResourceType  = "aws_sesv2_email_identity_mail_from_attributes"
+	sesv2EmailIdentityPolicyResourceType              = "aws_sesv2_email_identity_policy"
+	sesv2ResourceIDSeparator                          = "|"
 )
 
 var sesv2AllowEmptyValues = []string{"tags."}
@@ -45,6 +52,20 @@ func (g *SesV2Generator) InitResources() error {
 	return nil
 }
 
+func (g *SesV2Generator) PostConvertHook() error {
+	for i, resource := range g.Resources {
+		if resource.InstanceInfo.Type != sesv2EmailIdentityPolicyResourceType {
+			continue
+		}
+		policy, ok := resource.Item["policy"].(string)
+		if !ok || policy == "" {
+			continue
+		}
+		g.Resources[i].Item["policy"] = fmt.Sprintf("<<POLICY\n%s\nPOLICY", g.escapeAwsInterpolation(policy))
+	}
+	return nil
+}
+
 func (g *SesV2Generator) loadConfigurationSets(svc *sesv2.Client) error {
 	p := sesv2.NewListConfigurationSetsPaginator(svc, &sesv2.ListConfigurationSetsInput{})
 	for p.HasMorePages() {
@@ -53,9 +74,39 @@ func (g *SesV2Generator) loadConfigurationSets(svc *sesv2.Client) error {
 			return err
 		}
 		for _, configurationSetName := range page.ConfigurationSets {
+			if configurationSetName == "" {
+				continue
+			}
 			if resource, ok := newSESV2ConfigurationSetResource(configurationSetName); ok {
 				g.Resources = append(g.Resources, resource)
 			}
+			if err := g.loadConfigurationSetEventDestinations(svc, configurationSetName); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (g *SesV2Generator) loadConfigurationSetEventDestinations(svc *sesv2.Client, configurationSetName string) error {
+	if configurationSetName == "" {
+		return nil
+	}
+	output, err := svc.GetConfigurationSetEventDestinations(context.TODO(), &sesv2.GetConfigurationSetEventDestinationsInput{
+		ConfigurationSetName: &configurationSetName,
+	})
+	if err != nil {
+		if sesv2NotFound(err) {
+			return nil
+		}
+		return err
+	}
+	if output == nil {
+		return nil
+	}
+	for _, destination := range output.EventDestinations {
+		if resource, ok := newSESV2ConfigurationSetEventDestinationResource(configurationSetName, destination); ok {
+			g.Resources = append(g.Resources, resource)
 		}
 	}
 	return nil
@@ -101,6 +152,44 @@ func (g *SesV2Generator) loadEmailIdentities(svc *sesv2.Client) error {
 			if resource, ok := newSESV2EmailIdentityResource(identityName, output); ok {
 				g.Resources = append(g.Resources, resource)
 			}
+			if resource, ok := newSESV2EmailIdentityFeedbackAttributesResource(identityName, output); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+			if resource, ok := newSESV2EmailIdentityMailFromAttributesResource(identityName, output); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+			if err := g.loadEmailIdentityPolicies(svc, identityName); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (g *SesV2Generator) loadEmailIdentityPolicies(svc *sesv2.Client, identityName string) error {
+	if identityName == "" {
+		return nil
+	}
+	output, err := svc.GetEmailIdentityPolicies(context.TODO(), &sesv2.GetEmailIdentityPoliciesInput{
+		EmailIdentity: &identityName,
+	})
+	if err != nil {
+		if sesv2NotFound(err) {
+			return nil
+		}
+		return err
+	}
+	if output == nil {
+		return nil
+	}
+	policyNames := make([]string, 0, len(output.Policies))
+	for policyName := range output.Policies {
+		policyNames = append(policyNames, policyName)
+	}
+	sort.Strings(policyNames)
+	for _, policyName := range policyNames {
+		if resource, ok := newSESV2EmailIdentityPolicyResource(identityName, policyName, output.Policies[policyName]); ok {
+			g.Resources = append(g.Resources, resource)
 		}
 	}
 	return nil
@@ -117,6 +206,25 @@ func newSESV2ConfigurationSetResource(configurationSetName string) (terraformuti
 		"aws",
 		map[string]string{
 			"configuration_set_name": configurationSetName,
+		},
+		sesv2AllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
+func newSESV2ConfigurationSetEventDestinationResource(configurationSetName string, destination sesv2types.EventDestination) (terraformutils.Resource, bool) {
+	eventDestinationName := StringValue(destination.Name)
+	if configurationSetName == "" || eventDestinationName == "" {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewResource(
+		sesv2ConfigurationSetEventDestinationImportID(configurationSetName, eventDestinationName),
+		sesv2ResourceName("configuration_set_event_destination", configurationSetName, eventDestinationName),
+		sesv2ConfigurationSetEventDestinationResourceType,
+		"aws",
+		map[string]string{
+			"configuration_set_name": configurationSetName,
+			"event_destination_name": eventDestinationName,
 		},
 		sesv2AllowEmptyValues,
 		map[string]interface{}{},
@@ -157,6 +265,67 @@ func newSESV2EmailIdentityResource(identityName string, output *sesv2.GetEmailId
 	), true
 }
 
+func newSESV2EmailIdentityFeedbackAttributesResource(identityName string, output *sesv2.GetEmailIdentityOutput) (terraformutils.Resource, bool) {
+	if identityName == "" || output == nil {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewResource(
+		sesv2EmailIdentityFeedbackAttributesImportID(identityName),
+		sesv2ResourceName("email_identity_feedback_attributes", identityName),
+		sesv2EmailIdentityFeedbackAttributesResourceType,
+		"aws",
+		map[string]string{
+			"email_identity":           identityName,
+			"email_forwarding_enabled": strconv.FormatBool(output.FeedbackForwardingStatus),
+		},
+		sesv2AllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
+func newSESV2EmailIdentityMailFromAttributesResource(identityName string, output *sesv2.GetEmailIdentityOutput) (terraformutils.Resource, bool) {
+	if identityName == "" || output == nil || output.MailFromAttributes == nil {
+		return terraformutils.Resource{}, false
+	}
+	mailFromDomain := StringValue(output.MailFromAttributes.MailFromDomain)
+	behaviorOnMXFailure := string(output.MailFromAttributes.BehaviorOnMxFailure)
+	if mailFromDomain == "" || behaviorOnMXFailure == "" {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewResource(
+		sesv2EmailIdentityMailFromAttributesImportID(identityName),
+		sesv2ResourceName("email_identity_mail_from_attributes", identityName),
+		sesv2EmailIdentityMailFromAttributesResourceType,
+		"aws",
+		map[string]string{
+			"behavior_on_mx_failure": behaviorOnMXFailure,
+			"email_identity":         identityName,
+			"mail_from_domain":       mailFromDomain,
+		},
+		sesv2AllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
+func newSESV2EmailIdentityPolicyResource(identityName, policyName, policy string) (terraformutils.Resource, bool) {
+	if identityName == "" || policyName == "" || policy == "" {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewResource(
+		sesv2EmailIdentityPolicyImportID(identityName, policyName),
+		sesv2ResourceName("email_identity_policy", identityName, policyName),
+		sesv2EmailIdentityPolicyResourceType,
+		"aws",
+		map[string]string{
+			"email_identity": identityName,
+			"policy":         policy,
+			"policy_name":    policyName,
+		},
+		sesv2AllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
 func sesv2EmailIdentityImportable(output *sesv2.GetEmailIdentityOutput) bool {
 	if output == nil || output.DkimAttributes == nil {
 		return true
@@ -175,12 +344,28 @@ func sesv2ConfigurationSetImportID(configurationSetName string) string {
 	return configurationSetName
 }
 
+func sesv2ConfigurationSetEventDestinationImportID(configurationSetName, eventDestinationName string) string {
+	return strings.Join([]string{configurationSetName, eventDestinationName}, sesv2ResourceIDSeparator)
+}
+
 func sesv2DedicatedIPPoolImportID(poolName string) string {
 	return poolName
 }
 
 func sesv2EmailIdentityImportID(identityName string) string {
 	return identityName
+}
+
+func sesv2EmailIdentityFeedbackAttributesImportID(identityName string) string {
+	return identityName
+}
+
+func sesv2EmailIdentityMailFromAttributesImportID(identityName string) string {
+	return identityName
+}
+
+func sesv2EmailIdentityPolicyImportID(identityName, policyName string) string {
+	return strings.Join([]string{identityName, policyName}, sesv2ResourceIDSeparator)
 }
 
 func sesv2ResourceName(parts ...string) string {
