@@ -65,6 +65,26 @@ func TestGlueUserDefinedFunctionImportID(t *testing.T) {
 	}
 }
 
+func TestGlueFollowUpImportIDs(t *testing.T) {
+	tests := []struct {
+		name string
+		got  string
+		want string
+	}{
+		{name: "connection", got: glueConnectionImportID("123456789012", "warehouse"), want: "123456789012:warehouse"},
+		{name: "partition index", got: gluePartitionIndexImportID("123456789012", "analytics", "orders", "order_date"), want: "123456789012:analytics:orders:order_date"},
+		{name: "table optimizer", got: glueCatalogTableOptimizerImportID("123456789012", "analytics", "orders", "compaction"), want: "123456789012,analytics,orders,compaction"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.got != tt.want {
+				t.Fatalf("import ID = %q, want %q", tt.got, tt.want)
+			}
+		})
+	}
+}
+
 func TestGlueDevEndpointImportable(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -84,6 +104,113 @@ func TestGlueDevEndpointImportable(t *testing.T) {
 				t.Fatalf("glueDevEndpointImportable() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestNewGlueConnectionResource(t *testing.T) {
+	resource, ok := newGlueConnectionResource("123456789012", gluetypes.Connection{
+		Name:           aws.String("warehouse"),
+		ConnectionType: gluetypes.ConnectionTypeNetwork,
+		Status:         gluetypes.ConnectionStatusReady,
+	})
+	if !ok {
+		t.Fatal("newGlueConnectionResource() ok = false, want true")
+	}
+	if resource.InstanceInfo.Type != glueConnectionResourceType {
+		t.Fatalf("resource type = %q, want %q", resource.InstanceInfo.Type, glueConnectionResourceType)
+	}
+	if resource.InstanceState.ID != "123456789012:warehouse" {
+		t.Fatalf("ID = %q, want 123456789012:warehouse", resource.InstanceState.ID)
+	}
+}
+
+func TestGlueConnectionImportable(t *testing.T) {
+	tests := []struct {
+		name       string
+		connection gluetypes.Connection
+		want       bool
+	}{
+		{name: "ready", connection: gluetypes.Connection{Status: gluetypes.ConnectionStatusReady}, want: true},
+		{name: "empty status", connection: gluetypes.Connection{}, want: true},
+		{name: "in progress", connection: gluetypes.Connection{Status: gluetypes.ConnectionStatusInProgress}, want: false},
+		{name: "failed", connection: gluetypes.Connection{Status: gluetypes.ConnectionStatusFailed}, want: false},
+		{name: "password property", connection: gluetypes.Connection{Status: gluetypes.ConnectionStatusReady, ConnectionProperties: map[string]string{"PASSWORD": "redacted"}}, want: false},
+		{name: "auth configuration", connection: gluetypes.Connection{Status: gluetypes.ConnectionStatusReady, AuthenticationConfiguration: &gluetypes.AuthenticationConfiguration{}}, want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := glueConnectionImportable(tt.connection)
+			if got != tt.want {
+				t.Fatalf("glueConnectionImportable() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNewGlueDataCatalogEncryptionSettingsResource(t *testing.T) {
+	resource, ok := newGlueDataCatalogEncryptionSettingsResource("123456789012", &gluetypes.DataCatalogEncryptionSettings{
+		ConnectionPasswordEncryption: &gluetypes.ConnectionPasswordEncryption{ReturnConnectionPasswordEncrypted: false},
+	})
+	if !ok {
+		t.Fatal("newGlueDataCatalogEncryptionSettingsResource() ok = false, want true")
+	}
+	if resource.InstanceInfo.Type != glueDataCatalogEncryptionSettingsResourceType {
+		t.Fatalf("resource type = %q, want %q", resource.InstanceInfo.Type, glueDataCatalogEncryptionSettingsResourceType)
+	}
+	if got := resource.InstanceState.Attributes["catalog_id"]; got != "123456789012" {
+		t.Fatalf("catalog_id = %q, want 123456789012", got)
+	}
+}
+
+func TestNewGlueSchemaResource(t *testing.T) {
+	resource, ok := newGlueSchemaResource(gluetypes.SchemaListItem{
+		RegistryName: aws.String("registry"),
+		SchemaArn:    aws.String("arn:aws:glue:us-east-1:123456789012:schema/registry/orders"),
+		SchemaName:   aws.String("orders"),
+		SchemaStatus: gluetypes.SchemaStatusAvailable,
+	})
+	if !ok {
+		t.Fatal("newGlueSchemaResource() ok = false, want true")
+	}
+	if resource.InstanceState.ID != "arn:aws:glue:us-east-1:123456789012:schema/registry/orders" {
+		t.Fatalf("ID = %q, want schema ARN", resource.InstanceState.ID)
+	}
+}
+
+func TestGluePartitionIndexImportable(t *testing.T) {
+	tests := []struct {
+		name  string
+		index gluetypes.PartitionIndexDescriptor
+		want  bool
+	}{
+		{name: "active", index: gluetypes.PartitionIndexDescriptor{IndexStatus: gluetypes.PartitionIndexStatusActive}, want: true},
+		{name: "creating", index: gluetypes.PartitionIndexDescriptor{IndexStatus: gluetypes.PartitionIndexStatusCreating}, want: false},
+		{name: "failed", index: gluetypes.PartitionIndexDescriptor{IndexStatus: gluetypes.PartitionIndexStatusFailed}, want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := gluePartitionIndexImportable(tt.index)
+			if got != tt.want {
+				t.Fatalf("gluePartitionIndexImportable() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNewGlueCatalogTableOptimizerResource(t *testing.T) {
+	resource, ok := newGlueCatalogTableOptimizerResource("123456789012", "analytics", "orders", gluetypes.TableOptimizerTypeCompaction, &gluetypes.TableOptimizer{
+		Configuration: &gluetypes.TableOptimizerConfiguration{Enabled: aws.Bool(false)},
+	})
+	if !ok {
+		t.Fatal("newGlueCatalogTableOptimizerResource() ok = false, want true")
+	}
+	if resource.InstanceInfo.Type != glueCatalogTableOptimizerResourceType {
+		t.Fatalf("resource type = %q, want %q", resource.InstanceInfo.Type, glueCatalogTableOptimizerResourceType)
+	}
+	if resource.InstanceState.ID != "123456789012,analytics,orders,compaction" {
+		t.Fatalf("ID = %q, want optimizer import ID", resource.InstanceState.ID)
 	}
 }
 

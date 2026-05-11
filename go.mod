@@ -405,6 +405,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/appmesh v1.35.14
 	github.com/aws/aws-sdk-go-v2/service/apprunner v1.39.16
 	github.com/aws/aws-sdk-go-v2/service/appstream v1.58.0
+	github.com/aws/aws-sdk-go-v2/service/athena v1.57.6
 	github.com/aws/aws-sdk-go-v2/service/backup v1.55.2
 	github.com/aws/aws-sdk-go-v2/service/bedrock v1.59.2
 	github.com/aws/aws-sdk-go-v2/service/bedrockagent v1.53.2
@@ -417,6 +418,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ivs v1.50.1
 	github.com/aws/aws-sdk-go-v2/service/ivschat v1.21.22
 	github.com/aws/aws-sdk-go-v2/service/kendra v1.60.23
+	github.com/aws/aws-sdk-go-v2/service/lakeformation v1.47.8
 	github.com/aws/aws-sdk-go-v2/service/mediapackagev2 v1.37.0
 	github.com/aws/aws-sdk-go-v2/service/mwaa v1.40.0
 	github.com/aws/aws-sdk-go-v2/service/opensearch v1.68.0

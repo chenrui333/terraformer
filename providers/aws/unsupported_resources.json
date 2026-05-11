@@ -14,6 +14,18 @@
       ]
     },
     {
+      "resource": "aws_athena_database",
+      "service_family": "athena",
+      "reason": "Athena databases are backed by the Glue Data Catalog and would duplicate Terraform ownership with the existing aws_glue_catalog_database importer.",
+      "evidence": "Terraform AWS provider reads aws_athena_database with Athena GetDatabase against AwsDataCatalog by database name, which targets the same underlying Glue Data Catalog database that Terraformer already imports as aws_glue_catalog_database.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/athena_database",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/glue_catalog_database"
+      ]
+    },
+    {
       "resource": "aws_cloudwatch_event_connection",
       "service_family": "cloudwatch",
       "reason": "EventBridge connection credentials are write-only secrets; Terraformer cannot discover the required auth_parameters values from EventBridge APIs.",
@@ -158,6 +170,18 @@
       ]
     },
     {
+      "resource": "aws_glue_partition",
+      "service_family": "glue",
+      "reason": "Glue partitions are high-cardinality table data objects; broad account discovery can produce very large Terraform output and needs an explicit filtered follow-up design.",
+      "evidence": "Terraform AWS provider imports by catalog ID, database, table, and partition values, and Glue GetPartitions can enumerate every partition for every catalog table. This PR keeps table-level metadata support and defers partition inventory to avoid unbounded generated configuration.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/glue_partition",
+        "https://docs.aws.amazon.com/glue/latest/webapi/API_GetPartitions.html"
+      ]
+    },
+    {
       "resource": "aws_guardduty_detector_feature",
       "service_family": "guardduty",
       "reason": "Terraform AWS provider does not support importing this resource, so Terraformer cannot seed a provider-recognized import state.",
@@ -204,6 +228,61 @@
         "https://github.com/chenrui333/terraformer/issues/338",
         "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ivs_playback_key_pair",
         "https://docs.aws.amazon.com/ivs/latest/LowLatencyAPIReference/API_GetPlaybackKeyPair.html"
+      ]
+    },
+    {
+      "resource": "aws_lakeformation_opt_in",
+      "service_family": "lakeformation",
+      "reason": "Terraform AWS provider does not support importing this relationship resource, so Terraformer cannot seed a provider-recognized import state.",
+      "evidence": "The provider documentation for aws_lakeformation_opt_in has no Import section and the framework resource source does not define ImportState; its ID is created from principal/resource relationship state during Create.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lakeformation_opt_in"
+      ]
+    },
+    {
+      "resource": "aws_lakeformation_permissions",
+      "service_family": "lakeformation",
+      "reason": "Terraform AWS provider does not support importing this relationship resource, so Terraformer cannot seed a provider-recognized import state.",
+      "evidence": "The provider documentation for aws_lakeformation_permissions has no Import section and the SDK resource source has no ResourceImporter; its ID is a hash of grant input assembled during Create.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lakeformation_permissions"
+      ]
+    },
+    {
+      "resource": "aws_lakeformation_resource",
+      "service_family": "lakeformation",
+      "reason": "Terraform AWS provider does not support importing this registered-location resource, so Terraformer cannot seed a provider-recognized import state.",
+      "evidence": "The provider documentation for aws_lakeformation_resource has no Import section and the SDK resource source has no ResourceImporter; its ID is only assigned from arn during Create.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lakeformation_resource"
+      ]
+    },
+    {
+      "resource": "aws_lakeformation_resource_lf_tag",
+      "service_family": "lakeformation",
+      "reason": "Terraform AWS provider explicitly does not support importing this single LF-tag association resource.",
+      "evidence": "The provider documentation states 'You cannot import this resource' for aws_lakeformation_resource_lf_tag, and the framework resource has no ImportState implementation.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lakeformation_resource_lf_tag"
+      ]
+    },
+    {
+      "resource": "aws_lakeformation_resource_lf_tags",
+      "service_family": "lakeformation",
+      "reason": "Terraform AWS provider does not support importing this LF-tag association set resource, so Terraformer cannot seed a provider-recognized import state.",
+      "evidence": "The provider documentation for aws_lakeformation_resource_lf_tags has no Import section and the SDK resource source has no ResourceImporter; its ID is a hash of requested resource/tag input assembled during Create.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lakeformation_resource_lf_tags"
       ]
     },
     {
