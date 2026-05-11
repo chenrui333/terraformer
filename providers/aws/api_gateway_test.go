@@ -37,6 +37,52 @@ func TestAPIGatewayImportIDs(t *testing.T) {
 	}
 }
 
+func TestAPIGatewayProviderRefreshStateIDs(t *testing.T) {
+	tests := []struct {
+		name string
+		got  string
+		want string
+	}{
+		{name: "request validator", got: apiGatewayRequestValidatorStateID("validator-456"), want: "validator-456"},
+		{name: "resource", got: apiGatewayResourceStateID("resource-456"), want: "resource-456"},
+		{name: "usage plan key", got: apiGatewayUsagePlanKeyStateID("key-456"), want: "key-456"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.got != tt.want {
+				t.Fatalf("provider refresh state ID = %q, want %q", tt.got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAPIGatewayAccountIDFromRoleARN(t *testing.T) {
+	tests := []struct {
+		name    string
+		roleARN string
+		want    string
+		wantOK  bool
+	}{
+		{name: "standard partition", roleARN: "arn:aws:iam::123456789012:role/apigw-cloudwatch", want: "123456789012", wantOK: true},
+		{name: "gov partition", roleARN: "arn:aws-us-gov:iam::210987654321:role/apigw-cloudwatch", want: "210987654321", wantOK: true},
+		{name: "invalid arn", roleARN: "not-an-arn"},
+		{name: "missing account", roleARN: "arn:aws:iam:::role/apigw-cloudwatch"},
+		{name: "non-numeric account", roleARN: "arn:aws:iam::12345678901x:role/apigw-cloudwatch"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := apiGatewayAccountIDFromRoleARN(tt.roleARN)
+			if ok != tt.wantOK {
+				t.Fatalf("ok = %t, want %t", ok, tt.wantOK)
+			}
+			if got != tt.want {
+				t.Fatalf("account ID = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestNewAPIGatewayAccountResource(t *testing.T) {
 	resource, ok := newAPIGatewayAccountResource("123456789012", &apigateway.GetAccountOutput{
 		CloudwatchRoleArn: aws.String("arn:aws:iam::123456789012:role/apigw-cloudwatch"),

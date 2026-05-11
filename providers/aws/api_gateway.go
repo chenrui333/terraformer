@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/arn"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway/types"
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -48,7 +49,7 @@ func (g *APIGatewayGenerator) InitResources() error {
 	svc := apigateway.NewFromConfig(config)
 
 	g.loadOptionalResources([]apiGatewayOptionalResourceLoader{
-		{name: "account", load: func() error { return g.loadAccount(svc, config) }},
+		{name: "account", load: func() error { return g.loadAccount(svc) }},
 		{name: "client certificates", load: func() error { return g.loadClientCertificates(svc) }},
 	})
 
@@ -181,20 +182,24 @@ func (g *APIGatewayGenerator) shouldFilterBasePathMapping(mapping types.BasePath
 	return !ok
 }
 
-func (g *APIGatewayGenerator) loadAccount(svc *apigateway.Client, config aws.Config) error {
+func (g *APIGatewayGenerator) loadAccount(svc *apigateway.Client) error {
 	output, err := svc.GetAccount(context.TODO(), &apigateway.GetAccountInput{})
 	if err != nil {
 		return err
 	}
-	if output == nil || StringValue(output.CloudwatchRoleArn) == "" {
+	cloudwatchRoleARN := ""
+	if output != nil {
+		cloudwatchRoleARN = StringValue(output.CloudwatchRoleArn)
+	}
+	if cloudwatchRoleARN == "" {
 		return nil
 	}
-	account, err := g.getAccountNumber(config)
-	if err != nil {
-		log.Printf("Skipping API Gateway account: unable to get account ID: %v", err)
+	accountID, ok := apiGatewayAccountIDFromRoleARN(cloudwatchRoleARN)
+	if !ok {
+		log.Printf("Skipping API Gateway account: unable to parse account ID from CloudWatch role ARN %q", cloudwatchRoleARN)
 		return nil
 	}
-	if resource, ok := newAPIGatewayAccountResource(StringValue(account), output); ok {
+	if resource, ok := newAPIGatewayAccountResource(accountID, output); ok {
 		g.Resources = append(g.Resources, resource)
 	}
 	return nil
@@ -839,6 +844,26 @@ func apiGatewayAccountImportID(accountID string) string {
 	return accountID
 }
 
+func apiGatewayAccountIDFromRoleARN(roleARN string) (string, bool) {
+	parsedARN, err := arn.Parse(roleARN)
+	if err != nil || !apiGatewayAWSAccountID(parsedARN.AccountID) {
+		return "", false
+	}
+	return parsedARN.AccountID, true
+}
+
+func apiGatewayAWSAccountID(accountID string) bool {
+	if len(accountID) != 12 {
+		return false
+	}
+	for _, r := range accountID {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
+}
+
 func apiGatewayBasePathMappingImportID(domainName, basePath, domainNameID string) string {
 	parts := []string{domainName, basePath}
 	if domainNameID != "" {
@@ -859,6 +884,9 @@ func apiGatewayRequestValidatorImportID(restAPIID, validatorID string) string {
 	return strings.Join([]string{restAPIID, validatorID}, apiGatewayResourceIDSeparator)
 }
 
+// Terraformer seeds provider state directly before refresh. These IDs match the
+// Terraform AWS provider read IDs after its importers parse composite import IDs
+// and seed the required parent attributes.
 func apiGatewayRequestValidatorStateID(validatorID string) string {
 	return validatorID
 }
