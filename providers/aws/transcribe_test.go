@@ -102,6 +102,55 @@ func TestTranscribeInitialCleanupScopesIDFilters(t *testing.T) {
 	}
 }
 
+func TestTranscribeInitialCleanupHonorsTypedAttributeFilters(t *testing.T) {
+	resource, ok := newTranscribeLanguageModelResource(transcribetypes.LanguageModel{
+		ModelName:   aws.String("language-model"),
+		ModelStatus: transcribetypes.ModelStatusCompleted,
+	})
+	if !ok {
+		t.Fatal("expected resource")
+	}
+
+	g := TranscribeGenerator{}
+	g.Resources = []terraformutils.Resource{resource}
+	g.Filter = []terraformutils.ResourceFilter{
+		{ServiceName: transcribeServiceName(transcribeLanguageModelResourceType), FieldPath: "model_name", AcceptableValues: []string{"other-model"}},
+	}
+
+	g.InitialCleanup()
+	if len(g.Resources) != 0 {
+		t.Fatalf("expected non-matching typed attribute filter to remove resource, got %d resources", len(g.Resources))
+	}
+}
+
+func TestTranscribeTypedUnsupportedFilterDoesNotLoadLanguageModels(t *testing.T) {
+	resource, ok := newTranscribeLanguageModelResource(transcribetypes.LanguageModel{
+		ModelName:   aws.String("language-model"),
+		ModelStatus: transcribetypes.ModelStatusCompleted,
+	})
+	if !ok {
+		t.Fatal("expected resource")
+	}
+
+	g := TranscribeGenerator{}
+	g.Resources = []terraformutils.Resource{resource}
+	g.Filter = []terraformutils.ResourceFilter{
+		{ServiceName: "transcribe_vocabulary", FieldPath: "id", AcceptableValues: []string{"vocabulary"}},
+	}
+
+	if !g.hasTypedTranscribeFilter() {
+		t.Fatal("expected unsupported transcribe typed filter to be recognized")
+	}
+	if g.shouldLoadTranscribeResource(transcribeServiceName(transcribeLanguageModelResourceType)) {
+		t.Fatal("expected unsupported transcribe typed filter not to load language models")
+	}
+
+	g.InitialCleanup()
+	if len(g.Resources) != 0 {
+		t.Fatalf("expected unsupported typed filter to remove language model resource, got %d resources", len(g.Resources))
+	}
+}
+
 func TestTranscribeUnsupportedResourceEntries(t *testing.T) {
 	data, err := os.ReadFile("unsupported_resources.json")
 	if err != nil {

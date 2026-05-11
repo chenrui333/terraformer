@@ -20,9 +20,6 @@ const (
 
 var (
 	transcribeAllowEmptyValues = []string{"tags."}
-	transcribeResourceTypes    = []string{
-		transcribeServiceName(transcribeLanguageModelResourceType),
-	}
 )
 
 type TranscribeGenerator struct {
@@ -41,9 +38,6 @@ func (g *TranscribeGenerator) InitialCleanup() {
 		}
 		allPredicatesTrue := true
 		for _, filter := range g.Filter {
-			if filter.FieldPath != "id" {
-				continue
-			}
 			if filter.ServiceName != "" && filter.ServiceName != serviceName {
 				continue
 			}
@@ -79,8 +73,8 @@ func (g *TranscribeGenerator) shouldLoadTranscribeResource(serviceName string) b
 }
 
 func (g *TranscribeGenerator) hasTypedTranscribeFilter() bool {
-	for _, serviceName := range transcribeResourceTypes {
-		if g.hasTypedFilterFor(serviceName) {
+	for _, filter := range g.Filter {
+		if strings.HasPrefix(filter.ServiceName, "transcribe_") {
 			return true
 		}
 	}
