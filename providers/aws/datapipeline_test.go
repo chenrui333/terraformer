@@ -23,6 +23,7 @@ func TestNewDataPipelinePipelineResource(t *testing.T) {
 func TestNewDataPipelinePipelineDefinitionResource(t *testing.T) {
 	resource := newDataPipelinePipelineDefinitionResource("df-1234567890ABC", "daily-import")
 	assertDataPipelineResource(t, resource, true, "df-1234567890ABC", dataPipelineResourceName("pipeline-definition", "daily-import", "df-1234567890ABC"), dataPipelinePipelineDefinitionResourceType)
+	assertDataPipelineAttribute(t, resource, "name", "daily-import")
 	assertDataPipelineAttribute(t, resource, "pipeline_id", "df-1234567890ABC")
 }
 

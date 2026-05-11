@@ -97,6 +97,7 @@ func newDataPipelinePipelineDefinitionResource(pipelineID, pipelineName string) 
 		dataPipelinePipelineDefinitionResourceType,
 		"aws",
 		map[string]string{
+			"name":        pipelineName,
 			"pipeline_id": pipelineID,
 		},
 		datapipelineAllowEmptyValues,

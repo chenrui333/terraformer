@@ -191,7 +191,7 @@ func newDeviceFarmProjectResource(project devicefarmtypes.Project) (terraformuti
 	}
 	return terraformutils.NewSimpleResource(
 		deviceFarmARNImportID(projectArn),
-		projectName,
+		deviceFarmResourceName("project", projectName, projectArn),
 		deviceFarmProjectResourceType,
 		"aws",
 		devicefarmAllowEmptyValues), true

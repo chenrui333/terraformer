@@ -16,7 +16,7 @@ func TestNewDeviceFarmProjectResource(t *testing.T) {
 		Arn:  aws.String(arn),
 		Name: aws.String("core"),
 	})
-	assertDeviceFarmResource(t, resource, ok, arn, "core", deviceFarmProjectResourceType)
+	assertDeviceFarmResource(t, resource, ok, arn, deviceFarmResourceName("project", "core", arn), deviceFarmProjectResourceType)
 
 	if _, ok := newDeviceFarmProjectResource(devicefarmtypes.Project{}); ok {
 		t.Fatal("project with empty ARN should be skipped")
