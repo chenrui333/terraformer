@@ -469,7 +469,12 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_redshift_snapshot_schedule_association`
     * `aws_redshift_subnet_group`
 *   `redshiftserverless`
+    * `aws_redshiftserverless_custom_domain_association`
+    * `aws_redshiftserverless_endpoint_access`
     * `aws_redshiftserverless_namespace`
+    * `aws_redshiftserverless_resource_policy`
+    * `aws_redshiftserverless_snapshot`
+    * `aws_redshiftserverless_usage_limit`
     * `aws_redshiftserverless_workgroup`
 *   `resourcegroups`
     * `aws_resourcegroups_group`
