@@ -7,6 +7,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	kmstypes "github.com/aws/aws-sdk-go-v2/service/kms/types"
+	"github.com/aws/smithy-go"
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 )
@@ -175,7 +177,7 @@ func TestNewEBSEncryptionByDefaultResource(t *testing.T) {
 
 func TestNewEBSDefaultKMSKeyResource(t *testing.T) {
 	keyARN := "arn:aws:kms:us-east-1:123456789012:key/key-123"
-	resource, ok := newEBSDefaultKMSKeyResource(keyARN)
+	resource, ok := newEBSDefaultKMSKeyResource(keyARN, kmstypes.KeyManagerTypeCustomer)
 	if !ok {
 		t.Fatal("newEBSDefaultKMSKeyResource() ok = false, want true")
 	}
@@ -190,11 +192,34 @@ func TestNewEBSDefaultKMSKeyResource(t *testing.T) {
 	}
 	assertEBSPreservesID(t, resource)
 
-	if _, ok := newEBSDefaultKMSKeyResource(""); ok {
+	if _, ok := newEBSDefaultKMSKeyResource("", kmstypes.KeyManagerTypeCustomer); ok {
 		t.Fatal("default KMS key with empty ARN should be skipped")
 	}
-	if _, ok := newEBSDefaultKMSKeyResource("arn:aws:kms:us-east-1:123456789012:alias/aws/ebs"); ok {
-		t.Fatal("AWS-managed default EBS KMS key should be skipped")
+	if _, ok := newEBSDefaultKMSKeyResource("arn:aws:kms:us-east-1:123456789012:alias/aws/ebs", kmstypes.KeyManagerTypeCustomer); ok {
+		t.Fatal("AWS-managed default EBS KMS alias should be skipped")
+	}
+	if _, ok := newEBSDefaultKMSKeyResource("arn:aws:kms:us-east-1:123456789012:key/aws-managed-key", kmstypes.KeyManagerTypeAws); ok {
+		t.Fatal("AWS-managed default EBS KMS key ARN should be skipped")
+	}
+}
+
+func TestEBSDefaultKMSKeyDescribeSkippable(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "typed not found", err: &kmstypes.NotFoundException{}, want: true},
+		{name: "generic access denied", err: &smithy.GenericAPIError{Code: "AccessDeniedException"}, want: true},
+		{name: "generic not found", err: &smithy.GenericAPIError{Code: "NotFoundException"}, want: true},
+		{name: "generic internal", err: &smithy.GenericAPIError{Code: "InternalError"}, want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ebsDefaultKMSKeyDescribeSkippable(tt.err); got != tt.want {
+				t.Fatalf("ebsDefaultKMSKeyDescribeSkippable() = %t, want %t", got, tt.want)
+			}
+		})
 	}
 }
 

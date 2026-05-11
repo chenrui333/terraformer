@@ -4,16 +4,20 @@ package aws
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/smithy-go"
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go-v2/service/kms"
+	kmstypes "github.com/aws/aws-sdk-go-v2/service/kms/types"
 )
 
 const (
@@ -137,7 +141,7 @@ func (g *EbsGenerator) InitResources() error {
 			return err
 		}
 	}
-	if err := g.loadAccountSettings(svc); err != nil {
+	if err := g.loadAccountSettings(svc, kms.NewFromConfig(config)); err != nil {
 		return err
 	}
 	return nil
@@ -187,7 +191,7 @@ func (g *EbsGenerator) loadFastSnapshotRestores(svc *ec2.Client) error {
 	return nil
 }
 
-func (g *EbsGenerator) loadAccountSettings(svc *ec2.Client) error {
+func (g *EbsGenerator) loadAccountSettings(svc *ec2.Client, kmsSvc *kms.Client) error {
 	if g.shouldLoadEBSResource("ebs_encryption_by_default") {
 		encryption, err := svc.GetEbsEncryptionByDefault(context.TODO(), &ec2.GetEbsEncryptionByDefaultInput{})
 		if err != nil {
@@ -203,7 +207,21 @@ func (g *EbsGenerator) loadAccountSettings(svc *ec2.Client) error {
 		if err != nil {
 			return err
 		}
-		if resource, ok := newEBSDefaultKMSKeyResource(StringValue(defaultKey.KmsKeyId)); ok {
+		defaultKeyID := StringValue(defaultKey.KmsKeyId)
+		if !ebsDefaultKMSKeyIDCandidate(defaultKeyID) {
+			return nil
+		}
+		key, err := kmsSvc.DescribeKey(context.TODO(), &kms.DescribeKeyInput{KeyId: &defaultKeyID})
+		if err != nil {
+			if ebsDefaultKMSKeyDescribeSkippable(err) {
+				return nil
+			}
+			return err
+		}
+		if key.KeyMetadata == nil {
+			return nil
+		}
+		if resource, ok := newEBSDefaultKMSKeyResource(defaultKeyID, key.KeyMetadata.KeyManager); ok {
 			g.Resources = append(g.Resources, resource)
 		}
 	}
@@ -260,8 +278,8 @@ func newEBSEncryptionByDefaultResource(enabled bool) (terraformutils.Resource, b
 	return resource, true
 }
 
-func newEBSDefaultKMSKeyResource(keyARN string) (terraformutils.Resource, bool) {
-	if !ebsDefaultKMSKeyImportable(keyARN) {
+func newEBSDefaultKMSKeyResource(keyARN string, keyManager kmstypes.KeyManagerType) (terraformutils.Resource, bool) {
+	if !ebsDefaultKMSKeyImportable(keyARN, keyManager) {
 		return terraformutils.Resource{}, false
 	}
 	resource := terraformutils.NewResource(
@@ -299,11 +317,30 @@ func ebsFastSnapshotRestoreImportable(restore types.DescribeFastSnapshotRestoreS
 	return restore.State == types.FastSnapshotRestoreStateCodeEnabled
 }
 
-func ebsDefaultKMSKeyImportable(keyARN string) bool {
+func ebsDefaultKMSKeyIDCandidate(keyARN string) bool {
 	if keyARN == "" {
 		return false
 	}
 	return keyARN != "alias/aws/ebs" && !strings.HasSuffix(keyARN, ":alias/aws/ebs")
+}
+
+func ebsDefaultKMSKeyImportable(keyARN string, keyManager kmstypes.KeyManagerType) bool {
+	return ebsDefaultKMSKeyIDCandidate(keyARN) && keyManager == kmstypes.KeyManagerTypeCustomer
+}
+
+func ebsDefaultKMSKeyDescribeSkippable(err error) bool {
+	var notFound *kmstypes.NotFoundException
+	if errors.As(err, &notFound) {
+		return true
+	}
+	var apiErr smithy.APIError
+	if errors.As(err, &apiErr) {
+		switch apiErr.ErrorCode() {
+		case "AccessDenied", "AccessDeniedException", "NotFoundException":
+			return true
+		}
+	}
+	return false
 }
 
 func ebsFastSnapshotRestoreImportID(availabilityZone, snapshotID string) string {
