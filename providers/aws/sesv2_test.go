@@ -6,6 +6,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sesv2"
 	sesv2types "github.com/aws/aws-sdk-go-v2/service/sesv2/types"
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -18,8 +19,12 @@ func TestSESV2ImportIDs(t *testing.T) {
 		want string
 	}{
 		{name: "configuration set", got: sesv2ConfigurationSetImportID("config-set"), want: "config-set"},
+		{name: "configuration set event destination", got: sesv2ConfigurationSetEventDestinationImportID("config-set", "events"), want: "config-set|events"},
 		{name: "dedicated IP pool", got: sesv2DedicatedIPPoolImportID("pool-a"), want: "pool-a"},
 		{name: "email identity", got: sesv2EmailIdentityImportID("sender@example.com"), want: "sender@example.com"},
+		{name: "email identity feedback attributes", got: sesv2EmailIdentityFeedbackAttributesImportID("sender@example.com"), want: "sender@example.com"},
+		{name: "email identity mail from attributes", got: sesv2EmailIdentityMailFromAttributesImportID("sender@example.com"), want: "sender@example.com"},
+		{name: "email identity policy", got: sesv2EmailIdentityPolicyImportID("sender@example.com", "policy-a"), want: "sender@example.com|policy-a"},
 	}
 
 	for _, tt := range tests {
@@ -40,6 +45,28 @@ func TestNewSESV2ConfigurationSetResource(t *testing.T) {
 
 	if _, ok := newSESV2ConfigurationSetResource(""); ok {
 		t.Fatal("newSESV2ConfigurationSetResource() ok = true for empty configuration set name, want false")
+	}
+}
+
+func TestNewSESV2ConfigurationSetEventDestinationResource(t *testing.T) {
+	resource, ok := newSESV2ConfigurationSetEventDestinationResource("config-set", sesv2types.EventDestination{
+		Name: aws.String("events"),
+	})
+	if !ok {
+		t.Fatal("newSESV2ConfigurationSetEventDestinationResource() ok = false, want true")
+	}
+	assertSESV2ResourceAttributes(t, resource, sesv2ConfigurationSetEventDestinationResourceType, "config-set|events",
+		[]string{"configuration_set_event_destination", "config-set", "events"},
+		map[string]string{
+			"configuration_set_name": "config-set",
+			"event_destination_name": "events",
+		})
+
+	if _, ok := newSESV2ConfigurationSetEventDestinationResource("", sesv2types.EventDestination{Name: aws.String("events")}); ok {
+		t.Fatal("newSESV2ConfigurationSetEventDestinationResource() ok = true for empty configuration set name, want false")
+	}
+	if _, ok := newSESV2ConfigurationSetEventDestinationResource("config-set", sesv2types.EventDestination{}); ok {
+		t.Fatal("newSESV2ConfigurationSetEventDestinationResource() ok = true for empty event destination name, want false")
 	}
 }
 
@@ -72,6 +99,86 @@ func TestNewSESV2EmailIdentityResource(t *testing.T) {
 		},
 	}); ok {
 		t.Fatal("newSESV2EmailIdentityResource() ok = true for BYODKIM identity, want false")
+	}
+}
+
+func TestNewSESV2EmailIdentityFeedbackAttributesResource(t *testing.T) {
+	resource, ok := newSESV2EmailIdentityFeedbackAttributesResource("sender@example.com", &sesv2.GetEmailIdentityOutput{
+		FeedbackForwardingStatus: true,
+	})
+	if !ok {
+		t.Fatal("newSESV2EmailIdentityFeedbackAttributesResource() ok = false, want true")
+	}
+	assertSESV2ResourceAttributes(t, resource, sesv2EmailIdentityFeedbackAttributesResourceType, "sender@example.com",
+		[]string{"email_identity_feedback_attributes", "sender@example.com"},
+		map[string]string{
+			"email_identity":           "sender@example.com",
+			"email_forwarding_enabled": "true",
+		})
+
+	if _, ok := newSESV2EmailIdentityFeedbackAttributesResource("", &sesv2.GetEmailIdentityOutput{}); ok {
+		t.Fatal("newSESV2EmailIdentityFeedbackAttributesResource() ok = true for empty identity name, want false")
+	}
+	if _, ok := newSESV2EmailIdentityFeedbackAttributesResource("sender@example.com", nil); ok {
+		t.Fatal("newSESV2EmailIdentityFeedbackAttributesResource() ok = true for nil identity output, want false")
+	}
+}
+
+func TestNewSESV2EmailIdentityMailFromAttributesResource(t *testing.T) {
+	resource, ok := newSESV2EmailIdentityMailFromAttributesResource("example.com", &sesv2.GetEmailIdentityOutput{
+		MailFromAttributes: &sesv2types.MailFromAttributes{
+			BehaviorOnMxFailure: sesv2types.BehaviorOnMxFailureRejectMessage,
+			MailFromDomain:      aws.String("bounce.example.com"),
+		},
+	})
+	if !ok {
+		t.Fatal("newSESV2EmailIdentityMailFromAttributesResource() ok = false, want true")
+	}
+	assertSESV2ResourceAttributes(t, resource, sesv2EmailIdentityMailFromAttributesResourceType, "example.com",
+		[]string{"email_identity_mail_from_attributes", "example.com"},
+		map[string]string{
+			"behavior_on_mx_failure": "REJECT_MESSAGE",
+			"email_identity":         "example.com",
+			"mail_from_domain":       "bounce.example.com",
+		})
+
+	if _, ok := newSESV2EmailIdentityMailFromAttributesResource("", &sesv2.GetEmailIdentityOutput{}); ok {
+		t.Fatal("newSESV2EmailIdentityMailFromAttributesResource() ok = true for empty identity name, want false")
+	}
+	if _, ok := newSESV2EmailIdentityMailFromAttributesResource("example.com", &sesv2.GetEmailIdentityOutput{}); ok {
+		t.Fatal("newSESV2EmailIdentityMailFromAttributesResource() ok = true without mail-from attributes, want false")
+	}
+	if _, ok := newSESV2EmailIdentityMailFromAttributesResource("example.com", &sesv2.GetEmailIdentityOutput{
+		MailFromAttributes: &sesv2types.MailFromAttributes{
+			BehaviorOnMxFailure: sesv2types.BehaviorOnMxFailureRejectMessage,
+		},
+	}); ok {
+		t.Fatal("newSESV2EmailIdentityMailFromAttributesResource() ok = true without mail-from domain, want false")
+	}
+}
+
+func TestNewSESV2EmailIdentityPolicyResource(t *testing.T) {
+	policy := `{"Version":"2012-10-17"}`
+	resource, ok := newSESV2EmailIdentityPolicyResource("sender@example.com", "policy-a", policy)
+	if !ok {
+		t.Fatal("newSESV2EmailIdentityPolicyResource() ok = false, want true")
+	}
+	assertSESV2ResourceAttributes(t, resource, sesv2EmailIdentityPolicyResourceType, "sender@example.com|policy-a",
+		[]string{"email_identity_policy", "sender@example.com", "policy-a"},
+		map[string]string{
+			"email_identity": "sender@example.com",
+			"policy":         policy,
+			"policy_name":    "policy-a",
+		})
+
+	if _, ok := newSESV2EmailIdentityPolicyResource("", "policy-a", policy); ok {
+		t.Fatal("newSESV2EmailIdentityPolicyResource() ok = true for empty identity name, want false")
+	}
+	if _, ok := newSESV2EmailIdentityPolicyResource("sender@example.com", "", policy); ok {
+		t.Fatal("newSESV2EmailIdentityPolicyResource() ok = true for empty policy name, want false")
+	}
+	if _, ok := newSESV2EmailIdentityPolicyResource("sender@example.com", "policy-a", ""); ok {
+		t.Fatal("newSESV2EmailIdentityPolicyResource() ok = true for empty policy, want false")
 	}
 }
 
@@ -125,6 +232,8 @@ func TestSESV2ResourceNameAvoidsSanitizedCollisions(t *testing.T) {
 		{name: "separator boundary", first: []string{"email_identity", "a_b", "c"}, second: []string{"email_identity", "a", "b_c"}},
 		{name: "at sign encoding", first: []string{"email_identity", "a@example.com"}, second: []string{"email_identity", "a-0040-example.com"}},
 		{name: "slash encoding", first: []string{"configuration_set", "a/b"}, second: []string{"configuration_set", "a-002F-b"}},
+		{name: "event destination composite", first: []string{"configuration_set_event_destination", "a_b", "c"}, second: []string{"configuration_set_event_destination", "a", "b_c"}},
+		{name: "policy composite", first: []string{"email_identity_policy", "a|b", "c"}, second: []string{"email_identity_policy", "a", "b|c"}},
 	}
 
 	for _, tt := range tests {
@@ -138,7 +247,41 @@ func TestSESV2ResourceNameAvoidsSanitizedCollisions(t *testing.T) {
 	}
 }
 
+func TestSESV2PostConvertHookWrapsPolicy(t *testing.T) {
+	resource, ok := newSESV2EmailIdentityPolicyResource("sender@example.com", "policy-a", `{"Resource":"${aws:username}"}`)
+	if !ok {
+		t.Fatal("newSESV2EmailIdentityPolicyResource() ok = false, want true")
+	}
+	resource.Item = map[string]interface{}{
+		"policy": `{"Resource":"${aws:username}"}`,
+	}
+	generator := SesV2Generator{
+		AWSService: AWSService{
+			Service: terraformutils.Service{
+				Resources: []terraformutils.Resource{resource},
+			},
+		},
+	}
+
+	if err := generator.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook() error = %v", err)
+	}
+
+	want := "<<POLICY\n{\"Resource\":\"$${aws:username}\"}\nPOLICY"
+	if got := generator.Resources[0].Item["policy"]; got != want {
+		t.Fatalf("policy = %q, want %q", got, want)
+	}
+}
+
 func assertSESV2Resource(t *testing.T, resource terraformutils.Resource, resourceType, resourceID, attributeName, attributeValue string) {
+	t.Helper()
+
+	assertSESV2ResourceAttributes(t, resource, resourceType, resourceID, stringsForSESV2ResourceName(resourceType, attributeValue), map[string]string{
+		attributeName: attributeValue,
+	})
+}
+
+func assertSESV2ResourceAttributes(t *testing.T, resource terraformutils.Resource, resourceType, resourceID string, nameParts []string, attributes map[string]string) {
 	t.Helper()
 
 	if resource.InstanceInfo.Type != resourceType {
@@ -147,10 +290,12 @@ func assertSESV2Resource(t *testing.T, resource terraformutils.Resource, resourc
 	if resource.InstanceState.ID != resourceID {
 		t.Fatalf("resource ID = %q, want %q", resource.InstanceState.ID, resourceID)
 	}
-	if got := resource.InstanceState.Attributes[attributeName]; got != attributeValue {
-		t.Fatalf("attribute %q = %q, want %q", attributeName, got, attributeValue)
+	for name, want := range attributes {
+		if got := resource.InstanceState.Attributes[name]; got != want {
+			t.Fatalf("attribute %q = %q, want %q", name, got, want)
+		}
 	}
-	wantName := terraformutils.TfSanitize(sesv2ResourceName(stringsForSESV2ResourceName(resourceType, attributeValue)...))
+	wantName := terraformutils.TfSanitize(sesv2ResourceName(nameParts...))
 	if resource.ResourceName != wantName {
 		t.Fatalf("resource name = %q, want %q", resource.ResourceName, wantName)
 	}
