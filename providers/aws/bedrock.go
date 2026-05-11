@@ -12,13 +12,16 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/bedrock"
 	bedrocktypes "github.com/aws/aws-sdk-go-v2/service/bedrock/types"
 	"github.com/chenrui333/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 )
 
 const (
 	bedrockGuardrailResourceType                  = "aws_bedrock_guardrail"
+	bedrockGuardrailVersionResourceType           = "aws_bedrock_guardrail_version"
 	bedrockInferenceProfileResourceType           = "aws_bedrock_inference_profile"
 	bedrockModelInvocationLoggingResourceType     = "aws_bedrock_model_invocation_logging_configuration"
 	bedrockProvisionedModelThroughputResourceType = "aws_bedrock_provisioned_model_throughput"
+	bedrockGuardrailDraftVersion                  = "DRAFT"
 	bedrockGuardrailImportIDSeparator             = ","
 	bedrockResourceNameFallback                   = "bedrock-resource"
 )
@@ -27,6 +30,7 @@ var (
 	bedrockAllowEmptyValues = []string{"tags."}
 	bedrockResourceTypes    = []string{
 		bedrockServiceName(bedrockGuardrailResourceType),
+		bedrockServiceName(bedrockGuardrailVersionResourceType),
 		bedrockServiceName(bedrockInferenceProfileResourceType),
 		bedrockServiceName(bedrockModelInvocationLoggingResourceType),
 		bedrockServiceName(bedrockProvisionedModelThroughputResourceType),
@@ -68,9 +72,20 @@ func (g *BedrockGenerator) InitResources() error {
 	}
 	svc := bedrock.NewFromConfig(config)
 
-	if g.shouldLoadBedrockResource(bedrockServiceName(bedrockGuardrailResourceType)) {
-		if err := g.loadGuardrails(svc); err != nil {
+	loadGuardrails := g.shouldLoadBedrockResource(bedrockServiceName(bedrockGuardrailResourceType))
+	loadGuardrailVersions := g.shouldLoadBedrockResource(bedrockServiceName(bedrockGuardrailVersionResourceType))
+	if loadGuardrails || loadGuardrailVersions {
+		guardrails, err := listBedrockGuardrails(svc, "")
+		if err != nil {
 			return err
+		}
+		if loadGuardrails {
+			g.loadGuardrails(guardrails)
+		}
+		if loadGuardrailVersions {
+			if err := g.loadGuardrailVersions(svc, guardrails); err != nil {
+				return err
+			}
 		}
 	}
 	if g.shouldLoadBedrockResource(bedrockServiceName(bedrockInferenceProfileResourceType)) {
@@ -130,15 +145,46 @@ func bedrockServiceName(resourceType string) string {
 	return strings.TrimPrefix(resourceType, "aws_")
 }
 
-func (g *BedrockGenerator) loadGuardrails(svc *bedrock.Client) error {
-	p := bedrock.NewListGuardrailsPaginator(svc, &bedrock.ListGuardrailsInput{})
+func listBedrockGuardrails(svc *bedrock.Client, guardrailIdentifier string) ([]bedrocktypes.GuardrailSummary, error) {
+	input := &bedrock.ListGuardrailsInput{}
+	if guardrailIdentifier != "" {
+		input.GuardrailIdentifier = &guardrailIdentifier
+	}
+	p := bedrock.NewListGuardrailsPaginator(svc, input)
+	guardrails := []bedrocktypes.GuardrailSummary{}
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
 		if err != nil {
+			return nil, err
+		}
+		guardrails = append(guardrails, page.Guardrails...)
+	}
+	return guardrails, nil
+}
+
+func (g *BedrockGenerator) loadGuardrails(guardrails []bedrocktypes.GuardrailSummary) {
+	for _, guardrail := range guardrails {
+		if resource, ok := newBedrockGuardrailResource(guardrail); ok {
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+}
+
+func (g *BedrockGenerator) loadGuardrailVersions(svc *bedrock.Client, guardrails []bedrocktypes.GuardrailSummary) error {
+	for _, guardrail := range guardrails {
+		guardrailARN := StringValue(guardrail.Arn)
+		if guardrailARN == "" {
+			continue
+		}
+		versions, err := listBedrockGuardrails(svc, guardrailARN)
+		if err != nil {
+			if bedrockResourceNotFound(err) {
+				continue
+			}
 			return err
 		}
-		for _, guardrail := range page.Guardrails {
-			if resource, ok := newBedrockGuardrailResource(guardrail); ok {
+		for _, version := range versions {
+			if resource, ok := newBedrockGuardrailVersionResource(version); ok {
 				g.Resources = append(g.Resources, resource)
 			}
 		}
@@ -218,6 +264,38 @@ func newBedrockGuardrailResource(guardrail bedrocktypes.GuardrailSummary) (terra
 	), true
 }
 
+func newBedrockGuardrailVersionResource(guardrail bedrocktypes.GuardrailSummary) (terraformutils.Resource, bool) {
+	guardrailARN := StringValue(guardrail.Arn)
+	version := StringValue(guardrail.Version)
+	if guardrailARN == "" || !bedrockGuardrailVersionImportable(guardrail) {
+		return terraformutils.Resource{}, false
+	}
+	name := StringValue(guardrail.Name)
+	if name == "" {
+		name = StringValue(guardrail.Id)
+	}
+	if name == "" {
+		name = guardrailARN
+	}
+	resource := terraformutils.NewResource(
+		bedrockGuardrailVersionImportID(guardrailARN, version),
+		bedrockResourceName("guardrail-version", name, guardrailARN, version),
+		bedrockGuardrailVersionResourceType,
+		"aws",
+		map[string]string{
+			"guardrail_arn": guardrailARN,
+			"version":       version,
+		},
+		bedrockAllowEmptyValues,
+		map[string]interface{}{},
+	)
+	if resource.InstanceState.Meta == nil {
+		resource.InstanceState.Meta = map[string]interface{}{}
+	}
+	resource.InstanceState.Meta[tfcompat.MetaKeyPreserveIDAfterRefresh] = true
+	return resource, true
+}
+
 func newBedrockInferenceProfileResource(profile bedrocktypes.InferenceProfileSummary) (terraformutils.Resource, bool) {
 	profileID := StringValue(profile.InferenceProfileId)
 	if profileID == "" || !bedrockInferenceProfileImportable(profile) {
@@ -282,6 +360,10 @@ func bedrockGuardrailImportID(guardrailID, version string) string {
 	return guardrailID + bedrockGuardrailImportIDSeparator + version
 }
 
+func bedrockGuardrailVersionImportID(guardrailARN, version string) string {
+	return bedrockGuardrailImportID(guardrailARN, version)
+}
+
 func bedrockModelInvocationLoggingImportID(region string) string {
 	return region
 }
@@ -301,6 +383,11 @@ func bedrockResourceName(parts ...string) string {
 
 func bedrockGuardrailImportable(status bedrocktypes.GuardrailStatus) bool {
 	return status == bedrocktypes.GuardrailStatusReady
+}
+
+func bedrockGuardrailVersionImportable(guardrail bedrocktypes.GuardrailSummary) bool {
+	version := StringValue(guardrail.Version)
+	return version != "" && bedrockGuardrailImportable(guardrail.Status) && !strings.EqualFold(version, bedrockGuardrailDraftVersion)
 }
 
 func bedrockInferenceProfileImportable(profile bedrocktypes.InferenceProfileSummary) bool {

@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/bedrock"
 	bedrocktypes "github.com/aws/aws-sdk-go-v2/service/bedrock/types"
 	"github.com/chenrui333/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 )
 
 func TestBedrockGuardrailImportID(t *testing.T) {
@@ -17,6 +18,15 @@ func TestBedrockGuardrailImportID(t *testing.T) {
 	want := "gr-1234567890,DRAFT"
 	if got != want {
 		t.Fatalf("bedrockGuardrailImportID() = %q, want %q", got, want)
+	}
+}
+
+func TestBedrockGuardrailVersionImportID(t *testing.T) {
+	guardrailARN := "arn:aws:bedrock:us-east-1:123456789012:guardrail/gr-1234567890"
+	got := bedrockGuardrailVersionImportID(guardrailARN, "1")
+	want := guardrailARN + ",1"
+	if got != want {
+		t.Fatalf("bedrockGuardrailVersionImportID() = %q, want %q", got, want)
 	}
 }
 
@@ -45,6 +55,7 @@ func TestBedrockResourceNameUniqueness(t *testing.T) {
 func TestBedrockShouldLoadResourceHonorsTypedFilters(t *testing.T) {
 	g := BedrockGenerator{}
 	if !g.shouldLoadBedrockResource("bedrock_guardrail") ||
+		!g.shouldLoadBedrockResource("bedrock_guardrail_version") ||
 		!g.shouldLoadBedrockResource("bedrock_inference_profile") ||
 		!g.shouldLoadBedrockResource("bedrock_model_invocation_logging_configuration") ||
 		!g.shouldLoadBedrockResource("bedrock_provisioned_model_throughput") {
@@ -58,6 +69,9 @@ func TestBedrockShouldLoadResourceHonorsTypedFilters(t *testing.T) {
 	}}
 	if !g.shouldLoadBedrockResource("bedrock_guardrail") {
 		t.Fatal("typed guardrail filter should load guardrails")
+	}
+	if g.shouldLoadBedrockResource("bedrock_guardrail_version") {
+		t.Fatal("typed guardrail filter should not load guardrail versions")
 	}
 	if g.shouldLoadBedrockResource("bedrock_inference_profile") {
 		t.Fatal("typed guardrail filter should not load inference profiles")
@@ -79,6 +93,18 @@ func TestBedrockShouldLoadResourceHonorsTypedFilters(t *testing.T) {
 	}
 	if g.shouldLoadBedrockResource("bedrock_guardrail") {
 		t.Fatal("typed logging filter should not load guardrails")
+	}
+
+	g.Filter = []terraformutils.ResourceFilter{{
+		ServiceName:      "bedrock_guardrail_version",
+		FieldPath:        "id",
+		AcceptableValues: []string{"arn:aws:bedrock:us-east-1:123456789012:guardrail/gr-1234567890,1"},
+	}}
+	if !g.shouldLoadBedrockResource("bedrock_guardrail_version") {
+		t.Fatal("typed guardrail version filter should load guardrail versions")
+	}
+	if g.shouldLoadBedrockResource("bedrock_guardrail") {
+		t.Fatal("typed guardrail version filter should not load guardrails")
 	}
 }
 
@@ -120,6 +146,7 @@ func TestBedrockShouldLoadResourceAllowsUntypedFilters(t *testing.T) {
 				},
 			}
 			for _, serviceName := range []string{
+				"bedrock_guardrail_version",
 				"bedrock_inference_profile",
 				"bedrock_model_invocation_logging_configuration",
 				"bedrock_provisioned_model_throughput",
@@ -166,6 +193,65 @@ func TestNewBedrockGuardrailResource(t *testing.T) {
 		Version: aws.String("DRAFT"),
 	}); ok {
 		t.Fatal("deleting guardrail should be skipped")
+	}
+}
+
+func TestNewBedrockGuardrailVersionResource(t *testing.T) {
+	guardrailARN := "arn:aws:bedrock:us-east-1:123456789012:guardrail/gr-1234567890"
+	resource, ok := newBedrockGuardrailVersionResource(bedrocktypes.GuardrailSummary{
+		Arn:     aws.String(guardrailARN),
+		Id:      aws.String("gr-1234567890"),
+		Name:    aws.String("billing-policy"),
+		Status:  bedrocktypes.GuardrailStatusReady,
+		Version: aws.String("1"),
+	})
+	assertBedrockResource(t, resource, ok, guardrailARN+",1", bedrockGuardrailVersionResourceType)
+	if got := resource.InstanceState.Attributes["guardrail_arn"]; got != guardrailARN {
+		t.Fatalf("guardrail_arn attribute = %q, want %s", got, guardrailARN)
+	}
+	if got := resource.InstanceState.Attributes["version"]; got != "1" {
+		t.Fatalf("version attribute = %q, want 1", got)
+	}
+	if preserveID, ok := resource.InstanceState.Meta[tfcompat.MetaKeyPreserveIDAfterRefresh].(bool); !ok || !preserveID {
+		t.Fatalf("preserve ID metadata = %v, %t; want true, true", preserveID, ok)
+	}
+	otherVersion, ok := newBedrockGuardrailVersionResource(bedrocktypes.GuardrailSummary{
+		Arn:     aws.String(guardrailARN),
+		Id:      aws.String("gr-1234567890"),
+		Name:    aws.String("billing-policy"),
+		Status:  bedrocktypes.GuardrailStatusReady,
+		Version: aws.String("2"),
+	})
+	assertBedrockResource(t, otherVersion, ok, guardrailARN+",2", bedrockGuardrailVersionResourceType)
+	if resource.ResourceName == otherVersion.ResourceName {
+		t.Fatal("guardrail version resource names should include the version")
+	}
+
+	if _, ok := newBedrockGuardrailVersionResource(bedrocktypes.GuardrailSummary{
+		Status:  bedrocktypes.GuardrailStatusReady,
+		Version: aws.String("1"),
+	}); ok {
+		t.Fatal("guardrail version without ARN should be skipped")
+	}
+	if _, ok := newBedrockGuardrailVersionResource(bedrocktypes.GuardrailSummary{
+		Arn:    aws.String(guardrailARN),
+		Status: bedrocktypes.GuardrailStatusReady,
+	}); ok {
+		t.Fatal("guardrail version without version should be skipped")
+	}
+	if _, ok := newBedrockGuardrailVersionResource(bedrocktypes.GuardrailSummary{
+		Arn:     aws.String(guardrailARN),
+		Status:  bedrocktypes.GuardrailStatusReady,
+		Version: aws.String("DRAFT"),
+	}); ok {
+		t.Fatal("DRAFT guardrail should not be emitted as a guardrail version")
+	}
+	if _, ok := newBedrockGuardrailVersionResource(bedrocktypes.GuardrailSummary{
+		Arn:     aws.String(guardrailARN),
+		Status:  bedrocktypes.GuardrailStatusFailed,
+		Version: aws.String("1"),
+	}); ok {
+		t.Fatal("failed guardrail version should be skipped")
 	}
 }
 
@@ -274,6 +360,24 @@ func TestBedrockImportableStatuses(t *testing.T) {
 		}
 	}
 
+	if !bedrockGuardrailVersionImportable(bedrocktypes.GuardrailSummary{
+		Status:  bedrocktypes.GuardrailStatusReady,
+		Version: aws.String("1"),
+	}) {
+		t.Fatal("READY published guardrail version should be importable")
+	}
+	for _, guardrail := range []bedrocktypes.GuardrailSummary{
+		{Status: bedrocktypes.GuardrailStatusReady, Version: aws.String("")},
+		{Status: bedrocktypes.GuardrailStatusReady, Version: aws.String("DRAFT")},
+		{Status: bedrocktypes.GuardrailStatusCreating, Version: aws.String("1")},
+		{Status: bedrocktypes.GuardrailStatusFailed, Version: aws.String("1")},
+		{Status: bedrocktypes.GuardrailStatusDeleting, Version: aws.String("1")},
+	} {
+		if bedrockGuardrailVersionImportable(guardrail) {
+			t.Fatalf("%s guardrail version %q should not be importable", guardrail.Status, aws.ToString(guardrail.Version))
+		}
+	}
+
 	if !bedrockProvisionedModelThroughputImportable(bedrocktypes.ProvisionedModelStatusInService) {
 		t.Fatal("InService throughput should be importable")
 	}
@@ -310,6 +414,16 @@ func TestBedrockInitialCleanupHonorsTypedFilters(t *testing.T) {
 	if !ok {
 		t.Fatal("newBedrockGuardrailResource() should create guardrail")
 	}
+	version, ok := newBedrockGuardrailVersionResource(bedrocktypes.GuardrailSummary{
+		Arn:     aws.String("arn:aws:bedrock:us-east-1:123456789012:guardrail/gr-1234567890"),
+		Id:      aws.String("gr-1234567890"),
+		Name:    aws.String("billing-policy"),
+		Status:  bedrocktypes.GuardrailStatusReady,
+		Version: aws.String("1"),
+	})
+	if !ok {
+		t.Fatal("newBedrockGuardrailVersionResource() should create guardrail version")
+	}
 	profile, ok := newBedrockInferenceProfileResource(bedrocktypes.InferenceProfileSummary{
 		InferenceProfileId:   aws.String("ip-1234567890"),
 		InferenceProfileName: aws.String("application-profile"),
@@ -338,7 +452,7 @@ func TestBedrockInitialCleanupHonorsTypedFilters(t *testing.T) {
 	}
 
 	g := BedrockGenerator{}
-	g.Resources = []terraformutils.Resource{guardrail, profile, throughput, logging}
+	g.Resources = []terraformutils.Resource{guardrail, version, profile, throughput, logging}
 	g.Filter = []terraformutils.ResourceFilter{{
 		ServiceName:      "bedrock_guardrail",
 		FieldPath:        "id",
@@ -356,9 +470,9 @@ func TestBedrockInitialCleanupHonorsTypedFilters(t *testing.T) {
 }
 
 func TestBedrockInitialCleanupPreservesGlobalFilters(t *testing.T) {
-	guardrail, profile, logging, throughput := bedrockTestResources(t)
+	guardrail, version, profile, logging, throughput := bedrockTestResources(t)
 	g := BedrockGenerator{}
-	g.Resources = []terraformutils.Resource{guardrail, profile, logging, throughput}
+	g.Resources = []terraformutils.Resource{guardrail, version, profile, logging, throughput}
 	g.Filter = []terraformutils.ResourceFilter{
 		{
 			ServiceName:      "bedrock_guardrail",
@@ -373,8 +487,8 @@ func TestBedrockInitialCleanupPreservesGlobalFilters(t *testing.T) {
 
 	g.InitialCleanup()
 
-	if len(g.Resources) != 4 {
-		t.Fatalf("InitialCleanup() resources len = %d, want 4", len(g.Resources))
+	if len(g.Resources) != 5 {
+		t.Fatalf("InitialCleanup() resources len = %d, want 5", len(g.Resources))
 	}
 }
 
@@ -394,7 +508,7 @@ func assertBedrockResource(t *testing.T, resource terraformutils.Resource, ok bo
 	}
 }
 
-func bedrockTestResources(t *testing.T) (terraformutils.Resource, terraformutils.Resource, terraformutils.Resource, terraformutils.Resource) {
+func bedrockTestResources(t *testing.T) (terraformutils.Resource, terraformutils.Resource, terraformutils.Resource, terraformutils.Resource, terraformutils.Resource) {
 	t.Helper()
 	guardrail, ok := newBedrockGuardrailResource(bedrocktypes.GuardrailSummary{
 		Id:      aws.String("gr-1234567890"),
@@ -404,6 +518,16 @@ func bedrockTestResources(t *testing.T) (terraformutils.Resource, terraformutils
 	})
 	if !ok {
 		t.Fatal("newBedrockGuardrailResource() should create guardrail")
+	}
+	version, ok := newBedrockGuardrailVersionResource(bedrocktypes.GuardrailSummary{
+		Arn:     aws.String("arn:aws:bedrock:us-east-1:123456789012:guardrail/gr-1234567890"),
+		Id:      aws.String("gr-1234567890"),
+		Name:    aws.String("billing-policy"),
+		Status:  bedrocktypes.GuardrailStatusReady,
+		Version: aws.String("1"),
+	})
+	if !ok {
+		t.Fatal("newBedrockGuardrailVersionResource() should create guardrail version")
 	}
 	profile, ok := newBedrockInferenceProfileResource(bedrocktypes.InferenceProfileSummary{
 		InferenceProfileId:   aws.String("ip-1234567890"),
@@ -431,5 +555,5 @@ func bedrockTestResources(t *testing.T) (terraformutils.Resource, terraformutils
 	if !ok {
 		t.Fatal("newBedrockProvisionedModelThroughputResource() should create throughput")
 	}
-	return guardrail, profile, logging, throughput
+	return guardrail, version, profile, logging, throughput
 }
