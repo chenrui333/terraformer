@@ -22,10 +22,41 @@ const (
 	bedrockResourceNameFallback                   = "bedrock-resource"
 )
 
-var bedrockAllowEmptyValues = []string{"tags."}
+var (
+	bedrockAllowEmptyValues = []string{"tags."}
+	bedrockResourceTypes    = []string{
+		bedrockServiceName(bedrockGuardrailResourceType),
+		bedrockServiceName(bedrockInferenceProfileResourceType),
+		bedrockServiceName(bedrockProvisionedModelThroughputResourceType),
+	}
+)
 
 type BedrockGenerator struct {
 	AWSService
+}
+
+func (g *BedrockGenerator) InitialCleanup() {
+	if len(g.Filter) == 0 {
+		return
+	}
+	filteredResources := []terraformutils.Resource{}
+	for _, resource := range g.Resources {
+		serviceName := bedrockServiceName(resource.InstanceInfo.Type)
+		if g.hasTypedBedrockFilter() && !g.hasTypedFilterFor(serviceName) && !g.hasUntypedIDFilter() {
+			continue
+		}
+		allPredicatesTrue := true
+		for _, filter := range g.Filter {
+			if filter.FieldPath != "id" {
+				continue
+			}
+			allPredicatesTrue = allPredicatesTrue && filter.Filter(resource)
+		}
+		if allPredicatesTrue && !terraformutils.ContainsResource(filteredResources, resource) {
+			filteredResources = append(filteredResources, resource)
+		}
+	}
+	g.Resources = filteredResources
 }
 
 func (g *BedrockGenerator) InitResources() error {
@@ -35,17 +66,61 @@ func (g *BedrockGenerator) InitResources() error {
 	}
 	svc := bedrock.NewFromConfig(config)
 
-	if err := g.loadGuardrails(svc); err != nil {
-		return err
+	if g.shouldLoadBedrockResource(bedrockServiceName(bedrockGuardrailResourceType)) {
+		if err := g.loadGuardrails(svc); err != nil {
+			return err
+		}
 	}
-	if err := g.loadInferenceProfiles(svc); err != nil {
-		return err
+	if g.shouldLoadBedrockResource(bedrockServiceName(bedrockInferenceProfileResourceType)) {
+		if err := g.loadInferenceProfiles(svc); err != nil {
+			return err
+		}
 	}
-	if err := g.loadProvisionedModelThroughputs(svc); err != nil {
-		return err
+	if g.shouldLoadBedrockResource(bedrockServiceName(bedrockProvisionedModelThroughputResourceType)) {
+		if err := g.loadProvisionedModelThroughputs(svc); err != nil {
+			return err
+		}
 	}
 
 	return nil
+}
+
+func (g *BedrockGenerator) shouldLoadBedrockResource(serviceName string) bool {
+	if !g.hasTypedBedrockFilter() {
+		return true
+	}
+	return g.hasTypedFilterFor(serviceName) || g.hasUntypedIDFilter()
+}
+
+func (g *BedrockGenerator) hasTypedBedrockFilter() bool {
+	for _, serviceName := range bedrockResourceTypes {
+		if g.hasTypedFilterFor(serviceName) {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *BedrockGenerator) hasTypedFilterFor(serviceName string) bool {
+	for _, filter := range g.Filter {
+		if filter.ServiceName == serviceName {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *BedrockGenerator) hasUntypedIDFilter() bool {
+	for _, filter := range g.Filter {
+		if filter.ServiceName == "" && filter.FieldPath == "id" {
+			return true
+		}
+	}
+	return false
+}
+
+func bedrockServiceName(resourceType string) string {
+	return strings.TrimPrefix(resourceType, "aws_")
 }
 
 func (g *BedrockGenerator) loadGuardrails(svc *bedrock.Client) error {

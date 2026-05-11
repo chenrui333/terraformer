@@ -33,6 +33,53 @@ func TestBedrockResourceNameUniqueness(t *testing.T) {
 	}
 }
 
+func TestBedrockShouldLoadResourceHonorsTypedFilters(t *testing.T) {
+	g := BedrockGenerator{}
+	if !g.shouldLoadBedrockResource("bedrock_guardrail") ||
+		!g.shouldLoadBedrockResource("bedrock_inference_profile") ||
+		!g.shouldLoadBedrockResource("bedrock_provisioned_model_throughput") {
+		t.Fatal("without typed filters, all Bedrock resource families should be loaded")
+	}
+
+	g.Filter = []terraformutils.ResourceFilter{{
+		ServiceName:      "bedrock_guardrail",
+		FieldPath:        "id",
+		AcceptableValues: []string{"gr-1234567890,DRAFT"},
+	}}
+	if !g.shouldLoadBedrockResource("bedrock_guardrail") {
+		t.Fatal("typed guardrail filter should load guardrails")
+	}
+	if g.shouldLoadBedrockResource("bedrock_inference_profile") {
+		t.Fatal("typed guardrail filter should not load inference profiles")
+	}
+	if g.shouldLoadBedrockResource("bedrock_provisioned_model_throughput") {
+		t.Fatal("typed guardrail filter should not load provisioned throughputs")
+	}
+}
+
+func TestBedrockShouldLoadResourceAllowsUntypedIDFilter(t *testing.T) {
+	g := BedrockGenerator{
+		AWSService: AWSService{
+			Service: terraformutils.Service{
+				Filter: []terraformutils.ResourceFilter{
+					{
+						ServiceName:      "bedrock_guardrail",
+						FieldPath:        "id",
+						AcceptableValues: []string{"gr-1234567890,DRAFT"},
+					},
+					{
+						FieldPath:        "id",
+						AcceptableValues: []string{"arn:aws:bedrock:us-east-1:123456789012:provisioned-model/abc123"},
+					},
+				},
+			},
+		},
+	}
+	if !g.shouldLoadBedrockResource("bedrock_inference_profile") {
+		t.Fatal("untyped ID filter should keep broad Bedrock discovery available")
+	}
+}
+
 func TestNewBedrockGuardrailResource(t *testing.T) {
 	resource, ok := newBedrockGuardrailResource(bedrocktypes.GuardrailSummary{
 		Id:      aws.String("gr-1234567890"),
@@ -175,6 +222,55 @@ func TestBedrockResourceNotFound(t *testing.T) {
 	}
 	if bedrockResourceNotFound(errors.New("other error")) {
 		t.Fatal("non-not-found error should not be detected")
+	}
+}
+
+func TestBedrockInitialCleanupHonorsTypedFilters(t *testing.T) {
+	guardrail, ok := newBedrockGuardrailResource(bedrocktypes.GuardrailSummary{
+		Id:      aws.String("gr-1234567890"),
+		Name:    aws.String("billing-policy"),
+		Status:  bedrocktypes.GuardrailStatusReady,
+		Version: aws.String("DRAFT"),
+	})
+	if !ok {
+		t.Fatal("newBedrockGuardrailResource() should create guardrail")
+	}
+	profile, ok := newBedrockInferenceProfileResource(bedrocktypes.InferenceProfileSummary{
+		InferenceProfileId:   aws.String("ip-1234567890"),
+		InferenceProfileName: aws.String("application-profile"),
+		Status:               bedrocktypes.InferenceProfileStatusActive,
+		Type:                 bedrocktypes.InferenceProfileTypeApplication,
+	})
+	if !ok {
+		t.Fatal("newBedrockInferenceProfileResource() should create profile")
+	}
+	modelUnits := int32(2)
+	throughput, ok := newBedrockProvisionedModelThroughputResource(bedrocktypes.ProvisionedModelSummary{
+		ModelArn:             aws.String("arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-pro-v1:0"),
+		ModelUnits:           &modelUnits,
+		ProvisionedModelArn:  aws.String("arn:aws:bedrock:us-east-1:123456789012:provisioned-model/abc123"),
+		ProvisionedModelName: aws.String("prod-throughput"),
+		Status:               bedrocktypes.ProvisionedModelStatusInService,
+	})
+	if !ok {
+		t.Fatal("newBedrockProvisionedModelThroughputResource() should create throughput")
+	}
+
+	g := BedrockGenerator{}
+	g.Resources = []terraformutils.Resource{guardrail, profile, throughput}
+	g.Filter = []terraformutils.ResourceFilter{{
+		ServiceName:      "bedrock_guardrail",
+		FieldPath:        "id",
+		AcceptableValues: []string{"gr-1234567890,DRAFT"},
+	}}
+
+	g.InitialCleanup()
+
+	if len(g.Resources) != 1 {
+		t.Fatalf("InitialCleanup() resources len = %d, want 1", len(g.Resources))
+	}
+	if got := g.Resources[0].InstanceInfo.Type; got != bedrockGuardrailResourceType {
+		t.Fatalf("InitialCleanup() kept resource type = %q, want %s", got, bedrockGuardrailResourceType)
 	}
 }
 
