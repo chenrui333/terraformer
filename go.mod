@@ -410,6 +410,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/bedrockagent v1.53.2
 	github.com/aws/aws-sdk-go-v2/service/comprehend v1.40.23
 	github.com/aws/aws-sdk-go-v2/service/connect v1.172.1
+	github.com/aws/aws-sdk-go-v2/service/detective v1.38.15
 	github.com/aws/aws-sdk-go-v2/service/directconnect v1.38.17
 	github.com/aws/aws-sdk-go-v2/service/globalaccelerator v1.35.18
 	github.com/aws/aws-sdk-go-v2/service/guardduty v1.75.4
