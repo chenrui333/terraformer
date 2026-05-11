@@ -192,6 +192,122 @@ func TestNewDMSEventSubscriptionResource(t *testing.T) {
 	}
 }
 
+func TestNewDMSReplicationConfigResource(t *testing.T) {
+	multiAZ := false
+	resource, ok := newDMSReplicationConfigResource(dmstypes.ReplicationConfig{
+		ComputeConfig: &dmstypes.ComputeConfig{
+			AvailabilityZone:           dmsString("us-east-1a"),
+			DnsNameServers:             dmsString("1.1.1.1,2.2.2.2"),
+			KmsKeyId:                   dmsString("arn:aws:kms:us-east-1:123456789012:key/example"),
+			MaxCapacityUnits:           dmsInt32(64),
+			MinCapacityUnits:           dmsInt32(2),
+			MultiAZ:                    &multiAZ,
+			PreferredMaintenanceWindow: dmsString("sun:23:45-mon:00:30"),
+			ReplicationSubnetGroupId:   dmsString("dms-subnets"),
+			VpcSecurityGroupIds:        []string{"sg-1", "sg-2"},
+		},
+		ReplicationConfigArn:        dmsString("arn:aws:dms:us-east-1:123456789012:replication-config:ABC123"),
+		ReplicationConfigIdentifier: dmsString("orders"),
+		ReplicationSettings:         dmsString("{\"Logging\":{\"EnableLogging\":true}}"),
+		ReplicationType:             dmstypes.MigrationTypeValueCdc,
+		SourceEndpointArn:           dmsString("arn:aws:dms:us-east-1:123456789012:endpoint:SOURCE"),
+		SupplementalSettings:        dmsString("{}"),
+		TableMappings:               dmsString("{\"rules\":[]}"),
+		TargetEndpointArn:           dmsString("arn:aws:dms:us-east-1:123456789012:endpoint:TARGET"),
+	})
+	assertDMSResource(
+		t,
+		resource,
+		ok,
+		"arn:aws:dms:us-east-1:123456789012:replication-config:ABC123",
+		dmsResourceName("replication-config", "orders", "ABC123"),
+		dmsReplicationConfigResourceType,
+	)
+
+	attributes := resource.InstanceState.Attributes
+	expected := map[string]string{
+		"compute_config.#":                              "1",
+		"compute_config.0.availability_zone":            "us-east-1a",
+		"compute_config.0.dns_name_servers":             "1.1.1.1,2.2.2.2",
+		"compute_config.0.kms_key_id":                   "arn:aws:kms:us-east-1:123456789012:key/example",
+		"compute_config.0.max_capacity_units":           "64",
+		"compute_config.0.min_capacity_units":           "2",
+		"compute_config.0.multi_az":                     "false",
+		"compute_config.0.preferred_maintenance_window": "sun:23:45-mon:00:30",
+		"compute_config.0.replication_subnet_group_id":  "dms-subnets",
+		"compute_config.0.vpc_security_group_ids.#":     "2",
+		"compute_config.0.vpc_security_group_ids.1":     "sg-2",
+		"replication_config_identifier":                 "orders",
+		"replication_settings":                          "{\"Logging\":{\"EnableLogging\":true}}",
+		"replication_type":                              "cdc",
+		"source_endpoint_arn":                           "arn:aws:dms:us-east-1:123456789012:endpoint:SOURCE",
+		"supplemental_settings":                         "{}",
+		"table_mappings":                                "{\"rules\":[]}",
+		"target_endpoint_arn":                           "arn:aws:dms:us-east-1:123456789012:endpoint:TARGET",
+	}
+	for key, want := range expected {
+		if got := attributes[key]; got != want {
+			t.Fatalf("%s = %q, want %q", key, got, want)
+		}
+	}
+}
+
+func TestNewDMSReplicationConfigResourceSkipsUnsafeConfigs(t *testing.T) {
+	validConfig := func() dmstypes.ReplicationConfig {
+		return dmstypes.ReplicationConfig{
+			ComputeConfig: &dmstypes.ComputeConfig{
+				MaxCapacityUnits:         dmsInt32(64),
+				ReplicationSubnetGroupId: dmsString("dms-subnets"),
+			},
+			ReplicationConfigArn:        dmsString("arn:aws:dms:us-east-1:123456789012:replication-config:ABC123"),
+			ReplicationConfigIdentifier: dmsString("orders"),
+			ReplicationType:             dmstypes.MigrationTypeValueCdc,
+			SourceEndpointArn:           dmsString("arn:aws:dms:us-east-1:123456789012:endpoint:SOURCE"),
+			TableMappings:               dmsString("{\"rules\":[]}"),
+			TargetEndpointArn:           dmsString("arn:aws:dms:us-east-1:123456789012:endpoint:TARGET"),
+		}
+	}
+
+	tests := []struct {
+		name   string
+		mutate func(*dmstypes.ReplicationConfig)
+	}{
+		{name: "empty ARN", mutate: func(config *dmstypes.ReplicationConfig) { config.ReplicationConfigArn = nil }},
+		{name: "empty identifier", mutate: func(config *dmstypes.ReplicationConfig) { config.ReplicationConfigIdentifier = nil }},
+		{name: "empty replication type", mutate: func(config *dmstypes.ReplicationConfig) { config.ReplicationType = "" }},
+		{name: "empty source endpoint ARN", mutate: func(config *dmstypes.ReplicationConfig) { config.SourceEndpointArn = nil }},
+		{name: "empty target endpoint ARN", mutate: func(config *dmstypes.ReplicationConfig) { config.TargetEndpointArn = nil }},
+		{name: "empty table mappings", mutate: func(config *dmstypes.ReplicationConfig) { config.TableMappings = nil }},
+		{name: "missing compute config", mutate: func(config *dmstypes.ReplicationConfig) { config.ComputeConfig = nil }},
+		{name: "missing replication subnet group", mutate: func(config *dmstypes.ReplicationConfig) { config.ComputeConfig.ReplicationSubnetGroupId = nil }},
+		{name: "missing max capacity", mutate: func(config *dmstypes.ReplicationConfig) { config.ComputeConfig.MaxCapacityUnits = nil }},
+		{name: "read-only", mutate: func(config *dmstypes.ReplicationConfig) { config.IsReadOnly = dmsBool(true) }},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := validConfig()
+			tt.mutate(&config)
+			if _, ok := newDMSReplicationConfigResource(config); ok {
+				t.Fatal("replication config should be skipped")
+			}
+		})
+	}
+}
+
+func TestDMSReplicationConfigResourceNameAvoidsARNCollisions(t *testing.T) {
+	first := dmsReplicationConfigResourceName(dmstypes.ReplicationConfig{
+		ReplicationConfigArn:        dmsString("arn:aws:dms:us-east-1:123456789012:replication-config:ABC123"),
+		ReplicationConfigIdentifier: dmsString("orders"),
+	})
+	second := dmsReplicationConfigResourceName(dmstypes.ReplicationConfig{
+		ReplicationConfigArn:        dmsString("arn:aws:dms:us-east-1:123456789012:replication-config:XYZ789"),
+		ReplicationConfigIdentifier: dmsString("orders"),
+	})
+	if first == second {
+		t.Fatalf("replication config resource names collide: %q", first)
+	}
+}
+
 func TestNewDMSReplicationInstanceResource(t *testing.T) {
 	resource, ok := newDMSReplicationInstanceResource(dmstypes.ReplicationInstance{
 		ReplicationInstanceIdentifier: dmsString("dms-ri"),
@@ -463,5 +579,13 @@ func assertDMSAllowEmptyValue(t *testing.T, resource terraformutils.Resource, wa
 }
 
 func dmsString(value string) *string {
+	return &value
+}
+
+func dmsBool(value bool) *bool {
+	return &value
+}
+
+func dmsInt32(value int32) *int32 {
 	return &value
 }
