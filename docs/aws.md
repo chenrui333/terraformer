@@ -505,6 +505,8 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_ses_receipt_rule_set`
     * `aws_ses_template`
 *   `sesv2`
+    * `aws_sesv2_account_suppression_attributes`
+    * `aws_sesv2_account_vdm_attributes`
     * `aws_sesv2_configuration_set`
     * `aws_sesv2_configuration_set_event_destination`
     * `aws_sesv2_contact_list`

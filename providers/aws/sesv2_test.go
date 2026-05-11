@@ -19,6 +19,8 @@ func TestSESV2ImportIDs(t *testing.T) {
 		got  string
 		want string
 	}{
+		{name: "account suppression attributes", got: sesv2AccountSuppressionAttributesImportID("123456789012"), want: "123456789012"},
+		{name: "account VDM attributes", got: sesv2AccountVDMAttributesImportID(), want: "ses-account-vdm-attributes"},
 		{name: "configuration set", got: sesv2ConfigurationSetImportID("config-set"), want: "config-set"},
 		{name: "configuration set event destination", got: sesv2ConfigurationSetEventDestinationImportID("config-set", "events"), want: "config-set|events"},
 		{name: "contact list", got: sesv2ContactListImportID("contacts"), want: "contacts"},
@@ -34,6 +36,112 @@ func TestSESV2ImportIDs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.got != tt.want {
 				t.Fatalf("import ID = %q, want %q", tt.got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNewSESV2AccountSuppressionAttributesResource(t *testing.T) {
+	resource, ok := newSESV2AccountSuppressionAttributesResource("123456789012", &sesv2.GetAccountOutput{
+		SuppressionAttributes: &sesv2types.SuppressionAttributes{
+			SuppressedReasons: []sesv2types.SuppressionListReason{
+				sesv2types.SuppressionListReasonComplaint,
+				sesv2types.SuppressionListReasonBounce,
+			},
+		},
+	})
+	if !ok {
+		t.Fatal("newSESV2AccountSuppressionAttributesResource() ok = false, want true")
+	}
+	assertSESV2ResourceAttributes(t, resource, sesv2AccountSuppressionAttributesResourceType, "123456789012",
+		[]string{"account_suppression_attributes", "123456789012"},
+		map[string]string{
+			"suppressed_reasons.#": "2",
+			"suppressed_reasons.0": "BOUNCE",
+			"suppressed_reasons.1": "COMPLAINT",
+		})
+
+	tests := []struct {
+		name      string
+		accountID string
+		output    *sesv2.GetAccountOutput
+	}{
+		{name: "empty account ID", output: &sesv2.GetAccountOutput{
+			SuppressionAttributes: &sesv2types.SuppressionAttributes{
+				SuppressedReasons: []sesv2types.SuppressionListReason{sesv2types.SuppressionListReasonComplaint},
+			},
+		}},
+		{name: "nil output", accountID: "123456789012"},
+		{name: "nil suppression attributes", accountID: "123456789012", output: &sesv2.GetAccountOutput{}},
+		{name: "empty suppressed reasons", accountID: "123456789012", output: &sesv2.GetAccountOutput{SuppressionAttributes: &sesv2types.SuppressionAttributes{}}},
+		{name: "empty suppressed reason", accountID: "123456789012", output: &sesv2.GetAccountOutput{
+			SuppressionAttributes: &sesv2types.SuppressionAttributes{
+				SuppressedReasons: []sesv2types.SuppressionListReason{""},
+			},
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, ok := newSESV2AccountSuppressionAttributesResource(tt.accountID, tt.output); ok {
+				t.Fatal("newSESV2AccountSuppressionAttributesResource() ok = true, want false")
+			}
+		})
+	}
+}
+
+func TestNewSESV2AccountVDMAttributesResource(t *testing.T) {
+	resource, ok := newSESV2AccountVDMAttributesResource(&sesv2.GetAccountOutput{
+		VdmAttributes: &sesv2types.VdmAttributes{
+			VdmEnabled: sesv2types.FeatureStatusEnabled,
+			DashboardAttributes: &sesv2types.DashboardAttributes{
+				EngagementMetrics: sesv2types.FeatureStatusEnabled,
+			},
+			GuardianAttributes: &sesv2types.GuardianAttributes{
+				OptimizedSharedDelivery: sesv2types.FeatureStatusDisabled,
+			},
+		},
+	})
+	if !ok {
+		t.Fatal("newSESV2AccountVDMAttributesResource() ok = false, want true")
+	}
+	assertSESV2ResourceAttributes(t, resource, sesv2AccountVDMAttributesResourceType, "ses-account-vdm-attributes",
+		[]string{"account_vdm_attributes"},
+		map[string]string{
+			"dashboard_attributes.#":                          "1",
+			"dashboard_attributes.0.engagement_metrics":       "ENABLED",
+			"guardian_attributes.#":                           "1",
+			"guardian_attributes.0.optimized_shared_delivery": "DISABLED",
+			"vdm_enabled": "ENABLED",
+		})
+
+	resource, ok = newSESV2AccountVDMAttributesResource(&sesv2.GetAccountOutput{
+		VdmAttributes: &sesv2types.VdmAttributes{
+			VdmEnabled: sesv2types.FeatureStatusEnabled,
+		},
+	})
+	if !ok {
+		t.Fatal("newSESV2AccountVDMAttributesResource() ok = false for enabled VDM without optional attributes, want true")
+	}
+	if _, ok := resource.InstanceState.Attributes["dashboard_attributes.#"]; ok {
+		t.Fatal("newSESV2AccountVDMAttributesResource() seeded empty dashboard attributes, want omitted")
+	}
+	if _, ok := resource.InstanceState.Attributes["guardian_attributes.#"]; ok {
+		t.Fatal("newSESV2AccountVDMAttributesResource() seeded empty guardian attributes, want omitted")
+	}
+
+	tests := []struct {
+		name   string
+		output *sesv2.GetAccountOutput
+	}{
+		{name: "nil output"},
+		{name: "nil VDM attributes", output: &sesv2.GetAccountOutput{}},
+		{name: "empty VDM status", output: &sesv2.GetAccountOutput{VdmAttributes: &sesv2types.VdmAttributes{}}},
+		{name: "default disabled VDM", output: &sesv2.GetAccountOutput{VdmAttributes: &sesv2types.VdmAttributes{VdmEnabled: sesv2types.FeatureStatusDisabled}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, ok := newSESV2AccountVDMAttributesResource(tt.output); ok {
+				t.Fatal("newSESV2AccountVDMAttributesResource() ok = true, want false")
 			}
 		})
 	}
