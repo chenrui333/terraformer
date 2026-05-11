@@ -129,6 +129,10 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_batch_compute_environment`
     * `aws_batch_job_definition`
     * `aws_batch_job_queue`
+*   `bedrock`
+    * `aws_bedrock_guardrail`
+    * `aws_bedrock_inference_profile`
+    * `aws_bedrock_provisioned_model_throughput`
 *   `budgets`
     * `aws_budgets_budget`
 *   `cloud9`
