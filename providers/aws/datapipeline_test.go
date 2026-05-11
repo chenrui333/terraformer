@@ -66,6 +66,69 @@ func TestDataPipelineResourceNamesPreserveSegmentBoundaries(t *testing.T) {
 	}
 }
 
+func TestDataPipelinePostRefreshCleanupKeepsDefinitionForMatchedPipelineName(t *testing.T) {
+	pipeline := dataPipelinePipelineResourceForCleanup("df-123", "daily-import")
+	otherPipeline := dataPipelinePipelineResourceForCleanup("df-456", "hourly-import")
+	definition := dataPipelineDefinitionResourceForCleanup("df-123", "daily-import")
+	otherDefinition := dataPipelineDefinitionResourceForCleanup("df-456", "hourly-import")
+	generator := &DataPipelineGenerator{}
+	generator.Resources = []terraformutils.Resource{pipeline, definition, otherPipeline, otherDefinition}
+	generator.ParseFilters([]string{"Name=name;Value=daily-import"})
+
+	generator.PostRefreshCleanup()
+
+	assertDataPipelineResourceIDs(t, generator.Resources, []string{
+		dataPipelinePipelineResourceType + "/df-123",
+		dataPipelinePipelineDefinitionResourceType + "/df-123",
+	})
+}
+
+func TestDataPipelinePostRefreshCleanupDoesNotBroadenDefinitionSpecificFilters(t *testing.T) {
+	pipeline := dataPipelinePipelineResourceForCleanup("df-123", "daily-import")
+	otherPipeline := dataPipelinePipelineResourceForCleanup("df-456", "hourly-import")
+	definition := dataPipelineDefinitionResourceForCleanup("df-123", "daily-import")
+	otherDefinition := dataPipelineDefinitionResourceForCleanup("df-456", "hourly-import")
+	generator := &DataPipelineGenerator{}
+	generator.Resources = []terraformutils.Resource{pipeline, definition, otherPipeline, otherDefinition}
+	generator.ParseFilters([]string{"Type=datapipeline_pipeline_definition;Name=pipeline_id;Value=df-123"})
+
+	generator.PostRefreshCleanup()
+
+	assertDataPipelineResourceIDs(t, generator.Resources, []string{
+		dataPipelinePipelineResourceType + "/df-123",
+		dataPipelinePipelineDefinitionResourceType + "/df-123",
+		dataPipelinePipelineResourceType + "/df-456",
+	})
+}
+
+func dataPipelinePipelineResourceForCleanup(pipelineID, pipelineName string) terraformutils.Resource {
+	resource, ok := newDataPipelinePipelineResource(pipelineID, pipelineName)
+	if !ok {
+		panic("expected Data Pipeline pipeline resource")
+	}
+	resource.InstanceState.Attributes = map[string]string{"name": pipelineName}
+	return resource
+}
+
+func dataPipelineDefinitionResourceForCleanup(pipelineID, pipelineName string) terraformutils.Resource {
+	resource := newDataPipelinePipelineDefinitionResource(pipelineID, pipelineName)
+	resource.InstanceState.Attributes = map[string]string{"pipeline_id": pipelineID}
+	return resource
+}
+
+func assertDataPipelineResourceIDs(t *testing.T, resources []terraformutils.Resource, want []string) {
+	t.Helper()
+	if len(resources) != len(want) {
+		t.Fatalf("resources len = %d, want %d: %#v", len(resources), len(want), resources)
+	}
+	for i, resource := range resources {
+		got := resource.InstanceInfo.Type + "/" + resource.InstanceState.ID
+		if got != want[i] {
+			t.Fatalf("resource[%d] = %q, want %q", i, got, want[i])
+		}
+	}
+}
+
 func assertDataPipelineResource(t *testing.T, resource terraformutils.Resource, ok bool, wantID, wantName, wantType string) {
 	t.Helper()
 	if !ok {

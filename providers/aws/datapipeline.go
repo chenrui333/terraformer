@@ -56,6 +56,35 @@ func (g *DataPipelineGenerator) InitResources() error {
 	return nil
 }
 
+func (g *DataPipelineGenerator) PostRefreshCleanup() {
+	if len(g.Filter) == 0 {
+		return
+	}
+	definitionsByPipelineID := map[string][]terraformutils.Resource{}
+	matchedPipelineIDs := map[string]bool{}
+	for _, resource := range g.Resources {
+		switch resource.InstanceInfo.Type {
+		case dataPipelinePipelineResourceType:
+			if dataPipelineResourceMatchesPostRefreshFilters(resource, g.Filter) {
+				matchedPipelineIDs[resource.InstanceState.ID] = true
+			}
+		case dataPipelinePipelineDefinitionResourceType:
+			if pipelineID := dataPipelineDefinitionPipelineID(resource); pipelineID != "" {
+				definitionsByPipelineID[pipelineID] = append(definitionsByPipelineID[pipelineID], resource)
+			}
+		}
+	}
+
+	terraformutils.FilterCleanup(&g.Service, false)
+	for pipelineID := range matchedPipelineIDs {
+		for _, resource := range definitionsByPipelineID[pipelineID] {
+			if !terraformutils.ContainsResource(g.Resources, resource) {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+	}
+}
+
 func getDataPipelinePipelineDefinitionResource(svc *datapipeline.Client, pipelineID, pipelineName string) (terraformutils.Resource, bool, error) {
 	if pipelineID == "" {
 		return terraformutils.Resource{}, false, nil
@@ -106,6 +135,28 @@ func newDataPipelinePipelineDefinitionResource(pipelineID, pipelineName string) 
 
 func dataPipelineDefinitionImportable(definition *datapipeline.GetPipelineDefinitionOutput) bool {
 	return definition != nil && len(definition.PipelineObjects) > 0
+}
+
+func dataPipelineResourceMatchesPostRefreshFilters(resource terraformutils.Resource, filters []terraformutils.ResourceFilter) bool {
+	matchedApplicableFilter := false
+	serviceName := strings.TrimPrefix(resource.InstanceInfo.Type, resource.Provider+"_")
+	for _, filter := range filters {
+		if filter.FieldPath == "id" || !filter.IsApplicable(serviceName) {
+			continue
+		}
+		matchedApplicableFilter = true
+		if !filter.Filter(resource) {
+			return false
+		}
+	}
+	return matchedApplicableFilter
+}
+
+func dataPipelineDefinitionPipelineID(resource terraformutils.Resource) string {
+	if resource.InstanceState == nil || resource.InstanceState.Attributes == nil {
+		return ""
+	}
+	return resource.InstanceState.Attributes["pipeline_id"]
 }
 
 func dataPipelinePipelineImportID(pipelineID string) string {
