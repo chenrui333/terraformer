@@ -127,6 +127,7 @@ func newCloud9EnvironmentMembershipResource(membership types.EnvironmentMember) 
 }
 
 func cloud9EnvironmentMembershipImportable(permissions types.Permissions) bool {
+	// Owner memberships are created by AWS for environment creators and are not independently managed by Terraform.
 	return permissions == types.PermissionsReadOnly || permissions == types.PermissionsReadWrite
 }
 
