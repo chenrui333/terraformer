@@ -63,7 +63,9 @@ func (g *GuardDutyGenerator) InitResources() error {
 		}
 	}
 	if err := g.loadMalwareProtectionPlans(svc); err != nil {
-		return err
+		if !guardDutyMalwareProtectionPlansUnavailable(err) {
+			return err
+		}
 	}
 	detectors, e := listGuardDutyDetectors(svc)
 	if e != nil {
@@ -142,6 +144,9 @@ func (g *GuardDutyGenerator) loadOrganizationAdminAccounts(svc *guardduty.Client
 	paginator := guardduty.NewListOrganizationAdminAccountsPaginator(svc, &guardduty.ListOrganizationAdminAccountsInput{})
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(context.TODO())
+		if guardDutyOrganizationResourceUnavailable(err) {
+			return nil
+		}
 		if err != nil {
 			return err
 		}
@@ -195,6 +200,9 @@ func (g *GuardDutyGenerator) loadIPSets(svc *guardduty.Client, detectorID string
 	})
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(context.TODO())
+		if guardDutyMemberListingUnavailable(err) {
+			return nil
+		}
 		if err != nil {
 			return err
 		}
@@ -349,6 +357,9 @@ func (g *GuardDutyGenerator) loadMalwareProtectionPlans(svc *guardduty.Client) e
 			MalwareProtectionPlanId: aws.String(planID),
 		})
 		if guardDutyResourceNotFound(err) {
+			continue
+		}
+		if guardDutyMalwareProtectionPlansUnavailable(err) {
 			continue
 		}
 		if err != nil {
@@ -592,6 +603,7 @@ func newGuardDutyOrganizationConfigurationResource(detectorID string, configurat
 		"auto_enable_organization_members": string(configuration.AutoEnableOrganizationMembers),
 		"detector_id":                      detectorID,
 	}
+	addGuardDutyOrganizationDataSources(attributes, configuration.DataSources) //nolint:staticcheck // DataSources backs Terraform's deprecated datasources block.
 
 	return terraformutils.NewResource(
 		guardDutyOrganizationConfigurationResourceID(detectorID),
@@ -689,6 +701,28 @@ func addGuardDutyDataSources(attributes map[string]string, dataSources *guarddut
 		attributes["datasources.0.malware_protection.0.scan_ec2_instance_with_findings.#"] = "1"
 		attributes["datasources.0.malware_protection.0.scan_ec2_instance_with_findings.0.ebs_volumes.#"] = "1"
 		attributes["datasources.0.malware_protection.0.scan_ec2_instance_with_findings.0.ebs_volumes.0.enable"] = strconv.FormatBool(dataSources.MalwareProtection.ScanEc2InstanceWithFindings.EbsVolumes.Status == guarddutytypes.DataSourceStatusEnabled)
+	}
+}
+
+func addGuardDutyOrganizationDataSources(attributes map[string]string, dataSources *guarddutytypes.OrganizationDataSourceConfigurationsResult) {
+	if dataSources == nil {
+		return
+	}
+	attributes["datasources.#"] = "1"
+	if dataSources.S3Logs != nil && dataSources.S3Logs.AutoEnable != nil {
+		attributes["datasources.0.s3_logs.#"] = "1"
+		attributes["datasources.0.s3_logs.0.auto_enable"] = strconv.FormatBool(aws.ToBool(dataSources.S3Logs.AutoEnable))
+	}
+	if dataSources.Kubernetes != nil && dataSources.Kubernetes.AuditLogs != nil && dataSources.Kubernetes.AuditLogs.AutoEnable != nil {
+		attributes["datasources.0.kubernetes.#"] = "1"
+		attributes["datasources.0.kubernetes.0.audit_logs.#"] = "1"
+		attributes["datasources.0.kubernetes.0.audit_logs.0.enable"] = strconv.FormatBool(aws.ToBool(dataSources.Kubernetes.AuditLogs.AutoEnable))
+	}
+	if dataSources.MalwareProtection != nil && dataSources.MalwareProtection.ScanEc2InstanceWithFindings != nil && dataSources.MalwareProtection.ScanEc2InstanceWithFindings.EbsVolumes != nil && dataSources.MalwareProtection.ScanEc2InstanceWithFindings.EbsVolumes.AutoEnable != nil {
+		attributes["datasources.0.malware_protection.#"] = "1"
+		attributes["datasources.0.malware_protection.0.scan_ec2_instance_with_findings.#"] = "1"
+		attributes["datasources.0.malware_protection.0.scan_ec2_instance_with_findings.0.ebs_volumes.#"] = "1"
+		attributes["datasources.0.malware_protection.0.scan_ec2_instance_with_findings.0.ebs_volumes.0.auto_enable"] = strconv.FormatBool(aws.ToBool(dataSources.MalwareProtection.ScanEc2InstanceWithFindings.EbsVolumes.AutoEnable))
 	}
 }
 
@@ -973,6 +1007,52 @@ func guardDutyOrganizationAdminAccountImportable(adminAccount guarddutytypes.Adm
 	return StringValue(adminAccount.AdminAccountId) != "" && adminAccount.AdminStatus == guarddutytypes.AdminStatusEnabled
 }
 
+func guardDutyMalwareProtectionPlansUnavailable(err error) bool {
+	if err == nil {
+		return false
+	}
+	var accessDenied *guarddutytypes.AccessDeniedException
+	if errors.As(err, &accessDenied) {
+		return true
+	}
+	var badRequest *guarddutytypes.BadRequestException
+	if !errors.As(err, &badRequest) {
+		return false
+	}
+	message := strings.ToLower(badRequest.ErrorMessage())
+	return strings.Contains(message, "malware") ||
+		strings.Contains(message, "protection plan") ||
+		strings.Contains(message, "permission") ||
+		strings.Contains(message, "not authorized") ||
+		strings.Contains(message, "not supported") ||
+		strings.Contains(message, "not enabled") ||
+		strings.Contains(message, "not available")
+}
+
+func guardDutyMemberListingUnavailable(err error) bool {
+	if err == nil {
+		return false
+	}
+	var accessDenied *guarddutytypes.AccessDeniedException
+	if errors.As(err, &accessDenied) {
+		return true
+	}
+	var badRequest *guarddutytypes.BadRequestException
+	if !errors.As(err, &badRequest) {
+		return false
+	}
+	message := strings.ToLower(badRequest.ErrorMessage())
+	if strings.Contains(message, "member account") && strings.Contains(message, "cannot") {
+		return true
+	}
+	if !strings.Contains(message, "administrator") && !strings.Contains(message, "master") {
+		return false
+	}
+	return strings.Contains(message, "not") ||
+		strings.Contains(message, "only") ||
+		strings.Contains(message, "must")
+}
+
 func guardDutyResourceNotFound(err error) bool {
 	if err == nil {
 		return false
@@ -995,6 +1075,10 @@ func guardDutyOrganizationResourceUnavailable(err error) bool {
 	if err == nil {
 		return false
 	}
+	var accessDenied *guarddutytypes.AccessDeniedException
+	if errors.As(err, &accessDenied) {
+		return true
+	}
 	var badRequest *guarddutytypes.BadRequestException
 	if !errors.As(err, &badRequest) {
 		return false
@@ -1003,6 +1087,7 @@ func guardDutyOrganizationResourceUnavailable(err error) bool {
 	return strings.Contains(message, "organization") &&
 		(strings.Contains(message, "administrator") ||
 			strings.Contains(message, "delegated") ||
+			strings.Contains(message, "management") ||
 			strings.Contains(message, "master") ||
 			strings.Contains(message, "member"))
 }

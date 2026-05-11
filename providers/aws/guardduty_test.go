@@ -412,6 +412,17 @@ func TestGuardDutyOrganizationAdminAccountResource(t *testing.T) {
 func TestGuardDutyOrganizationConfigurationResource(t *testing.T) {
 	resource, ok := newGuardDutyOrganizationConfigurationResource(testGuardDutyDetectorID, &guardduty.DescribeOrganizationConfigurationOutput{
 		AutoEnableOrganizationMembers: guarddutytypes.AutoEnableMembersAll,
+		DataSources: &guarddutytypes.OrganizationDataSourceConfigurationsResult{
+			S3Logs: &guarddutytypes.OrganizationS3LogsConfigurationResult{AutoEnable: aws.Bool(true)},
+			Kubernetes: &guarddutytypes.OrganizationKubernetesConfigurationResult{
+				AuditLogs: &guarddutytypes.OrganizationKubernetesAuditLogsConfigurationResult{AutoEnable: aws.Bool(false)},
+			},
+			MalwareProtection: &guarddutytypes.OrganizationMalwareProtectionConfigurationResult{
+				ScanEc2InstanceWithFindings: &guarddutytypes.OrganizationScanEc2InstanceWithFindingsResult{
+					EbsVolumes: &guarddutytypes.OrganizationEbsVolumesResult{AutoEnable: aws.Bool(true)},
+				},
+			},
+		},
 	})
 	if !ok {
 		t.Fatal("expected organization configuration resource")
@@ -425,8 +436,18 @@ func TestGuardDutyOrganizationConfigurationResource(t *testing.T) {
 	}
 	attributes := resource.InstanceState.Attributes
 	for key, want := range map[string]string{
-		"auto_enable_organization_members": "ALL",
-		"detector_id":                      testGuardDutyDetectorID,
+		"auto_enable_organization_members":                                     "ALL",
+		"detector_id":                                                          testGuardDutyDetectorID,
+		"datasources.#":                                                        "1",
+		"datasources.0.s3_logs.#":                                              "1",
+		"datasources.0.s3_logs.0.auto_enable":                                  "true",
+		"datasources.0.kubernetes.#":                                           "1",
+		"datasources.0.kubernetes.0.audit_logs.#":                              "1",
+		"datasources.0.kubernetes.0.audit_logs.0.enable":                       "false",
+		"datasources.0.malware_protection.#":                                   "1",
+		"datasources.0.malware_protection.0.scan_ec2_instance_with_findings.#": "1",
+		"datasources.0.malware_protection.0.scan_ec2_instance_with_findings.0.ebs_volumes.#":             "1",
+		"datasources.0.malware_protection.0.scan_ec2_instance_with_findings.0.ebs_volumes.0.auto_enable": "true",
 	} {
 		if got := attributes[key]; got != want {
 			t.Fatalf("%s = %q, want %q", key, got, want)
@@ -690,12 +711,116 @@ func TestGuardDutyResourceNotFound(t *testing.T) {
 	}
 }
 
+func TestGuardDutyMalwareProtectionPlansUnavailable(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{
+			name: "access denied",
+			err:  &guarddutytypes.AccessDeniedException{Message: aws.String("User is not authorized to perform guardduty:ListMalwareProtectionPlans.")},
+			want: true,
+		},
+		{
+			name: "bad request missing malware feature",
+			err:  &guarddutytypes.BadRequestException{Message: aws.String("Malware Protection plan APIs are not supported in this account.")},
+			want: true,
+		},
+		{
+			name: "other bad request",
+			err:  &guarddutytypes.BadRequestException{Message: aws.String("The request is rejected because a parameter is invalid.")},
+			want: false,
+		},
+		{
+			name: "other error type",
+			err:  errors.New("boom"),
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := guardDutyMalwareProtectionPlansUnavailable(tt.err); got != tt.want {
+				t.Fatalf("malware protection plans unavailable = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGuardDutyMemberListingUnavailable(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{
+			name: "access denied",
+			err:  &guarddutytypes.AccessDeniedException{Message: aws.String("User is not authorized to perform guardduty:ListMembers.")},
+			want: true,
+		},
+		{
+			name: "not administrator",
+			err:  &guarddutytypes.BadRequestException{Message: aws.String("The request is rejected because the current account is not a GuardDuty administrator account.")},
+			want: true,
+		},
+		{
+			name: "administrator only",
+			err:  &guarddutytypes.BadRequestException{Message: aws.String("This API can only be called by the GuardDuty administrator account.")},
+			want: true,
+		},
+		{
+			name: "legacy not master",
+			err:  &guarddutytypes.BadRequestException{Message: aws.String("The request is rejected because the current account is not the master account.")},
+			want: true,
+		},
+		{
+			name: "member account cannot list",
+			err:  &guarddutytypes.BadRequestException{Message: aws.String("This operation cannot be called by a member account.")},
+			want: true,
+		},
+		{
+			name: "detector not owned is still not member listing",
+			err:  &guarddutytypes.BadRequestException{Message: aws.String("The request is rejected because the input detectorId is not owned by the current account.")},
+			want: false,
+		},
+		{
+			name: "other bad request",
+			err:  &guarddutytypes.BadRequestException{Message: aws.String("The request is rejected because a parameter is invalid.")},
+			want: false,
+		},
+		{
+			name: "other error type",
+			err:  errors.New("boom"),
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := guardDutyMemberListingUnavailable(tt.err); got != tt.want {
+				t.Fatalf("member listing unavailable = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestGuardDutyOrganizationResourceUnavailable(t *testing.T) {
 	tests := []struct {
 		name string
 		err  error
 		want bool
 	}{
+		{
+			name: "access denied",
+			err:  &guarddutytypes.AccessDeniedException{Message: aws.String("User is not authorized to perform guardduty:ListOrganizationAdminAccounts.")},
+			want: true,
+		},
+		{
+			name: "not management account",
+			err:  &guarddutytypes.BadRequestException{Message: aws.String("Only the organization's management account can run this API operation.")},
+			want: true,
+		},
 		{
 			name: "not delegated administrator",
 			err:  &guarddutytypes.BadRequestException{Message: aws.String("The request is rejected because the account is not the delegated administrator for this organization.")},
