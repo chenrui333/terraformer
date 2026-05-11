@@ -408,6 +408,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/backup v1.55.2
 	github.com/aws/aws-sdk-go-v2/service/bedrock v1.59.2
 	github.com/aws/aws-sdk-go-v2/service/bedrockagent v1.53.2
+	github.com/aws/aws-sdk-go-v2/service/connect v1.172.1
 	github.com/aws/aws-sdk-go-v2/service/directconnect v1.38.17
 	github.com/aws/aws-sdk-go-v2/service/globalaccelerator v1.35.18
 	github.com/aws/aws-sdk-go-v2/service/guardduty v1.75.4
@@ -417,6 +418,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/mwaa v1.40.0
 	github.com/aws/aws-sdk-go-v2/service/opensearch v1.68.0
 	github.com/aws/aws-sdk-go-v2/service/opensearchserverless v1.30.3
+	github.com/aws/aws-sdk-go-v2/service/pinpoint v1.39.23
+	github.com/aws/aws-sdk-go-v2/service/pinpointsmsvoicev2 v1.28.2
 	github.com/aws/aws-sdk-go-v2/service/pipes v1.23.22
 	github.com/aws/aws-sdk-go-v2/service/redshiftserverless v1.34.6
 	github.com/aws/aws-sdk-go-v2/service/route53resolver v1.43.0
