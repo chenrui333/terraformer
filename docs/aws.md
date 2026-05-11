@@ -458,6 +458,9 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_redshift_snapshot_schedule`
     * `aws_redshift_snapshot_schedule_association`
     * `aws_redshift_subnet_group`
+*   `redshiftserverless`
+    * `aws_redshiftserverless_namespace`
+    * `aws_redshiftserverless_workgroup`
 *   `resourcegroups`
     * `aws_resourcegroups_group`
 *   `route53`

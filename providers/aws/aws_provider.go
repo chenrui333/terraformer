@@ -261,7 +261,7 @@ func (p *AWSProvider) InitService(serviceName string, verbose bool) error {
 
 // GetAWSSupportService return map of support service for AWS
 func (p *AWSProvider) GetSupportedService() map[string]terraformutils.ServiceGenerator {
-	return map[string]terraformutils.ServiceGenerator{
+	services := map[string]terraformutils.ServiceGenerator{
 		"accessanalyzer":    &AwsFacade{service: &AccessAnalyzerGenerator{}},
 		"acm":               &AwsFacade{service: &ACMGenerator{}},
 		"alb":               &AwsFacade{service: &AlbGenerator{}},
@@ -367,6 +367,8 @@ func (p *AWSProvider) GetSupportedService() map[string]terraformutils.ServiceGen
 		"workspaces":        &AwsFacade{service: &WorkspacesGenerator{}},
 		"xray":              &AwsFacade{service: &XrayGenerator{}},
 	}
+	services["redshiftserverless"] = &AwsFacade{service: &RedshiftServerlessGenerator{}}
+	return services
 }
 
 func StringValue(value *string) string {
