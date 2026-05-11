@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/bedrock"
 	bedrocktypes "github.com/aws/aws-sdk-go-v2/service/bedrock/types"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
@@ -16,6 +17,14 @@ func TestBedrockGuardrailImportID(t *testing.T) {
 	want := "gr-1234567890,DRAFT"
 	if got != want {
 		t.Fatalf("bedrockGuardrailImportID() = %q, want %q", got, want)
+	}
+}
+
+func TestBedrockModelInvocationLoggingImportID(t *testing.T) {
+	got := bedrockModelInvocationLoggingImportID("us-east-1")
+	want := "us-east-1"
+	if got != want {
+		t.Fatalf("bedrockModelInvocationLoggingImportID() = %q, want %q", got, want)
 	}
 }
 
@@ -37,6 +46,7 @@ func TestBedrockShouldLoadResourceHonorsTypedFilters(t *testing.T) {
 	g := BedrockGenerator{}
 	if !g.shouldLoadBedrockResource("bedrock_guardrail") ||
 		!g.shouldLoadBedrockResource("bedrock_inference_profile") ||
+		!g.shouldLoadBedrockResource("bedrock_model_invocation_logging_configuration") ||
 		!g.shouldLoadBedrockResource("bedrock_provisioned_model_throughput") {
 		t.Fatal("without typed filters, all Bedrock resource families should be loaded")
 	}
@@ -52,8 +62,23 @@ func TestBedrockShouldLoadResourceHonorsTypedFilters(t *testing.T) {
 	if g.shouldLoadBedrockResource("bedrock_inference_profile") {
 		t.Fatal("typed guardrail filter should not load inference profiles")
 	}
+	if g.shouldLoadBedrockResource("bedrock_model_invocation_logging_configuration") {
+		t.Fatal("typed guardrail filter should not load model invocation logging configuration")
+	}
 	if g.shouldLoadBedrockResource("bedrock_provisioned_model_throughput") {
 		t.Fatal("typed guardrail filter should not load provisioned throughputs")
+	}
+
+	g.Filter = []terraformutils.ResourceFilter{{
+		ServiceName:      "bedrock_model_invocation_logging_configuration",
+		FieldPath:        "id",
+		AcceptableValues: []string{"us-east-1"},
+	}}
+	if !g.shouldLoadBedrockResource("bedrock_model_invocation_logging_configuration") {
+		t.Fatal("typed logging filter should load model invocation logging configuration")
+	}
+	if g.shouldLoadBedrockResource("bedrock_guardrail") {
+		t.Fatal("typed logging filter should not load guardrails")
 	}
 }
 
@@ -94,8 +119,14 @@ func TestBedrockShouldLoadResourceAllowsUntypedFilters(t *testing.T) {
 					},
 				},
 			}
-			if !g.shouldLoadBedrockResource("bedrock_inference_profile") {
-				t.Fatal("untyped filter should keep broad Bedrock discovery available")
+			for _, serviceName := range []string{
+				"bedrock_inference_profile",
+				"bedrock_model_invocation_logging_configuration",
+				"bedrock_provisioned_model_throughput",
+			} {
+				if !g.shouldLoadBedrockResource(serviceName) {
+					t.Fatalf("untyped filter should keep %s discovery available", serviceName)
+				}
 			}
 		})
 	}
@@ -165,6 +196,29 @@ func TestNewBedrockInferenceProfileResource(t *testing.T) {
 		Type:               bedrocktypes.InferenceProfileTypeSystemDefined,
 	}); ok {
 		t.Fatal("system-defined inference profile should be skipped")
+	}
+}
+
+func TestNewBedrockModelInvocationLoggingResource(t *testing.T) {
+	output := &bedrock.GetModelInvocationLoggingConfigurationOutput{
+		LoggingConfig: &bedrocktypes.LoggingConfig{},
+	}
+	resource, ok := newBedrockModelInvocationLoggingResource("us-east-1", output)
+	assertBedrockResource(t, resource, ok, "us-east-1", bedrockModelInvocationLoggingResourceType)
+	otherRegion, ok := newBedrockModelInvocationLoggingResource("us-west-2", output)
+	assertBedrockResource(t, otherRegion, ok, "us-west-2", bedrockModelInvocationLoggingResourceType)
+	if resource.ResourceName == otherRegion.ResourceName {
+		t.Fatal("logging configuration resource names should be region-specific")
+	}
+
+	if _, ok := newBedrockModelInvocationLoggingResource("", output); ok {
+		t.Fatal("logging configuration without region should be skipped")
+	}
+	if _, ok := newBedrockModelInvocationLoggingResource("us-east-1", nil); ok {
+		t.Fatal("nil logging configuration output should be skipped")
+	}
+	if _, ok := newBedrockModelInvocationLoggingResource("us-east-1", &bedrock.GetModelInvocationLoggingConfigurationOutput{}); ok {
+		t.Fatal("unconfigured logging should be skipped")
 	}
 }
 
@@ -276,9 +330,15 @@ func TestBedrockInitialCleanupHonorsTypedFilters(t *testing.T) {
 	if !ok {
 		t.Fatal("newBedrockProvisionedModelThroughputResource() should create throughput")
 	}
+	logging, ok := newBedrockModelInvocationLoggingResource("us-east-1", &bedrock.GetModelInvocationLoggingConfigurationOutput{
+		LoggingConfig: &bedrocktypes.LoggingConfig{},
+	})
+	if !ok {
+		t.Fatal("newBedrockModelInvocationLoggingResource() should create logging configuration")
+	}
 
 	g := BedrockGenerator{}
-	g.Resources = []terraformutils.Resource{guardrail, profile, throughput}
+	g.Resources = []terraformutils.Resource{guardrail, profile, throughput, logging}
 	g.Filter = []terraformutils.ResourceFilter{{
 		ServiceName:      "bedrock_guardrail",
 		FieldPath:        "id",
@@ -296,9 +356,9 @@ func TestBedrockInitialCleanupHonorsTypedFilters(t *testing.T) {
 }
 
 func TestBedrockInitialCleanupPreservesGlobalFilters(t *testing.T) {
-	guardrail, profile, throughput := bedrockTestResources(t)
+	guardrail, profile, logging, throughput := bedrockTestResources(t)
 	g := BedrockGenerator{}
-	g.Resources = []terraformutils.Resource{guardrail, profile, throughput}
+	g.Resources = []terraformutils.Resource{guardrail, profile, logging, throughput}
 	g.Filter = []terraformutils.ResourceFilter{
 		{
 			ServiceName:      "bedrock_guardrail",
@@ -313,8 +373,8 @@ func TestBedrockInitialCleanupPreservesGlobalFilters(t *testing.T) {
 
 	g.InitialCleanup()
 
-	if len(g.Resources) != 3 {
-		t.Fatalf("InitialCleanup() resources len = %d, want 3", len(g.Resources))
+	if len(g.Resources) != 4 {
+		t.Fatalf("InitialCleanup() resources len = %d, want 4", len(g.Resources))
 	}
 }
 
@@ -334,7 +394,7 @@ func assertBedrockResource(t *testing.T, resource terraformutils.Resource, ok bo
 	}
 }
 
-func bedrockTestResources(t *testing.T) (terraformutils.Resource, terraformutils.Resource, terraformutils.Resource) {
+func bedrockTestResources(t *testing.T) (terraformutils.Resource, terraformutils.Resource, terraformutils.Resource, terraformutils.Resource) {
 	t.Helper()
 	guardrail, ok := newBedrockGuardrailResource(bedrocktypes.GuardrailSummary{
 		Id:      aws.String("gr-1234567890"),
@@ -354,6 +414,12 @@ func bedrockTestResources(t *testing.T) (terraformutils.Resource, terraformutils
 	if !ok {
 		t.Fatal("newBedrockInferenceProfileResource() should create profile")
 	}
+	logging, ok := newBedrockModelInvocationLoggingResource("us-east-1", &bedrock.GetModelInvocationLoggingConfigurationOutput{
+		LoggingConfig: &bedrocktypes.LoggingConfig{},
+	})
+	if !ok {
+		t.Fatal("newBedrockModelInvocationLoggingResource() should create logging configuration")
+	}
 	modelUnits := int32(2)
 	throughput, ok := newBedrockProvisionedModelThroughputResource(bedrocktypes.ProvisionedModelSummary{
 		ModelArn:             aws.String("arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-pro-v1:0"),
@@ -365,5 +431,5 @@ func bedrockTestResources(t *testing.T) (terraformutils.Resource, terraformutils
 	if !ok {
 		t.Fatal("newBedrockProvisionedModelThroughputResource() should create throughput")
 	}
-	return guardrail, profile, throughput
+	return guardrail, profile, logging, throughput
 }
