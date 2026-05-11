@@ -37,6 +37,59 @@ func TestDMSResourceNamesAvoidTypeCollisions(t *testing.T) {
 	}
 }
 
+func TestNewDMSCertificateResource(t *testing.T) {
+	resource, ok := newDMSCertificateResource(dmstypes.Certificate{
+		CertificateIdentifier: dmsString("dms-cert"),
+		CertificatePem:        dmsString("-----BEGIN CERTIFICATE-----"),
+	})
+	assertDMSResource(t, resource, ok, "dms-cert", dmsResourceName("certificate", "dms-cert"), dmsCertificateResourceType)
+
+	if _, ok := newDMSCertificateResource(dmstypes.Certificate{CertificatePem: dmsString("-----BEGIN CERTIFICATE-----")}); ok {
+		t.Fatal("certificate with empty identifier should be skipped")
+	}
+	if _, ok := newDMSCertificateResource(dmstypes.Certificate{CertificateIdentifier: dmsString("dms-cert")}); ok {
+		t.Fatal("certificate without PEM or wallet material should be skipped")
+	}
+}
+
+func TestNewDMSEventSubscriptionResource(t *testing.T) {
+	resource, ok := newDMSEventSubscriptionResource(dmstypes.EventSubscription{
+		CustSubscriptionId:  dmsString("dms-events"),
+		EventCategoriesList: []string{"creation", "failure"},
+		SnsTopicArn:         dmsString("arn:aws:sns:us-east-1:123456789012:dms-events"),
+		SourceType:          dmsString("replication-task"),
+		Status:              dmsString("active"),
+	})
+	assertDMSResource(t, resource, ok, "dms-events", dmsResourceName("event-subscription", "dms-events"), dmsEventSubscriptionResourceType)
+
+	if _, ok := newDMSEventSubscriptionResource(dmstypes.EventSubscription{
+		EventCategoriesList: []string{"creation"},
+		SnsTopicArn:         dmsString("arn:aws:sns:us-east-1:123456789012:dms-events"),
+		SourceType:          dmsString("replication-task"),
+		Status:              dmsString("active"),
+	}); ok {
+		t.Fatal("event subscription with empty name should be skipped")
+	}
+	if _, ok := newDMSEventSubscriptionResource(dmstypes.EventSubscription{
+		CustSubscriptionId:  dmsString("dms-events"),
+		EventCategoriesList: []string{"creation"},
+		SnsTopicArn:         dmsString("arn:aws:sns:us-east-1:123456789012:dms-events"),
+		SourceType:          dmsString("replication-task"),
+		Status:              dmsString("creating"),
+	}); ok {
+		t.Fatal("creating event subscription should be skipped")
+	}
+	if _, ok := newDMSEventSubscriptionResource(dmstypes.EventSubscription{
+		CustSubscriptionId:  dmsString("dms-events"),
+		EventCategoriesList: []string{"creation"},
+		SnsTopicArn:         dmsString("arn:aws:sns:us-east-1:123456789012:dms-events"),
+		SourceType:          dmsString("security-group"),
+		Status:              dmsString("active"),
+	}); ok {
+		t.Fatal("event subscription with unsupported source type should be skipped")
+	}
+}
+
 func TestNewDMSReplicationInstanceResource(t *testing.T) {
 	resource, ok := newDMSReplicationInstanceResource(dmstypes.ReplicationInstance{
 		ReplicationInstanceIdentifier: dmsString("dms-ri"),
@@ -115,6 +168,89 @@ func TestNewDMSReplicationTaskResource(t *testing.T) {
 		Status:                    dmsString("creating"),
 	}); ok {
 		t.Fatal("creating replication task should be skipped")
+	}
+}
+
+func TestDMSCertificateImportable(t *testing.T) {
+	if !dmsCertificateImportable(dmstypes.Certificate{CertificatePem: dmsString("pem")}) {
+		t.Fatal("certificate with PEM material should be importable")
+	}
+	if !dmsCertificateImportable(dmstypes.Certificate{CertificateWallet: []byte("wallet")}) {
+		t.Fatal("certificate with wallet material should be importable")
+	}
+	if dmsCertificateImportable(dmstypes.Certificate{}) {
+		t.Fatal("certificate without PEM or wallet material should not be importable")
+	}
+}
+
+func TestDMSEventSubscriptionImportable(t *testing.T) {
+	base := dmstypes.EventSubscription{
+		EventCategoriesList: []string{"creation"},
+		SnsTopicArn:         dmsString("arn:aws:sns:us-east-1:123456789012:dms-events"),
+		SourceType:          dmsString("replication-instance"),
+		Status:              dmsString("active"),
+	}
+	if !dmsEventSubscriptionImportable(base) {
+		t.Fatal("active event subscription with supported source type and required fields should be importable")
+	}
+
+	tests := []struct {
+		name         string
+		subscription dmstypes.EventSubscription
+	}{
+		{name: "empty status", subscription: dmstypes.EventSubscription{
+			EventCategoriesList: []string{"creation"},
+			SnsTopicArn:         dmsString("arn:aws:sns:us-east-1:123456789012:dms-events"),
+			SourceType:          dmsString("replication-instance"),
+		}},
+		{name: "creating status", subscription: dmstypes.EventSubscription{
+			EventCategoriesList: []string{"creation"},
+			SnsTopicArn:         dmsString("arn:aws:sns:us-east-1:123456789012:dms-events"),
+			SourceType:          dmsString("replication-instance"),
+			Status:              dmsString("creating"),
+		}},
+		{name: "no permission status", subscription: dmstypes.EventSubscription{
+			EventCategoriesList: []string{"creation"},
+			SnsTopicArn:         dmsString("arn:aws:sns:us-east-1:123456789012:dms-events"),
+			SourceType:          dmsString("replication-instance"),
+			Status:              dmsString("no-permission"),
+		}},
+		{name: "unsupported source type", subscription: dmstypes.EventSubscription{
+			EventCategoriesList: []string{"creation"},
+			SnsTopicArn:         dmsString("arn:aws:sns:us-east-1:123456789012:dms-events"),
+			SourceType:          dmsString("security-group"),
+			Status:              dmsString("active"),
+		}},
+		{name: "empty sns topic arn", subscription: dmstypes.EventSubscription{
+			EventCategoriesList: []string{"creation"},
+			SourceType:          dmsString("replication-instance"),
+			Status:              dmsString("active"),
+		}},
+		{name: "empty event categories", subscription: dmstypes.EventSubscription{
+			SnsTopicArn: dmsString("arn:aws:sns:us-east-1:123456789012:dms-events"),
+			SourceType:  dmsString("replication-instance"),
+			Status:      dmsString("active"),
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if dmsEventSubscriptionImportable(tt.subscription) {
+				t.Fatal("event subscription should not be importable")
+			}
+		})
+	}
+}
+
+func TestDMSEventSubscriptionSourceTypeImportable(t *testing.T) {
+	for _, sourceType := range []string{"replication-instance", "replication-task"} {
+		if !dmsEventSubscriptionSourceTypeImportable(sourceType) {
+			t.Fatalf("source type %q should be importable", sourceType)
+		}
+	}
+	for _, sourceType := range []string{"", "replication-server", "security-group"} {
+		if dmsEventSubscriptionSourceTypeImportable(sourceType) {
+			t.Fatalf("source type %q should not be importable", sourceType)
+		}
 	}
 }
 

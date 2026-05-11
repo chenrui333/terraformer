@@ -203,7 +203,9 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
 *   `devicefarm`
     * `aws_devicefarm_project`
 *   `dms`
+    * `aws_dms_certificate`
     * `aws_dms_endpoint`
+    * `aws_dms_event_subscription`
     * `aws_dms_replication_instance`
     * `aws_dms_replication_subnet_group`
     * `aws_dms_replication_task`

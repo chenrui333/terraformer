@@ -4,6 +4,7 @@ package aws
 
 import (
 	"context"
+	"log"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/databasemigrationservice"
@@ -12,10 +13,17 @@ import (
 )
 
 const (
+	dmsCertificateResourceType            = "aws_dms_certificate"
+	dmsEventSubscriptionResourceType      = "aws_dms_event_subscription"
 	dmsReplicationInstanceResourceType    = "aws_dms_replication_instance"
 	dmsReplicationSubnetGroupResourceType = "aws_dms_replication_subnet_group"
 	dmsEndpointResourceType               = "aws_dms_endpoint"
 	dmsReplicationTaskResourceType        = "aws_dms_replication_task"
+
+	dmsEventSubscriptionStatusActive = "active"
+
+	dmsEventSubscriptionSourceTypeReplicationInstance = "replication-instance"
+	dmsEventSubscriptionSourceTypeReplicationTask     = "replication-task"
 
 	dmsReplicationInstanceStatusAvailable = "available"
 	dmsReplicationTaskStatusReady         = "ready"
@@ -29,6 +37,19 @@ var dmsAllowEmptyValues = []string{"tags."}
 
 type DmsGenerator struct {
 	AWSService
+}
+
+type dmsOptionalResourceLoader struct {
+	name string
+	load func() error
+}
+
+func (g *DmsGenerator) loadOptionalResources(loaders []dmsOptionalResourceLoader) {
+	for _, loader := range loaders {
+		if err := loader.load(); err != nil {
+			log.Printf("Skipping DMS %s: %v", loader.name, err)
+		}
+	}
 }
 
 func (g *DmsGenerator) InitResources() error {
@@ -50,6 +71,10 @@ func (g *DmsGenerator) InitResources() error {
 	if err := g.loadReplicationTasks(svc); err != nil {
 		return err
 	}
+	g.loadOptionalResources([]dmsOptionalResourceLoader{
+		{name: "certificates", load: func() error { return g.loadCertificates(svc) }},
+		{name: "event subscriptions", load: func() error { return g.loadEventSubscriptions(svc) }},
+	})
 
 	return nil
 }
@@ -116,6 +141,66 @@ func (g *DmsGenerator) loadReplicationTasks(svc *databasemigrationservice.Client
 		}
 	}
 	return nil
+}
+
+func (g *DmsGenerator) loadCertificates(svc *databasemigrationservice.Client) error {
+	p := databasemigrationservice.NewDescribeCertificatesPaginator(svc, &databasemigrationservice.DescribeCertificatesInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, certificate := range page.Certificates {
+			if resource, ok := newDMSCertificateResource(certificate); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+	}
+	return nil
+}
+
+func (g *DmsGenerator) loadEventSubscriptions(svc *databasemigrationservice.Client) error {
+	p := databasemigrationservice.NewDescribeEventSubscriptionsPaginator(svc, &databasemigrationservice.DescribeEventSubscriptionsInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, subscription := range page.EventSubscriptionsList {
+			if resource, ok := newDMSEventSubscriptionResource(subscription); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+	}
+	return nil
+}
+
+func newDMSCertificateResource(certificate dmstypes.Certificate) (terraformutils.Resource, bool) {
+	identifier := StringValue(certificate.CertificateIdentifier)
+	if identifier == "" || !dmsCertificateImportable(certificate) {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewSimpleResource(
+		identifier,
+		dmsResourceName("certificate", identifier),
+		dmsCertificateResourceType,
+		"aws",
+		dmsAllowEmptyValues,
+	), true
+}
+
+func newDMSEventSubscriptionResource(subscription dmstypes.EventSubscription) (terraformutils.Resource, bool) {
+	name := StringValue(subscription.CustSubscriptionId)
+	if name == "" || !dmsEventSubscriptionImportable(subscription) {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewSimpleResource(
+		name,
+		dmsResourceName("event-subscription", name),
+		dmsEventSubscriptionResourceType,
+		"aws",
+		dmsAllowEmptyValues,
+	), true
 }
 
 func newDMSReplicationInstanceResource(instance dmstypes.ReplicationInstance) (terraformutils.Resource, bool) {
@@ -185,6 +270,26 @@ func dmsResourceName(parts ...string) string {
 		return "dms-resource"
 	}
 	return strings.Join(cleanParts, "/")
+}
+
+func dmsCertificateImportable(certificate dmstypes.Certificate) bool {
+	return StringValue(certificate.CertificatePem) != "" || len(certificate.CertificateWallet) > 0
+}
+
+func dmsEventSubscriptionImportable(subscription dmstypes.EventSubscription) bool {
+	return strings.EqualFold(StringValue(subscription.Status), dmsEventSubscriptionStatusActive) &&
+		dmsEventSubscriptionSourceTypeImportable(StringValue(subscription.SourceType)) &&
+		StringValue(subscription.SnsTopicArn) != "" &&
+		len(subscription.EventCategoriesList) > 0
+}
+
+func dmsEventSubscriptionSourceTypeImportable(sourceType string) bool {
+	switch strings.ToLower(sourceType) {
+	case dmsEventSubscriptionSourceTypeReplicationInstance, dmsEventSubscriptionSourceTypeReplicationTask:
+		return true
+	default:
+		return false
+	}
 }
 
 func dmsReplicationInstanceImportable(instance dmstypes.ReplicationInstance) bool {
