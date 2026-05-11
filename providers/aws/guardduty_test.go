@@ -3,6 +3,7 @@
 package aws
 
 import (
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -180,6 +181,8 @@ func TestGuardDutyPostConvertHookPreservesUpdatedAtMillisecondsAfterRefresh(t *t
 	if !ok {
 		t.Fatal("expected filter resource")
 	}
+	resource.InstanceState.Attributes["finding_criteria.0.criterion.0.greater_than"] = "2024-03-09T16:00:00Z"
+	resource.InstanceState.SetTypedAttributes(json.RawMessage(`{"finding_criteria":[{"criterion":[{"field":"updatedAt","greater_than":"2024-03-09T16:00:00Z"}]}]}`))
 	resource.Item = map[string]interface{}{
 		guardDutyFilterUpdatedAtCriteriaAdditionalField: resource.AdditionalFields[guardDutyFilterUpdatedAtCriteriaAdditionalField],
 		"finding_criteria": []interface{}{
@@ -207,6 +210,21 @@ func TestGuardDutyPostConvertHookPreservesUpdatedAtMillisecondsAfterRefresh(t *t
 	criterion := findingCriteria["criterion"].([]interface{})[0].(map[string]interface{})
 	if got, want := criterion["greater_than"], "2024-03-09T16:00:00.123Z"; got != want {
 		t.Fatalf("greater_than = %q, want %q", got, want)
+	}
+	if got, want := g.Resources[0].InstanceState.Attributes["finding_criteria.0.criterion.0.greater_than"], "2024-03-09T16:00:00.123Z"; got != want {
+		t.Fatalf("state greater_than = %q, want %q", got, want)
+	}
+	var typedAttributes map[string]interface{}
+	if err := json.Unmarshal(g.Resources[0].InstanceState.TypedAttributes, &typedAttributes); err != nil {
+		t.Fatalf("TypedAttributes unmarshal error: %v", err)
+	}
+	typedFindingCriteria := typedAttributes["finding_criteria"].([]interface{})[0].(map[string]interface{})
+	typedCriterion := typedFindingCriteria["criterion"].([]interface{})[0].(map[string]interface{})
+	if got, want := typedCriterion["greater_than"], "2024-03-09T16:00:00.123Z"; got != want {
+		t.Fatalf("typed greater_than = %q, want %q", got, want)
+	}
+	if !g.Resources[0].InstanceState.HasCurrentTypedAttributes() {
+		t.Fatal("typed attributes should track patched flat state")
 	}
 }
 

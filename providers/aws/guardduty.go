@@ -4,6 +4,7 @@ package aws
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
@@ -15,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/guardduty"
 	guarddutytypes "github.com/aws/aws-sdk-go-v2/service/guardduty/types"
 	"github.com/chenrui333/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 )
 
 const (
@@ -88,7 +90,7 @@ func (g *GuardDutyGenerator) PostConvertHook() error {
 			continue
 		}
 		updatedAtCriteria := guardDutyUpdatedAtCriteriaFromAdditionalFields(resource.AdditionalFields)
-		guardDutyRestoreUpdatedAtCriteria(resource.Item, updatedAtCriteria)
+		guardDutyRestoreUpdatedAtCriteria(resource, updatedAtCriteria)
 	}
 	return nil
 }
@@ -225,7 +227,7 @@ func newGuardDutyDetectorResource(detectorID string, detector *guardduty.GetDete
 	if detector.FindingPublishingFrequency != "" {
 		attributes["finding_publishing_frequency"] = string(detector.FindingPublishingFrequency)
 	}
-	addGuardDutyDataSources(attributes, detector.DataSources)
+	addGuardDutyDataSources(attributes, detector.DataSources) //nolint:staticcheck // DataSources backs Terraform's deprecated datasources block.
 
 	return terraformutils.NewResource(
 		detectorID,
@@ -468,7 +470,19 @@ func guardDutyUpdatedAtCriteriaFromAdditionalFields(additionalFields map[string]
 	}
 }
 
-func guardDutyRestoreUpdatedAtCriteria(item map[string]interface{}, updatedAtCriteria map[string]string) {
+func guardDutyRestoreUpdatedAtCriteria(resource *terraformutils.Resource, updatedAtCriteria map[string]string) {
+	if resource == nil {
+		return
+	}
+	guardDutyRestoreUpdatedAtCriteriaItem(resource.Item, updatedAtCriteria)
+	if resource.InstanceState == nil {
+		return
+	}
+	guardDutyRestoreUpdatedAtCriteriaAttributes(resource.InstanceState.Attributes, updatedAtCriteria)
+	guardDutyRestoreUpdatedAtCriteriaTypedAttributes(resource.InstanceState, updatedAtCriteria)
+}
+
+func guardDutyRestoreUpdatedAtCriteriaItem(item map[string]interface{}, updatedAtCriteria map[string]string) {
 	if item == nil {
 		return
 	}
@@ -494,6 +508,40 @@ func guardDutyRestoreUpdatedAtCriteria(item map[string]interface{}, updatedAtCri
 			}
 		}
 	}
+}
+
+func guardDutyRestoreUpdatedAtCriteriaAttributes(attributes map[string]string, updatedAtCriteria map[string]string) {
+	if len(attributes) == 0 || len(updatedAtCriteria) == 0 {
+		return
+	}
+	for key, value := range attributes {
+		if value != guardDutyUpdatedAtField || !strings.HasPrefix(key, "finding_criteria.") || !strings.HasSuffix(key, ".field") {
+			continue
+		}
+		criterionPrefix := strings.TrimSuffix(key, ".field")
+		for conditionKey, conditionValue := range updatedAtCriteria {
+			attributeKey := criterionPrefix + "." + conditionKey
+			if _, ok := attributes[attributeKey]; ok {
+				attributes[attributeKey] = conditionValue
+			}
+		}
+	}
+}
+
+func guardDutyRestoreUpdatedAtCriteriaTypedAttributes(state *tfcompat.InstanceState, updatedAtCriteria map[string]string) {
+	if state == nil || len(state.TypedAttributes) == 0 || len(updatedAtCriteria) == 0 {
+		return
+	}
+	var attributes map[string]interface{}
+	if err := json.Unmarshal(state.TypedAttributes, &attributes); err != nil {
+		return
+	}
+	guardDutyRestoreUpdatedAtCriteriaItem(attributes, updatedAtCriteria)
+	raw, err := json.Marshal(attributes)
+	if err != nil {
+		return
+	}
+	state.SetTypedAttributes(raw)
 }
 
 func guardDutyInterfaceSlice(value interface{}) []interface{} {
