@@ -35,7 +35,7 @@ func (g *MediaPackageV2Generator) GetChannelGroups(svc *mediapackagev2.Client) e
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
 		if mediaPackageV2ResourceNotFound(err) {
-			continue
+			return nil
 		}
 		if err != nil {
 			return err

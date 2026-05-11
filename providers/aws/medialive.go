@@ -48,10 +48,12 @@ func (g *MediaLiveGenerator) InitResources() error {
 		return err
 	}
 
+	// Keep multiplex discovery optional so follow-up coverage does not block existing MediaLive imports.
 	if err := g.GetMultiplexes(svc); err != nil {
-		if !mediaLiveResourceNotFound(err) {
-			log.Printf("skipping optional MediaLive multiplex discovery: %v", err)
+		if mediaLiveResourceNotFound(err) {
+			return nil
 		}
+		log.Printf("skipping optional MediaLive multiplex discovery: %v", err)
 	}
 
 	return nil
@@ -131,9 +133,9 @@ func (g *MediaLiveGenerator) GetMultiplexes(svc *medialive.Client) error {
 			multiplexID := StringValue(multiplex.Id)
 			if resource, ok := newMediaLiveMultiplexResource(multiplex); ok {
 				g.Resources = append(g.Resources, resource)
-			}
-			if err := g.GetMultiplexPrograms(svc, multiplexID); err != nil {
-				return err
+				if err := g.GetMultiplexPrograms(svc, multiplexID); err != nil {
+					return err
+				}
 			}
 		}
 	}
