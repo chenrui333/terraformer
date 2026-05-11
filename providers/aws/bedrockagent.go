@@ -14,11 +14,15 @@ import (
 )
 
 const (
+	bedrockAgentAgentActionGroupResourceType              = "aws_bedrockagent_agent_action_group"
 	bedrockAgentAgentResourceType                         = "aws_bedrockagent_agent"
 	bedrockAgentAgentAliasResourceType                    = "aws_bedrockagent_agent_alias"
+	bedrockAgentAgentCollaboratorResourceType             = "aws_bedrockagent_agent_collaborator"
 	bedrockAgentAgentKnowledgeBaseAssociationResourceType = "aws_bedrockagent_agent_knowledge_base_association"
 	bedrockAgentDataSourceResourceType                    = "aws_bedrockagent_data_source"
+	bedrockAgentFlowResourceType                          = "aws_bedrockagent_flow"
 	bedrockAgentKnowledgeBaseResourceType                 = "aws_bedrockagent_knowledge_base"
+	bedrockAgentPromptResourceType                        = "aws_bedrockagent_prompt"
 	bedrockAgentDraftVersion                              = "DRAFT"
 	bedrockAgentImportIDSeparator                         = ","
 	bedrockAgentResourceNameFallback                      = "bedrockagent-resource"
@@ -27,11 +31,15 @@ const (
 var (
 	bedrockAgentAllowEmptyValues = []string{"tags."}
 	bedrockAgentResourceTypes    = []string{
+		bedrockAgentServiceName(bedrockAgentAgentActionGroupResourceType),
 		bedrockAgentServiceName(bedrockAgentAgentResourceType),
 		bedrockAgentServiceName(bedrockAgentAgentAliasResourceType),
+		bedrockAgentServiceName(bedrockAgentAgentCollaboratorResourceType),
 		bedrockAgentServiceName(bedrockAgentAgentKnowledgeBaseAssociationResourceType),
 		bedrockAgentServiceName(bedrockAgentDataSourceResourceType),
+		bedrockAgentServiceName(bedrockAgentFlowResourceType),
 		bedrockAgentServiceName(bedrockAgentKnowledgeBaseResourceType),
+		bedrockAgentServiceName(bedrockAgentPromptResourceType),
 	}
 )
 
@@ -71,9 +79,11 @@ func (g *BedrockAgentGenerator) InitResources() error {
 	svc := bedrockagent.NewFromConfig(config)
 
 	loadAgents := g.shouldLoadBedrockAgentResource(bedrockAgentServiceName(bedrockAgentAgentResourceType))
+	loadAgentActionGroups := g.shouldLoadBedrockAgentResource(bedrockAgentServiceName(bedrockAgentAgentActionGroupResourceType))
 	loadAgentAliases := g.shouldLoadBedrockAgentResource(bedrockAgentServiceName(bedrockAgentAgentAliasResourceType))
+	loadAgentCollaborators := g.shouldLoadBedrockAgentResource(bedrockAgentServiceName(bedrockAgentAgentCollaboratorResourceType))
 	loadAgentKnowledgeBaseAssociations := g.shouldLoadBedrockAgentResource(bedrockAgentServiceName(bedrockAgentAgentKnowledgeBaseAssociationResourceType))
-	if loadAgents || loadAgentAliases || loadAgentKnowledgeBaseAssociations {
+	if loadAgents || loadAgentActionGroups || loadAgentAliases || loadAgentCollaborators || loadAgentKnowledgeBaseAssociations {
 		agents, err := listBedrockAgentAgents(svc)
 		if err != nil {
 			return err
@@ -81,8 +91,18 @@ func (g *BedrockAgentGenerator) InitResources() error {
 		if loadAgents {
 			g.loadAgents(agents)
 		}
+		if loadAgentActionGroups {
+			if err := g.loadAgentActionGroups(svc, agents); err != nil {
+				return err
+			}
+		}
 		if loadAgentAliases {
 			if err := g.loadAgentAliases(svc, agents); err != nil {
+				return err
+			}
+		}
+		if loadAgentCollaborators {
+			if err := g.loadAgentCollaborators(svc, agents); err != nil {
 				return err
 			}
 		}
@@ -90,6 +110,26 @@ func (g *BedrockAgentGenerator) InitResources() error {
 			if err := g.loadAgentKnowledgeBaseAssociations(svc, agents); err != nil {
 				return err
 			}
+		}
+	}
+
+	if g.shouldLoadBedrockAgentResource(bedrockAgentServiceName(bedrockAgentFlowResourceType)) {
+		flows, err := listBedrockAgentFlows(svc)
+		if err != nil {
+			return err
+		}
+		if err := g.loadFlows(svc, flows); err != nil {
+			return err
+		}
+	}
+
+	if g.shouldLoadBedrockAgentResource(bedrockAgentServiceName(bedrockAgentPromptResourceType)) {
+		prompts, err := listBedrockAgentPrompts(svc)
+		if err != nil {
+			return err
+		}
+		if err := g.loadPrompts(svc, prompts); err != nil {
+			return err
 		}
 	}
 
@@ -179,12 +219,99 @@ func listBedrockAgentKnowledgeBases(svc *bedrockagent.Client) ([]bedrockagenttyp
 	return knowledgeBases, nil
 }
 
+func listBedrockAgentFlows(svc *bedrockagent.Client) ([]bedrockagenttypes.FlowSummary, error) {
+	p := bedrockagent.NewListFlowsPaginator(svc, &bedrockagent.ListFlowsInput{})
+	flows := []bedrockagenttypes.FlowSummary{}
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return nil, err
+		}
+		flows = append(flows, page.FlowSummaries...)
+	}
+	return flows, nil
+}
+
+func listBedrockAgentPrompts(svc *bedrockagent.Client) ([]bedrockagenttypes.PromptSummary, error) {
+	p := bedrockagent.NewListPromptsPaginator(svc, &bedrockagent.ListPromptsInput{})
+	prompts := []bedrockagenttypes.PromptSummary{}
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return nil, err
+		}
+		prompts = append(prompts, page.PromptSummaries...)
+	}
+	return prompts, nil
+}
+
 func (g *BedrockAgentGenerator) loadAgents(agents []bedrockagenttypes.AgentSummary) {
 	for _, agent := range agents {
 		if resource, ok := newBedrockAgentAgentResource(agent); ok {
 			g.Resources = append(g.Resources, resource)
 		}
 	}
+}
+
+func (g *BedrockAgentGenerator) loadAgentActionGroups(svc *bedrockagent.Client, agents []bedrockagenttypes.AgentSummary) error {
+	for _, agent := range agents {
+		agentID := StringValue(agent.AgentId)
+		if agentID == "" || !bedrockAgentAgentImportable(agent.AgentStatus) {
+			continue
+		}
+		actionGroups, err := listBedrockAgentActionGroups(svc, agentID, bedrockAgentDraftVersion)
+		if err != nil {
+			if bedrockAgentResourceNotFound(err) {
+				continue
+			}
+			return err
+		}
+		for _, actionGroup := range actionGroups {
+			actionGroupID := StringValue(actionGroup.ActionGroupId)
+			if actionGroupID == "" || !bedrockAgentActionGroupImportable(actionGroup.ActionGroupState) {
+				continue
+			}
+			agentActionGroup, err := getBedrockAgentActionGroup(svc, actionGroupID, agentID, bedrockAgentDraftVersion)
+			if err != nil {
+				if bedrockAgentResourceNotFound(err) {
+					continue
+				}
+				return err
+			}
+			if resource, ok := newBedrockAgentAgentActionGroupResource(agentActionGroup, agent.AgentStatus); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+	}
+	return nil
+}
+
+func listBedrockAgentActionGroups(svc *bedrockagent.Client, agentID, agentVersion string) ([]bedrockagenttypes.ActionGroupSummary, error) {
+	p := bedrockagent.NewListAgentActionGroupsPaginator(svc, &bedrockagent.ListAgentActionGroupsInput{
+		AgentId:      &agentID,
+		AgentVersion: &agentVersion,
+	})
+	actionGroups := []bedrockagenttypes.ActionGroupSummary{}
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return nil, err
+		}
+		actionGroups = append(actionGroups, page.ActionGroupSummaries...)
+	}
+	return actionGroups, nil
+}
+
+func getBedrockAgentActionGroup(svc *bedrockagent.Client, actionGroupID, agentID, agentVersion string) (*bedrockagenttypes.AgentActionGroup, error) {
+	output, err := svc.GetAgentActionGroup(context.TODO(), &bedrockagent.GetAgentActionGroupInput{
+		ActionGroupId: &actionGroupID,
+		AgentId:       &agentID,
+		AgentVersion:  &agentVersion,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return output.AgentActionGroup, nil
 }
 
 func (g *BedrockAgentGenerator) loadAgentAliases(svc *bedrockagent.Client, agents []bedrockagenttypes.AgentSummary) error {
@@ -212,6 +339,67 @@ func (g *BedrockAgentGenerator) loadAgentAliases(svc *bedrockagent.Client, agent
 		}
 	}
 	return nil
+}
+
+func (g *BedrockAgentGenerator) loadAgentCollaborators(svc *bedrockagent.Client, agents []bedrockagenttypes.AgentSummary) error {
+	for _, agent := range agents {
+		agentID := StringValue(agent.AgentId)
+		if agentID == "" || !bedrockAgentAgentImportable(agent.AgentStatus) {
+			continue
+		}
+		collaborators, err := listBedrockAgentCollaborators(svc, agentID, bedrockAgentDraftVersion)
+		if err != nil {
+			if bedrockAgentResourceNotFound(err) {
+				continue
+			}
+			return err
+		}
+		for _, collaborator := range collaborators {
+			collaboratorID := StringValue(collaborator.CollaboratorId)
+			if collaboratorID == "" {
+				continue
+			}
+			agentCollaborator, err := getBedrockAgentCollaborator(svc, agentID, bedrockAgentDraftVersion, collaboratorID)
+			if err != nil {
+				if bedrockAgentResourceNotFound(err) {
+					continue
+				}
+				return err
+			}
+			if resource, ok := newBedrockAgentAgentCollaboratorResource(agentCollaborator, agent.AgentStatus); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+	}
+	return nil
+}
+
+func listBedrockAgentCollaborators(svc *bedrockagent.Client, agentID, agentVersion string) ([]bedrockagenttypes.AgentCollaboratorSummary, error) {
+	p := bedrockagent.NewListAgentCollaboratorsPaginator(svc, &bedrockagent.ListAgentCollaboratorsInput{
+		AgentId:      &agentID,
+		AgentVersion: &agentVersion,
+	})
+	collaborators := []bedrockagenttypes.AgentCollaboratorSummary{}
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return nil, err
+		}
+		collaborators = append(collaborators, page.AgentCollaboratorSummaries...)
+	}
+	return collaborators, nil
+}
+
+func getBedrockAgentCollaborator(svc *bedrockagent.Client, agentID, agentVersion, collaboratorID string) (*bedrockagenttypes.AgentCollaborator, error) {
+	output, err := svc.GetAgentCollaborator(context.TODO(), &bedrockagent.GetAgentCollaboratorInput{
+		AgentId:        &agentID,
+		AgentVersion:   &agentVersion,
+		CollaboratorId: &collaboratorID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return output.AgentCollaborator, nil
 }
 
 func (g *BedrockAgentGenerator) loadAgentKnowledgeBaseAssociations(svc *bedrockagent.Client, agents []bedrockagenttypes.AgentSummary) error {
@@ -364,6 +552,66 @@ func getBedrockAgentDataSource(svc *bedrockagent.Client, knowledgeBaseID, dataSo
 	return output.DataSource, nil
 }
 
+func (g *BedrockAgentGenerator) loadFlows(svc *bedrockagent.Client, flows []bedrockagenttypes.FlowSummary) error {
+	for _, flow := range flows {
+		flowID := StringValue(flow.Id)
+		if flowID == "" || !bedrockAgentFlowImportable(flow.Status) {
+			continue
+		}
+		flowOutput, err := getBedrockAgentFlow(svc, flowID)
+		if err != nil {
+			if bedrockAgentResourceNotFound(err) {
+				continue
+			}
+			return err
+		}
+		if resource, ok := newBedrockAgentFlowResource(flowOutput); ok {
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
+func getBedrockAgentFlow(svc *bedrockagent.Client, flowID string) (*bedrockagent.GetFlowOutput, error) {
+	output, err := svc.GetFlow(context.TODO(), &bedrockagent.GetFlowInput{
+		FlowIdentifier: &flowID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return output, nil
+}
+
+func (g *BedrockAgentGenerator) loadPrompts(svc *bedrockagent.Client, prompts []bedrockagenttypes.PromptSummary) error {
+	for _, prompt := range prompts {
+		promptID := StringValue(prompt.Id)
+		if promptID == "" {
+			continue
+		}
+		promptOutput, err := getBedrockAgentPrompt(svc, promptID)
+		if err != nil {
+			if bedrockAgentResourceNotFound(err) {
+				continue
+			}
+			return err
+		}
+		if resource, ok := newBedrockAgentPromptResource(promptOutput); ok {
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
+func getBedrockAgentPrompt(svc *bedrockagent.Client, promptID string) (*bedrockagent.GetPromptOutput, error) {
+	output, err := svc.GetPrompt(context.TODO(), &bedrockagent.GetPromptInput{
+		PromptIdentifier: &promptID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return output, nil
+}
+
 func newBedrockAgentAgentResource(agent bedrockagenttypes.AgentSummary) (terraformutils.Resource, bool) {
 	agentID := StringValue(agent.AgentId)
 	agentName := StringValue(agent.AgentName)
@@ -404,6 +652,84 @@ func newBedrockAgentAgentAliasResource(agentID string, alias bedrockagenttypes.A
 			"agent_alias_name": agentAliasName,
 			"agent_id":         agentID,
 		},
+		bedrockAgentAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
+func newBedrockAgentAgentActionGroupResource(actionGroup *bedrockagenttypes.AgentActionGroup, agentStatus bedrockagenttypes.AgentStatus) (terraformutils.Resource, bool) {
+	if actionGroup == nil {
+		return terraformutils.Resource{}, false
+	}
+	actionGroupID := StringValue(actionGroup.ActionGroupId)
+	actionGroupName := StringValue(actionGroup.ActionGroupName)
+	agentID := StringValue(actionGroup.AgentId)
+	agentVersion := StringValue(actionGroup.AgentVersion)
+	if actionGroupID == "" ||
+		actionGroupName == "" ||
+		agentID == "" ||
+		agentVersion == "" ||
+		!bedrockAgentActionGroupImportable(actionGroup.ActionGroupState) {
+		return terraformutils.Resource{}, false
+	}
+	attributes := map[string]string{
+		"action_group_id":    actionGroupID,
+		"action_group_name":  actionGroupName,
+		"action_group_state": string(actionGroup.ActionGroupState),
+		"agent_id":           agentID,
+		"agent_version":      agentVersion,
+	}
+	bedrockAgentAddStringAttribute(attributes, "description", actionGroup.Description)
+	if actionGroup.ParentActionSignature != "" {
+		attributes["parent_action_group_signature"] = string(actionGroup.ParentActionSignature)
+	}
+	bedrockAgentAddPrepareAgentAttribute(attributes, agentStatus)
+	return terraformutils.NewResource(
+		bedrockAgentAgentActionGroupImportID(actionGroupID, agentID, agentVersion),
+		bedrockAgentResourceName("agent-action-group", agentID, agentVersion, actionGroupName, actionGroupID),
+		bedrockAgentAgentActionGroupResourceType,
+		"aws",
+		attributes,
+		bedrockAgentAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
+func newBedrockAgentAgentCollaboratorResource(collaborator *bedrockagenttypes.AgentCollaborator, agentStatus bedrockagenttypes.AgentStatus) (terraformutils.Resource, bool) {
+	if collaborator == nil || collaborator.AgentDescriptor == nil {
+		return terraformutils.Resource{}, false
+	}
+	agentID := StringValue(collaborator.AgentId)
+	agentVersion := StringValue(collaborator.AgentVersion)
+	collaboratorID := StringValue(collaborator.CollaboratorId)
+	collaboratorName := StringValue(collaborator.CollaboratorName)
+	collaborationInstruction := StringValue(collaborator.CollaborationInstruction)
+	aliasARN := StringValue(collaborator.AgentDescriptor.AliasArn)
+	if agentID == "" ||
+		agentVersion == "" ||
+		collaboratorID == "" ||
+		collaboratorName == "" ||
+		collaborationInstruction == "" ||
+		aliasARN == "" ||
+		!bedrockAgentRelayConversationHistoryImportable(collaborator.RelayConversationHistory) {
+		return terraformutils.Resource{}, false
+	}
+	attributes := map[string]string{
+		"agent_descriptor.0.alias_arn": aliasARN,
+		"agent_id":                     agentID,
+		"agent_version":                agentVersion,
+		"collaboration_instruction":    collaborationInstruction,
+		"collaborator_id":              collaboratorID,
+		"collaborator_name":            collaboratorName,
+		"relay_conversation_history":   string(collaborator.RelayConversationHistory),
+	}
+	bedrockAgentAddPrepareAgentAttribute(attributes, agentStatus)
+	return terraformutils.NewResource(
+		bedrockAgentAgentCollaboratorImportID(agentID, agentVersion, collaboratorID),
+		bedrockAgentResourceName("agent-collaborator", agentID, agentVersion, collaboratorName, collaboratorID),
+		bedrockAgentAgentCollaboratorResourceType,
+		"aws",
+		attributes,
 		bedrockAgentAllowEmptyValues,
 		map[string]interface{}{},
 	), true
@@ -472,6 +798,39 @@ func newBedrockAgentKnowledgeBaseResource(knowledgeBase *bedrockagenttypes.Knowl
 	), true
 }
 
+func newBedrockAgentFlowResource(flow *bedrockagent.GetFlowOutput) (terraformutils.Resource, bool) {
+	if flow == nil {
+		return terraformutils.Resource{}, false
+	}
+	flowID := StringValue(flow.Id)
+	flowName := StringValue(flow.Name)
+	executionRoleARN := StringValue(flow.ExecutionRoleArn)
+	if flowID == "" ||
+		flowName == "" ||
+		executionRoleARN == "" ||
+		!bedrockAgentFlowImportable(flow.Status) {
+		return terraformutils.Resource{}, false
+	}
+	attributes := map[string]string{
+		"execution_role_arn": executionRoleARN,
+		"id":                 flowID,
+		"name":               flowName,
+		"status":             string(flow.Status),
+	}
+	bedrockAgentAddStringAttribute(attributes, "customer_encryption_key_arn", flow.CustomerEncryptionKeyArn)
+	bedrockAgentAddStringAttribute(attributes, "description", flow.Description)
+	bedrockAgentAddStringAttribute(attributes, "version", flow.Version)
+	return terraformutils.NewResource(
+		bedrockAgentFlowImportID(flowID),
+		bedrockAgentResourceName("flow", flowName, flowID),
+		bedrockAgentFlowResourceType,
+		"aws",
+		attributes,
+		bedrockAgentAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
 func newBedrockAgentDataSourceResource(dataSource *bedrockagenttypes.DataSource) (terraformutils.Resource, bool) {
 	if dataSource == nil {
 		return terraformutils.Resource{}, false
@@ -501,8 +860,44 @@ func newBedrockAgentDataSourceResource(dataSource *bedrockagenttypes.DataSource)
 	), true
 }
 
+func newBedrockAgentPromptResource(prompt *bedrockagent.GetPromptOutput) (terraformutils.Resource, bool) {
+	if prompt == nil {
+		return terraformutils.Resource{}, false
+	}
+	promptID := StringValue(prompt.Id)
+	promptName := StringValue(prompt.Name)
+	if promptID == "" || promptName == "" {
+		return terraformutils.Resource{}, false
+	}
+	attributes := map[string]string{
+		"id":   promptID,
+		"name": promptName,
+	}
+	bedrockAgentAddStringAttribute(attributes, "customer_encryption_key_arn", prompt.CustomerEncryptionKeyArn)
+	bedrockAgentAddStringAttribute(attributes, "default_variant", prompt.DefaultVariant)
+	bedrockAgentAddStringAttribute(attributes, "description", prompt.Description)
+	bedrockAgentAddStringAttribute(attributes, "version", prompt.Version)
+	return terraformutils.NewResource(
+		bedrockAgentPromptImportID(promptID),
+		bedrockAgentResourceName("prompt", promptName, promptID),
+		bedrockAgentPromptResourceType,
+		"aws",
+		attributes,
+		bedrockAgentAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
 func bedrockAgentAgentAliasImportID(agentAliasID, agentID string) string {
 	return agentAliasID + bedrockAgentImportIDSeparator + agentID
+}
+
+func bedrockAgentAgentActionGroupImportID(actionGroupID, agentID, agentVersion string) string {
+	return actionGroupID + bedrockAgentImportIDSeparator + agentID + bedrockAgentImportIDSeparator + agentVersion
+}
+
+func bedrockAgentAgentCollaboratorImportID(agentID, agentVersion, collaboratorID string) string {
+	return agentID + bedrockAgentImportIDSeparator + agentVersion + bedrockAgentImportIDSeparator + collaboratorID
 }
 
 func bedrockAgentAgentKnowledgeBaseAssociationImportID(agentID, agentVersion, knowledgeBaseID string) string {
@@ -511,6 +906,14 @@ func bedrockAgentAgentKnowledgeBaseAssociationImportID(agentID, agentVersion, kn
 
 func bedrockAgentDataSourceImportID(dataSourceID, knowledgeBaseID string) string {
 	return dataSourceID + bedrockAgentImportIDSeparator + knowledgeBaseID
+}
+
+func bedrockAgentFlowImportID(flowID string) string {
+	return flowID
+}
+
+func bedrockAgentPromptImportID(promptID string) string {
+	return promptID
 }
 
 func bedrockAgentResourceName(parts ...string) string {
@@ -534,6 +937,15 @@ func bedrockAgentAgentAliasImportable(status bedrockagenttypes.AgentAliasStatus)
 	return status == bedrockagenttypes.AgentAliasStatusPrepared || status == bedrockagenttypes.AgentAliasStatusDissociated
 }
 
+func bedrockAgentActionGroupImportable(state bedrockagenttypes.ActionGroupState) bool {
+	return state == bedrockagenttypes.ActionGroupStateEnabled || state == bedrockagenttypes.ActionGroupStateDisabled
+}
+
+func bedrockAgentRelayConversationHistoryImportable(history bedrockagenttypes.RelayConversationHistory) bool {
+	return history == bedrockagenttypes.RelayConversationHistoryToCollaborator ||
+		history == bedrockagenttypes.RelayConversationHistoryDisabled
+}
+
 func bedrockAgentAgentKnowledgeBaseAssociationImportable(agentVersion string, state bedrockagenttypes.KnowledgeBaseState) bool {
 	return agentVersion == bedrockAgentDraftVersion &&
 		(state == bedrockagenttypes.KnowledgeBaseStateEnabled || state == bedrockagenttypes.KnowledgeBaseStateDisabled)
@@ -545,6 +957,10 @@ func bedrockAgentKnowledgeBaseImportable(status bedrockagenttypes.KnowledgeBaseS
 
 func bedrockAgentDataSourceImportable(status bedrockagenttypes.DataSourceStatus) bool {
 	return status == bedrockagenttypes.DataSourceStatusAvailable
+}
+
+func bedrockAgentFlowImportable(status bedrockagenttypes.FlowStatus) bool {
+	return status == bedrockagenttypes.FlowStatusPrepared || status == bedrockagenttypes.FlowStatusNotPrepared
 }
 
 func bedrockAgentKnowledgeBaseConfigurationImportable(config *bedrockagenttypes.KnowledgeBaseConfiguration) bool {
@@ -614,6 +1030,18 @@ func bedrockAgentDataSourceConfigurationImportable(config *bedrockagenttypes.Dat
 		return true
 	default:
 		return false
+	}
+}
+
+func bedrockAgentAddStringAttribute(attributes map[string]string, name string, value *string) {
+	if StringValue(value) != "" {
+		attributes[name] = StringValue(value)
+	}
+}
+
+func bedrockAgentAddPrepareAgentAttribute(attributes map[string]string, agentStatus bedrockagenttypes.AgentStatus) {
+	if agentStatus == bedrockagenttypes.AgentStatusNotPrepared {
+		attributes["prepare_agent"] = "false"
 	}
 }
 

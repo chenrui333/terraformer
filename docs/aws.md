@@ -140,10 +140,14 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_bedrock_provisioned_model_throughput`
 *   `bedrockagent`
     * `aws_bedrockagent_agent`
+    * `aws_bedrockagent_agent_action_group`
     * `aws_bedrockagent_agent_alias`
+    * `aws_bedrockagent_agent_collaborator`
     * `aws_bedrockagent_agent_knowledge_base_association`
     * `aws_bedrockagent_data_source`
+    * `aws_bedrockagent_flow`
     * `aws_bedrockagent_knowledge_base`
+    * `aws_bedrockagent_prompt`
 *   `budgets`
     * `aws_budgets_budget`
 *   `cloud9`
