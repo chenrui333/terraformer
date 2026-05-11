@@ -14,20 +14,14 @@ import (
 )
 
 const (
-	transcribeLanguageModelResourceType     = "aws_transcribe_language_model"
-	transcribeMedicalVocabularyResourceType = "aws_transcribe_medical_vocabulary"
-	transcribeVocabularyResourceType        = "aws_transcribe_vocabulary"
-	transcribeVocabularyFilterResourceType  = "aws_transcribe_vocabulary_filter"
-	transcribeResourceNameFallback          = "transcribe-resource"
+	transcribeLanguageModelResourceType = "aws_transcribe_language_model"
+	transcribeResourceNameFallback      = "transcribe-resource"
 )
 
 var (
 	transcribeAllowEmptyValues = []string{"tags."}
 	transcribeResourceTypes    = []string{
 		transcribeServiceName(transcribeLanguageModelResourceType),
-		transcribeServiceName(transcribeMedicalVocabularyResourceType),
-		transcribeServiceName(transcribeVocabularyFilterResourceType),
-		transcribeServiceName(transcribeVocabularyResourceType),
 	}
 )
 
@@ -71,21 +65,6 @@ func (g *TranscribeGenerator) InitResources() error {
 
 	if g.shouldLoadTranscribeResource(transcribeServiceName(transcribeLanguageModelResourceType)) {
 		if err := g.loadLanguageModels(svc); err != nil {
-			return err
-		}
-	}
-	if g.shouldLoadTranscribeResource(transcribeServiceName(transcribeMedicalVocabularyResourceType)) {
-		if err := g.loadMedicalVocabularies(svc); err != nil {
-			return err
-		}
-	}
-	if g.shouldLoadTranscribeResource(transcribeServiceName(transcribeVocabularyResourceType)) {
-		if err := g.loadVocabularies(svc); err != nil {
-			return err
-		}
-	}
-	if g.shouldLoadTranscribeResource(transcribeServiceName(transcribeVocabularyFilterResourceType)) {
-		if err := g.loadVocabularyFilters(svc); err != nil {
 			return err
 		}
 	}
@@ -149,63 +128,6 @@ func (g *TranscribeGenerator) loadLanguageModels(svc *transcribe.Client) error {
 	return nil
 }
 
-func (g *TranscribeGenerator) loadMedicalVocabularies(svc *transcribe.Client) error {
-	p := transcribe.NewListMedicalVocabulariesPaginator(svc, &transcribe.ListMedicalVocabulariesInput{})
-	for p.HasMorePages() {
-		page, err := p.NextPage(context.TODO())
-		if transcribeResourceNotFound(err) {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		for _, vocabulary := range page.Vocabularies {
-			if resource, ok := newTranscribeMedicalVocabularyResource(vocabulary); ok {
-				g.Resources = append(g.Resources, resource)
-			}
-		}
-	}
-	return nil
-}
-
-func (g *TranscribeGenerator) loadVocabularies(svc *transcribe.Client) error {
-	p := transcribe.NewListVocabulariesPaginator(svc, &transcribe.ListVocabulariesInput{})
-	for p.HasMorePages() {
-		page, err := p.NextPage(context.TODO())
-		if transcribeResourceNotFound(err) {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		for _, vocabulary := range page.Vocabularies {
-			if resource, ok := newTranscribeVocabularyResource(vocabulary); ok {
-				g.Resources = append(g.Resources, resource)
-			}
-		}
-	}
-	return nil
-}
-
-func (g *TranscribeGenerator) loadVocabularyFilters(svc *transcribe.Client) error {
-	p := transcribe.NewListVocabularyFiltersPaginator(svc, &transcribe.ListVocabularyFiltersInput{})
-	for p.HasMorePages() {
-		page, err := p.NextPage(context.TODO())
-		if transcribeResourceNotFound(err) {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		for _, filter := range page.VocabularyFilters {
-			if resource, ok := newTranscribeVocabularyFilterResource(filter); ok {
-				g.Resources = append(g.Resources, resource)
-			}
-		}
-	}
-	return nil
-}
-
 func newTranscribeLanguageModelResource(model transcribetypes.LanguageModel) (terraformutils.Resource, bool) {
 	name := StringValue(model.ModelName)
 	if name == "" || !transcribeLanguageModelImportable(model.ModelStatus) {
@@ -213,36 +135,6 @@ func newTranscribeLanguageModelResource(model transcribetypes.LanguageModel) (te
 	}
 	return transcribeResource(name, transcribeResourceName("language-model", name), transcribeLanguageModelResourceType, map[string]string{
 		"model_name": name,
-	})
-}
-
-func newTranscribeMedicalVocabularyResource(vocabulary transcribetypes.VocabularyInfo) (terraformutils.Resource, bool) {
-	name := StringValue(vocabulary.VocabularyName)
-	if name == "" || !transcribeVocabularyImportable(vocabulary.VocabularyState) {
-		return terraformutils.Resource{}, false
-	}
-	return transcribeResource(name, transcribeResourceName("medical-vocabulary", name), transcribeMedicalVocabularyResourceType, map[string]string{
-		"vocabulary_name": name,
-	})
-}
-
-func newTranscribeVocabularyResource(vocabulary transcribetypes.VocabularyInfo) (terraformutils.Resource, bool) {
-	name := StringValue(vocabulary.VocabularyName)
-	if name == "" || !transcribeVocabularyImportable(vocabulary.VocabularyState) {
-		return terraformutils.Resource{}, false
-	}
-	return transcribeResource(name, transcribeResourceName("vocabulary", name), transcribeVocabularyResourceType, map[string]string{
-		"vocabulary_name": name,
-	})
-}
-
-func newTranscribeVocabularyFilterResource(filter transcribetypes.VocabularyFilterInfo) (terraformutils.Resource, bool) {
-	name := StringValue(filter.VocabularyFilterName)
-	if name == "" {
-		return terraformutils.Resource{}, false
-	}
-	return transcribeResource(name, transcribeResourceName("vocabulary-filter", name), transcribeVocabularyFilterResourceType, map[string]string{
-		"vocabulary_filter_name": name,
 	})
 }
 
@@ -276,10 +168,6 @@ func transcribeResourceName(parts ...string) string {
 
 func transcribeLanguageModelImportable(status transcribetypes.ModelStatus) bool {
 	return status == transcribetypes.ModelStatusCompleted
-}
-
-func transcribeVocabularyImportable(status transcribetypes.VocabularyState) bool {
-	return status == transcribetypes.VocabularyStateReady
 }
 
 func transcribeResourceNotFound(err error) bool {

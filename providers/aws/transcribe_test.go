@@ -3,7 +3,10 @@
 package aws
 
 import (
+	"encoding/json"
 	"errors"
+	"os"
+	"sort"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -26,33 +29,6 @@ func TestNewTranscribeResources(t *testing.T) {
 			attrKey:      "model_name",
 			build: func() (terraformutils.Resource, bool) {
 				return newTranscribeLanguageModelResource(transcribetypes.LanguageModel{ModelName: aws.String("language-model"), ModelStatus: transcribetypes.ModelStatusCompleted})
-			},
-		},
-		{
-			name:         "medical vocabulary",
-			resourceType: transcribeMedicalVocabularyResourceType,
-			importID:     "medical-vocabulary",
-			attrKey:      "vocabulary_name",
-			build: func() (terraformutils.Resource, bool) {
-				return newTranscribeMedicalVocabularyResource(transcribetypes.VocabularyInfo{VocabularyName: aws.String("medical-vocabulary"), VocabularyState: transcribetypes.VocabularyStateReady})
-			},
-		},
-		{
-			name:         "vocabulary",
-			resourceType: transcribeVocabularyResourceType,
-			importID:     "vocabulary",
-			attrKey:      "vocabulary_name",
-			build: func() (terraformutils.Resource, bool) {
-				return newTranscribeVocabularyResource(transcribetypes.VocabularyInfo{VocabularyName: aws.String("vocabulary"), VocabularyState: transcribetypes.VocabularyStateReady})
-			},
-		},
-		{
-			name:         "vocabulary filter",
-			resourceType: transcribeVocabularyFilterResourceType,
-			importID:     "vocabulary-filter",
-			attrKey:      "vocabulary_filter_name",
-			build: func() (terraformutils.Resource, bool) {
-				return newTranscribeVocabularyFilterResource(transcribetypes.VocabularyFilterInfo{VocabularyFilterName: aws.String("vocabulary-filter")})
 			},
 		},
 	}
@@ -79,24 +55,6 @@ func TestTranscribeConstructorsSkipEmptyIdentifiers(t *testing.T) {
 				return newTranscribeLanguageModelResource(transcribetypes.LanguageModel{ModelStatus: transcribetypes.ModelStatusCompleted})
 			},
 		},
-		{
-			name: "medical vocabulary",
-			build: func() (terraformutils.Resource, bool) {
-				return newTranscribeMedicalVocabularyResource(transcribetypes.VocabularyInfo{VocabularyState: transcribetypes.VocabularyStateReady})
-			},
-		},
-		{
-			name: "vocabulary",
-			build: func() (terraformutils.Resource, bool) {
-				return newTranscribeVocabularyResource(transcribetypes.VocabularyInfo{VocabularyState: transcribetypes.VocabularyStateReady})
-			},
-		},
-		{
-			name: "vocabulary filter",
-			build: func() (terraformutils.Resource, bool) {
-				return newTranscribeVocabularyFilterResource(transcribetypes.VocabularyFilterInfo{})
-			},
-		},
 	}
 
 	for _, tt := range tests {
@@ -112,23 +70,20 @@ func TestTranscribeImportabilityPredicates(t *testing.T) {
 	if !transcribeLanguageModelImportable(transcribetypes.ModelStatusCompleted) || transcribeLanguageModelImportable(transcribetypes.ModelStatusInProgress) {
 		t.Fatal("unexpected language model importability")
 	}
-	if !transcribeVocabularyImportable(transcribetypes.VocabularyStateReady) || transcribeVocabularyImportable(transcribetypes.VocabularyStateFailed) {
-		t.Fatal("unexpected vocabulary importability")
-	}
 }
 
 func TestTranscribeResourceNameUniqueness(t *testing.T) {
-	first := transcribeResourceName("vocabulary", "ab", "c")
-	second := transcribeResourceName("vocabulary", "a", "bc")
+	first := transcribeResourceName("language-model", "ab", "c")
+	second := transcribeResourceName("language-model", "a", "bc")
 	if first == second {
 		t.Fatalf("expected length-prefixed resource names to be unique, got %s", first)
 	}
 }
 
 func TestTranscribeInitialCleanupScopesIDFilters(t *testing.T) {
-	resource, ok := newTranscribeVocabularyResource(transcribetypes.VocabularyInfo{
-		VocabularyName:  aws.String("vocabulary"),
-		VocabularyState: transcribetypes.VocabularyStateReady,
+	resource, ok := newTranscribeLanguageModelResource(transcribetypes.LanguageModel{
+		ModelName:   aws.String("language-model"),
+		ModelStatus: transcribetypes.ModelStatusCompleted,
 	})
 	if !ok {
 		t.Fatal("expected resource")
@@ -138,12 +93,66 @@ func TestTranscribeInitialCleanupScopesIDFilters(t *testing.T) {
 	g.Resources = []terraformutils.Resource{resource}
 	g.Filter = []terraformutils.ResourceFilter{
 		{ServiceName: "kendra_index", FieldPath: "id", AcceptableValues: []string{"idx-123"}},
-		{ServiceName: transcribeServiceName(transcribeVocabularyResourceType), FieldPath: "id", AcceptableValues: []string{"vocabulary"}},
+		{ServiceName: transcribeServiceName(transcribeLanguageModelResourceType), FieldPath: "id", AcceptableValues: []string{"language-model"}},
 	}
 
 	g.InitialCleanup()
 	if len(g.Resources) != 1 {
 		t.Fatalf("expected unrelated typed id filters to be ignored, got %d resources", len(g.Resources))
+	}
+}
+
+func TestTranscribeUnsupportedResourceEntries(t *testing.T) {
+	data, err := os.ReadFile("unsupported_resources.json")
+	if err != nil {
+		t.Fatalf("read unsupported resources: %v", err)
+	}
+	var unsupported map[string]interface{}
+	if err := json.Unmarshal(data, &unsupported); err != nil {
+		t.Fatalf("decode unsupported resources: %v", err)
+	}
+	entries, ok := unsupported["resources"].([]interface{})
+	if !ok {
+		t.Fatal("unsupported resources file is missing resources list")
+	}
+
+	found := map[string]bool{
+		"aws_transcribe_medical_vocabulary": false,
+		"aws_transcribe_vocabulary":         false,
+		"aws_transcribe_vocabulary_filter":  false,
+	}
+	resources := make([]string, 0, len(entries))
+	for _, rawEntry := range entries {
+		entry, ok := rawEntry.(map[string]interface{})
+		if !ok {
+			t.Fatalf("unsupported resource entry has unexpected type %T", rawEntry)
+		}
+		resource, _ := entry["resource"].(string)
+		resources = append(resources, resource)
+		if _, ok := found[resource]; !ok {
+			continue
+		}
+		found[resource] = true
+		if serviceFamily, _ := entry["service_family"].(string); serviceFamily != "transcribe" {
+			t.Fatalf("%s service family = %q, want transcribe", resource, serviceFamily)
+		}
+		if status, _ := entry["status"].(string); status != "unsupported" {
+			t.Fatalf("%s status = %q, want unsupported", resource, status)
+		}
+		references, _ := entry["references"].([]interface{})
+		reason, _ := entry["reason"].(string)
+		evidence, _ := entry["evidence"].(string)
+		if reason == "" || evidence == "" || len(references) == 0 {
+			t.Fatalf("%s unsupported entry is missing reason, evidence, or references", resource)
+		}
+	}
+	for resource, ok := range found {
+		if !ok {
+			t.Fatalf("%s unsupported entry was not found", resource)
+		}
+	}
+	if !sort.StringsAreSorted(resources) {
+		t.Fatalf("unsupported resources are not sorted by resource: %v", resources)
 	}
 }
 

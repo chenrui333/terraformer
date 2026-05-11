@@ -739,9 +739,6 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_swf_domain`
 *   `transcribe`
     * `aws_transcribe_language_model`
-    * `aws_transcribe_medical_vocabulary`
-    * `aws_transcribe_vocabulary`
-    * `aws_transcribe_vocabulary_filter`
 *   `transit_gateway`
     * `aws_ec2_transit_gateway`
     * `aws_ec2_transit_gateway_route_table`
