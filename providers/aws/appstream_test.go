@@ -39,6 +39,37 @@ func TestNewAppStreamStackResource(t *testing.T) {
 	}
 }
 
+func TestNewAppStreamImageBuilderResource(t *testing.T) {
+	resource, ok := newAppStreamImageBuilderResource(appstreamtypes.ImageBuilder{
+		InstanceType: appStreamString("stream.standard.medium"),
+		Name:         appStreamString("core-image-builder"),
+		State:        appstreamtypes.ImageBuilderStateRunning,
+	})
+	assertAppStreamResource(t, resource, ok, "core-image-builder", appStreamResourceName("image-builder", "core-image-builder"), appStreamImageBuilderResourceType)
+	assertAppStreamAttribute(t, resource, "instance_type", "stream.standard.medium")
+	assertAppStreamAttribute(t, resource, "name", "core-image-builder")
+
+	if _, ok := newAppStreamImageBuilderResource(appstreamtypes.ImageBuilder{
+		InstanceType: appStreamString("stream.standard.medium"),
+		State:        appstreamtypes.ImageBuilderStateRunning,
+	}); ok {
+		t.Fatal("image builder with empty name should be skipped")
+	}
+	if _, ok := newAppStreamImageBuilderResource(appstreamtypes.ImageBuilder{
+		Name:  appStreamString("core-image-builder"),
+		State: appstreamtypes.ImageBuilderStateRunning,
+	}); ok {
+		t.Fatal("image builder with empty instance type should be skipped")
+	}
+	if _, ok := newAppStreamImageBuilderResource(appstreamtypes.ImageBuilder{
+		InstanceType: appStreamString("stream.standard.medium"),
+		Name:         appStreamString("core-image-builder"),
+		State:        appstreamtypes.ImageBuilderStateDeleting,
+	}); ok {
+		t.Fatal("deleting image builder should be skipped")
+	}
+}
+
 func TestNewAppStreamFleetStackAssociationResource(t *testing.T) {
 	resource, ok := newAppStreamFleetStackAssociationResource("core-fleet", "core-stack")
 	assertAppStreamResource(t, resource, ok, "core-fleet/core-stack", appStreamResourceName("fleet-stack-association", "core-fleet", "core-stack"), appStreamFleetStackAssociationResourceType)
@@ -110,6 +141,14 @@ func TestAppStreamFleetStackAssociationImportID(t *testing.T) {
 	}
 }
 
+func TestAppStreamImageBuilderImportID(t *testing.T) {
+	got := appStreamImageBuilderImportID("imageBuilderName")
+	want := "imageBuilderName"
+	if got != want {
+		t.Fatalf("image builder import ID = %q, want %q", got, want)
+	}
+}
+
 func TestAppStreamUserImportID(t *testing.T) {
 	got := appStreamUserImportID("user@example.com", appstreamtypes.AuthenticationTypeUserpool)
 	want := "user@example.com/USERPOOL"
@@ -146,6 +185,38 @@ func TestAppStreamUserStackAssociationsInput(t *testing.T) {
 	}
 }
 
+func TestAppStreamImageBuilderStateImportable(t *testing.T) {
+	tests := []struct {
+		name  string
+		state appstreamtypes.ImageBuilderState
+		want  bool
+	}{
+		{name: "running", state: appstreamtypes.ImageBuilderStateRunning, want: true},
+		{name: "stopped", state: appstreamtypes.ImageBuilderStateStopped, want: true},
+		{name: "pending", state: appstreamtypes.ImageBuilderStatePending, want: true},
+		{name: "updating agent", state: appstreamtypes.ImageBuilderStateUpdatingAgent, want: true},
+		{name: "stopping", state: appstreamtypes.ImageBuilderStateStopping, want: true},
+		{name: "rebooting", state: appstreamtypes.ImageBuilderStateRebooting, want: true},
+		{name: "snapshotting", state: appstreamtypes.ImageBuilderStateSnapshotting, want: true},
+		{name: "updating", state: appstreamtypes.ImageBuilderStateUpdating, want: true},
+		{name: "pending qualification", state: appstreamtypes.ImageBuilderStatePendingQualification, want: true},
+		{name: "pending syncing apps", state: appstreamtypes.ImageBuilderStatePendingSyncingApps, want: true},
+		{name: "syncing apps", state: appstreamtypes.ImageBuilderStateSyncingApps, want: true},
+		{name: "pending image import", state: appstreamtypes.ImageBuilderStatePendingImageImport, want: true},
+		{name: "empty", want: false},
+		{name: "deleting", state: appstreamtypes.ImageBuilderStateDeleting, want: false},
+		{name: "failed", state: appstreamtypes.ImageBuilderStateFailed, want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := appStreamImageBuilderStateImportable(tt.state); got != tt.want {
+				t.Fatalf("appStreamImageBuilderStateImportable(%q) = %t, want %t", tt.state, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestAppStreamResourceNamesPreserveSegmentBoundaries(t *testing.T) {
 	left, ok := newAppStreamFleetStackAssociationResource("a/b_c", "d")
 	if !ok {
@@ -177,6 +248,26 @@ func TestAppStreamResourceNamesPreserveSegmentBoundaries(t *testing.T) {
 	}
 	if left.ResourceName == right.ResourceName {
 		t.Fatalf("user-stack association resource names collide: %q", left.ResourceName)
+	}
+
+	imageBuilderLeft, ok := newAppStreamImageBuilderResource(appstreamtypes.ImageBuilder{
+		InstanceType: appStreamString("stream.standard.medium"),
+		Name:         appStreamString("a/b_c"),
+		State:        appstreamtypes.ImageBuilderStateRunning,
+	})
+	if !ok {
+		t.Fatal("left image builder should be importable")
+	}
+	imageBuilderRight, ok := newAppStreamImageBuilderResource(appstreamtypes.ImageBuilder{
+		InstanceType: appStreamString("stream.standard.medium"),
+		Name:         appStreamString("a-002F-b_c"),
+		State:        appstreamtypes.ImageBuilderStateRunning,
+	})
+	if !ok {
+		t.Fatal("right image builder should be importable")
+	}
+	if imageBuilderLeft.ResourceName == imageBuilderRight.ResourceName {
+		t.Fatalf("image builder resource names collide: %q", imageBuilderLeft.ResourceName)
 	}
 }
 
