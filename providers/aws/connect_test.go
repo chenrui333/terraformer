@@ -80,6 +80,25 @@ func TestNewConnectInstanceResource(t *testing.T) {
 	}
 }
 
+func TestNewConnectInstanceReference(t *testing.T) {
+	ref, ok := newConnectInstanceReference(connecttypes.InstanceSummary{
+		Id:             aws.String("instance-123"),
+		InstanceStatus: connecttypes.InstanceStatusActive,
+	})
+	if !ok {
+		t.Fatal("active aliasless instance should be retained for child discovery")
+	}
+	if ref.id != "instance-123" {
+		t.Fatalf("instance reference ID = %q, want %q", ref.id, "instance-123")
+	}
+	if _, ok := newConnectInstanceReference(connecttypes.InstanceSummary{Id: aws.String("instance-123"), InstanceStatus: connecttypes.InstanceStatusCreationInProgress}); ok {
+		t.Fatal("non-active instance should be skipped for child discovery")
+	}
+	if _, ok := newConnectInstanceReference(connecttypes.InstanceSummary{}); ok {
+		t.Fatal("instance reference with empty ID should be skipped")
+	}
+}
+
 func TestNewConnectRelationshipResources(t *testing.T) {
 	instanceID := "instance-123"
 	tests := []struct {

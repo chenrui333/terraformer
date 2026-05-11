@@ -48,6 +48,14 @@ type connectOptionalResourceLoader struct {
 	load func() error
 }
 
+func newConnectInstanceReference(instance connecttypes.InstanceSummary) (connectInstanceReference, bool) {
+	instanceID := StringValue(instance.Id)
+	if instanceID == "" || !connectInstanceImportable(instance) {
+		return connectInstanceReference{}, false
+	}
+	return connectInstanceReference{id: instanceID}, true
+}
+
 func (g *ConnectGenerator) InitResources() error {
 	config, e := g.generateConfig()
 	if e != nil {
@@ -111,14 +119,14 @@ func (g *ConnectGenerator) loadInstances(svc *connect.Client) ([]connectInstance
 			return nil, err
 		}
 		for _, instance := range page.InstanceSummaryList {
-			resource, ok := newConnectInstanceResource(instance)
+			instanceReference, ok := newConnectInstanceReference(instance)
 			if !ok {
 				continue
 			}
-			g.Resources = append(g.Resources, resource)
-			instances = append(instances, connectInstanceReference{
-				id: StringValue(instance.Id),
-			})
+			if resource, ok := newConnectInstanceResource(instance); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+			instances = append(instances, instanceReference)
 		}
 	}
 	return instances, nil
