@@ -28,7 +28,6 @@ func TestMediaUnsupportedResourceEntries(t *testing.T) {
 		"aws_elastic_beanstalk_application_version":    "elastic_beanstalk",
 		"aws_elastic_beanstalk_configuration_template": "elastic_beanstalk",
 		"aws_ivs_playback_key_pair":                    "ivs",
-		"aws_qldb_stream":                              "qldb",
 	}
 	foundEntries := map[string]bool{}
 	resources := make([]string, 0, len(entries))
