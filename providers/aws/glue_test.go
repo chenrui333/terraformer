@@ -226,7 +226,10 @@ func TestGluePartitionIndexImportable(t *testing.T) {
 
 func TestNewGlueCatalogTableOptimizerResource(t *testing.T) {
 	resource, ok := newGlueCatalogTableOptimizerResource("123456789012", "analytics", "orders", gluetypes.TableOptimizerTypeCompaction, &gluetypes.TableOptimizer{
-		Configuration: &gluetypes.TableOptimizerConfiguration{Enabled: aws.Bool(false)},
+		Configuration: &gluetypes.TableOptimizerConfiguration{
+			Enabled: aws.Bool(false),
+			RoleArn: aws.String("arn:aws:iam::123456789012:role/glue-optimizer"),
+		},
 	})
 	if !ok {
 		t.Fatal("newGlueCatalogTableOptimizerResource() ok = false, want true")
@@ -249,6 +252,30 @@ func TestNewGlueCatalogTableOptimizerResource(t *testing.T) {
 		}
 	}
 	assertAwsFrameworkResourcePreserveIDAfterRefresh(t, resource)
+}
+
+func TestGlueCatalogTableOptimizerImportable(t *testing.T) {
+	tests := []struct {
+		name      string
+		optimizer *gluetypes.TableOptimizer
+		want      bool
+	}{
+		{name: "complete with disabled optimizer", optimizer: &gluetypes.TableOptimizer{Configuration: &gluetypes.TableOptimizerConfiguration{Enabled: aws.Bool(false), RoleArn: aws.String("arn:aws:iam::123456789012:role/glue-optimizer")}}, want: true},
+		{name: "missing optimizer", optimizer: nil, want: false},
+		{name: "missing configuration", optimizer: &gluetypes.TableOptimizer{}, want: false},
+		{name: "missing role arn", optimizer: &gluetypes.TableOptimizer{Configuration: &gluetypes.TableOptimizerConfiguration{Enabled: aws.Bool(true)}}, want: false},
+		{name: "empty role arn", optimizer: &gluetypes.TableOptimizer{Configuration: &gluetypes.TableOptimizerConfiguration{Enabled: aws.Bool(true), RoleArn: aws.String("")}}, want: false},
+		{name: "missing enabled", optimizer: &gluetypes.TableOptimizer{Configuration: &gluetypes.TableOptimizerConfiguration{RoleArn: aws.String("arn:aws:iam::123456789012:role/glue-optimizer")}}, want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := glueCatalogTableOptimizerImportable(tt.optimizer)
+			if got != tt.want {
+				t.Fatalf("glueCatalogTableOptimizerImportable() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 
 func TestGlueMLTransformImportable(t *testing.T) {

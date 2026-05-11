@@ -580,7 +580,7 @@ func newGluePartitionIndexResource(catalogID string, databaseName string, tableN
 }
 
 func newGlueCatalogTableOptimizerResource(catalogID string, databaseName string, tableName string, optimizerType gluetypes.TableOptimizerType, optimizer *gluetypes.TableOptimizer) (terraformutils.Resource, bool) {
-	if catalogID == "" || databaseName == "" || tableName == "" || optimizerType == "" || optimizer == nil || optimizer.Configuration == nil {
+	if catalogID == "" || databaseName == "" || tableName == "" || optimizerType == "" || !glueCatalogTableOptimizerImportable(optimizer) {
 		return terraformutils.Resource{}, false
 	}
 	id := glueCatalogTableOptimizerImportID(catalogID, databaseName, tableName, string(optimizerType))
@@ -600,6 +600,14 @@ func newGlueCatalogTableOptimizerResource(catalogID string, databaseName string,
 	)
 	setAwsFrameworkResourcePreserveIDAfterRefresh(&resource)
 	return resource, true
+}
+
+func glueCatalogTableOptimizerImportable(optimizer *gluetypes.TableOptimizer) bool {
+	if optimizer == nil || optimizer.Configuration == nil {
+		return false
+	}
+	configuration := optimizer.Configuration
+	return StringValue(configuration.RoleArn) != "" && configuration.Enabled != nil
 }
 
 func glueClassifierName(classifier gluetypes.Classifier) string {
