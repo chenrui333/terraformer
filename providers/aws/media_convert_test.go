@@ -160,15 +160,69 @@ func TestMediaConvertAccountEndpointError(t *testing.T) {
 	}
 }
 
-func TestMediaConvertSetAccountEndpoint(t *testing.T) {
-	t.Setenv(mediaConvertEndpointEnvVar, "")
-	endpoint := "https://abcd.mediaconvert.us-east-1.amazonaws.com"
-	if err := mediaConvertSetAccountEndpoint(endpoint); err != nil {
-		t.Fatalf("mediaConvertSetAccountEndpoint returned error: %v", err)
-	}
-	if got := os.Getenv(mediaConvertEndpointEnvVar); got != endpoint {
-		t.Fatalf("%s = %q, want %q", mediaConvertEndpointEnvVar, got, endpoint)
-	}
+func TestMediaConvertSetAndRestoreAccountEndpoint(t *testing.T) {
+	t.Run("restores previous value", func(t *testing.T) {
+		preserveMediaConvertEndpointEnv(t)
+		previousEndpoint := "https://previous.mediaconvert.us-west-2.amazonaws.com"
+		endpoint := "https://abcd.mediaconvert.us-east-1.amazonaws.com"
+		if err := os.Setenv(mediaConvertEndpointEnvVar, previousEndpoint); err != nil {
+			t.Fatalf("Setenv returned error: %v", err)
+		}
+
+		gotPrevious, hadPrevious, err := mediaConvertSetAccountEndpoint(endpoint)
+		if err != nil {
+			t.Fatalf("mediaConvertSetAccountEndpoint returned error: %v", err)
+		}
+		if !hadPrevious || gotPrevious != previousEndpoint {
+			t.Fatalf("previous endpoint = %q, %t; want %q, true", gotPrevious, hadPrevious, previousEndpoint)
+		}
+		if got := os.Getenv(mediaConvertEndpointEnvVar); got != endpoint {
+			t.Fatalf("%s = %q, want %q", mediaConvertEndpointEnvVar, got, endpoint)
+		}
+		if err := mediaConvertRestoreAccountEndpoint(gotPrevious, hadPrevious); err != nil {
+			t.Fatalf("mediaConvertRestoreAccountEndpoint returned error: %v", err)
+		}
+		if got := os.Getenv(mediaConvertEndpointEnvVar); got != previousEndpoint {
+			t.Fatalf("%s = %q, want restored %q", mediaConvertEndpointEnvVar, got, previousEndpoint)
+		}
+	})
+
+	t.Run("unsets absent value", func(t *testing.T) {
+		preserveMediaConvertEndpointEnv(t)
+		endpoint := "https://abcd.mediaconvert.us-east-1.amazonaws.com"
+		if err := os.Unsetenv(mediaConvertEndpointEnvVar); err != nil {
+			t.Fatalf("Unsetenv returned error: %v", err)
+		}
+
+		gotPrevious, hadPrevious, err := mediaConvertSetAccountEndpoint(endpoint)
+		if err != nil {
+			t.Fatalf("mediaConvertSetAccountEndpoint returned error: %v", err)
+		}
+		if hadPrevious || gotPrevious != "" {
+			t.Fatalf("previous endpoint = %q, %t; want empty, false", gotPrevious, hadPrevious)
+		}
+		if got := os.Getenv(mediaConvertEndpointEnvVar); got != endpoint {
+			t.Fatalf("%s = %q, want %q", mediaConvertEndpointEnvVar, got, endpoint)
+		}
+		if err := mediaConvertRestoreAccountEndpoint(gotPrevious, hadPrevious); err != nil {
+			t.Fatalf("mediaConvertRestoreAccountEndpoint returned error: %v", err)
+		}
+		if got, ok := os.LookupEnv(mediaConvertEndpointEnvVar); ok {
+			t.Fatalf("%s = %q, want unset", mediaConvertEndpointEnvVar, got)
+		}
+	})
+}
+
+func preserveMediaConvertEndpointEnv(t *testing.T) {
+	t.Helper()
+	previousEndpoint, hadPreviousEndpoint := os.LookupEnv(mediaConvertEndpointEnvVar)
+	t.Cleanup(func() {
+		if hadPreviousEndpoint {
+			_ = os.Setenv(mediaConvertEndpointEnvVar, previousEndpoint)
+			return
+		}
+		_ = os.Unsetenv(mediaConvertEndpointEnvVar)
+	})
 }
 
 type mediaConvertDescribeEndpointsClient struct {

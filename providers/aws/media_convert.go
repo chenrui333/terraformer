@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -24,7 +25,9 @@ var mediaConvertAllowEmptyValues = []string{"tags."}
 
 type MediaConvertGenerator struct {
 	AWSService
-	accountEndpoint string
+	accountEndpoint     string
+	previousEndpoint    string
+	hadPreviousEndpoint bool
 }
 
 func (g *MediaConvertGenerator) InitResources() error {
@@ -46,10 +49,13 @@ func (g *MediaConvertGenerator) InitResources() error {
 		if endpoint == "" {
 			return nil
 		}
-		if err := mediaConvertSetAccountEndpoint(endpoint); err != nil {
+		previousEndpoint, hadPreviousEndpoint, err := mediaConvertSetAccountEndpoint(endpoint)
+		if err != nil {
 			return err
 		}
 		g.accountEndpoint = endpoint
+		g.previousEndpoint = previousEndpoint
+		g.hadPreviousEndpoint = hadPreviousEndpoint
 		return g.loadQueues(mediaconvert.NewFromConfig(config, func(o *mediaconvert.Options) {
 			o.BaseEndpoint = aws.String(endpoint)
 		}))
@@ -64,6 +70,13 @@ func (g *MediaConvertGenerator) ConfigureImportProvider(providerWrapper *provide
 	// The Terraform AWS provider reads service endpoint environment variables when
 	// its plugin process starts, so refresh needs a restart after endpoint bootstrap.
 	return providerWrapper.Restart()
+}
+
+func (g *MediaConvertGenerator) PostConvertHook() error {
+	if g.accountEndpoint == "" {
+		return nil
+	}
+	return mediaConvertRestoreAccountEndpoint(g.previousEndpoint, g.hadPreviousEndpoint)
 }
 
 func (g *MediaConvertGenerator) loadQueues(svc *mediaconvert.Client) error {
@@ -86,8 +99,19 @@ func (g *MediaConvertGenerator) loadQueues(svc *mediaconvert.Client) error {
 	return nil
 }
 
-func mediaConvertSetAccountEndpoint(endpoint string) error {
-	return terraformutils.SetEnv(mediaConvertEndpointEnvVar, endpoint)
+func mediaConvertSetAccountEndpoint(endpoint string) (string, bool, error) {
+	previousEndpoint, hadPreviousEndpoint := os.LookupEnv(mediaConvertEndpointEnvVar)
+	if err := terraformutils.SetEnv(mediaConvertEndpointEnvVar, endpoint); err != nil {
+		return "", false, err
+	}
+	return previousEndpoint, hadPreviousEndpoint, nil
+}
+
+func mediaConvertRestoreAccountEndpoint(previousEndpoint string, hadPreviousEndpoint bool) error {
+	if hadPreviousEndpoint {
+		return terraformutils.SetEnv(mediaConvertEndpointEnvVar, previousEndpoint)
+	}
+	return terraformutils.UnsetEnv(mediaConvertEndpointEnvVar)
 }
 
 func mediaConvertAccountEndpoint(ctx context.Context, svc mediaconvert.DescribeEndpointsAPIClient) (string, error) {
