@@ -16,6 +16,7 @@ import (
 
 const (
 	appStreamFleetResourceType                 = "aws_appstream_fleet"
+	appStreamImageBuilderResourceType          = "aws_appstream_image_builder"
 	appStreamStackResourceType                 = "aws_appstream_stack"
 	appStreamFleetStackAssociationResourceType = "aws_appstream_fleet_stack_association"
 	appStreamUserResourceType                  = "aws_appstream_user"
@@ -45,6 +46,9 @@ func (g *AppStreamGenerator) InitResources() error {
 	}
 	stackNames, err := g.loadStacks(svc)
 	if err != nil {
+		return err
+	}
+	if err := g.loadImageBuilders(svc); err != nil {
 		return err
 	}
 	if err := g.loadFleetStackAssociations(svc, fleetNames); err != nil {
@@ -102,6 +106,30 @@ func (g *AppStreamGenerator) loadStacks(svc *appstream.Client) ([]string, error)
 		input.NextToken = nextToken
 	}
 	return stackNames, nil
+}
+
+func (g *AppStreamGenerator) loadImageBuilders(svc *appstream.Client) error {
+	input := &appstream.DescribeImageBuildersInput{}
+	for {
+		page, err := svc.DescribeImageBuilders(context.TODO(), input)
+		if appStreamResourceNotFound(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		for _, imageBuilder := range page.ImageBuilders {
+			if resource, ok := newAppStreamImageBuilderResource(imageBuilder); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+		nextToken := appStreamNextToken(page.NextToken)
+		if nextToken == nil {
+			break
+		}
+		input.NextToken = nextToken
+	}
+	return nil
 }
 
 func (g *AppStreamGenerator) loadFleetStackAssociations(svc *appstream.Client, fleetNames []string) error {
@@ -230,6 +258,26 @@ func newAppStreamStackResource(stack appstreamtypes.Stack) (terraformutils.Resou
 	), true
 }
 
+func newAppStreamImageBuilderResource(imageBuilder appstreamtypes.ImageBuilder) (terraformutils.Resource, bool) {
+	name := StringValue(imageBuilder.Name)
+	instanceType := StringValue(imageBuilder.InstanceType)
+	if name == "" || instanceType == "" || !appStreamImageBuilderStateImportable(imageBuilder.State) {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewResource(
+		appStreamImageBuilderImportID(name),
+		appStreamResourceName("image-builder", name),
+		appStreamImageBuilderResourceType,
+		"aws",
+		map[string]string{
+			"instance_type": instanceType,
+			"name":          name,
+		},
+		appStreamAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
 func newAppStreamFleetStackAssociationResource(fleetName, stackName string) (terraformutils.Resource, bool) {
 	if fleetName == "" || stackName == "" {
 		return terraformutils.Resource{}, false
@@ -289,6 +337,10 @@ func appStreamFleetStackAssociationImportID(fleetName, stackName string) string 
 	return strings.Join([]string{fleetName, stackName}, appStreamFleetStackAssociationIDSeparator)
 }
 
+func appStreamImageBuilderImportID(name string) string {
+	return name
+}
+
 func appStreamUserImportID(userName string, authType appstreamtypes.AuthenticationType) string {
 	return strings.Join([]string{userName, string(authType)}, appStreamUserIDSeparator)
 }
@@ -305,6 +357,15 @@ func appStreamUserStackAssociationsInput(stackName string) (*appstream.DescribeU
 		AuthenticationType: appstreamtypes.AuthenticationTypeUserpool,
 		StackName:          aws.String(stackName),
 	}, true
+}
+
+func appStreamImageBuilderStateImportable(state appstreamtypes.ImageBuilderState) bool {
+	switch state {
+	case "", appstreamtypes.ImageBuilderStateDeleting:
+		return false
+	default:
+		return true
+	}
 }
 
 func appStreamResourceName(parts ...string) string {

@@ -95,6 +95,7 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
 *   `appstream`
     * `aws_appstream_fleet`
     * `aws_appstream_fleet_stack_association`
+    * `aws_appstream_image_builder`
     * `aws_appstream_stack`
     * `aws_appstream_user`
     * `aws_appstream_user_stack_association`
