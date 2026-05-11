@@ -17,6 +17,7 @@ import (
 const (
 	bedrockGuardrailResourceType                  = "aws_bedrock_guardrail"
 	bedrockInferenceProfileResourceType           = "aws_bedrock_inference_profile"
+	bedrockModelInvocationLoggingResourceType     = "aws_bedrock_model_invocation_logging_configuration"
 	bedrockProvisionedModelThroughputResourceType = "aws_bedrock_provisioned_model_throughput"
 	bedrockGuardrailImportIDSeparator             = ","
 	bedrockResourceNameFallback                   = "bedrock-resource"
@@ -27,6 +28,7 @@ var (
 	bedrockResourceTypes    = []string{
 		bedrockServiceName(bedrockGuardrailResourceType),
 		bedrockServiceName(bedrockInferenceProfileResourceType),
+		bedrockServiceName(bedrockModelInvocationLoggingResourceType),
 		bedrockServiceName(bedrockProvisionedModelThroughputResourceType),
 	}
 )
@@ -73,6 +75,11 @@ func (g *BedrockGenerator) InitResources() error {
 	}
 	if g.shouldLoadBedrockResource(bedrockServiceName(bedrockInferenceProfileResourceType)) {
 		if err := g.loadInferenceProfiles(svc); err != nil {
+			return err
+		}
+	}
+	if g.shouldLoadBedrockResource(bedrockServiceName(bedrockModelInvocationLoggingResourceType)) {
+		if err := g.loadModelInvocationLoggingConfiguration(svc, config.Region); err != nil {
 			return err
 		}
 	}
@@ -157,6 +164,20 @@ func (g *BedrockGenerator) loadInferenceProfiles(svc *bedrock.Client) error {
 	return nil
 }
 
+func (g *BedrockGenerator) loadModelInvocationLoggingConfiguration(svc *bedrock.Client, region string) error {
+	output, err := svc.GetModelInvocationLoggingConfiguration(context.TODO(), &bedrock.GetModelInvocationLoggingConfigurationInput{})
+	if err != nil {
+		if bedrockResourceNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	if resource, ok := newBedrockModelInvocationLoggingResource(region, output); ok {
+		g.Resources = append(g.Resources, resource)
+	}
+	return nil
+}
+
 func (g *BedrockGenerator) loadProvisionedModelThroughputs(svc *bedrock.Client) error {
 	p := bedrock.NewListProvisionedModelThroughputsPaginator(svc, &bedrock.ListProvisionedModelThroughputsInput{})
 	for p.HasMorePages() {
@@ -220,6 +241,19 @@ func newBedrockInferenceProfileResource(profile bedrocktypes.InferenceProfileSum
 	), true
 }
 
+func newBedrockModelInvocationLoggingResource(region string, output *bedrock.GetModelInvocationLoggingConfigurationOutput) (terraformutils.Resource, bool) {
+	if region == "" || !bedrockModelInvocationLoggingConfigured(output) {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewSimpleResource(
+		bedrockModelInvocationLoggingImportID(region),
+		bedrockResourceName("model-invocation-logging-configuration", region),
+		bedrockModelInvocationLoggingResourceType,
+		"aws",
+		bedrockAllowEmptyValues,
+	), true
+}
+
 func newBedrockProvisionedModelThroughputResource(throughput bedrocktypes.ProvisionedModelSummary) (terraformutils.Resource, bool) {
 	provisionedModelARN := StringValue(throughput.ProvisionedModelArn)
 	modelARN := StringValue(throughput.ModelArn)
@@ -248,6 +282,10 @@ func bedrockGuardrailImportID(guardrailID, version string) string {
 	return guardrailID + bedrockGuardrailImportIDSeparator + version
 }
 
+func bedrockModelInvocationLoggingImportID(region string) string {
+	return region
+}
+
 func bedrockResourceName(parts ...string) string {
 	var cleanParts []string
 	for _, part := range parts {
@@ -267,6 +305,10 @@ func bedrockGuardrailImportable(status bedrocktypes.GuardrailStatus) bool {
 
 func bedrockInferenceProfileImportable(profile bedrocktypes.InferenceProfileSummary) bool {
 	return profile.Type == bedrocktypes.InferenceProfileTypeApplication && profile.Status == bedrocktypes.InferenceProfileStatusActive
+}
+
+func bedrockModelInvocationLoggingConfigured(output *bedrock.GetModelInvocationLoggingConfigurationOutput) bool {
+	return output != nil && output.LoggingConfig != nil
 }
 
 func bedrockProvisionedModelThroughputImportable(status bedrocktypes.ProvisionedModelStatus) bool {
