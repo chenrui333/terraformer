@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
 	"github.com/chenrui333/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 )
 
 var logsAllowEmptyValues = []string{"tags."}
@@ -658,14 +659,19 @@ func newLogsAnomalyDetectorResource(detector types.AnomalyDetector) (terraformut
 		attributes[key] = value
 	}
 
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		detectorARN,
 		logsAnomalyDetectorResourceName(StringValue(detector.DetectorName), detectorARN),
 		logsAnomalyDetectorResourceType,
 		"aws",
 		attributes,
 		logsAllowEmptyValues,
-		map[string]interface{}{}), true
+		map[string]interface{}{})
+	if resource.InstanceState.Meta == nil {
+		resource.InstanceState.Meta = map[string]interface{}{}
+	}
+	resource.InstanceState.Meta[tfcompat.MetaKeyPreserveIDAfterRefresh] = true
+	return resource, true
 }
 
 func logsAnomalyDetectorEnabledValue(status types.AnomalyDetectorStatus) (bool, bool) {

@@ -13,6 +13,9 @@ import (
 const (
 	TerraformVersion     = "1.9.0"
 	UnknownVariableValue = "74D93920-ED26-11E3-AC10-0800200C9A66"
+
+	// MetaKeyPreserveIDAfterRefresh marks state whose import ID is not represented by provider attributes.
+	MetaKeyPreserveIDAfterRefresh = "preserve_id_after_refresh"
 )
 
 type InstanceInfo struct {

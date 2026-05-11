@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 )
 
 func TestLogsAccountPolicyTypes(t *testing.T) {
@@ -630,6 +631,9 @@ func TestNewLogsAnomalyDetectorResource(t *testing.T) {
 			}
 			if got := resource.InstanceInfo.Type; got != logsAnomalyDetectorResourceType {
 				t.Fatalf("resource type = %q, want %q", got, logsAnomalyDetectorResourceType)
+			}
+			if preserveID, ok := resource.InstanceState.Meta[tfcompat.MetaKeyPreserveIDAfterRefresh].(bool); !ok || !preserveID {
+				t.Fatalf("preserve ID metadata = %v, %t; want true, true", preserveID, ok)
 			}
 			for key, want := range map[string]string{
 				"arn":                  detectorARN,

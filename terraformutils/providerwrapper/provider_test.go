@@ -242,6 +242,34 @@ func TestPreserveKubernetesManifestID(t *testing.T) {
 	}
 }
 
+func TestPreservePriorStateID(t *testing.T) {
+	previous := &tfcompat.InstanceState{
+		ID: "arn:aws:logs:us-east-1:123456789012:anomaly-detector:detector-1",
+		Meta: map[string]interface{}{
+			tfcompat.MetaKeyPreserveIDAfterRefresh: true,
+		},
+	}
+	next := &tfcompat.InstanceState{}
+
+	preservePriorStateID(next, previous)
+	if next.ID != previous.ID {
+		t.Fatalf("preserved ID = %q, want %q", next.ID, previous.ID)
+	}
+
+	next.ID = "provider-id"
+	preservePriorStateID(next, previous)
+	if next.ID != "provider-id" {
+		t.Fatalf("existing ID = %q, want provider-id", next.ID)
+	}
+
+	withoutOptIn := &tfcompat.InstanceState{ID: "import-id"}
+	next = &tfcompat.InstanceState{}
+	preservePriorStateID(next, withoutOptIn)
+	if next.ID != "" {
+		t.Fatalf("unmarked ID = %q, want empty", next.ID)
+	}
+}
+
 func assertJSONNumber(t *testing.T, value interface{}, want string) {
 	t.Helper()
 	number, ok := value.(json.Number)
