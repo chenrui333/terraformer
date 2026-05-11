@@ -122,7 +122,23 @@ func (g *AppRunnerGenerator) loadObservabilityConfigurations(svc *apprunner.Clie
 			return err
 		}
 		for _, configuration := range page.ObservabilityConfigurationSummaryList {
-			if resource, ok := newAppRunnerObservabilityConfigurationResource(configuration); ok {
+			arn := StringValue(configuration.ObservabilityConfigurationArn)
+			if arn == "" {
+				continue
+			}
+			output, err := svc.DescribeObservabilityConfiguration(context.TODO(), &apprunner.DescribeObservabilityConfigurationInput{
+				ObservabilityConfigurationArn: &arn,
+			})
+			if err != nil {
+				if appRunnerNotFound(err) {
+					continue
+				}
+				return err
+			}
+			if output == nil || output.ObservabilityConfiguration == nil {
+				continue
+			}
+			if resource, ok := newAppRunnerObservabilityConfigurationResource(*output.ObservabilityConfiguration); ok {
 				g.Resources = append(g.Resources, resource)
 			}
 		}
@@ -279,10 +295,10 @@ func newAppRunnerConnectionResource(connection apprunnertypes.ConnectionSummary)
 	), true
 }
 
-func newAppRunnerObservabilityConfigurationResource(configuration apprunnertypes.ObservabilityConfigurationSummary) (terraformutils.Resource, bool) {
+func newAppRunnerObservabilityConfigurationResource(configuration apprunnertypes.ObservabilityConfiguration) (terraformutils.Resource, bool) {
 	arn := StringValue(configuration.ObservabilityConfigurationArn)
 	name := StringValue(configuration.ObservabilityConfigurationName)
-	if arn == "" || name == "" {
+	if arn == "" || name == "" || !appRunnerObservabilityConfigurationImportable(configuration) {
 		return terraformutils.Resource{}, false
 	}
 	return terraformutils.NewResource(
@@ -424,6 +440,10 @@ func appRunnerAutoScalingConfigurationImportable(configuration apprunnertypes.Au
 
 func appRunnerConnectionImportable(connection apprunnertypes.ConnectionSummary) bool {
 	return connection.Status != apprunnertypes.ConnectionStatusDeleted
+}
+
+func appRunnerObservabilityConfigurationImportable(configuration apprunnertypes.ObservabilityConfiguration) bool {
+	return configuration.Status == "" || configuration.Status == apprunnertypes.ObservabilityConfigurationStatusActive
 }
 
 func appRunnerVpcConnectorImportable(connector apprunnertypes.VpcConnector) bool {

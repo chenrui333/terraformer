@@ -112,17 +112,25 @@ func TestNewAppRunnerConnectionResource(t *testing.T) {
 
 func TestNewAppRunnerObservabilityConfigurationResource(t *testing.T) {
 	arn := "arn:aws:apprunner:us-east-1:123456789012:observabilityconfiguration/core/1/d75bc7ea55b71e724fe5c23452fe22a1"
-	resource, ok := newAppRunnerObservabilityConfigurationResource(apprunnertypes.ObservabilityConfigurationSummary{
+	resource, ok := newAppRunnerObservabilityConfigurationResource(apprunnertypes.ObservabilityConfiguration{
 		ObservabilityConfigurationArn:      aws.String(arn),
 		ObservabilityConfigurationName:     aws.String("core"),
 		ObservabilityConfigurationRevision: 1,
+		Status:                             apprunnertypes.ObservabilityConfigurationStatusActive,
 	})
 	assertAppRunnerResource(t, resource, ok, arn, appRunnerResourceName("observability_configuration", "core", "1", "d75bc7ea55b71e724fe5c23452fe22a1"), appRunnerObservabilityConfigurationResourceType, map[string]string{
 		"arn":                              arn,
 		"observability_configuration_name": "core",
 	})
 
-	if _, ok := newAppRunnerObservabilityConfigurationResource(apprunnertypes.ObservabilityConfigurationSummary{
+	if _, ok := newAppRunnerObservabilityConfigurationResource(apprunnertypes.ObservabilityConfiguration{
+		ObservabilityConfigurationArn:  aws.String(arn),
+		ObservabilityConfigurationName: aws.String("core"),
+		Status:                         apprunnertypes.ObservabilityConfigurationStatusInactive,
+	}); ok {
+		t.Fatal("inactive observability configuration should be skipped")
+	}
+	if _, ok := newAppRunnerObservabilityConfigurationResource(apprunnertypes.ObservabilityConfiguration{
 		ObservabilityConfigurationName: aws.String("core"),
 	}); ok {
 		t.Fatal("observability configuration with empty ARN should be skipped")
