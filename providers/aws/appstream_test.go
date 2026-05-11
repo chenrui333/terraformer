@@ -64,6 +64,13 @@ func TestNewAppStreamImageBuilderResource(t *testing.T) {
 	if _, ok := newAppStreamImageBuilderResource(appstreamtypes.ImageBuilder{
 		InstanceType: appStreamString("stream.standard.medium"),
 		Name:         appStreamString("core-image-builder"),
+		State:        appstreamtypes.ImageBuilderStateFailed,
+	}); !ok {
+		t.Fatal("failed image builder with identifiers should be importable")
+	}
+	if _, ok := newAppStreamImageBuilderResource(appstreamtypes.ImageBuilder{
+		InstanceType: appStreamString("stream.standard.medium"),
+		Name:         appStreamString("core-image-builder"),
 		State:        appstreamtypes.ImageBuilderStateDeleting,
 	}); ok {
 		t.Fatal("deleting image builder should be skipped")
@@ -203,9 +210,9 @@ func TestAppStreamImageBuilderStateImportable(t *testing.T) {
 		{name: "pending syncing apps", state: appstreamtypes.ImageBuilderStatePendingSyncingApps, want: true},
 		{name: "syncing apps", state: appstreamtypes.ImageBuilderStateSyncingApps, want: true},
 		{name: "pending image import", state: appstreamtypes.ImageBuilderStatePendingImageImport, want: true},
+		{name: "failed", state: appstreamtypes.ImageBuilderStateFailed, want: true},
 		{name: "empty", want: false},
 		{name: "deleting", state: appstreamtypes.ImageBuilderStateDeleting, want: false},
-		{name: "failed", state: appstreamtypes.ImageBuilderStateFailed, want: false},
 	}
 
 	for _, tt := range tests {

@@ -361,7 +361,7 @@ func appStreamUserStackAssociationsInput(stackName string) (*appstream.DescribeU
 
 func appStreamImageBuilderStateImportable(state appstreamtypes.ImageBuilderState) bool {
 	switch state {
-	case "", appstreamtypes.ImageBuilderStateDeleting, appstreamtypes.ImageBuilderStateFailed:
+	case "", appstreamtypes.ImageBuilderStateDeleting:
 		return false
 	default:
 		return true
