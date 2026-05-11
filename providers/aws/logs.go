@@ -17,6 +17,7 @@ import (
 var logsAllowEmptyValues = []string{"tags."}
 
 const (
+	logsAnomalyDetectorResourceType           = "aws_cloudwatch_log_anomaly_detector"
 	logsDeliveryResourceType                  = "aws_cloudwatch_log_delivery"
 	logsDeliveryDestinationResourceType       = "aws_cloudwatch_log_delivery_destination"
 	logsDeliveryDestinationPolicyResourceType = "aws_cloudwatch_log_delivery_destination_policy"
@@ -100,6 +101,7 @@ func (g *LogsGenerator) InitResources() error {
 		logsOptionalResourceLoader{name: "delivery sources", load: func() error { return g.addDeliverySources(svc) }},
 		logsOptionalResourceLoader{name: "delivery destinations", load: func() error { return g.addDeliveryDestinations(svc) }},
 		logsOptionalResourceLoader{name: "deliveries", load: func() error { return g.addDeliveries(svc) }},
+		logsOptionalResourceLoader{name: "anomaly detectors", load: func() error { return g.addAnomalyDetectors(svc) }},
 		logsOptionalResourceLoader{name: "resource policies", load: func() error { return g.addResourcePolicies(svc) }},
 		logsOptionalResourceLoader{name: "account policies", load: func() error { return g.addAccountPolicies(svc) }},
 		logsOptionalResourceLoader{name: "query definitions", load: func() error { return g.addQueryDefinitions(svc) }},
@@ -325,6 +327,22 @@ func (g *LogsGenerator) addDeliveries(svc *cloudwatchlogs.Client) error {
 		}
 		for _, delivery := range page.Deliveries {
 			if resource, ok := newLogsDeliveryResource(delivery); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+	}
+	return nil
+}
+
+func (g *LogsGenerator) addAnomalyDetectors(svc *cloudwatchlogs.Client) error {
+	p := cloudwatchlogs.NewListLogAnomalyDetectorsPaginator(svc, &cloudwatchlogs.ListLogAnomalyDetectorsInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, detector := range page.AnomalyDetectors {
+			if resource, ok := newLogsAnomalyDetectorResource(detector); ok {
 				g.Resources = append(g.Resources, resource)
 			}
 		}
@@ -623,4 +641,68 @@ func logsResourceNameWithLengths(parts ...string) string {
 		name += fmt.Sprintf("%d_%s", len(part), part)
 	}
 	return name
+}
+
+func newLogsAnomalyDetectorResource(detector types.AnomalyDetector) (terraformutils.Resource, bool) {
+	detectorARN := StringValue(detector.AnomalyDetectorArn)
+	enabled, ok := logsAnomalyDetectorEnabledValue(detector.AnomalyDetectorStatus)
+	if !ok || detectorARN == "" || !logsStringListValuesComplete(detector.LogGroupArnList) {
+		return terraformutils.Resource{}, false
+	}
+
+	attributes := map[string]string{
+		"arn":     detectorARN,
+		"enabled": strconv.FormatBool(enabled),
+	}
+	for key, value := range logsStringListAttributes("log_group_arn_list", detector.LogGroupArnList) {
+		attributes[key] = value
+	}
+
+	return terraformutils.NewResource(
+		detectorARN,
+		logsAnomalyDetectorResourceName(StringValue(detector.DetectorName), detectorARN),
+		logsAnomalyDetectorResourceType,
+		"aws",
+		attributes,
+		logsAllowEmptyValues,
+		map[string]interface{}{}), true
+}
+
+func logsAnomalyDetectorEnabledValue(status types.AnomalyDetectorStatus) (bool, bool) {
+	switch status {
+	case "":
+		return false, false
+	case types.AnomalyDetectorStatusDeleted:
+		return false, false
+	case types.AnomalyDetectorStatusPaused:
+		return false, true
+	default:
+		return true, true
+	}
+}
+
+func logsAnomalyDetectorResourceName(detectorName, detectorARN string) string {
+	return logsResourceNameWithLengths("anomaly_detector", detectorName, detectorARN)
+}
+
+func logsStringListAttributes(name string, values []string) map[string]string {
+	attributes := map[string]string{
+		name + ".#": strconv.Itoa(len(values)),
+	}
+	for i, value := range values {
+		attributes[fmt.Sprintf("%s.%d", name, i)] = value
+	}
+	return attributes
+}
+
+func logsStringListValuesComplete(values []string) bool {
+	if len(values) == 0 {
+		return false
+	}
+	for _, value := range values {
+		if value == "" {
+			return false
+		}
+	}
+	return true
 }

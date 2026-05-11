@@ -532,3 +532,152 @@ func TestNewLogsDeliveryResource(t *testing.T) {
 		})
 	}
 }
+
+func TestNewLogsAnomalyDetectorResource(t *testing.T) {
+	detectorARN := "arn:aws:logs:us-east-1:123456789012:anomaly-detector:detector-1"
+	logGroupARN := "arn:aws:logs:us-east-1:123456789012:log-group:/aws/lambda/example"
+	detectorName := "lambda-errors"
+
+	tests := []struct {
+		name        string
+		detector    types.AnomalyDetector
+		wantOK      bool
+		wantEnabled string
+	}{
+		{
+			name: "analyzing detector",
+			detector: types.AnomalyDetector{
+				AnomalyDetectorArn:    &detectorARN,
+				AnomalyDetectorStatus: types.AnomalyDetectorStatusAnalyzing,
+				DetectorName:          &detectorName,
+				LogGroupArnList:       []string{logGroupARN},
+			},
+			wantOK:      true,
+			wantEnabled: "true",
+		},
+		{
+			name: "paused detector",
+			detector: types.AnomalyDetector{
+				AnomalyDetectorArn:    &detectorARN,
+				AnomalyDetectorStatus: types.AnomalyDetectorStatusPaused,
+				DetectorName:          &detectorName,
+				LogGroupArnList:       []string{logGroupARN},
+			},
+			wantOK:      true,
+			wantEnabled: "false",
+		},
+		{
+			name: "failed detector remains importable",
+			detector: types.AnomalyDetector{
+				AnomalyDetectorArn:    &detectorARN,
+				AnomalyDetectorStatus: types.AnomalyDetectorStatusFailed,
+				DetectorName:          &detectorName,
+				LogGroupArnList:       []string{logGroupARN},
+			},
+			wantOK:      true,
+			wantEnabled: "true",
+		},
+		{
+			name: "detector without ARN is skipped",
+			detector: types.AnomalyDetector{
+				AnomalyDetectorStatus: types.AnomalyDetectorStatusAnalyzing,
+				LogGroupArnList:       []string{logGroupARN},
+			},
+		},
+		{
+			name: "detector without log group ARN is skipped",
+			detector: types.AnomalyDetector{
+				AnomalyDetectorArn:    &detectorARN,
+				AnomalyDetectorStatus: types.AnomalyDetectorStatusAnalyzing,
+			},
+		},
+		{
+			name: "detector with empty log group ARN is skipped",
+			detector: types.AnomalyDetector{
+				AnomalyDetectorArn:    &detectorARN,
+				AnomalyDetectorStatus: types.AnomalyDetectorStatusAnalyzing,
+				LogGroupArnList:       []string{""},
+			},
+		},
+		{
+			name: "detector without status is skipped",
+			detector: types.AnomalyDetector{
+				AnomalyDetectorArn: &detectorARN,
+				LogGroupArnList:    []string{logGroupARN},
+			},
+		},
+		{
+			name: "deleted detector is skipped",
+			detector: types.AnomalyDetector{
+				AnomalyDetectorArn:    &detectorARN,
+				AnomalyDetectorStatus: types.AnomalyDetectorStatusDeleted,
+				LogGroupArnList:       []string{logGroupARN},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resource, ok := newLogsAnomalyDetectorResource(tt.detector)
+			if ok != tt.wantOK {
+				t.Fatalf("newLogsAnomalyDetectorResource() ok = %t, want %t", ok, tt.wantOK)
+			}
+			if !ok {
+				return
+			}
+			if got := resource.InstanceState.ID; got != detectorARN {
+				t.Fatalf("resource ID = %q, want %q", got, detectorARN)
+			}
+			if got := resource.InstanceInfo.Type; got != logsAnomalyDetectorResourceType {
+				t.Fatalf("resource type = %q, want %q", got, logsAnomalyDetectorResourceType)
+			}
+			for key, want := range map[string]string{
+				"arn":                  detectorARN,
+				"enabled":              tt.wantEnabled,
+				"log_group_arn_list.#": "1",
+				"log_group_arn_list.0": logGroupARN,
+			} {
+				if got := resource.InstanceState.Attributes[key]; got != want {
+					t.Fatalf("%s = %q, want %q", key, got, want)
+				}
+			}
+		})
+	}
+}
+
+func TestLogsAnomalyDetectorResourceNamesPreservePartBoundaries(t *testing.T) {
+	left := logsAnomalyDetectorResourceName("a/b", "arn:aws:logs:us-east-1:123456789012:anomaly-detector:left")
+	right := logsAnomalyDetectorResourceName("a-002F-b", "arn:aws:logs:us-east-1:123456789012:anomaly-detector:left")
+	if left == right {
+		t.Fatalf("anomaly detector resource names collide: %q", left)
+	}
+}
+
+func TestLogsAnomalyDetectorEnabledValue(t *testing.T) {
+	tests := []struct {
+		name        string
+		status      types.AnomalyDetectorStatus
+		wantEnabled bool
+		wantOK      bool
+	}{
+		{name: "analyzing", status: types.AnomalyDetectorStatusAnalyzing, wantEnabled: true, wantOK: true},
+		{name: "initializing", status: types.AnomalyDetectorStatusInitializing, wantEnabled: true, wantOK: true},
+		{name: "training", status: types.AnomalyDetectorStatusTraining, wantEnabled: true, wantOK: true},
+		{name: "failed", status: types.AnomalyDetectorStatusFailed, wantEnabled: true, wantOK: true},
+		{name: "paused", status: types.AnomalyDetectorStatusPaused, wantEnabled: false, wantOK: true},
+		{name: "deleted", status: types.AnomalyDetectorStatusDeleted, wantOK: false},
+		{name: "empty", wantOK: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotEnabled, gotOK := logsAnomalyDetectorEnabledValue(tt.status)
+			if gotOK != tt.wantOK {
+				t.Fatalf("logsAnomalyDetectorEnabledValue() ok = %t, want %t", gotOK, tt.wantOK)
+			}
+			if gotEnabled != tt.wantEnabled {
+				t.Fatalf("logsAnomalyDetectorEnabledValue() enabled = %t, want %t", gotEnabled, tt.wantEnabled)
+			}
+		})
+	}
+}
