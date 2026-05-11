@@ -6,6 +6,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 )
@@ -683,5 +684,113 @@ func TestLogsAnomalyDetectorEnabledValue(t *testing.T) {
 				t.Fatalf("logsAnomalyDetectorEnabledValue() enabled = %t, want %t", gotEnabled, tt.wantEnabled)
 			}
 		})
+	}
+}
+
+func TestNewLogsTransformerResource(t *testing.T) {
+	logGroupARN := "arn:aws:logs:us-east-1:123456789012:log-group:/aws/lambda/example"
+	logGroupName := "/aws/lambda/example"
+	source := "@message"
+	destination := "parsed"
+
+	resource, ok := newLogsTransformerResource(logGroupName, logGroupARN, &cloudwatchlogs.GetTransformerOutput{
+		TransformerConfig: []types.Processor{
+			{
+				ParseJSON: &types.ParseJSON{
+					Source:      &source,
+					Destination: &destination,
+				},
+			},
+		},
+	})
+	if !ok {
+		t.Fatal("newLogsTransformerResource() ok = false, want true")
+	}
+	if got := resource.InstanceState.ID; got != logGroupARN {
+		t.Fatalf("resource ID = %q, want %q", got, logGroupARN)
+	}
+	if got := resource.InstanceInfo.Type; got != logsTransformerResourceType {
+		t.Fatalf("resource type = %q, want %q", got, logsTransformerResourceType)
+	}
+	if preserveID, ok := resource.InstanceState.Meta[tfcompat.MetaKeyPreserveIDAfterRefresh].(bool); !ok || !preserveID {
+		t.Fatalf("preserve ID metadata = %v, %t; want true, true", preserveID, ok)
+	}
+	for key, want := range map[string]string{
+		"log_group_arn":                                 logGroupARN,
+		"transformer_config.#":                          "1",
+		"transformer_config.0.parse_json.#":             "1",
+		"transformer_config.0.parse_json.0.source":      source,
+		"transformer_config.0.parse_json.0.destination": destination,
+	} {
+		if got := resource.InstanceState.Attributes[key]; got != want {
+			t.Fatalf("%s = %q, want %q", key, got, want)
+		}
+	}
+	if _, ok := newLogsTransformerResource(logGroupName, "", &cloudwatchlogs.GetTransformerOutput{
+		TransformerConfig: []types.Processor{{ParseJSON: &types.ParseJSON{}}},
+	}); ok {
+		t.Fatal("newLogsTransformerResource() ok = true for empty log group ARN, want false")
+	}
+	if _, ok := newLogsTransformerResource(logGroupName, logGroupARN, &cloudwatchlogs.GetTransformerOutput{}); ok {
+		t.Fatal("newLogsTransformerResource() ok = true for empty transformer config, want false")
+	}
+	if _, ok := newLogsTransformerResource(logGroupName, logGroupARN, nil); ok {
+		t.Fatal("newLogsTransformerResource() ok = true for nil transformer, want false")
+	}
+}
+
+func TestLogsTransformerConfigAttributes(t *testing.T) {
+	key := "env"
+	value := "prod"
+	attributes := logsTransformerConfigAttributes([]types.Processor{
+		{
+			ParseJSON: &types.ParseJSON{},
+		},
+		{
+			AddKeys: &types.AddKeys{
+				Entries: []types.AddKeyEntry{
+					{Key: &key, Value: &value},
+				},
+			},
+		},
+	})
+
+	for key, want := range map[string]string{
+		"transformer_config.#":                                        "2",
+		"transformer_config.0.parse_json.#":                           "1",
+		"transformer_config.1.add_keys.#":                             "1",
+		"transformer_config.1.add_keys.0.entry.#":                     "1",
+		"transformer_config.1.add_keys.0.entry.0.key":                 "env",
+		"transformer_config.1.add_keys.0.entry.0.value":               "prod",
+		"transformer_config.1.add_keys.0.entry.0.overwrite_if_exists": "false",
+	} {
+		if got := attributes[key]; got != want {
+			t.Fatalf("%s = %q, want %q", key, got, want)
+		}
+	}
+	if _, ok := attributes["transformer_config.0.parse_json.0.source"]; ok {
+		t.Fatal("parse_json source was set for an empty processor config, want omitted")
+	}
+}
+
+func TestLogsTransformerLogGroupARN(t *testing.T) {
+	logGroupARN := "arn:aws:logs:us-east-1:123456789012:log-group:/aws/lambda/example"
+	if got := logsTransformerLogGroupARN(types.LogGroup{LogGroupArn: &logGroupARN}); got != logGroupARN {
+		t.Fatalf("logsTransformerLogGroupARN() = %q, want %q", got, logGroupARN)
+	}
+	arnWithWildcard := logGroupARN + ":*"
+	if got := logsTransformerLogGroupARN(types.LogGroup{Arn: &arnWithWildcard}); got != logGroupARN {
+		t.Fatalf("logsTransformerLogGroupARN() = %q, want %q", got, logGroupARN)
+	}
+	if got := logsTransformerLogGroupARN(types.LogGroup{}); got != "" {
+		t.Fatalf("logsTransformerLogGroupARN() = %q, want empty", got)
+	}
+}
+
+func TestLogsTransformerResourceNamesPreservePartBoundaries(t *testing.T) {
+	left := logsTransformerResourceName("a/b", "arn:aws:logs:us-east-1:123456789012:log-group:left")
+	right := logsTransformerResourceName("a-002F-b", "arn:aws:logs:us-east-1:123456789012:log-group:left")
+	if left == right {
+		t.Fatalf("transformer resource names collide: %q", left)
 	}
 }

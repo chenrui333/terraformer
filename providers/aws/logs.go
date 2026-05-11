@@ -7,12 +7,15 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
+	"github.com/iancoleman/strcase"
 )
 
 var logsAllowEmptyValues = []string{"tags."}
@@ -25,6 +28,7 @@ const (
 	logsDeliverySourceResourceType            = "aws_cloudwatch_log_delivery_source"
 	logsDestinationPolicyResourceType         = "aws_cloudwatch_log_destination_policy"
 	logsIndexPolicyResourceType               = "aws_cloudwatch_log_index_policy"
+	logsTransformerResourceType               = "aws_cloudwatch_log_transformer"
 )
 
 var logsAccountPolicyTypes = []types.PolicyType{
@@ -79,6 +83,7 @@ func (g *LogsGenerator) InitResources() error {
 	svc := cloudwatchlogs.NewFromConfig(config)
 
 	var logGroupNames []string
+	var logGroups []types.LogGroup
 	p := cloudwatchlogs.NewDescribeLogGroupsPaginator(svc, &cloudwatchlogs.DescribeLogGroupsInput{})
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
@@ -86,6 +91,7 @@ func (g *LogsGenerator) InitResources() error {
 			return err
 		}
 		g.Resources = append(g.Resources, g.createResources(page)...)
+		logGroups = append(logGroups, page.LogGroups...)
 		for _, logGroup := range page.LogGroups {
 			logGroupName := StringValue(logGroup.LogGroupName)
 			if logGroupName != "" {
@@ -103,6 +109,7 @@ func (g *LogsGenerator) InitResources() error {
 		logsOptionalResourceLoader{name: "delivery destinations", load: func() error { return g.addDeliveryDestinations(svc) }},
 		logsOptionalResourceLoader{name: "deliveries", load: func() error { return g.addDeliveries(svc) }},
 		logsOptionalResourceLoader{name: "anomaly detectors", load: func() error { return g.addAnomalyDetectors(svc) }},
+		logsOptionalResourceLoader{name: "transformers", load: func() error { return g.addTransformers(svc, logGroups) }},
 		logsOptionalResourceLoader{name: "resource policies", load: func() error { return g.addResourcePolicies(svc) }},
 		logsOptionalResourceLoader{name: "account policies", load: func() error { return g.addAccountPolicies(svc) }},
 		logsOptionalResourceLoader{name: "query definitions", load: func() error { return g.addQueryDefinitions(svc) }},
@@ -346,6 +353,28 @@ func (g *LogsGenerator) addAnomalyDetectors(svc *cloudwatchlogs.Client) error {
 			if resource, ok := newLogsAnomalyDetectorResource(detector); ok {
 				g.Resources = append(g.Resources, resource)
 			}
+		}
+	}
+	return nil
+}
+
+func (g *LogsGenerator) addTransformers(svc *cloudwatchlogs.Client, logGroups []types.LogGroup) error {
+	for _, logGroup := range logGroups {
+		logGroupARN := logsTransformerLogGroupARN(logGroup)
+		if logGroupARN == "" {
+			continue
+		}
+		transformer, err := svc.GetTransformer(context.TODO(), &cloudwatchlogs.GetTransformerInput{
+			LogGroupIdentifier: &logGroupARN,
+		})
+		if err != nil {
+			if logsResourceNotFound(err) {
+				continue
+			}
+			return err
+		}
+		if resource, ok := newLogsTransformerResource(StringValue(logGroup.LogGroupName), logGroupARN, transformer); ok {
+			g.Resources = append(g.Resources, resource)
 		}
 	}
 	return nil
@@ -689,6 +718,152 @@ func logsAnomalyDetectorEnabledValue(status types.AnomalyDetectorStatus) (bool, 
 
 func logsAnomalyDetectorResourceName(detectorName, detectorARN string) string {
 	return logsResourceNameWithLengths("anomaly_detector", detectorName, detectorARN)
+}
+
+func newLogsTransformerResource(logGroupName, logGroupARN string, transformer *cloudwatchlogs.GetTransformerOutput) (terraformutils.Resource, bool) {
+	if logGroupARN == "" || transformer == nil || len(transformer.TransformerConfig) == 0 {
+		return terraformutils.Resource{}, false
+	}
+
+	attributes := map[string]string{
+		"log_group_arn": logGroupARN,
+	}
+	for key, value := range logsTransformerConfigAttributes(transformer.TransformerConfig) {
+		attributes[key] = value
+	}
+
+	resource := terraformutils.NewResource(
+		logGroupARN,
+		logsTransformerResourceName(logGroupName, logGroupARN),
+		logsTransformerResourceType,
+		"aws",
+		attributes,
+		logsAllowEmptyValues,
+		map[string]interface{}{})
+	if resource.InstanceState.Meta == nil {
+		resource.InstanceState.Meta = map[string]interface{}{}
+	}
+	resource.InstanceState.Meta[tfcompat.MetaKeyPreserveIDAfterRefresh] = true
+	return resource, true
+}
+
+func logsTransformerLogGroupARN(logGroup types.LogGroup) string {
+	if logGroupARN := StringValue(logGroup.LogGroupArn); logGroupARN != "" {
+		return logGroupARN
+	}
+	return strings.TrimSuffix(StringValue(logGroup.Arn), ":*")
+}
+
+func logsTransformerResourceName(logGroupName, logGroupARN string) string {
+	return logsResourceNameWithLengths("transformer", logGroupName, logGroupARN)
+}
+
+func logsTransformerConfigAttributes(processors []types.Processor) map[string]string {
+	attributes := map[string]string{
+		"transformer_config.#": strconv.Itoa(len(processors)),
+	}
+	for i, processor := range processors {
+		logsFlattenTransformerValue(reflect.ValueOf(processor), fmt.Sprintf("transformer_config.%d", i), attributes)
+	}
+	return attributes
+}
+
+func logsFlattenTransformerValue(value reflect.Value, path string, attributes map[string]string) {
+	value = logsIndirectTransformerValue(value)
+	if !value.IsValid() {
+		return
+	}
+	switch value.Kind() {
+	case reflect.Struct:
+		valueType := value.Type()
+		for i := 0; i < value.NumField(); i++ {
+			field := valueType.Field(i)
+			if field.PkgPath != "" {
+				continue
+			}
+			fieldValue := value.Field(i)
+			if logsTransformerValueEmpty(fieldValue) {
+				continue
+			}
+			logsFlattenTransformerField(fieldValue, path+"."+logsTransformerFieldName(field.Name), attributes)
+		}
+	case reflect.String:
+		if value.String() != "" {
+			attributes[path] = value.String()
+		}
+	case reflect.Bool:
+		attributes[path] = strconv.FormatBool(value.Bool())
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		if value.Int() != 0 {
+			attributes[path] = strconv.FormatInt(value.Int(), 10)
+		}
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		if value.Uint() != 0 {
+			attributes[path] = strconv.FormatUint(value.Uint(), 10)
+		}
+	case reflect.Float32, reflect.Float64:
+		if value.Float() != 0 {
+			attributes[path] = strconv.FormatFloat(value.Float(), 'f', -1, value.Type().Bits())
+		}
+	}
+}
+
+func logsFlattenTransformerField(value reflect.Value, path string, attributes map[string]string) {
+	value = logsIndirectTransformerValue(value)
+	if !value.IsValid() {
+		return
+	}
+	switch value.Kind() {
+	case reflect.Struct:
+		attributes[path+".#"] = "1"
+		logsFlattenTransformerValue(value, path+".0", attributes)
+	case reflect.Slice:
+		attributes[path+".#"] = strconv.Itoa(value.Len())
+		for i := 0; i < value.Len(); i++ {
+			logsFlattenTransformerValue(value.Index(i), fmt.Sprintf("%s.%d", path, i), attributes)
+		}
+	default:
+		logsFlattenTransformerValue(value, path, attributes)
+	}
+}
+
+func logsIndirectTransformerValue(value reflect.Value) reflect.Value {
+	for value.IsValid() && value.Kind() == reflect.Pointer {
+		if value.IsNil() {
+			return reflect.Value{}
+		}
+		value = value.Elem()
+	}
+	return value
+}
+
+func logsTransformerValueEmpty(value reflect.Value) bool {
+	if !value.IsValid() {
+		return true
+	}
+	switch value.Kind() {
+	case reflect.Pointer, reflect.Interface:
+		return value.IsNil()
+	case reflect.Slice, reflect.Map:
+		return value.Len() == 0
+	case reflect.String:
+		return value.String() == ""
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return value.Int() == 0
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return value.Uint() == 0
+	case reflect.Float32, reflect.Float64:
+		return value.Float() == 0
+	default:
+		return false
+	}
+}
+
+func logsTransformerFieldName(name string) string {
+	if name == "Entries" {
+		return "entry"
+	}
+	return strcase.ToSnake(name)
 }
 
 func logsStringListAttributes(name string, values []string) map[string]string {
