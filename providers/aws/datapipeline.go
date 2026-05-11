@@ -83,10 +83,15 @@ func (g *DataPipelineGenerator) PostRefreshCleanup() {
 	if dataPipelineHasTypedFilter(g.Filter) && !awsHasApplicableFilter(g.Filter, dataPipelinePipelineResourceType) {
 		g.Resources = dataPipelineResourcesWithoutType(g.Resources, dataPipelinePipelineResourceType)
 	}
-	for pipelineID := range matchedPipelineIDs {
-		for _, resource := range definitionsByPipelineID[pipelineID] {
-			if !terraformutils.ContainsResource(g.Resources, resource) {
-				g.Resources = append(g.Resources, resource)
+	if dataPipelineShouldPruneDefinitionsToMatchedPipelines(g.Filter) {
+		g.Resources = dataPipelineResourcesWithDefinitionsForPipelineIDs(g.Resources, matchedPipelineIDs)
+	}
+	if !awsHasTypedFilter(g.Filter, dataPipelinePipelineDefinitionResourceType) {
+		for pipelineID := range matchedPipelineIDs {
+			for _, resource := range definitionsByPipelineID[pipelineID] {
+				if !terraformutils.ContainsResource(g.Resources, resource) {
+					g.Resources = append(g.Resources, resource)
+				}
 			}
 		}
 	}
@@ -169,6 +174,17 @@ func dataPipelineResourcesWithoutType(resources []terraformutils.Resource, resou
 	return filtered
 }
 
+func dataPipelineResourcesWithDefinitionsForPipelineIDs(resources []terraformutils.Resource, pipelineIDs map[string]bool) []terraformutils.Resource {
+	filtered := []terraformutils.Resource{}
+	for _, resource := range resources {
+		if resource.InstanceInfo.Type == dataPipelinePipelineDefinitionResourceType && !pipelineIDs[dataPipelineDefinitionPipelineID(resource)] {
+			continue
+		}
+		filtered = append(filtered, resource)
+	}
+	return filtered
+}
+
 func dataPipelineDefinitionPipelineID(resource terraformutils.Resource) string {
 	if resource.InstanceState == nil || resource.InstanceState.Attributes == nil {
 		return ""
@@ -203,6 +219,11 @@ func dataPipelineShouldEmitPipeline(filters []terraformutils.ResourceFilter, pip
 func dataPipelineHasTypedFilter(filters []terraformutils.ResourceFilter) bool {
 	return awsHasTypedFilter(filters, dataPipelinePipelineResourceType) ||
 		awsHasTypedFilter(filters, dataPipelinePipelineDefinitionResourceType)
+}
+
+func dataPipelineShouldPruneDefinitionsToMatchedPipelines(filters []terraformutils.ResourceFilter) bool {
+	return awsHasTypedNonIDFilter(filters, dataPipelinePipelineResourceType) &&
+		!awsHasTypedFilter(filters, dataPipelinePipelineDefinitionResourceType)
 }
 
 func dataPipelinePipelineImportID(pipelineID string) string {

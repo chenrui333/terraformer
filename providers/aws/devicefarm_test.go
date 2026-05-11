@@ -175,6 +175,22 @@ func TestDeviceFarmProjectIDFilterAllowsAllForUnparseableChildID(t *testing.T) {
 	}
 }
 
+func TestDeviceFarmProjectIDFilterAllowsAllForChildAttributeFilters(t *testing.T) {
+	service := terraformutils.Service{}
+	service.ParseFilters([]string{
+		"devicefarm_upload='arn:aws:devicefarm:us-west-2:123456789012:upload:project-upload/upload-id'",
+		"Type=devicefarm_device_pool;Name=name;Value=phones",
+	})
+
+	filter := deviceFarmProjectIDFilter(service.Filter)
+	if !awsIDFilterAllows(filter, "arn:aws:devicefarm:us-west-2:123456789012:project:project-other") {
+		t.Fatalf("Device Farm child attribute filters should disable project prefilter: %#v", filter)
+	}
+	if !deviceFarmShouldLoadDevicePools(service.Filter) || !deviceFarmShouldLoadUploads(service.Filter) {
+		t.Fatal("Device Farm child filters should load each requested child family")
+	}
+}
+
 func TestDeviceFarmTypedFiltersLoadOnlyRequestedFamilies(t *testing.T) {
 	service := terraformutils.Service{}
 	service.ParseFilters([]string{

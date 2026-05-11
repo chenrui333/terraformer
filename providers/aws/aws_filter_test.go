@@ -78,6 +78,12 @@ func TestAWSTypedFilterValuesAndApplicability(t *testing.T) {
 	if !awsHasTypedFilter(service.Filter, cloud9EnvironmentMembershipResourceType) {
 		t.Fatal("expected Cloud9 membership typed filter")
 	}
+	if !awsHasTypedNonIDFilter(service.Filter, dataPipelinePipelineDefinitionResourceType) {
+		t.Fatal("expected Data Pipeline definition typed non-ID filter")
+	}
+	if awsHasTypedNonIDFilter(service.Filter, cloud9EnvironmentMembershipResourceType) {
+		t.Fatal("unexpected Cloud9 membership typed non-ID filter")
+	}
 	if awsHasTypedFilter(service.Filter, qldbLedgerResourceType) {
 		t.Fatal("unexpected QLDB ledger typed filter")
 	}

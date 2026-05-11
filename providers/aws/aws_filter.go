@@ -41,6 +41,16 @@ func awsHasTypedFilter(filters []terraformutils.ResourceFilter, serviceName stri
 	return false
 }
 
+func awsHasTypedNonIDFilter(filters []terraformutils.ResourceFilter, serviceName string) bool {
+	serviceName = strings.TrimPrefix(serviceName, "aws_")
+	for _, filter := range filters {
+		if filter.ServiceName == serviceName && filter.FieldPath != "id" {
+			return true
+		}
+	}
+	return false
+}
+
 func awsHasApplicableFilter(filters []terraformutils.ResourceFilter, serviceName string) bool {
 	serviceName = strings.TrimPrefix(serviceName, "aws_")
 	for _, filter := range filters {

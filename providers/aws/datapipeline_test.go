@@ -126,6 +126,43 @@ func TestDataPipelinePostRefreshCleanupKeepsDefinitionForMatchedPipelineName(t *
 	})
 }
 
+func TestDataPipelinePostRefreshCleanupPrunesDefinitionsForTypedPipelineNameFilter(t *testing.T) {
+	pipeline := dataPipelinePipelineResourceForCleanup("df-123", "daily-import")
+	otherPipeline := dataPipelinePipelineResourceForCleanup("df-456", "hourly-import")
+	definition := dataPipelineDefinitionResourceForCleanup("df-123", "daily-import")
+	otherDefinition := dataPipelineDefinitionResourceForCleanup("df-456", "hourly-import")
+	generator := &DataPipelineGenerator{}
+	generator.Resources = []terraformutils.Resource{pipeline, definition, otherPipeline, otherDefinition}
+	generator.ParseFilters([]string{"Type=datapipeline_pipeline;Name=name;Value=daily-import"})
+
+	generator.PostRefreshCleanup()
+
+	assertDataPipelineResourceIDs(t, generator.Resources, []string{
+		dataPipelinePipelineResourceType + "/df-123",
+		dataPipelinePipelineDefinitionResourceType + "/df-123",
+	})
+}
+
+func TestDataPipelinePostRefreshCleanupPreservesExplicitDefinitionFilters(t *testing.T) {
+	pipeline := dataPipelinePipelineResourceForCleanup("df-123", "daily-import")
+	otherPipeline := dataPipelinePipelineResourceForCleanup("df-456", "hourly-import")
+	definition := dataPipelineDefinitionResourceForCleanup("df-123", "daily-import")
+	otherDefinition := dataPipelineDefinitionResourceForCleanup("df-456", "hourly-import")
+	generator := &DataPipelineGenerator{}
+	generator.Resources = []terraformutils.Resource{pipeline, definition, otherPipeline, otherDefinition}
+	generator.ParseFilters([]string{
+		"Type=datapipeline_pipeline;Name=name;Value=daily-import",
+		"Type=datapipeline_pipeline_definition;Name=pipeline_id;Value=df-456",
+	})
+
+	generator.PostRefreshCleanup()
+
+	assertDataPipelineResourceIDs(t, generator.Resources, []string{
+		dataPipelinePipelineResourceType + "/df-123",
+		dataPipelinePipelineDefinitionResourceType + "/df-456",
+	})
+}
+
 func TestDataPipelinePostRefreshCleanupDoesNotBroadenDefinitionSpecificFilters(t *testing.T) {
 	pipeline := dataPipelinePipelineResourceForCleanup("df-123", "daily-import")
 	otherPipeline := dataPipelinePipelineResourceForCleanup("df-456", "hourly-import")

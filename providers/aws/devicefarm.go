@@ -251,11 +251,27 @@ func deviceFarmShouldLoadInstanceProfiles(filters []terraformutils.ResourceFilte
 }
 
 func deviceFarmProjectIDFilter(filters []terraformutils.ResourceFilter) map[string]bool {
+	if deviceFarmHasProjectScopedChildAttributeFilter(filters) {
+		return nil
+	}
 	projectARNs, ok := deviceFarmProjectARNsFromChildFilterValues(filters)
 	if !ok {
 		return nil
 	}
 	return awsMergeIDFilterValues(awsTypedIDFilterValues(filters, deviceFarmProjectResourceType), projectARNs)
+}
+
+func deviceFarmHasProjectScopedChildAttributeFilter(filters []terraformutils.ResourceFilter) bool {
+	for _, resourceType := range []string{
+		deviceFarmDevicePoolResourceType,
+		deviceFarmNetworkProfileResourceType,
+		deviceFarmUploadResourceType,
+	} {
+		if awsHasTypedNonIDFilter(filters, resourceType) {
+			return true
+		}
+	}
+	return false
 }
 
 func deviceFarmProjectARNsFromChildFilterValues(filters []terraformutils.ResourceFilter) (map[string]bool, bool) {
