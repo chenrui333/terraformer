@@ -827,6 +827,11 @@ func TestGuardDutyOrganizationResourceUnavailable(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "delegated administrator not enabled",
+			err:  &guarddutytypes.BadRequestException{Message: aws.String("delegated administrator account has not been enabled")},
+			want: true,
+		},
+		{
 			name: "not organization member",
 			err:  &guarddutytypes.BadRequestException{Message: aws.String("The request is rejected because the account is not a member of an organization.")},
 			want: true,

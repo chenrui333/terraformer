@@ -1084,6 +1084,9 @@ func guardDutyOrganizationResourceUnavailable(err error) bool {
 		return false
 	}
 	message := strings.ToLower(badRequest.ErrorMessage())
+	if strings.Contains(message, "delegated administrator") && strings.Contains(message, "not been enabled") {
+		return true
+	}
 	return strings.Contains(message, "organization") &&
 		(strings.Contains(message, "administrator") ||
 			strings.Contains(message, "delegated") ||
