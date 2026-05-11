@@ -128,7 +128,7 @@ func TestMediaConvertAccountEndpoint(t *testing.T) {
 		t.Fatalf("DescribeEndpoints calls = %d, want %d", got, want)
 	}
 	for _, input := range client.inputs {
-		if got, want := input.Mode, mediaconverttypes.DescribeEndpointsModeGetOnly; got != want {
+		if got, want := input.Mode, mediaconverttypes.DescribeEndpointsModeGetOnly; got != want { //nolint:staticcheck // Verifies the intentional GET_ONLY fallback mode.
 			t.Fatalf("DescribeEndpoints mode = %q, want %q", got, want)
 		}
 	}

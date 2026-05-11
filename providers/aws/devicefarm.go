@@ -40,10 +40,10 @@ func (g *DeviceFarmGenerator) InitResources() error {
 		return err
 	}
 	if err := g.loadTestGridProjects(svc); err != nil {
-		return err
+		log.Printf("[WARN] Skipping Device Farm test grid projects: %v", err)
 	}
 	if err := g.loadInstanceProfiles(svc); err != nil {
-		return err
+		log.Printf("[WARN] Skipping Device Farm instance profiles: %v", err)
 	}
 
 	return nil
