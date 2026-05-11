@@ -227,7 +227,7 @@ func newS3ControlAccessPointPolicyResource(accountID, accessPointName, accessPoi
 		return terraformutils.Resource{}, false
 	}
 	return terraformutils.NewResource(
-		s3ControlAccessPointImportID(accountID, accessPointName, accessPointARN),
+		accessPointARN,
 		s3ControlResourceName("access_point_policy", accountID, accessPointName, accessPointARN),
 		s3ControlAccessPointPolicyResourceType,
 		"aws",
@@ -373,6 +373,25 @@ func s3ControlAccessPointImportID(accountID, accessPointName, accessPointARN str
 	return strings.Join([]string{accountID, accessPointName}, s3ControlAccessPointIDSeparator)
 }
 
+func s3ControlAccessPointImportIDFromARN(accessPointARN string) (string, bool) {
+	parsedARN, err := arn.Parse(accessPointARN)
+	if err != nil {
+		return "", false
+	}
+	switch parsedARN.Service {
+	case "s3", "s3express":
+		accessPointName := strings.TrimPrefix(parsedARN.Resource, "accesspoint/")
+		if accessPointName == parsedARN.Resource || parsedARN.AccountID == "" || accessPointName == "" {
+			return "", false
+		}
+		return s3ControlAccessPointImportID(parsedARN.AccountID, accessPointName, accessPointARN), true
+	case "s3-outposts":
+		return accessPointARN, true
+	default:
+		return "", false
+	}
+}
+
 func s3ControlObjectLambdaAccessPointImportID(accountID, accessPointName string) string {
 	return strings.Join([]string{accountID, accessPointName}, s3ControlAccessPointIDSeparator)
 }
@@ -470,6 +489,11 @@ func s3ControlSplitAccessPointPolicyIDs(resources []terraformutils.Resource) map
 			continue
 		}
 		ids[resource.InstanceState.ID] = true
+		if resource.InstanceState.Attributes != nil {
+			if id, ok := s3ControlAccessPointImportIDFromARN(resource.InstanceState.Attributes["access_point_arn"]); ok {
+				ids[id] = true
+			}
+		}
 	}
 	return ids
 }

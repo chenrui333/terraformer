@@ -117,7 +117,7 @@ func TestNewS3ControlOutpostsAccessPointResource(t *testing.T) {
 func TestNewS3ControlAccessPointPolicyResource(t *testing.T) {
 	policy := `{"Version":"2012-10-17"}`
 	resource, ok := newS3ControlAccessPointPolicyResource(testS3ControlAccountID, "core-ap", testS3ControlAccessPointARN, policy)
-	assertS3ControlResourceAttributes(t, resource, ok, s3ControlAccessPointPolicyResourceType, "123456789012:core-ap",
+	assertS3ControlResourceAttributes(t, resource, ok, s3ControlAccessPointPolicyResourceType, testS3ControlAccessPointARN,
 		[]string{"access_point_policy", testS3ControlAccountID, "core-ap", testS3ControlAccessPointARN},
 		map[string]string{
 			"access_point_arn": testS3ControlAccessPointARN,
@@ -182,6 +182,35 @@ func TestNewS3ControlObjectLambdaAccessPointPolicyResource(t *testing.T) {
 	}
 	if _, ok := newS3ControlObjectLambdaAccessPointPolicyResource(testS3ControlAccountID, "core-olap", ""); ok {
 		t.Fatal("object lambda policy with empty policy body should be skipped")
+	}
+}
+
+func TestS3ControlAccessPointImportIDFromARN(t *testing.T) {
+	outpostsARN := "arn:aws:s3-outposts:us-east-1:123456789012:outpost/op-1234567890123456/accesspoint/core-ap"
+	tests := []struct {
+		name string
+		arn  string
+		want string
+		ok   bool
+	}{
+		{name: "regular access point", arn: testS3ControlAccessPointARN, want: "123456789012:core-ap", ok: true},
+		{name: "s3 express access point", arn: "arn:aws:s3express:us-east-1:123456789012:accesspoint/core-ap", want: "123456789012:core-ap", ok: true},
+		{name: "outposts access point", arn: outpostsARN, want: outpostsARN, ok: true},
+		{name: "invalid arn", arn: "not-an-arn", ok: false},
+		{name: "wrong service", arn: "arn:aws:sqs:us-east-1:123456789012:queue/core", ok: false},
+		{name: "wrong resource", arn: "arn:aws:s3:us-east-1:123456789012:bucket/core", ok: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := s3ControlAccessPointImportIDFromARN(tt.arn)
+			if ok != tt.ok {
+				t.Fatalf("ok = %t, want %t", ok, tt.ok)
+			}
+			if got != tt.want {
+				t.Fatalf("import ID = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }
 
@@ -330,6 +359,21 @@ func TestS3ControlPostConvertHookWrapsSplitPolicies(t *testing.T) {
 	want := "<<POLICY\n{\"Resource\":\"$" + "$" + "{aws:username}\"}\nPOLICY"
 	if got := generator.Resources[1].Item["policy"]; got != want {
 		t.Fatalf("split policy = %q, want %q", got, want)
+	}
+}
+
+func TestS3ControlSplitAccessPointPolicyIDsIncludesImportedARN(t *testing.T) {
+	policyResource, ok := newS3ControlAccessPointPolicyResource(testS3ControlAccountID, "core-ap", testS3ControlAccessPointARN, "{\"Version\":\"2012-10-17\"}")
+	if !ok {
+		t.Fatal("access point policy should be importable")
+	}
+
+	ids := s3ControlSplitAccessPointPolicyIDs([]terraformutils.Resource{policyResource})
+	if !ids[testS3ControlAccessPointARN] {
+		t.Fatalf("split policy IDs did not include policy import ARN: %#v", ids)
+	}
+	if !ids["123456789012:core-ap"] {
+		t.Fatalf("split policy IDs did not include provider read ID derived from access_point_arn: %#v", ids)
 	}
 }
 
