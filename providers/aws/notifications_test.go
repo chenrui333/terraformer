@@ -81,6 +81,14 @@ func TestNewNotificationsResources(t *testing.T) {
 	assertMessagingResource(t, hub, ok, notificationsNotificationHubResourceType, "us-east-1", map[string]string{
 		"notification_hub_region": "us-east-1",
 	})
+
+	hub, ok = newNotificationsNotificationHubResource(notificationstypes.NotificationHubOverview{
+		NotificationHubRegion: aws.String("us-west-2"),
+		StatusSummary:         &notificationstypes.NotificationHubStatusSummary{Status: notificationstypes.NotificationHubStatusInactive},
+	})
+	assertMessagingResource(t, hub, ok, notificationsNotificationHubResourceType, "us-west-2", map[string]string{
+		"notification_hub_region": "us-west-2",
+	})
 }
 
 func TestNewNotificationsNotificationConfigurationResourceAllowsEmptyDescription(t *testing.T) {
@@ -141,9 +149,8 @@ func TestNotificationsResourceSkips(t *testing.T) {
 	}
 	if _, ok := newNotificationsNotificationHubResource(notificationstypes.NotificationHubOverview{
 		NotificationHubRegion: aws.String("us-east-1"),
-		StatusSummary:         &notificationstypes.NotificationHubStatusSummary{Status: notificationstypes.NotificationHubStatusInactive},
 	}); ok {
-		t.Fatal("inactive notification hub should be skipped")
+		t.Fatal("notification hub without status summary should be skipped")
 	}
 }
 

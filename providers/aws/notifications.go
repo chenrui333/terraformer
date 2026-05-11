@@ -258,7 +258,7 @@ func notificationsListNotificationConfigurationsInput() *notifications.ListNotif
 }
 
 func notificationsHubImportable(hub notificationstypes.NotificationHubOverview) bool {
-	return hub.StatusSummary != nil && hub.StatusSummary.Status == notificationstypes.NotificationHubStatusActive
+	return hub.StatusSummary != nil
 }
 
 func notificationsNotificationConfigurationImportID(arn string) string {
