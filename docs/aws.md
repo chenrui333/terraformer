@@ -332,6 +332,11 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_glue_trigger`
     * `aws_glue_user_defined_function`
     * `aws_glue_workflow`
+*   `guardduty`
+    * `aws_guardduty_detector`
+    * `aws_guardduty_filter`
+    * `aws_guardduty_ipset`
+    * `aws_guardduty_threatintelset`
 *   `iam`
     * `aws_iam_access_key`
     * `aws_iam_account_alias`

@@ -312,6 +312,7 @@ func (p *AWSProvider) GetSupportedService() map[string]terraformutils.ServiceGen
 		"es":                &AwsFacade{service: &EsGenerator{}},
 		"firehose":          &AwsFacade{service: &FirehoseGenerator{}},
 		"glue":              &AwsFacade{service: &GlueGenerator{}},
+		"guardduty":         &AwsFacade{service: &GuardDutyGenerator{}},
 		"iam":               &AwsFacade{service: &IamGenerator{}},
 		"identitystore":     &AwsFacade{service: &IdentityStoreGenerator{}},
 		"igw":               &AwsFacade{service: &IgwGenerator{}},
