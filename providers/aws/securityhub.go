@@ -471,7 +471,7 @@ func securityHubAccountDependency(accountNumber string) map[string]interface{} {
 }
 
 func securityHubAccountResourceRef(accountNumber string) string {
-	return "aws_securityhub_account.tfer--" + terraformutils.TfSanitize(accountNumber)
+	return securityHubAccountResourceType + "." + terraformutils.TfSanitize(accountNumber)
 }
 
 func securityHubActionTargetIdentifier(actionTargetARN string) string {

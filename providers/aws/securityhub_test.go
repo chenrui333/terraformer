@@ -194,7 +194,13 @@ func TestSecurityHubAccountDependency(t *testing.T) {
 	if !ok || len(dependsOn) != 1 {
 		t.Fatalf("depends_on = %#v", got["depends_on"])
 	}
-	want := "aws_securityhub_account.tfer--" + terraformutils.TfSanitize(securityHubTestAccountID)
+	want := terraformutils.NewSimpleResource(
+		securityHubTestAccountID,
+		securityHubTestAccountID,
+		securityHubAccountResourceType,
+		"aws",
+		securityhubAllowEmptyValues,
+	).InstanceInfo.Id
 	if dependsOn[0] != want {
 		t.Fatalf("depends_on[0] = %q, want %q", dependsOn[0], want)
 	}
