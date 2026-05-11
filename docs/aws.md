@@ -321,6 +321,14 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_elasticsearch_domain`
 *   `firehose`
     * `aws_kinesis_firehose_delivery_stream`
+*   `globalaccelerator`
+    * `aws_globalaccelerator_accelerator`
+    * `aws_globalaccelerator_cross_account_attachment`
+    * `aws_globalaccelerator_custom_routing_accelerator`
+    * `aws_globalaccelerator_custom_routing_endpoint_group`
+    * `aws_globalaccelerator_custom_routing_listener`
+    * `aws_globalaccelerator_endpoint_group`
+    * `aws_globalaccelerator_listener`
 *   `glue`
     * `aws_glue_catalog_database`
     * `aws_glue_catalog_table`
@@ -681,6 +689,7 @@ List of global AWS services:
 *   `budgets`
 *   `cloudfront`
 *   `ecrpublic`
+*   `globalaccelerator`
 *   `iam`
 *   `organization`
 *   `route53`

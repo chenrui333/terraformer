@@ -27,6 +27,7 @@ var SupportedGlobalResources = []string{
 	"budgets",
 	"cloudfront",
 	"ecrpublic",
+	"globalaccelerator",
 	"iam",
 	"organization",
 	"route53",
@@ -78,6 +79,12 @@ func (p AWSProvider) GetResourceConnections() map[string]map[string][]string {
 		"elb": {
 			"sg":     []string{"security_groups", "id"},
 			"subnet": []string{"subnets", "id"},
+		},
+		"globalaccelerator": {
+			"globalaccelerator": []string{
+				"accelerator_arn", "id",
+				"listener_arn", "id",
+			},
 		},
 		"igw": {"vpc": []string{"vpc_id", "id"}},
 		"identitystore": {
@@ -311,6 +318,7 @@ func (p *AWSProvider) GetSupportedService() map[string]terraformutils.ServiceGen
 		"eni":               &AwsFacade{service: &EniGenerator{}},
 		"es":                &AwsFacade{service: &EsGenerator{}},
 		"firehose":          &AwsFacade{service: &FirehoseGenerator{}},
+		"globalaccelerator": &AwsFacade{service: &GlobalAcceleratorGenerator{}},
 		"glue":              &AwsFacade{service: &GlueGenerator{}},
 		"guardduty":         &AwsFacade{service: &GuardDutyGenerator{}},
 		"iam":               &AwsFacade{service: &IamGenerator{}},
