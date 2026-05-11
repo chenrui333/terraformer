@@ -19,11 +19,14 @@ const (
 	sesv2ConfigurationSetResourceType                 = "aws_sesv2_configuration_set"
 	sesv2ConfigurationSetEventDestinationResourceType = "aws_sesv2_configuration_set_event_destination"
 	sesv2ContactListResourceType                      = "aws_sesv2_contact_list"
+	sesv2DedicatedIPAssignmentResourceType            = "aws_sesv2_dedicated_ip_assignment"
 	sesv2DedicatedIPPoolResourceType                  = "aws_sesv2_dedicated_ip_pool"
 	sesv2EmailIdentityResourceType                    = "aws_sesv2_email_identity"
 	sesv2EmailIdentityFeedbackAttributesResourceType  = "aws_sesv2_email_identity_feedback_attributes"
 	sesv2EmailIdentityMailFromAttributesResourceType  = "aws_sesv2_email_identity_mail_from_attributes"
 	sesv2EmailIdentityPolicyResourceType              = "aws_sesv2_email_identity_policy"
+	sesv2DefaultDedicatedIPPoolName                   = "ses-default-dedicated-pool"
+	sesv2DedicatedIPAssignmentIDSeparator             = ","
 	sesv2ResourceIDSeparator                          = "|"
 )
 
@@ -47,6 +50,9 @@ func (g *SesV2Generator) InitResources() error {
 		return err
 	}
 	if err := g.loadDedicatedIPPools(svc); err != nil {
+		return err
+	}
+	if err := g.loadDedicatedIPAssignments(svc); err != nil {
 		return err
 	}
 	if err := g.loadEmailIdentities(svc); err != nil {
@@ -159,6 +165,57 @@ func (g *SesV2Generator) loadDedicatedIPPools(svc *sesv2.Client) error {
 		}
 	}
 	return nil
+}
+
+func (g *SesV2Generator) loadDedicatedIPAssignments(svc *sesv2.Client) error {
+	poolScalingModes, err := g.loadDedicatedIPPoolScalingModes(svc)
+	if err != nil {
+		return err
+	}
+	p := sesv2.NewGetDedicatedIpsPaginator(svc, &sesv2.GetDedicatedIpsInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, dedicatedIP := range page.DedicatedIps {
+			poolName := StringValue(dedicatedIP.PoolName)
+			if resource, ok := newSESV2DedicatedIPAssignmentResource(dedicatedIP, poolScalingModes[poolName]); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+	}
+	return nil
+}
+
+func (g *SesV2Generator) loadDedicatedIPPoolScalingModes(svc *sesv2.Client) (map[string]sesv2types.ScalingMode, error) {
+	poolScalingModes := map[string]sesv2types.ScalingMode{}
+	p := sesv2.NewListDedicatedIpPoolsPaginator(svc, &sesv2.ListDedicatedIpPoolsInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return nil, err
+		}
+		for _, poolName := range page.DedicatedIpPools {
+			if poolName == "" {
+				continue
+			}
+			output, err := svc.GetDedicatedIpPool(context.TODO(), &sesv2.GetDedicatedIpPoolInput{
+				PoolName: &poolName,
+			})
+			if err != nil {
+				if sesv2NotFound(err) {
+					continue
+				}
+				return nil, err
+			}
+			if output == nil || output.DedicatedIpPool == nil {
+				continue
+			}
+			poolScalingModes[poolName] = output.DedicatedIpPool.ScalingMode
+		}
+	}
+	return poolScalingModes, nil
 }
 
 func (g *SesV2Generator) loadEmailIdentities(svc *sesv2.Client) error {
@@ -352,6 +409,33 @@ func newSESV2DedicatedIPPoolResource(poolName string) (terraformutils.Resource, 
 	), true
 }
 
+func newSESV2DedicatedIPAssignmentResource(dedicatedIP sesv2types.DedicatedIp, poolScalingMode sesv2types.ScalingMode) (terraformutils.Resource, bool) {
+	ip := StringValue(dedicatedIP.Ip)
+	poolName := StringValue(dedicatedIP.PoolName)
+	if ip == "" || poolName == "" || !sesv2DedicatedIPAssignmentImportable(poolName, poolScalingMode) {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewResource(
+		sesv2DedicatedIPAssignmentImportID(ip, poolName),
+		sesv2ResourceName("dedicated_ip_assignment", ip, poolName),
+		sesv2DedicatedIPAssignmentResourceType,
+		"aws",
+		map[string]string{
+			"destination_pool_name": poolName,
+			"ip":                    ip,
+		},
+		sesv2AllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
+func sesv2DedicatedIPAssignmentImportable(poolName string, poolScalingMode sesv2types.ScalingMode) bool {
+	if poolName == "" || poolName == sesv2DefaultDedicatedIPPoolName {
+		return false
+	}
+	return poolScalingMode == sesv2types.ScalingModeStandard
+}
+
 func newSESV2EmailIdentityResource(identityName string, output *sesv2.GetEmailIdentityOutput) (terraformutils.Resource, bool) {
 	if identityName == "" || !sesv2EmailIdentityImportable(output) {
 		return terraformutils.Resource{}, false
@@ -458,6 +542,10 @@ func sesv2ContactListImportID(contactListName string) string {
 
 func sesv2DedicatedIPPoolImportID(poolName string) string {
 	return poolName
+}
+
+func sesv2DedicatedIPAssignmentImportID(ip, poolName string) string {
+	return strings.Join([]string{ip, poolName}, sesv2DedicatedIPAssignmentIDSeparator)
 }
 
 func sesv2EmailIdentityImportID(identityName string) string {
