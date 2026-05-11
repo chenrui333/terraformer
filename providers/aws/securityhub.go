@@ -189,6 +189,10 @@ func (g *SecurityhubGenerator) addActionTargets(svc *securityhub.Client, account
 }
 
 func (g *SecurityhubGenerator) addProductSubscriptions(svc *securityhub.Client, accountNumber string) error {
+	productARNBySuffix, err := securityHubProductARNsBySubscriptionSuffix(svc)
+	if err != nil {
+		return err
+	}
 	p := securityhub.NewListEnabledProductsForImportPaginator(svc, &securityhub.ListEnabledProductsForImportInput{})
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
@@ -196,7 +200,11 @@ func (g *SecurityhubGenerator) addProductSubscriptions(svc *securityhub.Client, 
 			return err
 		}
 		for _, productSubscriptionARN := range page.ProductSubscriptions {
-			resource, ok := newSecurityHubProductSubscriptionResource(productSubscriptionARN, accountNumber)
+			suffix, ok := securityHubProductSubscriptionSuffix(productSubscriptionARN)
+			if !ok {
+				continue
+			}
+			resource, ok := newSecurityHubProductSubscriptionResource(productSubscriptionARN, productARNBySuffix[suffix], accountNumber)
 			if !ok {
 				continue
 			}
@@ -384,9 +392,8 @@ func newSecurityHubActionTargetResource(actionTarget securityhubtypes.ActionTarg
 	), true
 }
 
-func newSecurityHubProductSubscriptionResource(productSubscriptionARN, accountNumber string) (terraformutils.Resource, bool) {
-	productARN, ok := securityHubProductARNFromSubscriptionARN(productSubscriptionARN)
-	if !ok {
+func newSecurityHubProductSubscriptionResource(productSubscriptionARN, productARN, accountNumber string) (terraformutils.Resource, bool) {
+	if productSubscriptionARN == "" || productARN == "" {
 		return terraformutils.Resource{}, false
 	}
 	return terraformutils.NewResource(
@@ -486,17 +493,59 @@ func securityHubProductSubscriptionResourceID(productARN, productSubscriptionARN
 	return strings.Join([]string{productARN, productSubscriptionARN}, securityHubProductSubscriptionIDSeparator)
 }
 
-func securityHubProductARNFromSubscriptionARN(productSubscriptionARN string) (string, bool) {
-	parsed, err := awsarn.Parse(productSubscriptionARN)
+func securityHubProductARNsBySubscriptionSuffix(svc *securityhub.Client) (map[string]string, error) {
+	p := securityhub.NewDescribeProductsPaginator(svc, &securityhub.DescribeProductsInput{})
+	productsBySuffix := map[string]string{}
+	ambiguousSuffixes := map[string]bool{}
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return nil, err
+		}
+		securityHubAddProductARNsBySuffix(productsBySuffix, ambiguousSuffixes, page.Products)
+	}
+	for suffix := range ambiguousSuffixes {
+		delete(productsBySuffix, suffix)
+	}
+	return productsBySuffix, nil
+}
+
+func securityHubAddProductARNsBySuffix(productsBySuffix map[string]string, ambiguousSuffixes map[string]bool, products []securityhubtypes.Product) {
+	for _, product := range products {
+		productARN := StringValue(product.ProductArn)
+		suffix, ok := securityHubProductARNSuffix(productARN)
+		if !ok {
+			continue
+		}
+		if existing, exists := productsBySuffix[suffix]; exists && existing != productARN {
+			ambiguousSuffixes[suffix] = true
+			continue
+		}
+		productsBySuffix[suffix] = productARN
+	}
+}
+
+func securityHubProductARNSuffix(productARN string) (string, bool) {
+	return securityHubARNResourceSuffix(productARN, securityHubProductResourcePrefix)
+}
+
+func securityHubProductSubscriptionSuffix(productSubscriptionARN string) (string, bool) {
+	return securityHubARNResourceSuffix(productSubscriptionARN, securityHubProductSubscriptionResourcePrefix)
+}
+
+func securityHubARNResourceSuffix(value, prefix string) (string, bool) {
+	parsed, err := awsarn.Parse(value)
 	if err != nil {
 		return "", false
 	}
-	if !strings.HasPrefix(parsed.Resource, securityHubProductSubscriptionResourcePrefix) {
+	if !strings.HasPrefix(parsed.Resource, prefix) {
 		return "", false
 	}
-	parsed.AccountID = ""
-	parsed.Resource = securityHubProductResourcePrefix + strings.TrimPrefix(parsed.Resource, securityHubProductSubscriptionResourcePrefix)
-	return parsed.String(), true
+	suffix := strings.TrimPrefix(parsed.Resource, prefix)
+	if suffix == "" {
+		return "", false
+	}
+	return suffix, true
 }
 
 func securityHubResourceName(parts ...string) string {

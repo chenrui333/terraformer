@@ -23,7 +23,7 @@ func TestSecurityHubProductSubscriptionResourceID(t *testing.T) {
 	}
 }
 
-func TestSecurityHubProductARNFromSubscriptionARN(t *testing.T) {
+func TestSecurityHubProductARNAndSubscriptionSuffixes(t *testing.T) {
 	tests := []struct {
 		name string
 		arn  string
@@ -31,9 +31,9 @@ func TestSecurityHubProductARNFromSubscriptionARN(t *testing.T) {
 		ok   bool
 	}{
 		{
-			name: "derives product arn",
+			name: "subscription suffix",
 			arn:  "arn:aws:securityhub:us-west-2:123456789012:product-subscription/alertlogic/althreatmanagement",
-			want: "arn:aws:securityhub:us-west-2::product/alertlogic/althreatmanagement",
+			want: "alertlogic/althreatmanagement",
 			ok:   true,
 		},
 		{
@@ -50,11 +50,43 @@ func TestSecurityHubProductARNFromSubscriptionARN(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, ok := securityHubProductARNFromSubscriptionARN(tt.arn)
+			got, ok := securityHubProductSubscriptionSuffix(tt.arn)
 			if ok != tt.ok || got != tt.want {
-				t.Fatalf("securityHubProductARNFromSubscriptionARN() = (%q, %t), want (%q, %t)", got, ok, tt.want, tt.ok)
+				t.Fatalf("securityHubProductSubscriptionSuffix() = (%q, %t), want (%q, %t)", got, ok, tt.want, tt.ok)
 			}
 		})
+	}
+
+	productSuffix, ok := securityHubProductARNSuffix("arn:aws:securityhub:us-west-2:999999999999:product/alertlogic/althreatmanagement")
+	if !ok || productSuffix != "alertlogic/althreatmanagement" {
+		t.Fatalf("securityHubProductARNSuffix() = (%q, %t), want (alertlogic/althreatmanagement, true)", productSuffix, ok)
+	}
+}
+
+func TestSecurityHubAddProductARNsBySuffix(t *testing.T) {
+	productsBySuffix := map[string]string{}
+	ambiguousSuffixes := map[string]bool{}
+	securityHubAddProductARNsBySuffix(productsBySuffix, ambiguousSuffixes, []securityhubtypes.Product{
+		{ProductArn: aws.String("arn:aws:securityhub:us-east-1::product/aws/guardduty")},
+		{ProductArn: aws.String("arn:aws:securityhub:us-east-1:999999999999:product/alertlogic/althreatmanagement")},
+		{ProductArn: aws.String("not-an-arn")},
+	})
+
+	if got := productsBySuffix["aws/guardduty"]; got != "arn:aws:securityhub:us-east-1::product/aws/guardduty" {
+		t.Fatalf("aws product ARN = %q", got)
+	}
+	if got := productsBySuffix["alertlogic/althreatmanagement"]; got != "arn:aws:securityhub:us-east-1:999999999999:product/alertlogic/althreatmanagement" {
+		t.Fatalf("partner product ARN = %q", got)
+	}
+
+	securityHubAddProductARNsBySuffix(productsBySuffix, ambiguousSuffixes, []securityhubtypes.Product{
+		{ProductArn: aws.String("arn:aws:securityhub:us-east-1:888888888888:product/alertlogic/althreatmanagement")},
+	})
+	for suffix := range ambiguousSuffixes {
+		delete(productsBySuffix, suffix)
+	}
+	if _, ok := productsBySuffix["alertlogic/althreatmanagement"]; ok {
+		t.Fatal("expected ambiguous partner product suffix to be removed")
 	}
 }
 
@@ -91,18 +123,22 @@ func TestSecurityHubActionTargetResource(t *testing.T) {
 }
 
 func TestSecurityHubProductSubscriptionResource(t *testing.T) {
-	resource, ok := newSecurityHubProductSubscriptionResource("arn:aws:securityhub:us-east-1:123456789012:product-subscription/aws/guardduty", securityHubTestAccountID)
+	resource, ok := newSecurityHubProductSubscriptionResource(
+		"arn:aws:securityhub:us-east-1:123456789012:product-subscription/alertlogic/althreatmanagement",
+		"arn:aws:securityhub:us-east-1:999999999999:product/alertlogic/althreatmanagement",
+		securityHubTestAccountID,
+	)
 	if !ok {
 		t.Fatal("expected product subscription resource")
 	}
 	if got := resource.InstanceInfo.Type; got != securityHubProductSubscriptionResourceType {
 		t.Fatalf("resource type = %q, want %q", got, securityHubProductSubscriptionResourceType)
 	}
-	wantProductARN := "arn:aws:securityhub:us-east-1::product/aws/guardduty"
+	wantProductARN := "arn:aws:securityhub:us-east-1:999999999999:product/alertlogic/althreatmanagement"
 	if got := resource.InstanceState.Attributes["product_arn"]; got != wantProductARN {
 		t.Fatalf("product_arn = %q, want %q", got, wantProductARN)
 	}
-	wantID := wantProductARN + ",arn:aws:securityhub:us-east-1:123456789012:product-subscription/aws/guardduty"
+	wantID := wantProductARN + ",arn:aws:securityhub:us-east-1:123456789012:product-subscription/alertlogic/althreatmanagement"
 	if got := resource.InstanceState.ID; got != wantID {
 		t.Fatalf("resource ID = %q, want %q", got, wantID)
 	}
@@ -157,8 +193,11 @@ func TestSecurityHubConfigurationPolicyAssociationResource(t *testing.T) {
 }
 
 func TestSecurityHubEmptyIdentifierSkips(t *testing.T) {
-	if _, ok := newSecurityHubProductSubscriptionResource("", securityHubTestAccountID); ok {
+	if _, ok := newSecurityHubProductSubscriptionResource("", "arn:aws:securityhub:us-east-1::product/aws/guardduty", securityHubTestAccountID); ok {
 		t.Fatal("expected empty product subscription ARN to skip")
+	}
+	if _, ok := newSecurityHubProductSubscriptionResource("arn:aws:securityhub:us-east-1:123456789012:product-subscription/aws/guardduty", "", securityHubTestAccountID); ok {
+		t.Fatal("expected empty product ARN to skip")
 	}
 	if _, ok := newSecurityHubInsightResource(securityhubtypes.Insight{}, securityHubTestAccountID); ok {
 		t.Fatal("expected empty insight ARN to skip")
