@@ -4,6 +4,7 @@ package aws
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -94,6 +95,54 @@ func TestNewSESV2ContactListResource(t *testing.T) {
 	}
 	if _, ok := resource.InstanceState.Attributes["description"]; ok {
 		t.Fatal("newSESV2ContactListResource() seeded empty description, want omitted")
+	}
+	if _, ok := resource.AdditionalFields["topic"]; ok {
+		t.Fatal("newSESV2ContactListResource() seeded empty topics, want omitted")
+	}
+
+	resource, ok = newSESV2ContactListResource(&sesv2.GetContactListOutput{
+		ContactListName: aws.String("contacts"),
+		Topics: []sesv2types.Topic{
+			{
+				DefaultSubscriptionStatus: sesv2types.SubscriptionStatusOptOut,
+				Description:               aws.String("announcements"),
+				DisplayName:               aws.String("Announcements"),
+				TopicName:                 aws.String("announcements"),
+			},
+			{
+				DefaultSubscriptionStatus: sesv2types.SubscriptionStatusOptIn,
+				DisplayName:               aws.String("News"),
+				TopicName:                 aws.String("news"),
+			},
+		},
+	})
+	if !ok {
+		t.Fatal("newSESV2ContactListResource() ok = false with topics, want true")
+	}
+	assertSESV2ContactListTopics(t, resource, []map[string]interface{}{
+		{
+			"default_subscription_status": "OPT_OUT",
+			"description":                 "announcements",
+			"display_name":                "Announcements",
+			"topic_name":                  "announcements",
+		},
+		{
+			"default_subscription_status": "OPT_IN",
+			"display_name":                "News",
+			"topic_name":                  "news",
+		},
+	})
+
+	if _, ok := newSESV2ContactListResource(&sesv2.GetContactListOutput{
+		ContactListName: aws.String("contacts"),
+		Topics: []sesv2types.Topic{
+			{
+				DefaultSubscriptionStatus: sesv2types.SubscriptionStatusOptIn,
+				DisplayName:               aws.String("News"),
+			},
+		},
+	}); ok {
+		t.Fatal("newSESV2ContactListResource() ok = true for topic without topic name, want false")
 	}
 
 	if _, ok := newSESV2ContactListResource(&sesv2.GetContactListOutput{}); ok {
@@ -282,6 +331,47 @@ func TestSESV2ResourceNameAvoidsSanitizedCollisions(t *testing.T) {
 	}
 }
 
+func TestSESV2ContactListResourceHCLIncludesTopics(t *testing.T) {
+	resource, ok := newSESV2ContactListResource(&sesv2.GetContactListOutput{
+		ContactListName: aws.String("contacts"),
+		Topics: []sesv2types.Topic{
+			{
+				DefaultSubscriptionStatus: sesv2types.SubscriptionStatusOptIn,
+				DisplayName:               aws.String("News"),
+				TopicName:                 aws.String("news"),
+			},
+		},
+	})
+	if !ok {
+		t.Fatal("newSESV2ContactListResource() ok = false, want true")
+	}
+	resource.Item = map[string]interface{}{
+		"contact_list_name": resource.InstanceState.Attributes["contact_list_name"],
+		"topic":             resource.AdditionalFields["topic"],
+	}
+
+	data, err := terraformutils.HclPrintResource([]terraformutils.Resource{resource}, map[string]interface{}{}, "hcl", true)
+	if err != nil {
+		t.Fatalf("HclPrintResource() error = %v", err)
+	}
+	output := string(data)
+	normalizedOutput := strings.Join(strings.Fields(output), " ")
+	for _, want := range []string{
+		"topic {",
+		"default_subscription_status = \"OPT_IN\"",
+		"display_name = \"News\"",
+		"topic_name = \"news\"",
+	} {
+		outputToSearch := output
+		if strings.Contains(want, " = ") {
+			outputToSearch = normalizedOutput
+		}
+		if !strings.Contains(outputToSearch, want) {
+			t.Fatalf("output does not contain %q:\n%s", want, output)
+		}
+	}
+}
+
 func TestSESV2PostConvertHookWrapsPolicy(t *testing.T) {
 	resource, ok := newSESV2EmailIdentityPolicyResource("sender@example.com", "policy-a", `{"Resource":"${aws:username}"}`)
 	if !ok {
@@ -333,6 +423,32 @@ func assertSESV2ResourceAttributes(t *testing.T, resource terraformutils.Resourc
 	wantName := terraformutils.TfSanitize(sesv2ResourceName(nameParts...))
 	if resource.ResourceName != wantName {
 		t.Fatalf("resource name = %q, want %q", resource.ResourceName, wantName)
+	}
+}
+
+func assertSESV2ContactListTopics(t *testing.T, resource terraformutils.Resource, wants []map[string]interface{}) {
+	t.Helper()
+
+	topics, ok := resource.AdditionalFields["topic"].([]interface{})
+	if !ok {
+		t.Fatalf("topic additional field type = %T, want []interface{}", resource.AdditionalFields["topic"])
+	}
+	if len(topics) != len(wants) {
+		t.Fatalf("topic additional field length = %d, want %d", len(topics), len(wants))
+	}
+	for i, want := range wants {
+		got, ok := topics[i].(map[string]interface{})
+		if !ok {
+			t.Fatalf("topic[%d] type = %T, want map[string]interface{}", i, topics[i])
+		}
+		if len(got) != len(want) {
+			t.Fatalf("topic[%d] = %#v, want %#v", i, got, want)
+		}
+		for key, wantValue := range want {
+			if got[key] != wantValue {
+				t.Fatalf("topic[%d][%q] = %q, want %q", i, key, got[key], wantValue)
+			}
+		}
 	}
 }
 

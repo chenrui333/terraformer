@@ -278,6 +278,14 @@ func newSESV2ContactListResource(output *sesv2.GetContactListOutput) (terraformu
 	if description := StringValue(output.Description); description != "" {
 		attributes["description"] = description
 	}
+	additionalFields := map[string]interface{}{}
+	topics, ok := sesv2ContactListTopics(output.Topics)
+	if !ok {
+		return terraformutils.Resource{}, false
+	}
+	if len(topics) > 0 {
+		additionalFields["topic"] = topics
+	}
 	return terraformutils.NewResource(
 		sesv2ContactListImportID(contactListName),
 		sesv2ResourceName("contact_list", contactListName),
@@ -285,8 +293,46 @@ func newSESV2ContactListResource(output *sesv2.GetContactListOutput) (terraformu
 		"aws",
 		attributes,
 		sesv2AllowEmptyValues,
-		map[string]interface{}{},
+		additionalFields,
 	), true
+}
+
+func sesv2ContactListTopics(topics []sesv2types.Topic) ([]interface{}, bool) {
+	if len(topics) == 0 {
+		return nil, true
+	}
+	sortedTopics := append([]sesv2types.Topic(nil), topics...)
+	sort.SliceStable(sortedTopics, func(i, j int) bool {
+		return sesv2TopicSortKey(sortedTopics[i]) < sesv2TopicSortKey(sortedTopics[j])
+	})
+	values := make([]interface{}, 0, len(sortedTopics))
+	for _, topic := range sortedTopics {
+		topicName := StringValue(topic.TopicName)
+		displayName := StringValue(topic.DisplayName)
+		defaultSubscriptionStatus := string(topic.DefaultSubscriptionStatus)
+		if topicName == "" || displayName == "" || defaultSubscriptionStatus == "" {
+			return nil, false
+		}
+		value := map[string]interface{}{
+			"default_subscription_status": defaultSubscriptionStatus,
+			"display_name":                displayName,
+			"topic_name":                  topicName,
+		}
+		if topic.Description != nil {
+			value["description"] = StringValue(topic.Description)
+		}
+		values = append(values, value)
+	}
+	return values, true
+}
+
+func sesv2TopicSortKey(topic sesv2types.Topic) string {
+	return strings.Join([]string{
+		StringValue(topic.TopicName),
+		StringValue(topic.DisplayName),
+		string(topic.DefaultSubscriptionStatus),
+		StringValue(topic.Description),
+	}, "\x00")
 }
 
 func newSESV2DedicatedIPPoolResource(poolName string) (terraformutils.Resource, bool) {
