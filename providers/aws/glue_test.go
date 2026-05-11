@@ -248,6 +248,7 @@ func TestNewGlueCatalogTableOptimizerResource(t *testing.T) {
 			t.Fatalf("%s = %q, want %q", key, got, want)
 		}
 	}
+	assertAwsFrameworkResourcePreserveIDAfterRefresh(t, resource)
 }
 
 func TestGlueMLTransformImportable(t *testing.T) {

@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	athenatypes "github.com/aws/aws-sdk-go-v2/service/athena/types"
 	"github.com/chenrui333/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 )
 
 func TestAthenaPreparedStatementImportID(t *testing.T) {
@@ -116,6 +117,18 @@ func TestNewAthenaNamedQueryResource(t *testing.T) {
 	}
 }
 
+func TestNewAthenaCapacityReservationResourcePreservesIDAfterRefresh(t *testing.T) {
+	resource, ok := newAthenaCapacityReservationResource(athenatypes.CapacityReservation{
+		Name:       aws.String("reserved"),
+		Status:     athenatypes.CapacityReservationStatusActive,
+		TargetDpus: aws.Int32(24),
+	})
+	if !ok {
+		t.Fatal("newAthenaCapacityReservationResource() ok = false, want true")
+	}
+	assertAwsFrameworkResourcePreserveIDAfterRefresh(t, resource)
+}
+
 func TestAthenaCapacityReservationImportable(t *testing.T) {
 	target := int32(24)
 	belowMinimumTarget := int32(12)
@@ -169,4 +182,15 @@ func assertAllowEmptyValue(t *testing.T, resource terraformutils.Resource, want 
 		}
 	}
 	t.Fatalf("AllowEmptyValues = %v, want %q", resource.AllowEmptyValues, want)
+}
+
+func assertAwsFrameworkResourcePreserveIDAfterRefresh(t *testing.T, resource terraformutils.Resource) {
+	t.Helper()
+	if resource.InstanceState == nil {
+		t.Fatal("InstanceState is nil")
+	}
+	preserveID, _ := resource.InstanceState.Meta[tfcompat.MetaKeyPreserveIDAfterRefresh].(bool)
+	if !preserveID {
+		t.Fatalf("InstanceState.Meta[%q] = %v, want true", tfcompat.MetaKeyPreserveIDAfterRefresh, resource.InstanceState.Meta)
+	}
 }

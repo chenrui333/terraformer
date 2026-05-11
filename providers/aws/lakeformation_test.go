@@ -87,6 +87,7 @@ func TestNewLakeFormationLFTagExpressionResource(t *testing.T) {
 	if got := resource.InstanceState.Attributes["catalog_id"]; got != "123456789012" {
 		t.Fatalf("catalog_id = %q, want 123456789012", got)
 	}
+	assertAwsFrameworkResourcePreserveIDAfterRefresh(t, resource)
 }
 
 func TestNewLakeFormationDataCellsFilterResource(t *testing.T) {
@@ -162,4 +163,5 @@ func TestNewLakeFormationIdentityCenterConfigurationResource(t *testing.T) {
 	if got := resource.InstanceState.Attributes["instance_arn"]; got == "" {
 		t.Fatal("instance_arn was not seeded")
 	}
+	assertAwsFrameworkResourcePreserveIDAfterRefresh(t, resource)
 }

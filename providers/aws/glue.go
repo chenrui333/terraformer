@@ -584,7 +584,7 @@ func newGlueCatalogTableOptimizerResource(catalogID string, databaseName string,
 		return terraformutils.Resource{}, false
 	}
 	id := glueCatalogTableOptimizerImportID(catalogID, databaseName, tableName, string(optimizerType))
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		id,
 		glueResourceName(catalogID, databaseName, tableName, string(optimizerType)),
 		glueCatalogTableOptimizerResourceType,
@@ -597,7 +597,9 @@ func newGlueCatalogTableOptimizerResource(catalogID string, databaseName string,
 		},
 		glueAllowEmptyValues,
 		map[string]interface{}{},
-	), true
+	)
+	setAwsFrameworkResourcePreserveIDAfterRefresh(&resource)
+	return resource, true
 }
 
 func glueClassifierName(classifier gluetypes.Classifier) string {

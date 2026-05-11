@@ -209,7 +209,7 @@ func newLakeFormationLFTagExpressionResource(defaultCatalogID string, expression
 		return terraformutils.Resource{}, false
 	}
 	id := lakeFormationLFTagExpressionImportID(name, catalogID)
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		id,
 		lakeFormationResourceName(catalogID, name),
 		lakeFormationLFTagExpressionResourceType,
@@ -220,7 +220,9 @@ func newLakeFormationLFTagExpressionResource(defaultCatalogID string, expression
 		},
 		lakeFormationAllowEmptyValues,
 		map[string]interface{}{},
-	), true
+	)
+	setAwsFrameworkResourcePreserveIDAfterRefresh(&resource)
+	return resource, true
 }
 
 func newLakeFormationDataCellsFilterResource(filter lakeformationtypes.DataCellsFilter) (terraformutils.Resource, bool) {
@@ -252,7 +254,7 @@ func newLakeFormationIdentityCenterConfigurationResource(catalogID string, outpu
 	if catalogID == "" || instanceARN == "" {
 		return terraformutils.Resource{}, false
 	}
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		catalogID,
 		"identity_center_configuration",
 		lakeFormationIdentityCenterConfigurationResourceType,
@@ -265,7 +267,9 @@ func newLakeFormationIdentityCenterConfigurationResource(catalogID string, outpu
 		},
 		lakeFormationAllowEmptyValues,
 		map[string]interface{}{},
-	), true
+	)
+	setAwsFrameworkResourcePreserveIDAfterRefresh(&resource)
+	return resource, true
 }
 
 func preserveLakeFormationDataCellsFilterWildcardBlocks(resource *terraformutils.Resource) {

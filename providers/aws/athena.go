@@ -15,6 +15,7 @@ import (
 	athenatypes "github.com/aws/aws-sdk-go-v2/service/athena/types"
 	"github.com/aws/smithy-go"
 	"github.com/chenrui333/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 )
 
 const (
@@ -280,7 +281,7 @@ func newAthenaCapacityReservationResource(reservation athenatypes.CapacityReserv
 		"name":        reservationName,
 		"target_dpus": strconv.FormatInt(int64(aws.ToInt32(reservation.TargetDpus)), 10),
 	}
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		reservationName,
 		reservationName,
 		athenaCapacityReservationResourceType,
@@ -288,7 +289,9 @@ func newAthenaCapacityReservationResource(reservation athenatypes.CapacityReserv
 		attributes,
 		athenaAllowEmptyValues,
 		map[string]interface{}{},
-	), true
+	)
+	setAwsFrameworkResourcePreserveIDAfterRefresh(&resource)
+	return resource, true
 }
 
 func athenaPreparedStatementImportID(workGroupName string, statementName string) string {
@@ -384,6 +387,16 @@ func containsSensitiveToken(value string) bool {
 		}
 	}
 	return false
+}
+
+func setAwsFrameworkResourcePreserveIDAfterRefresh(resource *terraformutils.Resource) {
+	if resource == nil || resource.InstanceState == nil {
+		return
+	}
+	if resource.InstanceState.Meta == nil {
+		resource.InstanceState.Meta = map[string]interface{}{}
+	}
+	resource.InstanceState.Meta[tfcompat.MetaKeyPreserveIDAfterRefresh] = true
 }
 
 func wrapAthenaQueryHeredoc(g *AthenaGenerator, resource *terraformutils.Resource, field string) {
