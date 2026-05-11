@@ -6,16 +6,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sesv2"
 	sesv2types "github.com/aws/aws-sdk-go-v2/service/sesv2/types"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 const (
+	sesv2AccountSuppressionAttributesResourceType     = "aws_sesv2_account_suppression_attributes"
+	sesv2AccountVDMAttributesResourceType             = "aws_sesv2_account_vdm_attributes"
 	sesv2ConfigurationSetResourceType                 = "aws_sesv2_configuration_set"
 	sesv2ConfigurationSetEventDestinationResourceType = "aws_sesv2_configuration_set_event_destination"
 	sesv2ContactListResourceType                      = "aws_sesv2_contact_list"
@@ -25,6 +29,7 @@ const (
 	sesv2EmailIdentityFeedbackAttributesResourceType  = "aws_sesv2_email_identity_feedback_attributes"
 	sesv2EmailIdentityMailFromAttributesResourceType  = "aws_sesv2_email_identity_mail_from_attributes"
 	sesv2EmailIdentityPolicyResourceType              = "aws_sesv2_email_identity_policy"
+	sesv2AccountVDMAttributesImportIDValue            = "ses-account-vdm-attributes"
 	sesv2DefaultDedicatedIPPoolName                   = "ses-default-dedicated-pool"
 	sesv2DedicatedIPAssignmentIDSeparator             = ","
 	sesv2ResourceIDSeparator                          = "|"
@@ -43,6 +48,9 @@ func (g *SesV2Generator) InitResources() error {
 	}
 	svc := sesv2.NewFromConfig(config)
 
+	if err := g.loadAccountSettings(svc, config); err != nil {
+		log.Printf("Skipping SESv2 account settings: %v", err)
+	}
 	if err := g.loadConfigurationSets(svc); err != nil {
 		return err
 	}
@@ -72,6 +80,34 @@ func (g *SesV2Generator) PostConvertHook() error {
 			continue
 		}
 		g.Resources[i].Item["policy"] = fmt.Sprintf("<<POLICY\n%s\nPOLICY", g.escapeAwsInterpolation(policy))
+	}
+	return nil
+}
+
+func (g *SesV2Generator) loadAccountSettings(svc *sesv2.Client, config aws.Config) error {
+	output, err := svc.GetAccount(context.TODO(), &sesv2.GetAccountInput{})
+	if err != nil {
+		if sesv2NotFound(err) {
+			return nil
+		}
+		return err
+	}
+	if output == nil {
+		return nil
+	}
+	if output.SuppressionAttributes != nil && len(output.SuppressionAttributes.SuppressedReasons) > 0 {
+		accountID := ""
+		if account, err := g.getAccountNumber(config); err != nil {
+			log.Printf("Skipping SESv2 account suppression attributes: unable to get account ID: %v", err)
+		} else {
+			accountID = StringValue(account)
+		}
+		if resource, ok := newSESV2AccountSuppressionAttributesResource(accountID, output); ok {
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	if resource, ok := newSESV2AccountVDMAttributesResource(output); ok {
+		g.Resources = append(g.Resources, resource)
 	}
 	return nil
 }
@@ -283,6 +319,55 @@ func (g *SesV2Generator) loadEmailIdentityPolicies(svc *sesv2.Client, identityNa
 		}
 	}
 	return nil
+}
+
+func newSESV2AccountSuppressionAttributesResource(accountID string, output *sesv2.GetAccountOutput) (terraformutils.Resource, bool) {
+	if accountID == "" || output == nil || output.SuppressionAttributes == nil {
+		return terraformutils.Resource{}, false
+	}
+	attributes, ok := sesv2SuppressedReasonAttributes(output.SuppressionAttributes.SuppressedReasons)
+	if !ok {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewResource(
+		sesv2AccountSuppressionAttributesImportID(accountID),
+		sesv2ResourceName("account_suppression_attributes", accountID),
+		sesv2AccountSuppressionAttributesResourceType,
+		"aws",
+		attributes,
+		sesv2AllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
+func newSESV2AccountVDMAttributesResource(output *sesv2.GetAccountOutput) (terraformutils.Resource, bool) {
+	if output == nil || !sesv2AccountVDMAttributesConfigured(output.VdmAttributes) {
+		return terraformutils.Resource{}, false
+	}
+	attributes := map[string]string{
+		"vdm_enabled": string(output.VdmAttributes.VdmEnabled),
+	}
+	if output.VdmAttributes.DashboardAttributes != nil {
+		if engagementMetrics := string(output.VdmAttributes.DashboardAttributes.EngagementMetrics); engagementMetrics != "" {
+			attributes["dashboard_attributes.#"] = "1"
+			attributes["dashboard_attributes.0.engagement_metrics"] = engagementMetrics
+		}
+	}
+	if output.VdmAttributes.GuardianAttributes != nil {
+		if optimizedSharedDelivery := string(output.VdmAttributes.GuardianAttributes.OptimizedSharedDelivery); optimizedSharedDelivery != "" {
+			attributes["guardian_attributes.#"] = "1"
+			attributes["guardian_attributes.0.optimized_shared_delivery"] = optimizedSharedDelivery
+		}
+	}
+	return terraformutils.NewResource(
+		sesv2AccountVDMAttributesImportID(),
+		sesv2ResourceName("account_vdm_attributes"),
+		sesv2AccountVDMAttributesResourceType,
+		"aws",
+		attributes,
+		sesv2AllowEmptyValues,
+		map[string]interface{}{},
+	), true
 }
 
 func newSESV2ConfigurationSetResource(configurationSetName string) (terraformutils.Resource, bool) {
@@ -523,9 +608,60 @@ func sesv2EmailIdentityImportable(output *sesv2.GetEmailIdentityOutput) bool {
 	return output.DkimAttributes.SigningAttributesOrigin != sesv2types.DkimSigningAttributesOriginExternal
 }
 
+func sesv2AccountVDMAttributesConfigured(attributes *sesv2types.VdmAttributes) bool {
+	if attributes == nil || attributes.VdmEnabled == "" {
+		return false
+	}
+	if attributes.VdmEnabled != sesv2types.FeatureStatusDisabled {
+		return true
+	}
+	return sesv2DashboardAttributesConfigured(attributes.DashboardAttributes) || sesv2GuardianAttributesConfigured(attributes.GuardianAttributes)
+}
+
+func sesv2DashboardAttributesConfigured(attributes *sesv2types.DashboardAttributes) bool {
+	return attributes != nil && attributes.EngagementMetrics != ""
+}
+
+func sesv2GuardianAttributesConfigured(attributes *sesv2types.GuardianAttributes) bool {
+	return attributes != nil && attributes.OptimizedSharedDelivery != ""
+}
+
+func sesv2SuppressedReasonAttributes(reasons []sesv2types.SuppressionListReason) (map[string]string, bool) {
+	if len(reasons) == 0 {
+		return nil, false
+	}
+	values := make([]string, 0, len(reasons))
+	for _, reason := range reasons {
+		if reason == "" {
+			return nil, false
+		}
+		values = append(values, string(reason))
+	}
+	sort.Strings(values)
+	return sesv2StringSliceAttributes("suppressed_reasons", values), true
+}
+
+func sesv2StringSliceAttributes(name string, values []string) map[string]string {
+	attributes := map[string]string{
+		name + ".#": strconv.Itoa(len(values)),
+	}
+	for i, value := range values {
+		attributes[name+"."+strconv.Itoa(i)] = value
+	}
+	return attributes
+}
+
 func sesv2NotFound(err error) bool {
 	var notFound *sesv2types.NotFoundException
 	return errors.As(err, &notFound)
+}
+
+func sesv2AccountSuppressionAttributesImportID(accountID string) string {
+	return accountID
+}
+
+func sesv2AccountVDMAttributesImportID() string {
+	return sesv2AccountVDMAttributesImportIDValue
 }
 
 func sesv2ConfigurationSetImportID(configurationSetName string) string {
