@@ -17,8 +17,12 @@ import (
 var logsAllowEmptyValues = []string{"tags."}
 
 const (
-	logsDestinationPolicyResourceType = "aws_cloudwatch_log_destination_policy"
-	logsIndexPolicyResourceType       = "aws_cloudwatch_log_index_policy"
+	logsDeliveryResourceType                  = "aws_cloudwatch_log_delivery"
+	logsDeliveryDestinationResourceType       = "aws_cloudwatch_log_delivery_destination"
+	logsDeliveryDestinationPolicyResourceType = "aws_cloudwatch_log_delivery_destination_policy"
+	logsDeliverySourceResourceType            = "aws_cloudwatch_log_delivery_source"
+	logsDestinationPolicyResourceType         = "aws_cloudwatch_log_destination_policy"
+	logsIndexPolicyResourceType               = "aws_cloudwatch_log_index_policy"
 )
 
 var logsAccountPolicyTypes = []types.PolicyType{
@@ -93,6 +97,9 @@ func (g *LogsGenerator) InitResources() error {
 		logsOptionalResourceLoader{name: "data protection policies", load: func() error { return g.addDataProtectionPolicies(svc, logGroupNames) }},
 		logsOptionalResourceLoader{name: "destinations", load: func() error { return g.addDestinations(svc) }},
 		logsOptionalResourceLoader{name: "index policies", load: func() error { return g.addIndexPolicies(svc, logGroupNames) }},
+		logsOptionalResourceLoader{name: "delivery sources", load: func() error { return g.addDeliverySources(svc) }},
+		logsOptionalResourceLoader{name: "delivery destinations", load: func() error { return g.addDeliveryDestinations(svc) }},
+		logsOptionalResourceLoader{name: "deliveries", load: func() error { return g.addDeliveries(svc) }},
 		logsOptionalResourceLoader{name: "resource policies", load: func() error { return g.addResourcePolicies(svc) }},
 		logsOptionalResourceLoader{name: "account policies", load: func() error { return g.addAccountPolicies(svc) }},
 		logsOptionalResourceLoader{name: "query definitions", load: func() error { return g.addQueryDefinitions(svc) }},
@@ -251,6 +258,73 @@ func (g *LogsGenerator) addIndexPolicies(svc *cloudwatchlogs.Client, logGroupNam
 			nextToken = output.NextToken
 			if !awsHasMorePages(nextToken) {
 				break
+			}
+		}
+	}
+	return nil
+}
+
+func (g *LogsGenerator) addDeliverySources(svc *cloudwatchlogs.Client) error {
+	p := cloudwatchlogs.NewDescribeDeliverySourcesPaginator(svc, &cloudwatchlogs.DescribeDeliverySourcesInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, source := range page.DeliverySources {
+			if resource, ok := newLogsDeliverySourceResource(source); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+	}
+	return nil
+}
+
+func (g *LogsGenerator) addDeliveryDestinations(svc *cloudwatchlogs.Client) error {
+	p := cloudwatchlogs.NewDescribeDeliveryDestinationsPaginator(svc, &cloudwatchlogs.DescribeDeliveryDestinationsInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, destination := range page.DeliveryDestinations {
+			destinationName := StringValue(destination.Name)
+			if resource, ok := newLogsDeliveryDestinationResource(destination); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+			if destinationName == "" {
+				continue
+			}
+			policy, err := svc.GetDeliveryDestinationPolicy(context.TODO(), &cloudwatchlogs.GetDeliveryDestinationPolicyInput{
+				DeliveryDestinationName: &destinationName,
+			})
+			if err != nil {
+				if logsResourceNotFound(err) {
+					continue
+				}
+				return err
+			}
+			if policy == nil || policy.Policy == nil {
+				continue
+			}
+			if resource, ok := newLogsDeliveryDestinationPolicyResource(destinationName, *policy.Policy); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+	}
+	return nil
+}
+
+func (g *LogsGenerator) addDeliveries(svc *cloudwatchlogs.Client) error {
+	p := cloudwatchlogs.NewDescribeDeliveriesPaginator(svc, &cloudwatchlogs.DescribeDeliveriesInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, delivery := range page.Deliveries {
+			if resource, ok := newLogsDeliveryResource(delivery); ok {
+				g.Resources = append(g.Resources, resource)
 			}
 		}
 	}
@@ -445,4 +519,107 @@ func newLogsIndexPolicyResource(logGroupName string, policy types.IndexPolicy) (
 		},
 		logsAllowEmptyValues,
 		map[string]interface{}{}), true
+}
+
+func newLogsDeliverySourceResource(source types.DeliverySource) (terraformutils.Resource, bool) {
+	if !logsDeliverySourceImportable(source) {
+		return terraformutils.Resource{}, false
+	}
+
+	sourceName := StringValue(source.Name)
+	resourceArn := source.ResourceArns[0]
+	return terraformutils.NewResource(
+		sourceName,
+		logsDeliveryResourceName("delivery_source", sourceName),
+		logsDeliverySourceResourceType,
+		"aws",
+		map[string]string{
+			"log_type":     StringValue(source.LogType),
+			"name":         sourceName,
+			"resource_arn": resourceArn,
+		},
+		logsAllowEmptyValues,
+		map[string]interface{}{}), true
+}
+
+func logsDeliverySourceImportable(source types.DeliverySource) bool {
+	if StringValue(source.Name) == "" || StringValue(source.LogType) == "" || len(source.ResourceArns) == 0 || source.ResourceArns[0] == "" {
+		return false
+	}
+	return source.StatusReason != types.DeliverySourceStatusReasonResourceDeleted
+}
+
+func newLogsDeliveryDestinationResource(destination types.DeliveryDestination) (terraformutils.Resource, bool) {
+	destinationName := StringValue(destination.Name)
+	if destinationName == "" {
+		return terraformutils.Resource{}, false
+	}
+
+	return terraformutils.NewResource(
+		destinationName,
+		logsDeliveryResourceName("delivery_destination", destinationName),
+		logsDeliveryDestinationResourceType,
+		"aws",
+		map[string]string{
+			"name": destinationName,
+		},
+		logsAllowEmptyValues,
+		map[string]interface{}{}), true
+}
+
+func newLogsDeliveryDestinationPolicyResource(destinationName string, policy types.Policy) (terraformutils.Resource, bool) {
+	if destinationName == "" || StringValue(policy.DeliveryDestinationPolicy) == "" {
+		return terraformutils.Resource{}, false
+	}
+
+	return terraformutils.NewResource(
+		destinationName,
+		logsDeliveryResourceName("delivery_destination_policy", destinationName),
+		logsDeliveryDestinationPolicyResourceType,
+		"aws",
+		map[string]string{
+			"delivery_destination_name":   destinationName,
+			"delivery_destination_policy": StringValue(policy.DeliveryDestinationPolicy),
+		},
+		logsAllowEmptyValues,
+		map[string]interface{}{}), true
+}
+
+func newLogsDeliveryResource(delivery types.Delivery) (terraformutils.Resource, bool) {
+	deliveryID := StringValue(delivery.Id)
+	deliverySourceName := StringValue(delivery.DeliverySourceName)
+	deliveryDestinationArn := StringValue(delivery.DeliveryDestinationArn)
+	if deliveryID == "" || deliverySourceName == "" || deliveryDestinationArn == "" {
+		return terraformutils.Resource{}, false
+	}
+
+	return terraformutils.NewResource(
+		deliveryID,
+		logsDeliveryResourceName("delivery", deliveryID),
+		logsDeliveryResourceType,
+		"aws",
+		map[string]string{
+			"delivery_destination_arn": deliveryDestinationArn,
+			"delivery_source_name":     deliverySourceName,
+		},
+		logsAllowEmptyValues,
+		map[string]interface{}{}), true
+}
+
+func logsDeliveryResourceName(parts ...string) string {
+	return logsResourceNameWithLengths(parts...)
+}
+
+func logsResourceNameWithLengths(parts ...string) string {
+	var name string
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+		if name != "" {
+			name += "_"
+		}
+		name += fmt.Sprintf("%d_%s", len(part), part)
+	}
+	return name
 }
