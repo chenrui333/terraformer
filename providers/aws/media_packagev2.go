@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/mediapackagev2"
 	mediapackagev2types "github.com/aws/aws-sdk-go-v2/service/mediapackagev2/types"
 	"github.com/chenrui333/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 )
 
 const mediaPackageV2ChannelGroupResourceType = "aws_media_packagev2_channel_group"
@@ -55,7 +56,7 @@ func newMediaPackageV2ChannelGroupResource(channelGroup mediapackagev2types.Chan
 	if channelGroupName == "" {
 		return terraformutils.Resource{}, false
 	}
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		mediaPackageV2ChannelGroupImportID(channelGroupName),
 		mediaPackageV2ResourceName("channel-group", channelGroupName),
 		mediaPackageV2ChannelGroupResourceType,
@@ -65,7 +66,12 @@ func newMediaPackageV2ChannelGroupResource(channelGroup mediapackagev2types.Chan
 		},
 		mediaPackageV2AllowEmptyValues,
 		map[string]interface{}{},
-	), true
+	)
+	if resource.InstanceState.Meta == nil {
+		resource.InstanceState.Meta = map[string]interface{}{}
+	}
+	resource.InstanceState.Meta[tfcompat.MetaKeyPreserveIDAfterRefresh] = true
+	return resource, true
 }
 
 func mediaPackageV2ChannelGroupImportID(channelGroupName string) string {

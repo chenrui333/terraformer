@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	mediapackagev2types "github.com/aws/aws-sdk-go-v2/service/mediapackagev2/types"
 	"github.com/chenrui333/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 )
 
 func TestNewMediaPackageV2ChannelGroupResource(t *testing.T) {
@@ -17,6 +18,7 @@ func TestNewMediaPackageV2ChannelGroupResource(t *testing.T) {
 	})
 	assertMediaPackageV2Resource(t, resource, ok, "core-group", mediaPackageV2ResourceName("channel-group", "core-group"), mediaPackageV2ChannelGroupResourceType)
 	assertMediaPackageV2Attribute(t, resource, "name", "core-group")
+	assertMediaPackageV2PreservesID(t, resource)
 
 	if _, ok := newMediaPackageV2ChannelGroupResource(mediapackagev2types.ChannelGroupListConfiguration{}); ok {
 		t.Fatal("channel group with empty name should be skipped")
@@ -80,5 +82,13 @@ func assertMediaPackageV2Attribute(t *testing.T, resource terraformutils.Resourc
 	t.Helper()
 	if got := resource.InstanceState.Attributes[key]; got != want {
 		t.Fatalf("resource attribute %q = %q, want %q", key, got, want)
+	}
+}
+
+func assertMediaPackageV2PreservesID(t *testing.T, resource terraformutils.Resource) {
+	t.Helper()
+	preserveID, ok := resource.InstanceState.Meta[tfcompat.MetaKeyPreserveIDAfterRefresh].(bool)
+	if !ok || !preserveID {
+		t.Fatalf("preserve ID metadata = %#v, want true", resource.InstanceState.Meta[tfcompat.MetaKeyPreserveIDAfterRefresh])
 	}
 }
