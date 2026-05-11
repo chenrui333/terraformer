@@ -126,6 +126,26 @@ func TestAppStreamUserStackAssociationImportID(t *testing.T) {
 	}
 }
 
+func TestAppStreamUserStackAssociationsInput(t *testing.T) {
+	input, ok := appStreamUserStackAssociationsInput("core-stack")
+	if !ok {
+		t.Fatal("stack-filtered association input should be built")
+	}
+	if got := input.AuthenticationType; got != appstreamtypes.AuthenticationTypeUserpool {
+		t.Fatalf("authentication type = %q, want %q", got, appstreamtypes.AuthenticationTypeUserpool)
+	}
+	if got := StringValue(input.StackName); got != "core-stack" {
+		t.Fatalf("stack name = %q, want %q", got, "core-stack")
+	}
+	if input.UserName != nil {
+		t.Fatalf("user name = %v, want nil", input.UserName)
+	}
+
+	if _, ok := appStreamUserStackAssociationsInput(""); ok {
+		t.Fatal("association input with empty stack name should be skipped")
+	}
+}
+
 func TestAppStreamResourceNamesPreserveSegmentBoundaries(t *testing.T) {
 	left, ok := newAppStreamFleetStackAssociationResource("a/b_c", "d")
 	if !ok {

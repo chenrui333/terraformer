@@ -43,7 +43,8 @@ func (g *AppStreamGenerator) InitResources() error {
 	if err != nil {
 		return err
 	}
-	if err := g.loadStacks(svc); err != nil {
+	stackNames, err := g.loadStacks(svc)
+	if err != nil {
 		return err
 	}
 	if err := g.loadFleetStackAssociations(svc, fleetNames); err != nil {
@@ -52,7 +53,7 @@ func (g *AppStreamGenerator) InitResources() error {
 	if err := g.loadUsers(svc); err != nil {
 		return err
 	}
-	return g.loadUserStackAssociations(svc)
+	return g.loadUserStackAssociations(svc, stackNames)
 }
 
 func (g *AppStreamGenerator) loadFleets(svc *appstream.Client) ([]string, error) {
@@ -80,16 +81,18 @@ func (g *AppStreamGenerator) loadFleets(svc *appstream.Client) ([]string, error)
 	return fleetNames, nil
 }
 
-func (g *AppStreamGenerator) loadStacks(svc *appstream.Client) error {
+func (g *AppStreamGenerator) loadStacks(svc *appstream.Client) ([]string, error) {
+	var stackNames []string
 	input := &appstream.DescribeStacksInput{}
 	for {
 		page, err := svc.DescribeStacks(context.TODO(), input)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		for _, stack := range page.Stacks {
 			if resource, ok := newAppStreamStackResource(stack); ok {
 				g.Resources = append(g.Resources, resource)
+				stackNames = append(stackNames, StringValue(stack.Name))
 			}
 		}
 		nextToken := appStreamNextToken(page.NextToken)
@@ -98,7 +101,7 @@ func (g *AppStreamGenerator) loadStacks(svc *appstream.Client) error {
 		}
 		input.NextToken = nextToken
 	}
-	return nil
+	return stackNames, nil
 }
 
 func (g *AppStreamGenerator) loadFleetStackAssociations(svc *appstream.Client, fleetNames []string) error {
@@ -163,9 +166,19 @@ func (g *AppStreamGenerator) loadUsers(svc *appstream.Client) error {
 	return nil
 }
 
-func (g *AppStreamGenerator) loadUserStackAssociations(svc *appstream.Client) error {
-	input := &appstream.DescribeUserStackAssociationsInput{
-		AuthenticationType: appstreamtypes.AuthenticationTypeUserpool,
+func (g *AppStreamGenerator) loadUserStackAssociations(svc *appstream.Client, stackNames []string) error {
+	for _, stackName := range stackNames {
+		if err := g.loadUserStackAssociationsForStack(svc, stackName); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (g *AppStreamGenerator) loadUserStackAssociationsForStack(svc *appstream.Client, stackName string) error {
+	input, ok := appStreamUserStackAssociationsInput(stackName)
+	if !ok {
+		return nil
 	}
 	for {
 		page, err := svc.DescribeUserStackAssociations(context.TODO(), input)
@@ -282,6 +295,16 @@ func appStreamUserImportID(userName string, authType appstreamtypes.Authenticati
 
 func appStreamUserStackAssociationImportID(userName string, authType appstreamtypes.AuthenticationType, stackName string) string {
 	return strings.Join([]string{userName, string(authType), stackName}, appStreamUserStackAssociationIDSeparator)
+}
+
+func appStreamUserStackAssociationsInput(stackName string) (*appstream.DescribeUserStackAssociationsInput, bool) {
+	if stackName == "" {
+		return nil, false
+	}
+	return &appstream.DescribeUserStackAssociationsInput{
+		AuthenticationType: appstreamtypes.AuthenticationTypeUserpool,
+		StackName:          aws.String(stackName),
+	}, true
 }
 
 func appStreamResourceName(parts ...string) string {
