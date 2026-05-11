@@ -7,15 +7,32 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/bedrockagent"
 	bedrockagenttypes "github.com/aws/aws-sdk-go-v2/service/bedrockagent/types"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
+
+func TestBedrockAgentAgentActionGroupImportID(t *testing.T) {
+	got := bedrockAgentAgentActionGroupImportID("ACTGP12345", "GGRRAED6JP", bedrockAgentDraftVersion)
+	want := "ACTGP12345,GGRRAED6JP,DRAFT"
+	if got != want {
+		t.Fatalf("bedrockAgentAgentActionGroupImportID() = %q, want %q", got, want)
+	}
+}
 
 func TestBedrockAgentAgentAliasImportID(t *testing.T) {
 	got := bedrockAgentAgentAliasImportID("66IVY0GUTF", "GGRRAED6JP")
 	want := "66IVY0GUTF,GGRRAED6JP"
 	if got != want {
 		t.Fatalf("bedrockAgentAgentAliasImportID() = %q, want %q", got, want)
+	}
+}
+
+func TestBedrockAgentAgentCollaboratorImportID(t *testing.T) {
+	got := bedrockAgentAgentCollaboratorImportID("GGRRAED6JP", bedrockAgentDraftVersion, "COLLAB1234")
+	want := "GGRRAED6JP,DRAFT,COLLAB1234"
+	if got != want {
+		t.Fatalf("bedrockAgentAgentCollaboratorImportID() = %q, want %q", got, want)
 	}
 }
 
@@ -32,6 +49,22 @@ func TestBedrockAgentDataSourceImportID(t *testing.T) {
 	want := "GWCMFMQF6T,EMDPPAYPZI"
 	if got != want {
 		t.Fatalf("bedrockAgentDataSourceImportID() = %q, want %q", got, want)
+	}
+}
+
+func TestBedrockAgentFlowImportID(t *testing.T) {
+	got := bedrockAgentFlowImportID("FLOW123456")
+	want := "FLOW123456"
+	if got != want {
+		t.Fatalf("bedrockAgentFlowImportID() = %q, want %q", got, want)
+	}
+}
+
+func TestBedrockAgentPromptImportID(t *testing.T) {
+	got := bedrockAgentPromptImportID("PROMPT1234")
+	want := "PROMPT1234"
+	if got != want {
+		t.Fatalf("bedrockAgentPromptImportID() = %q, want %q", got, want)
 	}
 }
 
@@ -52,6 +85,16 @@ func TestBedrockAgentResourceNameUniqueness(t *testing.T) {
 	if aliasFirst == aliasSecond {
 		t.Fatalf("agent alias resource names should include parent agent identity: %q", aliasFirst)
 	}
+	actionGroupFirst := terraformutils.TfSanitize(bedrockAgentResourceName("agent-action-group", "agent-a", bedrockAgentDraftVersion, "lookup", "action-1"))
+	actionGroupSecond := terraformutils.TfSanitize(bedrockAgentResourceName("agent-action-group", "agent-b", bedrockAgentDraftVersion, "lookup", "action-1"))
+	if actionGroupFirst == actionGroupSecond {
+		t.Fatalf("action group resource names should include parent agent identity: %q", actionGroupFirst)
+	}
+	collaboratorFirst := terraformutils.TfSanitize(bedrockAgentResourceName("agent-collaborator", "agent-a", bedrockAgentDraftVersion, "helper", "collab-1"))
+	collaboratorSecond := terraformutils.TfSanitize(bedrockAgentResourceName("agent-collaborator", "agent-b", bedrockAgentDraftVersion, "helper", "collab-1"))
+	if collaboratorFirst == collaboratorSecond {
+		t.Fatalf("collaborator resource names should include parent agent identity: %q", collaboratorFirst)
+	}
 	dataSourceFirst := terraformutils.TfSanitize(bedrockAgentResourceName("data-source", "kb-a", "docs", "source-1"))
 	dataSourceSecond := terraformutils.TfSanitize(bedrockAgentResourceName("data-source", "kb-b", "docs", "source-1"))
 	if dataSourceFirst == dataSourceSecond {
@@ -61,6 +104,16 @@ func TestBedrockAgentResourceNameUniqueness(t *testing.T) {
 	associationSecond := terraformutils.TfSanitize(bedrockAgentResourceName("agent-knowledge-base-association", "agent-b", bedrockAgentDraftVersion, "kb-1"))
 	if associationFirst == associationSecond {
 		t.Fatalf("association resource names should include parent agent identity: %q", associationFirst)
+	}
+	flowFirst := terraformutils.TfSanitize(bedrockAgentResourceName("flow", "support", "flow-a"))
+	flowSecond := terraformutils.TfSanitize(bedrockAgentResourceName("flow", "support", "flow-b"))
+	if flowFirst == flowSecond {
+		t.Fatalf("flow resource names should include flow identity: %q", flowFirst)
+	}
+	promptFirst := terraformutils.TfSanitize(bedrockAgentResourceName("prompt", "support", "prompt-a"))
+	promptSecond := terraformutils.TfSanitize(bedrockAgentResourceName("prompt", "support", "prompt-b"))
+	if promptFirst == promptSecond {
+		t.Fatalf("prompt resource names should include prompt identity: %q", promptFirst)
 	}
 }
 
@@ -236,6 +289,141 @@ func TestNewBedrockAgentAgentAliasResource(t *testing.T) {
 	}
 }
 
+func TestNewBedrockAgentAgentActionGroupResource(t *testing.T) {
+	resource, ok := newBedrockAgentAgentActionGroupResource(bedrockAgentTestAgentActionGroup(), bedrockagenttypes.AgentStatusPrepared)
+	assertBedrockAgentResource(t, resource, ok, "ACTGP12345,GGRRAED6JP,DRAFT", bedrockAgentAgentActionGroupResourceType)
+	if got := resource.InstanceState.Attributes["action_group_id"]; got != "ACTGP12345" {
+		t.Fatalf("action_group_id attribute = %q, want ACTGP12345", got)
+	}
+	if got := resource.InstanceState.Attributes["action_group_name"]; got != "lookup-order" {
+		t.Fatalf("action_group_name attribute = %q, want lookup-order", got)
+	}
+	if got := resource.InstanceState.Attributes["action_group_state"]; got != "ENABLED" {
+		t.Fatalf("action_group_state attribute = %q, want ENABLED", got)
+	}
+	if got := resource.InstanceState.Attributes["agent_id"]; got != "GGRRAED6JP" {
+		t.Fatalf("agent_id attribute = %q, want GGRRAED6JP", got)
+	}
+	if got := resource.InstanceState.Attributes["agent_version"]; got != bedrockAgentDraftVersion {
+		t.Fatalf("agent_version attribute = %q, want %s", got, bedrockAgentDraftVersion)
+	}
+	if got := resource.InstanceState.Attributes["description"]; got != "order lookup" {
+		t.Fatalf("description attribute = %q, want order lookup", got)
+	}
+	if _, ok := resource.InstanceState.Attributes["prepare_agent"]; ok {
+		t.Fatal("prepared parent agent should not force prepare_agent")
+	}
+
+	unprepared, ok := newBedrockAgentAgentActionGroupResource(bedrockAgentTestAgentActionGroup(), bedrockagenttypes.AgentStatusNotPrepared)
+	assertBedrockAgentResource(t, unprepared, ok, "ACTGP12345,GGRRAED6JP,DRAFT", bedrockAgentAgentActionGroupResourceType)
+	if got := unprepared.InstanceState.Attributes["prepare_agent"]; got != "false" {
+		t.Fatalf("prepare_agent attribute = %q, want false", got)
+	}
+
+	parentSignature := bedrockAgentTestAgentActionGroup()
+	parentSignature.Description = nil
+	parentSignature.ParentActionSignature = bedrockagenttypes.ActionGroupSignatureAmazonUserinput
+	resource, ok = newBedrockAgentAgentActionGroupResource(parentSignature, bedrockagenttypes.AgentStatusPrepared)
+	assertBedrockAgentResource(t, resource, ok, "ACTGP12345,GGRRAED6JP,DRAFT", bedrockAgentAgentActionGroupResourceType)
+	if got := resource.InstanceState.Attributes["parent_action_group_signature"]; got != "AMAZON.UserInput" {
+		t.Fatalf("parent_action_group_signature attribute = %q, want AMAZON.UserInput", got)
+	}
+
+	if _, ok := newBedrockAgentAgentActionGroupResource(nil, bedrockagenttypes.AgentStatusPrepared); ok {
+		t.Fatal("nil action group should be skipped")
+	}
+	for name, mutate := range map[string]func(*bedrockagenttypes.AgentActionGroup){
+		"action group ID":   func(actionGroup *bedrockagenttypes.AgentActionGroup) { actionGroup.ActionGroupId = nil },
+		"action group name": func(actionGroup *bedrockagenttypes.AgentActionGroup) { actionGroup.ActionGroupName = nil },
+		"agent ID":          func(actionGroup *bedrockagenttypes.AgentActionGroup) { actionGroup.AgentId = nil },
+		"agent version":     func(actionGroup *bedrockagenttypes.AgentActionGroup) { actionGroup.AgentVersion = nil },
+	} {
+		t.Run("missing "+name, func(t *testing.T) {
+			actionGroup := bedrockAgentTestAgentActionGroup()
+			mutate(actionGroup)
+			if _, ok := newBedrockAgentAgentActionGroupResource(actionGroup, bedrockagenttypes.AgentStatusPrepared); ok {
+				t.Fatalf("action group without %s should be skipped", name)
+			}
+		})
+	}
+
+	unknownState := bedrockAgentTestAgentActionGroup()
+	unknownState.ActionGroupState = ""
+	if _, ok := newBedrockAgentAgentActionGroupResource(unknownState, bedrockagenttypes.AgentStatusPrepared); ok {
+		t.Fatal("action group with empty state should be skipped")
+	}
+}
+
+func TestNewBedrockAgentAgentCollaboratorResource(t *testing.T) {
+	resource, ok := newBedrockAgentAgentCollaboratorResource(bedrockAgentTestAgentCollaborator(), bedrockagenttypes.AgentStatusPrepared)
+	assertBedrockAgentResource(t, resource, ok, "GGRRAED6JP,DRAFT,COLLAB1234", bedrockAgentAgentCollaboratorResourceType)
+	if got := resource.InstanceState.Attributes["agent_descriptor.0.alias_arn"]; got != "arn:aws:bedrock:us-east-1:123456789012:agent-alias/OTHERAGENT/ALIAS12345" {
+		t.Fatalf("agent_descriptor.0.alias_arn attribute = %q, want collaborator alias ARN", got)
+	}
+	if got := resource.InstanceState.Attributes["agent_id"]; got != "GGRRAED6JP" {
+		t.Fatalf("agent_id attribute = %q, want GGRRAED6JP", got)
+	}
+	if got := resource.InstanceState.Attributes["agent_version"]; got != bedrockAgentDraftVersion {
+		t.Fatalf("agent_version attribute = %q, want %s", got, bedrockAgentDraftVersion)
+	}
+	if got := resource.InstanceState.Attributes["collaboration_instruction"]; got != "escalate billing questions" {
+		t.Fatalf("collaboration_instruction attribute = %q, want escalate billing questions", got)
+	}
+	if got := resource.InstanceState.Attributes["collaborator_id"]; got != "COLLAB1234" {
+		t.Fatalf("collaborator_id attribute = %q, want COLLAB1234", got)
+	}
+	if got := resource.InstanceState.Attributes["collaborator_name"]; got != "billing-helper" {
+		t.Fatalf("collaborator_name attribute = %q, want billing-helper", got)
+	}
+	if got := resource.InstanceState.Attributes["relay_conversation_history"]; got != "TO_COLLABORATOR" {
+		t.Fatalf("relay_conversation_history attribute = %q, want TO_COLLABORATOR", got)
+	}
+	if _, ok := resource.InstanceState.Attributes["prepare_agent"]; ok {
+		t.Fatal("prepared parent agent should not force prepare_agent")
+	}
+
+	unprepared, ok := newBedrockAgentAgentCollaboratorResource(bedrockAgentTestAgentCollaborator(), bedrockagenttypes.AgentStatusNotPrepared)
+	assertBedrockAgentResource(t, unprepared, ok, "GGRRAED6JP,DRAFT,COLLAB1234", bedrockAgentAgentCollaboratorResourceType)
+	if got := unprepared.InstanceState.Attributes["prepare_agent"]; got != "false" {
+		t.Fatalf("prepare_agent attribute = %q, want false", got)
+	}
+
+	if _, ok := newBedrockAgentAgentCollaboratorResource(nil, bedrockagenttypes.AgentStatusPrepared); ok {
+		t.Fatal("nil collaborator should be skipped")
+	}
+	for name, mutate := range map[string]func(*bedrockagenttypes.AgentCollaborator){
+		"agent descriptor":           func(collaborator *bedrockagenttypes.AgentCollaborator) { collaborator.AgentDescriptor = nil },
+		"agent descriptor alias ARN": func(collaborator *bedrockagenttypes.AgentCollaborator) { collaborator.AgentDescriptor.AliasArn = nil },
+		"agent ID":                   func(collaborator *bedrockagenttypes.AgentCollaborator) { collaborator.AgentId = nil },
+		"agent version":              func(collaborator *bedrockagenttypes.AgentCollaborator) { collaborator.AgentVersion = nil },
+		"collaborator ID":            func(collaborator *bedrockagenttypes.AgentCollaborator) { collaborator.CollaboratorId = nil },
+		"collaborator name":          func(collaborator *bedrockagenttypes.AgentCollaborator) { collaborator.CollaboratorName = nil },
+		"instruction":                func(collaborator *bedrockagenttypes.AgentCollaborator) { collaborator.CollaborationInstruction = nil },
+	} {
+		t.Run("missing "+name, func(t *testing.T) {
+			collaborator := bedrockAgentTestAgentCollaborator()
+			mutate(collaborator)
+			if _, ok := newBedrockAgentAgentCollaboratorResource(collaborator, bedrockagenttypes.AgentStatusPrepared); ok {
+				t.Fatalf("collaborator without %s should be skipped", name)
+			}
+		})
+	}
+
+	unknownHistory := bedrockAgentTestAgentCollaborator()
+	unknownHistory.RelayConversationHistory = ""
+	resource, ok = newBedrockAgentAgentCollaboratorResource(unknownHistory, bedrockagenttypes.AgentStatusPrepared)
+	assertBedrockAgentResource(t, resource, ok, "GGRRAED6JP,DRAFT,COLLAB1234", bedrockAgentAgentCollaboratorResourceType)
+	if _, ok := resource.InstanceState.Attributes["relay_conversation_history"]; ok {
+		t.Fatal("collaborator with empty relay conversation history should omit relay_conversation_history attribute")
+	}
+
+	invalidHistory := bedrockAgentTestAgentCollaborator()
+	invalidHistory.RelayConversationHistory = bedrockagenttypes.RelayConversationHistory("UNKNOWN")
+	if _, ok := newBedrockAgentAgentCollaboratorResource(invalidHistory, bedrockagenttypes.AgentStatusPrepared); ok {
+		t.Fatal("collaborator with unknown relay conversation history should be skipped")
+	}
+}
+
 func TestNewBedrockAgentAgentKnowledgeBaseAssociationResource(t *testing.T) {
 	resource, ok := newBedrockAgentAgentKnowledgeBaseAssociationResource(bedrockAgentTestAgentKnowledgeBaseAssociation())
 	assertBedrockAgentResource(t, resource, ok, "GGRRAED6JP,DRAFT,EMDPPAYPZI", bedrockAgentAgentKnowledgeBaseAssociationResourceType)
@@ -384,6 +572,101 @@ func TestNewBedrockAgentDataSourceResource(t *testing.T) {
 	}
 }
 
+func TestNewBedrockAgentFlowResource(t *testing.T) {
+	resource, ok := newBedrockAgentFlowResource(bedrockAgentTestFlow())
+	assertBedrockAgentResource(t, resource, ok, "FLOW123456", bedrockAgentFlowResourceType)
+	if got := resource.InstanceState.Attributes["id"]; got != "FLOW123456" {
+		t.Fatalf("id attribute = %q, want FLOW123456", got)
+	}
+	if got := resource.InstanceState.Attributes["name"]; got != "support-flow" {
+		t.Fatalf("name attribute = %q, want support-flow", got)
+	}
+	if got := resource.InstanceState.Attributes["execution_role_arn"]; got != "arn:aws:iam::123456789012:role/bedrock-flow" {
+		t.Fatalf("execution_role_arn attribute = %q, want arn:aws:iam::123456789012:role/bedrock-flow", got)
+	}
+	if got := resource.InstanceState.Attributes["status"]; got != "Prepared" {
+		t.Fatalf("status attribute = %q, want Prepared", got)
+	}
+	if got := resource.InstanceState.Attributes["description"]; got != "support workflow" {
+		t.Fatalf("description attribute = %q, want support workflow", got)
+	}
+	if got := resource.InstanceState.Attributes["version"]; got != "DRAFT" {
+		t.Fatalf("version attribute = %q, want DRAFT", got)
+	}
+
+	notPrepared := bedrockAgentTestFlow()
+	notPrepared.Status = bedrockagenttypes.FlowStatusNotPrepared
+	resource, ok = newBedrockAgentFlowResource(notPrepared)
+	assertBedrockAgentResource(t, resource, ok, "FLOW123456", bedrockAgentFlowResourceType)
+	if got := resource.InstanceState.Attributes["status"]; got != "NotPrepared" {
+		t.Fatalf("status attribute = %q, want NotPrepared", got)
+	}
+
+	if _, ok := newBedrockAgentFlowResource(nil); ok {
+		t.Fatal("nil flow should be skipped")
+	}
+	for name, mutate := range map[string]func(*bedrockagent.GetFlowOutput){
+		"ID":                 func(flow *bedrockagent.GetFlowOutput) { flow.Id = nil },
+		"name":               func(flow *bedrockagent.GetFlowOutput) { flow.Name = nil },
+		"execution role ARN": func(flow *bedrockagent.GetFlowOutput) { flow.ExecutionRoleArn = nil },
+	} {
+		t.Run("missing "+name, func(t *testing.T) {
+			flow := bedrockAgentTestFlow()
+			mutate(flow)
+			if _, ok := newBedrockAgentFlowResource(flow); ok {
+				t.Fatalf("flow without %s should be skipped", name)
+			}
+		})
+	}
+
+	preparing := bedrockAgentTestFlow()
+	preparing.Status = bedrockagenttypes.FlowStatusPreparing
+	if _, ok := newBedrockAgentFlowResource(preparing); ok {
+		t.Fatal("preparing flow should be skipped")
+	}
+	failed := bedrockAgentTestFlow()
+	failed.Status = bedrockagenttypes.FlowStatusFailed
+	if _, ok := newBedrockAgentFlowResource(failed); ok {
+		t.Fatal("failed flow should be skipped")
+	}
+}
+
+func TestNewBedrockAgentPromptResource(t *testing.T) {
+	resource, ok := newBedrockAgentPromptResource(bedrockAgentTestPrompt())
+	assertBedrockAgentResource(t, resource, ok, "PROMPT1234", bedrockAgentPromptResourceType)
+	if got := resource.InstanceState.Attributes["id"]; got != "PROMPT1234" {
+		t.Fatalf("id attribute = %q, want PROMPT1234", got)
+	}
+	if got := resource.InstanceState.Attributes["name"]; got != "support-prompt" {
+		t.Fatalf("name attribute = %q, want support-prompt", got)
+	}
+	if got := resource.InstanceState.Attributes["default_variant"]; got != "primary" {
+		t.Fatalf("default_variant attribute = %q, want primary", got)
+	}
+	if got := resource.InstanceState.Attributes["description"]; got != "support prompt" {
+		t.Fatalf("description attribute = %q, want support prompt", got)
+	}
+	if got := resource.InstanceState.Attributes["version"]; got != "DRAFT" {
+		t.Fatalf("version attribute = %q, want DRAFT", got)
+	}
+
+	if _, ok := newBedrockAgentPromptResource(nil); ok {
+		t.Fatal("nil prompt should be skipped")
+	}
+	for name, mutate := range map[string]func(*bedrockagent.GetPromptOutput){
+		"ID":   func(prompt *bedrockagent.GetPromptOutput) { prompt.Id = nil },
+		"name": func(prompt *bedrockagent.GetPromptOutput) { prompt.Name = nil },
+	} {
+		t.Run("missing "+name, func(t *testing.T) {
+			prompt := bedrockAgentTestPrompt()
+			mutate(prompt)
+			if _, ok := newBedrockAgentPromptResource(prompt); ok {
+				t.Fatalf("prompt without %s should be skipped", name)
+			}
+		})
+	}
+}
+
 func TestBedrockAgentImportableStatuses(t *testing.T) {
 	for _, status := range []bedrockagenttypes.AgentStatus{
 		bedrockagenttypes.AgentStatusPrepared,
@@ -425,6 +708,33 @@ func TestBedrockAgentImportableStatuses(t *testing.T) {
 		}
 	}
 
+	for _, state := range []bedrockagenttypes.ActionGroupState{
+		bedrockagenttypes.ActionGroupStateEnabled,
+		bedrockagenttypes.ActionGroupStateDisabled,
+	} {
+		if !bedrockAgentActionGroupImportable(state) {
+			t.Fatalf("%s action group should be importable", state)
+		}
+	}
+	if bedrockAgentActionGroupImportable("") {
+		t.Fatal("action group with empty state should not be importable")
+	}
+
+	for _, history := range []bedrockagenttypes.RelayConversationHistory{
+		bedrockagenttypes.RelayConversationHistoryToCollaborator,
+		bedrockagenttypes.RelayConversationHistoryDisabled,
+	} {
+		if !bedrockAgentRelayConversationHistoryImportable(history) {
+			t.Fatalf("%s collaborator relay history should be importable", history)
+		}
+	}
+	if !bedrockAgentRelayConversationHistoryImportable("") {
+		t.Fatal("collaborator with empty relay history should be importable")
+	}
+	if bedrockAgentRelayConversationHistoryImportable(bedrockagenttypes.RelayConversationHistory("UNKNOWN")) {
+		t.Fatal("collaborator with unknown relay history should not be importable")
+	}
+
 	for _, state := range []bedrockagenttypes.KnowledgeBaseState{
 		bedrockagenttypes.KnowledgeBaseStateEnabled,
 		bedrockagenttypes.KnowledgeBaseStateDisabled,
@@ -464,6 +774,23 @@ func TestBedrockAgentImportableStatuses(t *testing.T) {
 	} {
 		if bedrockAgentDataSourceImportable(status) {
 			t.Fatalf("%s data source should not be importable", status)
+		}
+	}
+
+	for _, status := range []bedrockagenttypes.FlowStatus{
+		bedrockagenttypes.FlowStatusPrepared,
+		bedrockagenttypes.FlowStatusNotPrepared,
+	} {
+		if !bedrockAgentFlowImportable(status) {
+			t.Fatalf("%s flow should be importable", status)
+		}
+	}
+	for _, status := range []bedrockagenttypes.FlowStatus{
+		bedrockagenttypes.FlowStatusPreparing,
+		bedrockagenttypes.FlowStatusFailed,
+	} {
+		if bedrockAgentFlowImportable(status) {
+			t.Fatalf("%s flow should not be importable", status)
 		}
 	}
 }
@@ -740,9 +1067,9 @@ func TestBedrockAgentResourceNotFound(t *testing.T) {
 }
 
 func TestBedrockAgentInitialCleanupHonorsTypedFilters(t *testing.T) {
-	agent, alias, association, dataSource, knowledgeBase := bedrockAgentTestResources(t)
+	agent, actionGroup, alias, collaborator, association, dataSource, flow, knowledgeBase, prompt := bedrockAgentTestResources(t)
 	g := BedrockAgentGenerator{}
-	g.Resources = []terraformutils.Resource{agent, alias, association, dataSource, knowledgeBase}
+	g.Resources = []terraformutils.Resource{agent, actionGroup, alias, collaborator, association, dataSource, flow, knowledgeBase, prompt}
 	g.Filter = []terraformutils.ResourceFilter{{
 		ServiceName:      "bedrockagent_agent_alias",
 		FieldPath:        "id",
@@ -760,9 +1087,9 @@ func TestBedrockAgentInitialCleanupHonorsTypedFilters(t *testing.T) {
 }
 
 func TestBedrockAgentInitialCleanupPreservesGlobalFilters(t *testing.T) {
-	agent, alias, association, dataSource, knowledgeBase := bedrockAgentTestResources(t)
+	agent, actionGroup, alias, collaborator, association, dataSource, flow, knowledgeBase, prompt := bedrockAgentTestResources(t)
 	g := BedrockAgentGenerator{}
-	g.Resources = []terraformutils.Resource{agent, alias, association, dataSource, knowledgeBase}
+	g.Resources = []terraformutils.Resource{agent, actionGroup, alias, collaborator, association, dataSource, flow, knowledgeBase, prompt}
 	g.Filter = []terraformutils.ResourceFilter{
 		{
 			ServiceName:      "bedrockagent_agent",
@@ -777,8 +1104,8 @@ func TestBedrockAgentInitialCleanupPreservesGlobalFilters(t *testing.T) {
 
 	g.InitialCleanup()
 
-	if len(g.Resources) != 5 {
-		t.Fatalf("InitialCleanup() resources len = %d, want 5", len(g.Resources))
+	if len(g.Resources) != 9 {
+		t.Fatalf("InitialCleanup() resources len = %d, want 9", len(g.Resources))
 	}
 }
 
@@ -798,7 +1125,7 @@ func assertBedrockAgentResource(t *testing.T, resource terraformutils.Resource, 
 	}
 }
 
-func bedrockAgentTestResources(t *testing.T) (terraformutils.Resource, terraformutils.Resource, terraformutils.Resource, terraformutils.Resource, terraformutils.Resource) {
+func bedrockAgentTestResources(t *testing.T) (terraformutils.Resource, terraformutils.Resource, terraformutils.Resource, terraformutils.Resource, terraformutils.Resource, terraformutils.Resource, terraformutils.Resource, terraformutils.Resource, terraformutils.Resource) {
 	t.Helper()
 	agent, ok := newBedrockAgentAgentResource(bedrockagenttypes.AgentSummary{
 		AgentId:     aws.String("GGRRAED6JP"),
@@ -808,6 +1135,10 @@ func bedrockAgentTestResources(t *testing.T) (terraformutils.Resource, terraform
 	if !ok {
 		t.Fatal("newBedrockAgentAgentResource() should create agent")
 	}
+	actionGroup, ok := newBedrockAgentAgentActionGroupResource(bedrockAgentTestAgentActionGroup(), bedrockagenttypes.AgentStatusPrepared)
+	if !ok {
+		t.Fatal("newBedrockAgentAgentActionGroupResource() should create action group")
+	}
 	alias, ok := newBedrockAgentAgentAliasResource("GGRRAED6JP", bedrockagenttypes.AgentAliasSummary{
 		AgentAliasId:     aws.String("66IVY0GUTF"),
 		AgentAliasName:   aws.String("prod"),
@@ -815,6 +1146,10 @@ func bedrockAgentTestResources(t *testing.T) (terraformutils.Resource, terraform
 	})
 	if !ok {
 		t.Fatal("newBedrockAgentAgentAliasResource() should create alias")
+	}
+	collaborator, ok := newBedrockAgentAgentCollaboratorResource(bedrockAgentTestAgentCollaborator(), bedrockagenttypes.AgentStatusPrepared)
+	if !ok {
+		t.Fatal("newBedrockAgentAgentCollaboratorResource() should create collaborator")
 	}
 	association, ok := newBedrockAgentAgentKnowledgeBaseAssociationResource(bedrockAgentTestAgentKnowledgeBaseAssociation())
 	if !ok {
@@ -824,11 +1159,44 @@ func bedrockAgentTestResources(t *testing.T) (terraformutils.Resource, terraform
 	if !ok {
 		t.Fatal("newBedrockAgentDataSourceResource() should create data source")
 	}
+	flow, ok := newBedrockAgentFlowResource(bedrockAgentTestFlow())
+	if !ok {
+		t.Fatal("newBedrockAgentFlowResource() should create flow")
+	}
 	knowledgeBase, ok := newBedrockAgentKnowledgeBaseResource(bedrockAgentTestKnowledgeBase())
 	if !ok {
 		t.Fatal("newBedrockAgentKnowledgeBaseResource() should create knowledge base")
 	}
-	return agent, alias, association, dataSource, knowledgeBase
+	prompt, ok := newBedrockAgentPromptResource(bedrockAgentTestPrompt())
+	if !ok {
+		t.Fatal("newBedrockAgentPromptResource() should create prompt")
+	}
+	return agent, actionGroup, alias, collaborator, association, dataSource, flow, knowledgeBase, prompt
+}
+
+func bedrockAgentTestAgentActionGroup() *bedrockagenttypes.AgentActionGroup {
+	return &bedrockagenttypes.AgentActionGroup{
+		ActionGroupId:    aws.String("ACTGP12345"),
+		ActionGroupName:  aws.String("lookup-order"),
+		ActionGroupState: bedrockagenttypes.ActionGroupStateEnabled,
+		AgentId:          aws.String("GGRRAED6JP"),
+		AgentVersion:     aws.String(bedrockAgentDraftVersion),
+		Description:      aws.String("order lookup"),
+	}
+}
+
+func bedrockAgentTestAgentCollaborator() *bedrockagenttypes.AgentCollaborator {
+	return &bedrockagenttypes.AgentCollaborator{
+		AgentDescriptor: &bedrockagenttypes.AgentDescriptor{
+			AliasArn: aws.String("arn:aws:bedrock:us-east-1:123456789012:agent-alias/OTHERAGENT/ALIAS12345"),
+		},
+		AgentId:                  aws.String("GGRRAED6JP"),
+		AgentVersion:             aws.String(bedrockAgentDraftVersion),
+		CollaborationInstruction: aws.String("escalate billing questions"),
+		CollaboratorId:           aws.String("COLLAB1234"),
+		CollaboratorName:         aws.String("billing-helper"),
+		RelayConversationHistory: bedrockagenttypes.RelayConversationHistoryToCollaborator,
+	}
 }
 
 func bedrockAgentTestAgentKnowledgeBaseAssociation() *bedrockagenttypes.AgentKnowledgeBase {
@@ -838,6 +1206,17 @@ func bedrockAgentTestAgentKnowledgeBaseAssociation() *bedrockagenttypes.AgentKno
 		Description:        aws.String("customer knowledge"),
 		KnowledgeBaseId:    aws.String("EMDPPAYPZI"),
 		KnowledgeBaseState: bedrockagenttypes.KnowledgeBaseStateEnabled,
+	}
+}
+
+func bedrockAgentTestFlow() *bedrockagent.GetFlowOutput {
+	return &bedrockagent.GetFlowOutput{
+		Description:      aws.String("support workflow"),
+		ExecutionRoleArn: aws.String("arn:aws:iam::123456789012:role/bedrock-flow"),
+		Id:               aws.String("FLOW123456"),
+		Name:             aws.String("support-flow"),
+		Status:           bedrockagenttypes.FlowStatusPrepared,
+		Version:          aws.String(bedrockAgentDraftVersion),
 	}
 }
 
@@ -855,6 +1234,16 @@ func bedrockAgentTestKnowledgeBase() *bedrockagenttypes.KnowledgeBase {
 			OpensearchServerlessConfiguration: &bedrockagenttypes.OpenSearchServerlessConfiguration{},
 		},
 		Status: bedrockagenttypes.KnowledgeBaseStatusActive,
+	}
+}
+
+func bedrockAgentTestPrompt() *bedrockagent.GetPromptOutput {
+	return &bedrockagent.GetPromptOutput{
+		DefaultVariant: aws.String("primary"),
+		Description:    aws.String("support prompt"),
+		Id:             aws.String("PROMPT1234"),
+		Name:           aws.String("support-prompt"),
+		Version:        aws.String(bedrockAgentDraftVersion),
 	}
 }
 
