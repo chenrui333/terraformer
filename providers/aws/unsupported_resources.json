@@ -37,6 +37,43 @@
       ]
     },
     {
+      "resource": "aws_guardduty_detector_feature",
+      "service_family": "guardduty",
+      "reason": "Terraform AWS provider does not support importing this resource, so Terraformer cannot seed a provider-recognized import state.",
+      "evidence": "The Terraform AWS provider aws_guardduty_detector_feature resource source has no ResourceImporter and the provider documentation has no Import section; its detector_id/name ID is only assigned during create.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/guardduty_detector_feature",
+        "https://docs.aws.amazon.com/guardduty/latest/APIReference/API_GetDetector.html"
+      ]
+    },
+    {
+      "resource": "aws_guardduty_invite_accepter",
+      "service_family": "guardduty",
+      "reason": "The resource represents accepting a GuardDuty administrator invitation in a member account; discovery can see an existing administrator relationship but cannot safely infer Terraform ownership of the acceptance/disassociation lifecycle.",
+      "evidence": "Terraform AWS provider imports by member detector ID and reads GetMasterAccount, while create calls AcceptInvitation with invitation context. Emitting this from an existing relationship would assume ownership of side-effectful account association state.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/guardduty_invite_accepter",
+        "https://docs.aws.amazon.com/guardduty/latest/APIReference/API_AcceptInvitation.html",
+        "https://docs.aws.amazon.com/guardduty/latest/APIReference/API_GetMasterAccount.html"
+      ]
+    },
+    {
+      "resource": "aws_guardduty_organization_configuration_feature",
+      "service_family": "guardduty",
+      "reason": "Terraform AWS provider does not support importing this resource, so Terraformer cannot seed a provider-recognized import state.",
+      "evidence": "The Terraform AWS provider aws_guardduty_organization_configuration_feature resource source has no ResourceImporter and the provider documentation has no Import section; its detector_id/name ID is only assigned during update/create.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/guardduty_organization_configuration_feature",
+        "https://docs.aws.amazon.com/guardduty/latest/APIReference/API_DescribeOrganizationConfiguration.html"
+      ]
+    },
+    {
       "resource": "aws_ivs_playback_key_pair",
       "service_family": "ivs",
       "reason": "IVS playback key pairs require public_key, but IVS GetPlaybackKeyPair and ListPlaybackKeyPairs responses do not return the public key material needed to seed an imported resource.",

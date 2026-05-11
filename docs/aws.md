@@ -357,6 +357,11 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_guardduty_detector`
     * `aws_guardduty_filter`
     * `aws_guardduty_ipset`
+    * `aws_guardduty_malware_protection_plan`
+    * `aws_guardduty_member`
+    * `aws_guardduty_organization_admin_account`
+    * `aws_guardduty_organization_configuration`
+    * `aws_guardduty_publishing_destination`
     * `aws_guardduty_threatintelset`
 *   `iam`
     * `aws_iam_access_key`
