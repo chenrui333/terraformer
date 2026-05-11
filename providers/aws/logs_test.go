@@ -261,3 +261,274 @@ func TestNewLogsIndexPolicyResource(t *testing.T) {
 		})
 	}
 }
+
+func TestNewLogsDeliverySourceResource(t *testing.T) {
+	sourceName := "api-delivery-source"
+	logType := "ACCESS_LOGS"
+	resourceArn := "arn:aws:apigateway:us-east-1::/restapis/api-id"
+
+	tests := []struct {
+		name   string
+		source types.DeliverySource
+		wantOK bool
+	}{
+		{
+			name: "active delivery source",
+			source: types.DeliverySource{
+				LogType:      &logType,
+				Name:         &sourceName,
+				ResourceArns: []string{resourceArn},
+				Status:       types.DeliverySourceStatusActive,
+			},
+			wantOK: true,
+		},
+		{
+			name: "source without name is skipped",
+			source: types.DeliverySource{
+				LogType:      &logType,
+				ResourceArns: []string{resourceArn},
+			},
+		},
+		{
+			name: "source without log type is skipped",
+			source: types.DeliverySource{
+				Name:         &sourceName,
+				ResourceArns: []string{resourceArn},
+			},
+		},
+		{
+			name: "source without resource ARN is skipped",
+			source: types.DeliverySource{
+				LogType: &logType,
+				Name:    &sourceName,
+			},
+		},
+		{
+			name: "source with deleted backing resource is skipped",
+			source: types.DeliverySource{
+				LogType:      &logType,
+				Name:         &sourceName,
+				ResourceArns: []string{resourceArn},
+				StatusReason: types.DeliverySourceStatusReasonResourceDeleted,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resource, ok := newLogsDeliverySourceResource(tt.source)
+			if ok != tt.wantOK {
+				t.Fatalf("newLogsDeliverySourceResource() ok = %t, want %t", ok, tt.wantOK)
+			}
+			if !ok {
+				return
+			}
+			if got := resource.InstanceState.ID; got != sourceName {
+				t.Fatalf("resource ID = %q, want %q", got, sourceName)
+			}
+			if got := resource.InstanceInfo.Type; got != logsDeliverySourceResourceType {
+				t.Fatalf("resource type = %q, want %q", got, logsDeliverySourceResourceType)
+			}
+			if got := resource.InstanceState.Attributes["name"]; got != sourceName {
+				t.Fatalf("name = %q, want %q", got, sourceName)
+			}
+			if got := resource.InstanceState.Attributes["log_type"]; got != logType {
+				t.Fatalf("log_type = %q, want %q", got, logType)
+			}
+			if got := resource.InstanceState.Attributes["resource_arn"]; got != resourceArn {
+				t.Fatalf("resource_arn = %q, want %q", got, resourceArn)
+			}
+		})
+	}
+}
+
+func TestLogsDeliveryResourceNamesPreservePartBoundaries(t *testing.T) {
+	logType := "ACCESS_LOGS"
+	resourceArn := "arn:aws:apigateway:us-east-1::/restapis/api-id"
+	leftName := "a/b"
+	rightName := "a-002F-b"
+
+	left, ok := newLogsDeliverySourceResource(types.DeliverySource{
+		LogType:      &logType,
+		Name:         &leftName,
+		ResourceArns: []string{resourceArn},
+	})
+	if !ok {
+		t.Fatal("newLogsDeliverySourceResource() should create left resource")
+	}
+	right, ok := newLogsDeliverySourceResource(types.DeliverySource{
+		LogType:      &logType,
+		Name:         &rightName,
+		ResourceArns: []string{resourceArn},
+	})
+	if !ok {
+		t.Fatal("newLogsDeliverySourceResource() should create right resource")
+	}
+	if left.ResourceName == right.ResourceName {
+		t.Fatalf("delivery source resource names collide: %q", left.ResourceName)
+	}
+}
+
+func TestNewLogsDeliveryDestinationResource(t *testing.T) {
+	destinationName := "central-delivery-destination"
+
+	tests := []struct {
+		name        string
+		destination types.DeliveryDestination
+		wantOK      bool
+	}{
+		{
+			name: "delivery destination",
+			destination: types.DeliveryDestination{
+				Name: &destinationName,
+			},
+			wantOK: true,
+		},
+		{
+			name: "destination without name is skipped",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resource, ok := newLogsDeliveryDestinationResource(tt.destination)
+			if ok != tt.wantOK {
+				t.Fatalf("newLogsDeliveryDestinationResource() ok = %t, want %t", ok, tt.wantOK)
+			}
+			if !ok {
+				return
+			}
+			if got := resource.InstanceState.ID; got != destinationName {
+				t.Fatalf("resource ID = %q, want %q", got, destinationName)
+			}
+			if got := resource.InstanceInfo.Type; got != logsDeliveryDestinationResourceType {
+				t.Fatalf("resource type = %q, want %q", got, logsDeliveryDestinationResourceType)
+			}
+			if got := resource.InstanceState.Attributes["name"]; got != destinationName {
+				t.Fatalf("name = %q, want %q", got, destinationName)
+			}
+		})
+	}
+}
+
+func TestNewLogsDeliveryDestinationPolicyResource(t *testing.T) {
+	destinationName := "central-delivery-destination"
+	policyDocument := "{}"
+
+	tests := []struct {
+		name            string
+		destinationName string
+		policy          types.Policy
+		wantOK          bool
+	}{
+		{
+			name:            "delivery destination policy",
+			destinationName: destinationName,
+			policy: types.Policy{
+				DeliveryDestinationPolicy: &policyDocument,
+			},
+			wantOK: true,
+		},
+		{
+			name: "policy without destination name is skipped",
+			policy: types.Policy{
+				DeliveryDestinationPolicy: &policyDocument,
+			},
+		},
+		{
+			name:            "policy without document is skipped",
+			destinationName: destinationName,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resource, ok := newLogsDeliveryDestinationPolicyResource(tt.destinationName, tt.policy)
+			if ok != tt.wantOK {
+				t.Fatalf("newLogsDeliveryDestinationPolicyResource() ok = %t, want %t", ok, tt.wantOK)
+			}
+			if !ok {
+				return
+			}
+			if got := resource.InstanceState.ID; got != destinationName {
+				t.Fatalf("resource ID = %q, want %q", got, destinationName)
+			}
+			if got := resource.InstanceInfo.Type; got != logsDeliveryDestinationPolicyResourceType {
+				t.Fatalf("resource type = %q, want %q", got, logsDeliveryDestinationPolicyResourceType)
+			}
+			if got := resource.InstanceState.Attributes["delivery_destination_name"]; got != destinationName {
+				t.Fatalf("delivery_destination_name = %q, want %q", got, destinationName)
+			}
+			if got := resource.InstanceState.Attributes["delivery_destination_policy"]; got != policyDocument {
+				t.Fatalf("delivery_destination_policy = %q, want %q", got, policyDocument)
+			}
+		})
+	}
+}
+
+func TestNewLogsDeliveryResource(t *testing.T) {
+	deliveryID := "delivery-1234567890"
+	sourceName := "api-delivery-source"
+	destinationArn := "arn:aws:logs:us-east-1:123456789012:delivery-destination:central"
+
+	tests := []struct {
+		name     string
+		delivery types.Delivery
+		wantOK   bool
+	}{
+		{
+			name: "delivery",
+			delivery: types.Delivery{
+				DeliveryDestinationArn: &destinationArn,
+				DeliverySourceName:     &sourceName,
+				Id:                     &deliveryID,
+			},
+			wantOK: true,
+		},
+		{
+			name: "delivery without ID is skipped",
+			delivery: types.Delivery{
+				DeliveryDestinationArn: &destinationArn,
+				DeliverySourceName:     &sourceName,
+			},
+		},
+		{
+			name: "delivery without source is skipped",
+			delivery: types.Delivery{
+				DeliveryDestinationArn: &destinationArn,
+				Id:                     &deliveryID,
+			},
+		},
+		{
+			name: "delivery without destination is skipped",
+			delivery: types.Delivery{
+				DeliverySourceName: &sourceName,
+				Id:                 &deliveryID,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resource, ok := newLogsDeliveryResource(tt.delivery)
+			if ok != tt.wantOK {
+				t.Fatalf("newLogsDeliveryResource() ok = %t, want %t", ok, tt.wantOK)
+			}
+			if !ok {
+				return
+			}
+			if got := resource.InstanceState.ID; got != deliveryID {
+				t.Fatalf("resource ID = %q, want %q", got, deliveryID)
+			}
+			if got := resource.InstanceInfo.Type; got != logsDeliveryResourceType {
+				t.Fatalf("resource type = %q, want %q", got, logsDeliveryResourceType)
+			}
+			if got := resource.InstanceState.Attributes["delivery_source_name"]; got != sourceName {
+				t.Fatalf("delivery_source_name = %q, want %q", got, sourceName)
+			}
+			if got := resource.InstanceState.Attributes["delivery_destination_arn"]; got != destinationArn {
+				t.Fatalf("delivery_destination_arn = %q, want %q", got, destinationArn)
+			}
+		})
+	}
+}

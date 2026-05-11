@@ -355,6 +355,10 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
 *   `logs`
     * `aws_cloudwatch_log_account_policy`
     * `aws_cloudwatch_log_data_protection_policy`
+    * `aws_cloudwatch_log_delivery`
+    * `aws_cloudwatch_log_delivery_destination`
+    * `aws_cloudwatch_log_delivery_destination_policy`
+    * `aws_cloudwatch_log_delivery_source`
     * `aws_cloudwatch_log_destination`
     * `aws_cloudwatch_log_destination_policy`
     * `aws_cloudwatch_log_group`
