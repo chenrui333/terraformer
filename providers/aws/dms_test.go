@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	dmstypes "github.com/aws/aws-sdk-go-v2/service/databasemigrationservice/types"
+	"github.com/aws/smithy-go"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -65,6 +66,32 @@ func TestDMSOptionalResourceLoaderErrors(t *testing.T) {
 		}
 	})
 
+	t.Run("skips access denied", func(t *testing.T) {
+		g := DmsGenerator{}
+		calledNext := false
+		err := g.loadOptionalResources([]dmsOptionalResourceLoader{
+			{
+				name: "replication configs",
+				load: func() error {
+					return &dmstypes.AccessDeniedFault{}
+				},
+			},
+			{
+				name: "event subscriptions",
+				load: func() error {
+					calledNext = true
+					return nil
+				},
+			},
+		})
+		if err != nil {
+			t.Fatalf("loadOptionalResources() error = %v, want nil", err)
+		}
+		if !calledNext {
+			t.Fatal("loadOptionalResources() should continue after access denied")
+		}
+	})
+
 	t.Run("returns unexpected error", func(t *testing.T) {
 		g := DmsGenerator{}
 		boom := errors.New("boom")
@@ -91,6 +118,28 @@ func TestDMSOptionalResourceLoaderErrors(t *testing.T) {
 			t.Fatal("loadOptionalResources() should stop after unexpected error")
 		}
 	})
+}
+
+func TestDMSOptionalResourceErrorSkippable(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "resource not found", err: &dmstypes.ResourceNotFoundFault{}, want: true},
+		{name: "typed access denied", err: &dmstypes.AccessDeniedFault{}, want: true},
+		{name: "generic access denied", err: &smithy.GenericAPIError{Code: "AccessDeniedException"}, want: true},
+		{name: "generic access denied fault", err: &smithy.GenericAPIError{Code: "AccessDeniedFault"}, want: true},
+		{name: "unexpected generic error", err: &smithy.GenericAPIError{Code: "ThrottlingException"}, want: false},
+		{name: "plain error", err: errors.New("boom"), want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := dmsOptionalResourceErrorSkippable(tt.err); got != tt.want {
+				t.Fatalf("dmsOptionalResourceErrorSkippable() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 
 func TestNewDMSCertificateResource(t *testing.T) {

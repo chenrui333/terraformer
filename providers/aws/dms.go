@@ -12,6 +12,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/databasemigrationservice"
 	dmstypes "github.com/aws/aws-sdk-go-v2/service/databasemigrationservice/types"
+	"github.com/aws/smithy-go"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -64,7 +65,15 @@ func (g *DmsGenerator) loadOptionalResources(loaders []dmsOptionalResourceLoader
 
 func dmsOptionalResourceErrorSkippable(err error) bool {
 	var notFound *dmstypes.ResourceNotFoundFault
-	return errors.As(err, &notFound)
+	if errors.As(err, &notFound) {
+		return true
+	}
+	var accessDenied *dmstypes.AccessDeniedFault
+	if errors.As(err, &accessDenied) {
+		return true
+	}
+	var apiErr smithy.APIError
+	return errors.As(err, &apiErr) && strings.Contains(strings.ToLower(apiErr.ErrorCode()), "accessdenied")
 }
 
 func (g *DmsGenerator) InitResources() error {
