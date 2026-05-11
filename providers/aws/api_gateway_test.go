@@ -112,6 +112,31 @@ func TestNewAPIGatewayBasePathMappingResource(t *testing.T) {
 	}
 }
 
+func TestAPIGatewayBasePathMappingsRespectRestAPITagFilters(t *testing.T) {
+	noFilter := &APIGatewayGenerator{}
+	if noFilter.shouldFilterBasePathMapping(types.BasePathMapping{RestApiId: aws.String("api-excluded")}) {
+		t.Fatal("shouldFilterBasePathMapping() = true without REST API tag filter, want false")
+	}
+
+	filtered := &APIGatewayGenerator{}
+	filtered.Filter = []terraformutils.ResourceFilter{{
+		ServiceName:      "api_gateway_rest_api",
+		FieldPath:        "tags.Environment",
+		AcceptableValues: []string{"prod"},
+	}}
+	filtered.rememberAcceptedRestAPIID("api-allowed")
+
+	if filtered.shouldFilterBasePathMapping(types.BasePathMapping{RestApiId: aws.String("api-allowed")}) {
+		t.Fatal("shouldFilterBasePathMapping() = true for accepted REST API, want false")
+	}
+	if !filtered.shouldFilterBasePathMapping(types.BasePathMapping{RestApiId: aws.String("api-excluded")}) {
+		t.Fatal("shouldFilterBasePathMapping() = false for filtered REST API, want true")
+	}
+	if !filtered.shouldFilterBasePathMapping(types.BasePathMapping{}) {
+		t.Fatal("shouldFilterBasePathMapping() = false for empty REST API ID under tag filter, want true")
+	}
+}
+
 func TestNewAPIGatewayClientCertificateResource(t *testing.T) {
 	resource, ok := newAPIGatewayClientCertificateResource(types.ClientCertificate{
 		ClientCertificateId: aws.String("cert-123"),

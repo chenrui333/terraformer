@@ -37,6 +37,7 @@ type apiGatewayOptionalResourceLoader struct {
 
 type APIGatewayGenerator struct {
 	AWSService
+	acceptedRestAPIIDs map[string]struct{}
 }
 
 func (g *APIGatewayGenerator) InitResources() error {
@@ -48,13 +49,15 @@ func (g *APIGatewayGenerator) InitResources() error {
 
 	g.loadOptionalResources([]apiGatewayOptionalResourceLoader{
 		{name: "account", load: func() error { return g.loadAccount(svc, config) }},
-		{name: "base path mappings", load: func() error { return g.loadDomainBasePathMappings(svc) }},
 		{name: "client certificates", load: func() error { return g.loadClientCertificates(svc) }},
 	})
 
 	if err := g.loadRestApis(svc); err != nil {
 		return err
 	}
+	g.loadOptionalResources([]apiGatewayOptionalResourceLoader{
+		{name: "base path mappings", load: func() error { return g.loadDomainBasePathMappings(svc) }},
+	})
 	if err := g.loadVpcLinks(svc); err != nil {
 		return err
 	}
@@ -90,9 +93,18 @@ func (g *APIGatewayGenerator) loadRestApis(svc *apigateway.Client) error {
 			if g.shouldFilterRestAPI(restAPI.Tags) {
 				continue
 			}
+			restAPIID := StringValue(restAPI.Id)
+			if restAPIID == "" {
+				continue
+			}
+			restAPIName := StringValue(restAPI.Name)
+			if restAPIName == "" {
+				restAPIName = restAPIID
+			}
+			g.rememberAcceptedRestAPIID(restAPIID)
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				*restAPI.Id,
-				*restAPI.Id+"_"+*restAPI.Name,
+				restAPIID,
+				restAPIID+"_"+restAPIName,
 				"aws_api_gateway_rest_api",
 				"aws",
 				apiGatewayAllowEmptyValues))
@@ -136,6 +148,37 @@ func (g *APIGatewayGenerator) shouldFilterRestAPI(tags map[string]string) bool {
 		}
 	}
 	return false
+}
+
+func (g *APIGatewayGenerator) hasRestAPITagFilter() bool {
+	for _, filter := range g.Filter {
+		if strings.HasPrefix(filter.FieldPath, "tags.") && filter.IsApplicable("api_gateway_rest_api") {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *APIGatewayGenerator) rememberAcceptedRestAPIID(restAPIID string) {
+	if restAPIID == "" {
+		return
+	}
+	if g.acceptedRestAPIIDs == nil {
+		g.acceptedRestAPIIDs = map[string]struct{}{}
+	}
+	g.acceptedRestAPIIDs[restAPIID] = struct{}{}
+}
+
+func (g *APIGatewayGenerator) shouldFilterBasePathMapping(mapping types.BasePathMapping) bool {
+	if !g.hasRestAPITagFilter() {
+		return false
+	}
+	restAPIID := StringValue(mapping.RestApiId)
+	if restAPIID == "" {
+		return true
+	}
+	_, ok := g.acceptedRestAPIIDs[restAPIID]
+	return !ok
 }
 
 func (g *APIGatewayGenerator) loadAccount(svc *apigateway.Client, config aws.Config) error {
@@ -619,6 +662,9 @@ func (g *APIGatewayGenerator) loadBasePathMappings(svc *apigateway.Client, domai
 			return err
 		}
 		for _, mapping := range page.Items {
+			if g.shouldFilterBasePathMapping(mapping) {
+				continue
+			}
 			if resource, ok := newAPIGatewayBasePathMappingResource(domainName, domainNameID, mapping); ok {
 				g.Resources = append(g.Resources, resource)
 			}
