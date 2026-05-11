@@ -101,6 +101,28 @@ func TestSecurityHubActionTargetIdentifier(t *testing.T) {
 	}
 }
 
+func TestSecurityHubStandardsSubscriptionResource(t *testing.T) {
+	subscriptionARN := "arn:aws:securityhub:us-east-1:123456789012:subscription/cis-aws-foundations-benchmark/v/1.2.0"
+	standardsARN := "arn:aws:securityhub:us-east-1::standards/cis-aws-foundations-benchmark/v/1.2.0"
+	resource, ok := newSecurityHubStandardsSubscriptionResource(securityhubtypes.StandardsSubscription{
+		StandardsArn:             aws.String(standardsARN),
+		StandardsSubscriptionArn: aws.String(subscriptionARN),
+	}, securityHubTestAccountID)
+	if !ok {
+		t.Fatal("expected standards subscription resource")
+	}
+	if got := resource.InstanceInfo.Type; got != securityHubStandardsSubscriptionResourceType {
+		t.Fatalf("resource type = %q, want %q", got, securityHubStandardsSubscriptionResourceType)
+	}
+	if got := resource.InstanceState.ID; got != subscriptionARN {
+		t.Fatalf("resource ID = %q, want %q", got, subscriptionARN)
+	}
+	if got := resource.InstanceState.Attributes["standards_arn"]; got != standardsARN {
+		t.Fatalf("standards_arn = %q, want %q", got, standardsARN)
+	}
+	assertSecurityHubAccountDependency(t, resource)
+}
+
 func TestSecurityHubActionTargetResource(t *testing.T) {
 	resource, ok := newSecurityHubActionTargetResource(securityhubtypes.ActionTarget{
 		ActionTargetArn: aws.String("arn:aws:securityhub:us-east-1:123456789012:action/custom/SendToChat"),
@@ -193,6 +215,16 @@ func TestSecurityHubConfigurationPolicyAssociationResource(t *testing.T) {
 }
 
 func TestSecurityHubEmptyIdentifierSkips(t *testing.T) {
+	if _, ok := newSecurityHubStandardsSubscriptionResource(securityhubtypes.StandardsSubscription{
+		StandardsArn: aws.String("arn:aws:securityhub:us-east-1::standards/cis-aws-foundations-benchmark/v/1.2.0"),
+	}, securityHubTestAccountID); ok {
+		t.Fatal("expected empty standards subscription ARN to skip")
+	}
+	if _, ok := newSecurityHubStandardsSubscriptionResource(securityhubtypes.StandardsSubscription{
+		StandardsSubscriptionArn: aws.String("arn:aws:securityhub:us-east-1:123456789012:subscription/cis-aws-foundations-benchmark/v/1.2.0"),
+	}, securityHubTestAccountID); ok {
+		t.Fatal("expected empty standards ARN to skip")
+	}
 	if _, ok := newSecurityHubProductSubscriptionResource("", "arn:aws:securityhub:us-east-1::product/aws/guardduty", securityHubTestAccountID); ok {
 		t.Fatal("expected empty product subscription ARN to skip")
 	}

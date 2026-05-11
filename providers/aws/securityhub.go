@@ -150,21 +150,11 @@ func (g *SecurityhubGenerator) addStandardsSubscription(svc *securityhub.Client,
 			return err
 		}
 		for _, standardsSubscription := range page.StandardsSubscriptions {
-			id := StringValue(standardsSubscription.StandardsSubscriptionArn)
-			if id == "" {
+			resource, ok := newSecurityHubStandardsSubscriptionResource(standardsSubscription, accountNumber)
+			if !ok {
 				continue
 			}
-			g.Resources = append(g.Resources, terraformutils.NewResource(
-				id,
-				securityHubResourceName("standards_subscription", id),
-				securityHubStandardsSubscriptionResourceType,
-				"aws",
-				map[string]string{
-					"standards_arn": id,
-				},
-				securityhubAllowEmptyValues,
-				securityHubAccountDependency(accountNumber),
-			))
+			g.Resources = append(g.Resources, resource)
 		}
 	}
 	return nil
@@ -369,6 +359,25 @@ func (g *SecurityhubGenerator) addAutomationRules(svc *securityhub.Client, accou
 		}
 	}
 	return nil
+}
+
+func newSecurityHubStandardsSubscriptionResource(standardsSubscription securityhubtypes.StandardsSubscription, accountNumber string) (terraformutils.Resource, bool) {
+	id := StringValue(standardsSubscription.StandardsSubscriptionArn)
+	standardsARN := StringValue(standardsSubscription.StandardsArn)
+	if id == "" || standardsARN == "" {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewResource(
+		id,
+		securityHubResourceName("standards_subscription", id),
+		securityHubStandardsSubscriptionResourceType,
+		"aws",
+		map[string]string{
+			"standards_arn": standardsARN,
+		},
+		securityhubAllowEmptyValues,
+		securityHubAccountDependency(accountNumber),
+	), true
 }
 
 func newSecurityHubActionTargetResource(actionTarget securityhubtypes.ActionTarget, accountNumber string) (terraformutils.Resource, bool) {
