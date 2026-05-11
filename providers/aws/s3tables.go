@@ -23,6 +23,7 @@ const (
 	s3TablesNamespaceResourceType         = "aws_s3tables_namespace"
 	s3TablesTableResourceType             = "aws_s3tables_table"
 	s3TablesTableBucketPolicyResourceType = "aws_s3tables_table_bucket_policy"
+	s3TablesTablePolicyResourceType       = "aws_s3tables_table_policy"
 	s3TablesIDSeparator                   = ";"
 )
 
@@ -47,7 +48,8 @@ func (g *S3TablesGenerator) PostConvertHook() error {
 		if g.Resources[i].InstanceInfo == nil {
 			continue
 		}
-		if g.Resources[i].InstanceInfo.Type == s3TablesTableBucketPolicyResourceType {
+		if g.Resources[i].InstanceInfo.Type == s3TablesTableBucketPolicyResourceType ||
+			g.Resources[i].InstanceInfo.Type == s3TablesTablePolicyResourceType {
 			wrapS3TablesPolicyHeredoc(g, &g.Resources[i])
 		}
 	}
@@ -177,6 +179,7 @@ func (g *S3TablesGenerator) loadTables(svc *s3tables.Client, tableBucketARN, nam
 			}
 			if resource, ok := newS3TablesTableResource(tableBucketARN, table); ok {
 				g.Resources = append(g.Resources, resource)
+				g.addTablePolicy(svc, tableBucketARN, namespace, tableName)
 			}
 		}
 	}
@@ -283,6 +286,38 @@ func newS3TablesTableBucketPolicyResource(tableBucketARN, policy string) (terraf
 	return resource, true
 }
 
+func newS3TablesTablePolicyResource(tableBucketARN, namespace, name, policy string) (terraformutils.Resource, bool) {
+	if tableBucketARN == "" || namespace == "" || name == "" || policy == "" {
+		return terraformutils.Resource{}, false
+	}
+	resource := terraformutils.NewResource(
+		s3TablesTableImportID(tableBucketARN, namespace, name),
+		s3TablesResourceName("table_policy", tableBucketARN, namespace, name),
+		s3TablesTablePolicyResourceType,
+		"aws",
+		map[string]string{
+			"name":             name,
+			"namespace":        namespace,
+			"resource_policy":  policy,
+			"table_bucket_arn": tableBucketARN,
+		},
+		s3TablesAllowEmptyValues,
+		map[string]interface{}{},
+	)
+	setS3TablesPreserveIDAfterRefresh(&resource)
+	return resource, true
+}
+
+func (g *S3TablesGenerator) addTablePolicy(svc *s3tables.Client, tableBucketARN, namespace, name string) {
+	policy, ok := getS3TablesTablePolicy(svc, tableBucketARN, namespace, name)
+	if !ok {
+		return
+	}
+	if resource, ok := newS3TablesTablePolicyResource(tableBucketARN, namespace, name, policy); ok {
+		g.Resources = append(g.Resources, resource)
+	}
+}
+
 func getS3TablesTableBucketPolicy(svc *s3tables.Client, tableBucketARN string) (string, bool) {
 	if tableBucketARN == "" {
 		return "", false
@@ -295,6 +330,32 @@ func getS3TablesTableBucketPolicy(svc *s3tables.Client, tableBucketARN string) (
 	}
 	if err != nil {
 		log.Printf("skipping S3 Tables table bucket policy discovery for %s: %v", tableBucketARN, err)
+		return "", false
+	}
+	if policyOutput == nil {
+		return "", false
+	}
+	policy := StringValue(policyOutput.ResourcePolicy)
+	if policy == "" {
+		return "", false
+	}
+	return policy, true
+}
+
+func getS3TablesTablePolicy(svc *s3tables.Client, tableBucketARN, namespace, name string) (string, bool) {
+	if tableBucketARN == "" || namespace == "" || name == "" {
+		return "", false
+	}
+	policyOutput, err := svc.GetTablePolicy(context.TODO(), &s3tables.GetTablePolicyInput{
+		Name:           aws.String(name),
+		Namespace:      aws.String(namespace),
+		TableBucketARN: aws.String(tableBucketARN),
+	})
+	if s3TablesResourceNotFound(err) {
+		return "", false
+	}
+	if err != nil {
+		log.Printf("skipping S3 Tables table policy discovery for %s: %v", s3TablesTableImportID(tableBucketARN, namespace, name), err)
 		return "", false
 	}
 	if policyOutput == nil {

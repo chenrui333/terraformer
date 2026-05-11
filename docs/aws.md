@@ -489,6 +489,7 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_s3tables_namespace`
     * `aws_s3tables_table`
     * `aws_s3tables_table_bucket_policy`
+    * `aws_s3tables_table_policy`
 *   `scheduler`
     * `aws_scheduler_schedule`
     * `aws_scheduler_schedule_group`

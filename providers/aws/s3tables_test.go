@@ -35,6 +35,11 @@ func TestS3TablesImportIDs(t *testing.T) {
 			got:  s3TablesTableImportID(testS3TablesTableBucketARN, "core_namespace", "core_table"),
 			want: testS3TablesTableBucketARN + ";core_namespace;core_table",
 		},
+		{
+			name: "table policy",
+			got:  s3TablesTableImportID(testS3TablesTableBucketARN, "core_namespace", "core_table"),
+			want: testS3TablesTableBucketARN + ";core_namespace;core_table",
+		},
 	}
 
 	for _, tt := range tests {
@@ -204,6 +209,33 @@ func TestNewS3TablesTableBucketPolicyResource(t *testing.T) {
 	}
 }
 
+func TestNewS3TablesTablePolicyResource(t *testing.T) {
+	policy := `{"Version":"2012-10-17"}`
+	resource, ok := newS3TablesTablePolicyResource(testS3TablesTableBucketARN, "core_namespace", "core_table", policy)
+	assertS3TablesResourceAttributes(t, resource, ok, s3TablesTablePolicyResourceType, testS3TablesTableBucketARN+";core_namespace;core_table",
+		[]string{"table_policy", testS3TablesTableBucketARN, "core_namespace", "core_table"},
+		map[string]string{
+			"name":             "core_table",
+			"namespace":        "core_namespace",
+			"resource_policy":  policy,
+			"table_bucket_arn": testS3TablesTableBucketARN,
+		})
+	assertS3TablesPreservesID(t, resource)
+
+	if _, ok := newS3TablesTablePolicyResource("", "core_namespace", "core_table", policy); ok {
+		t.Fatal("table policy with empty table bucket ARN should be skipped")
+	}
+	if _, ok := newS3TablesTablePolicyResource(testS3TablesTableBucketARN, "", "core_table", policy); ok {
+		t.Fatal("table policy with empty namespace should be skipped")
+	}
+	if _, ok := newS3TablesTablePolicyResource(testS3TablesTableBucketARN, "core_namespace", "", policy); ok {
+		t.Fatal("table policy with empty name should be skipped")
+	}
+	if _, ok := newS3TablesTablePolicyResource(testS3TablesTableBucketARN, "core_namespace", "core_table", ""); ok {
+		t.Fatal("table policy with empty policy body should be skipped")
+	}
+}
+
 func TestS3TablesNamespaceName(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -284,18 +316,25 @@ func TestS3TablesResourceNotFound(t *testing.T) {
 }
 
 func TestS3TablesPostConvertHookWrapsPolicy(t *testing.T) {
-	policyResource, ok := newS3TablesTableBucketPolicyResource(testS3TablesTableBucketARN, `{"Resource":"${aws:username}"}`)
+	tableBucketPolicyResource, ok := newS3TablesTableBucketPolicyResource(testS3TablesTableBucketARN, `{"Resource":"${aws:username}"}`)
 	if !ok {
 		t.Fatal("table bucket policy should be importable")
 	}
-	policyResource.Item = map[string]interface{}{
+	tableBucketPolicyResource.Item = map[string]interface{}{
+		"resource_policy": `{"Resource":"${aws:username}"}`,
+	}
+	tablePolicyResource, ok := newS3TablesTablePolicyResource(testS3TablesTableBucketARN, "core_namespace", "core_table", `{"Resource":"${aws:username}"}`)
+	if !ok {
+		t.Fatal("table policy should be importable")
+	}
+	tablePolicyResource.Item = map[string]interface{}{
 		"resource_policy": `{"Resource":"${aws:username}"}`,
 	}
 
 	generator := S3TablesGenerator{
 		AWSService: AWSService{
 			Service: terraformutils.Service{
-				Resources: []terraformutils.Resource{policyResource},
+				Resources: []terraformutils.Resource{tableBucketPolicyResource, tablePolicyResource},
 			},
 		},
 	}
@@ -303,8 +342,10 @@ func TestS3TablesPostConvertHookWrapsPolicy(t *testing.T) {
 		t.Fatalf("PostConvertHook() error = %v", err)
 	}
 	want := "<<POLICY\n{\"Resource\":\"$" + "$" + "{aws:username}\"}\nPOLICY"
-	if got := generator.Resources[0].Item["resource_policy"]; got != want {
-		t.Fatalf("resource_policy = %q, want %q", got, want)
+	for _, resource := range generator.Resources {
+		if got := resource.Item["resource_policy"]; got != want {
+			t.Fatalf("resource_policy = %q, want %q", got, want)
+		}
 	}
 }
 
