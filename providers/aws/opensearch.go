@@ -453,7 +453,7 @@ func openSearchDomainSAMLImportable(domain opensearchtypes.DomainStatus) bool {
 	}
 	options := domain.AdvancedSecurityOptions.SAMLOptions
 	if options.Enabled != nil && !*options.Enabled {
-		return true
+		return false
 	}
 	return options.Idp != nil &&
 		StringValue(options.Idp.EntityId) != "" &&

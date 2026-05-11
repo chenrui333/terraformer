@@ -146,14 +146,14 @@ func TestNewOpenSearchDomainSAMLOptionsResource(t *testing.T) {
 	assertOpenSearchAttribute(t, resource, "saml_options.0.session_timeout_minutes", "30")
 
 	enabled = false
-	resource, ok = newOpenSearchDomainSAMLOptionsResource(opensearchtypes.DomainStatus{
+	if _, ok := newOpenSearchDomainSAMLOptionsResource(opensearchtypes.DomainStatus{
 		DomainName: openSearchTestString("search"),
 		AdvancedSecurityOptions: &opensearchtypes.AdvancedSecurityOptions{
 			SAMLOptions: &opensearchtypes.SAMLOptionsOutput{Enabled: &enabled},
 		},
-	})
-	assertOpenSearchResource(t, resource, ok, "search", openSearchResourceName("domain-saml-options", "search"), openSearchDomainSAMLOptionsResourceType)
-	assertOpenSearchAttribute(t, resource, "saml_options.0.enabled", "false")
+	}); ok {
+		t.Fatal("disabled SAML options should be skipped")
+	}
 }
 
 func TestNewOpenSearchVPCEndpointResource(t *testing.T) {
