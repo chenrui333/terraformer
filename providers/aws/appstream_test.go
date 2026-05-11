@@ -11,7 +11,13 @@ import (
 )
 
 func TestNewAppStreamFleetResource(t *testing.T) {
-	for _, state := range []appstreamtypes.FleetState{appstreamtypes.FleetStateRunning, appstreamtypes.FleetStateStopped} {
+	for _, state := range []appstreamtypes.FleetState{
+		"",
+		appstreamtypes.FleetStateRunning,
+		appstreamtypes.FleetStateStopped,
+		appstreamtypes.FleetStateStarting,
+		appstreamtypes.FleetStateStopping,
+	} {
 		resource, ok := newAppStreamFleetResource(appstreamtypes.Fleet{
 			Name:  appStreamString("core-fleet"),
 			State: state,
@@ -21,12 +27,6 @@ func TestNewAppStreamFleetResource(t *testing.T) {
 
 	if _, ok := newAppStreamFleetResource(appstreamtypes.Fleet{State: appstreamtypes.FleetStateRunning}); ok {
 		t.Fatal("fleet with empty name should be skipped")
-	}
-	if _, ok := newAppStreamFleetResource(appstreamtypes.Fleet{
-		Name:  appStreamString("starting-fleet"),
-		State: appstreamtypes.FleetStateStarting,
-	}); ok {
-		t.Fatal("starting fleet should be skipped")
 	}
 }
 
@@ -73,19 +73,6 @@ func TestAppStreamResourceNamesPreserveSegmentBoundaries(t *testing.T) {
 	}
 	if left.ResourceName == right.ResourceName {
 		t.Fatalf("association resource names collide: %q", left.ResourceName)
-	}
-}
-
-func TestAppStreamFleetImportable(t *testing.T) {
-	for _, state := range []appstreamtypes.FleetState{appstreamtypes.FleetStateRunning, appstreamtypes.FleetStateStopped} {
-		if !appStreamFleetImportable(appstreamtypes.Fleet{State: state}) {
-			t.Fatalf("fleet state %q should be importable", state)
-		}
-	}
-	for _, state := range []appstreamtypes.FleetState{"", appstreamtypes.FleetStateStarting, appstreamtypes.FleetStateStopping} {
-		if appStreamFleetImportable(appstreamtypes.Fleet{State: state}) {
-			t.Fatalf("fleet state %q should not be importable", state)
-		}
 	}
 }
 

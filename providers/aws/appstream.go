@@ -129,7 +129,7 @@ func (g *AppStreamGenerator) loadFleetStackAssociationsForFleet(svc *appstream.C
 
 func newAppStreamFleetResource(fleet appstreamtypes.Fleet) (terraformutils.Resource, bool) {
 	name := StringValue(fleet.Name)
-	if name == "" || !appStreamFleetImportable(fleet) {
+	if name == "" {
 		return terraformutils.Resource{}, false
 	}
 	return terraformutils.NewSimpleResource(
@@ -183,15 +183,6 @@ func appStreamResourceName(parts ...string) string {
 		return "appstream-resource"
 	}
 	return strings.Join(cleanParts, "/")
-}
-
-func appStreamFleetImportable(fleet appstreamtypes.Fleet) bool {
-	switch fleet.State {
-	case appstreamtypes.FleetStateRunning, appstreamtypes.FleetStateStopped:
-		return true
-	default:
-		return false
-	}
 }
 
 func appStreamNextToken(token *string) *string {
