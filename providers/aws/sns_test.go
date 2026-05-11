@@ -112,6 +112,24 @@ func TestSNSDataProtectionPolicyOptionalErrors(t *testing.T) {
 	}
 }
 
+func TestSNSTopicSupportsDataProtectionPolicy(t *testing.T) {
+	tests := []struct {
+		name      string
+		topicName string
+		want      bool
+	}{
+		{name: "standard", topicName: "topic-a", want: true},
+		{name: "fifo", topicName: "topic-a.fifo", want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := snsTopicSupportsDataProtectionPolicy(tt.topicName); got != tt.want {
+				t.Fatalf("supports data protection policy = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestSNSPostConvertHookRemovesInlinePolicyWhenSplitPolicyExists(t *testing.T) {
 	arn := "arn:aws:sns:us-east-1:123456789012:topic-a"
 	topic := terraformutils.NewSimpleResource(arn, "topic-a", snsTopicResourceType, "aws", snsAllowEmptyValues)

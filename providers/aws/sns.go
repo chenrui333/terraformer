@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	snstypes "github.com/aws/aws-sdk-go-v2/service/sns/types"
@@ -105,6 +106,9 @@ func (g *SnsGenerator) loadTopicPolicies(svc *sns.Client, topicARN, topicName st
 		g.Resources = append(g.Resources, resource)
 	}
 
+	if !snsTopicSupportsDataProtectionPolicy(topicName) {
+		return nil
+	}
 	dataProtectionPolicy, err := svc.GetDataProtectionPolicy(context.TODO(), &sns.GetDataProtectionPolicyInput{
 		ResourceArn: &topicARN,
 	})
@@ -216,6 +220,10 @@ func snsDataProtectionPolicyReadUnavailable(err error) bool {
 		}
 	}
 	return false
+}
+
+func snsTopicSupportsDataProtectionPolicy(topicName string) bool {
+	return !strings.HasSuffix(topicName, ".fifo")
 }
 
 // PostConvertHook for add policy json as heredoc
