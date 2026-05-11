@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -27,7 +28,6 @@ const (
 
 var lakeFormationAllowEmptyValues = []string{
 	"tags.",
-	"table_data.*.row_filter.*.all_rows_wildcard.",
 }
 
 type LakeFormationGenerator struct {
@@ -60,6 +60,16 @@ func (g *LakeFormationGenerator) InitResources() error {
 		{name: "Identity Center configuration", load: func() error { return g.loadIdentityCenterConfiguration(svc, catalogID) }},
 	})
 
+	return nil
+}
+
+func (g *LakeFormationGenerator) PostConvertHook() error {
+	for i := range g.Resources {
+		if g.Resources[i].InstanceInfo == nil || g.Resources[i].InstanceInfo.Type != lakeFormationDataCellsFilterResourceType {
+			continue
+		}
+		preserveLakeFormationDataCellsFilterWildcardBlocks(&g.Resources[i])
+	}
 	return nil
 }
 
@@ -256,6 +266,70 @@ func newLakeFormationIdentityCenterConfigurationResource(catalogID string, outpu
 		lakeFormationAllowEmptyValues,
 		map[string]interface{}{},
 	), true
+}
+
+func preserveLakeFormationDataCellsFilterWildcardBlocks(resource *terraformutils.Resource) {
+	if resource == nil || resource.InstanceState == nil || resource.Item == nil {
+		return
+	}
+	tableData, ok := resource.Item["table_data"].([]interface{})
+	if !ok {
+		return
+	}
+	for i := range tableData {
+		tableDataItem, ok := tableData[i].(map[string]interface{})
+		if !ok {
+			continue
+		}
+		tablePrefix := "table_data." + strconv.Itoa(i)
+		if lakeFormationStateBlockCount(resource, tablePrefix+".column_wildcard") > 0 {
+			if _, exists := tableDataItem["column_wildcard"]; !exists {
+				tableDataItem["column_wildcard"] = []interface{}{map[string]interface{}{}}
+			}
+		}
+		preserveLakeFormationDataCellsFilterRowWildcards(resource, tableDataItem, tablePrefix)
+	}
+}
+
+func preserveLakeFormationDataCellsFilterRowWildcards(resource *terraformutils.Resource, tableDataItem map[string]interface{}, tablePrefix string) {
+	rowFilterCount := lakeFormationStateBlockCount(resource, tablePrefix+".row_filter")
+	if rowFilterCount == 0 {
+		return
+	}
+	rowFilters, _ := tableDataItem["row_filter"].([]interface{})
+	for len(rowFilters) < rowFilterCount {
+		rowFilters = append(rowFilters, map[string]interface{}{})
+	}
+	changed := false
+	for i := 0; i < rowFilterCount; i++ {
+		rowFilter, ok := rowFilters[i].(map[string]interface{})
+		if !ok {
+			rowFilter = map[string]interface{}{}
+			rowFilters[i] = rowFilter
+		}
+		rowPrefix := tablePrefix + ".row_filter." + strconv.Itoa(i)
+		if lakeFormationStateBlockCount(resource, rowPrefix+".all_rows_wildcard") == 0 {
+			continue
+		}
+		if _, exists := rowFilter["all_rows_wildcard"]; !exists {
+			rowFilter["all_rows_wildcard"] = []interface{}{map[string]interface{}{}}
+			changed = true
+		}
+	}
+	if changed {
+		tableDataItem["row_filter"] = rowFilters
+	}
+}
+
+func lakeFormationStateBlockCount(resource *terraformutils.Resource, key string) int {
+	if resource == nil || resource.InstanceState == nil {
+		return 0
+	}
+	count, err := strconv.Atoi(resource.InstanceState.Attributes[key+".#"])
+	if err != nil {
+		return 0
+	}
+	return count
 }
 
 func lakeFormationDataLakeSettingsImportable(settings *lakeformationtypes.DataLakeSettings) bool {

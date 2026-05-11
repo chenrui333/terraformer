@@ -3,11 +3,13 @@
 package aws
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lakeformation"
 	lakeformationtypes "github.com/aws/aws-sdk-go-v2/service/lakeformation/types"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 func TestLakeFormationImportIDs(t *testing.T) {
@@ -99,6 +101,46 @@ func TestNewLakeFormationDataCellsFilterResource(t *testing.T) {
 	}
 	if resource.InstanceState.ID != "analytics,orders_filter,123456789012,orders" {
 		t.Fatalf("ID = %q, want analytics,orders_filter,123456789012,orders", resource.InstanceState.ID)
+	}
+}
+
+func TestLakeFormationPostConvertHookPreservesDataCellsFilterWildcardBlocks(t *testing.T) {
+	resource := terraformutils.NewSimpleResource(
+		"analytics,orders_filter,123456789012,orders",
+		"orders_filter",
+		lakeFormationDataCellsFilterResourceType,
+		"aws",
+		lakeFormationAllowEmptyValues,
+	)
+	resource.InstanceState.Attributes = map[string]string{
+		"table_data.#":                                  "1",
+		"table_data.0.column_wildcard.#":                "1",
+		"table_data.0.row_filter.#":                     "1",
+		"table_data.0.row_filter.0.all_rows_wildcard.#": "1",
+	}
+	resource.Item = map[string]interface{}{
+		"table_data": []interface{}{map[string]interface{}{
+			"database_name":    "analytics",
+			"name":             "orders_filter",
+			"table_catalog_id": "123456789012",
+			"table_name":       "orders",
+		}},
+	}
+	g := &LakeFormationGenerator{AWSService: AWSService{}}
+	g.Resources = []terraformutils.Resource{resource}
+
+	if err := g.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook() error = %v", err)
+	}
+	data, err := terraformutils.HclPrintResource(g.Resources, map[string]interface{}{}, "hcl", true)
+	if err != nil {
+		t.Fatalf("HclPrintResource() error = %v", err)
+	}
+	hcl := string(data)
+	for _, want := range []string{"column_wildcard {", "all_rows_wildcard {"} {
+		if !strings.Contains(hcl, want) {
+			t.Fatalf("generated HCL missing %q:\n%s", want, hcl)
+		}
 	}
 }
 
