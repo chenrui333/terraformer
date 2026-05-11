@@ -263,8 +263,9 @@ func TestDMSEventSubscriptionImportable(t *testing.T) {
 		t.Fatal("active event subscription without event categories should import all categories")
 	}
 	caseVariant := base
-	caseVariant.SourceType = dmsString("REPLICATION-TASK")
-	caseVariant.Status = dmsString("ACTIVE")
+	caseVariant.SnsTopicArn = dmsString("arn:aws:sns:us-east-1:123456789012:DmS-EvEnTs")
+	caseVariant.SourceType = dmsString("RePlIcAtIoN-InStAnCe")
+	caseVariant.Status = dmsString("AcTiVe")
 	if !dmsEventSubscriptionImportable(caseVariant) {
 		t.Fatal("event subscription importability should be case-insensitive for status and source type")
 	}
@@ -317,7 +318,7 @@ func TestDMSEventSubscriptionSourceTypeImportable(t *testing.T) {
 			t.Fatalf("source type %q should be importable", sourceType)
 		}
 	}
-	for _, sourceType := range []string{"", "replication-server", "security-group"} {
+	for _, sourceType := range []string{"", "replication-server", "security-group", "SeCuRiTy-GrOuP"} {
 		if dmsEventSubscriptionSourceTypeImportable(sourceType) {
 			t.Fatalf("source type %q should not be importable", sourceType)
 		}
