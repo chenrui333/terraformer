@@ -107,7 +107,7 @@ require (
 	github.com/ddelnano/terraform-provider-xenorchestra/client v0.18.0-alpha1
 	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
-	github.com/digitalocean/godo v1.188.0
+	github.com/digitalocean/godo v1.189.0
 	github.com/fastly/go-fastly/v7 v7.5.5
 	github.com/google/go-github/v35 v35.3.0
 	github.com/gophercloud/gophercloud v1.14.1
