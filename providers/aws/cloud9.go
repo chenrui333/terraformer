@@ -127,7 +127,7 @@ func newCloud9EnvironmentMembershipResource(membership types.EnvironmentMember) 
 }
 
 func cloud9EnvironmentMembershipImportable(permissions types.Permissions) bool {
-	return permissions != ""
+	return permissions == types.PermissionsReadOnly || permissions == types.PermissionsReadWrite
 }
 
 func cloud9EnvironmentMembershipImportID(environmentID, userArn string) string {

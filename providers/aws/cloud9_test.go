@@ -44,7 +44,7 @@ func TestCloud9EnvironmentMembershipImportable(t *testing.T) {
 	}{
 		{name: "read only", permissions: types.PermissionsReadOnly, want: true},
 		{name: "read write", permissions: types.PermissionsReadWrite, want: true},
-		{name: "owner", permissions: types.PermissionsOwner, want: true},
+		{name: "owner", permissions: types.PermissionsOwner, want: false},
 		{name: "empty", want: false},
 	}
 
