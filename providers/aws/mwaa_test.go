@@ -20,14 +20,6 @@ func TestNewMwaaEnvironmentResource(t *testing.T) {
 	assertMwaaAttribute(t, resource, "source_bucket_arn", "arn:aws:s3:::mwaa-source")
 }
 
-func TestNewMwaaEnvironmentResourceAllowsMissingLastUpdate(t *testing.T) {
-	environment := validMwaaEnvironment("prod-airflow")
-	environment.LastUpdate = nil
-
-	resource, ok := newMwaaEnvironmentResource(environment)
-	assertMwaaResource(t, resource, ok, "prod-airflow", mwaaResourceName("environment", "prod-airflow"), mwaaEnvironmentResourceType)
-}
-
 func TestNewMwaaEnvironmentResourceSkipsIncompleteEnvironments(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -79,6 +71,12 @@ func TestNewMwaaEnvironmentResourceSkipsIncompleteEnvironments(t *testing.T) {
 			name: "single subnet",
 			mutate: func(environment *mwaatypes.Environment) {
 				environment.NetworkConfiguration.SubnetIds = []string{"subnet-1"}
+			},
+		},
+		{
+			name: "missing last update",
+			mutate: func(environment *mwaatypes.Environment) {
+				environment.LastUpdate = nil
 			},
 		},
 		{

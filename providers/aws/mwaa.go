@@ -94,10 +94,12 @@ func mwaaEnvironmentImportable(environment *mwaatypes.Environment) bool {
 	if environment == nil || !mwaaEnvironmentStatusImportable(environment.Status) {
 		return false
 	}
+	// Terraform AWS provider v6.43/v6.44 dereference LastUpdate during Read.
 	if StringValue(environment.Name) == "" ||
 		StringValue(environment.DagS3Path) == "" ||
 		StringValue(environment.ExecutionRoleArn) == "" ||
-		StringValue(environment.SourceBucketArn) == "" {
+		StringValue(environment.SourceBucketArn) == "" ||
+		environment.LastUpdate == nil {
 		return false
 	}
 	return mwaaEnvironmentNetworkConfigurationComplete(environment.NetworkConfiguration)
