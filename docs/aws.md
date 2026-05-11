@@ -476,6 +476,21 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_organizations_organizational_unit`
     * `aws_organizations_policy`
     * `aws_organizations_policy_attachment`
+*   `opensearch`
+    * `aws_opensearch_domain`
+    * `aws_opensearch_domain_policy`
+    * `aws_opensearch_domain_saml_options`
+    * `aws_opensearch_inbound_connection_accepter`
+    * `aws_opensearch_outbound_connection`
+    * `aws_opensearch_package_association`
+    * `aws_opensearch_vpc_endpoint`
+*   `opensearchserverless`
+    * `aws_opensearchserverless_access_policy`
+    * `aws_opensearchserverless_collection`
+    * `aws_opensearchserverless_lifecycle_policy`
+    * `aws_opensearchserverless_security_config`
+    * `aws_opensearchserverless_security_policy`
+    * `aws_opensearchserverless_vpc_endpoint`
 *   `pipes`
     * `aws_pipes_pipe`
 *   `qldb`

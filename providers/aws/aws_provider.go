@@ -343,6 +343,7 @@ func (p *AWSProvider) GetSupportedService() map[string]terraformutils.ServiceGen
 		"nat":               &AwsFacade{service: &NatGatewayGenerator{}},
 		"opsworks":          &AwsFacade{service: &OpsworksGenerator{}},
 		"organization":      &AwsFacade{service: &OrganizationGenerator{}},
+		"opensearch":        &AwsFacade{service: &OpenSearchGenerator{}},
 		"pipes":             &AwsFacade{service: &PipesGenerator{}},
 		"qldb":              &AwsFacade{service: &QLDBGenerator{}},
 		"rds":               &AwsFacade{service: &RDSGenerator{}},
@@ -381,6 +382,7 @@ func (p *AWSProvider) GetSupportedService() map[string]terraformutils.ServiceGen
 		"workspaces":        &AwsFacade{service: &WorkspacesGenerator{}},
 		"xray":              &AwsFacade{service: &XrayGenerator{}},
 	}
+	services["opensearchserverless"] = &AwsFacade{service: &OpenSearchServerlessGenerator{}}
 	services["redshiftserverless"] = &AwsFacade{service: &RedshiftServerlessGenerator{}}
 	return services
 }
