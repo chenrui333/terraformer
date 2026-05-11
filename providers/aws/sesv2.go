@@ -18,6 +18,7 @@ import (
 const (
 	sesv2ConfigurationSetResourceType                 = "aws_sesv2_configuration_set"
 	sesv2ConfigurationSetEventDestinationResourceType = "aws_sesv2_configuration_set_event_destination"
+	sesv2ContactListResourceType                      = "aws_sesv2_contact_list"
 	sesv2DedicatedIPPoolResourceType                  = "aws_sesv2_dedicated_ip_pool"
 	sesv2EmailIdentityResourceType                    = "aws_sesv2_email_identity"
 	sesv2EmailIdentityFeedbackAttributesResourceType  = "aws_sesv2_email_identity_feedback_attributes"
@@ -40,6 +41,9 @@ func (g *SesV2Generator) InitResources() error {
 	svc := sesv2.NewFromConfig(config)
 
 	if err := g.loadConfigurationSets(svc); err != nil {
+		return err
+	}
+	if err := g.loadContactLists(svc); err != nil {
 		return err
 	}
 	if err := g.loadDedicatedIPPools(svc); err != nil {
@@ -107,6 +111,35 @@ func (g *SesV2Generator) loadConfigurationSetEventDestinations(svc *sesv2.Client
 	for _, destination := range output.EventDestinations {
 		if resource, ok := newSESV2ConfigurationSetEventDestinationResource(configurationSetName, destination); ok {
 			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
+func (g *SesV2Generator) loadContactLists(svc *sesv2.Client) error {
+	p := sesv2.NewListContactListsPaginator(svc, &sesv2.ListContactListsInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, contactList := range page.ContactLists {
+			contactListName := StringValue(contactList.ContactListName)
+			if contactListName == "" {
+				continue
+			}
+			output, err := svc.GetContactList(context.TODO(), &sesv2.GetContactListInput{
+				ContactListName: &contactListName,
+			})
+			if err != nil {
+				if sesv2NotFound(err) {
+					continue
+				}
+				return err
+			}
+			if resource, ok := newSESV2ContactListResource(output); ok {
+				g.Resources = append(g.Resources, resource)
+			}
 		}
 	}
 	return nil
@@ -231,6 +264,77 @@ func newSESV2ConfigurationSetEventDestinationResource(configurationSetName strin
 	), true
 }
 
+func newSESV2ContactListResource(output *sesv2.GetContactListOutput) (terraformutils.Resource, bool) {
+	if output == nil {
+		return terraformutils.Resource{}, false
+	}
+	contactListName := StringValue(output.ContactListName)
+	if contactListName == "" {
+		return terraformutils.Resource{}, false
+	}
+	attributes := map[string]string{
+		"contact_list_name": contactListName,
+	}
+	if description := StringValue(output.Description); description != "" {
+		attributes["description"] = description
+	}
+	additionalFields := map[string]interface{}{}
+	topics, ok := sesv2ContactListTopics(output.Topics)
+	if !ok {
+		return terraformutils.Resource{}, false
+	}
+	if len(topics) > 0 {
+		additionalFields["topic"] = topics
+	}
+	return terraformutils.NewResource(
+		sesv2ContactListImportID(contactListName),
+		sesv2ResourceName("contact_list", contactListName),
+		sesv2ContactListResourceType,
+		"aws",
+		attributes,
+		sesv2AllowEmptyValues,
+		additionalFields,
+	), true
+}
+
+func sesv2ContactListTopics(topics []sesv2types.Topic) ([]interface{}, bool) {
+	if len(topics) == 0 {
+		return nil, true
+	}
+	sortedTopics := append([]sesv2types.Topic(nil), topics...)
+	sort.SliceStable(sortedTopics, func(i, j int) bool {
+		return sesv2TopicSortKey(sortedTopics[i]) < sesv2TopicSortKey(sortedTopics[j])
+	})
+	values := make([]interface{}, 0, len(sortedTopics))
+	for _, topic := range sortedTopics {
+		topicName := StringValue(topic.TopicName)
+		displayName := StringValue(topic.DisplayName)
+		defaultSubscriptionStatus := string(topic.DefaultSubscriptionStatus)
+		if topicName == "" || displayName == "" || defaultSubscriptionStatus == "" {
+			return nil, false
+		}
+		value := map[string]interface{}{
+			"default_subscription_status": defaultSubscriptionStatus,
+			"display_name":                displayName,
+			"topic_name":                  topicName,
+		}
+		if topic.Description != nil {
+			value["description"] = StringValue(topic.Description)
+		}
+		values = append(values, value)
+	}
+	return values, true
+}
+
+func sesv2TopicSortKey(topic sesv2types.Topic) string {
+	return strings.Join([]string{
+		StringValue(topic.TopicName),
+		StringValue(topic.DisplayName),
+		string(topic.DefaultSubscriptionStatus),
+		StringValue(topic.Description),
+	}, "\x00")
+}
+
 func newSESV2DedicatedIPPoolResource(poolName string) (terraformutils.Resource, bool) {
 	if poolName == "" {
 		return terraformutils.Resource{}, false
@@ -346,6 +450,10 @@ func sesv2ConfigurationSetImportID(configurationSetName string) string {
 
 func sesv2ConfigurationSetEventDestinationImportID(configurationSetName, eventDestinationName string) string {
 	return strings.Join([]string{configurationSetName, eventDestinationName}, sesv2ResourceIDSeparator)
+}
+
+func sesv2ContactListImportID(contactListName string) string {
+	return contactListName
 }
 
 func sesv2DedicatedIPPoolImportID(poolName string) string {

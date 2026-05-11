@@ -4,6 +4,7 @@ package aws
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -20,6 +21,7 @@ func TestSESV2ImportIDs(t *testing.T) {
 	}{
 		{name: "configuration set", got: sesv2ConfigurationSetImportID("config-set"), want: "config-set"},
 		{name: "configuration set event destination", got: sesv2ConfigurationSetEventDestinationImportID("config-set", "events"), want: "config-set|events"},
+		{name: "contact list", got: sesv2ContactListImportID("contacts"), want: "contacts"},
 		{name: "dedicated IP pool", got: sesv2DedicatedIPPoolImportID("pool-a"), want: "pool-a"},
 		{name: "email identity", got: sesv2EmailIdentityImportID("sender@example.com"), want: "sender@example.com"},
 		{name: "email identity feedback attributes", got: sesv2EmailIdentityFeedbackAttributesImportID("sender@example.com"), want: "sender@example.com"},
@@ -67,6 +69,87 @@ func TestNewSESV2ConfigurationSetEventDestinationResource(t *testing.T) {
 	}
 	if _, ok := newSESV2ConfigurationSetEventDestinationResource("config-set", sesv2types.EventDestination{}); ok {
 		t.Fatal("newSESV2ConfigurationSetEventDestinationResource() ok = true for empty event destination name, want false")
+	}
+}
+
+func TestNewSESV2ContactListResource(t *testing.T) {
+	resource, ok := newSESV2ContactListResource(&sesv2.GetContactListOutput{
+		ContactListName: aws.String("contacts"),
+		Description:     aws.String("primary contact list"),
+	})
+	if !ok {
+		t.Fatal("newSESV2ContactListResource() ok = false, want true")
+	}
+	assertSESV2ResourceAttributes(t, resource, sesv2ContactListResourceType, "contacts",
+		[]string{"contact_list", "contacts"},
+		map[string]string{
+			"contact_list_name": "contacts",
+			"description":       "primary contact list",
+		})
+
+	resource, ok = newSESV2ContactListResource(&sesv2.GetContactListOutput{
+		ContactListName: aws.String("contacts"),
+	})
+	if !ok {
+		t.Fatal("newSESV2ContactListResource() ok = false without description, want true")
+	}
+	if _, ok := resource.InstanceState.Attributes["description"]; ok {
+		t.Fatal("newSESV2ContactListResource() seeded empty description, want omitted")
+	}
+	if _, ok := resource.AdditionalFields["topic"]; ok {
+		t.Fatal("newSESV2ContactListResource() seeded empty topics, want omitted")
+	}
+
+	resource, ok = newSESV2ContactListResource(&sesv2.GetContactListOutput{
+		ContactListName: aws.String("contacts"),
+		Topics: []sesv2types.Topic{
+			{
+				DefaultSubscriptionStatus: sesv2types.SubscriptionStatusOptOut,
+				Description:               aws.String("announcements"),
+				DisplayName:               aws.String("Announcements"),
+				TopicName:                 aws.String("announcements"),
+			},
+			{
+				DefaultSubscriptionStatus: sesv2types.SubscriptionStatusOptIn,
+				DisplayName:               aws.String("News"),
+				TopicName:                 aws.String("news"),
+			},
+		},
+	})
+	if !ok {
+		t.Fatal("newSESV2ContactListResource() ok = false with topics, want true")
+	}
+	assertSESV2ContactListTopics(t, resource, []map[string]interface{}{
+		{
+			"default_subscription_status": "OPT_OUT",
+			"description":                 "announcements",
+			"display_name":                "Announcements",
+			"topic_name":                  "announcements",
+		},
+		{
+			"default_subscription_status": "OPT_IN",
+			"display_name":                "News",
+			"topic_name":                  "news",
+		},
+	})
+
+	if _, ok := newSESV2ContactListResource(&sesv2.GetContactListOutput{
+		ContactListName: aws.String("contacts"),
+		Topics: []sesv2types.Topic{
+			{
+				DefaultSubscriptionStatus: sesv2types.SubscriptionStatusOptIn,
+				DisplayName:               aws.String("News"),
+			},
+		},
+	}); ok {
+		t.Fatal("newSESV2ContactListResource() ok = true for topic without topic name, want false")
+	}
+
+	if _, ok := newSESV2ContactListResource(&sesv2.GetContactListOutput{}); ok {
+		t.Fatal("newSESV2ContactListResource() ok = true for empty contact list name, want false")
+	}
+	if _, ok := newSESV2ContactListResource(nil); ok {
+		t.Fatal("newSESV2ContactListResource() ok = true for nil contact list output, want false")
 	}
 }
 
@@ -232,6 +315,7 @@ func TestSESV2ResourceNameAvoidsSanitizedCollisions(t *testing.T) {
 		{name: "separator boundary", first: []string{"email_identity", "a_b", "c"}, second: []string{"email_identity", "a", "b_c"}},
 		{name: "at sign encoding", first: []string{"email_identity", "a@example.com"}, second: []string{"email_identity", "a-0040-example.com"}},
 		{name: "slash encoding", first: []string{"configuration_set", "a/b"}, second: []string{"configuration_set", "a-002F-b"}},
+		{name: "contact list separator", first: []string{"contact_list", "a_b", "c"}, second: []string{"contact_list", "a", "b_c"}},
 		{name: "event destination composite", first: []string{"configuration_set_event_destination", "a_b", "c"}, second: []string{"configuration_set_event_destination", "a", "b_c"}},
 		{name: "policy composite", first: []string{"email_identity_policy", "a|b", "c"}, second: []string{"email_identity_policy", "a", "b|c"}},
 	}
@@ -244,6 +328,47 @@ func TestSESV2ResourceNameAvoidsSanitizedCollisions(t *testing.T) {
 				t.Fatalf("sesv2ResourceName() generated duplicate sanitized names %q", first)
 			}
 		})
+	}
+}
+
+func TestSESV2ContactListResourceHCLIncludesTopics(t *testing.T) {
+	resource, ok := newSESV2ContactListResource(&sesv2.GetContactListOutput{
+		ContactListName: aws.String("contacts"),
+		Topics: []sesv2types.Topic{
+			{
+				DefaultSubscriptionStatus: sesv2types.SubscriptionStatusOptIn,
+				DisplayName:               aws.String("News"),
+				TopicName:                 aws.String("news"),
+			},
+		},
+	})
+	if !ok {
+		t.Fatal("newSESV2ContactListResource() ok = false, want true")
+	}
+	resource.Item = map[string]interface{}{
+		"contact_list_name": resource.InstanceState.Attributes["contact_list_name"],
+		"topic":             resource.AdditionalFields["topic"],
+	}
+
+	data, err := terraformutils.HclPrintResource([]terraformutils.Resource{resource}, map[string]interface{}{}, "hcl", true)
+	if err != nil {
+		t.Fatalf("HclPrintResource() error = %v", err)
+	}
+	output := string(data)
+	normalizedOutput := strings.Join(strings.Fields(output), " ")
+	for _, want := range []string{
+		"topic {",
+		"default_subscription_status = \"OPT_IN\"",
+		"display_name = \"News\"",
+		"topic_name = \"news\"",
+	} {
+		outputToSearch := output
+		if strings.Contains(want, " = ") {
+			outputToSearch = normalizedOutput
+		}
+		if !strings.Contains(outputToSearch, want) {
+			t.Fatalf("output does not contain %q:\n%s", want, output)
+		}
 	}
 }
 
@@ -301,10 +426,38 @@ func assertSESV2ResourceAttributes(t *testing.T, resource terraformutils.Resourc
 	}
 }
 
+func assertSESV2ContactListTopics(t *testing.T, resource terraformutils.Resource, wants []map[string]interface{}) {
+	t.Helper()
+
+	topics, ok := resource.AdditionalFields["topic"].([]interface{})
+	if !ok {
+		t.Fatalf("topic additional field type = %T, want []interface{}", resource.AdditionalFields["topic"])
+	}
+	if len(topics) != len(wants) {
+		t.Fatalf("topic additional field length = %d, want %d", len(topics), len(wants))
+	}
+	for i, want := range wants {
+		got, ok := topics[i].(map[string]interface{})
+		if !ok {
+			t.Fatalf("topic[%d] type = %T, want map[string]interface{}", i, topics[i])
+		}
+		if len(got) != len(want) {
+			t.Fatalf("topic[%d] = %#v, want %#v", i, got, want)
+		}
+		for key, wantValue := range want {
+			if got[key] != wantValue {
+				t.Fatalf("topic[%d][%q] = %q, want %q", i, key, got[key], wantValue)
+			}
+		}
+	}
+}
+
 func stringsForSESV2ResourceName(resourceType, name string) []string {
 	switch resourceType {
 	case sesv2ConfigurationSetResourceType:
 		return []string{"configuration_set", name}
+	case sesv2ContactListResourceType:
+		return []string{"contact_list", name}
 	case sesv2DedicatedIPPoolResourceType:
 		return []string{"dedicated_ip_pool", name}
 	case sesv2EmailIdentityResourceType:

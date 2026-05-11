@@ -500,6 +500,7 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
 *   `sesv2`
     * `aws_sesv2_configuration_set`
     * `aws_sesv2_configuration_set_event_destination`
+    * `aws_sesv2_contact_list`
     * `aws_sesv2_dedicated_ip_pool`
     * `aws_sesv2_email_identity`
     * `aws_sesv2_email_identity_feedback_attributes`
