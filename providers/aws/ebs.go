@@ -44,85 +44,97 @@ func (g *EbsGenerator) InitResources() error {
 		return e
 	}
 	svc := ec2.NewFromConfig(config)
-	var filters []types.Filter
-	for _, filter := range g.Filter {
-		if strings.HasPrefix(filter.FieldPath, "tags.") && filter.IsApplicable("ebs_volume") {
-			filters = append(filters, types.Filter{
-				Name:   aws.String("tag:" + strings.TrimPrefix(filter.FieldPath, "tags.")),
-				Values: filter.AcceptableValues,
-			})
-		}
-	}
-	p := ec2.NewDescribeVolumesPaginator(svc, &ec2.DescribeVolumesInput{
-		Filters: filters,
-	})
-	for p.HasMorePages() {
-		page, e := p.NextPage(context.TODO())
-		if e != nil {
-			return e
-		}
-		for _, volume := range page.Volumes {
-			isRootDevice := false // Let's leave root device configuration to be done in ec2_instance resources
-
-			for _, attachment := range volume.Attachments {
-				instances, err := svc.DescribeInstances(context.TODO(), &ec2.DescribeInstancesInput{
-					InstanceIds: []string{StringValue(attachment.InstanceId)},
+	loadVolumes := g.shouldLoadEBSResource("ebs_volume")
+	loadVolumeAttachments := g.shouldLoadEBSResource("volume_attachment")
+	if loadVolumes || loadVolumeAttachments {
+		var filters []types.Filter
+		for _, filter := range g.Filter {
+			if strings.HasPrefix(filter.FieldPath, "tags.") && filter.IsApplicable("ebs_volume") {
+				filters = append(filters, types.Filter{
+					Name:   aws.String("tag:" + strings.TrimPrefix(filter.FieldPath, "tags.")),
+					Values: filter.AcceptableValues,
 				})
-				if err != nil {
-					return fmt.Errorf(
-						"describe EC2 instance %s for EBS volume %s: %w",
-						StringValue(attachment.InstanceId),
-						StringValue(volume.VolumeId),
-						err,
-					)
+			}
+		}
+		p := ec2.NewDescribeVolumesPaginator(svc, &ec2.DescribeVolumesInput{
+			Filters: filters,
+		})
+		for p.HasMorePages() {
+			page, e := p.NextPage(context.TODO())
+			if e != nil {
+				return e
+			}
+			for _, volume := range page.Volumes {
+				isRootDevice := false // Let's leave root device configuration to be done in ec2_instance resources
+
+				for _, attachment := range volume.Attachments {
+					instances, err := svc.DescribeInstances(context.TODO(), &ec2.DescribeInstancesInput{
+						InstanceIds: []string{StringValue(attachment.InstanceId)},
+					})
+					if err != nil {
+						return fmt.Errorf(
+							"describe EC2 instance %s for EBS volume %s: %w",
+							StringValue(attachment.InstanceId),
+							StringValue(volume.VolumeId),
+							err,
+						)
+					}
+					for _, reservation := range instances.Reservations {
+						for _, instance := range reservation.Instances {
+							if StringValue(instance.RootDeviceName) == StringValue(attachment.Device) {
+								isRootDevice = true
+							}
+						}
+					}
 				}
-				for _, reservation := range instances.Reservations {
-					for _, instance := range reservation.Instances {
-						if StringValue(instance.RootDeviceName) == StringValue(attachment.Device) {
-							isRootDevice = true
+
+				if !isRootDevice {
+					if loadVolumes {
+						g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
+							StringValue(volume.VolumeId),
+							StringValue(volume.VolumeId),
+							ebsVolumeResourceType,
+							"aws",
+							ebsAllowEmptyValues,
+						))
+					}
+
+					if loadVolumeAttachments {
+						for _, attachment := range volume.Attachments {
+							if attachment.State == types.VolumeAttachmentStateAttached {
+								attachmentID := g.volumeAttachmentID(
+									StringValue(attachment.Device),
+									StringValue(attachment.VolumeId),
+									StringValue(attachment.InstanceId))
+								g.Resources = append(g.Resources, terraformutils.NewResource(
+									attachmentID,
+									StringValue(attachment.InstanceId)+":"+StringValue(attachment.Device),
+									ebsVolumeAttachmentResourceType,
+									"aws",
+									map[string]string{
+										"device_name": StringValue(attachment.Device),
+										"volume_id":   StringValue(attachment.VolumeId),
+										"instance_id": StringValue(attachment.InstanceId),
+									},
+									[]string{},
+									map[string]interface{}{},
+								))
+							}
 						}
 					}
 				}
 			}
-
-			if !isRootDevice {
-				g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-					StringValue(volume.VolumeId),
-					StringValue(volume.VolumeId),
-					ebsVolumeResourceType,
-					"aws",
-					ebsAllowEmptyValues,
-				))
-
-				for _, attachment := range volume.Attachments {
-					if attachment.State == types.VolumeAttachmentStateAttached {
-						attachmentID := g.volumeAttachmentID(
-							StringValue(attachment.Device),
-							StringValue(attachment.VolumeId),
-							StringValue(attachment.InstanceId))
-						g.Resources = append(g.Resources, terraformutils.NewResource(
-							attachmentID,
-							StringValue(attachment.InstanceId)+":"+StringValue(attachment.Device),
-							ebsVolumeAttachmentResourceType,
-							"aws",
-							map[string]string{
-								"device_name": StringValue(attachment.Device),
-								"volume_id":   StringValue(attachment.VolumeId),
-								"instance_id": StringValue(attachment.InstanceId),
-							},
-							[]string{},
-							map[string]interface{}{},
-						))
-					}
-				}
-			}
 		}
 	}
-	if err := g.loadSnapshots(svc); err != nil {
-		return err
+	if g.shouldLoadEBSResource("ebs_snapshot") {
+		if err := g.loadSnapshots(svc); err != nil {
+			return err
+		}
 	}
-	if err := g.loadFastSnapshotRestores(svc); err != nil {
-		return err
+	if g.shouldLoadEBSResource("ebs_fast_snapshot_restore") {
+		if err := g.loadFastSnapshotRestores(svc); err != nil {
+			return err
+		}
 	}
 	if err := g.loadAccountSettings(svc); err != nil {
 		return err
@@ -175,22 +187,30 @@ func (g *EbsGenerator) loadFastSnapshotRestores(svc *ec2.Client) error {
 }
 
 func (g *EbsGenerator) loadAccountSettings(svc *ec2.Client) error {
-	encryption, err := svc.GetEbsEncryptionByDefault(context.TODO(), &ec2.GetEbsEncryptionByDefaultInput{})
-	if err != nil {
-		return err
-	}
-	if resource, ok := newEBSEncryptionByDefaultResource(aws.ToBool(encryption.EbsEncryptionByDefault)); ok {
-		g.Resources = append(g.Resources, resource)
+	if g.shouldLoadEBSResource("ebs_encryption_by_default") {
+		encryption, err := svc.GetEbsEncryptionByDefault(context.TODO(), &ec2.GetEbsEncryptionByDefaultInput{})
+		if err != nil {
+			return err
+		}
+		if resource, ok := newEBSEncryptionByDefaultResource(aws.ToBool(encryption.EbsEncryptionByDefault)); ok {
+			g.Resources = append(g.Resources, resource)
+		}
 	}
 
-	defaultKey, err := svc.GetEbsDefaultKmsKeyId(context.TODO(), &ec2.GetEbsDefaultKmsKeyIdInput{})
-	if err != nil {
-		return err
-	}
-	if resource, ok := newEBSDefaultKMSKeyResource(StringValue(defaultKey.KmsKeyId)); ok {
-		g.Resources = append(g.Resources, resource)
+	if g.shouldLoadEBSResource("ebs_default_kms_key") {
+		defaultKey, err := svc.GetEbsDefaultKmsKeyId(context.TODO(), &ec2.GetEbsDefaultKmsKeyIdInput{})
+		if err != nil {
+			return err
+		}
+		if resource, ok := newEBSDefaultKMSKeyResource(StringValue(defaultKey.KmsKeyId)); ok {
+			g.Resources = append(g.Resources, resource)
+		}
 	}
 	return nil
+}
+
+func (g *EbsGenerator) shouldLoadEBSResource(serviceNames ...string) bool {
+	return shouldLoadAWSResourceForTypedFilters(g.Filter, serviceNames...)
 }
 
 func newEBSSnapshotResource(snapshot types.Snapshot) (terraformutils.Resource, bool) {

@@ -10,6 +10,40 @@ import (
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
+func TestIPAMShouldLoadResource(t *testing.T) {
+	g := IPAMGenerator{}
+	if !g.shouldLoadIPAMResource("vpc_ipam_pool") {
+		t.Fatal("should load IPAM pool without typed filters")
+	}
+
+	g.Filter = []terraformutils.ResourceFilter{{
+		ServiceName:      "vpc_ipam_pool",
+		FieldPath:        "tags.env",
+		AcceptableValues: []string{"prod"},
+	}}
+	if !g.shouldLoadIPAMResource("vpc_ipam_pool") {
+		t.Fatal("should load typed IPAM pool resource")
+	}
+	if g.shouldLoadIPAMResource("vpc_ipam") {
+		t.Fatal("should not load IPAMs for typed IPAM pool filter")
+	}
+	if g.shouldLoadIPAMResource("vpc_ipam_pool_cidr") {
+		t.Fatal("should not load IPAM pool CIDRs for typed IPAM pool filter")
+	}
+
+	g.Filter = []terraformutils.ResourceFilter{{
+		ServiceName:      "vpc_ipam_pool_cidr",
+		FieldPath:        "id",
+		AcceptableValues: []string{"10.0.0.0/16_ipam-pool-123"},
+	}}
+	if !g.shouldLoadIPAMResource("vpc_ipam_pool_cidr") {
+		t.Fatal("should load typed IPAM pool CIDR resource")
+	}
+	if g.shouldLoadIPAMResource("vpc_ipam_pool") {
+		t.Fatal("should not append IPAM pools for typed IPAM pool CIDR filter")
+	}
+}
+
 func TestNewIPAMResource(t *testing.T) {
 	resource, ok := newIPAMResource(types.Ipam{
 		IpamId:     aws.String("ipam-123"),

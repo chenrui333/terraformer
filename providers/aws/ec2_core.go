@@ -39,19 +39,25 @@ func (g *EC2CoreGenerator) InitResources() error {
 	}
 	svc := ec2.NewFromConfig(config)
 
-	loaders := []func(*ec2.Client) error{
-		g.loadPlacementGroups,
-		g.loadInstanceConnectEndpoints,
-		g.loadCapacityReservations,
-		g.loadHosts,
-		g.loadNetworkInsightsPaths,
-		g.loadTrafficMirrorFilters,
-		g.loadTrafficMirrorFilterRules,
-		g.loadTrafficMirrorTargets,
-		g.loadTrafficMirrorSessions,
+	loaders := []struct {
+		serviceName string
+		load        func(*ec2.Client) error
+	}{
+		{serviceName: "placement_group", load: g.loadPlacementGroups},
+		{serviceName: "ec2_instance_connect_endpoint", load: g.loadInstanceConnectEndpoints},
+		{serviceName: "ec2_capacity_reservation", load: g.loadCapacityReservations},
+		{serviceName: "ec2_host", load: g.loadHosts},
+		{serviceName: "ec2_network_insights_path", load: g.loadNetworkInsightsPaths},
+		{serviceName: "ec2_traffic_mirror_filter", load: g.loadTrafficMirrorFilters},
+		{serviceName: "ec2_traffic_mirror_filter_rule", load: g.loadTrafficMirrorFilterRules},
+		{serviceName: "ec2_traffic_mirror_target", load: g.loadTrafficMirrorTargets},
+		{serviceName: "ec2_traffic_mirror_session", load: g.loadTrafficMirrorSessions},
 	}
 	for _, loader := range loaders {
-		if err := loader(svc); err != nil {
+		if !g.shouldLoadEC2CoreResource(loader.serviceName) {
+			continue
+		}
+		if err := loader.load(svc); err != nil {
 			return err
 		}
 	}
@@ -232,6 +238,10 @@ func (g *EC2CoreGenerator) ec2CoreTagFilters(resourceName string) []types.Filter
 		}
 	}
 	return filters
+}
+
+func (g *EC2CoreGenerator) shouldLoadEC2CoreResource(serviceNames ...string) bool {
+	return shouldLoadAWSResourceForTypedFilters(g.Filter, serviceNames...)
 }
 
 func newEC2PlacementGroupResource(placementGroup types.PlacementGroup) (terraformutils.Resource, bool) {

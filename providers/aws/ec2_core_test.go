@@ -10,6 +10,28 @@ import (
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
+func TestEC2CoreShouldLoadResource(t *testing.T) {
+	g := EC2CoreGenerator{}
+	if !g.shouldLoadEC2CoreResource("ec2_host") {
+		t.Fatal("should load EC2 host without typed filters")
+	}
+
+	g.Filter = []terraformutils.ResourceFilter{{
+		ServiceName:      "ec2_capacity_reservation",
+		FieldPath:        "id",
+		AcceptableValues: []string{"cr-123"},
+	}}
+	if !g.shouldLoadEC2CoreResource("ec2_capacity_reservation") {
+		t.Fatal("should load typed capacity reservation resource")
+	}
+	if g.shouldLoadEC2CoreResource("placement_group") {
+		t.Fatal("should not load placement groups for typed capacity reservation filter")
+	}
+	if g.shouldLoadEC2CoreResource("ec2_traffic_mirror_filter") {
+		t.Fatal("should not load traffic mirror filters for typed capacity reservation filter")
+	}
+}
+
 func TestNewEC2PlacementGroupResource(t *testing.T) {
 	resource, ok := newEC2PlacementGroupResource(types.PlacementGroup{
 		GroupName: aws.String("cluster-a"),

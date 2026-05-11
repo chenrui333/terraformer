@@ -36,16 +36,22 @@ func (g *IPAMGenerator) InitResources() error {
 	}
 	svc := ec2.NewFromConfig(config)
 
-	loaders := []func(*ec2.Client) error{
-		g.loadIPAMs,
-		g.loadIPAMScopes,
-		g.loadIPAMPools,
-		g.loadIPAMPoolCIDRs,
-		g.loadIPAMResourceDiscoveries,
-		g.loadIPAMResourceDiscoveryAssociations,
+	loaders := []struct {
+		serviceName string
+		load        func(*ec2.Client) error
+	}{
+		{serviceName: "vpc_ipam", load: g.loadIPAMs},
+		{serviceName: "vpc_ipam_scope", load: g.loadIPAMScopes},
+		{serviceName: "vpc_ipam_pool", load: g.loadIPAMPools},
+		{serviceName: "vpc_ipam_pool_cidr", load: g.loadIPAMPoolCIDRs},
+		{serviceName: "vpc_ipam_resource_discovery", load: g.loadIPAMResourceDiscoveries},
+		{serviceName: "vpc_ipam_resource_discovery_association", load: g.loadIPAMResourceDiscoveryAssociations},
 	}
 	for _, loader := range loaders {
-		if err := loader(svc); err != nil {
+		if !g.shouldLoadIPAMResource(loader.serviceName) {
+			continue
+		}
+		if err := loader.load(svc); err != nil {
 			return err
 		}
 	}
@@ -195,6 +201,10 @@ func (g *IPAMGenerator) ipamTagFilters(resourceName string) []types.Filter {
 		}
 	}
 	return filters
+}
+
+func (g *IPAMGenerator) shouldLoadIPAMResource(serviceNames ...string) bool {
+	return shouldLoadAWSResourceForTypedFilters(g.Filter, serviceNames...)
 }
 
 func newIPAMResource(ipam types.Ipam) (terraformutils.Resource, bool) {

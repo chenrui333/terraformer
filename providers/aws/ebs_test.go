@@ -11,6 +11,43 @@ import (
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 )
 
+func TestEBSShouldLoadResource(t *testing.T) {
+	g := EbsGenerator{}
+	if !g.shouldLoadEBSResource("ebs_snapshot") {
+		t.Fatal("should load snapshots without typed filters")
+	}
+
+	g.Filter = []terraformutils.ResourceFilter{{
+		ServiceName:      "ebs_volume",
+		FieldPath:        "id",
+		AcceptableValues: []string{"vol-123"},
+	}}
+	if !g.shouldLoadEBSResource("ebs_volume") {
+		t.Fatal("should load typed EBS volume resource")
+	}
+	if !g.shouldLoadEBSResource("ebs_volume", "volume_attachment") {
+		t.Fatal("should load shared volume loader for typed EBS volume resource")
+	}
+	if g.shouldLoadEBSResource("ebs_snapshot") {
+		t.Fatal("should not load snapshots for typed EBS volume filter")
+	}
+	if g.shouldLoadEBSResource("ebs_default_kms_key") {
+		t.Fatal("should not load default KMS key for typed EBS volume filter")
+	}
+
+	g.Filter = []terraformutils.ResourceFilter{{
+		ServiceName:      "volume_attachment",
+		FieldPath:        "id",
+		AcceptableValues: []string{"i-123:/dev/sdf"},
+	}}
+	if !g.shouldLoadEBSResource("ebs_volume", "volume_attachment") {
+		t.Fatal("should load shared volume loader for typed volume attachment resource")
+	}
+	if g.shouldLoadEBSResource("ebs_volume") {
+		t.Fatal("should not append EBS volumes for typed volume attachment filter")
+	}
+}
+
 func TestNewEBSSnapshotResource(t *testing.T) {
 	resource, ok := newEBSSnapshotResource(types.Snapshot{
 		SnapshotId: aws.String("snap-123"),
