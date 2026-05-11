@@ -173,15 +173,19 @@ func detectiveOptionalResourceUnavailable(err error) bool {
 	}
 	var accessDenied *detectivetypes.AccessDeniedException
 	if errors.As(err, &accessDenied) {
-		return true
+		return detectiveAdminUnavailableMessage(accessDenied.ErrorMessage())
 	}
 	var validation *detectivetypes.ValidationException
 	if errors.As(err, &validation) {
-		message := strings.ToLower(validation.ErrorMessage())
-		return strings.Contains(message, "not a member of an organization") ||
-			strings.Contains(message, "not an administrator") ||
-			strings.Contains(message, "administrator account") ||
-			strings.Contains(message, "delegated")
+		return detectiveAdminUnavailableMessage(validation.ErrorMessage())
 	}
 	return false
+}
+
+func detectiveAdminUnavailableMessage(message string) bool {
+	message = strings.ToLower(message)
+	return strings.Contains(message, "not a member of an organization") ||
+		strings.Contains(message, "not an administrator") ||
+		strings.Contains(message, "not the administrator") ||
+		strings.Contains(message, "delegated administrator")
 }

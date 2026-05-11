@@ -427,7 +427,7 @@ func newSecurityHubConfigurationPolicyAssociationResource(association securityhu
 	policyID := StringValue(association.ConfigurationPolicyId)
 	if targetID == "" || policyID == "" ||
 		association.AssociationType != securityhubtypes.AssociationTypeApplied ||
-		association.AssociationStatus != securityhubtypes.ConfigurationPolicyAssociationStatusSuccess {
+		!securityHubConfigurationPolicyAssociationImportable(association.AssociationStatus) {
 		return terraformutils.Resource{}, false
 	}
 	return terraformutils.NewResource(
@@ -442,6 +442,11 @@ func newSecurityHubConfigurationPolicyAssociationResource(association securityhu
 		securityhubAllowEmptyValues,
 		securityHubAccountDependency(accountNumber),
 	), true
+}
+
+func securityHubConfigurationPolicyAssociationImportable(status securityhubtypes.ConfigurationPolicyAssociationStatus) bool {
+	return status == securityhubtypes.ConfigurationPolicyAssociationStatusSuccess ||
+		status == securityhubtypes.ConfigurationPolicyAssociationStatusPending
 }
 
 func newSecurityHubSimpleResource(id, name, resourceType, accountNumber string) terraformutils.Resource {

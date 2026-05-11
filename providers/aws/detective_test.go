@@ -100,8 +100,18 @@ func TestDetectiveOptionalResourceUnavailable(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "access denied",
+			name: "generic access denied",
 			err:  &detectivetypes.AccessDeniedException{Message: aws.String("denied")},
+			want: false,
+		},
+		{
+			name: "access denied for non organization member",
+			err:  &detectivetypes.AccessDeniedException{Message: aws.String("This account is not a member of an organization")},
+			want: true,
+		},
+		{
+			name: "access denied for non administrator",
+			err:  &detectivetypes.AccessDeniedException{Message: aws.String("The account is not an administrator account")},
 			want: true,
 		},
 		{

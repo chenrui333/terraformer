@@ -128,25 +128,32 @@ func TestSecurityHubInsightResource(t *testing.T) {
 }
 
 func TestSecurityHubConfigurationPolicyAssociationResource(t *testing.T) {
-	resource, ok := newSecurityHubConfigurationPolicyAssociationResource(securityhubtypes.ConfigurationPolicyAssociationSummary{
-		AssociationStatus:     securityhubtypes.ConfigurationPolicyAssociationStatusSuccess,
-		AssociationType:       securityhubtypes.AssociationTypeApplied,
-		ConfigurationPolicyId: aws.String("00000000-1111-2222-3333-444444444444"),
-		TargetId:              aws.String("123456789012"),
-	}, securityHubTestAccountID)
-	if !ok {
-		t.Fatal("expected configuration policy association resource")
+	for _, status := range []securityhubtypes.ConfigurationPolicyAssociationStatus{
+		securityhubtypes.ConfigurationPolicyAssociationStatusSuccess,
+		securityhubtypes.ConfigurationPolicyAssociationStatusPending,
+	} {
+		t.Run(string(status), func(t *testing.T) {
+			resource, ok := newSecurityHubConfigurationPolicyAssociationResource(securityhubtypes.ConfigurationPolicyAssociationSummary{
+				AssociationStatus:     status,
+				AssociationType:       securityhubtypes.AssociationTypeApplied,
+				ConfigurationPolicyId: aws.String("00000000-1111-2222-3333-444444444444"),
+				TargetId:              aws.String("123456789012"),
+			}, securityHubTestAccountID)
+			if !ok {
+				t.Fatal("expected configuration policy association resource")
+			}
+			if got := resource.InstanceInfo.Type; got != securityHubConfigurationPolicyAssociationResourceType {
+				t.Fatalf("resource type = %q, want %q", got, securityHubConfigurationPolicyAssociationResourceType)
+			}
+			if got := resource.InstanceState.Attributes["policy_id"]; got != "00000000-1111-2222-3333-444444444444" {
+				t.Fatalf("policy_id = %q", got)
+			}
+			if got := resource.InstanceState.Attributes["target_id"]; got != "123456789012" {
+				t.Fatalf("target_id = %q", got)
+			}
+			assertSecurityHubAccountDependency(t, resource)
+		})
 	}
-	if got := resource.InstanceInfo.Type; got != securityHubConfigurationPolicyAssociationResourceType {
-		t.Fatalf("resource type = %q, want %q", got, securityHubConfigurationPolicyAssociationResourceType)
-	}
-	if got := resource.InstanceState.Attributes["policy_id"]; got != "00000000-1111-2222-3333-444444444444" {
-		t.Fatalf("policy_id = %q", got)
-	}
-	if got := resource.InstanceState.Attributes["target_id"]; got != "123456789012" {
-		t.Fatalf("target_id = %q", got)
-	}
-	assertSecurityHubAccountDependency(t, resource)
 }
 
 func TestSecurityHubEmptyIdentifierSkips(t *testing.T) {
@@ -172,12 +179,12 @@ func TestSecurityHubEmptyIdentifierSkips(t *testing.T) {
 		t.Fatal("expected inherited association to skip")
 	}
 	if _, ok := newSecurityHubConfigurationPolicyAssociationResource(securityhubtypes.ConfigurationPolicyAssociationSummary{
-		AssociationStatus:     securityhubtypes.ConfigurationPolicyAssociationStatusPending,
+		AssociationStatus:     securityhubtypes.ConfigurationPolicyAssociationStatusFailed,
 		AssociationType:       securityhubtypes.AssociationTypeApplied,
 		ConfigurationPolicyId: aws.String("policy-id"),
 		TargetId:              aws.String("123456789012"),
 	}, securityHubTestAccountID); ok {
-		t.Fatal("expected pending association to skip")
+		t.Fatal("expected failed association to skip")
 	}
 }
 
