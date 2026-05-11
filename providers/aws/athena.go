@@ -337,6 +337,7 @@ func athenaDataCatalogParametersSafe(parameters map[string]string) bool {
 }
 
 func athenaCapacityReservationImportable(reservation athenatypes.CapacityReservation) bool {
+	// Match the current Terraform AWS provider validation for target_dpus.
 	return reservation.Status == athenatypes.CapacityReservationStatusActive && aws.ToInt32(reservation.TargetDpus) >= 24
 }
 
