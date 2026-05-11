@@ -84,14 +84,18 @@ func newRedshiftServerlessNamespaceResource(namespace redshiftserverlesstypes.Na
 	if importID == "" || !redshiftServerlessNamespaceImportable(namespace) {
 		return terraformutils.Resource{}, false
 	}
+	attributes := map[string]string{
+		"namespace_name": importID,
+	}
+	if StringValue(namespace.AdminPasswordSecretArn) != "" {
+		attributes["manage_admin_password"] = "true"
+	}
 	return terraformutils.NewResource(
 		importID,
 		redshiftServerlessResourceName("namespace", importID),
 		redshiftServerlessNamespaceResourceType,
 		"aws",
-		map[string]string{
-			"namespace_name": importID,
-		},
+		attributes,
 		redshiftServerlessAllowEmptyValues,
 		map[string]interface{}{},
 	), true
@@ -136,13 +140,21 @@ func redshiftServerlessResourceName(parts ...string) string {
 
 func redshiftServerlessNamespaceImportable(namespace redshiftserverlesstypes.Namespace) bool {
 	return redshiftServerlessNamespaceImportID(namespace) != "" &&
-		namespace.Status == redshiftserverlesstypes.NamespaceStatusAvailable
+		redshiftServerlessNamespaceStatusImportable(namespace.Status)
 }
 
 func redshiftServerlessWorkgroupImportable(workgroup redshiftserverlesstypes.Workgroup) bool {
 	return redshiftServerlessWorkgroupImportID(workgroup) != "" &&
 		StringValue(workgroup.NamespaceName) != "" &&
-		workgroup.Status == redshiftserverlesstypes.WorkgroupStatusAvailable
+		redshiftServerlessWorkgroupStatusImportable(workgroup.Status)
+}
+
+func redshiftServerlessNamespaceStatusImportable(status redshiftserverlesstypes.NamespaceStatus) bool {
+	return status != "" && status != redshiftserverlesstypes.NamespaceStatusDeleting
+}
+
+func redshiftServerlessWorkgroupStatusImportable(status redshiftserverlesstypes.WorkgroupStatus) bool {
+	return status != "" && status != redshiftserverlesstypes.WorkgroupStatusDeleting
 }
 
 func redshiftServerlessWorkgroupAttributes(workgroup redshiftserverlesstypes.Workgroup) map[string]string {

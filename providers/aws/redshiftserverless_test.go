@@ -51,8 +51,9 @@ func TestRedshiftServerlessImportIDs(t *testing.T) {
 
 func TestNewRedshiftServerlessNamespaceResource(t *testing.T) {
 	resource, ok := newRedshiftServerlessNamespaceResource(redshiftserverlesstypes.Namespace{
-		NamespaceName: redshiftServerlessString("analytics"),
-		Status:        redshiftserverlesstypes.NamespaceStatusAvailable,
+		AdminPasswordSecretArn: redshiftServerlessString("arn:aws:secretsmanager:us-east-1:123456789012:secret:redshift-serverless-admin"),
+		NamespaceName:          redshiftServerlessString("analytics"),
+		Status:                 redshiftserverlesstypes.NamespaceStatusAvailable,
 	})
 	assertRedshiftServerlessResource(
 		t,
@@ -63,17 +64,30 @@ func TestNewRedshiftServerlessNamespaceResource(t *testing.T) {
 		redshiftServerlessNamespaceResourceType,
 	)
 	assertRedshiftServerlessAttribute(t, resource, "namespace_name", "analytics")
+	assertRedshiftServerlessAttribute(t, resource, "manage_admin_password", "true")
 
 	if _, ok := newRedshiftServerlessNamespaceResource(redshiftserverlesstypes.Namespace{
 		Status: redshiftserverlesstypes.NamespaceStatusAvailable,
 	}); ok {
 		t.Fatal("namespace with empty name should be skipped")
 	}
-	if _, ok := newRedshiftServerlessNamespaceResource(redshiftserverlesstypes.Namespace{
+	resource, ok = newRedshiftServerlessNamespaceResource(redshiftserverlesstypes.Namespace{
 		NamespaceName: redshiftServerlessString("analytics"),
 		Status:        redshiftserverlesstypes.NamespaceStatusModifying,
+	})
+	assertRedshiftServerlessResource(
+		t,
+		resource,
+		ok,
+		"analytics",
+		redshiftServerlessResourceName("namespace", "analytics"),
+		redshiftServerlessNamespaceResourceType,
+	)
+	if _, ok := newRedshiftServerlessNamespaceResource(redshiftserverlesstypes.Namespace{
+		NamespaceName: redshiftServerlessString("analytics"),
+		Status:        redshiftserverlesstypes.NamespaceStatusDeleting,
 	}); ok {
-		t.Fatal("modifying namespace should be skipped")
+		t.Fatal("deleting namespace should be skipped")
 	}
 }
 
@@ -143,12 +157,6 @@ func TestNewRedshiftServerlessWorkgroupResourceSkipsUnsafeWorkgroups(t *testing.
 	}{
 		{name: "empty workgroup name", mutate: func(workgroup *redshiftserverlesstypes.Workgroup) { workgroup.WorkgroupName = nil }},
 		{name: "empty namespace name", mutate: func(workgroup *redshiftserverlesstypes.Workgroup) { workgroup.NamespaceName = nil }},
-		{name: "creating status", mutate: func(workgroup *redshiftserverlesstypes.Workgroup) {
-			workgroup.Status = redshiftserverlesstypes.WorkgroupStatusCreating
-		}},
-		{name: "modifying status", mutate: func(workgroup *redshiftserverlesstypes.Workgroup) {
-			workgroup.Status = redshiftserverlesstypes.WorkgroupStatusModifying
-		}},
 		{name: "deleting status", mutate: func(workgroup *redshiftserverlesstypes.Workgroup) {
 			workgroup.Status = redshiftserverlesstypes.WorkgroupStatusDeleting
 		}},
@@ -172,7 +180,13 @@ func TestRedshiftServerlessStatusImportability(t *testing.T) {
 	}) {
 		t.Fatal("available namespace should be importable")
 	}
-	for _, status := range []redshiftserverlesstypes.NamespaceStatus{"", redshiftserverlesstypes.NamespaceStatusModifying, redshiftserverlesstypes.NamespaceStatusDeleting} {
+	if !redshiftServerlessNamespaceImportable(redshiftserverlesstypes.Namespace{
+		NamespaceName: redshiftServerlessString("analytics"),
+		Status:        redshiftserverlesstypes.NamespaceStatusModifying,
+	}) {
+		t.Fatal("modifying namespace should be importable")
+	}
+	for _, status := range []redshiftserverlesstypes.NamespaceStatus{"", redshiftserverlesstypes.NamespaceStatusDeleting} {
 		if redshiftServerlessNamespaceImportable(redshiftserverlesstypes.Namespace{
 			NamespaceName: redshiftServerlessString("analytics"),
 			Status:        status,
@@ -188,7 +202,16 @@ func TestRedshiftServerlessStatusImportability(t *testing.T) {
 	}) {
 		t.Fatal("available workgroup should be importable")
 	}
-	for _, status := range []redshiftserverlesstypes.WorkgroupStatus{"", redshiftserverlesstypes.WorkgroupStatusCreating, redshiftserverlesstypes.WorkgroupStatusModifying, redshiftserverlesstypes.WorkgroupStatusDeleting} {
+	for _, status := range []redshiftserverlesstypes.WorkgroupStatus{redshiftserverlesstypes.WorkgroupStatusCreating, redshiftserverlesstypes.WorkgroupStatusModifying} {
+		if !redshiftServerlessWorkgroupImportable(redshiftserverlesstypes.Workgroup{
+			NamespaceName: redshiftServerlessString("analytics"),
+			Status:        status,
+			WorkgroupName: redshiftServerlessString("reporting"),
+		}) {
+			t.Fatalf("workgroup status %q should be importable", status)
+		}
+	}
+	for _, status := range []redshiftserverlesstypes.WorkgroupStatus{"", redshiftserverlesstypes.WorkgroupStatusDeleting} {
 		if redshiftServerlessWorkgroupImportable(redshiftserverlesstypes.Workgroup{
 			NamespaceName: redshiftServerlessString("analytics"),
 			Status:        status,
