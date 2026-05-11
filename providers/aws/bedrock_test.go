@@ -57,26 +57,47 @@ func TestBedrockShouldLoadResourceHonorsTypedFilters(t *testing.T) {
 	}
 }
 
-func TestBedrockShouldLoadResourceAllowsUntypedIDFilter(t *testing.T) {
-	g := BedrockGenerator{
-		AWSService: AWSService{
-			Service: terraformutils.Service{
-				Filter: []terraformutils.ResourceFilter{
-					{
-						ServiceName:      "bedrock_guardrail",
-						FieldPath:        "id",
-						AcceptableValues: []string{"gr-1234567890,DRAFT"},
-					},
-					{
-						FieldPath:        "id",
-						AcceptableValues: []string{"arn:aws:bedrock:us-east-1:123456789012:provisioned-model/abc123"},
-					},
-				},
+func TestBedrockShouldLoadResourceAllowsUntypedFilters(t *testing.T) {
+	tests := []struct {
+		name   string
+		filter terraformutils.ResourceFilter
+	}{
+		{
+			name: "id",
+			filter: terraformutils.ResourceFilter{
+				FieldPath:        "id",
+				AcceptableValues: []string{"arn:aws:bedrock:us-east-1:123456789012:provisioned-model/abc123"},
+			},
+		},
+		{
+			name: "post-refresh attribute",
+			filter: terraformutils.ResourceFilter{
+				FieldPath:        "tags.env",
+				AcceptableValues: []string{"prod"},
 			},
 		},
 	}
-	if !g.shouldLoadBedrockResource("bedrock_inference_profile") {
-		t.Fatal("untyped ID filter should keep broad Bedrock discovery available")
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := BedrockGenerator{
+				AWSService: AWSService{
+					Service: terraformutils.Service{
+						Filter: []terraformutils.ResourceFilter{
+							{
+								ServiceName:      "bedrock_guardrail",
+								FieldPath:        "id",
+								AcceptableValues: []string{"gr-1234567890,DRAFT"},
+							},
+							tt.filter,
+						},
+					},
+				},
+			}
+			if !g.shouldLoadBedrockResource("bedrock_inference_profile") {
+				t.Fatal("untyped filter should keep broad Bedrock discovery available")
+			}
+		})
 	}
 }
 
@@ -274,6 +295,29 @@ func TestBedrockInitialCleanupHonorsTypedFilters(t *testing.T) {
 	}
 }
 
+func TestBedrockInitialCleanupPreservesGlobalFilters(t *testing.T) {
+	guardrail, profile, throughput := bedrockTestResources(t)
+	g := BedrockGenerator{}
+	g.Resources = []terraformutils.Resource{guardrail, profile, throughput}
+	g.Filter = []terraformutils.ResourceFilter{
+		{
+			ServiceName:      "bedrock_guardrail",
+			FieldPath:        "id",
+			AcceptableValues: []string{"gr-1234567890,DRAFT"},
+		},
+		{
+			FieldPath:        "tags.env",
+			AcceptableValues: []string{"prod"},
+		},
+	}
+
+	g.InitialCleanup()
+
+	if len(g.Resources) != 3 {
+		t.Fatalf("InitialCleanup() resources len = %d, want 3", len(g.Resources))
+	}
+}
+
 func assertBedrockResource(t *testing.T, resource terraformutils.Resource, ok bool, wantID, wantType string) {
 	t.Helper()
 	if !ok {
@@ -288,4 +332,38 @@ func assertBedrockResource(t *testing.T, resource terraformutils.Resource, ok bo
 	if resource.ResourceName == "" {
 		t.Fatal("resource name should not be empty")
 	}
+}
+
+func bedrockTestResources(t *testing.T) (terraformutils.Resource, terraformutils.Resource, terraformutils.Resource) {
+	t.Helper()
+	guardrail, ok := newBedrockGuardrailResource(bedrocktypes.GuardrailSummary{
+		Id:      aws.String("gr-1234567890"),
+		Name:    aws.String("billing-policy"),
+		Status:  bedrocktypes.GuardrailStatusReady,
+		Version: aws.String("DRAFT"),
+	})
+	if !ok {
+		t.Fatal("newBedrockGuardrailResource() should create guardrail")
+	}
+	profile, ok := newBedrockInferenceProfileResource(bedrocktypes.InferenceProfileSummary{
+		InferenceProfileId:   aws.String("ip-1234567890"),
+		InferenceProfileName: aws.String("application-profile"),
+		Status:               bedrocktypes.InferenceProfileStatusActive,
+		Type:                 bedrocktypes.InferenceProfileTypeApplication,
+	})
+	if !ok {
+		t.Fatal("newBedrockInferenceProfileResource() should create profile")
+	}
+	modelUnits := int32(2)
+	throughput, ok := newBedrockProvisionedModelThroughputResource(bedrocktypes.ProvisionedModelSummary{
+		ModelArn:             aws.String("arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-pro-v1:0"),
+		ModelUnits:           &modelUnits,
+		ProvisionedModelArn:  aws.String("arn:aws:bedrock:us-east-1:123456789012:provisioned-model/abc123"),
+		ProvisionedModelName: aws.String("prod-throughput"),
+		Status:               bedrocktypes.ProvisionedModelStatusInService,
+	})
+	if !ok {
+		t.Fatal("newBedrockProvisionedModelThroughputResource() should create throughput")
+	}
+	return guardrail, profile, throughput
 }

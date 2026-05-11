@@ -42,7 +42,7 @@ func (g *BedrockGenerator) InitialCleanup() {
 	filteredResources := []terraformutils.Resource{}
 	for _, resource := range g.Resources {
 		serviceName := bedrockServiceName(resource.InstanceInfo.Type)
-		if g.hasTypedBedrockFilter() && !g.hasTypedFilterFor(serviceName) && !g.hasUntypedIDFilter() {
+		if g.hasTypedBedrockFilter() && !g.hasTypedFilterFor(serviceName) && !g.hasUntypedFilter() {
 			continue
 		}
 		allPredicatesTrue := true
@@ -89,7 +89,7 @@ func (g *BedrockGenerator) shouldLoadBedrockResource(serviceName string) bool {
 	if !g.hasTypedBedrockFilter() {
 		return true
 	}
-	return g.hasTypedFilterFor(serviceName) || g.hasUntypedIDFilter()
+	return g.hasTypedFilterFor(serviceName) || g.hasUntypedFilter()
 }
 
 func (g *BedrockGenerator) hasTypedBedrockFilter() bool {
@@ -110,9 +110,9 @@ func (g *BedrockGenerator) hasTypedFilterFor(serviceName string) bool {
 	return false
 }
 
-func (g *BedrockGenerator) hasUntypedIDFilter() bool {
+func (g *BedrockGenerator) hasUntypedFilter() bool {
 	for _, filter := range g.Filter {
-		if filter.ServiceName == "" && filter.FieldPath == "id" {
+		if filter.ServiceName == "" {
 			return true
 		}
 	}
