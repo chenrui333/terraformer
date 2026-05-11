@@ -4,6 +4,7 @@ package aws
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -52,6 +53,11 @@ func TestSSOAdminResourceIDs(t *testing.T) {
 			),
 			want: testSSOAdminPrincipalID + ",USER," + testSSOAdminAccountID + ",AWS_ACCOUNT," + testSSOAdminPermissionSetARN + "," + testSSOAdminInstanceARN,
 		},
+		{
+			name: "instance access control attributes",
+			got:  ssoAdminInstanceAccessControlAttributesResourceID(testSSOAdminInstanceARN),
+			want: testSSOAdminInstanceARN,
+		},
 	}
 
 	for _, tt := range tests {
@@ -60,6 +66,53 @@ func TestSSOAdminResourceIDs(t *testing.T) {
 				t.Fatalf("resource ID = %q, want %q", tt.got, tt.want)
 			}
 		})
+	}
+}
+
+func TestSSOAdminInstanceAccessControlAttributesResource(t *testing.T) {
+	resource := newSSOAdminInstanceAccessControlAttributesResource(
+		testSSOAdminInstanceARN,
+		&ssotypes.InstanceAccessControlAttributeConfiguration{
+			AccessControlAttributes: []ssotypes.AccessControlAttribute{
+				{
+					Key: aws.String("name"),
+					Value: &ssotypes.AccessControlAttributeValue{
+						Source: []string{"${path:name.preferredName}", "${path:name.givenName}"},
+					},
+				},
+				{
+					Key: aws.String("last"),
+					Value: &ssotypes.AccessControlAttributeValue{
+						Source: []string{"${path:name.familyName}"},
+					},
+				},
+			},
+		},
+	)
+
+	if got, want := resource.InstanceState.ID, testSSOAdminInstanceARN; got != want {
+		t.Fatalf("resource ID = %q, want %q", got, want)
+	}
+	if got, want := resource.InstanceInfo.Type, ssoAdminInstanceAccessControlAttributesResourceType; got != want {
+		t.Fatalf("resource type = %q, want %q", got, want)
+	}
+	attributes := resource.InstanceState.Attributes
+	for key, want := range map[string]string{
+		"attribute.#":                  "2",
+		"attribute.0.key":              "last",
+		"attribute.0.value.#":          "1",
+		"attribute.0.value.0.source.#": "1",
+		"attribute.0.value.0.source.0": "${path:name.familyName}",
+		"attribute.1.key":              "name",
+		"attribute.1.value.#":          "1",
+		"attribute.1.value.0.source.#": "2",
+		"attribute.1.value.0.source.0": "${path:name.givenName}",
+		"attribute.1.value.0.source.1": "${path:name.preferredName}",
+		"instance_arn":                 testSSOAdminInstanceARN,
+	} {
+		if got := attributes[key]; got != want {
+			t.Fatalf("%s = %q, want %q", key, got, want)
+		}
 	}
 }
 
@@ -345,6 +398,81 @@ func TestSSOAdminPostConvertHookWrapsInlinePolicy(t *testing.T) {
 	}
 }
 
+func TestSSOAdminPostConvertHookEscapesInstanceAccessControlAttributeSources(t *testing.T) {
+	rawGivenNameSource := "$" + "{path:name.givenName}"
+	escapedGivenNameSource := "$" + "$" + "{path:name.givenName}"
+	escapedFamilyNameSource := "$" + "$" + "{path:name.familyName}"
+	rawDirectiveSource := "%" + "{if true}"
+	escapedDirectiveSource := "%" + "%" + "{if true}"
+	resource := newSSOAdminInstanceAccessControlAttributesResource(
+		testSSOAdminInstanceARN,
+		&ssotypes.InstanceAccessControlAttributeConfiguration{
+			AccessControlAttributes: []ssotypes.AccessControlAttribute{
+				{
+					Key: aws.String("name"),
+					Value: &ssotypes.AccessControlAttributeValue{
+						Source: []string{rawGivenNameSource},
+					},
+				},
+			},
+		},
+	)
+	resource.Item = map[string]interface{}{
+		"attribute": []interface{}{
+			map[string]interface{}{
+				"key": "name",
+				"value": []interface{}{
+					map[string]interface{}{
+						"source": []interface{}{
+							rawGivenNameSource,
+							escapedFamilyNameSource,
+							rawDirectiveSource,
+						},
+					},
+				},
+			},
+		},
+		"instance_arn": testSSOAdminInstanceARN,
+	}
+	g := &SSOAdminGenerator{}
+	g.Resources = append(g.Resources, resource)
+
+	if err := g.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook() error = %v", err)
+	}
+
+	attribute := g.Resources[0].Item["attribute"].([]interface{})[0].(map[string]interface{})
+	value := attribute["value"].([]interface{})[0].(map[string]interface{})
+	sources := value["source"].([]interface{})
+	for i, want := range []string{
+		escapedGivenNameSource,
+		escapedFamilyNameSource,
+		escapedDirectiveSource,
+	} {
+		if got := sources[i]; got != want {
+			t.Fatalf("source[%d] = %q, want %q", i, got, want)
+		}
+	}
+
+	data, err := terraformutils.HclPrintResource(g.Resources, map[string]interface{}{}, "hcl", true)
+	if err != nil {
+		t.Fatalf("HclPrintResource() error = %v", err)
+	}
+	output := string(data)
+	for _, want := range []string{
+		"\"" + escapedGivenNameSource + "\"",
+		"\"" + escapedFamilyNameSource + "\"",
+		"\"" + escapedDirectiveSource + "\"",
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("output does not contain %q:\n%s", want, output)
+		}
+	}
+	if strings.Contains(output, "\""+rawGivenNameSource+"\"") || strings.Contains(output, "\""+rawDirectiveSource+"\"") {
+		t.Fatalf("output contains unescaped Terraform template markers:\n%s", output)
+	}
+}
+
 func TestSSOAdminPermissionsBoundaryAttachmentResource(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -440,6 +568,80 @@ func TestSSOAdminResourceNamesDoNotCollapseJoinedParts(t *testing.T) {
 	if left.ResourceName == right.ResourceName {
 		t.Fatalf("account assignment resource names collide: %q", left.ResourceName)
 	}
+
+	config := &ssotypes.InstanceAccessControlAttributeConfiguration{
+		AccessControlAttributes: []ssotypes.AccessControlAttribute{
+			{
+				Key: aws.String("name"),
+				Value: &ssotypes.AccessControlAttributeValue{
+					Source: []string{"${path:name.givenName}"},
+				},
+			},
+		},
+	}
+	left = newSSOAdminInstanceAccessControlAttributesResource("instance:a_b", config)
+	right = newSSOAdminInstanceAccessControlAttributesResource("instance:a:b", config)
+	if left.ResourceName == right.ResourceName {
+		t.Fatalf("instance access control attributes resource names collide: %q", left.ResourceName)
+	}
+}
+
+func TestSSOAdminInstanceAccessControlAttributesConfigured(t *testing.T) {
+	tests := []struct {
+		name   string
+		config *ssotypes.InstanceAccessControlAttributeConfiguration
+		want   bool
+	}{
+		{name: "nil", want: false},
+		{name: "empty", config: &ssotypes.InstanceAccessControlAttributeConfiguration{}, want: false},
+		{
+			name: "configured",
+			config: &ssotypes.InstanceAccessControlAttributeConfiguration{
+				AccessControlAttributes: []ssotypes.AccessControlAttribute{
+					{
+						Key: aws.String("name"),
+						Value: &ssotypes.AccessControlAttributeValue{
+							Source: []string{"${path:name.givenName}"},
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "missing key",
+			config: &ssotypes.InstanceAccessControlAttributeConfiguration{
+				AccessControlAttributes: []ssotypes.AccessControlAttribute{
+					{Value: &ssotypes.AccessControlAttributeValue{Source: []string{"${path:name.givenName}"}}},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "missing value",
+			config: &ssotypes.InstanceAccessControlAttributeConfiguration{
+				AccessControlAttributes: []ssotypes.AccessControlAttribute{{Key: aws.String("name")}},
+			},
+			want: false,
+		},
+		{
+			name: "missing source",
+			config: &ssotypes.InstanceAccessControlAttributeConfiguration{
+				AccessControlAttributes: []ssotypes.AccessControlAttribute{
+					{Key: aws.String("name"), Value: &ssotypes.AccessControlAttributeValue{}},
+				},
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ssoAdminInstanceAccessControlAttributesConfigured(tt.config); got != tt.want {
+				t.Fatalf("ssoAdminInstanceAccessControlAttributesConfigured() = %t, want %t", got, tt.want)
+			}
+		})
+	}
 }
 
 func TestSSOAdminAccountAssignmentConfigured(t *testing.T) {
@@ -520,6 +722,26 @@ func TestSSOAdminPermissionsBoundaryConfigured(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := ssoAdminPermissionsBoundaryConfigured(tt.boundary); got != tt.want {
 				t.Fatalf("ssoAdminPermissionsBoundaryConfigured() = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSSOAdminInstanceAccessControlAttributesNotConfigured(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "nil", want: false},
+		{name: "resource not found", err: &ssotypes.ResourceNotFoundException{}, want: true},
+		{name: "generic", err: errors.New("boom"), want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ssoAdminInstanceAccessControlAttributesNotConfigured(tt.err); got != tt.want {
+				t.Fatalf("ssoAdminInstanceAccessControlAttributesNotConfigured(%v) = %t, want %t", tt.err, got, tt.want)
 			}
 		})
 	}

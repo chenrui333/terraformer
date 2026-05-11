@@ -518,6 +518,7 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
 *   `ssoadmin`
     * `aws_ssoadmin_account_assignment`
     * `aws_ssoadmin_customer_managed_policy_attachment`
+    * `aws_ssoadmin_instance_access_control_attributes`
     * `aws_ssoadmin_managed_policy_attachment`
     * `aws_ssoadmin_permission_set`
     * `aws_ssoadmin_permission_set_inline_policy`
