@@ -222,6 +222,9 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_cognito_user_pool_client`
     * `aws_cognito_user_pool_domain`
     * Note: `aws_cognito_user_pool_client` ID filters may use `<user_pool_id>/<client_id>`, such as `Type=cognito_user_pool_client;Name=id;Value=us-east-1_abc/client123`. Generated state stores `client123` as the resource ID and keeps `user_pool_id` separately, matching the provider read path in [providers/aws/cognito.go](../providers/aws/cognito.go).
+*   `comprehend`
+    * `aws_comprehend_document_classifier`
+    * `aws_comprehend_entity_recognizer`
 *   `connect`
     * `aws_connect_bot_association`
     * `aws_connect_hours_of_operation`
@@ -433,6 +436,13 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
 *   `ivschat`
     * `aws_ivschat_logging_configuration`
     * `aws_ivschat_room`
+*   `kendra`
+    * `aws_kendra_data_source`
+    * `aws_kendra_experience`
+    * `aws_kendra_faq`
+    * `aws_kendra_index`
+    * `aws_kendra_query_suggestions_block_list`
+    * `aws_kendra_thesaurus`
 *   `kinesis`
     * `aws_kinesis_resource_policy`
     * `aws_kinesis_stream`
@@ -576,6 +586,10 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_redshiftserverless_snapshot`
     * `aws_redshiftserverless_usage_limit`
     * `aws_redshiftserverless_workgroup`
+*   `rekognition`
+    * `aws_rekognition_collection`
+    * `aws_rekognition_project`
+    * `aws_rekognition_stream_processor`
 *   `resourcegroups`
     * `aws_resourcegroups_group`
 *   `route53`
@@ -723,6 +737,8 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_subnet`
 *   `swf`
     * `aws_swf_domain`
+*   `transcribe`
+    * `aws_transcribe_language_model`
 *   `transit_gateway`
     * `aws_ec2_transit_gateway`
     * `aws_ec2_transit_gateway_route_table`

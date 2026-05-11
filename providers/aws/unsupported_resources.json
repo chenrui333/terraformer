@@ -269,6 +269,42 @@
         "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sagemaker_human_task_ui",
         "https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribeHumanTaskUi.html"
       ]
+    },
+    {
+      "resource": "aws_transcribe_medical_vocabulary",
+      "service_family": "transcribe",
+      "reason": "Transcribe medical vocabulary imports cannot reconstruct the required vocabulary_file_uri from provider read state.",
+      "evidence": "Terraform AWS provider marks vocabulary_file_uri as required, but resourceMedicalVocabularyRead only sets arn, download_uri, vocabulary_name, and language_code after GetMedicalVocabulary. Provider import tests ignore vocabulary_file_uri and download_uri after import.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/transcribe_medical_vocabulary",
+        "https://docs.aws.amazon.com/transcribe/latest/APIReference/API_GetMedicalVocabulary.html"
+      ]
+    },
+    {
+      "resource": "aws_transcribe_vocabulary",
+      "service_family": "transcribe",
+      "reason": "Transcribe vocabulary imports cannot reconstruct the required source terms or vocabulary_file_uri from provider read state.",
+      "evidence": "Terraform AWS provider requires either phrases or vocabulary_file_uri, but resourceVocabularyRead only sets arn, download_uri, vocabulary_name, and language_code after GetVocabulary. Provider import tests ignore vocabulary_file_uri and download_uri after import.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/transcribe_vocabulary",
+        "https://docs.aws.amazon.com/transcribe/latest/APIReference/API_GetVocabulary.html"
+      ]
+    },
+    {
+      "resource": "aws_transcribe_vocabulary_filter",
+      "service_family": "transcribe",
+      "reason": "Transcribe vocabulary filter imports cannot reconstruct the required words or vocabulary_filter_file_uri from provider read state.",
+      "evidence": "Terraform AWS provider requires either words or vocabulary_filter_file_uri, but resourceVocabularyFilterRead only sets arn, vocabulary_filter_name, language_code, and download_uri after GetVocabularyFilter. Provider import tests ignore vocabulary_filter_file_uri and download_uri after import.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/transcribe_vocabulary_filter",
+        "https://docs.aws.amazon.com/transcribe/latest/APIReference/API_GetVocabularyFilter.html"
+      ]
     }
   ]
 }

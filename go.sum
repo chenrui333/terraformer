@@ -257,6 +257,8 @@ github.com/aws/aws-sdk-go-v2/service/cognitoidentity v1.33.24 h1:DLQWli3xz20zXXw
 github.com/aws/aws-sdk-go-v2/service/cognitoidentity v1.33.24/go.mod h1:D9DtGGYo4Fp2t1UwtaoTKuemugfwy5VG5aQLCqan5yk=
 github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.60.2 h1:pZxE29WAHgnk0jGj1P4UOOJnNPHXfltkfnK4F1Tg8jU=
 github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.60.2/go.mod h1:nbe4Nf/HOY+e54Dl+yjv04scYTGTC+4ZthbfOuPTXQs=
+github.com/aws/aws-sdk-go-v2/service/comprehend v1.40.23 h1:pLIc5ffUWW8BbdW+cR8RslHk9SugHqNFHqoN2vaagMw=
+github.com/aws/aws-sdk-go-v2/service/comprehend v1.40.23/go.mod h1:XdcHFOF8Kvzv6Ng37wgQgw59AMMxLT/sHrdZc2lLEK0=
 github.com/aws/aws-sdk-go-v2/service/configservice v1.62.3 h1:8rcAUMhCUuQe7kVBTBLPqMsJWFSVDPSFdpFexVQEEdU=
 github.com/aws/aws-sdk-go-v2/service/configservice v1.62.3/go.mod h1:PvCpYWzh0/jwa8v3jYJOaDobKiKQzFm1hI7+4Ms3J90=
 github.com/aws/aws-sdk-go-v2/service/connect v1.172.1 h1:aHqy/dANNJHJlgjDs/8exwtHMeHDWCVG+L1T/0+7hps=
@@ -327,6 +329,8 @@ github.com/aws/aws-sdk-go-v2/service/ivschat v1.21.22 h1:A6xe0lDrslLJw1krOhqfEdC
 github.com/aws/aws-sdk-go-v2/service/ivschat v1.21.22/go.mod h1:YtV5J3V6kO+ZIYpVSbdQhq3lrEFxQLDtqRNptC+rlGg=
 github.com/aws/aws-sdk-go-v2/service/kafka v1.51.0 h1:ovcPO5rh87iOWFMLAwtgyHEzZOCx0WYemd7thWdnXME=
 github.com/aws/aws-sdk-go-v2/service/kafka v1.51.0/go.mod h1:pW4pYNuVeScl13yqwsjLY0F/7g2YD8E0AvR6SOQsJZE=
+github.com/aws/aws-sdk-go-v2/service/kendra v1.60.23 h1:1AZgLYCMh//yiVdPwwltHFFqVxpRboFUtozB3ItiSAQ=
+github.com/aws/aws-sdk-go-v2/service/kendra v1.60.23/go.mod h1:cznbYGyQ57ijyUhYzyCSDaKVSIh8ryhCu5te3l1aaL4=
 github.com/aws/aws-sdk-go-v2/service/kinesis v1.43.7 h1:9FvrpWzkSPbm995UGQ4jOdRDuhQLmwgh/5t8UoosTdY=
 github.com/aws/aws-sdk-go-v2/service/kinesis v1.43.7/go.mod h1:A7b/tv2nIcdfLY6EfH9fklY+L/wpVo6PtDJ6KA43PKg=
 github.com/aws/aws-sdk-go-v2/service/kms v1.51.1 h1:zuSf4olLKZW8cF/W9Y5wvGT+/0raY/3kVp49KsGs0QY=
@@ -367,6 +371,8 @@ github.com/aws/aws-sdk-go-v2/service/redshift v1.62.7 h1:6NCQBp9IIEs51YI9/jT5/ck
 github.com/aws/aws-sdk-go-v2/service/redshift v1.62.7/go.mod h1:uLWlNO4q8278lSx2iKIJZ09zSXNJ6uQTFM1jvZIZRf4=
 github.com/aws/aws-sdk-go-v2/service/redshiftserverless v1.34.6 h1:g+QhVVF4V03mgbtf6lLpvhLh0gf7mGMr+bFDMmKJvec=
 github.com/aws/aws-sdk-go-v2/service/redshiftserverless v1.34.6/go.mod h1:24tWvrWAt7wxYpXYPSmDyfyRWKGdz2glsgnLV9MSRq4=
+github.com/aws/aws-sdk-go-v2/service/rekognition v1.51.23 h1:FLbnYKee5UfH4zdsZk95kYl4UrIZyIg3XJIj7ZjDN64=
+github.com/aws/aws-sdk-go-v2/service/rekognition v1.51.23/go.mod h1:1j7mu8NwhHLrAB43agCDAv4BsncoE0Ld+JWpDgUKH6w=
 github.com/aws/aws-sdk-go-v2/service/resourcegroups v1.33.26 h1:HmcCtAaTeZTskXrcrdoioe6oDsQCbdGekBkLOCUE8F8=
 github.com/aws/aws-sdk-go-v2/service/resourcegroups v1.33.26/go.mod h1:nYctzUkOuHA0n6thF68Td93Mm8NJzAhWuhKOIqk5vW8=
 github.com/aws/aws-sdk-go-v2/service/route53 v1.62.7 h1:twRRMmtSITnt/rrp+D7UDLzE5pKMZe759aalkUdN+OY=
@@ -413,6 +419,8 @@ github.com/aws/aws-sdk-go-v2/service/sts v1.42.1 h1:F/M5Y9I3nwr2IEpshZgh1GeHpOIt
 github.com/aws/aws-sdk-go-v2/service/sts v1.42.1/go.mod h1:mTNxImtovCOEEuD65mKW7DCsL+2gjEH+RPEAexAzAio=
 github.com/aws/aws-sdk-go-v2/service/swf v1.33.18 h1:SjWST41D98QAQs/S2wDlH8zts5SgngDd0qkKG9WUX6M=
 github.com/aws/aws-sdk-go-v2/service/swf v1.33.18/go.mod h1:6JHjVMsfOip9vyH0U/aS0+eGLIE9Ha1PebQFseCG/fU=
+github.com/aws/aws-sdk-go-v2/service/transcribe v1.54.6 h1:orXy3mYg4nOuACxT7dK07me2A2AaS/FcFBwq+WUA258=
+github.com/aws/aws-sdk-go-v2/service/transcribe v1.54.6/go.mod h1:z29t64Pva4oeaYboSZrJhhYJDZu80VCV/AnMnqhNvwE=
 github.com/aws/aws-sdk-go-v2/service/waf v1.30.22 h1:EI78jKQQi/G+HRZeopJFSPSyG1/GzjCTeGd/1HPLHw8=
 github.com/aws/aws-sdk-go-v2/service/waf v1.30.22/go.mod h1:0KD+OoOdCNYDPZuFx2Ul5hHamV/vuC/Xs/f+Ke2x6y8=
 github.com/aws/aws-sdk-go-v2/service/wafregional v1.30.23 h1:nSMoPH2GSzNREwCcUNgUuTT5fbN/NRlLXmF4ozCWXmw=
