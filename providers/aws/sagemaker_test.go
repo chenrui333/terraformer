@@ -16,7 +16,8 @@ import (
 )
 
 func TestSageMakerImportIDs(t *testing.T) {
-	if got, want := sageMakerUserProfileImportID("d-abc123", "alice"), "d-abc123/alice"; got != want {
+	userProfileArn := "arn:aws:sagemaker:us-east-1:123456789012:user-profile/d-abc123/alice"
+	if got, want := sageMakerUserProfileImportID(userProfileArn), userProfileArn; got != want {
 		t.Fatalf("sageMakerUserProfileImportID() = %q, want %q", got, want)
 	}
 	if got, want := sageMakerImageVersionImportID("studio-image", 7), "studio-image,7"; got != want {
@@ -142,12 +143,14 @@ func TestNewSageMakerStudioResources(t *testing.T) {
 		t.Fatalf("domain_name attribute = %q, want studio-domain", got)
 	}
 
-	profile, ok := newSageMakerUserProfileResource(sagemakertypes.UserProfileDetails{
+	profileArn := "arn:aws:sagemaker:us-east-1:123456789012:user-profile/d-abc123/alice"
+	profile, ok := newSageMakerUserProfileResource(&sagemaker.DescribeUserProfileOutput{
 		DomainId:        aws.String("d-abc123"),
-		UserProfileName: aws.String("alice"),
 		Status:          sagemakertypes.UserProfileStatusInService,
+		UserProfileArn:  aws.String(profileArn),
+		UserProfileName: aws.String("alice"),
 	})
-	assertSageMakerResource(t, profile, ok, "d-abc123/alice", sageMakerUserProfileResourceType)
+	assertSageMakerResource(t, profile, ok, profileArn, sageMakerUserProfileResourceType)
 	if got := profile.InstanceState.Attributes["domain_id"]; got != "d-abc123" {
 		t.Fatalf("domain_id attribute = %q, want d-abc123", got)
 	}
@@ -196,6 +199,13 @@ func TestNewSageMakerStudioResources(t *testing.T) {
 		Status:     sagemakertypes.DomainStatusDeleting,
 	}); ok {
 		t.Fatal("deleting domain should be skipped")
+	}
+	if _, ok := newSageMakerUserProfileResource(&sagemaker.DescribeUserProfileOutput{
+		DomainId:        aws.String("d-abc123"),
+		Status:          sagemakertypes.UserProfileStatusInService,
+		UserProfileName: aws.String("alice"),
+	}); ok {
+		t.Fatal("user profile without ARN should be skipped")
 	}
 	if _, ok := newSageMakerAppResource(&sagemaker.DescribeAppOutput{
 		AppArn:   aws.String("arn:aws:sagemaker:us-east-1:123456789012:app/d-abc123/alice/JupyterServer/default"),
@@ -556,7 +566,7 @@ func sageMakerTestResources(t *testing.T) []terraformutils.Resource {
 			return newSageMakerDomainResource(sagemakertypes.DomainDetails{DomainId: aws.String("d-abc123"), DomainName: aws.String("studio-domain"), Status: sagemakertypes.DomainStatusInService})
 		}},
 		{name: "user profile", make: func() (terraformutils.Resource, bool) {
-			return newSageMakerUserProfileResource(sagemakertypes.UserProfileDetails{DomainId: aws.String("d-abc123"), UserProfileName: aws.String("alice"), Status: sagemakertypes.UserProfileStatusInService})
+			return newSageMakerUserProfileResource(&sagemaker.DescribeUserProfileOutput{DomainId: aws.String("d-abc123"), Status: sagemakertypes.UserProfileStatusInService, UserProfileArn: aws.String("arn:aws:sagemaker:us-east-1:123456789012:user-profile/d-abc123/alice"), UserProfileName: aws.String("alice")})
 		}},
 		{name: "space", make: func() (terraformutils.Resource, bool) {
 			return newSageMakerSpaceResource(&sagemaker.DescribeSpaceOutput{DomainId: aws.String("d-abc123"), SpaceArn: aws.String("arn:aws:sagemaker:us-east-1:123456789012:space/d-abc123/team"), SpaceName: aws.String("team"), Status: sagemakertypes.SpaceStatusInService})

@@ -352,12 +352,31 @@ func (g *SageMakerGenerator) loadUserProfiles(svc *sagemaker.Client) error {
 			return err
 		}
 		for _, userProfile := range page.UserProfiles {
-			if resource, ok := newSageMakerUserProfileResource(userProfile); ok {
+			domainID := StringValue(userProfile.DomainId)
+			userProfileName := StringValue(userProfile.UserProfileName)
+			if domainID == "" || userProfileName == "" || !sageMakerUserProfileImportable(userProfile.Status) {
+				continue
+			}
+			userProfileOutput, err := getSageMakerUserProfile(svc, domainID, userProfileName)
+			if err != nil {
+				if sageMakerResourceNotFound(err) {
+					continue
+				}
+				return err
+			}
+			if resource, ok := newSageMakerUserProfileResource(userProfileOutput); ok {
 				g.Resources = append(g.Resources, resource)
 			}
 		}
 	}
 	return nil
+}
+
+func getSageMakerUserProfile(svc *sagemaker.Client, domainID, userProfileName string) (*sagemaker.DescribeUserProfileOutput, error) {
+	return svc.DescribeUserProfile(context.TODO(), &sagemaker.DescribeUserProfileInput{
+		DomainId:        &domainID,
+		UserProfileName: &userProfileName,
+	})
 }
 
 func (g *SageMakerGenerator) loadSpaces(svc *sagemaker.Client) error {
@@ -674,23 +693,7 @@ func (g *SageMakerGenerator) loadWorkforces(svc *sagemaker.Client) error {
 			return err
 		}
 		for _, workforce := range page.Workforces {
-			workforceName := StringValue(workforce.WorkforceName)
-			if workforceName == "" {
-				continue
-			}
-			output, err := svc.DescribeWorkforce(context.TODO(), &sagemaker.DescribeWorkforceInput{
-				WorkforceName: &workforceName,
-			})
-			if err != nil {
-				if sageMakerResourceNotFound(err) {
-					continue
-				}
-				return err
-			}
-			if output == nil || output.Workforce == nil {
-				continue
-			}
-			if resource, ok := newSageMakerWorkforceResource(*output.Workforce); ok {
+			if resource, ok := newSageMakerWorkforceResource(workforce); ok {
 				g.Resources = append(g.Resources, resource)
 			}
 		}
@@ -706,23 +709,7 @@ func (g *SageMakerGenerator) loadWorkteams(svc *sagemaker.Client) error {
 			return err
 		}
 		for _, workteam := range page.Workteams {
-			workteamName := StringValue(workteam.WorkteamName)
-			if workteamName == "" {
-				continue
-			}
-			output, err := svc.DescribeWorkteam(context.TODO(), &sagemaker.DescribeWorkteamInput{
-				WorkteamName: &workteamName,
-			})
-			if err != nil {
-				if sageMakerResourceNotFound(err) {
-					continue
-				}
-				return err
-			}
-			if output == nil || output.Workteam == nil {
-				continue
-			}
-			if resource, ok := newSageMakerWorkteamResource(*output.Workteam); ok {
+			if resource, ok := newSageMakerWorkteamResource(workteam); ok {
 				g.Resources = append(g.Resources, resource)
 			}
 		}
@@ -797,13 +784,17 @@ func newSageMakerDomainResource(domain sagemakertypes.DomainDetails) (terraformu
 	})
 }
 
-func newSageMakerUserProfileResource(profile sagemakertypes.UserProfileDetails) (terraformutils.Resource, bool) {
-	domainID := StringValue(profile.DomainId)
-	name := StringValue(profile.UserProfileName)
-	if domainID == "" || name == "" || !sageMakerUserProfileImportable(profile.Status) {
+func newSageMakerUserProfileResource(profile *sagemaker.DescribeUserProfileOutput) (terraformutils.Resource, bool) {
+	if profile == nil {
 		return terraformutils.Resource{}, false
 	}
-	return sageMakerResource(sageMakerUserProfileImportID(domainID, name), sageMakerResourceName("user-profile", domainID, name), sageMakerUserProfileResourceType, map[string]string{
+	userProfileArn := StringValue(profile.UserProfileArn)
+	domainID := StringValue(profile.DomainId)
+	name := StringValue(profile.UserProfileName)
+	if userProfileArn == "" || domainID == "" || name == "" || !sageMakerUserProfileImportable(profile.Status) {
+		return terraformutils.Resource{}, false
+	}
+	return sageMakerResource(sageMakerUserProfileImportID(userProfileArn), sageMakerResourceName("user-profile", domainID, name), sageMakerUserProfileResourceType, map[string]string{
 		"domain_id":         domainID,
 		"user_profile_name": name,
 	})
@@ -1036,8 +1027,8 @@ func sageMakerResource(importID, name, resourceType string, attributes map[strin
 	), true
 }
 
-func sageMakerUserProfileImportID(domainID, userProfileName string) string {
-	return strings.Join([]string{domainID, userProfileName}, "/")
+func sageMakerUserProfileImportID(userProfileArn string) string {
+	return userProfileArn
 }
 
 func sageMakerImageVersionImportID(imageName string, version int32) string {
