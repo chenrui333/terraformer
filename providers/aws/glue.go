@@ -584,12 +584,19 @@ func newGlueCatalogTableOptimizerResource(catalogID string, databaseName string,
 		return terraformutils.Resource{}, false
 	}
 	id := glueCatalogTableOptimizerImportID(catalogID, databaseName, tableName, string(optimizerType))
-	return terraformutils.NewSimpleResource(
+	return terraformutils.NewResource(
 		id,
 		glueResourceName(catalogID, databaseName, tableName, string(optimizerType)),
 		glueCatalogTableOptimizerResourceType,
 		"aws",
+		map[string]string{
+			"catalog_id":    catalogID,
+			"database_name": databaseName,
+			"table_name":    tableName,
+			"type":          string(optimizerType),
+		},
 		glueAllowEmptyValues,
+		map[string]interface{}{},
 	), true
 }
 

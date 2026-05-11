@@ -24,6 +24,7 @@ const (
 	athenaPreparedStatementResourceType   = "aws_athena_prepared_statement"
 	athenaCapacityReservationResourceType = "aws_athena_capacity_reservation"
 	athenaDefaultDataCatalogName          = "AwsDataCatalog"
+	athenaDefaultWorkGroupName            = "primary"
 	athenaPreparedStatementIDSeparator    = "/"
 )
 
@@ -45,10 +46,15 @@ func (g *AthenaGenerator) InitResources() error {
 	}
 
 	svc := athena.NewFromConfig(config)
+	var workGroupNames []string
 	g.loadOptionalResources([]athenaOptionalResourceLoader{
-		{name: "workgroups", load: func() error { return g.loadWorkGroups(svc) }},
+		{name: "workgroups", load: func() error {
+			var err error
+			workGroupNames, err = g.loadWorkGroups(svc)
+			return err
+		}},
 		{name: "data catalogs", load: func() error { return g.loadDataCatalogs(svc) }},
-		{name: "named queries", load: func() error { return g.loadNamedQueries(svc) }},
+		{name: "named queries", load: func() error { return g.loadNamedQueries(svc, workGroupNames) }},
 		{name: "capacity reservations", load: func() error { return g.loadCapacityReservations(svc) }},
 	})
 
@@ -78,18 +84,20 @@ func (g *AthenaGenerator) loadOptionalResources(loaders []athenaOptionalResource
 	}
 }
 
-func (g *AthenaGenerator) loadWorkGroups(svc *athena.Client) error {
+func (g *AthenaGenerator) loadWorkGroups(svc *athena.Client) ([]string, error) {
+	workGroupNames := []string{}
 	paginator := athena.NewListWorkGroupsPaginator(svc, &athena.ListWorkGroupsInput{})
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(context.TODO())
 		if err != nil {
-			return err
+			return workGroupNames, err
 		}
 		for _, workGroup := range page.WorkGroups {
 			workGroupName := StringValue(workGroup.Name)
 			if workGroupName == "" || !athenaWorkGroupImportable(workGroup) {
 				continue
 			}
+			workGroupNames = append(workGroupNames, workGroupName)
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
 				workGroupName,
 				workGroupName,
@@ -102,7 +110,7 @@ func (g *AthenaGenerator) loadWorkGroups(svc *athena.Client) error {
 			}
 		}
 	}
-	return nil
+	return workGroupNames, nil
 }
 
 func (g *AthenaGenerator) loadDataCatalogs(svc *athena.Client) error {
@@ -134,8 +142,23 @@ func (g *AthenaGenerator) loadDataCatalogs(svc *athena.Client) error {
 	return nil
 }
 
-func (g *AthenaGenerator) loadNamedQueries(svc *athena.Client) error {
-	paginator := athena.NewListNamedQueriesPaginator(svc, &athena.ListNamedQueriesInput{})
+func (g *AthenaGenerator) loadNamedQueries(svc *athena.Client, workGroupNames []string) error {
+	if len(workGroupNames) == 0 {
+		workGroupNames = []string{athenaDefaultWorkGroupName}
+	}
+	for _, workGroupName := range workGroupNames {
+		if err := g.loadNamedQueriesForWorkGroup(svc, workGroupName); err != nil {
+			log.Printf("Skipping Athena named queries for workgroup %s: %v", workGroupName, err)
+		}
+	}
+	return nil
+}
+
+func (g *AthenaGenerator) loadNamedQueriesForWorkGroup(svc *athena.Client, workGroupName string) error {
+	if workGroupName == "" {
+		return nil
+	}
+	paginator := athena.NewListNamedQueriesPaginator(svc, athenaNamedQueriesInput(workGroupName))
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(context.TODO())
 		if err != nil {
@@ -156,6 +179,10 @@ func (g *AthenaGenerator) loadNamedQueries(svc *athena.Client) error {
 		}
 	}
 	return nil
+}
+
+func athenaNamedQueriesInput(workGroupName string) *athena.ListNamedQueriesInput {
+	return &athena.ListNamedQueriesInput{WorkGroup: aws.String(workGroupName)}
 }
 
 func (g *AthenaGenerator) loadPreparedStatements(svc *athena.Client, workGroupName string) error {

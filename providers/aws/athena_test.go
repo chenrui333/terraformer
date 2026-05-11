@@ -26,6 +26,13 @@ func TestAthenaResourceName(t *testing.T) {
 	}
 }
 
+func TestAthenaNamedQueriesInputSetsWorkGroup(t *testing.T) {
+	got := athenaNamedQueriesInput("analytics")
+	if StringValue(got.WorkGroup) != "analytics" {
+		t.Fatalf("WorkGroup = %q, want analytics", StringValue(got.WorkGroup))
+	}
+}
+
 func TestNewAthenaDataCatalogResource(t *testing.T) {
 	resource, ok := newAthenaDataCatalogResource(&athenatypes.DataCatalog{
 		Name:        aws.String("analytics"),

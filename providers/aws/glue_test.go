@@ -212,6 +212,17 @@ func TestNewGlueCatalogTableOptimizerResource(t *testing.T) {
 	if resource.InstanceState.ID != "123456789012,analytics,orders,compaction" {
 		t.Fatalf("ID = %q, want optimizer import ID", resource.InstanceState.ID)
 	}
+	wantAttributes := map[string]string{
+		"catalog_id":    "123456789012",
+		"database_name": "analytics",
+		"table_name":    "orders",
+		"type":          "compaction",
+	}
+	for key, want := range wantAttributes {
+		if got := resource.InstanceState.Attributes[key]; got != want {
+			t.Fatalf("%s = %q, want %q", key, got, want)
+		}
+	}
 }
 
 func TestGlueMLTransformImportable(t *testing.T) {
