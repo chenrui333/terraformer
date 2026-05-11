@@ -371,6 +371,7 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_cloudwatch_log_metric_filter`
     * `aws_cloudwatch_log_resource_policy`
     * `aws_cloudwatch_log_subscription_filter`
+    * `aws_cloudwatch_log_transformer`
     * `aws_cloudwatch_query_definition`
 *   `media_package`
     * `aws_media_package_channel`
