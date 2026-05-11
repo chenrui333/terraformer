@@ -302,7 +302,8 @@ func (g *LogsGenerator) addDeliveryDestinations(svc *cloudwatchlogs.Client) erro
 				if logsResourceNotFound(err) {
 					continue
 				}
-				return err
+				log.Printf("skipping CloudWatch Logs delivery destination policy discovery for %s: %v", destinationName, err)
+				continue
 			}
 			if policy == nil || policy.Policy == nil {
 				continue
