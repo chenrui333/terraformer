@@ -18,8 +18,12 @@ const (
 	appStreamFleetResourceType                 = "aws_appstream_fleet"
 	appStreamStackResourceType                 = "aws_appstream_stack"
 	appStreamFleetStackAssociationResourceType = "aws_appstream_fleet_stack_association"
+	appStreamUserResourceType                  = "aws_appstream_user"
+	appStreamUserStackAssociationResourceType  = "aws_appstream_user_stack_association"
 
 	appStreamFleetStackAssociationIDSeparator = "/"
+	appStreamUserIDSeparator                  = "/"
+	appStreamUserStackAssociationIDSeparator  = "/"
 )
 
 var appStreamAllowEmptyValues = []string{"tags."}
@@ -42,7 +46,13 @@ func (g *AppStreamGenerator) InitResources() error {
 	if err := g.loadStacks(svc); err != nil {
 		return err
 	}
-	return g.loadFleetStackAssociations(svc, fleetNames)
+	if err := g.loadFleetStackAssociations(svc, fleetNames); err != nil {
+		return err
+	}
+	if err := g.loadUsers(svc); err != nil {
+		return err
+	}
+	return g.loadUserStackAssociations(svc)
 }
 
 func (g *AppStreamGenerator) loadFleets(svc *appstream.Client) ([]string, error) {
@@ -127,6 +137,58 @@ func (g *AppStreamGenerator) loadFleetStackAssociationsForFleet(svc *appstream.C
 	return nil
 }
 
+func (g *AppStreamGenerator) loadUsers(svc *appstream.Client) error {
+	input := &appstream.DescribeUsersInput{
+		AuthenticationType: appstreamtypes.AuthenticationTypeUserpool,
+	}
+	for {
+		page, err := svc.DescribeUsers(context.TODO(), input)
+		if appStreamResourceNotFound(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		for _, user := range page.Users {
+			if resource, ok := newAppStreamUserResource(user); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+		nextToken := appStreamNextToken(page.NextToken)
+		if nextToken == nil {
+			break
+		}
+		input.NextToken = nextToken
+	}
+	return nil
+}
+
+func (g *AppStreamGenerator) loadUserStackAssociations(svc *appstream.Client) error {
+	input := &appstream.DescribeUserStackAssociationsInput{
+		AuthenticationType: appstreamtypes.AuthenticationTypeUserpool,
+	}
+	for {
+		page, err := svc.DescribeUserStackAssociations(context.TODO(), input)
+		if appStreamResourceNotFound(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		for _, association := range page.UserStackAssociations {
+			if resource, ok := newAppStreamUserStackAssociationResource(association); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+		nextToken := appStreamNextToken(page.NextToken)
+		if nextToken == nil {
+			break
+		}
+		input.NextToken = nextToken
+	}
+	return nil
+}
+
 func newAppStreamFleetResource(fleet appstreamtypes.Fleet) (terraformutils.Resource, bool) {
 	name := StringValue(fleet.Name)
 	if name == "" {
@@ -168,8 +230,58 @@ func newAppStreamFleetStackAssociationResource(fleetName, stackName string) (ter
 	), true
 }
 
+func newAppStreamUserResource(user appstreamtypes.User) (terraformutils.Resource, bool) {
+	userName := StringValue(user.UserName)
+	authType := user.AuthenticationType
+	if userName == "" || authType == "" {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewResource(
+		appStreamUserImportID(userName, authType),
+		appStreamResourceName("user", string(authType), userName),
+		appStreamUserResourceType,
+		"aws",
+		map[string]string{
+			"authentication_type": string(authType),
+			"user_name":           userName,
+		},
+		appStreamAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
+func newAppStreamUserStackAssociationResource(association appstreamtypes.UserStackAssociation) (terraformutils.Resource, bool) {
+	userName := StringValue(association.UserName)
+	stackName := StringValue(association.StackName)
+	authType := association.AuthenticationType
+	if userName == "" || stackName == "" || authType == "" {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewResource(
+		appStreamUserStackAssociationImportID(userName, authType, stackName),
+		appStreamResourceName("user-stack-association", string(authType), userName, stackName),
+		appStreamUserStackAssociationResourceType,
+		"aws",
+		map[string]string{
+			"authentication_type": string(authType),
+			"stack_name":          stackName,
+			"user_name":           userName,
+		},
+		appStreamAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
 func appStreamFleetStackAssociationImportID(fleetName, stackName string) string {
 	return strings.Join([]string{fleetName, stackName}, appStreamFleetStackAssociationIDSeparator)
+}
+
+func appStreamUserImportID(userName string, authType appstreamtypes.AuthenticationType) string {
+	return strings.Join([]string{userName, string(authType)}, appStreamUserIDSeparator)
+}
+
+func appStreamUserStackAssociationImportID(userName string, authType appstreamtypes.AuthenticationType, stackName string) string {
+	return strings.Join([]string{userName, string(authType), stackName}, appStreamUserStackAssociationIDSeparator)
 }
 
 func appStreamResourceName(parts ...string) string {
