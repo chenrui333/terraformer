@@ -415,6 +415,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ivschat v1.21.22
 	github.com/aws/aws-sdk-go-v2/service/mediapackagev2 v1.37.0
 	github.com/aws/aws-sdk-go-v2/service/mwaa v1.40.0
+	github.com/aws/aws-sdk-go-v2/service/opensearch v1.68.0
+	github.com/aws/aws-sdk-go-v2/service/opensearchserverless v1.30.3
 	github.com/aws/aws-sdk-go-v2/service/pipes v1.23.22
 	github.com/aws/aws-sdk-go-v2/service/redshiftserverless v1.34.6
 	github.com/aws/aws-sdk-go-v2/service/route53resolver v1.43.0

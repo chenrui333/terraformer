@@ -84,6 +84,18 @@
         "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ivs_playback_key_pair",
         "https://docs.aws.amazon.com/ivs/latest/LowLatencyAPIReference/API_GetPlaybackKeyPair.html"
       ]
+    },
+    {
+      "resource": "aws_opensearch_package",
+      "service_family": "opensearch",
+      "reason": "OpenSearch packages require package_source.s3_bucket_name and package_source.s3_key, but DescribePackages does not return the source S3 location needed to seed valid Terraform configuration.",
+      "evidence": "Terraform AWS provider marks package_source as required and its Read path only sets available_package_version, engine_version, package_description, package_id, package_name, and package_type. AWS DescribePackages PackageDetails exposes package metadata but not the original PackageSource S3 bucket/key.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/opensearch_package",
+        "https://docs.aws.amazon.com/opensearch-service/latest/APIReference/API_DescribePackages.html"
+      ]
     }
   ]
 }
