@@ -122,6 +122,7 @@ func TestLakeFormationPostConvertHookPreservesDataCellsFilterWildcardBlocks(t *t
 		"table_data": []interface{}{map[string]interface{}{
 			"database_name":    "analytics",
 			"name":             "orders_filter",
+			"row_filter":       []interface{}{map[string]interface{}{"filter_expression": "TRUE"}},
 			"table_catalog_id": "123456789012",
 			"table_name":       "orders",
 		}},
@@ -141,6 +142,9 @@ func TestLakeFormationPostConvertHookPreservesDataCellsFilterWildcardBlocks(t *t
 		if !strings.Contains(hcl, want) {
 			t.Fatalf("generated HCL missing %q:\n%s", want, hcl)
 		}
+	}
+	if strings.Contains(hcl, "filter_expression") {
+		t.Fatalf("generated HCL retained filter_expression with all_rows_wildcard:\n%s", hcl)
 	}
 }
 

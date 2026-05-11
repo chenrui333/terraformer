@@ -311,6 +311,10 @@ func preserveLakeFormationDataCellsFilterRowWildcards(resource *terraformutils.R
 		if lakeFormationStateBlockCount(resource, rowPrefix+".all_rows_wildcard") == 0 {
 			continue
 		}
+		if _, exists := rowFilter["filter_expression"]; exists {
+			delete(rowFilter, "filter_expression")
+			changed = true
+		}
 		if _, exists := rowFilter["all_rows_wildcard"]; !exists {
 			rowFilter["all_rows_wildcard"] = []interface{}{map[string]interface{}{}}
 			changed = true

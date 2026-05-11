@@ -151,6 +151,7 @@ func TestGlueConnectionImportable(t *testing.T) {
 func TestNewGlueDataCatalogEncryptionSettingsResource(t *testing.T) {
 	resource, ok := newGlueDataCatalogEncryptionSettingsResource("123456789012", &gluetypes.DataCatalogEncryptionSettings{
 		ConnectionPasswordEncryption: &gluetypes.ConnectionPasswordEncryption{ReturnConnectionPasswordEncrypted: false},
+		EncryptionAtRest:             &gluetypes.EncryptionAtRest{CatalogEncryptionMode: gluetypes.CatalogEncryptionModeDisabled},
 	})
 	if !ok {
 		t.Fatal("newGlueDataCatalogEncryptionSettingsResource() ok = false, want true")
@@ -160,6 +161,30 @@ func TestNewGlueDataCatalogEncryptionSettingsResource(t *testing.T) {
 	}
 	if got := resource.InstanceState.Attributes["catalog_id"]; got != "123456789012" {
 		t.Fatalf("catalog_id = %q, want 123456789012", got)
+	}
+}
+
+func TestGlueDataCatalogEncryptionSettingsImportable(t *testing.T) {
+	fullSettings := &gluetypes.DataCatalogEncryptionSettings{
+		ConnectionPasswordEncryption: &gluetypes.ConnectionPasswordEncryption{ReturnConnectionPasswordEncrypted: false},
+		EncryptionAtRest:             &gluetypes.EncryptionAtRest{CatalogEncryptionMode: gluetypes.CatalogEncryptionModeDisabled},
+	}
+	tests := []struct {
+		name     string
+		settings *gluetypes.DataCatalogEncryptionSettings
+		want     bool
+	}{
+		{name: "both blocks", settings: fullSettings, want: true},
+		{name: "nil", settings: nil, want: false},
+		{name: "only password encryption", settings: &gluetypes.DataCatalogEncryptionSettings{ConnectionPasswordEncryption: fullSettings.ConnectionPasswordEncryption}, want: false},
+		{name: "only encryption at rest", settings: &gluetypes.DataCatalogEncryptionSettings{EncryptionAtRest: fullSettings.EncryptionAtRest}, want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := glueDataCatalogEncryptionSettingsImportable(tt.settings); got != tt.want {
+				t.Fatalf("glueDataCatalogEncryptionSettingsImportable() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 

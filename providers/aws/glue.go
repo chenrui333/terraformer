@@ -660,7 +660,7 @@ func glueConnectionHasSensitiveConfiguration(connection gluetypes.Connection) bo
 }
 
 func glueDataCatalogEncryptionSettingsImportable(settings *gluetypes.DataCatalogEncryptionSettings) bool {
-	return settings != nil && (settings.ConnectionPasswordEncryption != nil || settings.EncryptionAtRest != nil)
+	return settings != nil && settings.ConnectionPasswordEncryption != nil && settings.EncryptionAtRest != nil
 }
 
 func gluePartitionIndexImportable(index gluetypes.PartitionIndexDescriptor) bool {
