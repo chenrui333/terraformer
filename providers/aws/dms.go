@@ -24,6 +24,7 @@ const (
 	dmsReplicationSubnetGroupResourceType = "aws_dms_replication_subnet_group"
 	dmsEndpointResourceType               = "aws_dms_endpoint"
 	dmsReplicationTaskResourceType        = "aws_dms_replication_task"
+	dmsS3EndpointResourceType             = "aws_dms_s3_endpoint"
 
 	dmsEventSubscriptionStatusActive = "active"
 
@@ -39,6 +40,7 @@ const (
 )
 
 var dmsAllowEmptyValues = []string{"tags.", "^enabled$"}
+var dmsS3EndpointAllowEmptyValues = []string{"tags.", "^enable_statistics$", "^rfc_4180$"}
 
 type DmsGenerator struct {
 	AWSService
@@ -147,6 +149,9 @@ func (g *DmsGenerator) loadEndpoints(svc *databasemigrationservice.Client) error
 		}
 		for _, endpoint := range page.Endpoints {
 			if resource, ok := newDMSEndpointResource(endpoint); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+			if resource, ok := newDMSS3EndpointResource(endpoint); ok {
 				g.Resources = append(g.Resources, resource)
 			}
 		}
@@ -315,6 +320,22 @@ func newDMSEndpointResource(endpoint dmstypes.Endpoint) (terraformutils.Resource
 	), true
 }
 
+func newDMSS3EndpointResource(endpoint dmstypes.Endpoint) (terraformutils.Resource, bool) {
+	identifier := dmsS3EndpointImportID(endpoint)
+	if identifier == "" || !dmsS3EndpointImportable(endpoint) {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewResource(
+		identifier,
+		dmsResourceName("s3-endpoint", identifier),
+		dmsS3EndpointResourceType,
+		"aws",
+		dmsS3EndpointAttributes(endpoint),
+		dmsS3EndpointAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
 func newDMSReplicationTaskResource(task dmstypes.ReplicationTask) (terraformutils.Resource, bool) {
 	identifier := StringValue(task.ReplicationTaskIdentifier)
 	if identifier == "" || !dmsReplicationTaskImportable(task) {
@@ -349,6 +370,10 @@ func dmsReplicationConfigImportID(config dmstypes.ReplicationConfig) string {
 func dmsReplicationConfigResourceName(config dmstypes.ReplicationConfig) string {
 	arnSuffix := arnLastSegment(dmsReplicationConfigImportID(config), ":")
 	return dmsResourceName("replication-config", StringValue(config.ReplicationConfigIdentifier), arnSuffix)
+}
+
+func dmsS3EndpointImportID(endpoint dmstypes.Endpoint) string {
+	return StringValue(endpoint.EndpointIdentifier)
 }
 
 func dmsCertificateImportable(certificate dmstypes.Certificate) bool {
@@ -455,6 +480,63 @@ func dmsEndpointImportable(endpoint dmstypes.Endpoint) bool {
 		return false
 	}
 	return dmsStableStatusImportable(StringValue(endpoint.Status))
+}
+
+func dmsS3EndpointImportable(endpoint dmstypes.Endpoint) bool {
+	if !strings.EqualFold(StringValue(endpoint.EngineName), dmsEndpointEngineS3) {
+		return false
+	}
+	if endpoint.IsReadOnly != nil && *endpoint.IsReadOnly {
+		return false
+	}
+	if dmsS3EndpointImportID(endpoint) == "" ||
+		endpoint.EndpointType == "" ||
+		!dmsStableStatusImportable(StringValue(endpoint.Status)) ||
+		!dmsS3EndpointSettingsImportable(endpoint.S3Settings) {
+		return false
+	}
+	if strings.EqualFold(string(endpoint.EndpointType), string(dmstypes.ReplicationEndpointTypeValueSource)) {
+		return StringValue(endpoint.S3Settings.ExternalTableDefinition) != ""
+	}
+	return true
+}
+
+func dmsS3EndpointSettingsImportable(settings *dmstypes.S3Settings) bool {
+	return settings != nil &&
+		StringValue(settings.BucketName) != "" &&
+		StringValue(settings.ServiceAccessRoleArn) != ""
+}
+
+func dmsS3EndpointAttributes(endpoint dmstypes.Endpoint) map[string]string {
+	settings := endpoint.S3Settings
+	attributes := map[string]string{
+		"bucket_name":             StringValue(settings.BucketName),
+		"endpoint_id":             dmsS3EndpointImportID(endpoint),
+		"endpoint_type":           strings.ToLower(string(endpoint.EndpointType)),
+		"service_access_role_arn": StringValue(settings.ServiceAccessRoleArn),
+	}
+	if value := StringValue(endpoint.CertificateArn); value != "" {
+		attributes["certificate_arn"] = value
+	}
+	if value := StringValue(endpoint.KmsKeyId); value != "" {
+		attributes["kms_key_arn"] = value
+	}
+	if endpoint.SslMode != "" {
+		attributes["ssl_mode"] = string(endpoint.SslMode)
+	}
+	if value := StringValue(settings.BucketFolder); value != "" {
+		attributes["bucket_folder"] = value
+	}
+	if value := StringValue(settings.ExternalTableDefinition); value != "" {
+		attributes["external_table_definition"] = value
+	}
+	if settings.EnableStatistics != nil {
+		attributes["enable_statistics"] = strconv.FormatBool(*settings.EnableStatistics)
+	}
+	if settings.Rfc4180 != nil {
+		attributes["rfc_4180"] = strconv.FormatBool(*settings.Rfc4180)
+	}
+	return attributes
 }
 
 func dmsReplicationTaskImportable(task dmstypes.ReplicationTask) bool {

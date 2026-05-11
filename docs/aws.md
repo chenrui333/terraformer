@@ -223,6 +223,7 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_dms_replication_instance`
     * `aws_dms_replication_subnet_group`
     * `aws_dms_replication_task`
+    * `aws_dms_s3_endpoint`
 *   `docdb`
     * `aws_docdb_cluster`
     * `aws_docdb_cluster_instance`

@@ -33,9 +33,13 @@ func TestDMSResourceName(t *testing.T) {
 
 func TestDMSResourceNamesAvoidTypeCollisions(t *testing.T) {
 	endpoint := dmsResourceName("endpoint", "shared")
+	s3Endpoint := dmsResourceName("s3-endpoint", "shared")
 	task := dmsResourceName("replication-task", "shared")
 	if endpoint == task {
 		t.Fatalf("resource names collide: %q", endpoint)
+	}
+	if endpoint == s3Endpoint {
+		t.Fatalf("endpoint resource names collide: %q", endpoint)
 	}
 }
 
@@ -406,8 +410,13 @@ func TestNewDMSEndpointResource(t *testing.T) {
 	}
 	if _, ok := newDMSEndpointResource(dmstypes.Endpoint{
 		EndpointIdentifier: dmsString("s3-target"),
+		EndpointType:       dmstypes.ReplicationEndpointTypeValueTarget,
 		EngineName:         dmsString("s3"),
-		Status:             dmsString("active"),
+		S3Settings: &dmstypes.S3Settings{
+			BucketName:           dmsString("dms-export-bucket"),
+			ServiceAccessRoleArn: dmsString("arn:aws:iam::123456789012:role/dms-s3-role"),
+		},
+		Status: dmsString("active"),
 	}); ok {
 		t.Fatal("S3 endpoint should be skipped for aws_dms_endpoint")
 	}
@@ -417,6 +426,103 @@ func TestNewDMSEndpointResource(t *testing.T) {
 		Status:             dmsString("failed"),
 	}); ok {
 		t.Fatal("failed endpoint should be skipped")
+	}
+}
+
+func TestNewDMSS3EndpointResource(t *testing.T) {
+	resource, ok := newDMSS3EndpointResource(dmstypes.Endpoint{
+		CertificateArn:     dmsString("arn:aws:dms:us-east-1:123456789012:cert:ABC123"),
+		EndpointIdentifier: dmsString("s3-target"),
+		EndpointType:       dmstypes.ReplicationEndpointTypeValueTarget,
+		EngineName:         dmsString("S3"),
+		KmsKeyId:           dmsString("arn:aws:kms:us-east-1:123456789012:key/example"),
+		S3Settings: &dmstypes.S3Settings{
+			BucketFolder:         dmsString("exports"),
+			BucketName:           dmsString("dms-export-bucket"),
+			EnableStatistics:     dmsBool(false),
+			Rfc4180:              dmsBool(false),
+			ServiceAccessRoleArn: dmsString("arn:aws:iam::123456789012:role/dms-s3-role"),
+		},
+		SslMode: dmstypes.DmsSslModeValueNone,
+		Status:  dmsString("active"),
+	})
+	assertDMSResource(t, resource, ok, "s3-target", dmsResourceName("s3-endpoint", "s3-target"), dmsS3EndpointResourceType)
+	attributes := resource.InstanceState.Attributes
+	expected := map[string]string{
+		"bucket_folder":           "exports",
+		"bucket_name":             "dms-export-bucket",
+		"certificate_arn":         "arn:aws:dms:us-east-1:123456789012:cert:ABC123",
+		"enable_statistics":       "false",
+		"endpoint_id":             "s3-target",
+		"endpoint_type":           "target",
+		"kms_key_arn":             "arn:aws:kms:us-east-1:123456789012:key/example",
+		"rfc_4180":                "false",
+		"service_access_role_arn": "arn:aws:iam::123456789012:role/dms-s3-role",
+		"ssl_mode":                "none",
+	}
+	for key, want := range expected {
+		if got := attributes[key]; got != want {
+			t.Fatalf("%s = %q, want %q", key, got, want)
+		}
+	}
+	assertDMSAllowEmptyValue(t, resource, "enable_statistics")
+	assertDMSAllowEmptyValue(t, resource, "rfc_4180")
+
+	sourceResource, ok := newDMSS3EndpointResource(dmstypes.Endpoint{
+		EndpointIdentifier: dmsString("s3-source"),
+		EndpointType:       dmstypes.ReplicationEndpointTypeValueSource,
+		EngineName:         dmsString("s3"),
+		S3Settings: &dmstypes.S3Settings{
+			BucketName:              dmsString("dms-source-bucket"),
+			ExternalTableDefinition: dmsString("{\"TableCount\":1}"),
+			ServiceAccessRoleArn:    dmsString("arn:aws:iam::123456789012:role/dms-s3-role"),
+		},
+		Status: dmsString("active"),
+	})
+	assertDMSResource(t, sourceResource, ok, "s3-source", dmsResourceName("s3-endpoint", "s3-source"), dmsS3EndpointResourceType)
+	if got := sourceResource.InstanceState.Attributes["external_table_definition"]; got != "{\"TableCount\":1}" {
+		t.Fatalf("external_table_definition = %q, want source table definition", got)
+	}
+}
+
+func TestNewDMSS3EndpointResourceSkipsUnsafeEndpoints(t *testing.T) {
+	validEndpoint := func() dmstypes.Endpoint {
+		return dmstypes.Endpoint{
+			EndpointIdentifier: dmsString("s3-target"),
+			EndpointType:       dmstypes.ReplicationEndpointTypeValueTarget,
+			EngineName:         dmsString("s3"),
+			S3Settings: &dmstypes.S3Settings{
+				BucketName:           dmsString("dms-export-bucket"),
+				ServiceAccessRoleArn: dmsString("arn:aws:iam::123456789012:role/dms-s3-role"),
+			},
+			Status: dmsString("active"),
+		}
+	}
+
+	tests := []struct {
+		name   string
+		mutate func(*dmstypes.Endpoint)
+	}{
+		{name: "empty identifier", mutate: func(endpoint *dmstypes.Endpoint) { endpoint.EndpointIdentifier = nil }},
+		{name: "non-S3 engine", mutate: func(endpoint *dmstypes.Endpoint) { endpoint.EngineName = dmsString("postgres") }},
+		{name: "empty endpoint type", mutate: func(endpoint *dmstypes.Endpoint) { endpoint.EndpointType = "" }},
+		{name: "creating status", mutate: func(endpoint *dmstypes.Endpoint) { endpoint.Status = dmsString("creating") }},
+		{name: "missing S3 settings", mutate: func(endpoint *dmstypes.Endpoint) { endpoint.S3Settings = nil }},
+		{name: "missing bucket", mutate: func(endpoint *dmstypes.Endpoint) { endpoint.S3Settings.BucketName = nil }},
+		{name: "missing service role", mutate: func(endpoint *dmstypes.Endpoint) { endpoint.S3Settings.ServiceAccessRoleArn = nil }},
+		{name: "read-only", mutate: func(endpoint *dmstypes.Endpoint) { endpoint.IsReadOnly = dmsBool(true) }},
+		{name: "source missing external table definition", mutate: func(endpoint *dmstypes.Endpoint) {
+			endpoint.EndpointType = dmstypes.ReplicationEndpointTypeValueSource
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			endpoint := validEndpoint()
+			tt.mutate(&endpoint)
+			if _, ok := newDMSS3EndpointResource(endpoint); ok {
+				t.Fatal("S3 endpoint should be skipped")
+			}
+		})
 	}
 }
 
