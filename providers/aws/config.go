@@ -53,8 +53,6 @@ func (g *ConfigGenerator) InitResources() error {
 	g.loadOptionalResources([]configOptionalResourceLoader{
 		{name: "configuration aggregators", load: func() error { return g.addConfigurationAggregators(client) }},
 		{name: "aggregate authorizations", load: func() error { return g.addAggregateAuthorizations(client) }},
-		{name: "conformance packs", load: func() error { return g.addConformancePacks(client) }},
-		{name: "organization conformance packs", load: func() error { return g.addOrganizationConformancePacks(client) }},
 		{name: "organization config rules", load: func() error { return g.addOrganizationConfigRules(client) }},
 		{name: "remediation configurations", load: func() error { return g.addRemediationConfigurations(client, configRuleNames) }},
 		{name: "retention configurations", load: func() error { return g.addRetentionConfigurations(client) }},
@@ -238,64 +236,6 @@ func (g *ConfigGenerator) addAggregateAuthorizations(svc *configservice.Client) 
 				map[string]string{
 					"account_id": accountID,
 					"region":     region,
-				},
-				configAllowEmptyValues,
-				map[string]interface{}{},
-			))
-		}
-	}
-	return nil
-}
-
-func (g *ConfigGenerator) addConformancePacks(svc *configservice.Client) error {
-	p := configservice.NewDescribeConformancePacksPaginator(svc,
-		&configservice.DescribeConformancePacksInput{})
-	for p.HasMorePages() {
-		page, err := p.NextPage(context.TODO())
-		if err != nil {
-			return err
-		}
-		for _, conformancePack := range page.ConformancePackDetails {
-			name := StringValue(conformancePack.ConformancePackName)
-			if name == "" {
-				continue
-			}
-			g.Resources = append(g.Resources, terraformutils.NewResource(
-				name,
-				name,
-				"aws_config_conformance_pack",
-				"aws",
-				map[string]string{
-					"name": name,
-				},
-				configAllowEmptyValues,
-				map[string]interface{}{},
-			))
-		}
-	}
-	return nil
-}
-
-func (g *ConfigGenerator) addOrganizationConformancePacks(svc *configservice.Client) error {
-	p := configservice.NewDescribeOrganizationConformancePacksPaginator(svc,
-		&configservice.DescribeOrganizationConformancePacksInput{})
-	for p.HasMorePages() {
-		page, err := p.NextPage(context.TODO())
-		if err != nil {
-			return err
-		}
-		for _, conformancePack := range page.OrganizationConformancePacks {
-			name := StringValue(conformancePack.OrganizationConformancePackName)
-			if name == "" {
-				continue
-			}
-			g.Resources = append(g.Resources, terraformutils.NewResource(
-				name,
-				name,
-				"aws_config_organization_conformance_pack",
-				"aws",
-				map[string]string{
-					"name": name,
 				},
 				configAllowEmptyValues,
 				map[string]interface{}{},

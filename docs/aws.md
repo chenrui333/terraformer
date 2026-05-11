@@ -245,9 +245,7 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_config_configuration_aggregator`
     * `aws_config_configuration_recorder`
     * `aws_config_configuration_recorder_status`
-    * `aws_config_conformance_pack`
     * `aws_config_delivery_channel`
-    * `aws_config_organization_conformance_pack`
     * `aws_config_organization_custom_policy_rule`
     * `aws_config_organization_custom_rule`
     * `aws_config_organization_managed_rule`

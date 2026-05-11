@@ -25,6 +25,30 @@
       ]
     },
     {
+      "resource": "aws_config_conformance_pack",
+      "service_family": "config",
+      "reason": "Config conformance packs require either template_body or template_s3_uri, but the Config read APIs do not return the original template source needed to seed valid Terraform configuration.",
+      "evidence": "Terraform AWS provider requires one of template_body or template_s3_uri. AWS DescribeConformancePacks returns conformance pack metadata and delivery settings, but not the template body or template S3 URI needed for generated HCL to validate.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/config_conformance_pack",
+        "https://docs.aws.amazon.com/config/latest/APIReference/API_DescribeConformancePacks.html"
+      ]
+    },
+    {
+      "resource": "aws_config_organization_conformance_pack",
+      "service_family": "config",
+      "reason": "Organization conformance packs require either template_body or template_s3_uri, but the Config read APIs do not return the original template source needed to seed valid Terraform configuration.",
+      "evidence": "Terraform AWS provider requires one of template_body or template_s3_uri. AWS DescribeOrganizationConformancePacks returns organization conformance pack metadata and delivery settings, but not the template body or template S3 URI needed for generated HCL to validate.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/config_organization_conformance_pack",
+        "https://docs.aws.amazon.com/config/latest/APIReference/API_DescribeOrganizationConformancePacks.html"
+      ]
+    },
+    {
       "resource": "aws_detective_invitation_accepter",
       "service_family": "detective",
       "reason": "The resource represents accepting a Detective invitation in a member account; discovery can see invitations or membership, but cannot safely infer Terraform ownership of the acceptance/disassociation lifecycle.",
