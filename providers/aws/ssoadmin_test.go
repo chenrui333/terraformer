@@ -8,12 +8,15 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	ssotypes "github.com/aws/aws-sdk-go-v2/service/ssoadmin/types"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 const (
 	testSSOAdminInstanceARN      = "arn:aws:sso:::instance/ssoins-1234567890abcdef"
 	testSSOAdminPermissionSetARN = "arn:aws:sso:::permissionSet/ssoins-1234567890abcdef/ps-1234567890abcdef"
 	testSSOAdminPolicyARN        = "arn:aws:iam::aws:policy/ReadOnlyAccess"
+	testSSOAdminAccountID        = "123456789012"
+	testSSOAdminPrincipalID      = "1234567890-11111111-2222-3333-4444-555555555555"
 )
 
 func TestSSOAdminResourceIDs(t *testing.T) {
@@ -37,6 +40,18 @@ func TestSSOAdminResourceIDs(t *testing.T) {
 			got:  ssoAdminCustomerManagedPolicyAttachmentResourceID("Boundary", "/service/", testSSOAdminPermissionSetARN, testSSOAdminInstanceARN),
 			want: "Boundary,/service/," + testSSOAdminPermissionSetARN + "," + testSSOAdminInstanceARN,
 		},
+		{
+			name: "account assignment",
+			got: ssoAdminAccountAssignmentResourceID(
+				testSSOAdminPrincipalID,
+				string(ssotypes.PrincipalTypeUser),
+				testSSOAdminAccountID,
+				string(ssotypes.TargetTypeAwsAccount),
+				testSSOAdminPermissionSetARN,
+				testSSOAdminInstanceARN,
+			),
+			want: testSSOAdminPrincipalID + ",USER," + testSSOAdminAccountID + ",AWS_ACCOUNT," + testSSOAdminPermissionSetARN + "," + testSSOAdminInstanceARN,
+		},
 	}
 
 	for _, tt := range tests {
@@ -45,6 +60,40 @@ func TestSSOAdminResourceIDs(t *testing.T) {
 				t.Fatalf("resource ID = %q, want %q", tt.got, tt.want)
 			}
 		})
+	}
+}
+
+func TestSSOAdminAccountAssignmentResource(t *testing.T) {
+	resource := newSSOAdminAccountAssignmentResource(
+		testSSOAdminInstanceARN,
+		testSSOAdminPermissionSetARN,
+		testSSOAdminAccountID,
+		ssotypes.AccountAssignment{
+			AccountId:        aws.String(testSSOAdminAccountID),
+			PermissionSetArn: aws.String(testSSOAdminPermissionSetARN),
+			PrincipalId:      aws.String(testSSOAdminPrincipalID),
+			PrincipalType:    ssotypes.PrincipalTypeUser,
+		},
+	)
+
+	if got, want := resource.InstanceState.ID, testSSOAdminPrincipalID+",USER,"+testSSOAdminAccountID+",AWS_ACCOUNT,"+testSSOAdminPermissionSetARN+","+testSSOAdminInstanceARN; got != want {
+		t.Fatalf("resource ID = %q, want %q", got, want)
+	}
+	if got, want := resource.InstanceInfo.Type, ssoAdminAccountAssignmentResourceType; got != want {
+		t.Fatalf("resource type = %q, want %q", got, want)
+	}
+	attributes := resource.InstanceState.Attributes
+	for key, want := range map[string]string{
+		"instance_arn":       testSSOAdminInstanceARN,
+		"permission_set_arn": testSSOAdminPermissionSetARN,
+		"principal_id":       testSSOAdminPrincipalID,
+		"principal_type":     "USER",
+		"target_id":          testSSOAdminAccountID,
+		"target_type":        "AWS_ACCOUNT",
+	} {
+		if got := attributes[key]; got != want {
+			t.Fatalf("%s = %q, want %q", key, got, want)
+		}
 	}
 }
 
@@ -103,6 +152,92 @@ func TestSSOAdminManagedPolicyAttachmentResource(t *testing.T) {
 		if got := attributes[key]; got != want {
 			t.Fatalf("%s = %q, want %q", key, got, want)
 		}
+	}
+	if _, ok := resource.AdditionalFields["depends_on"]; ok {
+		t.Fatalf("unexpected depends_on in %#v", resource.AdditionalFields)
+	}
+}
+
+func TestSSOAdminPostConvertHookAddsManagedPolicyAttachmentDependsOnFilteredAssignments(t *testing.T) {
+	managedPolicyAttachment := newSSOAdminManagedPolicyAttachmentResource(
+		testSSOAdminInstanceARN,
+		testSSOAdminPermissionSetARN,
+		ssotypes.AttachedManagedPolicy{Arn: aws.String(testSSOAdminPolicyARN)},
+	)
+	managedPolicyAttachment.Item = map[string]interface{}{"permission_set_arn": testSSOAdminPermissionSetARN}
+	matchingAssignment := newSSOAdminAccountAssignmentResource(
+		testSSOAdminInstanceARN,
+		testSSOAdminPermissionSetARN,
+		testSSOAdminAccountID,
+		ssotypes.AccountAssignment{
+			AccountId:        aws.String(testSSOAdminAccountID),
+			PermissionSetArn: aws.String(testSSOAdminPermissionSetARN),
+			PrincipalId:      aws.String(testSSOAdminPrincipalID),
+			PrincipalType:    ssotypes.PrincipalTypeUser,
+		},
+	)
+	otherAssignment := newSSOAdminAccountAssignmentResource(
+		testSSOAdminInstanceARN,
+		testSSOAdminPermissionSetARN+"-other",
+		testSSOAdminAccountID,
+		ssotypes.AccountAssignment{
+			AccountId:        aws.String(testSSOAdminAccountID),
+			PermissionSetArn: aws.String(testSSOAdminPermissionSetARN + "-other"),
+			PrincipalId:      aws.String("1234567890-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
+			PrincipalType:    ssotypes.PrincipalTypeGroup,
+		},
+	)
+	g := &SSOAdminGenerator{}
+	g.Resources = []terraformutils.Resource{managedPolicyAttachment, otherAssignment, matchingAssignment}
+
+	if err := g.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook() error = %v", err)
+	}
+
+	dependsOn, ok := g.Resources[0].Item["depends_on"].([]string)
+	if !ok {
+		t.Fatalf("depends_on type = %T, want []string", g.Resources[0].Item["depends_on"])
+	}
+	want := []string{matchingAssignment.InstanceInfo.Id}
+	if len(dependsOn) != len(want) {
+		t.Fatalf("depends_on = %#v, want %#v", dependsOn, want)
+	}
+	for i := range want {
+		if dependsOn[i] != want[i] {
+			t.Fatalf("depends_on = %#v, want %#v", dependsOn, want)
+		}
+	}
+	additionalDependsOn, ok := g.Resources[0].AdditionalFields["depends_on"].([]string)
+	if !ok || len(additionalDependsOn) != 1 || additionalDependsOn[0] != want[0] {
+		t.Fatalf("additional depends_on = %#v, want %#v", g.Resources[0].AdditionalFields["depends_on"], want)
+	}
+}
+
+func TestSSOAdminPostConvertHookDropsDanglingManagedPolicyAttachmentDependsOn(t *testing.T) {
+	managedPolicyAttachment := newSSOAdminManagedPolicyAttachmentResource(
+		testSSOAdminInstanceARN,
+		testSSOAdminPermissionSetARN,
+		ssotypes.AttachedManagedPolicy{Arn: aws.String(testSSOAdminPolicyARN)},
+	)
+	managedPolicyAttachment.Item = map[string]interface{}{
+		"depends_on":         []string{"aws_ssoadmin_account_assignment.tfer--filtered"},
+		"permission_set_arn": testSSOAdminPermissionSetARN,
+	}
+	managedPolicyAttachment.AdditionalFields = map[string]interface{}{
+		"depends_on": []string{"aws_ssoadmin_account_assignment.tfer--filtered"},
+	}
+	g := &SSOAdminGenerator{}
+	g.Resources = []terraformutils.Resource{managedPolicyAttachment}
+
+	if err := g.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook() error = %v", err)
+	}
+
+	if _, ok := g.Resources[0].Item["depends_on"]; ok {
+		t.Fatalf("unexpected item depends_on = %#v", g.Resources[0].Item["depends_on"])
+	}
+	if _, ok := g.Resources[0].AdditionalFields["depends_on"]; ok {
+		t.Fatalf("unexpected additional depends_on = %#v", g.Resources[0].AdditionalFields["depends_on"])
 	}
 }
 
@@ -288,6 +423,71 @@ func TestSSOAdminResourceNamesDoNotCollapseJoinedParts(t *testing.T) {
 	right := newSSOAdminManagedPolicyAttachmentResource("instance", "a", ssotypes.AttachedManagedPolicy{Arn: aws.String("b_c")})
 	if left.ResourceName == right.ResourceName {
 		t.Fatalf("managed policy attachment resource names collide: %q", left.ResourceName)
+	}
+
+	left = newSSOAdminAccountAssignmentResource(
+		"instance",
+		"permission",
+		"a_b",
+		ssotypes.AccountAssignment{PrincipalId: aws.String("c"), PrincipalType: ssotypes.PrincipalTypeGroup},
+	)
+	right = newSSOAdminAccountAssignmentResource(
+		"instance",
+		"permission",
+		"a",
+		ssotypes.AccountAssignment{PrincipalId: aws.String("b_c"), PrincipalType: ssotypes.PrincipalTypeGroup},
+	)
+	if left.ResourceName == right.ResourceName {
+		t.Fatalf("account assignment resource names collide: %q", left.ResourceName)
+	}
+}
+
+func TestSSOAdminAccountAssignmentConfigured(t *testing.T) {
+	tests := []struct {
+		name       string
+		targetID   string
+		assignment ssotypes.AccountAssignment
+		want       bool
+	}{
+		{
+			name:     "configured",
+			targetID: testSSOAdminAccountID,
+			assignment: ssotypes.AccountAssignment{
+				PrincipalId:   aws.String(testSSOAdminPrincipalID),
+				PrincipalType: ssotypes.PrincipalTypeUser,
+			},
+			want: true,
+		},
+		{
+			name:     "missing target ID",
+			targetID: "",
+			assignment: ssotypes.AccountAssignment{
+				PrincipalId:   aws.String(testSSOAdminPrincipalID),
+				PrincipalType: ssotypes.PrincipalTypeUser,
+			},
+		},
+		{
+			name:     "missing principal ID",
+			targetID: testSSOAdminAccountID,
+			assignment: ssotypes.AccountAssignment{
+				PrincipalType: ssotypes.PrincipalTypeUser,
+			},
+		},
+		{
+			name:     "missing principal type",
+			targetID: testSSOAdminAccountID,
+			assignment: ssotypes.AccountAssignment{
+				PrincipalId: aws.String(testSSOAdminPrincipalID),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ssoAdminAccountAssignmentConfigured(tt.targetID, tt.assignment); got != tt.want {
+				t.Fatalf("ssoAdminAccountAssignmentConfigured() = %t, want %t", got, tt.want)
+			}
+		})
 	}
 }
 

@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -19,6 +20,7 @@ var ssoAdminAllowEmptyValues = []string{"tags."}
 
 const (
 	ssoAdminPermissionSetResourceType                     = "aws_ssoadmin_permission_set"
+	ssoAdminAccountAssignmentResourceType                 = "aws_ssoadmin_account_assignment"
 	ssoAdminManagedPolicyAttachmentResourceType           = "aws_ssoadmin_managed_policy_attachment"
 	ssoAdminCustomerManagedPolicyAttachmentResourceType   = "aws_ssoadmin_customer_managed_policy_attachment"
 	ssoAdminPermissionSetInlinePolicyResourceType         = "aws_ssoadmin_permission_set_inline_policy"
@@ -60,6 +62,7 @@ func (g *SSOAdminGenerator) InitResources() error {
 }
 
 func (g *SSOAdminGenerator) PostConvertHook() error {
+	g.updateManagedPolicyAttachmentDependencies()
 	for i, resource := range g.Resources {
 		if resource.InstanceInfo.Type != ssoAdminPermissionSetInlinePolicyResourceType {
 			continue
@@ -133,7 +136,10 @@ func (g *SSOAdminGenerator) loadPermissionSetChildren(svc *ssoadmin.Client, inst
 	if err := g.loadPermissionSetInlinePolicy(svc, instanceARN, permissionSetARN); err != nil {
 		return err
 	}
-	return g.loadPermissionsBoundaryAttachment(svc, instanceARN, permissionSetARN)
+	if err := g.loadPermissionsBoundaryAttachment(svc, instanceARN, permissionSetARN); err != nil {
+		return err
+	}
+	return g.loadAccountAssignments(svc, instanceARN, permissionSetARN)
 }
 
 func describeSSOAdminPermissionSet(svc *ssoadmin.Client, instanceARN, permissionSetARN string) (*ssotypes.PermissionSet, error) {
@@ -230,6 +236,53 @@ func (g *SSOAdminGenerator) loadPermissionsBoundaryAttachment(svc *ssoadmin.Clie
 	return nil
 }
 
+func (g *SSOAdminGenerator) loadAccountAssignments(svc *ssoadmin.Client, instanceARN, permissionSetARN string) error {
+	p := ssoadmin.NewListAccountsForProvisionedPermissionSetPaginator(svc, &ssoadmin.ListAccountsForProvisionedPermissionSetInput{
+		InstanceArn:      aws.String(instanceARN),
+		PermissionSetArn: aws.String(permissionSetARN),
+	})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, accountID := range page.AccountIds {
+			if accountID == "" {
+				continue
+			}
+			if err := g.loadAccountAssignmentsForAccount(svc, instanceARN, permissionSetARN, accountID); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (g *SSOAdminGenerator) loadAccountAssignmentsForAccount(svc *ssoadmin.Client, instanceARN, permissionSetARN, accountID string) error {
+	p := ssoadmin.NewListAccountAssignmentsPaginator(svc, &ssoadmin.ListAccountAssignmentsInput{
+		AccountId:        aws.String(accountID),
+		InstanceArn:      aws.String(instanceARN),
+		PermissionSetArn: aws.String(permissionSetARN),
+	})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, assignment := range page.AccountAssignments {
+			targetID := StringValue(assignment.AccountId)
+			if targetID == "" {
+				targetID = accountID
+			}
+			if !ssoAdminAccountAssignmentConfigured(targetID, assignment) {
+				continue
+			}
+			g.Resources = append(g.Resources, newSSOAdminAccountAssignmentResource(instanceARN, permissionSetARN, targetID, assignment))
+		}
+	}
+	return nil
+}
+
 func newSSOAdminPermissionSetResource(instanceARN string, permissionSet *ssotypes.PermissionSet) terraformutils.Resource {
 	permissionSetARN := StringValue(permissionSet.PermissionSetArn)
 	attributes := map[string]string{
@@ -255,6 +308,29 @@ func newSSOAdminPermissionSetResource(instanceARN string, permissionSet *ssotype
 		ssoAdminPermissionSetResourceID(permissionSetARN, instanceARN),
 		ssoAdminResourceName(StringValue(permissionSet.Name), permissionSetARN, instanceARN),
 		ssoAdminPermissionSetResourceType,
+		"aws",
+		attributes,
+		ssoAdminAllowEmptyValues,
+		map[string]interface{}{},
+	)
+}
+
+func newSSOAdminAccountAssignmentResource(instanceARN, permissionSetARN, targetID string, assignment ssotypes.AccountAssignment) terraformutils.Resource {
+	principalID := StringValue(assignment.PrincipalId)
+	principalType := string(assignment.PrincipalType)
+	targetType := string(ssotypes.TargetTypeAwsAccount)
+	attributes := map[string]string{
+		"instance_arn":       instanceARN,
+		"permission_set_arn": permissionSetARN,
+		"principal_id":       principalID,
+		"principal_type":     principalType,
+		"target_id":          targetID,
+		"target_type":        targetType,
+	}
+	return terraformutils.NewResource(
+		ssoAdminAccountAssignmentResourceID(principalID, principalType, targetID, targetType, permissionSetARN, instanceARN),
+		ssoAdminAccountAssignmentResourceName(instanceARN, permissionSetARN, principalID, principalType, targetID, targetType),
+		ssoAdminAccountAssignmentResourceType,
 		"aws",
 		attributes,
 		ssoAdminAllowEmptyValues,
@@ -348,12 +424,20 @@ func ssoAdminPermissionSetResourceID(permissionSetARN, instanceARN string) strin
 	return strings.Join([]string{permissionSetARN, instanceARN}, ssoAdminResourceIDSeparator)
 }
 
+func ssoAdminAccountAssignmentResourceID(principalID, principalType, targetID, targetType, permissionSetARN, instanceARN string) string {
+	return strings.Join([]string{principalID, principalType, targetID, targetType, permissionSetARN, instanceARN}, ssoAdminResourceIDSeparator)
+}
+
 func ssoAdminManagedPolicyAttachmentResourceID(managedPolicyARN, permissionSetARN, instanceARN string) string {
 	return strings.Join([]string{managedPolicyARN, permissionSetARN, instanceARN}, ssoAdminResourceIDSeparator)
 }
 
 func ssoAdminCustomerManagedPolicyAttachmentResourceID(policyName, policyPath, permissionSetARN, instanceARN string) string {
 	return strings.Join([]string{policyName, policyPath, permissionSetARN, instanceARN}, ssoAdminResourceIDSeparator)
+}
+
+func ssoAdminAccountAssignmentResourceName(instanceARN, permissionSetARN, principalID, principalType, targetID, targetType string) string {
+	return ssoAdminResourceName(permissionSetARN, targetID, targetType, principalType, principalID, instanceARN)
 }
 
 func ssoAdminResourceName(parts ...string) string {
@@ -364,6 +448,87 @@ func ssoAdminResourceName(parts ...string) string {
 		}
 	}
 	return strings.Join(nonEmptyParts, ssoAdminResourceNameSeparator)
+}
+
+func (g *SSOAdminGenerator) updateManagedPolicyAttachmentDependencies() {
+	accountAssignmentRefsByPermissionSet := ssoAdminAccountAssignmentRefsByPermissionSet(g.Resources)
+	for i := range g.Resources {
+		if ssoAdminResourceType(g.Resources[i]) != ssoAdminManagedPolicyAttachmentResourceType {
+			continue
+		}
+		permissionSetARN := ssoAdminResourceAttribute(g.Resources[i], "permission_set_arn")
+		ssoAdminSetDependsOn(&g.Resources[i], accountAssignmentRefsByPermissionSet[permissionSetARN])
+	}
+}
+
+func ssoAdminAccountAssignmentRefsByPermissionSet(resources []terraformutils.Resource) map[string][]string {
+	refsByPermissionSet := map[string]map[string]struct{}{}
+	for _, resource := range resources {
+		resourceRef := ssoAdminResourceRef(resource)
+		if ssoAdminResourceType(resource) != ssoAdminAccountAssignmentResourceType || resourceRef == "" {
+			continue
+		}
+		permissionSetARN := ssoAdminResourceAttribute(resource, "permission_set_arn")
+		if permissionSetARN == "" {
+			continue
+		}
+		if refsByPermissionSet[permissionSetARN] == nil {
+			refsByPermissionSet[permissionSetARN] = map[string]struct{}{}
+		}
+		refsByPermissionSet[permissionSetARN][resourceRef] = struct{}{}
+	}
+
+	result := map[string][]string{}
+	for permissionSetARN, refs := range refsByPermissionSet {
+		for ref := range refs {
+			result[permissionSetARN] = append(result[permissionSetARN], ref)
+		}
+		sort.Strings(result[permissionSetARN])
+	}
+	return result
+}
+
+func ssoAdminResourceType(resource terraformutils.Resource) string {
+	if resource.InstanceInfo == nil {
+		return ""
+	}
+	return resource.InstanceInfo.Type
+}
+
+func ssoAdminResourceRef(resource terraformutils.Resource) string {
+	if resource.InstanceInfo == nil {
+		return ""
+	}
+	return resource.InstanceInfo.Id
+}
+
+func ssoAdminResourceAttribute(resource terraformutils.Resource, key string) string {
+	if value, ok := resource.Item[key].(string); ok && value != "" {
+		return value
+	}
+	if resource.InstanceState == nil {
+		return ""
+	}
+	return resource.InstanceState.Attributes[key]
+}
+
+func ssoAdminSetDependsOn(resource *terraformutils.Resource, dependsOn []string) {
+	if len(dependsOn) == 0 {
+		delete(resource.AdditionalFields, "depends_on")
+		if resource.Item != nil {
+			delete(resource.Item, "depends_on")
+		}
+		return
+	}
+	refs := append([]string(nil), dependsOn...)
+	sort.Strings(refs)
+	if resource.AdditionalFields == nil {
+		resource.AdditionalFields = map[string]interface{}{}
+	}
+	resource.AdditionalFields["depends_on"] = refs
+	if resource.Item != nil {
+		resource.Item["depends_on"] = refs
+	}
 }
 
 func ssoAdminPermissionsBoundaryConfigured(boundary *ssotypes.PermissionsBoundary) bool {
@@ -377,6 +542,10 @@ func ssoAdminPermissionsBoundaryConfigured(boundary *ssotypes.PermissionsBoundar
 		return false
 	}
 	return StringValue(boundary.CustomerManagedPolicyReference.Name) != ""
+}
+
+func ssoAdminAccountAssignmentConfigured(targetID string, assignment ssotypes.AccountAssignment) bool {
+	return targetID != "" && StringValue(assignment.PrincipalId) != "" && string(assignment.PrincipalType) != ""
 }
 
 func ssoAdminCustomerManagedPolicyPath(path *string) string {
