@@ -22,6 +22,7 @@ func TestSESV2ImportIDs(t *testing.T) {
 		{name: "configuration set", got: sesv2ConfigurationSetImportID("config-set"), want: "config-set"},
 		{name: "configuration set event destination", got: sesv2ConfigurationSetEventDestinationImportID("config-set", "events"), want: "config-set|events"},
 		{name: "contact list", got: sesv2ContactListImportID("contacts"), want: "contacts"},
+		{name: "dedicated IP assignment", got: sesv2DedicatedIPAssignmentImportID("192.0.2.1", "pool-a"), want: "192.0.2.1,pool-a"},
 		{name: "dedicated IP pool", got: sesv2DedicatedIPPoolImportID("pool-a"), want: "pool-a"},
 		{name: "email identity", got: sesv2EmailIdentityImportID("sender@example.com"), want: "sender@example.com"},
 		{name: "email identity feedback attributes", got: sesv2EmailIdentityFeedbackAttributesImportID("sender@example.com"), want: "sender@example.com"},
@@ -162,6 +163,51 @@ func TestNewSESV2DedicatedIPPoolResource(t *testing.T) {
 
 	if _, ok := newSESV2DedicatedIPPoolResource(""); ok {
 		t.Fatal("newSESV2DedicatedIPPoolResource() ok = true for empty pool name, want false")
+	}
+}
+
+func TestNewSESV2DedicatedIPAssignmentResource(t *testing.T) {
+	resource, ok := newSESV2DedicatedIPAssignmentResource(sesv2types.DedicatedIp{
+		Ip:       aws.String("192.0.2.1"),
+		PoolName: aws.String("pool-a"),
+	}, sesv2types.ScalingModeStandard)
+	if !ok {
+		t.Fatal("newSESV2DedicatedIPAssignmentResource() ok = false, want true")
+	}
+	assertSESV2ResourceAttributes(t, resource, sesv2DedicatedIPAssignmentResourceType, "192.0.2.1,pool-a",
+		[]string{"dedicated_ip_assignment", "192.0.2.1", "pool-a"},
+		map[string]string{
+			"destination_pool_name": "pool-a",
+			"ip":                    "192.0.2.1",
+		})
+
+	if _, ok := newSESV2DedicatedIPAssignmentResource(sesv2types.DedicatedIp{
+		PoolName: aws.String("pool-a"),
+	}, sesv2types.ScalingModeStandard); ok {
+		t.Fatal("newSESV2DedicatedIPAssignmentResource() ok = true for empty IP, want false")
+	}
+	if _, ok := newSESV2DedicatedIPAssignmentResource(sesv2types.DedicatedIp{
+		Ip: aws.String("192.0.2.1"),
+	}, sesv2types.ScalingModeStandard); ok {
+		t.Fatal("newSESV2DedicatedIPAssignmentResource() ok = true for empty pool name, want false")
+	}
+	if _, ok := newSESV2DedicatedIPAssignmentResource(sesv2types.DedicatedIp{
+		Ip:       aws.String("192.0.2.1"),
+		PoolName: aws.String(sesv2DefaultDedicatedIPPoolName),
+	}, sesv2types.ScalingModeStandard); ok {
+		t.Fatal("newSESV2DedicatedIPAssignmentResource() ok = true for default pool assignment, want false")
+	}
+	if _, ok := newSESV2DedicatedIPAssignmentResource(sesv2types.DedicatedIp{
+		Ip:       aws.String("192.0.2.1"),
+		PoolName: aws.String("managed-pool"),
+	}, sesv2types.ScalingModeManaged); ok {
+		t.Fatal("newSESV2DedicatedIPAssignmentResource() ok = true for managed pool assignment, want false")
+	}
+	if _, ok := newSESV2DedicatedIPAssignmentResource(sesv2types.DedicatedIp{
+		Ip:       aws.String("192.0.2.1"),
+		PoolName: aws.String("unknown-pool"),
+	}, ""); ok {
+		t.Fatal("newSESV2DedicatedIPAssignmentResource() ok = true for unknown pool scaling mode, want false")
 	}
 }
 
@@ -316,6 +362,7 @@ func TestSESV2ResourceNameAvoidsSanitizedCollisions(t *testing.T) {
 		{name: "at sign encoding", first: []string{"email_identity", "a@example.com"}, second: []string{"email_identity", "a-0040-example.com"}},
 		{name: "slash encoding", first: []string{"configuration_set", "a/b"}, second: []string{"configuration_set", "a-002F-b"}},
 		{name: "contact list separator", first: []string{"contact_list", "a_b", "c"}, second: []string{"contact_list", "a", "b_c"}},
+		{name: "dedicated IP assignment composite", first: []string{"dedicated_ip_assignment", "192.0.2.1_foo", "bar"}, second: []string{"dedicated_ip_assignment", "192.0.2.1", "foo_bar"}},
 		{name: "event destination composite", first: []string{"configuration_set_event_destination", "a_b", "c"}, second: []string{"configuration_set_event_destination", "a", "b_c"}},
 		{name: "policy composite", first: []string{"email_identity_policy", "a|b", "c"}, second: []string{"email_identity_policy", "a", "b|c"}},
 	}
@@ -458,6 +505,8 @@ func stringsForSESV2ResourceName(resourceType, name string) []string {
 		return []string{"configuration_set", name}
 	case sesv2ContactListResourceType:
 		return []string{"contact_list", name}
+	case sesv2DedicatedIPAssignmentResourceType:
+		return []string{"dedicated_ip_assignment", name}
 	case sesv2DedicatedIPPoolResourceType:
 		return []string{"dedicated_ip_pool", name}
 	case sesv2EmailIdentityResourceType:
