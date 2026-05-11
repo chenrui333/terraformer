@@ -36,6 +36,8 @@ var SupportedGlobalResources = []string{
 
 // SupportedEastOnlyResources should be bound to us-east-1 region only, and does not work in any other region.
 var SupportedEastOnlyResources = []string{
+	"notifications",
+	"notificationscontacts",
 	"wafv2_cloudfront",
 }
 

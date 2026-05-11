@@ -48,6 +48,26 @@ func TestNewChimeSDKVoiceGlobalSettingsResource(t *testing.T) {
 	}
 }
 
+func TestChimeSDKVoiceShouldLoadGlobalSettings(t *testing.T) {
+	tests := []struct {
+		name   string
+		region string
+		want   bool
+	}{
+		{name: "default import", region: NoRegion, want: true},
+		{name: "canonical public partition region", region: MainRegionPublicPartition, want: true},
+		{name: "regional import", region: "us-west-2", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := chimeSDKVoiceShouldLoadGlobalSettings(tt.region); got != tt.want {
+				t.Fatalf("should load global settings = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestNewChimeSDKVoiceSIPMediaApplicationResource(t *testing.T) {
 	resource, ok := newChimeSDKVoiceSIPMediaApplicationResource(&chimesdkvoice.GetSipMediaApplicationOutput{
 		SipMediaApplication: &chimesdkvoicetypes.SipMediaApplication{

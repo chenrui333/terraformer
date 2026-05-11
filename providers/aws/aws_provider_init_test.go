@@ -110,3 +110,16 @@ func TestAWSProviderInitUsesSharedConfigEnvVars(t *testing.T) {
 		t.Fatalf("AWS_PROFILE = %q, want unset", value)
 	}
 }
+
+func TestNotificationsServicesAreEastOnly(t *testing.T) {
+	for _, service := range []string{"notifications", "notificationscontacts"} {
+		t.Run(service, func(t *testing.T) {
+			for _, supported := range SupportedEastOnlyResources {
+				if supported == service {
+					return
+				}
+			}
+			t.Fatalf("%s not found in SupportedEastOnlyResources", service)
+		})
+	}
+}

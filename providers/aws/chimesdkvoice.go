@@ -35,8 +35,10 @@ func (g *ChimeSDKVoiceGenerator) InitResources() error {
 		return e
 	}
 	svc := chimesdkvoice.NewFromConfig(config)
-	if err := g.loadGlobalSettings(svc, config); err != nil {
-		return err
+	if chimeSDKVoiceShouldLoadGlobalSettings(g.GetArgs()["region"].(string)) {
+		if err := g.loadGlobalSettings(svc, config); err != nil {
+			return err
+		}
 	}
 	if err := g.loadSIPMediaApplications(svc); err != nil {
 		return err
@@ -318,6 +320,10 @@ func chimeSDKVoiceSIPRuleImportID(ruleID string) string {
 
 func chimeSDKVoiceVoiceProfileDomainImportID(domainID string) string {
 	return domainID
+}
+
+func chimeSDKVoiceShouldLoadGlobalSettings(region string) bool {
+	return region == NoRegion || region == MainRegionPublicPartition
 }
 
 func chimeSDKVoiceResourceName(parts ...string) string {
