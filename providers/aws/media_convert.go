@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/mediaconvert"
 	mediaconverttypes "github.com/aws/aws-sdk-go-v2/service/mediaconvert/types"
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -27,14 +28,31 @@ func (g *MediaConvertGenerator) InitResources() error {
 		return e
 	}
 	svc := mediaconvert.NewFromConfig(config)
-	return g.loadQueues(svc)
+	if err := g.loadQueues(svc); err != nil {
+		if !mediaConvertQueueEndpointUnavailable(err) {
+			return err
+		}
+		// Regional endpoints are preferred, but older accounts can require an
+		// existing account endpoint. GET_ONLY avoids creating one during discovery.
+		endpoint, endpointErr := mediaConvertAccountEndpoint(context.TODO(), svc)
+		if endpointErr != nil {
+			return endpointErr
+		}
+		if endpoint == "" {
+			return nil
+		}
+		return g.loadQueues(mediaconvert.NewFromConfig(config, func(o *mediaconvert.Options) {
+			o.BaseEndpoint = aws.String(endpoint)
+		}))
+	}
+	return nil
 }
 
 func (g *MediaConvertGenerator) loadQueues(svc *mediaconvert.Client) error {
 	p := mediaconvert.NewListQueuesPaginator(svc, &mediaconvert.ListQueuesInput{})
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
-		if mediaConvertQueueDiscoverySkippable(err) {
+		if mediaConvertQueueNotFound(err) {
 			return nil
 		}
 		if err != nil {
@@ -48,6 +66,27 @@ func (g *MediaConvertGenerator) loadQueues(svc *mediaconvert.Client) error {
 	}
 
 	return nil
+}
+
+func mediaConvertAccountEndpoint(ctx context.Context, svc mediaconvert.DescribeEndpointsAPIClient) (string, error) {
+	p := mediaconvert.NewDescribeEndpointsPaginator(svc, &mediaconvert.DescribeEndpointsInput{
+		Mode: mediaconverttypes.DescribeEndpointsModeGetOnly,
+	})
+	for p.HasMorePages() {
+		page, err := p.NextPage(ctx)
+		if mediaConvertQueueNotFound(err) {
+			return "", nil
+		}
+		if err != nil {
+			return "", err
+		}
+		for _, endpoint := range page.Endpoints {
+			if endpointURL := StringValue(endpoint.Url); endpointURL != "" {
+				return endpointURL, nil
+			}
+		}
+	}
+	return "", nil
 }
 
 func newMediaConvertQueueResource(queue mediaconverttypes.Queue) (terraformutils.Resource, bool) {
@@ -91,10 +130,6 @@ func mediaConvertResourceName(parts ...string) string {
 func mediaConvertQueueNotFound(err error) bool {
 	var notFound *mediaconverttypes.NotFoundException
 	return errors.As(err, &notFound)
-}
-
-func mediaConvertQueueDiscoverySkippable(err error) bool {
-	return mediaConvertQueueNotFound(err) || mediaConvertQueueEndpointUnavailable(err)
 }
 
 func mediaConvertQueueEndpointUnavailable(err error) bool {

@@ -3,10 +3,12 @@
 package aws
 
 import (
+	"context"
 	"errors"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/mediaconvert"
 	mediaconverttypes "github.com/aws/aws-sdk-go-v2/service/mediaconvert/types"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
@@ -79,14 +81,14 @@ func TestMediaConvertQueueNotFound(t *testing.T) {
 	}
 }
 
-func TestMediaConvertQueueDiscoverySkippable(t *testing.T) {
+func TestMediaConvertQueueEndpointUnavailable(t *testing.T) {
 	tests := []struct {
 		name string
 		err  error
 		want bool
 	}{
 		{name: "nil", want: false},
-		{name: "not found", err: &mediaconverttypes.NotFoundException{}, want: true},
+		{name: "not found", err: &mediaconverttypes.NotFoundException{}, want: false},
 		{name: "customer endpoint bad request", err: &mediaconverttypes.BadRequestException{Message: aws.String("You must use the customer-specific endpoint")}, want: true},
 		{name: "account endpoint bad request", err: &mediaconverttypes.BadRequestException{Message: aws.String("account endpoint is not available")}, want: true},
 		{name: "wrapped endpoint bad request", err: errors.Join(errors.New("list queues failed"), &mediaconverttypes.BadRequestException{Message: aws.String("use the account-specific endpoint")}), want: true},
@@ -96,11 +98,85 @@ func TestMediaConvertQueueDiscoverySkippable(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := mediaConvertQueueDiscoverySkippable(tt.err); got != tt.want {
-				t.Fatalf("mediaConvertQueueDiscoverySkippable(%v) = %t, want %t", tt.err, got, tt.want)
+			if got := mediaConvertQueueEndpointUnavailable(tt.err); got != tt.want {
+				t.Fatalf("mediaConvertQueueEndpointUnavailable(%v) = %t, want %t", tt.err, got, tt.want)
 			}
 		})
 	}
+}
+
+func TestMediaConvertAccountEndpoint(t *testing.T) {
+	client := &mediaConvertDescribeEndpointsClient{
+		outputs: []*mediaconvert.DescribeEndpointsOutput{
+			{
+				Endpoints: []mediaconverttypes.Endpoint{{}},
+				NextToken: aws.String("next"),
+			},
+			{
+				Endpoints: []mediaconverttypes.Endpoint{{Url: aws.String("https://abcd.mediaconvert.us-east-1.amazonaws.com")}},
+			},
+		},
+	}
+	endpoint, err := mediaConvertAccountEndpoint(context.Background(), client)
+	if err != nil {
+		t.Fatalf("mediaConvertAccountEndpoint returned error: %v", err)
+	}
+	if got, want := endpoint, "https://abcd.mediaconvert.us-east-1.amazonaws.com"; got != want {
+		t.Fatalf("mediaConvert account endpoint = %q, want %q", got, want)
+	}
+	if got, want := len(client.inputs), 2; got != want {
+		t.Fatalf("DescribeEndpoints calls = %d, want %d", got, want)
+	}
+	for _, input := range client.inputs {
+		if got, want := input.Mode, mediaconverttypes.DescribeEndpointsModeGetOnly; got != want {
+			t.Fatalf("DescribeEndpoints mode = %q, want %q", got, want)
+		}
+	}
+}
+
+func TestMediaConvertAccountEndpointEmpty(t *testing.T) {
+	client := &mediaConvertDescribeEndpointsClient{
+		outputs: []*mediaconvert.DescribeEndpointsOutput{{}},
+	}
+	endpoint, err := mediaConvertAccountEndpoint(context.Background(), client)
+	if err != nil {
+		t.Fatalf("mediaConvertAccountEndpoint returned error: %v", err)
+	}
+	if endpoint != "" {
+		t.Fatalf("MediaConvert account endpoint = %q, want empty", endpoint)
+	}
+}
+
+func TestMediaConvertAccountEndpointError(t *testing.T) {
+	wantErr := errors.New("describe endpoints failed")
+	client := &mediaConvertDescribeEndpointsClient{errs: []error{wantErr}}
+	endpoint, err := mediaConvertAccountEndpoint(context.Background(), client)
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("mediaConvertAccountEndpoint error = %v, want %v", err, wantErr)
+	}
+	if endpoint != "" {
+		t.Fatalf("MediaConvert account endpoint = %q, want empty", endpoint)
+	}
+}
+
+type mediaConvertDescribeEndpointsClient struct {
+	outputs []*mediaconvert.DescribeEndpointsOutput
+	errs    []error
+	inputs  []*mediaconvert.DescribeEndpointsInput
+	calls   int
+}
+
+func (c *mediaConvertDescribeEndpointsClient) DescribeEndpoints(_ context.Context, input *mediaconvert.DescribeEndpointsInput, _ ...func(*mediaconvert.Options)) (*mediaconvert.DescribeEndpointsOutput, error) {
+	c.inputs = append(c.inputs, input)
+	call := c.calls
+	c.calls++
+	if call < len(c.errs) && c.errs[call] != nil {
+		return nil, c.errs[call]
+	}
+	if call < len(c.outputs) {
+		return c.outputs[call], nil
+	}
+	return &mediaconvert.DescribeEndpointsOutput{}, nil
 }
 
 func assertMediaConvertResource(t *testing.T, resource terraformutils.Resource, ok bool, wantID, wantName, wantType string) {
