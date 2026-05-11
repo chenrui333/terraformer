@@ -179,6 +179,7 @@ func (p *ProviderWrapper) Refresh(info *tfcompat.InstanceInfo, state *tfcompat.I
 
 	refreshedState := tfcompat.NewInstanceStateShimmedFromValue(resp.NewState, int(schema.ResourceTypes[info.Type].Version))
 	preserveKubernetesManifestID(info.Type, refreshedState, state)
+	preservePriorStateID(refreshedState, state)
 	return refreshedState, nil
 }
 
@@ -204,12 +205,24 @@ func (p *ProviderWrapper) importResourceState(info *tfcompat.InstanceInfo, state
 	}
 	importedState := tfcompat.NewInstanceStateShimmedFromValue(importResponse.ImportedResources[0].State, int(schema.ResourceTypes[info.Type].Version))
 	preserveKubernetesManifestID(info.Type, importedState, state)
+	preservePriorStateID(importedState, state)
 	populateKubernetesManifestFromObject(info.Type, importedState)
 	return importedState, nil
 }
 
 func preserveKubernetesManifestID(resourceType string, next *tfcompat.InstanceState, previous *tfcompat.InstanceState) {
 	if resourceType != kubernetesManifestResourceType || next == nil || next.ID != "" || previous == nil {
+		return
+	}
+	next.ID = previous.ID
+}
+
+func preservePriorStateID(next *tfcompat.InstanceState, previous *tfcompat.InstanceState) {
+	if next == nil || next.ID != "" || previous == nil || previous.ID == "" || previous.Meta == nil {
+		return
+	}
+	preserveID, _ := previous.Meta[tfcompat.MetaKeyPreserveIDAfterRefresh].(bool)
+	if !preserveID {
 		return
 	}
 	next.ID = previous.ID

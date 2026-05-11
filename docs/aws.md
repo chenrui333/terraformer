@@ -358,6 +358,7 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_lambda_runtime_management_config`
 *   `logs`
     * `aws_cloudwatch_log_account_policy`
+    * `aws_cloudwatch_log_anomaly_detector`
     * `aws_cloudwatch_log_data_protection_policy`
     * `aws_cloudwatch_log_delivery`
     * `aws_cloudwatch_log_delivery_destination`
