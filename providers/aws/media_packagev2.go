@@ -55,12 +55,16 @@ func newMediaPackageV2ChannelGroupResource(channelGroup mediapackagev2types.Chan
 	if channelGroupName == "" {
 		return terraformutils.Resource{}, false
 	}
-	return terraformutils.NewSimpleResource(
+	return terraformutils.NewResource(
 		mediaPackageV2ChannelGroupImportID(channelGroupName),
 		mediaPackageV2ResourceName("channel-group", channelGroupName),
 		mediaPackageV2ChannelGroupResourceType,
 		"aws",
+		map[string]string{
+			"name": channelGroupName,
+		},
 		mediaPackageV2AllowEmptyValues,
+		map[string]interface{}{},
 	), true
 }
 

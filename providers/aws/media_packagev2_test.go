@@ -16,6 +16,7 @@ func TestNewMediaPackageV2ChannelGroupResource(t *testing.T) {
 		ChannelGroupName: aws.String("core-group"),
 	})
 	assertMediaPackageV2Resource(t, resource, ok, "core-group", mediaPackageV2ResourceName("channel-group", "core-group"), mediaPackageV2ChannelGroupResourceType)
+	assertMediaPackageV2Attribute(t, resource, "name", "core-group")
 
 	if _, ok := newMediaPackageV2ChannelGroupResource(mediapackagev2types.ChannelGroupListConfiguration{}); ok {
 		t.Fatal("channel group with empty name should be skipped")
@@ -72,5 +73,12 @@ func assertMediaPackageV2Resource(t *testing.T, resource terraformutils.Resource
 	}
 	if got := resource.InstanceInfo.Type; got != wantType {
 		t.Fatalf("resource type = %q, want %q", got, wantType)
+	}
+}
+
+func assertMediaPackageV2Attribute(t *testing.T, resource terraformutils.Resource, key, want string) {
+	t.Helper()
+	if got := resource.InstanceState.Attributes[key]; got != want {
+		t.Fatalf("resource attribute %q = %q, want %q", key, got, want)
 	}
 }
