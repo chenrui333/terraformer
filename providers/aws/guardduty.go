@@ -313,7 +313,7 @@ func (g *GuardDutyGenerator) loadPublishingDestinations(svc *guardduty.Client, d
 		}
 		for _, destinationSummary := range page.Destinations {
 			destinationID := StringValue(destinationSummary.DestinationId)
-			if destinationID == "" || !guardDutyPublishingDestinationStatusImportable(destinationSummary.Status) {
+			if destinationID == "" {
 				continue
 			}
 			destination, err := svc.DescribePublishingDestination(context.TODO(), &guardduty.DescribePublishingDestinationInput{
@@ -605,7 +605,7 @@ func newGuardDutyOrganizationConfigurationResource(detectorID string, configurat
 }
 
 func newGuardDutyPublishingDestinationResource(detectorID, destinationID string, destination *guardduty.DescribePublishingDestinationOutput) (terraformutils.Resource, bool) {
-	if detectorID == "" || destinationID == "" || destination == nil || !guardDutyPublishingDestinationStatusImportable(destination.Status) {
+	if detectorID == "" || destinationID == "" || destination == nil {
 		return terraformutils.Resource{}, false
 	}
 	properties := destination.DestinationProperties
@@ -971,10 +971,6 @@ func guardDutyMemberInviteEnabled(status string) bool {
 
 func guardDutyOrganizationAdminAccountImportable(adminAccount guarddutytypes.AdminAccount) bool {
 	return StringValue(adminAccount.AdminAccountId) != "" && adminAccount.AdminStatus == guarddutytypes.AdminStatusEnabled
-}
-
-func guardDutyPublishingDestinationStatusImportable(status guarddutytypes.PublishingStatus) bool {
-	return status == guarddutytypes.PublishingStatusPublishing
 }
 
 func guardDutyResourceNotFound(err error) bool {

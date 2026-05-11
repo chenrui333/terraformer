@@ -467,7 +467,7 @@ func TestGuardDutyPublishingDestinationResource(t *testing.T) {
 		}
 	}
 
-	if _, ok := newGuardDutyPublishingDestinationResource(testGuardDutyDetectorID, testGuardDutyPublishingID, &guardduty.DescribePublishingDestinationOutput{
+	resource, ok = newGuardDutyPublishingDestinationResource(testGuardDutyDetectorID, testGuardDutyPublishingID, &guardduty.DescribePublishingDestinationOutput{
 		DestinationId:   aws.String(testGuardDutyPublishingID),
 		DestinationType: guarddutytypes.DestinationTypeS3,
 		DestinationProperties: &guarddutytypes.DestinationProperties{
@@ -475,8 +475,12 @@ func TestGuardDutyPublishingDestinationResource(t *testing.T) {
 			KmsKeyArn:      aws.String("arn:aws:kms:us-east-1:123456789012:key/00000000-0000-0000-0000-000000000000"),
 		},
 		Status: guarddutytypes.PublishingStatusPendingVerification,
-	}); ok {
-		t.Fatal("expected pending publishing destination to skip")
+	})
+	if !ok {
+		t.Fatal("expected pending publishing destination resource")
+	}
+	if got, want := resource.InstanceState.ID, testGuardDutyDetectorID+":"+testGuardDutyPublishingID; got != want {
+		t.Fatalf("pending destination resource ID = %q, want %q", got, want)
 	}
 }
 
