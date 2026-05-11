@@ -138,6 +138,9 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_bedrock_inference_profile`
     * `aws_bedrock_model_invocation_logging_configuration`
     * `aws_bedrock_provisioned_model_throughput`
+*   `bedrockagent`
+    * `aws_bedrockagent_agent`
+    * `aws_bedrockagent_agent_alias`
 *   `budgets`
     * `aws_budgets_budget`
 *   `cloud9`

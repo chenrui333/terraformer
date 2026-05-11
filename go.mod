@@ -406,6 +406,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/appstream v1.58.0
 	github.com/aws/aws-sdk-go-v2/service/backup v1.55.2
 	github.com/aws/aws-sdk-go-v2/service/bedrock v1.59.2
+	github.com/aws/aws-sdk-go-v2/service/bedrockagent v1.53.2
 	github.com/aws/aws-sdk-go-v2/service/directconnect v1.38.17
 	github.com/aws/aws-sdk-go-v2/service/mwaa v1.40.0
 	github.com/aws/aws-sdk-go-v2/service/pipes v1.23.22

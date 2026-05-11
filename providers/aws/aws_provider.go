@@ -275,6 +275,7 @@ func (p *AWSProvider) GetSupportedService() map[string]terraformutils.ServiceGen
 		"backup":            &AwsFacade{service: &BackupGenerator{}},
 		"batch":             &AwsFacade{service: &BatchGenerator{}},
 		"bedrock":           &AwsFacade{service: &BedrockGenerator{}},
+		"bedrockagent":      &AwsFacade{service: &BedrockAgentGenerator{}},
 		"budgets":           &AwsFacade{service: &BudgetsGenerator{}},
 		"cloud9":            &AwsFacade{service: &Cloud9Generator{}},
 		"cloudformation":    &AwsFacade{service: &CloudFormationGenerator{}},
