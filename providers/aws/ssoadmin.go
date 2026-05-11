@@ -5,6 +5,7 @@ package aws
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -54,6 +55,20 @@ func (g *SSOAdminGenerator) InitResources() error {
 			}
 			return err
 		}
+	}
+	return nil
+}
+
+func (g *SSOAdminGenerator) PostConvertHook() error {
+	for i, resource := range g.Resources {
+		if resource.InstanceInfo.Type != ssoAdminPermissionSetInlinePolicyResourceType {
+			continue
+		}
+		inlinePolicy, ok := resource.Item["inline_policy"].(string)
+		if !ok || inlinePolicy == "" {
+			continue
+		}
+		g.Resources[i].Item["inline_policy"] = fmt.Sprintf("<<POLICY\n%s\nPOLICY", g.escapeAwsInterpolation(inlinePolicy))
 	}
 	return nil
 }

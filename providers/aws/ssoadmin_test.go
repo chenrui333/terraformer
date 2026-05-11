@@ -192,6 +192,24 @@ func TestSSOAdminPermissionSetInlinePolicyResource(t *testing.T) {
 	}
 }
 
+func TestSSOAdminPostConvertHookWrapsInlinePolicy(t *testing.T) {
+	inlinePolicy := "{\"Resource\":\"$" + "{aws:username}\"}"
+	resource := newSSOAdminPermissionSetInlinePolicyResource(testSSOAdminInstanceARN, testSSOAdminPermissionSetARN, inlinePolicy)
+	resource.Item = map[string]interface{}{"inline_policy": inlinePolicy}
+
+	g := &SSOAdminGenerator{}
+	g.Resources = append(g.Resources, resource)
+
+	if err := g.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook() error = %v", err)
+	}
+
+	want := "<<POLICY\n{\"Resource\":\"$" + "$" + "{aws:username}\"}\nPOLICY"
+	if got := g.Resources[0].Item["inline_policy"]; got != want {
+		t.Fatalf("inline_policy = %q, want %q", got, want)
+	}
+}
+
 func TestSSOAdminPermissionsBoundaryAttachmentResource(t *testing.T) {
 	tests := []struct {
 		name       string
