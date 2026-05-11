@@ -265,7 +265,13 @@ func ebsSnapshotImportable(snapshot types.Snapshot) bool {
 	if StringValue(snapshot.SnapshotId) == "" {
 		return false
 	}
-	return snapshot.State == types.SnapshotStateCompleted
+	if snapshot.State != types.SnapshotStateCompleted {
+		return false
+	}
+	if StringValue(snapshot.VolumeId) == "" {
+		return false
+	}
+	return snapshot.TransferType == ""
 }
 
 func ebsFastSnapshotRestoreImportable(restore types.DescribeFastSnapshotRestoreSuccessItem) bool {

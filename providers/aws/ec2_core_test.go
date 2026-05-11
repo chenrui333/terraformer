@@ -98,6 +98,13 @@ func TestNewEC2CapacityReservationResource(t *testing.T) {
 		t.Fatal("cancelled capacity reservation should be skipped")
 	}
 	if _, ok := newEC2CapacityReservationResource(types.CapacityReservation{
+		CapacityReservationId: aws.String("cr-123"),
+		ReservationType:       types.CapacityReservationTypeCapacityBlock,
+		State:                 types.CapacityReservationStateActive,
+	}); ok {
+		t.Fatal("capacity block reservation should be skipped")
+	}
+	if _, ok := newEC2CapacityReservationResource(types.CapacityReservation{
 		State: types.CapacityReservationStateActive,
 	}); ok {
 		t.Fatal("capacity reservation with empty ID should be skipped")

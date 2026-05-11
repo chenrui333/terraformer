@@ -393,6 +393,9 @@ func ec2CapacityReservationImportable(reservation types.CapacityReservation) boo
 	if StringValue(reservation.CapacityReservationId) == "" {
 		return false
 	}
+	if reservation.ReservationType == types.CapacityReservationTypeCapacityBlock {
+		return false
+	}
 	switch reservation.State {
 	case types.CapacityReservationStateActive, types.CapacityReservationStateScheduled:
 		return true

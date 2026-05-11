@@ -32,6 +32,12 @@ func TestNewEBSSnapshotResource(t *testing.T) {
 	}
 	if _, ok := newEBSSnapshotResource(types.Snapshot{
 		SnapshotId: aws.String("snap-123"),
+		State:      types.SnapshotStateCompleted,
+	}); ok {
+		t.Fatal("snapshot with empty source volume should be skipped")
+	}
+	if _, ok := newEBSSnapshotResource(types.Snapshot{
+		SnapshotId: aws.String("snap-123"),
 		State:      types.SnapshotStateError,
 	}); ok {
 		t.Fatal("error snapshot should be skipped")
@@ -41,6 +47,14 @@ func TestNewEBSSnapshotResource(t *testing.T) {
 		State:      types.SnapshotStatePending,
 	}); ok {
 		t.Fatal("pending snapshot should be skipped")
+	}
+	if _, ok := newEBSSnapshotResource(types.Snapshot{
+		SnapshotId:   aws.String("snap-123"),
+		State:        types.SnapshotStateCompleted,
+		TransferType: types.TransferTypeStandard,
+		VolumeId:     aws.String("vol-copy-derived"),
+	}); ok {
+		t.Fatal("copy-derived snapshot should be skipped")
 	}
 }
 
