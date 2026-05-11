@@ -30,7 +30,7 @@ func TestNewPinpointAppResource(t *testing.T) {
 		Id:   aws.String("app-123"),
 		Name: aws.String("engagement"),
 	})
-	assertPinpointResource(t, resource, ok, pinpointAppResourceType, "app-123", map[string]string{
+	assertPinpointResource(t, resource, ok, pinpointAppResourceType, map[string]string{
 		"application_id": "app-123",
 		"name":           "engagement",
 	})
@@ -45,7 +45,7 @@ func TestNewPinpointEmailChannelResource(t *testing.T) {
 		FromAddress: aws.String("sender@example.com"),
 		Identity:    aws.String("arn:aws:ses:us-east-1:123456789012:identity/example.com"),
 	})
-	assertPinpointResource(t, resource, ok, pinpointEmailChannelResourceType, "app-123", map[string]string{
+	assertPinpointResource(t, resource, ok, pinpointEmailChannelResourceType, map[string]string{
 		"application_id": "app-123",
 		"enabled":        "true",
 		"from_address":   "sender@example.com",
@@ -68,7 +68,7 @@ func TestNewPinpointSMSChannelResource(t *testing.T) {
 		SenderId:  aws.String("Example"),
 		ShortCode: aws.String("12345"),
 	})
-	assertPinpointResource(t, resource, ok, pinpointSMSChannelResourceType, "app-123", map[string]string{
+	assertPinpointResource(t, resource, ok, pinpointSMSChannelResourceType, map[string]string{
 		"application_id": "app-123",
 		"enabled":        "false",
 		"sender_id":      "Example",
@@ -84,7 +84,7 @@ func TestNewPinpointEventStreamResource(t *testing.T) {
 		DestinationStreamArn: aws.String("arn:aws:kinesis:us-east-1:123456789012:stream/pinpoint-events"),
 		RoleArn:              aws.String("arn:aws:iam::123456789012:role/pinpoint-events"),
 	})
-	assertPinpointResource(t, resource, ok, pinpointEventStreamResourceType, "app-123", map[string]string{
+	assertPinpointResource(t, resource, ok, pinpointEventStreamResourceType, map[string]string{
 		"application_id":         "app-123",
 		"destination_stream_arn": "arn:aws:kinesis:us-east-1:123456789012:stream/pinpoint-events",
 		"role_arn":               "arn:aws:iam::123456789012:role/pinpoint-events",
@@ -103,7 +103,7 @@ func TestPinpointNotFound(t *testing.T) {
 	}
 }
 
-func assertPinpointResource(t *testing.T, resource terraformutils.Resource, ok bool, wantType, wantID string, wantAttrs map[string]string) {
+func assertPinpointResource(t *testing.T, resource terraformutils.Resource, ok bool, wantType string, wantAttrs map[string]string) {
 	t.Helper()
 	if !ok {
 		t.Fatal("resource constructor returned ok=false, want true")
@@ -111,8 +111,8 @@ func assertPinpointResource(t *testing.T, resource terraformutils.Resource, ok b
 	if resource.InstanceInfo.Type != wantType {
 		t.Fatalf("type = %q, want %q", resource.InstanceInfo.Type, wantType)
 	}
-	if resource.InstanceState.ID != wantID {
-		t.Fatalf("ID = %q, want %q", resource.InstanceState.ID, wantID)
+	if resource.InstanceState.ID != "app-123" {
+		t.Fatalf("ID = %q, want %q", resource.InstanceState.ID, "app-123")
 	}
 	for key, want := range wantAttrs {
 		if got := resource.InstanceState.Attributes[key]; got != want {

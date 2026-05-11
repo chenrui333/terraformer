@@ -60,7 +60,6 @@ func (g *ConnectGenerator) InitResources() error {
 		return err
 	}
 	for _, instance := range instances {
-		instance := instance
 		g.getOptionalConnectResources(
 			connectOptionalResourceLoader{name: "instance storage configs", load: func() error {
 				return g.loadInstanceStorageConfigs(svc, instance.id)

@@ -49,7 +49,6 @@ func (g *PinpointGenerator) InitResources() error {
 		return err
 	}
 	for _, app := range apps {
-		app := app
 		g.getOptionalPinpointResources(
 			pinpointOptionalResourceLoader{name: "email channels", load: func() error {
 				return g.loadEmailChannel(svc, app.id, app.name)
