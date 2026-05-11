@@ -245,7 +245,7 @@ func newIPAMPoolCIDRResource(poolID string, poolCIDR types.IpamPoolCidr) (terraf
 	}
 	cidr := StringValue(poolCIDR.Cidr)
 	importID := ipamPoolCIDRImportID(cidr, poolID)
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		importID,
 		ipamResourceName("pool_cidr", poolID, cidr),
 		ipamPoolCIDRResourceType,
@@ -256,7 +256,9 @@ func newIPAMPoolCIDRResource(poolID string, poolCIDR types.IpamPoolCidr) (terraf
 		},
 		ipamAllowEmptyValues,
 		map[string]interface{}{},
-	), true
+	)
+	resource.IgnoreKeys = append(resource.IgnoreKeys, "^netmask_length$")
+	return resource, true
 }
 
 func newIPAMResourceDiscoveryResource(discovery types.IpamResourceDiscovery) (terraformutils.Resource, bool) {

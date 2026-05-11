@@ -119,6 +119,9 @@ func TestNewIPAMPoolCIDRResource(t *testing.T) {
 	if got := resource.InstanceState.Attributes["ipam_pool_id"]; got != "ipam-pool-123" {
 		t.Fatalf("ipam_pool_id = %q, want ipam-pool-123", got)
 	}
+	if got, want := resource.IgnoreKeys, []string{"^netmask_length$"}; len(got) != len(want) || got[0] != want[0] {
+		t.Fatalf("IgnoreKeys = %v, want %v", got, want)
+	}
 
 	tests := []struct {
 		name     string

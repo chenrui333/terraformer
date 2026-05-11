@@ -115,6 +115,7 @@ func TestNewEC2HostResource(t *testing.T) {
 	resource, ok := newEC2HostResource(types.Host{
 		AvailabilityZone: aws.String("us-east-1a"),
 		HostId:           aws.String("h-123"),
+		HostProperties:   &types.HostProperties{InstanceFamily: aws.String("m5")},
 		State:            types.AllocationStateAvailable,
 	})
 	if !ok {
@@ -125,6 +126,25 @@ func TestNewEC2HostResource(t *testing.T) {
 	}
 	if got := resource.InstanceState.ID; got != "h-123" {
 		t.Fatalf("resource ID = %q, want h-123", got)
+	}
+	if len(resource.IgnoreKeys) != 0 {
+		t.Fatalf("IgnoreKeys = %v, want empty for family-only host", resource.IgnoreKeys)
+	}
+
+	resource, ok = newEC2HostResource(types.Host{
+		AvailabilityZone: aws.String("us-east-1a"),
+		HostId:           aws.String("h-456"),
+		HostProperties: &types.HostProperties{
+			InstanceFamily: aws.String("m5"),
+			InstanceType:   aws.String("m5.large"),
+		},
+		State: types.AllocationStateAvailable,
+	})
+	if !ok {
+		t.Fatal("newEC2HostResource(instance type) ok = false, want true")
+	}
+	if got, want := resource.IgnoreKeys, []string{"^instance_family$"}; len(got) != len(want) || got[0] != want[0] {
+		t.Fatalf("IgnoreKeys = %v, want %v", got, want)
 	}
 
 	if _, ok := newEC2HostResource(types.Host{
@@ -140,7 +160,14 @@ func TestNewEC2HostResource(t *testing.T) {
 	}
 	if _, ok := newEC2HostResource(types.Host{
 		HostId: aws.String("h-123"),
-		State:  types.AllocationStatePending,
+		State:  types.AllocationStateAvailable,
+	}); ok {
+		t.Fatal("host without sizing properties should be skipped")
+	}
+	if _, ok := newEC2HostResource(types.Host{
+		HostId:         aws.String("h-123"),
+		HostProperties: &types.HostProperties{InstanceFamily: aws.String("m5")},
+		State:          types.AllocationStatePending,
 	}); ok {
 		t.Fatal("pending host should be skipped")
 	}

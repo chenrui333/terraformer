@@ -281,13 +281,17 @@ func newEC2HostResource(host types.Host) (terraformutils.Resource, bool) {
 		return terraformutils.Resource{}, false
 	}
 	id := StringValue(host.HostId)
-	return terraformutils.NewSimpleResource(
+	resource := terraformutils.NewSimpleResource(
 		id,
 		ec2CoreResourceName("host", StringValue(host.AvailabilityZone), id),
 		ec2HostResourceType,
 		"aws",
 		ec2CoreAllowEmptyValues,
-	), true
+	)
+	if host.HostProperties != nil && StringValue(host.HostProperties.InstanceType) != "" {
+		resource.IgnoreKeys = append(resource.IgnoreKeys, "^instance_family$")
+	}
+	return resource, true
 }
 
 func newEC2NetworkInsightsPathResource(path types.NetworkInsightsPath) (terraformutils.Resource, bool) {
@@ -408,7 +412,13 @@ func ec2HostImportable(host types.Host) bool {
 	if StringValue(host.HostId) == "" {
 		return false
 	}
-	return host.State == types.AllocationStateAvailable
+	if host.State != types.AllocationStateAvailable {
+		return false
+	}
+	if host.HostProperties == nil {
+		return false
+	}
+	return StringValue(host.HostProperties.InstanceFamily) != "" || StringValue(host.HostProperties.InstanceType) != ""
 }
 
 func ec2TrafficMirrorFilterRuleImportID(filterID, ruleID string) string {
