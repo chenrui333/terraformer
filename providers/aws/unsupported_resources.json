@@ -96,6 +96,18 @@
         "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/opensearch_package",
         "https://docs.aws.amazon.com/opensearch-service/latest/APIReference/API_DescribePackages.html"
       ]
+    },
+    {
+      "resource": "aws_sagemaker_human_task_ui",
+      "service_family": "sagemaker",
+      "reason": "SageMaker Human Task UI imports cannot reconstruct the required ui_template.content field from SageMaker APIs.",
+      "evidence": "Terraform AWS provider marks ui_template as required, but its Read path preserves ui_template.content from prior state while DescribeHumanTaskUi returns template metadata rather than the original content. Provider import tests ignore ui_template.0.content and ui_template.0.url after import.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sagemaker_human_task_ui",
+        "https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribeHumanTaskUi.html"
+      ]
     }
   ]
 }

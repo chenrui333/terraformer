@@ -583,6 +583,31 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_s3tables_table`
     * `aws_s3tables_table_bucket_policy`
     * `aws_s3tables_table_policy`
+*   `sagemaker`
+    * `aws_sagemaker_app`
+    * `aws_sagemaker_app_image_config`
+    * `aws_sagemaker_code_repository`
+    * `aws_sagemaker_data_quality_job_definition`
+    * `aws_sagemaker_device_fleet`
+    * `aws_sagemaker_domain`
+    * `aws_sagemaker_endpoint`
+    * `aws_sagemaker_endpoint_configuration`
+    * `aws_sagemaker_feature_group`
+    * `aws_sagemaker_flow_definition`
+    * `aws_sagemaker_image`
+    * `aws_sagemaker_image_version`
+    * `aws_sagemaker_model`
+    * `aws_sagemaker_model_package_group`
+    * `aws_sagemaker_model_package_group_policy`
+    * `aws_sagemaker_monitoring_schedule`
+    * `aws_sagemaker_pipeline`
+    * `aws_sagemaker_project`
+    * `aws_sagemaker_servicecatalog_portfolio_status`
+    * `aws_sagemaker_space`
+    * `aws_sagemaker_studio_lifecycle_config`
+    * `aws_sagemaker_user_profile`
+    * `aws_sagemaker_workforce`
+    * `aws_sagemaker_workteam`
 *   `scheduler`
     * `aws_scheduler_schedule`
     * `aws_scheduler_schedule_group`
