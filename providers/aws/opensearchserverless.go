@@ -43,6 +43,10 @@ type openSearchServerlessOptionalResourceLoader struct {
 	load func() error
 }
 
+type openSearchServerlessEC2VPCEndpointDescriber interface {
+	DescribeVpcEndpoints(context.Context, *ec2.DescribeVpcEndpointsInput, ...func(*ec2.Options)) (*ec2.DescribeVpcEndpointsOutput, error)
+}
+
 func (g *OpenSearchServerlessGenerator) loadOptionalResources(loaders []openSearchServerlessOptionalResourceLoader) error {
 	for _, loader := range loaders {
 		if err := loader.load(); err != nil {
@@ -586,6 +590,9 @@ func openSearchServerlessCollectionIDs(summaries []opensearchserverlesstypes.Col
 func openSearchServerlessVPCEndpointIDs(summaries []opensearchserverlesstypes.VpcEndpointSummary) []string {
 	var ids []string
 	for _, summary := range summaries {
+		if summary.Status != opensearchserverlesstypes.VpcEndpointStatusActive {
+			continue
+		}
 		if id := StringValue(summary.Id); id != "" {
 			ids = append(ids, id)
 		}
@@ -593,7 +600,7 @@ func openSearchServerlessVPCEndpointIDs(summaries []opensearchserverlesstypes.Vp
 	return ids
 }
 
-func openSearchServerlessEC2VPCEndpointSecurityGroups(ctx context.Context, svc *ec2.Client, ids []string) (map[string][]string, error) {
+func openSearchServerlessEC2VPCEndpointSecurityGroups(ctx context.Context, svc openSearchServerlessEC2VPCEndpointDescriber, ids []string) (map[string][]string, error) {
 	securityGroupIDs := map[string][]string{}
 	if svc == nil || len(ids) == 0 {
 		return securityGroupIDs, nil
@@ -602,16 +609,40 @@ func openSearchServerlessEC2VPCEndpointSecurityGroups(ctx context.Context, svc *
 		VpcEndpointIds: ids,
 	})
 	if err != nil {
+		if openSearchServerlessEC2NotFound(err) {
+			return openSearchServerlessEC2VPCEndpointSecurityGroupsByID(ctx, svc, ids)
+		}
 		return securityGroupIDs, err
 	}
-	for _, endpoint := range output.VpcEndpoints {
+	openSearchServerlessCollectEC2VPCEndpointSecurityGroups(securityGroupIDs, output.VpcEndpoints)
+	return securityGroupIDs, nil
+}
+
+func openSearchServerlessEC2VPCEndpointSecurityGroupsByID(ctx context.Context, svc openSearchServerlessEC2VPCEndpointDescriber, ids []string) (map[string][]string, error) {
+	securityGroupIDs := map[string][]string{}
+	for _, id := range ids {
+		output, err := svc.DescribeVpcEndpoints(ctx, &ec2.DescribeVpcEndpointsInput{
+			VpcEndpointIds: []string{id},
+		})
+		if err != nil {
+			if openSearchServerlessEC2NotFound(err) {
+				continue
+			}
+			return securityGroupIDs, err
+		}
+		openSearchServerlessCollectEC2VPCEndpointSecurityGroups(securityGroupIDs, output.VpcEndpoints)
+	}
+	return securityGroupIDs, nil
+}
+
+func openSearchServerlessCollectEC2VPCEndpointSecurityGroups(securityGroupIDs map[string][]string, endpoints []ec2types.VpcEndpoint) {
+	for _, endpoint := range endpoints {
 		id := StringValue(endpoint.VpcEndpointId)
 		if id == "" {
 			continue
 		}
 		securityGroupIDs[id] = openSearchServerlessEC2SecurityGroupIDs(endpoint.Groups)
 	}
-	return securityGroupIDs, nil
 }
 
 func openSearchServerlessEC2SecurityGroupIDs(groups []ec2types.SecurityGroupIdentifier) []string {
@@ -625,14 +656,22 @@ func openSearchServerlessEC2SecurityGroupIDs(groups []ec2types.SecurityGroupIden
 }
 
 func openSearchServerlessEC2ErrorSkippable(err error) bool {
+	return openSearchServerlessEC2AccessDenied(err)
+}
+
+func openSearchServerlessEC2AccessDenied(err error) bool {
 	var apiErr smithy.APIError
 	if !errors.As(err, &apiErr) {
 		return false
 	}
 	code := strings.ToLower(apiErr.ErrorCode())
 	return strings.Contains(code, "accessdenied") ||
-		strings.Contains(code, "unauthorized") ||
-		strings.Contains(code, "notfound")
+		strings.Contains(code, "unauthorized")
+}
+
+func openSearchServerlessEC2NotFound(err error) bool {
+	var apiErr smithy.APIError
+	return errors.As(err, &apiErr) && strings.Contains(strings.ToLower(apiErr.ErrorCode()), "notfound")
 }
 
 func openSearchServerlessStringChunks(values []string, size int) [][]string {

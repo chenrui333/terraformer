@@ -3,11 +3,13 @@
 package aws
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	opensearchtypes "github.com/aws/aws-sdk-go-v2/service/opensearch/types"
 	"github.com/aws/aws-sdk-go-v2/service/opensearchserverless/document"
@@ -502,6 +504,57 @@ func TestOpenSearchServerlessEC2SecurityGroupIDs(t *testing.T) {
 	}
 }
 
+func TestOpenSearchServerlessVPCEndpointIDsFiltersInactiveSummaries(t *testing.T) {
+	got := openSearchServerlessVPCEndpointIDs([]opensearchserverlesstypes.VpcEndpointSummary{
+		{Id: openSearchTestString("vpce-active"), Status: opensearchserverlesstypes.VpcEndpointStatusActive},
+		{Id: openSearchTestString("vpce-pending"), Status: opensearchserverlesstypes.VpcEndpointStatusPending},
+		{Id: openSearchTestString("vpce-deleting"), Status: opensearchserverlesstypes.VpcEndpointStatusDeleting},
+		{Status: opensearchserverlesstypes.VpcEndpointStatusActive},
+	})
+	want := []string{"vpce-active"}
+	if len(got) != len(want) {
+		t.Fatalf("VPC endpoint IDs = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("VPC endpoint IDs = %v, want %v", got, want)
+		}
+	}
+}
+
+func TestOpenSearchServerlessEC2VPCEndpointSecurityGroupsRetriesStaleIDs(t *testing.T) {
+	notFound := &smithy.GenericAPIError{Code: "InvalidVpcEndpointId.NotFound"}
+	describer := &fakeOpenSearchServerlessEC2VPCEndpointDescriber{
+		batchErr: notFound,
+		errors: map[string]error{
+			"vpce-stale": notFound,
+		},
+		outputs: map[string]*ec2.DescribeVpcEndpointsOutput{
+			"vpce-active": {
+				VpcEndpoints: []ec2types.VpcEndpoint{{
+					VpcEndpointId: openSearchTestString("vpce-active"),
+					Groups: []ec2types.SecurityGroupIdentifier{
+						{GroupId: openSearchTestString("sg-1")},
+					},
+				}},
+			},
+		},
+	}
+	got, err := openSearchServerlessEC2VPCEndpointSecurityGroups(context.Background(), describer, []string{"vpce-active", "vpce-stale"})
+	if err != nil {
+		t.Fatalf("EC2 VPC endpoint security group lookup returned error: %v", err)
+	}
+	if got["vpce-active"][0] != "sg-1" {
+		t.Fatalf("active endpoint security groups = %v, want sg-1", got["vpce-active"])
+	}
+	if _, exists := got["vpce-stale"]; exists {
+		t.Fatal("stale endpoint should not produce security group state")
+	}
+	if len(describer.calls) != 3 {
+		t.Fatalf("EC2 calls = %v, want batch call plus two single-ID retries", describer.calls)
+	}
+}
+
 func TestOpenSearchServerlessOptionalResourceErrorSkippable(t *testing.T) {
 	tests := []struct {
 		name string
@@ -530,7 +583,7 @@ func TestOpenSearchServerlessEC2ErrorSkippable(t *testing.T) {
 	}{
 		{name: "access denied", err: &smithy.GenericAPIError{Code: "AccessDeniedException"}, want: true},
 		{name: "unauthorized operation", err: &smithy.GenericAPIError{Code: "UnauthorizedOperation"}, want: true},
-		{name: "not found", err: &smithy.GenericAPIError{Code: "InvalidVpcEndpointId.NotFound"}, want: true},
+		{name: "not found", err: &smithy.GenericAPIError{Code: "InvalidVpcEndpointId.NotFound"}, want: false},
 		{name: "throttling", err: &smithy.GenericAPIError{Code: "ThrottlingException"}, want: false},
 		{name: "plain error", err: errors.New("boom"), want: false},
 	}
@@ -540,6 +593,15 @@ func TestOpenSearchServerlessEC2ErrorSkippable(t *testing.T) {
 				t.Fatalf("openSearchServerlessEC2ErrorSkippable() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestOpenSearchServerlessEC2NotFound(t *testing.T) {
+	if !openSearchServerlessEC2NotFound(&smithy.GenericAPIError{Code: "InvalidVpcEndpointId.NotFound"}) {
+		t.Fatal("InvalidVpcEndpointId.NotFound should be detected as EC2 not found")
+	}
+	if openSearchServerlessEC2NotFound(&smithy.GenericAPIError{Code: "AccessDeniedException"}) {
+		t.Fatal("AccessDeniedException should not be detected as EC2 not found")
 	}
 }
 
@@ -623,6 +685,31 @@ func openSearchTestString(value string) *string {
 
 func openSearchTestInt32(value int32) *int32 {
 	return &value
+}
+
+type fakeOpenSearchServerlessEC2VPCEndpointDescriber struct {
+	batchErr error
+	errors   map[string]error
+	outputs  map[string]*ec2.DescribeVpcEndpointsOutput
+	calls    [][]string
+}
+
+func (f *fakeOpenSearchServerlessEC2VPCEndpointDescriber) DescribeVpcEndpoints(_ context.Context, input *ec2.DescribeVpcEndpointsInput, _ ...func(*ec2.Options)) (*ec2.DescribeVpcEndpointsOutput, error) {
+	ids := append([]string{}, input.VpcEndpointIds...)
+	f.calls = append(f.calls, ids)
+	if len(ids) > 1 && f.batchErr != nil {
+		return nil, f.batchErr
+	}
+	if len(ids) == 1 {
+		id := ids[0]
+		if err := f.errors[id]; err != nil {
+			return nil, err
+		}
+		if output := f.outputs[id]; output != nil {
+			return output, nil
+		}
+	}
+	return &ec2.DescribeVpcEndpointsOutput{}, nil
 }
 
 func openSearchTestDomainInfo(domainName, ownerID, region string) *opensearchtypes.DomainInformationContainer {
