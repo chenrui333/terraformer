@@ -117,6 +117,15 @@ func TestNewDMSEventSubscriptionResource(t *testing.T) {
 		Status:              dmsString("active"),
 	})
 	assertDMSResource(t, resource, ok, "dms-events", dmsResourceName("event-subscription", "dms-events"), dmsEventSubscriptionResourceType)
+	if got := resource.InstanceState.Attributes["event_categories.#"]; got != "2" {
+		t.Fatalf("event_categories.# = %q, want 2", got)
+	}
+	if got := resource.InstanceState.Attributes["event_categories.1"]; got != "failure" {
+		t.Fatalf("event_categories.1 = %q, want failure", got)
+	}
+	if _, ok := resource.AdditionalFields["event_categories"]; ok {
+		t.Fatal("non-empty event categories should be read from refreshed state")
+	}
 
 	resource, ok = newDMSEventSubscriptionResource(dmstypes.EventSubscription{
 		CustSubscriptionId: dmsString("dms-all-events"),
@@ -125,6 +134,16 @@ func TestNewDMSEventSubscriptionResource(t *testing.T) {
 		Status:             dmsString("active"),
 	})
 	assertDMSResource(t, resource, ok, "dms-all-events", dmsResourceName("event-subscription", "dms-all-events"), dmsEventSubscriptionResourceType)
+	if got := resource.InstanceState.Attributes["event_categories.#"]; got != "0" {
+		t.Fatalf("all-category event_categories.# = %q, want 0", got)
+	}
+	emptyCategories, ok := resource.AdditionalFields["event_categories"].([]interface{})
+	if !ok {
+		t.Fatalf("all-category event_categories additional field type = %T, want []interface{}", resource.AdditionalFields["event_categories"])
+	}
+	if len(emptyCategories) != 0 {
+		t.Fatalf("all-category event_categories length = %d, want 0", len(emptyCategories))
+	}
 
 	if _, ok := newDMSEventSubscriptionResource(dmstypes.EventSubscription{
 		EventCategoriesList: []string{"creation"},
@@ -244,6 +263,27 @@ func TestDMSCertificateImportable(t *testing.T) {
 	}
 	if dmsCertificateImportable(dmstypes.Certificate{}) {
 		t.Fatal("certificate without PEM or wallet material should not be importable")
+	}
+}
+
+func TestDMSStringSliceAttributes(t *testing.T) {
+	attributes := dmsStringSliceAttributes("event_categories", []string{"creation", "failure"})
+	if got := attributes["event_categories.#"]; got != "2" {
+		t.Fatalf("event_categories.# = %q, want 2", got)
+	}
+	if got := attributes["event_categories.0"]; got != "creation" {
+		t.Fatalf("event_categories.0 = %q, want creation", got)
+	}
+	if got := attributes["event_categories.1"]; got != "failure" {
+		t.Fatalf("event_categories.1 = %q, want failure", got)
+	}
+
+	emptyAttributes := dmsStringSliceAttributes("event_categories", nil)
+	if got := emptyAttributes["event_categories.#"]; got != "0" {
+		t.Fatalf("empty event_categories.# = %q, want 0", got)
+	}
+	if len(emptyAttributes) != 1 {
+		t.Fatalf("empty attributes length = %d, want 1", len(emptyAttributes))
 	}
 }
 

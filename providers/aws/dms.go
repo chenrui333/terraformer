@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/databasemigrationservice"
@@ -209,12 +210,20 @@ func newDMSEventSubscriptionResource(subscription dmstypes.EventSubscription) (t
 	if name == "" || !dmsEventSubscriptionImportable(subscription) {
 		return terraformutils.Resource{}, false
 	}
-	return terraformutils.NewSimpleResource(
+	attributes := dmsStringSliceAttributes("event_categories", subscription.EventCategoriesList)
+	additionalFields := map[string]interface{}{}
+	if len(subscription.EventCategoriesList) == 0 {
+		// DMS omits categories for all-category subscriptions, but Terraform still requires an explicit empty set.
+		additionalFields["event_categories"] = []interface{}{}
+	}
+	return terraformutils.NewResource(
 		name,
 		dmsResourceName("event-subscription", name),
 		dmsEventSubscriptionResourceType,
 		"aws",
+		attributes,
 		dmsAllowEmptyValues,
+		additionalFields,
 	), true
 }
 
@@ -289,6 +298,16 @@ func dmsResourceName(parts ...string) string {
 
 func dmsCertificateImportable(certificate dmstypes.Certificate) bool {
 	return StringValue(certificate.CertificatePem) != "" || len(certificate.CertificateWallet) > 0
+}
+
+func dmsStringSliceAttributes(prefix string, values []string) map[string]string {
+	attributes := map[string]string{
+		prefix + ".#": strconv.Itoa(len(values)),
+	}
+	for i, value := range values {
+		attributes[prefix+"."+strconv.Itoa(i)] = value
+	}
+	return attributes
 }
 
 func dmsEventSubscriptionImportable(subscription dmstypes.EventSubscription) bool {
