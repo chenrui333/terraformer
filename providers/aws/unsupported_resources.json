@@ -2,6 +2,18 @@
   "version": 1,
   "resources": [
     {
+      "resource": "aws_appstream_directory_config",
+      "service_family": "appstream",
+      "reason": "AppStream directory configs require service_account_credentials.account_password, which is a sensitive required field that AppStream DescribeDirectoryConfigs does not return.",
+      "evidence": "Terraform AWS provider marks service_account_credentials.account_password as required and reuses prior state during Read; the AppStream DescribeDirectoryConfigs API documentation states the account password is not returned in the actual response.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/appstream_directory_config",
+        "https://docs.aws.amazon.com/appstream2/latest/APIReference/API_DescribeDirectoryConfigs.html"
+      ]
+    },
+    {
       "resource": "aws_cloudwatch_event_connection",
       "service_family": "cloudwatch",
       "reason": "EventBridge connection credentials are write-only secrets; Terraformer cannot discover the required auth_parameters values from EventBridge APIs.",
