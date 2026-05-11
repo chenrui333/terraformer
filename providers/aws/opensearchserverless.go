@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/opensearchserverless"
 	opensearchserverlesstypes "github.com/aws/aws-sdk-go-v2/service/opensearchserverless/types"
 	"github.com/aws/smithy-go"
@@ -70,6 +72,7 @@ func (g *OpenSearchServerlessGenerator) InitResources() error {
 		return err
 	}
 	svc := opensearchserverless.NewFromConfig(config)
+	ec2Svc := ec2.NewFromConfig(config)
 
 	return g.loadOptionalResources([]openSearchServerlessOptionalResourceLoader{
 		{name: "collections", load: func() error { return g.loadCollections(svc) }},
@@ -77,7 +80,7 @@ func (g *OpenSearchServerlessGenerator) InitResources() error {
 		{name: "security policies", load: func() error { return g.loadSecurityPolicies(svc) }},
 		{name: "security configs", load: func() error { return g.loadSecurityConfigs(svc) }},
 		{name: "lifecycle policies", load: func() error { return g.loadLifecyclePolicies(svc) }},
-		{name: "VPC endpoints", load: func() error { return g.loadVPCEndpoints(svc) }},
+		{name: "VPC endpoints", load: func() error { return g.loadVPCEndpoints(svc, ec2Svc) }},
 	})
 }
 
@@ -103,13 +106,9 @@ func (g *OpenSearchServerlessGenerator) loadCollections(svc *opensearchserverles
 		if err != nil {
 			return err
 		}
-		for _, summary := range page.CollectionSummaries {
-			id := StringValue(summary.Id)
-			if id == "" {
-				continue
-			}
+		for _, chunk := range openSearchServerlessStringChunks(openSearchServerlessCollectionIDs(page.CollectionSummaries), 100) {
 			output, err := svc.BatchGetCollection(context.TODO(), &opensearchserverless.BatchGetCollectionInput{
-				Ids: []string{id},
+				Ids: chunk,
 			})
 			if err != nil {
 				if openSearchServerlessOptionalResourceErrorSkippable(err) {
@@ -271,7 +270,7 @@ func (g *OpenSearchServerlessGenerator) loadLifecyclePolicies(svc *opensearchser
 	return nil
 }
 
-func (g *OpenSearchServerlessGenerator) loadVPCEndpoints(svc *opensearchserverless.Client) error {
+func (g *OpenSearchServerlessGenerator) loadVPCEndpoints(svc *opensearchserverless.Client, ec2Svc *ec2.Client) error {
 	p := opensearchserverless.NewListVpcEndpointsPaginator(svc, &opensearchserverless.ListVpcEndpointsInput{})
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
@@ -280,6 +279,15 @@ func (g *OpenSearchServerlessGenerator) loadVPCEndpoints(svc *opensearchserverle
 		}
 		ids := openSearchServerlessVPCEndpointIDs(page.VpcEndpointSummaries)
 		for _, chunk := range openSearchServerlessStringChunks(ids, 100) {
+			securityGroupIDs, err := openSearchServerlessEC2VPCEndpointSecurityGroups(context.TODO(), ec2Svc, chunk)
+			if err != nil {
+				if openSearchServerlessEC2ErrorSkippable(err) {
+					log.Printf("Skipping OpenSearch Serverless VPC endpoint EC2 security group lookup: %v", err)
+					securityGroupIDs = map[string][]string{}
+				} else {
+					return err
+				}
+			}
 			output, err := svc.BatchGetVpcEndpoint(context.TODO(), &opensearchserverless.BatchGetVpcEndpointInput{
 				Ids: chunk,
 			})
@@ -290,7 +298,7 @@ func (g *OpenSearchServerlessGenerator) loadVPCEndpoints(svc *opensearchserverle
 				return err
 			}
 			for _, endpoint := range output.VpcEndpointDetails {
-				if resource, ok := newOpenSearchServerlessVPCEndpointResource(endpoint); ok {
+				if resource, ok := newOpenSearchServerlessVPCEndpointResource(endpoint, securityGroupIDs[StringValue(endpoint.Id)]); ok {
 					g.Resources = append(g.Resources, resource)
 				}
 			}
@@ -408,7 +416,7 @@ func newOpenSearchServerlessLifecyclePolicyResource(policy opensearchserverlesst
 	), true
 }
 
-func newOpenSearchServerlessVPCEndpointResource(endpoint opensearchserverlesstypes.VpcEndpointDetail) (terraformutils.Resource, bool) {
+func newOpenSearchServerlessVPCEndpointResource(endpoint opensearchserverlesstypes.VpcEndpointDetail, securityGroupIDs []string) (terraformutils.Resource, bool) {
 	importID := openSearchServerlessVPCEndpointImportID(endpoint)
 	if importID == "" || !openSearchServerlessVPCEndpointImportable(endpoint) {
 		return terraformutils.Resource{}, false
@@ -420,8 +428,10 @@ func newOpenSearchServerlessVPCEndpointResource(endpoint opensearchserverlesstyp
 	for key, value := range openSearchServerlessStringSliceAttributes("subnet_ids", endpoint.SubnetIds) {
 		attributes[key] = value
 	}
-	for key, value := range openSearchServerlessStringSliceAttributes("security_group_ids", endpoint.SecurityGroupIds) {
-		attributes[key] = value
+	if len(securityGroupIDs) > 0 {
+		for key, value := range openSearchServerlessStringSliceAttributes("security_group_ids", securityGroupIDs) {
+			attributes[key] = value
+		}
 	}
 	return terraformutils.NewResource(
 		importID,
@@ -517,11 +527,13 @@ func openSearchServerlessSecurityConfigName(importID string) string {
 }
 
 func openSearchServerlessSamlOptionsAttributes(prefix string, options *opensearchserverlesstypes.SamlConfigOptions) map[string]string {
+	if options == nil {
+		return map[string]string{
+			prefix + ".#": "0",
+		}
+	}
 	attributes := map[string]string{
 		prefix + ".#": "1",
-	}
-	if options == nil {
-		return attributes
 	}
 	attributes[prefix+".0.metadata"] = StringValue(options.Metadata)
 	if value := StringValue(options.GroupAttribute); value != "" {
@@ -563,6 +575,16 @@ func openSearchServerlessPolicyDocumentString(policy interface{}) string {
 	return string(b)
 }
 
+func openSearchServerlessCollectionIDs(summaries []opensearchserverlesstypes.CollectionSummary) []string {
+	var ids []string
+	for _, summary := range summaries {
+		if id := StringValue(summary.Id); id != "" {
+			ids = append(ids, id)
+		}
+	}
+	return ids
+}
+
 func openSearchServerlessVPCEndpointIDs(summaries []opensearchserverlesstypes.VpcEndpointSummary) []string {
 	var ids []string
 	for _, summary := range summaries {
@@ -571,6 +593,48 @@ func openSearchServerlessVPCEndpointIDs(summaries []opensearchserverlesstypes.Vp
 		}
 	}
 	return ids
+}
+
+func openSearchServerlessEC2VPCEndpointSecurityGroups(ctx context.Context, svc *ec2.Client, ids []string) (map[string][]string, error) {
+	securityGroupIDs := map[string][]string{}
+	if svc == nil || len(ids) == 0 {
+		return securityGroupIDs, nil
+	}
+	output, err := svc.DescribeVpcEndpoints(ctx, &ec2.DescribeVpcEndpointsInput{
+		VpcEndpointIds: ids,
+	})
+	if err != nil {
+		return securityGroupIDs, err
+	}
+	for _, endpoint := range output.VpcEndpoints {
+		id := StringValue(endpoint.VpcEndpointId)
+		if id == "" {
+			continue
+		}
+		securityGroupIDs[id] = openSearchServerlessEC2SecurityGroupIDs(endpoint.Groups)
+	}
+	return securityGroupIDs, nil
+}
+
+func openSearchServerlessEC2SecurityGroupIDs(groups []ec2types.SecurityGroupIdentifier) []string {
+	var ids []string
+	for _, group := range groups {
+		if id := StringValue(group.GroupId); id != "" {
+			ids = append(ids, id)
+		}
+	}
+	return ids
+}
+
+func openSearchServerlessEC2ErrorSkippable(err error) bool {
+	var apiErr smithy.APIError
+	if !errors.As(err, &apiErr) {
+		return false
+	}
+	code := strings.ToLower(apiErr.ErrorCode())
+	return strings.Contains(code, "accessdenied") ||
+		strings.Contains(code, "unauthorized") ||
+		strings.Contains(code, "notfound")
 }
 
 func openSearchServerlessStringChunks(values []string, size int) [][]string {

@@ -8,6 +8,7 @@ import (
 	"os"
 	"testing"
 
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	opensearchtypes "github.com/aws/aws-sdk-go-v2/service/opensearch/types"
 	"github.com/aws/aws-sdk-go-v2/service/opensearchserverless/document"
 	opensearchserverlesstypes "github.com/aws/aws-sdk-go-v2/service/opensearchserverless/types"
@@ -394,20 +395,36 @@ func TestNewOpenSearchServerlessSecurityConfigResource(t *testing.T) {
 	}); ok {
 		t.Fatal("SAML security config without metadata should be skipped")
 	}
+	if got := openSearchServerlessSamlOptionsAttributes("saml_options", nil)["saml_options.#"]; got != "0" {
+		t.Fatalf("nil SAML options count = %q, want 0", got)
+	}
 }
 
 func TestNewOpenSearchServerlessVPCEndpointResource(t *testing.T) {
 	resource, ok := newOpenSearchServerlessVPCEndpointResource(opensearchserverlesstypes.VpcEndpointDetail{
 		Id:               openSearchTestString("vpce-123"),
 		Name:             openSearchTestString("private-search"),
-		SecurityGroupIds: []string{"sg-1"},
+		SecurityGroupIds: []string{"sg-from-serverless"},
 		Status:           opensearchserverlesstypes.VpcEndpointStatusActive,
 		SubnetIds:        []string{"subnet-1", "subnet-2"},
 		VpcId:            openSearchTestString("vpc-123"),
-	})
+	}, []string{"sg-from-ec2"})
 	assertOpenSearchResource(t, resource, ok, "vpce-123", openSearchServerlessResourceName("vpc-endpoint", "private-search", "vpce-123"), openSearchServerlessVPCEndpointResourceType)
 	assertOpenSearchAttribute(t, resource, "name", "private-search")
 	assertOpenSearchAttribute(t, resource, "subnet_ids.#", "2")
+	assertOpenSearchAttribute(t, resource, "security_group_ids.0", "sg-from-ec2")
+
+	resource, ok = newOpenSearchServerlessVPCEndpointResource(opensearchserverlesstypes.VpcEndpointDetail{
+		Id:        openSearchTestString("vpce-456"),
+		Name:      openSearchTestString("private-search"),
+		Status:    opensearchserverlesstypes.VpcEndpointStatusActive,
+		SubnetIds: []string{"subnet-1"},
+		VpcId:     openSearchTestString("vpc-123"),
+	}, nil)
+	assertOpenSearchResource(t, resource, ok, "vpce-456", openSearchServerlessResourceName("vpc-endpoint", "private-search", "vpce-456"), openSearchServerlessVPCEndpointResourceType)
+	if _, exists := resource.InstanceState.Attributes["security_group_ids.#"]; exists {
+		t.Fatal("security_group_ids should be omitted when EC2 lookup is unavailable")
+	}
 
 	if _, ok := newOpenSearchServerlessVPCEndpointResource(opensearchserverlesstypes.VpcEndpointDetail{
 		Id:        openSearchTestString("vpce-123"),
@@ -415,8 +432,45 @@ func TestNewOpenSearchServerlessVPCEndpointResource(t *testing.T) {
 		Status:    opensearchserverlesstypes.VpcEndpointStatusPending,
 		SubnetIds: []string{"subnet-1"},
 		VpcId:     openSearchTestString("vpc-123"),
-	}); ok {
+	}, []string{"sg-1"}); ok {
 		t.Fatal("pending VPC endpoint should be skipped")
+	}
+}
+
+func TestOpenSearchServerlessCollectionIDs(t *testing.T) {
+	got := openSearchServerlessCollectionIDs([]opensearchserverlesstypes.CollectionSummary{
+		{Id: openSearchTestString("col-1")},
+		{},
+		{Id: openSearchTestString("col-2")},
+	})
+	want := []string{"col-1", "col-2"}
+	if len(got) != len(want) {
+		t.Fatalf("collection IDs = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("collection IDs = %v, want %v", got, want)
+		}
+	}
+	if chunks := openSearchServerlessStringChunks(got, 1); len(chunks) != 2 || len(chunks[0]) != 1 || chunks[0][0] != "col-1" {
+		t.Fatalf("collection chunks = %v, want one ID per chunk", chunks)
+	}
+}
+
+func TestOpenSearchServerlessEC2SecurityGroupIDs(t *testing.T) {
+	got := openSearchServerlessEC2SecurityGroupIDs([]ec2types.SecurityGroupIdentifier{
+		{GroupId: openSearchTestString("sg-1")},
+		{},
+		{GroupId: openSearchTestString("sg-2")},
+	})
+	want := []string{"sg-1", "sg-2"}
+	if len(got) != len(want) {
+		t.Fatalf("EC2 security group IDs = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("EC2 security group IDs = %v, want %v", got, want)
+		}
 	}
 }
 
@@ -435,6 +489,27 @@ func TestOpenSearchServerlessOptionalResourceErrorSkippable(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := openSearchServerlessOptionalResourceErrorSkippable(tt.err); got != tt.want {
 				t.Fatalf("openSearchServerlessOptionalResourceErrorSkippable() = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestOpenSearchServerlessEC2ErrorSkippable(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "access denied", err: &smithy.GenericAPIError{Code: "AccessDeniedException"}, want: true},
+		{name: "unauthorized operation", err: &smithy.GenericAPIError{Code: "UnauthorizedOperation"}, want: true},
+		{name: "not found", err: &smithy.GenericAPIError{Code: "InvalidVpcEndpointId.NotFound"}, want: true},
+		{name: "throttling", err: &smithy.GenericAPIError{Code: "ThrottlingException"}, want: false},
+		{name: "plain error", err: errors.New("boom"), want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := openSearchServerlessEC2ErrorSkippable(tt.err); got != tt.want {
+				t.Fatalf("openSearchServerlessEC2ErrorSkippable() = %v, want %v", got, tt.want)
 			}
 		})
 	}
