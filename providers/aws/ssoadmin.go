@@ -277,7 +277,7 @@ func (g *SSOAdminGenerator) loadAccountAssignmentsForAccount(svc *ssoadmin.Clien
 			if !ssoAdminAccountAssignmentConfigured(targetID, assignment) {
 				continue
 			}
-			g.Resources = append(g.Resources, newSSOAdminAccountAssignmentResource(instanceARN, permissionSetARN, targetID, string(ssotypes.TargetTypeAwsAccount), assignment))
+			g.Resources = append(g.Resources, newSSOAdminAccountAssignmentResource(instanceARN, permissionSetARN, targetID, assignment))
 		}
 	}
 	return nil
@@ -315,9 +315,10 @@ func newSSOAdminPermissionSetResource(instanceARN string, permissionSet *ssotype
 	)
 }
 
-func newSSOAdminAccountAssignmentResource(instanceARN, permissionSetARN, targetID, targetType string, assignment ssotypes.AccountAssignment) terraformutils.Resource {
+func newSSOAdminAccountAssignmentResource(instanceARN, permissionSetARN, targetID string, assignment ssotypes.AccountAssignment) terraformutils.Resource {
 	principalID := StringValue(assignment.PrincipalId)
 	principalType := string(assignment.PrincipalType)
+	targetType := string(ssotypes.TargetTypeAwsAccount)
 	attributes := map[string]string{
 		"instance_arn":       instanceARN,
 		"permission_set_arn": permissionSetARN,

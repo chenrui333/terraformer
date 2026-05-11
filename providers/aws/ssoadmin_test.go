@@ -68,7 +68,6 @@ func TestSSOAdminAccountAssignmentResource(t *testing.T) {
 		testSSOAdminInstanceARN,
 		testSSOAdminPermissionSetARN,
 		testSSOAdminAccountID,
-		string(ssotypes.TargetTypeAwsAccount),
 		ssotypes.AccountAssignment{
 			AccountId:        aws.String(testSSOAdminAccountID),
 			PermissionSetArn: aws.String(testSSOAdminPermissionSetARN),
@@ -170,7 +169,6 @@ func TestSSOAdminPostConvertHookAddsManagedPolicyAttachmentDependsOnFilteredAssi
 		testSSOAdminInstanceARN,
 		testSSOAdminPermissionSetARN,
 		testSSOAdminAccountID,
-		string(ssotypes.TargetTypeAwsAccount),
 		ssotypes.AccountAssignment{
 			AccountId:        aws.String(testSSOAdminAccountID),
 			PermissionSetArn: aws.String(testSSOAdminPermissionSetARN),
@@ -182,7 +180,6 @@ func TestSSOAdminPostConvertHookAddsManagedPolicyAttachmentDependsOnFilteredAssi
 		testSSOAdminInstanceARN,
 		testSSOAdminPermissionSetARN+"-other",
 		testSSOAdminAccountID,
-		string(ssotypes.TargetTypeAwsAccount),
 		ssotypes.AccountAssignment{
 			AccountId:        aws.String(testSSOAdminAccountID),
 			PermissionSetArn: aws.String(testSSOAdminPermissionSetARN + "-other"),
@@ -432,14 +429,12 @@ func TestSSOAdminResourceNamesDoNotCollapseJoinedParts(t *testing.T) {
 		"instance",
 		"permission",
 		"a_b",
-		string(ssotypes.TargetTypeAwsAccount),
 		ssotypes.AccountAssignment{PrincipalId: aws.String("c"), PrincipalType: ssotypes.PrincipalTypeGroup},
 	)
 	right = newSSOAdminAccountAssignmentResource(
 		"instance",
 		"permission",
 		"a",
-		string(ssotypes.TargetTypeAwsAccount),
 		ssotypes.AccountAssignment{PrincipalId: aws.String("b_c"), PrincipalType: ssotypes.PrincipalTypeGroup},
 	)
 	if left.ResourceName == right.ResourceName {
