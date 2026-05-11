@@ -353,6 +353,19 @@
       ]
     },
     {
+      "resource": "aws_mq_broker",
+      "service_family": "mq",
+      "reason": "MQ brokers require sensitive user.password values, and LDAP brokers can require service_account_password; Amazon MQ APIs do not return those passwords for imported brokers.",
+      "evidence": "Terraform AWS provider marks user.password as required and sensitive, and its Read path only preserves user passwords from prior Terraform state while DescribeBroker/DescribeUser return user metadata without password values. Terraformer cannot seed those passwords during broad discovery.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/mq_broker",
+        "https://docs.aws.amazon.com/amazon-mq/latest/api-reference/brokers-broker-id.html",
+        "https://docs.aws.amazon.com/amazon-mq/latest/api-reference/brokers-broker-id-users-username.html"
+      ]
+    },
+    {
       "resource": "aws_opensearch_package",
       "service_family": "opensearch",
       "reason": "OpenSearch packages require package_source.s3_bucket_name and package_source.s3_key, but DescribePackages does not return the source S3 location needed to seed valid Terraform configuration.",

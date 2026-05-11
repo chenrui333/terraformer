@@ -543,7 +543,6 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_medialive_multiplex`
     * `aws_medialive_multiplex_program`
 *   `mq`
-    * `aws_mq_broker`
     * `aws_mq_configuration`
 *   `msk`
     * `aws_msk_cluster`

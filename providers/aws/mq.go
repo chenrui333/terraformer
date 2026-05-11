@@ -14,7 +14,6 @@ import (
 )
 
 const (
-	mqBrokerResourceType        = "aws_mq_broker"
 	mqConfigurationResourceType = "aws_mq_configuration"
 )
 
@@ -22,22 +21,6 @@ var mqAllowEmptyValues = []string{"tags."}
 
 type MQGenerator struct {
 	AWSService
-}
-
-func (g *MQGenerator) loadBrokers(svc *mq.Client) error {
-	p := mq.NewListBrokersPaginator(svc, &mq.ListBrokersInput{})
-	for p.HasMorePages() {
-		page, err := p.NextPage(context.TODO())
-		if err != nil {
-			return err
-		}
-		for _, broker := range page.BrokerSummaries {
-			if resource, ok := newMQBrokerResource(broker); ok {
-				g.Resources = append(g.Resources, resource)
-			}
-		}
-	}
-	return nil
 }
 
 func (g *MQGenerator) loadConfigurations(svc *mq.Client) error {
@@ -68,34 +51,12 @@ func (g *MQGenerator) InitResources() error {
 	}
 	svc := mq.NewFromConfig(config)
 
-	err := g.loadBrokers(svc)
-	if err != nil {
-		return err
-	}
-
-	err = g.loadConfigurations(svc)
+	err := g.loadConfigurations(svc)
 	if err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func newMQBrokerResource(broker mqtypes.BrokerSummary) (terraformutils.Resource, bool) {
-	brokerID := StringValue(broker.BrokerId)
-	if brokerID == "" {
-		return terraformutils.Resource{}, false
-	}
-	brokerName := StringValue(broker.BrokerName)
-	if brokerName == "" {
-		brokerName = brokerID
-	}
-	return terraformutils.NewSimpleResource(
-		mqBrokerImportID(brokerID),
-		brokerName,
-		mqBrokerResourceType,
-		"aws",
-		mqAllowEmptyValues), true
 }
 
 func newMQConfigurationResource(configuration mqtypes.Configuration) (terraformutils.Resource, bool) {
@@ -113,10 +74,6 @@ func newMQConfigurationResource(configuration mqtypes.Configuration) (terraformu
 		mqConfigurationResourceType,
 		"aws",
 		mqAllowEmptyValues), true
-}
-
-func mqBrokerImportID(brokerID string) string {
-	return brokerID
 }
 
 func mqConfigurationImportID(configurationID string) string {

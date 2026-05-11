@@ -10,18 +10,6 @@ import (
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
-func TestNewMQBrokerResource(t *testing.T) {
-	resource, ok := newMQBrokerResource(mqtypes.BrokerSummary{
-		BrokerId:   aws.String("b-12345678-1234-1234-1234-123456789012"),
-		BrokerName: aws.String("orders"),
-	})
-	assertMQResource(t, resource, ok, "b-12345678-1234-1234-1234-123456789012", "orders", mqBrokerResourceType)
-
-	if _, ok := newMQBrokerResource(mqtypes.BrokerSummary{BrokerName: aws.String("missing-id")}); ok {
-		t.Fatal("broker with empty ID should be skipped")
-	}
-}
-
 func TestNewMQConfigurationResource(t *testing.T) {
 	resource, ok := newMQConfigurationResource(mqtypes.Configuration{
 		Id:   aws.String("c-12345678-1234-1234-1234-123456789012"),
@@ -35,9 +23,6 @@ func TestNewMQConfigurationResource(t *testing.T) {
 }
 
 func TestMQImportIDs(t *testing.T) {
-	if got, want := mqBrokerImportID("b-123"), "b-123"; got != want {
-		t.Fatalf("MQ broker import ID = %q, want %q", got, want)
-	}
 	if got, want := mqConfigurationImportID("c-123"), "c-123"; got != want {
 		t.Fatalf("MQ configuration import ID = %q, want %q", got, want)
 	}
