@@ -8,6 +8,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
+	snstypes "github.com/aws/aws-sdk-go-v2/service/sns/types"
+	"github.com/aws/smithy-go"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -68,6 +70,45 @@ func TestNewSNSTopicDataProtectionPolicyResource(t *testing.T) {
 	}
 	if _, ok := newSNSTopicDataProtectionPolicyResource(arn, "topic-a", &sns.GetDataProtectionPolicyOutput{}); ok {
 		t.Fatal("empty data protection policy should be skipped")
+	}
+}
+
+func TestSNSDataProtectionPolicyOptionalErrors(t *testing.T) {
+	notFoundTests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "typed not found", err: &snstypes.NotFoundException{}, want: true},
+		{name: "typed resource not found", err: &snstypes.ResourceNotFoundException{}, want: true},
+		{name: "generic resource not found", err: &smithy.GenericAPIError{Code: "ResourceNotFoundException"}, want: true},
+		{name: "authorization is not not-found", err: &snstypes.AuthorizationErrorException{}, want: false},
+	}
+	for _, tt := range notFoundTests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := snsDataProtectionPolicyNotFound(tt.err); got != tt.want {
+				t.Fatalf("not found = %t, want %t", got, tt.want)
+			}
+		})
+	}
+
+	unavailableTests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "typed authorization", err: &snstypes.AuthorizationErrorException{}, want: true},
+		{name: "generic access denied", err: &smithy.GenericAPIError{Code: "AccessDeniedException"}, want: true},
+		{name: "unsupported operation", err: &smithy.GenericAPIError{Code: "UnsupportedOperationException"}, want: true},
+		{name: "not found is handled separately", err: &snstypes.NotFoundException{}, want: false},
+		{name: "unexpected", err: &smithy.GenericAPIError{Code: "InternalError"}, want: false},
+	}
+	for _, tt := range unavailableTests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := snsDataProtectionPolicyReadUnavailable(tt.err); got != tt.want {
+				t.Fatalf("read unavailable = %t, want %t", got, tt.want)
+			}
+		})
 	}
 }
 

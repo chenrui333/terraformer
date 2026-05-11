@@ -6,9 +6,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	snstypes "github.com/aws/aws-sdk-go-v2/service/sns/types"
+	"github.com/aws/smithy-go"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -110,6 +112,10 @@ func (g *SnsGenerator) loadTopicPolicies(svc *sns.Client, topicARN, topicName st
 		if snsDataProtectionPolicyNotFound(err) {
 			return nil
 		}
+		if snsDataProtectionPolicyReadUnavailable(err) {
+			log.Printf("Skipping SNS topic data protection policy for %s: %v", topicARN, err)
+			return nil
+		}
 		return fmt.Errorf("get SNS topic data protection policy for %s: %w", topicARN, err)
 	}
 	if resource, ok := newSNSTopicDataProtectionPolicyResource(topicARN, topicName, dataProtectionPolicy); ok {
@@ -179,7 +185,37 @@ func snsResourceName(parts ...string) string {
 
 func snsDataProtectionPolicyNotFound(err error) bool {
 	var notFound *snstypes.NotFoundException
-	return errors.As(err, &notFound)
+	if errors.As(err, &notFound) {
+		return true
+	}
+	var resourceNotFound *snstypes.ResourceNotFoundException
+	if errors.As(err, &resourceNotFound) {
+		return true
+	}
+	var apiErr smithy.APIError
+	if errors.As(err, &apiErr) {
+		switch apiErr.ErrorCode() {
+		case "NotFound", "NotFoundException", "ResourceNotFoundException":
+			return true
+		}
+	}
+	return false
+}
+
+func snsDataProtectionPolicyReadUnavailable(err error) bool {
+	var authorization *snstypes.AuthorizationErrorException
+	if errors.As(err, &authorization) {
+		return true
+	}
+	var apiErr smithy.APIError
+	if errors.As(err, &apiErr) {
+		switch apiErr.ErrorCode() {
+		case "AccessDenied", "AccessDeniedException", "AuthorizationError", "AuthorizationErrorException",
+			"InvalidAction", "UnknownOperationException", "UnsupportedOperation", "UnsupportedOperationException":
+			return true
+		}
+	}
+	return false
 }
 
 // PostConvertHook for add policy json as heredoc
