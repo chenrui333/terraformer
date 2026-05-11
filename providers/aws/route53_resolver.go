@@ -27,6 +27,8 @@ const (
 	route53ResolverFirewallRuleResourceType                 = "aws_route53_resolver_firewall_rule"
 	route53ResolverFirewallRuleGroupAssociationResourceType = "aws_route53_resolver_firewall_rule_group_association"
 	route53ResolverFirewallRuleIDSeparator                  = ":"
+	route53ResolverAutodefinedIDPart                        = "autodefined"
+	route53ResolverAWSOwnerID                               = "Route 53 Resolver"
 )
 
 var route53ResolverAllowEmptyValues = []string{"tags."}
@@ -103,7 +105,7 @@ func (g *Route53ResolverGenerator) loadResolverRules(svc *route53resolver.Client
 		}
 		for _, ruleSummary := range page.ResolverRules {
 			ruleID := StringValue(ruleSummary.Id)
-			if ruleID == "" {
+			if ruleID == "" || route53ResolverAutodefinedID(ruleID) {
 				continue
 			}
 			rule, err := getRoute53ResolverRule(svc, ruleID)
@@ -130,7 +132,9 @@ func (g *Route53ResolverGenerator) loadResolverRuleAssociations(svc *route53reso
 		}
 		for _, associationSummary := range page.ResolverRuleAssociations {
 			associationID := StringValue(associationSummary.Id)
-			if associationID == "" {
+			if associationID == "" ||
+				route53ResolverAutodefinedID(associationID) ||
+				route53ResolverAutodefinedID(StringValue(associationSummary.ResolverRuleId)) {
 				continue
 			}
 			association, err := getRoute53ResolverRuleAssociation(svc, associationID)
@@ -526,10 +530,11 @@ func route53ResolverEndpointHasImportableIP(ipAddresses []route53resolvertypes.I
 func route53ResolverRuleImportable(rule *route53resolvertypes.ResolverRule) bool {
 	return rule != nil &&
 		StringValue(rule.Id) != "" &&
-		StringValue(rule.DomainName) != "" &&
+		trimRoute53ResolverTrailingPeriod(StringValue(rule.DomainName)) != "" &&
 		rule.RuleType != "" &&
 		rule.Status == route53resolvertypes.ResolverRuleStatusComplete &&
-		rule.ShareStatus != route53resolvertypes.ShareStatusSharedWithMe
+		rule.ShareStatus != route53resolvertypes.ShareStatusSharedWithMe &&
+		!route53ResolverRuleSystemDefined(rule)
 }
 
 func route53ResolverRuleAssociationImportable(association *route53resolvertypes.ResolverRuleAssociation) bool {
@@ -537,7 +542,8 @@ func route53ResolverRuleAssociationImportable(association *route53resolvertypes.
 		StringValue(association.Id) != "" &&
 		StringValue(association.ResolverRuleId) != "" &&
 		StringValue(association.VPCId) != "" &&
-		association.Status == route53resolvertypes.ResolverRuleAssociationStatusComplete
+		association.Status == route53resolvertypes.ResolverRuleAssociationStatusComplete &&
+		!route53ResolverRuleAssociationSystemDefined(association)
 }
 
 func route53ResolverQueryLogConfigImportable(config *route53resolvertypes.ResolverQueryLogConfig) bool {
@@ -603,6 +609,22 @@ func route53ResolverFirewallRuleImportID(ruleGroupID, ruleIdentifier string) str
 	return strings.Join([]string{ruleGroupID, ruleIdentifier}, route53ResolverFirewallRuleIDSeparator)
 }
 
+func route53ResolverRuleSystemDefined(rule *route53resolvertypes.ResolverRule) bool {
+	return rule != nil &&
+		(route53ResolverAutodefinedID(StringValue(rule.Id)) ||
+			strings.EqualFold(StringValue(rule.OwnerId), route53ResolverAWSOwnerID))
+}
+
+func route53ResolverRuleAssociationSystemDefined(association *route53resolvertypes.ResolverRuleAssociation) bool {
+	return association != nil &&
+		(route53ResolverAutodefinedID(StringValue(association.Id)) ||
+			route53ResolverAutodefinedID(StringValue(association.ResolverRuleId)))
+}
+
+func route53ResolverAutodefinedID(id string) bool {
+	return strings.Contains(strings.ToLower(id), route53ResolverAutodefinedIDPart)
+}
+
 func route53ResolverResourceName(parts ...string) string {
 	var name strings.Builder
 	for _, part := range parts {
@@ -639,7 +661,11 @@ func putRoute53ResolverListAttributes(attributes map[string]string, key string, 
 }
 
 func trimRoute53ResolverTrailingPeriod(s string) string {
-	return strings.TrimSuffix(s, ".")
+	trimmed := strings.TrimSuffix(s, ".")
+	if trimmed == "" && s == "." {
+		return s
+	}
+	return trimmed
 }
 
 func getRoute53ResolverEndpoint(svc *route53resolver.Client, id string) (*route53resolvertypes.ResolverEndpoint, error) {

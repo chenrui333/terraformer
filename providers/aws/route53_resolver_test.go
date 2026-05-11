@@ -72,6 +72,12 @@ func TestNewRoute53ResolverRuleResource(t *testing.T) {
 	if _, ok := newRoute53ResolverRuleResource(&route53resolvertypes.ResolverRule{DomainName: aws.String("example.com."), Id: aws.String(testRoute53ResolverRuleID), RuleType: route53resolvertypes.RuleTypeOptionForward, ShareStatus: route53resolvertypes.ShareStatusSharedWithMe, Status: route53resolvertypes.ResolverRuleStatusComplete}); ok {
 		t.Fatal("shared-with-me resolver rule should be skipped")
 	}
+	if _, ok := newRoute53ResolverRuleResource(&route53resolvertypes.ResolverRule{DomainName: aws.String("."), Id: aws.String("rslvr-autodefined-rr-internet-resolver"), OwnerId: aws.String("Route 53 Resolver"), RuleType: route53resolvertypes.RuleTypeOptionRecursive, ShareStatus: route53resolvertypes.ShareStatusNotShared, Status: route53resolvertypes.ResolverRuleStatusComplete}); ok {
+		t.Fatal("AWS-owned autodefined resolver rule should be skipped")
+	}
+	if _, ok := newRoute53ResolverRuleResource(&route53resolvertypes.ResolverRule{DomainName: aws.String("example.org."), Id: aws.String(testRoute53ResolverRuleID), OwnerId: aws.String("Route 53 Resolver"), RuleType: route53resolvertypes.RuleTypeOptionForward, ShareStatus: route53resolvertypes.ShareStatusNotShared, Status: route53resolvertypes.ResolverRuleStatusComplete}); ok {
+		t.Fatal("AWS-owned resolver rule should be skipped")
+	}
 }
 
 func TestNewRoute53ResolverRuleAssociationResource(t *testing.T) {
@@ -92,6 +98,12 @@ func TestNewRoute53ResolverRuleAssociationResource(t *testing.T) {
 
 	if _, ok := newRoute53ResolverRuleAssociationResource(&route53resolvertypes.ResolverRuleAssociation{Id: aws.String(testRoute53ResolverRuleAssociationID), ResolverRuleId: aws.String(testRoute53ResolverRuleID), Status: route53resolvertypes.ResolverRuleAssociationStatusFailed, VPCId: aws.String(testRoute53ResolverVPCID)}); ok {
 		t.Fatal("failed resolver rule association should be skipped")
+	}
+	if _, ok := newRoute53ResolverRuleAssociationResource(&route53resolvertypes.ResolverRuleAssociation{Id: aws.String("rslvr-autodefined-rrassoc-vpc-1234567890abcdef0"), ResolverRuleId: aws.String(testRoute53ResolverRuleID), Status: route53resolvertypes.ResolverRuleAssociationStatusComplete, VPCId: aws.String(testRoute53ResolverVPCID)}); ok {
+		t.Fatal("autodefined resolver rule association should be skipped")
+	}
+	if _, ok := newRoute53ResolverRuleAssociationResource(&route53resolvertypes.ResolverRuleAssociation{Id: aws.String(testRoute53ResolverRuleAssociationID), ResolverRuleId: aws.String("rslvr-autodefined-rr-internet-resolver"), Status: route53resolvertypes.ResolverRuleAssociationStatusComplete, VPCId: aws.String(testRoute53ResolverVPCID)}); ok {
+		t.Fatal("association for an autodefined resolver rule should be skipped")
 	}
 }
 
