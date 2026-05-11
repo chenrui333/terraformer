@@ -282,11 +282,10 @@ func (g *OpenSearchServerlessGenerator) loadVPCEndpoints(svc *opensearchserverle
 			securityGroupIDs, err := openSearchServerlessEC2VPCEndpointSecurityGroups(context.TODO(), ec2Svc, chunk)
 			if err != nil {
 				if openSearchServerlessEC2ErrorSkippable(err) {
-					log.Printf("Skipping OpenSearch Serverless VPC endpoint EC2 security group lookup: %v", err)
-					securityGroupIDs = map[string][]string{}
-				} else {
-					return err
+					log.Printf("Skipping OpenSearch Serverless VPC endpoint discovery: %v", err)
+					continue
 				}
+				return err
 			}
 			output, err := svc.BatchGetVpcEndpoint(context.TODO(), &opensearchserverless.BatchGetVpcEndpointInput{
 				Ids: chunk,
@@ -418,7 +417,7 @@ func newOpenSearchServerlessLifecyclePolicyResource(policy opensearchserverlesst
 
 func newOpenSearchServerlessVPCEndpointResource(endpoint opensearchserverlesstypes.VpcEndpointDetail, securityGroupIDs []string) (terraformutils.Resource, bool) {
 	importID := openSearchServerlessVPCEndpointImportID(endpoint)
-	if importID == "" || !openSearchServerlessVPCEndpointImportable(endpoint) {
+	if importID == "" || !openSearchServerlessVPCEndpointImportable(endpoint, securityGroupIDs) {
 		return terraformutils.Resource{}, false
 	}
 	attributes := map[string]string{
@@ -428,10 +427,8 @@ func newOpenSearchServerlessVPCEndpointResource(endpoint opensearchserverlesstyp
 	for key, value := range openSearchServerlessStringSliceAttributes("subnet_ids", endpoint.SubnetIds) {
 		attributes[key] = value
 	}
-	if len(securityGroupIDs) > 0 {
-		for key, value := range openSearchServerlessStringSliceAttributes("security_group_ids", securityGroupIDs) {
-			attributes[key] = value
-		}
+	for key, value := range openSearchServerlessStringSliceAttributes("security_group_ids", securityGroupIDs) {
+		attributes[key] = value
 	}
 	return terraformutils.NewResource(
 		importID,
@@ -498,11 +495,12 @@ func openSearchServerlessSecurityConfigImportable(config opensearchserverlesstyp
 		StringValue(config.SamlOptions.Metadata) != ""
 }
 
-func openSearchServerlessVPCEndpointImportable(endpoint opensearchserverlesstypes.VpcEndpointDetail) bool {
+func openSearchServerlessVPCEndpointImportable(endpoint opensearchserverlesstypes.VpcEndpointDetail, securityGroupIDs []string) bool {
 	return openSearchServerlessVPCEndpointImportID(endpoint) != "" &&
 		StringValue(endpoint.Name) != "" &&
 		StringValue(endpoint.VpcId) != "" &&
 		len(endpoint.SubnetIds) > 0 &&
+		len(securityGroupIDs) > 0 &&
 		endpoint.Status == opensearchserverlesstypes.VpcEndpointStatusActive
 }
 

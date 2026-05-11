@@ -94,6 +94,36 @@ func TestNewOpenSearchDomainPolicyResource(t *testing.T) {
 	}
 }
 
+func TestCleanOpenSearchDomainItemRemovesPolicyOwnership(t *testing.T) {
+	resource, ok := newOpenSearchDomainResource(opensearchtypes.DomainStatus{
+		AccessPolicies: openSearchTestString("{\"Version\":\"2012-10-17\"}"),
+		DomainName:     openSearchTestString("search"),
+	})
+	assertOpenSearchResource(t, resource, ok, "search", openSearchResourceName("domain", "search"), openSearchDomainResourceType)
+	resource.Item = map[string]interface{}{
+		"access_policies": "{\"Version\":\"2012-10-17\"}",
+		"cognito_options": []interface{}{map[string]interface{}{"enabled": false}},
+		"cluster_config":  []interface{}{map[string]interface{}{"warm_count": 0}},
+		"engine_version":  "OpenSearch_2.11",
+		"domain_name":     "search",
+	}
+	resource.InstanceState.Attributes["access_policies"] = "{\"Version\":\"2012-10-17\"}"
+	resource.InstanceState.Attributes["cognito_options.0.enabled"] = "false"
+	resource.InstanceState.Attributes["cluster_config.0.warm_count"] = "0"
+
+	cleanOpenSearchDomainItem(&resource)
+
+	if _, exists := resource.Item["access_policies"]; exists {
+		t.Fatal("domain access_policies should be removed when aws_opensearch_domain_policy owns it")
+	}
+	if _, exists := resource.InstanceState.Attributes["access_policies"]; exists {
+		t.Fatal("domain access_policies state should be removed when aws_opensearch_domain_policy owns it")
+	}
+	if _, exists := resource.Item["cognito_options"]; exists {
+		t.Fatal("disabled cognito_options should still be removed")
+	}
+}
+
 func TestNewOpenSearchDomainSAMLOptionsResource(t *testing.T) {
 	enabled := true
 	resource, ok := newOpenSearchDomainSAMLOptionsResource(opensearchtypes.DomainStatus{
@@ -414,16 +444,14 @@ func TestNewOpenSearchServerlessVPCEndpointResource(t *testing.T) {
 	assertOpenSearchAttribute(t, resource, "subnet_ids.#", "2")
 	assertOpenSearchAttribute(t, resource, "security_group_ids.0", "sg-from-ec2")
 
-	resource, ok = newOpenSearchServerlessVPCEndpointResource(opensearchserverlesstypes.VpcEndpointDetail{
+	if _, ok := newOpenSearchServerlessVPCEndpointResource(opensearchserverlesstypes.VpcEndpointDetail{
 		Id:        openSearchTestString("vpce-456"),
 		Name:      openSearchTestString("private-search"),
 		Status:    opensearchserverlesstypes.VpcEndpointStatusActive,
 		SubnetIds: []string{"subnet-1"},
 		VpcId:     openSearchTestString("vpc-123"),
-	}, nil)
-	assertOpenSearchResource(t, resource, ok, "vpce-456", openSearchServerlessResourceName("vpc-endpoint", "private-search", "vpce-456"), openSearchServerlessVPCEndpointResourceType)
-	if _, exists := resource.InstanceState.Attributes["security_group_ids.#"]; exists {
-		t.Fatal("security_group_ids should be omitted when EC2 lookup is unavailable")
+	}, nil); ok {
+		t.Fatal("VPC endpoint without EC2 security group IDs should be skipped")
 	}
 
 	if _, ok := newOpenSearchServerlessVPCEndpointResource(opensearchserverlesstypes.VpcEndpointDetail{

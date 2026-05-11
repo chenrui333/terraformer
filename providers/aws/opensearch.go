@@ -617,6 +617,10 @@ func cleanOpenSearchDomainItem(resource *terraformutils.Resource) {
 	if resource.Item == nil {
 		return
 	}
+	delete(resource.Item, "access_policies")
+	if resource.InstanceState != nil {
+		delete(resource.InstanceState.Attributes, "access_policies")
+	}
 	if resource.InstanceState.Attributes["cognito_options.0.enabled"] == "false" {
 		delete(resource.Item, "cognito_options")
 	}
