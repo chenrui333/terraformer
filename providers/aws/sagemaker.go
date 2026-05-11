@@ -34,6 +34,7 @@ const (
 	sageMakerMonitoringScheduleResourceType       = "aws_sagemaker_monitoring_schedule"
 	sageMakerPipelineResourceType                 = "aws_sagemaker_pipeline"
 	sageMakerProjectResourceType                  = "aws_sagemaker_project"
+	sageMakerServicecatalogPortfolioStatusType    = "aws_sagemaker_servicecatalog_portfolio_status"
 	sageMakerSpaceResourceType                    = "aws_sagemaker_space"
 	sageMakerStudioLifecycleConfigResourceType    = "aws_sagemaker_studio_lifecycle_config"
 	sageMakerUserProfileResourceType              = "aws_sagemaker_user_profile"
@@ -64,6 +65,7 @@ var (
 		sageMakerServiceName(sageMakerMonitoringScheduleResourceType),
 		sageMakerServiceName(sageMakerPipelineResourceType),
 		sageMakerServiceName(sageMakerProjectResourceType),
+		sageMakerServiceName(sageMakerServicecatalogPortfolioStatusType),
 		sageMakerServiceName(sageMakerSpaceResourceType),
 		sageMakerServiceName(sageMakerStudioLifecycleConfigResourceType),
 		sageMakerServiceName(sageMakerUserProfileResourceType),
@@ -205,6 +207,11 @@ func (g *SageMakerGenerator) InitResources() error {
 	}
 	if g.shouldLoadSageMakerResource(sageMakerServiceName(sageMakerProjectResourceType)) {
 		if err := g.loadProjects(svc); err != nil {
+			return err
+		}
+	}
+	if g.shouldLoadSageMakerResource(sageMakerServiceName(sageMakerServicecatalogPortfolioStatusType)) {
+		if err := g.loadServicecatalogPortfolioStatus(svc, config.Region); err != nil {
 			return err
 		}
 	}
@@ -653,6 +660,17 @@ func (g *SageMakerGenerator) loadProjects(svc *sagemaker.Client) error {
 	return nil
 }
 
+func (g *SageMakerGenerator) loadServicecatalogPortfolioStatus(svc *sagemaker.Client, region string) error {
+	output, err := svc.GetSagemakerServicecatalogPortfolioStatus(context.TODO(), &sagemaker.GetSagemakerServicecatalogPortfolioStatusInput{})
+	if err != nil {
+		return err
+	}
+	if resource, ok := newSageMakerServicecatalogPortfolioStatusResource(region, output); ok {
+		g.Resources = append(g.Resources, resource)
+	}
+	return nil
+}
+
 func (g *SageMakerGenerator) loadDataQualityJobDefinitions(svc *sagemaker.Client) error {
 	p := sagemaker.NewListDataQualityJobDefinitionsPaginator(svc, &sagemaker.ListDataQualityJobDefinitionsInput{})
 	for p.HasMorePages() {
@@ -951,6 +969,15 @@ func newSageMakerProjectResource(project sagemakertypes.ProjectSummary) (terrafo
 	})
 }
 
+func newSageMakerServicecatalogPortfolioStatusResource(region string, status *sagemaker.GetSagemakerServicecatalogPortfolioStatusOutput) (terraformutils.Resource, bool) {
+	if status == nil || region == "" || status.Status == "" {
+		return terraformutils.Resource{}, false
+	}
+	return sageMakerResource(sageMakerServicecatalogPortfolioStatusImportID(region), sageMakerResourceName("servicecatalog-portfolio-status", region), sageMakerServicecatalogPortfolioStatusType, map[string]string{
+		"status": string(status.Status),
+	})
+}
+
 func newSageMakerDataQualityJobDefinitionResource(definition sagemakertypes.MonitoringJobDefinitionSummary) (terraformutils.Resource, bool) {
 	name := StringValue(definition.MonitoringJobDefinitionName)
 	if name == "" {
@@ -986,10 +1013,14 @@ func newSageMakerWorkteamResource(workteam sagemakertypes.Workteam) (terraformut
 	if name == "" || StringValue(workteam.Description) == "" || len(workteam.MemberDefinitions) == 0 {
 		return terraformutils.Resource{}, false
 	}
-	return sageMakerResource(name, sageMakerResourceName("workteam", name), sageMakerWorkteamResourceType, map[string]string{
+	attributes := map[string]string{
 		"description":   StringValue(workteam.Description),
 		"workteam_name": name,
-	})
+	}
+	if workforceName := sageMakerWorkforceNameFromARN(StringValue(workteam.WorkforceArn)); workforceName != "" {
+		attributes["workforce_name"] = workforceName
+	}
+	return sageMakerResource(name, sageMakerResourceName("workteam", name), sageMakerWorkteamResourceType, attributes)
 }
 
 func newSageMakerFlowDefinitionResource(definition sagemakertypes.FlowDefinitionSummary) (terraformutils.Resource, bool) {
@@ -1029,6 +1060,10 @@ func sageMakerResource(importID, name, resourceType string, attributes map[strin
 
 func sageMakerUserProfileImportID(userProfileArn string) string {
 	return userProfileArn
+}
+
+func sageMakerServicecatalogPortfolioStatusImportID(region string) string {
+	return region
 }
 
 func sageMakerImageVersionImportID(imageName string, version int32) string {
@@ -1117,6 +1152,15 @@ func sageMakerInt32Value(value *int32) int32 {
 		return 0
 	}
 	return *value
+}
+
+func sageMakerWorkforceNameFromARN(workforceARN string) string {
+	const workforceResourcePrefix = "workforce/"
+	_, resource, ok := strings.Cut(workforceARN, workforceResourcePrefix)
+	if !ok {
+		return ""
+	}
+	return resource
 }
 
 func sageMakerResourceNotFound(err error) bool {

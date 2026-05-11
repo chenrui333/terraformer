@@ -561,6 +561,7 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_sagemaker_monitoring_schedule`
     * `aws_sagemaker_pipeline`
     * `aws_sagemaker_project`
+    * `aws_sagemaker_servicecatalog_portfolio_status`
     * `aws_sagemaker_space`
     * `aws_sagemaker_studio_lifecycle_config`
     * `aws_sagemaker_user_profile`

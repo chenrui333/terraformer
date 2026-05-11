@@ -23,6 +23,9 @@ func TestSageMakerImportIDs(t *testing.T) {
 	if got, want := sageMakerImageVersionImportID("studio-image", 7), "studio-image,7"; got != want {
 		t.Fatalf("sageMakerImageVersionImportID() = %q, want %q", got, want)
 	}
+	if got, want := sageMakerServicecatalogPortfolioStatusImportID("us-east-1"), "us-east-1"; got != want {
+		t.Fatalf("sageMakerServicecatalogPortfolioStatusImportID() = %q, want %q", got, want)
+	}
 }
 
 func TestSageMakerResourceNameFallback(t *testing.T) {
@@ -283,6 +286,14 @@ func TestNewSageMakerRegistryWorkflowAndMonitoringResources(t *testing.T) {
 	})
 	assertSageMakerResource(t, project, ok, "ml-project", sageMakerProjectResourceType)
 
+	portfolioStatus, ok := newSageMakerServicecatalogPortfolioStatusResource("us-east-1", &sagemaker.GetSagemakerServicecatalogPortfolioStatusOutput{
+		Status: sagemakertypes.SagemakerServicecatalogStatusEnabled,
+	})
+	assertSageMakerResource(t, portfolioStatus, ok, "us-east-1", sageMakerServicecatalogPortfolioStatusType)
+	if got := portfolioStatus.InstanceState.Attributes["status"]; got != "Enabled" {
+		t.Fatalf("status attribute = %q, want Enabled", got)
+	}
+
 	jobDefinition, ok := newSageMakerDataQualityJobDefinitionResource(sagemakertypes.MonitoringJobDefinitionSummary{
 		MonitoringJobDefinitionName: aws.String("data-quality"),
 	})
@@ -305,6 +316,14 @@ func TestNewSageMakerRegistryWorkflowAndMonitoringResources(t *testing.T) {
 		PipelineStatus: sagemakertypes.PipelineStatusDeleting,
 	}); ok {
 		t.Fatal("deleting pipeline should be skipped")
+	}
+	if _, ok := newSageMakerServicecatalogPortfolioStatusResource("", &sagemaker.GetSagemakerServicecatalogPortfolioStatusOutput{
+		Status: sagemakertypes.SagemakerServicecatalogStatusEnabled,
+	}); ok {
+		t.Fatal("portfolio status without region should be skipped")
+	}
+	if _, ok := newSageMakerServicecatalogPortfolioStatusResource("us-east-1", &sagemaker.GetSagemakerServicecatalogPortfolioStatusOutput{}); ok {
+		t.Fatal("portfolio status without status should be skipped")
 	}
 }
 
@@ -335,6 +354,7 @@ func TestNewSageMakerGroundTruthAndLowRiskResources(t *testing.T) {
 
 	workteam, ok := newSageMakerWorkteamResource(sagemakertypes.Workteam{
 		Description:  aws.String("review team"),
+		WorkforceArn: aws.String("arn:aws:sagemaker:us-east-1:123456789012:workforce/private"),
 		WorkteamName: aws.String("reviewers"),
 		MemberDefinitions: []sagemakertypes.MemberDefinition{{
 			CognitoMemberDefinition: &sagemakertypes.CognitoMemberDefinition{
@@ -345,6 +365,9 @@ func TestNewSageMakerGroundTruthAndLowRiskResources(t *testing.T) {
 		}},
 	})
 	assertSageMakerResource(t, workteam, ok, "reviewers", sageMakerWorkteamResourceType)
+	if got := workteam.InstanceState.Attributes["workforce_name"]; got != "private" {
+		t.Fatalf("workforce_name attribute = %q, want private", got)
+	}
 
 	flow, ok := newSageMakerFlowDefinitionResource(sagemakertypes.FlowDefinitionSummary{
 		FlowDefinitionName:   aws.String("human-loop"),
@@ -374,6 +397,15 @@ func TestNewSageMakerGroundTruthAndLowRiskResources(t *testing.T) {
 		FlowDefinitionStatus: sagemakertypes.FlowDefinitionStatusFailed,
 	}); ok {
 		t.Fatal("failed flow definition should be skipped")
+	}
+}
+
+func TestSageMakerWorkforceNameFromARN(t *testing.T) {
+	if got, want := sageMakerWorkforceNameFromARN("arn:aws:sagemaker:us-east-1:123456789012:workforce/private"), "private"; got != want {
+		t.Fatalf("sageMakerWorkforceNameFromARN() = %q, want %q", got, want)
+	}
+	if got := sageMakerWorkforceNameFromARN("arn:aws:sagemaker:us-east-1:123456789012:workteam/reviewers"); got != "" {
+		t.Fatalf("sageMakerWorkforceNameFromARN() = %q, want empty", got)
 	}
 }
 
@@ -494,8 +526,7 @@ func TestSageMakerUnsupportedResourceEntries(t *testing.T) {
 
 	resources := make([]string, 0, len(entries))
 	found := map[string]bool{
-		"aws_sagemaker_human_task_ui":                   false,
-		"aws_sagemaker_servicecatalog_portfolio_status": false,
+		"aws_sagemaker_human_task_ui": false,
 	}
 	for _, rawEntry := range entries {
 		entry, ok := rawEntry.(map[string]interface{})
@@ -604,6 +635,9 @@ func sageMakerTestResources(t *testing.T) []terraformutils.Resource {
 		{name: "project", make: func() (terraformutils.Resource, bool) {
 			return newSageMakerProjectResource(sagemakertypes.ProjectSummary{ProjectName: aws.String("ml-project"), ProjectStatus: sagemakertypes.ProjectStatusCreateCompleted})
 		}},
+		{name: "servicecatalog portfolio status", make: func() (terraformutils.Resource, bool) {
+			return newSageMakerServicecatalogPortfolioStatusResource("us-east-1", &sagemaker.GetSagemakerServicecatalogPortfolioStatusOutput{Status: sagemakertypes.SagemakerServicecatalogStatusEnabled})
+		}},
 		{name: "data quality job definition", make: func() (terraformutils.Resource, bool) {
 			return newSageMakerDataQualityJobDefinitionResource(sagemakertypes.MonitoringJobDefinitionSummary{MonitoringJobDefinitionName: aws.String("data-quality")})
 		}},
@@ -614,7 +648,7 @@ func sageMakerTestResources(t *testing.T) []terraformutils.Resource {
 			return newSageMakerWorkforceResource(sagemakertypes.Workforce{Status: sagemakertypes.WorkforceStatusActive, WorkforceName: aws.String("private")})
 		}},
 		{name: "workteam", make: func() (terraformutils.Resource, bool) {
-			return newSageMakerWorkteamResource(sagemakertypes.Workteam{Description: aws.String("review team"), WorkteamName: aws.String("reviewers"), MemberDefinitions: []sagemakertypes.MemberDefinition{{CognitoMemberDefinition: &sagemakertypes.CognitoMemberDefinition{ClientId: aws.String("client"), UserGroup: aws.String("labelers"), UserPool: aws.String("pool")}}}})
+			return newSageMakerWorkteamResource(sagemakertypes.Workteam{Description: aws.String("review team"), WorkforceArn: aws.String("arn:aws:sagemaker:us-east-1:123456789012:workforce/private"), WorkteamName: aws.String("reviewers"), MemberDefinitions: []sagemakertypes.MemberDefinition{{CognitoMemberDefinition: &sagemakertypes.CognitoMemberDefinition{ClientId: aws.String("client"), UserGroup: aws.String("labelers"), UserPool: aws.String("pool")}}}})
 		}},
 		{name: "flow definition", make: func() (terraformutils.Resource, bool) {
 			return newSageMakerFlowDefinitionResource(sagemakertypes.FlowDefinitionSummary{FlowDefinitionName: aws.String("human-loop"), FlowDefinitionStatus: sagemakertypes.FlowDefinitionStatusActive})
