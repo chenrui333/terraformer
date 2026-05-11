@@ -62,6 +62,7 @@ func (g *SSOAdminGenerator) InitResources() error {
 }
 
 func (g *SSOAdminGenerator) PostConvertHook() error {
+	g.updateManagedPolicyAttachmentDependencies()
 	for i, resource := range g.Resources {
 		if resource.InstanceInfo.Type != ssoAdminPermissionSetInlinePolicyResourceType {
 			continue
@@ -126,11 +127,7 @@ func (g *SSOAdminGenerator) loadPermissionSets(svc *ssoadmin.Client, instanceARN
 }
 
 func (g *SSOAdminGenerator) loadPermissionSetChildren(svc *ssoadmin.Client, instanceARN, permissionSetARN string) error {
-	accountAssignmentRefs, err := g.loadAccountAssignments(svc, instanceARN, permissionSetARN)
-	if err != nil {
-		return err
-	}
-	if err := g.loadManagedPolicyAttachments(svc, instanceARN, permissionSetARN, accountAssignmentRefs); err != nil {
+	if err := g.loadManagedPolicyAttachments(svc, instanceARN, permissionSetARN); err != nil {
 		return err
 	}
 	if err := g.loadCustomerManagedPolicyAttachments(svc, instanceARN, permissionSetARN); err != nil {
@@ -142,7 +139,7 @@ func (g *SSOAdminGenerator) loadPermissionSetChildren(svc *ssoadmin.Client, inst
 	if err := g.loadPermissionsBoundaryAttachment(svc, instanceARN, permissionSetARN); err != nil {
 		return err
 	}
-	return nil
+	return g.loadAccountAssignments(svc, instanceARN, permissionSetARN)
 }
 
 func describeSSOAdminPermissionSet(svc *ssoadmin.Client, instanceARN, permissionSetARN string) (*ssotypes.PermissionSet, error) {
@@ -159,7 +156,7 @@ func describeSSOAdminPermissionSet(svc *ssoadmin.Client, instanceARN, permission
 	return output.PermissionSet, nil
 }
 
-func (g *SSOAdminGenerator) loadManagedPolicyAttachments(svc *ssoadmin.Client, instanceARN, permissionSetARN string, accountAssignmentRefs []string) error {
+func (g *SSOAdminGenerator) loadManagedPolicyAttachments(svc *ssoadmin.Client, instanceARN, permissionSetARN string) error {
 	p := ssoadmin.NewListManagedPoliciesInPermissionSetPaginator(svc, &ssoadmin.ListManagedPoliciesInPermissionSetInput{
 		InstanceArn:      aws.String(instanceARN),
 		PermissionSetArn: aws.String(permissionSetARN),
@@ -173,7 +170,7 @@ func (g *SSOAdminGenerator) loadManagedPolicyAttachments(svc *ssoadmin.Client, i
 			if StringValue(policy.Arn) == "" {
 				continue
 			}
-			g.Resources = append(g.Resources, newSSOAdminManagedPolicyAttachmentResource(instanceARN, permissionSetARN, policy, accountAssignmentRefs))
+			g.Resources = append(g.Resources, newSSOAdminManagedPolicyAttachmentResource(instanceARN, permissionSetARN, policy))
 		}
 	}
 	return nil
@@ -239,43 +236,38 @@ func (g *SSOAdminGenerator) loadPermissionsBoundaryAttachment(svc *ssoadmin.Clie
 	return nil
 }
 
-func (g *SSOAdminGenerator) loadAccountAssignments(svc *ssoadmin.Client, instanceARN, permissionSetARN string) ([]string, error) {
+func (g *SSOAdminGenerator) loadAccountAssignments(svc *ssoadmin.Client, instanceARN, permissionSetARN string) error {
 	p := ssoadmin.NewListAccountsForProvisionedPermissionSetPaginator(svc, &ssoadmin.ListAccountsForProvisionedPermissionSetInput{
 		InstanceArn:      aws.String(instanceARN),
 		PermissionSetArn: aws.String(permissionSetARN),
 	})
-	var accountAssignmentRefs []string
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
 		if err != nil {
-			return nil, err
+			return err
 		}
 		for _, accountID := range page.AccountIds {
 			if accountID == "" {
 				continue
 			}
-			refs, err := g.loadAccountAssignmentsForAccount(svc, instanceARN, permissionSetARN, accountID)
-			if err != nil {
-				return nil, err
+			if err := g.loadAccountAssignmentsForAccount(svc, instanceARN, permissionSetARN, accountID); err != nil {
+				return err
 			}
-			accountAssignmentRefs = append(accountAssignmentRefs, refs...)
 		}
 	}
-	sort.Strings(accountAssignmentRefs)
-	return accountAssignmentRefs, nil
+	return nil
 }
 
-func (g *SSOAdminGenerator) loadAccountAssignmentsForAccount(svc *ssoadmin.Client, instanceARN, permissionSetARN, accountID string) ([]string, error) {
+func (g *SSOAdminGenerator) loadAccountAssignmentsForAccount(svc *ssoadmin.Client, instanceARN, permissionSetARN, accountID string) error {
 	p := ssoadmin.NewListAccountAssignmentsPaginator(svc, &ssoadmin.ListAccountAssignmentsInput{
 		AccountId:        aws.String(accountID),
 		InstanceArn:      aws.String(instanceARN),
 		PermissionSetArn: aws.String(permissionSetARN),
 	})
-	var accountAssignmentRefs []string
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
 		if err != nil {
-			return nil, err
+			return err
 		}
 		for _, assignment := range page.AccountAssignments {
 			targetID := StringValue(assignment.AccountId)
@@ -285,12 +277,10 @@ func (g *SSOAdminGenerator) loadAccountAssignmentsForAccount(svc *ssoadmin.Clien
 			if !ssoAdminAccountAssignmentConfigured(targetID, assignment) {
 				continue
 			}
-			resource := newSSOAdminAccountAssignmentResource(instanceARN, permissionSetARN, targetID, string(ssotypes.TargetTypeAwsAccount), assignment)
-			g.Resources = append(g.Resources, resource)
-			accountAssignmentRefs = append(accountAssignmentRefs, resource.InstanceInfo.Id)
+			g.Resources = append(g.Resources, newSSOAdminAccountAssignmentResource(instanceARN, permissionSetARN, targetID, string(ssotypes.TargetTypeAwsAccount), assignment))
 		}
 	}
-	return accountAssignmentRefs, nil
+	return nil
 }
 
 func newSSOAdminPermissionSetResource(instanceARN string, permissionSet *ssotypes.PermissionSet) terraformutils.Resource {
@@ -347,7 +337,7 @@ func newSSOAdminAccountAssignmentResource(instanceARN, permissionSetARN, targetI
 	)
 }
 
-func newSSOAdminManagedPolicyAttachmentResource(instanceARN, permissionSetARN string, policy ssotypes.AttachedManagedPolicy, accountAssignmentRefs []string) terraformutils.Resource {
+func newSSOAdminManagedPolicyAttachmentResource(instanceARN, permissionSetARN string, policy ssotypes.AttachedManagedPolicy) terraformutils.Resource {
 	policyARN := StringValue(policy.Arn)
 	attributes := map[string]string{
 		"instance_arn":       instanceARN,
@@ -357,7 +347,6 @@ func newSSOAdminManagedPolicyAttachmentResource(instanceARN, permissionSetARN st
 	if policyName := StringValue(policy.Name); policyName != "" {
 		attributes["managed_policy_name"] = policyName
 	}
-	additionalFields := ssoAdminAdditionalFieldsWithDependsOn(accountAssignmentRefs)
 	return terraformutils.NewResource(
 		ssoAdminManagedPolicyAttachmentResourceID(policyARN, permissionSetARN, instanceARN),
 		ssoAdminResourceName(permissionSetARN, policyARN, instanceARN),
@@ -365,7 +354,7 @@ func newSSOAdminManagedPolicyAttachmentResource(instanceARN, permissionSetARN st
 		"aws",
 		attributes,
 		ssoAdminAllowEmptyValues,
-		additionalFields,
+		map[string]interface{}{},
 	)
 }
 
@@ -460,6 +449,87 @@ func ssoAdminResourceName(parts ...string) string {
 	return strings.Join(nonEmptyParts, ssoAdminResourceNameSeparator)
 }
 
+func (g *SSOAdminGenerator) updateManagedPolicyAttachmentDependencies() {
+	accountAssignmentRefsByPermissionSet := ssoAdminAccountAssignmentRefsByPermissionSet(g.Resources)
+	for i := range g.Resources {
+		if ssoAdminResourceType(g.Resources[i]) != ssoAdminManagedPolicyAttachmentResourceType {
+			continue
+		}
+		permissionSetARN := ssoAdminResourceAttribute(g.Resources[i], "permission_set_arn")
+		ssoAdminSetDependsOn(&g.Resources[i], accountAssignmentRefsByPermissionSet[permissionSetARN])
+	}
+}
+
+func ssoAdminAccountAssignmentRefsByPermissionSet(resources []terraformutils.Resource) map[string][]string {
+	refsByPermissionSet := map[string]map[string]struct{}{}
+	for _, resource := range resources {
+		resourceRef := ssoAdminResourceRef(resource)
+		if ssoAdminResourceType(resource) != ssoAdminAccountAssignmentResourceType || resourceRef == "" {
+			continue
+		}
+		permissionSetARN := ssoAdminResourceAttribute(resource, "permission_set_arn")
+		if permissionSetARN == "" {
+			continue
+		}
+		if refsByPermissionSet[permissionSetARN] == nil {
+			refsByPermissionSet[permissionSetARN] = map[string]struct{}{}
+		}
+		refsByPermissionSet[permissionSetARN][resourceRef] = struct{}{}
+	}
+
+	result := map[string][]string{}
+	for permissionSetARN, refs := range refsByPermissionSet {
+		for ref := range refs {
+			result[permissionSetARN] = append(result[permissionSetARN], ref)
+		}
+		sort.Strings(result[permissionSetARN])
+	}
+	return result
+}
+
+func ssoAdminResourceType(resource terraformutils.Resource) string {
+	if resource.InstanceInfo == nil {
+		return ""
+	}
+	return resource.InstanceInfo.Type
+}
+
+func ssoAdminResourceRef(resource terraformutils.Resource) string {
+	if resource.InstanceInfo == nil {
+		return ""
+	}
+	return resource.InstanceInfo.Id
+}
+
+func ssoAdminResourceAttribute(resource terraformutils.Resource, key string) string {
+	if value, ok := resource.Item[key].(string); ok && value != "" {
+		return value
+	}
+	if resource.InstanceState == nil {
+		return ""
+	}
+	return resource.InstanceState.Attributes[key]
+}
+
+func ssoAdminSetDependsOn(resource *terraformutils.Resource, dependsOn []string) {
+	if len(dependsOn) == 0 {
+		delete(resource.AdditionalFields, "depends_on")
+		if resource.Item != nil {
+			delete(resource.Item, "depends_on")
+		}
+		return
+	}
+	refs := append([]string(nil), dependsOn...)
+	sort.Strings(refs)
+	if resource.AdditionalFields == nil {
+		resource.AdditionalFields = map[string]interface{}{}
+	}
+	resource.AdditionalFields["depends_on"] = refs
+	if resource.Item != nil {
+		resource.Item["depends_on"] = refs
+	}
+}
+
 func ssoAdminPermissionsBoundaryConfigured(boundary *ssotypes.PermissionsBoundary) bool {
 	if boundary == nil {
 		return false
@@ -475,15 +545,6 @@ func ssoAdminPermissionsBoundaryConfigured(boundary *ssotypes.PermissionsBoundar
 
 func ssoAdminAccountAssignmentConfigured(targetID string, assignment ssotypes.AccountAssignment) bool {
 	return targetID != "" && StringValue(assignment.PrincipalId) != "" && string(assignment.PrincipalType) != ""
-}
-
-func ssoAdminAdditionalFieldsWithDependsOn(dependsOn []string) map[string]interface{} {
-	if len(dependsOn) == 0 {
-		return map[string]interface{}{}
-	}
-	refs := append([]string(nil), dependsOn...)
-	sort.Strings(refs)
-	return map[string]interface{}{"depends_on": refs}
 }
 
 func ssoAdminCustomerManagedPolicyPath(path *string) string {

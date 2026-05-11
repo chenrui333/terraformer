@@ -8,6 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	ssotypes "github.com/aws/aws-sdk-go-v2/service/ssoadmin/types"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 const (
@@ -134,7 +135,7 @@ func TestSSOAdminManagedPolicyAttachmentResource(t *testing.T) {
 	resource := newSSOAdminManagedPolicyAttachmentResource(testSSOAdminInstanceARN, testSSOAdminPermissionSetARN, ssotypes.AttachedManagedPolicy{
 		Arn:  aws.String(testSSOAdminPolicyARN),
 		Name: aws.String("ReadOnlyAccess"),
-	}, nil)
+	})
 
 	if got, want := resource.InstanceState.ID, testSSOAdminPolicyARN+","+testSSOAdminPermissionSetARN+","+testSSOAdminInstanceARN; got != want {
 		t.Fatalf("resource ID = %q, want %q", got, want)
@@ -158,25 +159,49 @@ func TestSSOAdminManagedPolicyAttachmentResource(t *testing.T) {
 	}
 }
 
-func TestSSOAdminManagedPolicyAttachmentDependsOnAccountAssignments(t *testing.T) {
-	resource := newSSOAdminManagedPolicyAttachmentResource(
+func TestSSOAdminPostConvertHookAddsManagedPolicyAttachmentDependsOnFilteredAssignments(t *testing.T) {
+	managedPolicyAttachment := newSSOAdminManagedPolicyAttachmentResource(
 		testSSOAdminInstanceARN,
 		testSSOAdminPermissionSetARN,
 		ssotypes.AttachedManagedPolicy{Arn: aws.String(testSSOAdminPolicyARN)},
-		[]string{
-			"aws_ssoadmin_account_assignment.tfer--z",
-			"aws_ssoadmin_account_assignment.tfer--a",
+	)
+	managedPolicyAttachment.Item = map[string]interface{}{"permission_set_arn": testSSOAdminPermissionSetARN}
+	matchingAssignment := newSSOAdminAccountAssignmentResource(
+		testSSOAdminInstanceARN,
+		testSSOAdminPermissionSetARN,
+		testSSOAdminAccountID,
+		string(ssotypes.TargetTypeAwsAccount),
+		ssotypes.AccountAssignment{
+			AccountId:        aws.String(testSSOAdminAccountID),
+			PermissionSetArn: aws.String(testSSOAdminPermissionSetARN),
+			PrincipalId:      aws.String(testSSOAdminPrincipalID),
+			PrincipalType:    ssotypes.PrincipalTypeUser,
 		},
 	)
+	otherAssignment := newSSOAdminAccountAssignmentResource(
+		testSSOAdminInstanceARN,
+		testSSOAdminPermissionSetARN+"-other",
+		testSSOAdminAccountID,
+		string(ssotypes.TargetTypeAwsAccount),
+		ssotypes.AccountAssignment{
+			AccountId:        aws.String(testSSOAdminAccountID),
+			PermissionSetArn: aws.String(testSSOAdminPermissionSetARN + "-other"),
+			PrincipalId:      aws.String("1234567890-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
+			PrincipalType:    ssotypes.PrincipalTypeGroup,
+		},
+	)
+	g := &SSOAdminGenerator{}
+	g.Resources = []terraformutils.Resource{managedPolicyAttachment, otherAssignment, matchingAssignment}
 
-	dependsOn, ok := resource.AdditionalFields["depends_on"].([]string)
+	if err := g.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook() error = %v", err)
+	}
+
+	dependsOn, ok := g.Resources[0].Item["depends_on"].([]string)
 	if !ok {
-		t.Fatalf("depends_on type = %T, want []string", resource.AdditionalFields["depends_on"])
+		t.Fatalf("depends_on type = %T, want []string", g.Resources[0].Item["depends_on"])
 	}
-	want := []string{
-		"aws_ssoadmin_account_assignment.tfer--a",
-		"aws_ssoadmin_account_assignment.tfer--z",
-	}
+	want := []string{matchingAssignment.InstanceInfo.Id}
 	if len(dependsOn) != len(want) {
 		t.Fatalf("depends_on = %#v, want %#v", dependsOn, want)
 	}
@@ -184,6 +209,38 @@ func TestSSOAdminManagedPolicyAttachmentDependsOnAccountAssignments(t *testing.T
 		if dependsOn[i] != want[i] {
 			t.Fatalf("depends_on = %#v, want %#v", dependsOn, want)
 		}
+	}
+	additionalDependsOn, ok := g.Resources[0].AdditionalFields["depends_on"].([]string)
+	if !ok || len(additionalDependsOn) != 1 || additionalDependsOn[0] != want[0] {
+		t.Fatalf("additional depends_on = %#v, want %#v", g.Resources[0].AdditionalFields["depends_on"], want)
+	}
+}
+
+func TestSSOAdminPostConvertHookDropsDanglingManagedPolicyAttachmentDependsOn(t *testing.T) {
+	managedPolicyAttachment := newSSOAdminManagedPolicyAttachmentResource(
+		testSSOAdminInstanceARN,
+		testSSOAdminPermissionSetARN,
+		ssotypes.AttachedManagedPolicy{Arn: aws.String(testSSOAdminPolicyARN)},
+	)
+	managedPolicyAttachment.Item = map[string]interface{}{
+		"depends_on":         []string{"aws_ssoadmin_account_assignment.tfer--filtered"},
+		"permission_set_arn": testSSOAdminPermissionSetARN,
+	}
+	managedPolicyAttachment.AdditionalFields = map[string]interface{}{
+		"depends_on": []string{"aws_ssoadmin_account_assignment.tfer--filtered"},
+	}
+	g := &SSOAdminGenerator{}
+	g.Resources = []terraformutils.Resource{managedPolicyAttachment}
+
+	if err := g.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook() error = %v", err)
+	}
+
+	if _, ok := g.Resources[0].Item["depends_on"]; ok {
+		t.Fatalf("unexpected item depends_on = %#v", g.Resources[0].Item["depends_on"])
+	}
+	if _, ok := g.Resources[0].AdditionalFields["depends_on"]; ok {
+		t.Fatalf("unexpected additional depends_on = %#v", g.Resources[0].AdditionalFields["depends_on"])
 	}
 }
 
@@ -365,8 +422,8 @@ func TestSSOAdminPermissionsBoundaryAttachmentResource(t *testing.T) {
 }
 
 func TestSSOAdminResourceNamesDoNotCollapseJoinedParts(t *testing.T) {
-	left := newSSOAdminManagedPolicyAttachmentResource("instance", "a_b", ssotypes.AttachedManagedPolicy{Arn: aws.String("c")}, nil)
-	right := newSSOAdminManagedPolicyAttachmentResource("instance", "a", ssotypes.AttachedManagedPolicy{Arn: aws.String("b_c")}, nil)
+	left := newSSOAdminManagedPolicyAttachmentResource("instance", "a_b", ssotypes.AttachedManagedPolicy{Arn: aws.String("c")})
+	right := newSSOAdminManagedPolicyAttachmentResource("instance", "a", ssotypes.AttachedManagedPolicy{Arn: aws.String("b_c")})
 	if left.ResourceName == right.ResourceName {
 		t.Fatalf("managed policy attachment resource names collide: %q", left.ResourceName)
 	}
