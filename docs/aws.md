@@ -222,6 +222,20 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_cognito_user_pool_client`
     * `aws_cognito_user_pool_domain`
     * Note: `aws_cognito_user_pool_client` ID filters may use `<user_pool_id>/<client_id>`, such as `Type=cognito_user_pool_client;Name=id;Value=us-east-1_abc/client123`. Generated state stores `client123` as the resource ID and keeps `user_pool_id` separately, matching the provider read path in [providers/aws/cognito.go](../providers/aws/cognito.go).
+*   `connect`
+    * `aws_connect_bot_association`
+    * `aws_connect_hours_of_operation`
+    * `aws_connect_instance`
+    * `aws_connect_instance_storage_config`
+    * `aws_connect_lambda_function_association`
+    * `aws_connect_phone_number`
+    * `aws_connect_queue`
+    * `aws_connect_quick_connect`
+    * `aws_connect_routing_profile`
+    * `aws_connect_security_profile`
+    * `aws_connect_user`
+    * `aws_connect_user_hierarchy_group`
+    * `aws_connect_user_hierarchy_structure`
 *   `config`
     * `aws_config_aggregate_authorization`
     * `aws_config_config_rule`
@@ -496,6 +510,15 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_opensearchserverless_security_config`
     * `aws_opensearchserverless_security_policy`
     * `aws_opensearchserverless_vpc_endpoint`
+*   `pinpoint`
+    * `aws_pinpoint_app`
+    * `aws_pinpoint_email_channel`
+    * `aws_pinpoint_event_stream`
+    * `aws_pinpoint_sms_channel`
+*   `pinpointsmsvoicev2`
+    * `aws_pinpointsmsvoicev2_configuration_set`
+    * `aws_pinpointsmsvoicev2_opt_out_list`
+    * `aws_pinpointsmsvoicev2_phone_number`
 *   `pipes`
     * `aws_pipes_pipe`
 *   `qldb`

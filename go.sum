@@ -259,6 +259,8 @@ github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.60.2 h1:pZxE29WA
 github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.60.2/go.mod h1:nbe4Nf/HOY+e54Dl+yjv04scYTGTC+4ZthbfOuPTXQs=
 github.com/aws/aws-sdk-go-v2/service/configservice v1.62.3 h1:8rcAUMhCUuQe7kVBTBLPqMsJWFSVDPSFdpFexVQEEdU=
 github.com/aws/aws-sdk-go-v2/service/configservice v1.62.3/go.mod h1:PvCpYWzh0/jwa8v3jYJOaDobKiKQzFm1hI7+4Ms3J90=
+github.com/aws/aws-sdk-go-v2/service/connect v1.172.1 h1:aHqy/dANNJHJlgjDs/8exwtHMeHDWCVG+L1T/0+7hps=
+github.com/aws/aws-sdk-go-v2/service/connect v1.172.1/go.mod h1:Du5pBjluSAHkGpEiz8aCfk9NdndzEeGpCqARDWAlGGQ=
 github.com/aws/aws-sdk-go-v2/service/databasemigrationservice v1.62.2 h1:+vWChWbLMrEzHuKtm2koCaGoZo6Cnu8OpYH0fsdSLEI=
 github.com/aws/aws-sdk-go-v2/service/databasemigrationservice v1.62.2/go.mod h1:Qa7SOwwtaE9VticcY52FgDIXJZLS1jz+Y6fiCdLUdRU=
 github.com/aws/aws-sdk-go-v2/service/datapipeline v1.30.22 h1:th7UIseI06gZDd/7ntsyUJmVVbbowq4ypEUh8gf5+OU=
@@ -351,6 +353,10 @@ github.com/aws/aws-sdk-go-v2/service/opsworks v1.31.0 h1:wTMEW5MX0+KDR2twK2UkdZ2
 github.com/aws/aws-sdk-go-v2/service/opsworks v1.31.0/go.mod h1:pGgL2+mF6Gtjq9diAn/tVmvRqfFI+2/oyz3dENRCPXw=
 github.com/aws/aws-sdk-go-v2/service/organizations v1.51.3 h1:LWSmXWwYzR9yRcszxyqaKuPCO4E6g/iknZv1kQIkD7I=
 github.com/aws/aws-sdk-go-v2/service/organizations v1.51.3/go.mod h1:DGpC4BVQ1zS8X/nFYfHGiHyAhrsb8gZ8pPxn+Jf0iPY=
+github.com/aws/aws-sdk-go-v2/service/pinpoint v1.39.23 h1:YEwsIfiIhbD4eVaM8GmvFAb5w3MBtNka6lWNBQAEEuc=
+github.com/aws/aws-sdk-go-v2/service/pinpoint v1.39.23/go.mod h1:5cQboSsKjW/hMBKeTzbjK93jmgsiCakuK7m4iNxfiFY=
+github.com/aws/aws-sdk-go-v2/service/pinpointsmsvoicev2 v1.28.2 h1:CCUupPmQvjZRsQlyF6/qmrWgOwLhejP+prj273iCuyY=
+github.com/aws/aws-sdk-go-v2/service/pinpointsmsvoicev2 v1.28.2/go.mod h1:8+8lD4dvbnctRIsbL4mHv8FEhm5a5RLdwVElfA9rxoM=
 github.com/aws/aws-sdk-go-v2/service/pipes v1.23.22 h1:hmfDlMVre8V5t46Y6qZpPGyzDsnYEkZVtZnVSyd5c/k=
 github.com/aws/aws-sdk-go-v2/service/pipes v1.23.22/go.mod h1:zpfI78kzmseqeSDG1tA4++Y8TKMDDTBQcFiwNoPgjgU=
 github.com/aws/aws-sdk-go-v2/service/qldb v1.32.2 h1:tSctQisNHgXnDmyoOdLXkSQmHYo5yPQuvYK+4c4QiNI=

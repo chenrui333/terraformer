@@ -98,6 +98,83 @@
       ]
     },
     {
+      "resource": "aws_pinpoint_adm_channel",
+      "service_family": "pinpoint",
+      "reason": "Pinpoint ADM channels require client_id and client_secret, which are sensitive credential fields that Pinpoint GetAdmChannel does not return.",
+      "evidence": "Terraform AWS provider marks client_id and client_secret as required and sensitive; its Read path explicitly notes these values are never returned by the API.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/pinpoint_adm_channel"
+      ]
+    },
+    {
+      "resource": "aws_pinpoint_apns_channel",
+      "service_family": "pinpoint",
+      "reason": "Pinpoint APNS channels require certificate/private_key or token authentication material that Pinpoint GetApnsChannel does not return.",
+      "evidence": "Terraform AWS provider marks APNS credential fields as sensitive and requires either certificate/private_key or bundle_id/team_id/token_key/token_key_id; its Read path notes sensitive params are not returned.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/pinpoint_apns_channel"
+      ]
+    },
+    {
+      "resource": "aws_pinpoint_apns_sandbox_channel",
+      "service_family": "pinpoint",
+      "reason": "Pinpoint APNS sandbox channels require certificate/private_key or token authentication material that Pinpoint GetApnsSandboxChannel does not return.",
+      "evidence": "Terraform AWS provider uses the same sensitive APNS credential model for sandbox channels and cannot reconstruct those values during Read.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/pinpoint_apns_sandbox_channel"
+      ]
+    },
+    {
+      "resource": "aws_pinpoint_apns_voip_channel",
+      "service_family": "pinpoint",
+      "reason": "Pinpoint APNS VoIP channels require certificate/private_key or token authentication material that Pinpoint GetApnsVoipChannel does not return.",
+      "evidence": "Terraform AWS provider uses the same sensitive APNS credential model for VoIP channels and cannot reconstruct those values during Read.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/pinpoint_apns_voip_channel"
+      ]
+    },
+    {
+      "resource": "aws_pinpoint_apns_voip_sandbox_channel",
+      "service_family": "pinpoint",
+      "reason": "Pinpoint APNS VoIP sandbox channels require certificate/private_key or token authentication material that Pinpoint GetApnsVoipSandboxChannel does not return.",
+      "evidence": "Terraform AWS provider uses the same sensitive APNS credential model for VoIP sandbox channels and cannot reconstruct those values during Read.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/pinpoint_apns_voip_sandbox_channel"
+      ]
+    },
+    {
+      "resource": "aws_pinpoint_baidu_channel",
+      "service_family": "pinpoint",
+      "reason": "Pinpoint Baidu channels require api_key and secret_key, which are sensitive credential fields that Pinpoint GetBaiduChannel does not return.",
+      "evidence": "Terraform AWS provider marks api_key and secret_key as required and sensitive; Read can refresh channel settings but cannot recover the original credentials.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/pinpoint_baidu_channel"
+      ]
+    },
+    {
+      "resource": "aws_pinpoint_gcm_channel",
+      "service_family": "pinpoint",
+      "reason": "Pinpoint GCM channels require api_key or service_json credential material that Pinpoint GetGcmChannel does not return.",
+      "evidence": "Terraform AWS provider marks api_key and service_json as sensitive authentication inputs and reuses prior state; broad discovery cannot seed those write-only values.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/pinpoint_gcm_channel"
+      ]
+    },
+    {
       "resource": "aws_sagemaker_human_task_ui",
       "service_family": "sagemaker",
       "reason": "SageMaker Human Task UI imports cannot reconstruct the required ui_template.content field from SageMaker APIs.",
