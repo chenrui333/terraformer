@@ -35,6 +35,30 @@
         "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ivs_playback_key_pair",
         "https://docs.aws.amazon.com/ivs/latest/LowLatencyAPIReference/API_GetPlaybackKeyPair.html"
       ]
+    },
+    {
+      "resource": "aws_sagemaker_human_task_ui",
+      "service_family": "sagemaker",
+      "reason": "SageMaker Human Task UI imports cannot reconstruct the required ui_template.content field from SageMaker APIs.",
+      "evidence": "Terraform AWS provider marks ui_template as required, but its Read path preserves ui_template.content from prior state while DescribeHumanTaskUi returns template metadata rather than the original content. Provider import tests ignore ui_template.0.content and ui_template.0.url after import.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sagemaker_human_task_ui",
+        "https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribeHumanTaskUi.html"
+      ]
+    },
+    {
+      "resource": "aws_sagemaker_servicecatalog_portfolio_status",
+      "service_family": "sagemaker",
+      "reason": "SageMaker Service Catalog portfolio status is a region-scoped setting without a Terraform AWS provider import path.",
+      "evidence": "Terraform AWS provider v6.44.0 defines create/read/update/delete behavior for aws_sagemaker_servicecatalog_portfolio_status but does not define a ResourceImporter, so there is no verified import ID shape for Terraformer to seed.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sagemaker_servicecatalog_portfolio_status",
+        "https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_GetSagemakerServicecatalogPortfolioStatus.html"
+      ]
     }
   ]
 }
