@@ -200,9 +200,6 @@ func (g *GuardDutyGenerator) loadIPSets(svc *guardduty.Client, detectorID string
 	})
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(context.TODO())
-		if guardDutyMemberListingUnavailable(err) {
-			return nil
-		}
 		if err != nil {
 			return err
 		}
@@ -270,6 +267,9 @@ func (g *GuardDutyGenerator) loadMembers(svc *guardduty.Client, detectorID strin
 	})
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(context.TODO())
+		if guardDutyMemberListingUnavailable(err) {
+			return nil
+		}
 		if err != nil {
 			return err
 		}
