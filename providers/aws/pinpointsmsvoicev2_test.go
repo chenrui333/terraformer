@@ -38,6 +38,15 @@ func TestPinpointSMSVoiceV2ResourceNameAvoidsSanitizedCollisions(t *testing.T) {
 	}
 }
 
+func TestPinpointSMSVoiceV2OwnedResourceInputs(t *testing.T) {
+	if got := pinpointSMSVoiceV2DescribeOptOutListsInput().Owner; got != pinpointsmsvoicev2types.OwnerSelf {
+		t.Fatalf("opt-out list owner = %q, want %q", got, pinpointsmsvoicev2types.OwnerSelf)
+	}
+	if got := pinpointSMSVoiceV2DescribePhoneNumbersInput().Owner; got != pinpointsmsvoicev2types.OwnerSelf {
+		t.Fatalf("phone number owner = %q, want %q", got, pinpointsmsvoicev2types.OwnerSelf)
+	}
+}
+
 func TestNewPinpointSMSVoiceV2ConfigurationSetResource(t *testing.T) {
 	resource, ok := newPinpointSMSVoiceV2ConfigurationSetResource(pinpointsmsvoicev2types.ConfigurationSetInformation{
 		ConfigurationSetArn:  aws.String("arn:aws:sms-voice:us-east-1:123456789012:configuration-set/config-set"),

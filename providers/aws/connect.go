@@ -344,7 +344,34 @@ func (g *ConnectGenerator) loadUserHierarchyStructure(svc *connect.Client, insta
 }
 
 func (g *ConnectGenerator) loadPhoneNumbers(svc *connect.Client, instanceID string) error {
-	p := connect.NewListPhoneNumbersV2Paginator(svc, &connect.ListPhoneNumbersV2Input{InstanceId: &instanceID})
+	if err := g.loadPhoneNumbersForInput(svc, &connect.ListPhoneNumbersV2Input{InstanceId: &instanceID}); err != nil {
+		return err
+	}
+	return g.loadTrafficDistributionGroupPhoneNumbers(svc, instanceID)
+}
+
+func (g *ConnectGenerator) loadTrafficDistributionGroupPhoneNumbers(svc *connect.Client, instanceID string) error {
+	p := connect.NewListTrafficDistributionGroupsPaginator(svc, &connect.ListTrafficDistributionGroupsInput{InstanceId: &instanceID})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, group := range page.TrafficDistributionGroupSummaryList {
+			targetARN := connectTrafficDistributionGroupTargetARN(group)
+			if targetARN == "" {
+				continue
+			}
+			if err := g.loadPhoneNumbersForInput(svc, &connect.ListPhoneNumbersV2Input{TargetArn: &targetARN}); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (g *ConnectGenerator) loadPhoneNumbersForInput(svc *connect.Client, input *connect.ListPhoneNumbersV2Input) error {
+	p := connect.NewListPhoneNumbersV2Paginator(svc, input)
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
 		if err != nil {
@@ -753,6 +780,23 @@ func connectPhoneNumberImportable(phoneNumber connecttypes.ClaimedPhoneNumberSum
 		return true
 	}
 	return phoneNumber.PhoneNumberStatus.Status == "" || phoneNumber.PhoneNumberStatus.Status == connecttypes.PhoneNumberWorkflowStatusClaimed
+}
+
+func connectTrafficDistributionGroupTargetARN(group connecttypes.TrafficDistributionGroupSummary) string {
+	if !connectTrafficDistributionGroupImportable(group) {
+		return ""
+	}
+	if arn := StringValue(group.Arn); arn != "" {
+		return arn
+	}
+	if id := StringValue(group.Id); strings.HasPrefix(id, "arn:") {
+		return id
+	}
+	return ""
+}
+
+func connectTrafficDistributionGroupImportable(group connecttypes.TrafficDistributionGroupSummary) bool {
+	return group.Status == "" || group.Status == connecttypes.TrafficDistributionGroupStatusActive
 }
 
 func connectNotFound(err error) bool {

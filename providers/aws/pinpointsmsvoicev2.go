@@ -61,7 +61,7 @@ func (g *PinpointSMSVoiceV2Generator) loadConfigurationSets(svc *pinpointsmsvoic
 }
 
 func (g *PinpointSMSVoiceV2Generator) loadOptOutLists(svc *pinpointsmsvoicev2.Client) error {
-	p := pinpointsmsvoicev2.NewDescribeOptOutListsPaginator(svc, &pinpointsmsvoicev2.DescribeOptOutListsInput{})
+	p := pinpointsmsvoicev2.NewDescribeOptOutListsPaginator(svc, pinpointSMSVoiceV2DescribeOptOutListsInput())
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
 		if err != nil {
@@ -77,7 +77,7 @@ func (g *PinpointSMSVoiceV2Generator) loadOptOutLists(svc *pinpointsmsvoicev2.Cl
 }
 
 func (g *PinpointSMSVoiceV2Generator) loadPhoneNumbers(svc *pinpointsmsvoicev2.Client) error {
-	p := pinpointsmsvoicev2.NewDescribePhoneNumbersPaginator(svc, &pinpointsmsvoicev2.DescribePhoneNumbersInput{})
+	p := pinpointsmsvoicev2.NewDescribePhoneNumbersPaginator(svc, pinpointSMSVoiceV2DescribePhoneNumbersInput())
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
 		if err != nil {
@@ -179,6 +179,14 @@ func pinpointSMSVoiceV2NameImportID(name string) string {
 
 func pinpointSMSVoiceV2PhoneNumberImportID(phoneNumberID string) string {
 	return phoneNumberID
+}
+
+func pinpointSMSVoiceV2DescribeOptOutListsInput() *pinpointsmsvoicev2.DescribeOptOutListsInput {
+	return &pinpointsmsvoicev2.DescribeOptOutListsInput{Owner: pinpointsmsvoicev2types.OwnerSelf}
+}
+
+func pinpointSMSVoiceV2DescribePhoneNumbersInput() *pinpointsmsvoicev2.DescribePhoneNumbersInput {
+	return &pinpointsmsvoicev2.DescribePhoneNumbersInput{Owner: pinpointsmsvoicev2types.OwnerSelf}
 }
 
 func pinpointSMSVoiceV2ResourceName(parts ...string) string {

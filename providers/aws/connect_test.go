@@ -334,6 +334,52 @@ func TestNewConnectPhoneNumberResource(t *testing.T) {
 	}
 }
 
+func TestConnectTrafficDistributionGroupTargetARN(t *testing.T) {
+	tests := []struct {
+		name  string
+		group connecttypes.TrafficDistributionGroupSummary
+		want  string
+	}{
+		{
+			name: "active group ARN",
+			group: connecttypes.TrafficDistributionGroupSummary{
+				Arn:    aws.String("arn:aws:connect:us-east-1:123456789012:traffic-distribution-group/tdg-123"),
+				Status: connecttypes.TrafficDistributionGroupStatusActive,
+			},
+			want: "arn:aws:connect:us-east-1:123456789012:traffic-distribution-group/tdg-123",
+		},
+		{
+			name: "replica region ID ARN",
+			group: connecttypes.TrafficDistributionGroupSummary{
+				Id:     aws.String("arn:aws:connect:us-east-1:123456789012:traffic-distribution-group/tdg-123"),
+				Status: connecttypes.TrafficDistributionGroupStatusActive,
+			},
+			want: "arn:aws:connect:us-east-1:123456789012:traffic-distribution-group/tdg-123",
+		},
+		{
+			name: "inactive group",
+			group: connecttypes.TrafficDistributionGroupSummary{
+				Arn:    aws.String("arn:aws:connect:us-east-1:123456789012:traffic-distribution-group/tdg-123"),
+				Status: connecttypes.TrafficDistributionGroupStatusPendingDeletion,
+			},
+		},
+		{
+			name: "non ARN ID",
+			group: connecttypes.TrafficDistributionGroupSummary{
+				Id:     aws.String("tdg-123"),
+				Status: connecttypes.TrafficDistributionGroupStatusActive,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := connectTrafficDistributionGroupTargetARN(tt.group); got != tt.want {
+				t.Fatalf("target ARN = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestConnectNotFound(t *testing.T) {
 	if !connectNotFound(&connecttypes.ResourceNotFoundException{}) {
 		t.Fatal("connectNotFound() = false, want true")
