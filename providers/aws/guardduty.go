@@ -400,7 +400,7 @@ func guardDutyConditionIntAttribute(attributes map[string]string, key, field str
 
 func guardDutyConditionIntValue(field string, value int64) string {
 	if field == "updatedAt" {
-		return time.Unix(value/1000, value%1000).UTC().Format(time.RFC3339)
+		return time.UnixMilli(value).UTC().Format(time.RFC3339Nano)
 	}
 	return strconv.FormatInt(value, 10)
 }

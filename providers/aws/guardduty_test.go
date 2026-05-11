@@ -104,7 +104,7 @@ func TestGuardDutyDetectorResource(t *testing.T) {
 
 func TestGuardDutyFilterResource(t *testing.T) {
 	rank := int32(7)
-	greaterThan := int64(1710000000000)
+	greaterThan := int64(1710000000123)
 	lessThan := int64(5)
 	resource, ok := newGuardDutyFilterResource(testGuardDutyDetectorID, testGuardDutyFilterName, &guardduty.GetFilterOutput{
 		Action:      guarddutytypes.FilterActionArchive,
@@ -147,7 +147,7 @@ func TestGuardDutyFilterResource(t *testing.T) {
 		"finding_criteria.0.criterion.0.not_equals.#":          "1",
 		"finding_criteria.0.criterion.0.not_equals.0":          "1",
 		"finding_criteria.0.criterion.1.field":                 "updatedAt",
-		"finding_criteria.0.criterion.1.greater_than":          "2024-03-09T16:00:00Z",
+		"finding_criteria.0.criterion.1.greater_than":          "2024-03-09T16:00:00.123Z",
 	} {
 		if got := attributes[key]; got != want {
 			t.Fatalf("%s = %q, want %q", key, got, want)
