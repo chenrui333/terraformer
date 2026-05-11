@@ -40,7 +40,8 @@ type ConnectGenerator struct {
 }
 
 type connectInstanceReference struct {
-	id string
+	id                     string
+	identityManagementType connecttypes.DirectoryType
 }
 
 type connectOptionalResourceLoader struct {
@@ -53,7 +54,10 @@ func newConnectInstanceReference(instance connecttypes.InstanceSummary) (connect
 	if instanceID == "" || !connectInstanceImportable(instance) {
 		return connectInstanceReference{}, false
 	}
-	return connectInstanceReference{id: instanceID}, true
+	return connectInstanceReference{
+		id:                     instanceID,
+		identityManagementType: instance.IdentityManagementType,
+	}, true
 }
 
 func (g *ConnectGenerator) InitResources() error {
@@ -94,7 +98,7 @@ func (g *ConnectGenerator) InitResources() error {
 				return g.loadSecurityProfiles(svc, instance.id)
 			}},
 			connectOptionalResourceLoader{name: "users", load: func() error {
-				return g.loadUsers(svc, instance.id)
+				return g.loadUsers(svc, instance.id, instance.identityManagementType)
 			}},
 			connectOptionalResourceLoader{name: "user hierarchy groups", load: func() error {
 				return g.loadUserHierarchyGroups(svc, instance.id)
@@ -277,7 +281,7 @@ func (g *ConnectGenerator) loadSecurityProfiles(svc *connect.Client, instanceID 
 	return nil
 }
 
-func (g *ConnectGenerator) loadUsers(svc *connect.Client, instanceID string) error {
+func (g *ConnectGenerator) loadUsers(svc *connect.Client, instanceID string, identityManagementType connecttypes.DirectoryType) error {
 	p := connect.NewListUsersPaginator(svc, &connect.ListUsersInput{InstanceId: &instanceID})
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
@@ -285,7 +289,7 @@ func (g *ConnectGenerator) loadUsers(svc *connect.Client, instanceID string) err
 			return err
 		}
 		for _, user := range page.UserSummaryList {
-			if resource, ok := newConnectUserResource(instanceID, user); ok {
+			if resource, ok := newConnectUserResource(instanceID, identityManagementType, user); ok {
 				g.Resources = append(g.Resources, resource)
 			}
 		}
@@ -411,7 +415,7 @@ func (g *ConnectGenerator) getOptionalConnectResources(loaders ...connectOptiona
 func newConnectInstanceResource(instance connecttypes.InstanceSummary) (terraformutils.Resource, bool) {
 	instanceID := StringValue(instance.Id)
 	instanceAlias := StringValue(instance.InstanceAlias)
-	if instanceID == "" || instanceAlias == "" || !connectInstanceImportable(instance) {
+	if instanceID == "" || instanceAlias == "" || !connectInstanceImportable(instance) || !connectInstanceResourceReconstructable(instance) {
 		return terraformutils.Resource{}, false
 	}
 	attributes := map[string]string{
@@ -596,9 +600,9 @@ func newConnectSecurityProfileResource(instanceID string, profile connecttypes.S
 	), true
 }
 
-func newConnectUserResource(instanceID string, user connecttypes.UserSummary) (terraformutils.Resource, bool) {
+func newConnectUserResource(instanceID string, identityManagementType connecttypes.DirectoryType, user connecttypes.UserSummary) (terraformutils.Resource, bool) {
 	userID := StringValue(user.Id)
-	if instanceID == "" || userID == "" {
+	if instanceID == "" || userID == "" || !connectUserResourceReconstructable(identityManagementType) {
 		return terraformutils.Resource{}, false
 	}
 	attributes := connectChildAttributes(instanceID, userID, "user_id")
@@ -730,6 +734,14 @@ func connectResourceName(parts ...string) string {
 
 func connectInstanceImportable(instance connecttypes.InstanceSummary) bool {
 	return instance.InstanceStatus == "" || instance.InstanceStatus == connecttypes.InstanceStatusActive
+}
+
+func connectInstanceResourceReconstructable(instance connecttypes.InstanceSummary) bool {
+	return instance.IdentityManagementType != connecttypes.DirectoryTypeExistingDirectory
+}
+
+func connectUserResourceReconstructable(identityManagementType connecttypes.DirectoryType) bool {
+	return identityManagementType != connecttypes.DirectoryTypeConnectManaged
 }
 
 func connectHierarchyStructureConfigured(structure connecttypes.HierarchyStructure) bool {

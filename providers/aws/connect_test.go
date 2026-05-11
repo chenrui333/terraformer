@@ -75,6 +75,14 @@ func TestNewConnectInstanceResource(t *testing.T) {
 	if _, ok := newConnectInstanceResource(connecttypes.InstanceSummary{Id: aws.String("instance-123"), InstanceStatus: connecttypes.InstanceStatusActive}); ok {
 		t.Fatal("instance without reconstructable alias should be skipped")
 	}
+	if _, ok := newConnectInstanceResource(connecttypes.InstanceSummary{
+		Id:                     aws.String("instance-123"),
+		InstanceAlias:          aws.String("directory-backed"),
+		InstanceStatus:         connecttypes.InstanceStatusActive,
+		IdentityManagementType: connecttypes.DirectoryTypeExistingDirectory,
+	}); ok {
+		t.Fatal("existing-directory instance without directory ID should be skipped")
+	}
 	if _, ok := newConnectInstanceResource(connecttypes.InstanceSummary{}); ok {
 		t.Fatal("instance with empty ID should be skipped")
 	}
@@ -90,6 +98,20 @@ func TestNewConnectInstanceReference(t *testing.T) {
 	}
 	if ref.id != "instance-123" {
 		t.Fatalf("instance reference ID = %q, want %q", ref.id, "instance-123")
+	}
+	if ref.identityManagementType != "" {
+		t.Fatalf("identity management type = %q, want empty", ref.identityManagementType)
+	}
+	directoryRef, ok := newConnectInstanceReference(connecttypes.InstanceSummary{
+		Id:                     aws.String("instance-456"),
+		InstanceStatus:         connecttypes.InstanceStatusActive,
+		IdentityManagementType: connecttypes.DirectoryTypeExistingDirectory,
+	})
+	if !ok {
+		t.Fatal("active existing-directory instance should be retained for child discovery")
+	}
+	if directoryRef.identityManagementType != connecttypes.DirectoryTypeExistingDirectory {
+		t.Fatalf("identity management type = %q, want %q", directoryRef.identityManagementType, connecttypes.DirectoryTypeExistingDirectory)
 	}
 	if _, ok := newConnectInstanceReference(connecttypes.InstanceSummary{Id: aws.String("instance-123"), InstanceStatus: connecttypes.InstanceStatusCreationInProgress}); ok {
 		t.Fatal("non-active instance should be skipped for child discovery")
@@ -232,7 +254,7 @@ func TestNewConnectChildResources(t *testing.T) {
 		},
 		{
 			name:     "user",
-			resource: mustConnectResource(newConnectUserResource(instanceID, connecttypes.UserSummary{Id: aws.String("user-123"), Username: aws.String("alice")})),
+			resource: mustConnectResource(newConnectUserResource(instanceID, connecttypes.DirectoryTypeSaml, connecttypes.UserSummary{Id: aws.String("user-123"), Username: aws.String("alice")})),
 			ok:       true,
 			wantType: connectUserResourceType,
 			wantID:   "instance-123:user-123",
@@ -283,8 +305,11 @@ func TestNewConnectChildResources(t *testing.T) {
 	if _, ok := newConnectQueueResource(instanceID, connecttypes.QueueSummary{Id: aws.String("queue-123"), QueueType: connecttypes.QueueTypeAgent}); ok {
 		t.Fatal("agent queue should be skipped")
 	}
-	if _, ok := newConnectUserResource(instanceID, connecttypes.UserSummary{}); ok {
+	if _, ok := newConnectUserResource(instanceID, connecttypes.DirectoryTypeSaml, connecttypes.UserSummary{}); ok {
 		t.Fatal("child resource with empty ID should be skipped")
+	}
+	if _, ok := newConnectUserResource(instanceID, connecttypes.DirectoryTypeConnectManaged, connecttypes.UserSummary{Id: aws.String("user-123"), Username: aws.String("alice")}); ok {
+		t.Fatal("Connect-managed user without recoverable password should be skipped")
 	}
 }
 
