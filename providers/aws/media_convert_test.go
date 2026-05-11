@@ -79,6 +79,30 @@ func TestMediaConvertQueueNotFound(t *testing.T) {
 	}
 }
 
+func TestMediaConvertQueueDiscoverySkippable(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "nil", want: false},
+		{name: "not found", err: &mediaconverttypes.NotFoundException{}, want: true},
+		{name: "customer endpoint bad request", err: &mediaconverttypes.BadRequestException{Message: aws.String("You must use the customer-specific endpoint")}, want: true},
+		{name: "account endpoint bad request", err: &mediaconverttypes.BadRequestException{Message: aws.String("account endpoint is not available")}, want: true},
+		{name: "wrapped endpoint bad request", err: errors.Join(errors.New("list queues failed"), &mediaconverttypes.BadRequestException{Message: aws.String("use the account-specific endpoint")}), want: true},
+		{name: "other bad request", err: &mediaconverttypes.BadRequestException{Message: aws.String("invalid maxResults")}, want: false},
+		{name: "generic", err: errors.New("boom"), want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := mediaConvertQueueDiscoverySkippable(tt.err); got != tt.want {
+				t.Fatalf("mediaConvertQueueDiscoverySkippable(%v) = %t, want %t", tt.err, got, tt.want)
+			}
+		})
+	}
+}
+
 func assertMediaConvertResource(t *testing.T, resource terraformutils.Resource, ok bool, wantID, wantName, wantType string) {
 	t.Helper()
 	if !ok {

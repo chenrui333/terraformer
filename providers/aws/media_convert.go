@@ -34,7 +34,7 @@ func (g *MediaConvertGenerator) loadQueues(svc *mediaconvert.Client) error {
 	p := mediaconvert.NewListQueuesPaginator(svc, &mediaconvert.ListQueuesInput{})
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
-		if mediaConvertQueueNotFound(err) {
+		if mediaConvertQueueDiscoverySkippable(err) {
 			return nil
 		}
 		if err != nil {
@@ -91,4 +91,18 @@ func mediaConvertResourceName(parts ...string) string {
 func mediaConvertQueueNotFound(err error) bool {
 	var notFound *mediaconverttypes.NotFoundException
 	return errors.As(err, &notFound)
+}
+
+func mediaConvertQueueDiscoverySkippable(err error) bool {
+	return mediaConvertQueueNotFound(err) || mediaConvertQueueEndpointUnavailable(err)
+}
+
+func mediaConvertQueueEndpointUnavailable(err error) bool {
+	var badRequest *mediaconverttypes.BadRequestException
+	if !errors.As(err, &badRequest) {
+		return false
+	}
+	message := strings.ToLower(StringValue(badRequest.Message))
+	return strings.Contains(message, "endpoint") &&
+		(strings.Contains(message, "customer") || strings.Contains(message, "account"))
 }
