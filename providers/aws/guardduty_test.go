@@ -711,6 +711,43 @@ func TestGuardDutyResourceNotFound(t *testing.T) {
 	}
 }
 
+func TestGuardDutyPublishingDestinationNotFound(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{
+			name: "shared not found",
+			err:  &guarddutytypes.ResourceNotFoundException{Message: aws.String("The requested resource does not exist.")},
+			want: true,
+		},
+		{
+			name: "stale destination invalid parameter",
+			err:  &guarddutytypes.BadRequestException{Message: aws.String("The request is rejected because one or more input parameters have invalid values.")},
+			want: true,
+		},
+		{
+			name: "other bad request",
+			err:  &guarddutytypes.BadRequestException{Message: aws.String("The request is rejected because a parameter is invalid.")},
+			want: false,
+		},
+		{
+			name: "other error type",
+			err:  errors.New("boom"),
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := guardDutyPublishingDestinationNotFound(tt.err); got != tt.want {
+				t.Fatalf("publishing destination not found = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestGuardDutyMalwareProtectionPlansUnavailable(t *testing.T) {
 	tests := []struct {
 		name string

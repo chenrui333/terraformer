@@ -328,7 +328,7 @@ func (g *GuardDutyGenerator) loadPublishingDestinations(svc *guardduty.Client, d
 				DestinationId: aws.String(destinationID),
 				DetectorId:    aws.String(detectorID),
 			})
-			if guardDutyResourceNotFound(err) {
+			if guardDutyPublishingDestinationNotFound(err) {
 				continue
 			}
 			if err != nil {
@@ -1069,6 +1069,17 @@ func guardDutyResourceNotFound(err error) bool {
 	return strings.Contains(message, "no such resource found") ||
 		strings.Contains(message, "input detectorid is not owned by the current account") ||
 		strings.Contains(message, "input detectorid is not owned by current account")
+}
+
+func guardDutyPublishingDestinationNotFound(err error) bool {
+	if guardDutyResourceNotFound(err) {
+		return true
+	}
+	var badRequest *guarddutytypes.BadRequestException
+	if !errors.As(err, &badRequest) {
+		return false
+	}
+	return strings.Contains(strings.ToLower(badRequest.ErrorMessage()), "one or more input parameters have invalid values")
 }
 
 func guardDutyOrganizationResourceUnavailable(err error) bool {
