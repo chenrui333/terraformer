@@ -293,8 +293,25 @@ func (g *ConnectGenerator) loadUserHierarchyGroups(svc *connect.Client, instance
 		if err != nil {
 			return err
 		}
-		for _, group := range page.UserHierarchyGroupSummaryList {
-			if resource, ok := newConnectUserHierarchyGroupResource(instanceID, group); ok {
+		for _, summary := range page.UserHierarchyGroupSummaryList {
+			groupID := StringValue(summary.Id)
+			if groupID == "" {
+				continue
+			}
+			output, err := svc.DescribeUserHierarchyGroup(context.TODO(), &connect.DescribeUserHierarchyGroupInput{
+				HierarchyGroupId: &groupID,
+				InstanceId:       &instanceID,
+			})
+			if err != nil {
+				if connectNotFound(err) {
+					continue
+				}
+				return err
+			}
+			if output == nil || output.HierarchyGroup == nil {
+				continue
+			}
+			if resource, ok := newConnectUserHierarchyGroupResource(instanceID, *output.HierarchyGroup); ok {
 				g.Resources = append(g.Resources, resource)
 			}
 		}
@@ -359,14 +376,13 @@ func (g *ConnectGenerator) getOptionalConnectResources(loaders ...connectOptiona
 
 func newConnectInstanceResource(instance connecttypes.InstanceSummary) (terraformutils.Resource, bool) {
 	instanceID := StringValue(instance.Id)
-	if instanceID == "" || !connectInstanceImportable(instance) {
+	instanceAlias := StringValue(instance.InstanceAlias)
+	if instanceID == "" || instanceAlias == "" || !connectInstanceImportable(instance) {
 		return terraformutils.Resource{}, false
 	}
 	attributes := map[string]string{
 		"identity_management_type": string(instance.IdentityManagementType),
-	}
-	if alias := StringValue(instance.InstanceAlias); alias != "" {
-		attributes["instance_alias"] = alias
+		"instance_alias":           instanceAlias,
 	}
 	if instance.InboundCallsEnabled != nil {
 		attributes["inbound_calls_enabled"] = strconv.FormatBool(*instance.InboundCallsEnabled)
@@ -376,7 +392,7 @@ func newConnectInstanceResource(instance connecttypes.InstanceSummary) (terrafor
 	}
 	return terraformutils.NewResource(
 		connectInstanceImportID(instanceID),
-		connectResourceName("instance", StringValue(instance.InstanceAlias), instanceID),
+		connectResourceName("instance", instanceAlias, instanceID),
 		connectInstanceResourceType,
 		"aws",
 		attributes,
@@ -566,7 +582,7 @@ func newConnectUserResource(instanceID string, user connecttypes.UserSummary) (t
 	), true
 }
 
-func newConnectUserHierarchyGroupResource(instanceID string, group connecttypes.HierarchyGroupSummary) (terraformutils.Resource, bool) {
+func newConnectUserHierarchyGroupResource(instanceID string, group connecttypes.HierarchyGroup) (terraformutils.Resource, bool) {
 	groupID := StringValue(group.Id)
 	if instanceID == "" || groupID == "" {
 		return terraformutils.Resource{}, false
@@ -574,6 +590,9 @@ func newConnectUserHierarchyGroupResource(instanceID string, group connecttypes.
 	attributes := connectChildAttributes(instanceID, groupID, "hierarchy_group_id")
 	if name := StringValue(group.Name); name != "" {
 		attributes["name"] = name
+	}
+	if parentGroupID := connectHierarchyGroupParentID(group); parentGroupID != "" {
+		attributes["parent_group_id"] = parentGroupID
 	}
 	return terraformutils.NewResource(
 		connectTwoPartImportID(instanceID, groupID),
@@ -685,6 +704,41 @@ func connectHierarchyStructureConfigured(structure connecttypes.HierarchyStructu
 		structure.LevelThree != nil ||
 		structure.LevelFour != nil ||
 		structure.LevelFive != nil
+}
+
+func connectHierarchyGroupParentID(group connecttypes.HierarchyGroup) string {
+	groupID := StringValue(group.Id)
+	if groupID == "" || group.HierarchyPath == nil {
+		return ""
+	}
+	parentID := ""
+	for _, levelID := range connectHierarchyPathIDs(*group.HierarchyPath) {
+		if levelID == "" {
+			continue
+		}
+		if levelID == groupID {
+			return parentID
+		}
+		parentID = levelID
+	}
+	return parentID
+}
+
+func connectHierarchyPathIDs(path connecttypes.HierarchyPath) []string {
+	return []string{
+		connectHierarchyGroupSummaryID(path.LevelOne),
+		connectHierarchyGroupSummaryID(path.LevelTwo),
+		connectHierarchyGroupSummaryID(path.LevelThree),
+		connectHierarchyGroupSummaryID(path.LevelFour),
+		connectHierarchyGroupSummaryID(path.LevelFive),
+	}
+}
+
+func connectHierarchyGroupSummaryID(group *connecttypes.HierarchyGroupSummary) string {
+	if group == nil {
+		return ""
+	}
+	return StringValue(group.Id)
 }
 
 func connectPhoneNumberImportable(phoneNumber connecttypes.ClaimedPhoneNumberSummary) bool {

@@ -198,6 +198,9 @@ func pinpointSMSVoiceV2ResourceName(parts ...string) string {
 }
 
 func pinpointSMSVoiceV2PhoneNumberImportable(phoneNumber pinpointsmsvoicev2types.PhoneNumberInformation) bool {
+	if phoneNumber.NumberType == pinpointsmsvoicev2types.NumberTypeShortCode {
+		return false
+	}
 	switch phoneNumber.Status {
 	case "", pinpointsmsvoicev2types.NumberStatusActive:
 		return true

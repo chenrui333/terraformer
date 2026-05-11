@@ -97,6 +97,19 @@ func TestNewPinpointSMSVoiceV2PhoneNumberResource(t *testing.T) {
 	}); ok {
 		t.Fatal("pending phone number should be skipped")
 	}
+	if _, ok := newPinpointSMSVoiceV2PhoneNumberResource(pinpointsmsvoicev2types.PhoneNumberInformation{
+		IsoCountryCode: aws.String("US"),
+		MessageType:    pinpointsmsvoicev2types.MessageTypeTransactional,
+		NumberCapabilities: []pinpointsmsvoicev2types.NumberCapability{
+			pinpointsmsvoicev2types.NumberCapabilitySms,
+		},
+		NumberType:    pinpointsmsvoicev2types.NumberTypeShortCode,
+		PhoneNumber:   aws.String("12345"),
+		PhoneNumberId: aws.String("phone-123"),
+		Status:        pinpointsmsvoicev2types.NumberStatusActive,
+	}); ok {
+		t.Fatal("short-code phone number should be skipped")
+	}
 	if _, ok := newPinpointSMSVoiceV2PhoneNumberResource(pinpointsmsvoicev2types.PhoneNumberInformation{}); ok {
 		t.Fatal("phone number with empty ID should be skipped")
 	}

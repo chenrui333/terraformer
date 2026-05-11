@@ -72,6 +72,9 @@ func TestNewConnectInstanceResource(t *testing.T) {
 	if _, ok := newConnectInstanceResource(connecttypes.InstanceSummary{Id: aws.String("instance-123"), InstanceStatus: connecttypes.InstanceStatusCreationInProgress}); ok {
 		t.Fatal("non-active instance should be skipped")
 	}
+	if _, ok := newConnectInstanceResource(connecttypes.InstanceSummary{Id: aws.String("instance-123"), InstanceStatus: connecttypes.InstanceStatusActive}); ok {
+		t.Fatal("instance without reconstructable alias should be skipped")
+	}
 	if _, ok := newConnectInstanceResource(connecttypes.InstanceSummary{}); ok {
 		t.Fatal("instance with empty ID should be skipped")
 	}
@@ -222,7 +225,7 @@ func TestNewConnectChildResources(t *testing.T) {
 		},
 		{
 			name:     "hierarchy group",
-			resource: mustConnectResource(newConnectUserHierarchyGroupResource(instanceID, connecttypes.HierarchyGroupSummary{Id: aws.String("group-123"), Name: aws.String("sales")})),
+			resource: mustConnectResource(newConnectUserHierarchyGroupResource(instanceID, connecttypes.HierarchyGroup{Id: aws.String("group-123"), Name: aws.String("sales")})),
 			ok:       true,
 			wantType: connectUserHierarchyGroupResourceType,
 			wantID:   "instance-123:group-123",
@@ -230,6 +233,26 @@ func TestNewConnectChildResources(t *testing.T) {
 				"hierarchy_group_id": "group-123",
 				"instance_id":        instanceID,
 				"name":               "sales",
+			},
+		},
+		{
+			name: "nested hierarchy group",
+			resource: mustConnectResource(newConnectUserHierarchyGroupResource(instanceID, connecttypes.HierarchyGroup{
+				Id:   aws.String("child-123"),
+				Name: aws.String("east"),
+				HierarchyPath: &connecttypes.HierarchyPath{
+					LevelOne: &connecttypes.HierarchyGroupSummary{Id: aws.String("parent-123")},
+					LevelTwo: &connecttypes.HierarchyGroupSummary{Id: aws.String("child-123")},
+				},
+			})),
+			ok:       true,
+			wantType: connectUserHierarchyGroupResourceType,
+			wantID:   "instance-123:child-123",
+			wantAttrs: map[string]string{
+				"hierarchy_group_id": "child-123",
+				"instance_id":        instanceID,
+				"name":               "east",
+				"parent_group_id":    "parent-123",
 			},
 		},
 	}
