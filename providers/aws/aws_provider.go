@@ -339,6 +339,7 @@ func (p *AWSProvider) GetSupportedService() map[string]terraformutils.ServiceGen
 		"redshift":          &AwsFacade{service: &RedshiftGenerator{}},
 		"resourcegroups":    &AwsFacade{service: &ResourceGroupsGenerator{}},
 		"route53":           &AwsFacade{service: &Route53Generator{}},
+		"route53_resolver":  &AwsFacade{service: &Route53ResolverGenerator{}},
 		"route_table":       &AwsFacade{service: &RouteTableGenerator{}},
 		"s3":                &AwsFacade{service: &S3Generator{}},
 		"s3control":         &AwsFacade{service: &S3ControlGenerator{}},
