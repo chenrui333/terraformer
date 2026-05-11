@@ -134,7 +134,7 @@ func TestSSOAdminManagedPolicyAttachmentResource(t *testing.T) {
 	resource := newSSOAdminManagedPolicyAttachmentResource(testSSOAdminInstanceARN, testSSOAdminPermissionSetARN, ssotypes.AttachedManagedPolicy{
 		Arn:  aws.String(testSSOAdminPolicyARN),
 		Name: aws.String("ReadOnlyAccess"),
-	})
+	}, nil)
 
 	if got, want := resource.InstanceState.ID, testSSOAdminPolicyARN+","+testSSOAdminPermissionSetARN+","+testSSOAdminInstanceARN; got != want {
 		t.Fatalf("resource ID = %q, want %q", got, want)
@@ -151,6 +151,38 @@ func TestSSOAdminManagedPolicyAttachmentResource(t *testing.T) {
 	} {
 		if got := attributes[key]; got != want {
 			t.Fatalf("%s = %q, want %q", key, got, want)
+		}
+	}
+	if _, ok := resource.AdditionalFields["depends_on"]; ok {
+		t.Fatalf("unexpected depends_on in %#v", resource.AdditionalFields)
+	}
+}
+
+func TestSSOAdminManagedPolicyAttachmentDependsOnAccountAssignments(t *testing.T) {
+	resource := newSSOAdminManagedPolicyAttachmentResource(
+		testSSOAdminInstanceARN,
+		testSSOAdminPermissionSetARN,
+		ssotypes.AttachedManagedPolicy{Arn: aws.String(testSSOAdminPolicyARN)},
+		[]string{
+			"aws_ssoadmin_account_assignment.tfer--z",
+			"aws_ssoadmin_account_assignment.tfer--a",
+		},
+	)
+
+	dependsOn, ok := resource.AdditionalFields["depends_on"].([]string)
+	if !ok {
+		t.Fatalf("depends_on type = %T, want []string", resource.AdditionalFields["depends_on"])
+	}
+	want := []string{
+		"aws_ssoadmin_account_assignment.tfer--a",
+		"aws_ssoadmin_account_assignment.tfer--z",
+	}
+	if len(dependsOn) != len(want) {
+		t.Fatalf("depends_on = %#v, want %#v", dependsOn, want)
+	}
+	for i := range want {
+		if dependsOn[i] != want[i] {
+			t.Fatalf("depends_on = %#v, want %#v", dependsOn, want)
 		}
 	}
 }
@@ -333,8 +365,8 @@ func TestSSOAdminPermissionsBoundaryAttachmentResource(t *testing.T) {
 }
 
 func TestSSOAdminResourceNamesDoNotCollapseJoinedParts(t *testing.T) {
-	left := newSSOAdminManagedPolicyAttachmentResource("instance", "a_b", ssotypes.AttachedManagedPolicy{Arn: aws.String("c")})
-	right := newSSOAdminManagedPolicyAttachmentResource("instance", "a", ssotypes.AttachedManagedPolicy{Arn: aws.String("b_c")})
+	left := newSSOAdminManagedPolicyAttachmentResource("instance", "a_b", ssotypes.AttachedManagedPolicy{Arn: aws.String("c")}, nil)
+	right := newSSOAdminManagedPolicyAttachmentResource("instance", "a", ssotypes.AttachedManagedPolicy{Arn: aws.String("b_c")}, nil)
 	if left.ResourceName == right.ResourceName {
 		t.Fatalf("managed policy attachment resource names collide: %q", left.ResourceName)
 	}
