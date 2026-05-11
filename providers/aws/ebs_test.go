@@ -153,13 +153,23 @@ func TestNewEBSEncryptionByDefaultResource(t *testing.T) {
 	if got := resource.InstanceState.ID; got != ebsEncryptionByDefaultImportID {
 		t.Fatalf("resource ID = %q, want %q", got, ebsEncryptionByDefaultImportID)
 	}
+	if got, want := resource.ResourceName, terraformutils.TfSanitize(ebsEncryptionByDefaultResourceName); got != want {
+		t.Fatalf("resource name = %q, want %q", got, want)
+	}
 	if got := resource.InstanceState.Attributes["enabled"]; got != "true" {
 		t.Fatalf("enabled = %q, want true", got)
 	}
 	assertEBSPreservesID(t, resource)
 
-	if _, ok := newEBSEncryptionByDefaultResource(false); ok {
-		t.Fatal("disabled EBS encryption by default should be skipped")
+	resource, ok = newEBSEncryptionByDefaultResource(false)
+	if !ok {
+		t.Fatal("disabled EBS encryption by default should still be imported")
+	}
+	if got := resource.InstanceState.ID; got != ebsEncryptionByDefaultImportID {
+		t.Fatalf("disabled resource ID = %q, want %q", got, ebsEncryptionByDefaultImportID)
+	}
+	if got := resource.InstanceState.Attributes["enabled"]; got != "false" {
+		t.Fatalf("disabled enabled = %q, want false", got)
 	}
 }
 

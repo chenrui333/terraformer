@@ -28,6 +28,11 @@ const (
 
 var ec2CoreAllowEmptyValues = []string{"tags."}
 
+var ec2CoreTagFilterResources = map[string]struct{}{
+	"placement_group":               {},
+	"ec2_instance_connect_endpoint": {},
+}
+
 type EC2CoreGenerator struct {
 	AWSService
 }
@@ -228,6 +233,9 @@ func (g *EC2CoreGenerator) loadTrafficMirrorSessions(svc *ec2.Client) error {
 }
 
 func (g *EC2CoreGenerator) ec2CoreTagFilters(resourceName string) []types.Filter {
+	if !ec2CoreSupportsTagFilters(resourceName) {
+		return nil
+	}
 	var filters []types.Filter
 	for _, filter := range g.Filter {
 		if strings.HasPrefix(filter.FieldPath, "tags.") && filter.IsApplicable(resourceName) {
@@ -238,6 +246,11 @@ func (g *EC2CoreGenerator) ec2CoreTagFilters(resourceName string) []types.Filter
 		}
 	}
 	return filters
+}
+
+func ec2CoreSupportsTagFilters(resourceName string) bool {
+	_, ok := ec2CoreTagFilterResources[resourceName]
+	return ok
 }
 
 func (g *EC2CoreGenerator) shouldLoadEC2CoreResource(serviceNames ...string) bool {

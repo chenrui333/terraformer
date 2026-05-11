@@ -32,6 +32,40 @@ func TestEC2CoreShouldLoadResource(t *testing.T) {
 	}
 }
 
+func TestEC2CoreTagFiltersOnlyForSupportedAPIs(t *testing.T) {
+	g := EC2CoreGenerator{AWSService: AWSService{Service: terraformutils.Service{Filter: []terraformutils.ResourceFilter{{
+		FieldPath:        "tags.env",
+		AcceptableValues: []string{"prod"},
+	}}}}}
+
+	filters := g.ec2CoreTagFilters("placement_group")
+	if len(filters) != 1 {
+		t.Fatalf("placement group filters length = %d, want 1", len(filters))
+	}
+	if got := aws.ToString(filters[0].Name); got != "tag:env" {
+		t.Fatalf("placement group filter name = %q, want tag:env", got)
+	}
+	if got := filters[0].Values; len(got) != 1 || got[0] != "prod" {
+		t.Fatalf("placement group filter values = %v, want [prod]", got)
+	}
+
+	unsupportedResources := []string{
+		"ec2_capacity_reservation",
+		"ec2_host",
+		"ec2_network_insights_path",
+		"ec2_traffic_mirror_filter",
+		"ec2_traffic_mirror_target",
+		"ec2_traffic_mirror_session",
+	}
+	for _, resourceName := range unsupportedResources {
+		t.Run(resourceName, func(t *testing.T) {
+			if filters := g.ec2CoreTagFilters(resourceName); len(filters) != 0 {
+				t.Fatalf("ec2CoreTagFilters(%q) = %v, want empty", resourceName, filters)
+			}
+		})
+	}
+}
+
 func TestNewEC2PlacementGroupResource(t *testing.T) {
 	resource, ok := newEC2PlacementGroupResource(types.PlacementGroup{
 		GroupName: aws.String("cluster-a"),

@@ -23,7 +23,8 @@ const (
 	ebsFastSnapshotRestoreResourceType      = "aws_ebs_fast_snapshot_restore"
 	ebsEncryptionByDefaultResourceType      = "aws_ebs_encryption_by_default"
 	ebsDefaultKMSKeyResourceType            = "aws_ebs_default_kms_key"
-	ebsEncryptionByDefaultImportID          = "ebs-encryption-by-default"
+	ebsEncryptionByDefaultImportID          = "default"
+	ebsEncryptionByDefaultResourceName      = "ebs-encryption-by-default"
 	ebsFastSnapshotRestoreImportIDSeparator = ","
 	ebsSelfOwnerID                          = "self"
 )
@@ -244,12 +245,9 @@ func newEBSFastSnapshotRestoreResource(restore types.DescribeFastSnapshotRestore
 }
 
 func newEBSEncryptionByDefaultResource(enabled bool) (terraformutils.Resource, bool) {
-	if !enabled {
-		return terraformutils.Resource{}, false
-	}
 	resource := terraformutils.NewResource(
 		ebsEncryptionByDefaultImportID,
-		ebsEncryptionByDefaultImportID,
+		ebsEncryptionByDefaultResourceName,
 		ebsEncryptionByDefaultResourceType,
 		"aws",
 		map[string]string{
