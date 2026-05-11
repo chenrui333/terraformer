@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -43,11 +44,7 @@ func (g *MediaStoreGenerator) InitResources() error {
 				"aws_media_store_container",
 				"aws",
 				mediastoreAllowEmptyValues))
-			resource, ok, err := getMediaStoreContainerPolicyResource(svc, containerName)
-			if err != nil {
-				return err
-			}
-			if ok {
+			if resource, ok := getMediaStoreContainerPolicyResource(svc, containerName); ok {
 				resources = append(resources, resource)
 			}
 		}
@@ -65,24 +62,27 @@ func (g *MediaStoreGenerator) PostConvertHook() error {
 	return nil
 }
 
-func getMediaStoreContainerPolicyResource(svc *mediastore.Client, containerName string) (terraformutils.Resource, bool, error) {
+type mediaStoreContainerPolicyGetter interface {
+	GetContainerPolicy(context.Context, *mediastore.GetContainerPolicyInput, ...func(*mediastore.Options)) (*mediastore.GetContainerPolicyOutput, error)
+}
+
+func getMediaStoreContainerPolicyResource(svc mediaStoreContainerPolicyGetter, containerName string) (terraformutils.Resource, bool) {
 	if containerName == "" {
-		return terraformutils.Resource{}, false, nil
+		return terraformutils.Resource{}, false
 	}
 	output, err := svc.GetContainerPolicy(context.TODO(), &mediastore.GetContainerPolicyInput{
 		ContainerName: aws.String(containerName),
 	})
-	if mediaStoreContainerPolicyNotFound(err) {
-		return terraformutils.Resource{}, false, nil
-	}
 	if err != nil {
-		return terraformutils.Resource{}, false, err
+		if !mediaStoreContainerPolicyNotFound(err) {
+			log.Printf("skipping optional MediaStore container policy discovery for %s: %v", containerName, err)
+		}
+		return terraformutils.Resource{}, false
 	}
 	if output == nil {
-		return terraformutils.Resource{}, false, nil
+		return terraformutils.Resource{}, false
 	}
-	resource, ok := newMediaStoreContainerPolicyResource(containerName, StringValue(output.Policy))
-	return resource, ok, nil
+	return newMediaStoreContainerPolicyResource(containerName, StringValue(output.Policy))
 }
 
 func newMediaStoreContainerPolicyResource(containerName, policy string) (terraformutils.Resource, bool) {

@@ -3,9 +3,12 @@
 package aws
 
 import (
+	"context"
 	"errors"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/mediastore"
 	mediastoretypes "github.com/aws/aws-sdk-go-v2/service/mediastore/types"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
@@ -28,6 +31,44 @@ func TestNewMediaStoreContainerPolicyResource(t *testing.T) {
 func TestMediaStoreContainerPolicyImportID(t *testing.T) {
 	if got := mediaStoreContainerPolicyImportID("media-container"); got != "media-container" {
 		t.Fatalf("container policy import ID = %q, want %q", got, "media-container")
+	}
+}
+
+func TestGetMediaStoreContainerPolicyResource(t *testing.T) {
+	policy := "{\"Version\":\"2012-10-17\"}"
+	resource, ok := getMediaStoreContainerPolicyResource(mediaStoreContainerPolicyGetterFunc(
+		func(_ context.Context, input *mediastore.GetContainerPolicyInput, _ ...func(*mediastore.Options)) (*mediastore.GetContainerPolicyOutput, error) {
+			if got := StringValue(input.ContainerName); got != "media-container" {
+				t.Fatalf("container name = %q, want %q", got, "media-container")
+			}
+			return &mediastore.GetContainerPolicyOutput{Policy: aws.String(policy)}, nil
+		},
+	), "media-container")
+	assertMediaStoreResource(t, resource, ok, "media-container", mediaStoreResourceName("container-policy", "media-container"), mediaStoreContainerPolicyResourceType)
+	assertMediaStoreAttribute(t, resource, "policy", policy)
+}
+
+func TestGetMediaStoreContainerPolicyResourceSkipsLookupErrors(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+	}{
+		{name: "access denied", err: errors.New("access denied")},
+		{name: "container not found", err: &mediastoretypes.ContainerNotFoundException{}},
+		{name: "policy not found", err: &mediastoretypes.PolicyNotFoundException{}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resource, ok := getMediaStoreContainerPolicyResource(mediaStoreContainerPolicyGetterFunc(
+				func(context.Context, *mediastore.GetContainerPolicyInput, ...func(*mediastore.Options)) (*mediastore.GetContainerPolicyOutput, error) {
+					return nil, tt.err
+				},
+			), "media-container")
+			if ok {
+				t.Fatalf("policy lookup error returned resource %#v", resource)
+			}
+		})
 	}
 }
 
@@ -106,4 +147,10 @@ func assertMediaStoreAttribute(t *testing.T, resource terraformutils.Resource, k
 	if got := resource.InstanceState.Attributes[key]; got != want {
 		t.Fatalf("resource attribute %q = %q, want %q", key, got, want)
 	}
+}
+
+type mediaStoreContainerPolicyGetterFunc func(context.Context, *mediastore.GetContainerPolicyInput, ...func(*mediastore.Options)) (*mediastore.GetContainerPolicyOutput, error)
+
+func (f mediaStoreContainerPolicyGetterFunc) GetContainerPolicy(ctx context.Context, input *mediastore.GetContainerPolicyInput, optFns ...func(*mediastore.Options)) (*mediastore.GetContainerPolicyOutput, error) {
+	return f(ctx, input, optFns...)
 }
