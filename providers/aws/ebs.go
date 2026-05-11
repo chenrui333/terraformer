@@ -5,13 +5,27 @@ package aws
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/chenrui333/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+)
+
+const (
+	ebsVolumeResourceType                   = "aws_ebs_volume"
+	ebsVolumeAttachmentResourceType         = "aws_volume_attachment"
+	ebsSnapshotResourceType                 = "aws_ebs_snapshot"
+	ebsFastSnapshotRestoreResourceType      = "aws_ebs_fast_snapshot_restore"
+	ebsEncryptionByDefaultResourceType      = "aws_ebs_encryption_by_default"
+	ebsDefaultKMSKeyResourceType            = "aws_ebs_default_kms_key"
+	ebsEncryptionByDefaultImportID          = "ebs-encryption-by-default"
+	ebsFastSnapshotRestoreImportIDSeparator = ","
+	ebsSelfOwnerID                          = "self"
 )
 
 var ebsAllowEmptyValues = []string{"tags."}
@@ -75,7 +89,7 @@ func (g *EbsGenerator) InitResources() error {
 				g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
 					StringValue(volume.VolumeId),
 					StringValue(volume.VolumeId),
-					"aws_ebs_volume",
+					ebsVolumeResourceType,
 					"aws",
 					ebsAllowEmptyValues,
 				))
@@ -89,7 +103,7 @@ func (g *EbsGenerator) InitResources() error {
 						g.Resources = append(g.Resources, terraformutils.NewResource(
 							attachmentID,
 							StringValue(attachment.InstanceId)+":"+StringValue(attachment.Device),
-							"aws_volume_attachment",
+							ebsVolumeAttachmentResourceType,
 							"aws",
 							map[string]string{
 								"device_name": StringValue(attachment.Device),
@@ -104,5 +118,194 @@ func (g *EbsGenerator) InitResources() error {
 			}
 		}
 	}
+	if err := g.loadSnapshots(svc); err != nil {
+		return err
+	}
+	if err := g.loadFastSnapshotRestores(svc); err != nil {
+		return err
+	}
+	if err := g.loadAccountSettings(svc); err != nil {
+		return err
+	}
 	return nil
+}
+
+func (g *EbsGenerator) loadSnapshots(svc *ec2.Client) error {
+	var filters []types.Filter
+	for _, filter := range g.Filter {
+		if strings.HasPrefix(filter.FieldPath, "tags.") && filter.IsApplicable("ebs_snapshot") {
+			filters = append(filters, types.Filter{
+				Name:   aws.String("tag:" + strings.TrimPrefix(filter.FieldPath, "tags.")),
+				Values: filter.AcceptableValues,
+			})
+		}
+	}
+	p := ec2.NewDescribeSnapshotsPaginator(svc, &ec2.DescribeSnapshotsInput{
+		Filters:  filters,
+		OwnerIds: []string{ebsSelfOwnerID},
+	})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, snapshot := range page.Snapshots {
+			if resource, ok := newEBSSnapshotResource(snapshot); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+	}
+	return nil
+}
+
+func (g *EbsGenerator) loadFastSnapshotRestores(svc *ec2.Client) error {
+	p := ec2.NewDescribeFastSnapshotRestoresPaginator(svc, &ec2.DescribeFastSnapshotRestoresInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, restore := range page.FastSnapshotRestores {
+			if resource, ok := newEBSFastSnapshotRestoreResource(restore); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+	}
+	return nil
+}
+
+func (g *EbsGenerator) loadAccountSettings(svc *ec2.Client) error {
+	encryption, err := svc.GetEbsEncryptionByDefault(context.TODO(), &ec2.GetEbsEncryptionByDefaultInput{})
+	if err != nil {
+		return err
+	}
+	if resource, ok := newEBSEncryptionByDefaultResource(aws.ToBool(encryption.EbsEncryptionByDefault)); ok {
+		g.Resources = append(g.Resources, resource)
+	}
+
+	defaultKey, err := svc.GetEbsDefaultKmsKeyId(context.TODO(), &ec2.GetEbsDefaultKmsKeyIdInput{})
+	if err != nil {
+		return err
+	}
+	if resource, ok := newEBSDefaultKMSKeyResource(StringValue(defaultKey.KmsKeyId)); ok {
+		g.Resources = append(g.Resources, resource)
+	}
+	return nil
+}
+
+func newEBSSnapshotResource(snapshot types.Snapshot) (terraformutils.Resource, bool) {
+	if !ebsSnapshotImportable(snapshot) {
+		return terraformutils.Resource{}, false
+	}
+	id := StringValue(snapshot.SnapshotId)
+	return terraformutils.NewSimpleResource(
+		id,
+		ebsResourceName("snapshot", StringValue(snapshot.VolumeId), id),
+		ebsSnapshotResourceType,
+		"aws",
+		ebsAllowEmptyValues,
+	), true
+}
+
+func newEBSFastSnapshotRestoreResource(restore types.DescribeFastSnapshotRestoreSuccessItem) (terraformutils.Resource, bool) {
+	if !ebsFastSnapshotRestoreImportable(restore) {
+		return terraformutils.Resource{}, false
+	}
+	availabilityZone := StringValue(restore.AvailabilityZone)
+	snapshotID := StringValue(restore.SnapshotId)
+	importID := ebsFastSnapshotRestoreImportID(availabilityZone, snapshotID)
+	return terraformutils.NewSimpleResource(
+		importID,
+		ebsResourceName("fast_snapshot_restore", availabilityZone, snapshotID),
+		ebsFastSnapshotRestoreResourceType,
+		"aws",
+		ebsAllowEmptyValues,
+	), true
+}
+
+func newEBSEncryptionByDefaultResource(enabled bool) (terraformutils.Resource, bool) {
+	if !enabled {
+		return terraformutils.Resource{}, false
+	}
+	resource := terraformutils.NewResource(
+		ebsEncryptionByDefaultImportID,
+		ebsEncryptionByDefaultImportID,
+		ebsEncryptionByDefaultResourceType,
+		"aws",
+		map[string]string{
+			"enabled": strconv.FormatBool(enabled),
+		},
+		ebsAllowEmptyValues,
+		map[string]interface{}{},
+	)
+	setEBSPreserveIDAfterRefresh(&resource)
+	return resource, true
+}
+
+func newEBSDefaultKMSKeyResource(keyARN string) (terraformutils.Resource, bool) {
+	if !ebsDefaultKMSKeyImportable(keyARN) {
+		return terraformutils.Resource{}, false
+	}
+	resource := terraformutils.NewResource(
+		keyARN,
+		ebsResourceName("default_kms_key", keyARN),
+		ebsDefaultKMSKeyResourceType,
+		"aws",
+		map[string]string{
+			"key_arn": keyARN,
+		},
+		ebsAllowEmptyValues,
+		map[string]interface{}{},
+	)
+	setEBSPreserveIDAfterRefresh(&resource)
+	return resource, true
+}
+
+func ebsSnapshotImportable(snapshot types.Snapshot) bool {
+	if StringValue(snapshot.SnapshotId) == "" {
+		return false
+	}
+	return snapshot.State == types.SnapshotStateCompleted
+}
+
+func ebsFastSnapshotRestoreImportable(restore types.DescribeFastSnapshotRestoreSuccessItem) bool {
+	if StringValue(restore.AvailabilityZone) == "" || StringValue(restore.SnapshotId) == "" {
+		return false
+	}
+	return restore.State == types.FastSnapshotRestoreStateCodeEnabled
+}
+
+func ebsDefaultKMSKeyImportable(keyARN string) bool {
+	if keyARN == "" {
+		return false
+	}
+	return keyARN != "alias/aws/ebs" && !strings.HasSuffix(keyARN, ":alias/aws/ebs")
+}
+
+func ebsFastSnapshotRestoreImportID(availabilityZone, snapshotID string) string {
+	if availabilityZone == "" || snapshotID == "" {
+		return ""
+	}
+	return availabilityZone + ebsFastSnapshotRestoreImportIDSeparator + snapshotID
+}
+
+func setEBSPreserveIDAfterRefresh(resource *terraformutils.Resource) {
+	if resource == nil || resource.InstanceState == nil {
+		return
+	}
+	if resource.InstanceState.Meta == nil {
+		resource.InstanceState.Meta = map[string]interface{}{}
+	}
+	resource.InstanceState.Meta[tfcompat.MetaKeyPreserveIDAfterRefresh] = true
+}
+
+func ebsResourceName(parts ...string) string {
+	nameParts := make([]string, 0, len(parts)*2)
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+		nameParts = append(nameParts, strconv.Itoa(len(part)), part)
+	}
+	return strings.Join(nameParts, "_")
 }
