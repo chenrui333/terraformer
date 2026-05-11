@@ -25,6 +25,9 @@ const (
 
 	guardDutyResourceIDSeparator   = ":"
 	guardDutyResourceNameSeparator = ":"
+	guardDutyUpdatedAtField        = "updatedAt"
+
+	guardDutyFilterUpdatedAtCriteriaAdditionalField = "__guardduty_filter_updated_at_criteria"
 )
 
 var guardDutyAllowEmptyValues = []string{"tags."}
@@ -75,6 +78,18 @@ func (g *GuardDutyGenerator) InitResources() error {
 		}
 	}
 
+	return nil
+}
+
+func (g *GuardDutyGenerator) PostConvertHook() error {
+	for i := range g.Resources {
+		resource := &g.Resources[i]
+		if resource.InstanceInfo == nil || resource.InstanceInfo.Type != guardDutyFilterResourceType {
+			continue
+		}
+		updatedAtCriteria := guardDutyUpdatedAtCriteriaFromAdditionalFields(resource.AdditionalFields)
+		guardDutyRestoreUpdatedAtCriteria(resource.Item, updatedAtCriteria)
+	}
 	return nil
 }
 
@@ -246,6 +261,10 @@ func newGuardDutyFilterResource(detectorID, filterName string, filter *guardduty
 	if description := StringValue(filter.Description); description != "" {
 		attributes["description"] = description
 	}
+	additionalFields := map[string]interface{}{}
+	if updatedAtCriteria := guardDutyUpdatedAtCriteria(filter.FindingCriteria); len(updatedAtCriteria) > 0 {
+		additionalFields[guardDutyFilterUpdatedAtCriteriaAdditionalField] = updatedAtCriteria
+	}
 
 	return terraformutils.NewResource(
 		guardDutyChildResourceID(detectorID, name),
@@ -254,7 +273,7 @@ func newGuardDutyFilterResource(detectorID, filterName string, filter *guardduty
 		"aws",
 		attributes,
 		guardDutyAllowEmptyValues,
-		map[string]interface{}{},
+		additionalFields,
 	), true
 }
 
@@ -399,10 +418,97 @@ func guardDutyConditionIntAttribute(attributes map[string]string, key, field str
 }
 
 func guardDutyConditionIntValue(field string, value int64) string {
-	if field == "updatedAt" {
+	if field == guardDutyUpdatedAtField {
 		return time.UnixMilli(value).UTC().Format(time.RFC3339Nano)
 	}
 	return strconv.FormatInt(value, 10)
+}
+
+func guardDutyUpdatedAtCriteria(criteria *guarddutytypes.FindingCriteria) map[string]string {
+	if criteria == nil {
+		return nil
+	}
+	condition, ok := criteria.Criterion[guardDutyUpdatedAtField]
+	if !ok {
+		return nil
+	}
+	updatedAtCriteria := map[string]string{}
+	guardDutyUpdatedAtCriteriaValue(updatedAtCriteria, "greater_than", condition.GreaterThan)
+	guardDutyUpdatedAtCriteriaValue(updatedAtCriteria, "greater_than_or_equal", condition.GreaterThanOrEqual)
+	guardDutyUpdatedAtCriteriaValue(updatedAtCriteria, "less_than", condition.LessThan)
+	guardDutyUpdatedAtCriteriaValue(updatedAtCriteria, "less_than_or_equal", condition.LessThanOrEqual)
+	return updatedAtCriteria
+}
+
+func guardDutyUpdatedAtCriteriaValue(criteria map[string]string, key string, value *int64) {
+	if value == nil || *value <= 0 {
+		return
+	}
+	criteria[key] = guardDutyConditionIntValue(guardDutyUpdatedAtField, *value)
+}
+
+func guardDutyUpdatedAtCriteriaFromAdditionalFields(additionalFields map[string]interface{}) map[string]string {
+	raw, ok := additionalFields[guardDutyFilterUpdatedAtCriteriaAdditionalField]
+	if !ok {
+		return nil
+	}
+	switch criteria := raw.(type) {
+	case map[string]string:
+		return criteria
+	case map[string]interface{}:
+		updatedAtCriteria := map[string]string{}
+		for key, value := range criteria {
+			if text, ok := value.(string); ok {
+				updatedAtCriteria[key] = text
+			}
+		}
+		return updatedAtCriteria
+	default:
+		return nil
+	}
+}
+
+func guardDutyRestoreUpdatedAtCriteria(item map[string]interface{}, updatedAtCriteria map[string]string) {
+	if item == nil {
+		return
+	}
+	delete(item, guardDutyFilterUpdatedAtCriteriaAdditionalField)
+	if len(updatedAtCriteria) == 0 {
+		return
+	}
+
+	for _, findingCriteria := range guardDutyInterfaceSlice(item["finding_criteria"]) {
+		findingCriteriaMap, ok := findingCriteria.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		for _, criterion := range guardDutyInterfaceSlice(findingCriteriaMap["criterion"]) {
+			criterionMap, ok := criterion.(map[string]interface{})
+			if !ok || criterionMap["field"] != guardDutyUpdatedAtField {
+				continue
+			}
+			for key, value := range updatedAtCriteria {
+				if _, ok := criterionMap[key]; ok {
+					criterionMap[key] = value
+				}
+			}
+		}
+	}
+}
+
+func guardDutyInterfaceSlice(value interface{}) []interface{} {
+	switch values := value.(type) {
+	case []interface{}:
+		return values
+	case []map[string]interface{}:
+		result := make([]interface{}, 0, len(values))
+		for _, value := range values {
+			result = append(result, value)
+		}
+		return result
+	default:
+		return nil
+	}
 }
 
 func guardDutyChildResourceID(detectorID, resourceID string) string {

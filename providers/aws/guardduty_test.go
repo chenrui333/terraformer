@@ -153,6 +153,61 @@ func TestGuardDutyFilterResource(t *testing.T) {
 			t.Fatalf("%s = %q, want %q", key, got, want)
 		}
 	}
+	updatedAtCriteria, ok := resource.AdditionalFields[guardDutyFilterUpdatedAtCriteriaAdditionalField].(map[string]string)
+	if !ok {
+		t.Fatalf("missing updatedAt criteria metadata in %#v", resource.AdditionalFields)
+	}
+	if got, want := updatedAtCriteria["greater_than"], "2024-03-09T16:00:00.123Z"; got != want {
+		t.Fatalf("updatedAt greater_than metadata = %q, want %q", got, want)
+	}
+}
+
+func TestGuardDutyPostConvertHookPreservesUpdatedAtMillisecondsAfterRefresh(t *testing.T) {
+	rank := int32(7)
+	greaterThan := int64(1710000000123)
+	resource, ok := newGuardDutyFilterResource(testGuardDutyDetectorID, testGuardDutyFilterName, &guardduty.GetFilterOutput{
+		Action: guarddutytypes.FilterActionArchive,
+		FindingCriteria: &guarddutytypes.FindingCriteria{
+			Criterion: map[string]guarddutytypes.Condition{
+				"updatedAt": {
+					GreaterThan: &greaterThan,
+				},
+			},
+		},
+		Name: aws.String(testGuardDutyFilterName),
+		Rank: &rank,
+	})
+	if !ok {
+		t.Fatal("expected filter resource")
+	}
+	resource.Item = map[string]interface{}{
+		guardDutyFilterUpdatedAtCriteriaAdditionalField: resource.AdditionalFields[guardDutyFilterUpdatedAtCriteriaAdditionalField],
+		"finding_criteria": []interface{}{
+			map[string]interface{}{
+				"criterion": []interface{}{
+					map[string]interface{}{
+						"field":        "updatedAt",
+						"greater_than": "2024-03-09T16:00:00Z",
+					},
+				},
+			},
+		},
+	}
+
+	g := GuardDutyGenerator{}
+	g.Resources = append(g.Resources, resource)
+	if err := g.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook() error = %v", err)
+	}
+
+	if _, ok := g.Resources[0].Item[guardDutyFilterUpdatedAtCriteriaAdditionalField]; ok {
+		t.Fatalf("unexpected metadata in item: %#v", g.Resources[0].Item)
+	}
+	findingCriteria := g.Resources[0].Item["finding_criteria"].([]interface{})[0].(map[string]interface{})
+	criterion := findingCriteria["criterion"].([]interface{})[0].(map[string]interface{})
+	if got, want := criterion["greater_than"], "2024-03-09T16:00:00.123Z"; got != want {
+		t.Fatalf("greater_than = %q, want %q", got, want)
+	}
 }
 
 func TestGuardDutyIPSetResource(t *testing.T) {
