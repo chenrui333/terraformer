@@ -111,6 +111,7 @@ func TestNewDMSCertificateResource(t *testing.T) {
 func TestNewDMSEventSubscriptionResource(t *testing.T) {
 	resource, ok := newDMSEventSubscriptionResource(dmstypes.EventSubscription{
 		CustSubscriptionId:  dmsString("dms-events"),
+		Enabled:             true,
 		EventCategoriesList: []string{"creation", "failure"},
 		SnsTopicArn:         dmsString("arn:aws:sns:us-east-1:123456789012:dms-events"),
 		SourceType:          dmsString("replication-task"),
@@ -126,9 +127,13 @@ func TestNewDMSEventSubscriptionResource(t *testing.T) {
 	if _, ok := resource.AdditionalFields["event_categories"]; ok {
 		t.Fatal("non-empty event categories should be read from refreshed state")
 	}
+	if _, ok := resource.InstanceState.Attributes["enabled"]; ok {
+		t.Fatal("enabled=true event subscription should use the provider default")
+	}
 
 	resource, ok = newDMSEventSubscriptionResource(dmstypes.EventSubscription{
 		CustSubscriptionId: dmsString("dms-all-events"),
+		Enabled:            true,
 		SnsTopicArn:        dmsString("arn:aws:sns:us-east-1:123456789012:dms-events"),
 		SourceType:         dmsString("replication-instance"),
 		Status:             dmsString("active"),
@@ -144,6 +149,20 @@ func TestNewDMSEventSubscriptionResource(t *testing.T) {
 	if len(emptyCategories) != 0 {
 		t.Fatalf("all-category event_categories length = %d, want 0", len(emptyCategories))
 	}
+
+	resource, ok = newDMSEventSubscriptionResource(dmstypes.EventSubscription{
+		CustSubscriptionId:  dmsString("dms-disabled-events"),
+		Enabled:             false,
+		EventCategoriesList: []string{"creation"},
+		SnsTopicArn:         dmsString("arn:aws:sns:us-east-1:123456789012:dms-events"),
+		SourceType:          dmsString("replication-task"),
+		Status:              dmsString("active"),
+	})
+	assertDMSResource(t, resource, ok, "dms-disabled-events", dmsResourceName("event-subscription", "dms-disabled-events"), dmsEventSubscriptionResourceType)
+	if got := resource.InstanceState.Attributes["enabled"]; got != "false" {
+		t.Fatalf("disabled event subscription enabled = %q, want false", got)
+	}
+	assertDMSAllowEmptyValue(t, resource, "enabled")
 
 	if _, ok := newDMSEventSubscriptionResource(dmstypes.EventSubscription{
 		EventCategoriesList: []string{"creation"},
@@ -431,6 +450,16 @@ func assertDMSResource(t *testing.T, resource terraformutils.Resource, ok bool, 
 	if got := resource.InstanceInfo.Type; got != wantType {
 		t.Fatalf("resource type = %q, want %q", got, wantType)
 	}
+}
+
+func assertDMSAllowEmptyValue(t *testing.T, resource terraformutils.Resource, want string) {
+	t.Helper()
+	for _, value := range resource.AllowEmptyValues {
+		if value == "^"+want+"$" {
+			return
+		}
+	}
+	t.Fatalf("AllowEmptyValues = %v, want anchored %q", resource.AllowEmptyValues, want)
 }
 
 func dmsString(value string) *string {

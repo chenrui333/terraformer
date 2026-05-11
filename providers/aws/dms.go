@@ -36,7 +36,7 @@ const (
 	dmsEndpointEngineS3 = "s3"
 )
 
-var dmsAllowEmptyValues = []string{"tags."}
+var dmsAllowEmptyValues = []string{"tags.", "^enabled$"}
 
 type DmsGenerator struct {
 	AWSService
@@ -211,6 +211,9 @@ func newDMSEventSubscriptionResource(subscription dmstypes.EventSubscription) (t
 		return terraformutils.Resource{}, false
 	}
 	attributes := dmsStringSliceAttributes("event_categories", subscription.EventCategoriesList)
+	if !subscription.Enabled {
+		attributes["enabled"] = strconv.FormatBool(subscription.Enabled)
+	}
 	additionalFields := map[string]interface{}{}
 	if len(subscription.EventCategoriesList) == 0 {
 		// DMS omits categories for all-category subscriptions, but Terraform still requires an explicit empty set.
