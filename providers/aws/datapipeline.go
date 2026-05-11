@@ -29,6 +29,7 @@ func (g *DataPipelineGenerator) InitResources() error {
 		return e
 	}
 	svc := datapipeline.NewFromConfig(config)
+	pipelineIDFilter := awsTypedIDFilterValues(g.Filter, dataPipelinePipelineResourceType)
 	p := datapipeline.NewListPipelinesPaginator(svc, &datapipeline.ListPipelinesInput{})
 	var resources []terraformutils.Resource
 	for p.HasMorePages() {
@@ -39,6 +40,9 @@ func (g *DataPipelineGenerator) InitResources() error {
 		for _, pipeline := range page.PipelineIdList {
 			pipelineID := StringValue(pipeline.Id)
 			pipelineName := StringValue(pipeline.Name)
+			if !awsIDFilterAllows(pipelineIDFilter, pipelineID) {
+				continue
+			}
 			if resource, ok := newDataPipelinePipelineResource(pipelineID, pipelineName); ok {
 				resources = append(resources, resource)
 			}

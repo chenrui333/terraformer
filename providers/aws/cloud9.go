@@ -30,6 +30,7 @@ func (g *Cloud9Generator) InitResources() error {
 		return e
 	}
 	svc := cloud9.NewFromConfig(config)
+	environmentIDFilter := awsTypedIDFilterValues(g.Filter, cloud9EnvironmentEC2ResourceType)
 	p := cloud9.NewListEnvironmentsPaginator(svc, &cloud9.ListEnvironmentsInput{})
 	for p.HasMorePages() {
 		output, err := p.NextPage(context.TODO())
@@ -37,6 +38,9 @@ func (g *Cloud9Generator) InitResources() error {
 			return err
 		}
 		for _, environmentID := range output.EnvironmentIds {
+			if !awsIDFilterAllows(environmentIDFilter, environmentID) {
+				continue
+			}
 			if err := g.addEnvironment(svc, environmentID); err != nil {
 				return err
 			}

@@ -12,14 +12,19 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/mediaconvert"
 	mediaconverttypes "github.com/aws/aws-sdk-go-v2/service/mediaconvert/types"
 	"github.com/chenrui333/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils/providerwrapper"
 )
 
-const mediaConvertQueueResourceType = "aws_media_convert_queue"
+const (
+	mediaConvertQueueResourceType = "aws_media_convert_queue"
+	mediaConvertEndpointEnvVar    = "AWS_ENDPOINT_URL_MEDIACONVERT"
+)
 
 var mediaConvertAllowEmptyValues = []string{"tags."}
 
 type MediaConvertGenerator struct {
 	AWSService
+	accountEndpoint string
 }
 
 func (g *MediaConvertGenerator) InitResources() error {
@@ -41,11 +46,24 @@ func (g *MediaConvertGenerator) InitResources() error {
 		if endpoint == "" {
 			return nil
 		}
+		if err := mediaConvertSetAccountEndpoint(endpoint); err != nil {
+			return err
+		}
+		g.accountEndpoint = endpoint
 		return g.loadQueues(mediaconvert.NewFromConfig(config, func(o *mediaconvert.Options) {
 			o.BaseEndpoint = aws.String(endpoint)
 		}))
 	}
 	return nil
+}
+
+func (g *MediaConvertGenerator) ConfigureImportProvider(providerWrapper *providerwrapper.ProviderWrapper) error {
+	if g.accountEndpoint == "" {
+		return nil
+	}
+	// The Terraform AWS provider reads service endpoint environment variables when
+	// its plugin process starts, so refresh needs a restart after endpoint bootstrap.
+	return providerWrapper.Restart()
 }
 
 func (g *MediaConvertGenerator) loadQueues(svc *mediaconvert.Client) error {
@@ -66,6 +84,10 @@ func (g *MediaConvertGenerator) loadQueues(svc *mediaconvert.Client) error {
 	}
 
 	return nil
+}
+
+func mediaConvertSetAccountEndpoint(endpoint string) error {
+	return terraformutils.SetEnv(mediaConvertEndpointEnvVar, endpoint)
 }
 
 func mediaConvertAccountEndpoint(ctx context.Context, svc mediaconvert.DescribeEndpointsAPIClient) (string, error) {

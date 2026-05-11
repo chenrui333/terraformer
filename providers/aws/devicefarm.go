@@ -35,21 +35,24 @@ func (g *DeviceFarmGenerator) InitResources() error {
 		return e
 	}
 	svc := devicefarm.NewFromConfig(config)
+	projectIDFilter := awsTypedIDFilterValues(g.Filter, deviceFarmProjectResourceType)
 
-	if err := g.loadProjects(svc); err != nil {
+	if err := g.loadProjects(svc, projectIDFilter); err != nil {
 		return err
 	}
-	if err := g.loadTestGridProjects(svc); err != nil {
-		log.Printf("[WARN] Skipping Device Farm test grid projects: %v", err)
-	}
-	if err := g.loadInstanceProfiles(svc); err != nil {
-		log.Printf("[WARN] Skipping Device Farm instance profiles: %v", err)
+	if len(projectIDFilter) == 0 {
+		if err := g.loadTestGridProjects(svc); err != nil {
+			log.Printf("[WARN] Skipping Device Farm test grid projects: %v", err)
+		}
+		if err := g.loadInstanceProfiles(svc); err != nil {
+			log.Printf("[WARN] Skipping Device Farm instance profiles: %v", err)
+		}
 	}
 
 	return nil
 }
 
-func (g *DeviceFarmGenerator) loadProjects(svc *devicefarm.Client) error {
+func (g *DeviceFarmGenerator) loadProjects(svc *devicefarm.Client, projectIDFilter map[string]bool) error {
 	p := devicefarm.NewListProjectsPaginator(svc, &devicefarm.ListProjectsInput{})
 	for p.HasMorePages() {
 		page, e := p.NextPage(context.TODO())
@@ -58,6 +61,9 @@ func (g *DeviceFarmGenerator) loadProjects(svc *devicefarm.Client) error {
 		}
 		for _, project := range page.Projects {
 			projectArn := StringValue(project.Arn)
+			if !awsIDFilterAllows(projectIDFilter, projectArn) {
+				continue
+			}
 			if resource, ok := newDeviceFarmProjectResource(project); ok {
 				g.Resources = append(g.Resources, resource)
 			}

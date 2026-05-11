@@ -54,6 +54,10 @@ type importValidator interface {
 	ValidateImport(resources []string) error
 }
 
+type importProviderConfigurer interface {
+	ConfigureImportProvider(*providerwrapper.ProviderWrapper) error
+}
+
 const DefaultPathPattern = "{output}/{provider}/{service}/"
 const DefaultPathOutput = "generated"
 const DefaultState = "local"
@@ -219,6 +223,12 @@ func initServiceResources(service string, provider terraformutils.ProviderGenera
 	if err != nil {
 		log.Printf("%s error initializing resources in service %s, err: %s\n", provider.GetName(), service, err)
 		return err
+	}
+	if configurer, ok := provider.GetService().(importProviderConfigurer); ok {
+		if err := configurer.ConfigureImportProvider(providerWrapper); err != nil {
+			log.Printf("%s error configuring import provider for service %s, err: %s\n", provider.GetName(), service, err)
+			return err
+		}
 	}
 
 	provider.GetService().PopulateIgnoreKeys(providerWrapper)

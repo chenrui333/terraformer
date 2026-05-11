@@ -5,6 +5,7 @@ package aws
 import (
 	"context"
 	"errors"
+	"os"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -156,6 +157,17 @@ func TestMediaConvertAccountEndpointError(t *testing.T) {
 	}
 	if endpoint != "" {
 		t.Fatalf("MediaConvert account endpoint = %q, want empty", endpoint)
+	}
+}
+
+func TestMediaConvertSetAccountEndpoint(t *testing.T) {
+	t.Setenv(mediaConvertEndpointEnvVar, "")
+	endpoint := "https://abcd.mediaconvert.us-east-1.amazonaws.com"
+	if err := mediaConvertSetAccountEndpoint(endpoint); err != nil {
+		t.Fatalf("mediaConvertSetAccountEndpoint returned error: %v", err)
+	}
+	if got := os.Getenv(mediaConvertEndpointEnvVar); got != endpoint {
+		t.Fatalf("%s = %q, want %q", mediaConvertEndpointEnvVar, got, endpoint)
 	}
 }
 

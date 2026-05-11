@@ -36,6 +36,7 @@ func (g *QLDBGenerator) InitResources() error {
 }
 
 func (g *QLDBGenerator) loadLedgers(svc *qldb.Client) error {
+	ledgerIDFilter := awsTypedIDFilterValues(g.Filter, qldbLedgerResourceType)
 	p := qldb.NewListLedgersPaginator(svc, &qldb.ListLedgersInput{})
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
@@ -44,6 +45,9 @@ func (g *QLDBGenerator) loadLedgers(svc *qldb.Client) error {
 		}
 		for _, ledger := range page.Ledgers {
 			ledgerName := StringValue(ledger.Name)
+			if !awsIDFilterAllows(ledgerIDFilter, ledgerName) {
+				continue
+			}
 			if resource, ok := newQLDBLedgerResource(ledgerName); ok {
 				g.Resources = append(g.Resources, resource)
 			}
