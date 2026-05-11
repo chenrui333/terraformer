@@ -5,36 +5,49 @@ package aws
 
 import (
 	"context"
+	"errors"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/chenrui333/terraformer/terraformutils"
 
 	"github.com/aws/aws-sdk-go-v2/service/identitystore"
-	"github.com/aws/aws-sdk-go-v2/service/identitystore/types"
+	identitystoretypes "github.com/aws/aws-sdk-go-v2/service/identitystore/types"
 	"github.com/aws/aws-sdk-go-v2/service/ssoadmin"
 )
 
 var identityStoreAllowEmptyValues = []string{"tags."}
 
+const (
+	identityStoreGroupResourceType           = "aws_identitystore_group"
+	identityStoreGroupMembershipResourceType = "aws_identitystore_group_membership"
+	identityStoreUserResourceType            = "aws_identitystore_user"
+	identityStoreResourceIDSeparator         = "/"
+	identityStoreResourceNameSeparator       = ":"
+)
+
 type IdentityStoreGenerator struct {
 	AWSService
 }
 
-func (g *IdentityStoreGenerator) GetIdentityStoreId() (*string, error) {
+func (g *IdentityStoreGenerator) GetIdentityStoreIds() ([]string, error) {
 	config, e := g.generateConfig()
 	if e != nil {
 		return nil, e
 	}
 	svc := ssoadmin.NewFromConfig(config)
-	instances, err := svc.ListInstances(context.TODO(), &ssoadmin.ListInstancesInput{})
+	instances, err := listSSOAdminInstances(svc)
 	if err != nil {
 		return nil, err
 	}
-	if len(instances.Instances) == 0 {
-		return nil, nil
+	var identityStoreIds []string
+	for _, instance := range instances {
+		identityStoreId := StringValue(instance.IdentityStoreId)
+		if identityStoreId != "" {
+			identityStoreIds = append(identityStoreIds, identityStoreId)
+		}
 	}
-	identityStoreId := StringValue(instances.Instances[0].IdentityStoreId)
-	return &identityStoreId, nil
+	return identityStoreIds, nil
 }
 
 func (g *IdentityStoreGenerator) InitGroupResources(identityStoreId string) error {
@@ -53,21 +66,17 @@ func (g *IdentityStoreGenerator) InitGroupResources(identityStoreId string) erro
 		}
 		for _, group := range page.Groups {
 			groupId := StringValue(group.GroupId)
-			displayName := StringValue(group.DisplayName)
-			g.Resources = append(g.Resources, terraformutils.NewResource(
-				identityStoreId+"/"+groupId,
-				displayName,
-				"aws_identitystore_group",
-				"aws",
-				map[string]string{
-					"identity_store_id": identityStoreId,
-					"description":       StringValue(group.Description),
-				},
-				identityStoreAllowEmptyValues,
-				map[string]interface{}{},
-			))
+			if groupId == "" {
+				continue
+			}
+			resourceStart := len(g.Resources)
+			g.Resources = append(g.Resources, newIdentityStoreGroupResource(identityStoreId, group))
 			err = g.InitGroupMembershipResources(identityStoreId, groupId)
 			if err != nil {
+				if identityStoreResourceNotFound(err) {
+					g.Resources = g.Resources[:resourceStart]
+					continue
+				}
 				return err
 			}
 		}
@@ -93,27 +102,16 @@ func (g *IdentityStoreGenerator) InitGroupMembershipResources(identityStoreId st
 		for _, user := range page.GroupMemberships {
 			var memberId string
 			switch v := user.MemberId.(type) {
-			case *types.MemberIdMemberUserId:
+			case *identitystoretypes.MemberIdMemberUserId:
 				memberId = v.Value // Value is string
-			case *types.UnknownUnionMember:
-				memberId = v.Tag
 			default:
-				memberId = ""
+				continue
 			}
 			membershipId := StringValue(user.MembershipId)
-			g.Resources = append(g.Resources, terraformutils.NewResource(
-				identityStoreId+"/"+membershipId,
-				"m-"+groupId+"-"+memberId,
-				"aws_identitystore_group_membership",
-				"aws",
-				map[string]string{
-					"identity_store_id": identityStoreId,
-					"group_id":          groupId,
-					"member_id":         memberId,
-				},
-				identityStoreAllowEmptyValues,
-				map[string]interface{}{},
-			))
+			if membershipId == "" || memberId == "" {
+				continue
+			}
+			g.Resources = append(g.Resources, newIdentityStoreGroupMembershipResource(identityStoreId, groupId, memberId, membershipId))
 		}
 	}
 	return nil
@@ -135,45 +133,127 @@ func (g *IdentityStoreGenerator) InitUserResources(identityStoreId string) error
 		}
 		for _, user := range page.Users {
 			userId := StringValue(user.UserId)
-			displayName := StringValue(user.DisplayName)
-			//			name := StringValue(user.Name)
-			userName := StringValue(user.UserName)
-			g.Resources = append(g.Resources, terraformutils.NewResource(
-				identityStoreId+"/"+userId,
-				userName,
-				"aws_identitystore_user",
-				"aws",
-				map[string]string{
-					"identity_store_id": identityStoreId,
-					"display_name":      displayName,
-					"use_name":          userName,
-				},
-				identityStoreAllowEmptyValues,
-				map[string]interface{}{},
-			))
+			if userId == "" {
+				continue
+			}
+			g.Resources = append(g.Resources, newIdentityStoreUserResource(identityStoreId, user))
 		}
 	}
 	return nil
 }
 
 func (g *IdentityStoreGenerator) InitResources() error {
-	identityStoreId, e := g.GetIdentityStoreId()
+	identityStoreIds, e := g.GetIdentityStoreIds()
 	if e != nil {
 		return e
 	}
-	if identityStoreId == nil {
+	if len(identityStoreIds) == 0 {
 		return nil
 	}
 
-	e = g.InitUserResources(*identityStoreId)
-	if e != nil {
-		return e
-	}
+	for _, identityStoreId := range identityStoreIds {
+		resourceStart := len(g.Resources)
 
-	e = g.InitGroupResources(*identityStoreId)
-	if e != nil {
-		return e
+		e = g.InitUserResources(identityStoreId)
+		if e != nil {
+			if identityStoreResourceNotFound(e) {
+				g.Resources = g.Resources[:resourceStart]
+				continue
+			}
+			return e
+		}
+
+		e = g.InitGroupResources(identityStoreId)
+		if e != nil {
+			if identityStoreResourceNotFound(e) {
+				g.Resources = g.Resources[:resourceStart]
+				continue
+			}
+			return e
+		}
 	}
 
 	return nil
+}
+
+func newIdentityStoreGroupResource(identityStoreId string, group identitystoretypes.Group) terraformutils.Resource {
+	groupId := StringValue(group.GroupId)
+	attributes := map[string]string{
+		"group_id":          groupId,
+		"identity_store_id": identityStoreId,
+	}
+	if description := StringValue(group.Description); description != "" {
+		attributes["description"] = description
+	}
+	if displayName := StringValue(group.DisplayName); displayName != "" {
+		attributes["display_name"] = displayName
+	}
+	return terraformutils.NewResource(
+		identityStoreResourceID(identityStoreId, groupId),
+		identityStoreResourceName(StringValue(group.DisplayName), groupId, identityStoreId),
+		identityStoreGroupResourceType,
+		"aws",
+		attributes,
+		identityStoreAllowEmptyValues,
+		map[string]interface{}{},
+	)
+}
+
+func newIdentityStoreGroupMembershipResource(identityStoreId, groupId, memberId, membershipId string) terraformutils.Resource {
+	return terraformutils.NewResource(
+		identityStoreResourceID(identityStoreId, membershipId),
+		identityStoreResourceName(groupId, memberId, membershipId, identityStoreId),
+		identityStoreGroupMembershipResourceType,
+		"aws",
+		map[string]string{
+			"group_id":          groupId,
+			"identity_store_id": identityStoreId,
+			"member_id":         memberId,
+			"membership_id":     membershipId,
+		},
+		identityStoreAllowEmptyValues,
+		map[string]interface{}{},
+	)
+}
+
+func newIdentityStoreUserResource(identityStoreId string, user identitystoretypes.User) terraformutils.Resource {
+	userId := StringValue(user.UserId)
+	attributes := map[string]string{
+		"identity_store_id": identityStoreId,
+		"user_id":           userId,
+	}
+	if displayName := StringValue(user.DisplayName); displayName != "" {
+		attributes["display_name"] = displayName
+	}
+	if userName := StringValue(user.UserName); userName != "" {
+		attributes["user_name"] = userName
+	}
+	return terraformutils.NewResource(
+		identityStoreResourceID(identityStoreId, userId),
+		identityStoreResourceName(StringValue(user.UserName), userId, identityStoreId),
+		identityStoreUserResourceType,
+		"aws",
+		attributes,
+		identityStoreAllowEmptyValues,
+		map[string]interface{}{},
+	)
+}
+
+func identityStoreResourceID(identityStoreId, resourceId string) string {
+	return strings.Join([]string{identityStoreId, resourceId}, identityStoreResourceIDSeparator)
+}
+
+func identityStoreResourceName(parts ...string) string {
+	var nonEmptyParts []string
+	for _, part := range parts {
+		if part != "" {
+			nonEmptyParts = append(nonEmptyParts, part)
+		}
+	}
+	return strings.Join(nonEmptyParts, identityStoreResourceNameSeparator)
+}
+
+func identityStoreResourceNotFound(err error) bool {
+	var notFound *identitystoretypes.ResourceNotFoundException
+	return errors.As(err, &notFound)
 }

@@ -485,6 +485,12 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
 *   `sns`
     * `aws_sns_topic`
     * `aws_sns_topic_subscription`
+*   `ssoadmin`
+    * `aws_ssoadmin_customer_managed_policy_attachment`
+    * `aws_ssoadmin_managed_policy_attachment`
+    * `aws_ssoadmin_permission_set`
+    * `aws_ssoadmin_permission_set_inline_policy`
+    * `aws_ssoadmin_permissions_boundary_attachment`
 *   `sqs`
     * `aws_sqs_queue`
     * `aws_sqs_queue_policy`
