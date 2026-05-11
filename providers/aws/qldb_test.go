@@ -114,6 +114,44 @@ func TestQLDBLedgerIDFilterRestrictsLedgerOnlyFilters(t *testing.T) {
 	}
 }
 
+func TestQLDBShouldEmitLedgerSkipsStreamOnlyFilters(t *testing.T) {
+	service := terraformutils.Service{}
+	service.ParseFilters([]string{"qldb_stream=stream-id"})
+
+	if qldbShouldEmitLedger(service.Filter, "ledger-a") {
+		t.Fatal("stream-only filter should scan but not emit ledger resources")
+	}
+}
+
+func TestQLDBShouldEmitLedgerHonorsLedgerFilters(t *testing.T) {
+	service := terraformutils.Service{}
+	service.ParseFilters([]string{
+		"qldb_ledger=ledger-a",
+		"qldb_stream=stream-id",
+	})
+
+	if !qldbShouldEmitLedger(service.Filter, "ledger-a") {
+		t.Fatal("ledger filter should emit matching ledger")
+	}
+	if qldbShouldEmitLedger(service.Filter, "ledger-b") {
+		t.Fatal("ledger filter should not emit unrelated ledgers")
+	}
+}
+
+func TestQLDBShouldLoadStreamsOnlyWhenRequested(t *testing.T) {
+	ledgerService := terraformutils.Service{}
+	ledgerService.ParseFilters([]string{"qldb_ledger=ledger-a"})
+	if qldbShouldLoadStreams(ledgerService.Filter) {
+		t.Fatal("ledger-only filter should not load stream resources")
+	}
+
+	streamService := terraformutils.Service{}
+	streamService.ParseFilters([]string{"qldb_stream=stream-id"})
+	if !qldbShouldLoadStreams(streamService.Filter) {
+		t.Fatal("stream filter should load stream resources")
+	}
+}
+
 func TestQLDBStreamNotFound(t *testing.T) {
 	tests := []struct {
 		name string

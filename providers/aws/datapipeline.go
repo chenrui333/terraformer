@@ -43,7 +43,7 @@ func (g *DataPipelineGenerator) InitResources() error {
 			if !awsIDFilterAllows(pipelineIDFilter, pipelineID) {
 				continue
 			}
-			if resource, ok := newDataPipelinePipelineResource(pipelineID, pipelineName); ok {
+			if resource, ok := newDataPipelinePipelineResource(pipelineID, pipelineName); ok && dataPipelineShouldEmitPipeline(g.Filter, pipelineID) {
 				resources = append(resources, resource)
 			}
 			resource, ok, err := getDataPipelinePipelineDefinitionResource(svc, pipelineID, pipelineName)
@@ -80,6 +80,9 @@ func (g *DataPipelineGenerator) PostRefreshCleanup() {
 	}
 
 	terraformutils.FilterCleanup(&g.Service, false)
+	if dataPipelineHasTypedFilter(g.Filter) && !awsHasApplicableFilter(g.Filter, dataPipelinePipelineResourceType) {
+		g.Resources = dataPipelineResourcesWithoutType(g.Resources, dataPipelinePipelineResourceType)
+	}
 	for pipelineID := range matchedPipelineIDs {
 		for _, resource := range definitionsByPipelineID[pipelineID] {
 			if !terraformutils.ContainsResource(g.Resources, resource) {
@@ -156,6 +159,16 @@ func dataPipelineResourceMatchesPostRefreshFilters(resource terraformutils.Resou
 	return matchedApplicableFilter
 }
 
+func dataPipelineResourcesWithoutType(resources []terraformutils.Resource, resourceType string) []terraformutils.Resource {
+	filtered := []terraformutils.Resource{}
+	for _, resource := range resources {
+		if resource.InstanceInfo.Type != resourceType {
+			filtered = append(filtered, resource)
+		}
+	}
+	return filtered
+}
+
 func dataPipelineDefinitionPipelineID(resource terraformutils.Resource) string {
 	if resource.InstanceState == nil || resource.InstanceState.Attributes == nil {
 		return ""
@@ -166,8 +179,30 @@ func dataPipelineDefinitionPipelineID(resource terraformutils.Resource) string {
 func dataPipelinePipelineIDFilter(filters []terraformutils.ResourceFilter) map[string]bool {
 	return awsMergeIDFilterValues(
 		awsTypedIDFilterValues(filters, dataPipelinePipelineResourceType),
-		awsTypedIDFilterValues(filters, dataPipelinePipelineDefinitionResourceType),
+		dataPipelineDefinitionPipelineIDFilter(filters),
 	)
+}
+
+func dataPipelineDefinitionPipelineIDFilter(filters []terraformutils.ResourceFilter) map[string]bool {
+	return awsMergeIDFilterValues(
+		awsTypedIDFilterValues(filters, dataPipelinePipelineDefinitionResourceType),
+		awsTypedFilterValues(filters, dataPipelinePipelineDefinitionResourceType, "pipeline_id"),
+	)
+}
+
+func dataPipelineShouldEmitPipeline(filters []terraformutils.ResourceFilter, pipelineID string) bool {
+	if !dataPipelineHasTypedFilter(filters) {
+		return true
+	}
+	if !awsHasApplicableFilter(filters, dataPipelinePipelineResourceType) {
+		return false
+	}
+	return awsIDFilterAllows(awsTypedIDFilterValues(filters, dataPipelinePipelineResourceType), pipelineID)
+}
+
+func dataPipelineHasTypedFilter(filters []terraformutils.ResourceFilter) bool {
+	return awsHasTypedFilter(filters, dataPipelinePipelineResourceType) ||
+		awsHasTypedFilter(filters, dataPipelinePipelineDefinitionResourceType)
 }
 
 func dataPipelinePipelineImportID(pipelineID string) string {

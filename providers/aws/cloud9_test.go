@@ -88,6 +88,44 @@ func TestCloud9EnvironmentIDFilterAllowsAllForUnparseableMembershipID(t *testing
 	}
 }
 
+func TestCloud9ShouldEmitEnvironmentSkipsMembershipOnlyFilters(t *testing.T) {
+	service := terraformutils.Service{}
+	service.ParseFilters([]string{"cloud9_environment_membership='env-child#arn:aws:iam::123456789012:user/alice'"})
+
+	if cloud9ShouldEmitEnvironment(service.Filter, "env-child") {
+		t.Fatal("membership-only filter should scan but not emit parent environment")
+	}
+}
+
+func TestCloud9ShouldEmitEnvironmentHonorsEnvironmentFilters(t *testing.T) {
+	service := terraformutils.Service{}
+	service.ParseFilters([]string{
+		"cloud9_environment_ec2=env-parent",
+		"cloud9_environment_membership='env-child#arn:aws:iam::123456789012:user/alice'",
+	})
+
+	if !cloud9ShouldEmitEnvironment(service.Filter, "env-parent") {
+		t.Fatal("environment filter should emit matching environment")
+	}
+	if cloud9ShouldEmitEnvironment(service.Filter, "env-child") {
+		t.Fatal("membership-derived parent should not be emitted when it is not requested by the environment filter")
+	}
+}
+
+func TestCloud9ShouldLoadMembershipsOnlyWhenRequested(t *testing.T) {
+	environmentService := terraformutils.Service{}
+	environmentService.ParseFilters([]string{"cloud9_environment_ec2=env-parent"})
+	if cloud9ShouldLoadEnvironmentMemberships(environmentService.Filter) {
+		t.Fatal("environment-only filter should not load membership resources")
+	}
+
+	membershipService := terraformutils.Service{}
+	membershipService.ParseFilters([]string{"cloud9_environment_membership='env-child#arn:aws:iam::123456789012:user/alice'"})
+	if !cloud9ShouldLoadEnvironmentMemberships(membershipService.Filter) {
+		t.Fatal("membership filter should load memberships")
+	}
+}
+
 func TestCloud9MembershipSkipsEmptyIdentifiers(t *testing.T) {
 	if _, ok := newCloud9EnvironmentMembershipResource(types.EnvironmentMember{
 		Permissions: types.PermissionsReadOnly,

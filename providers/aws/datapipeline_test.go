@@ -71,16 +71,41 @@ func TestDataPipelinePipelineIDFilterIncludesDefinitionIDs(t *testing.T) {
 	service.ParseFilters([]string{
 		"datapipeline_pipeline=df-parent",
 		"datapipeline_pipeline_definition=df-child",
+		"Type=datapipeline_pipeline_definition;Name=pipeline_id;Value=df-grandchild",
 	})
 
 	filter := dataPipelinePipelineIDFilter(service.Filter)
-	for _, pipelineID := range []string{"df-parent", "df-child"} {
+	for _, pipelineID := range []string{"df-parent", "df-child", "df-grandchild"} {
 		if !awsIDFilterAllows(filter, pipelineID) {
 			t.Fatalf("Data Pipeline filter should allow %q: %#v", pipelineID, filter)
 		}
 	}
 	if awsIDFilterAllows(filter, "df-other") {
 		t.Fatalf("Data Pipeline filter allowed unrelated pipeline: %#v", filter)
+	}
+}
+
+func TestDataPipelineShouldEmitPipelineSkipsDefinitionOnlyFilters(t *testing.T) {
+	service := terraformutils.Service{}
+	service.ParseFilters([]string{"Type=datapipeline_pipeline_definition;Name=pipeline_id;Value=df-123"})
+
+	if dataPipelineShouldEmitPipeline(service.Filter, "df-123") {
+		t.Fatal("definition-only filter should scan but not emit parent pipeline")
+	}
+}
+
+func TestDataPipelineShouldEmitPipelineHonorsPipelineFilters(t *testing.T) {
+	service := terraformutils.Service{}
+	service.ParseFilters([]string{
+		"datapipeline_pipeline=df-123",
+		"Type=datapipeline_pipeline_definition;Name=pipeline_id;Value=df-456",
+	})
+
+	if !dataPipelineShouldEmitPipeline(service.Filter, "df-123") {
+		t.Fatal("pipeline filter should emit matching pipeline")
+	}
+	if dataPipelineShouldEmitPipeline(service.Filter, "df-456") {
+		t.Fatal("definition-derived parent should not be emitted when it is not requested by the pipeline filter")
 	}
 }
 
@@ -113,9 +138,7 @@ func TestDataPipelinePostRefreshCleanupDoesNotBroadenDefinitionSpecificFilters(t
 	generator.PostRefreshCleanup()
 
 	assertDataPipelineResourceIDs(t, generator.Resources, []string{
-		dataPipelinePipelineResourceType + "/df-123",
 		dataPipelinePipelineDefinitionResourceType + "/df-123",
-		dataPipelinePipelineResourceType + "/df-456",
 	})
 }
 

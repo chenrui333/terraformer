@@ -9,10 +9,14 @@ import (
 )
 
 func awsTypedIDFilterValues(filters []terraformutils.ResourceFilter, serviceName string) map[string]bool {
+	return awsTypedFilterValues(filters, serviceName, "id")
+}
+
+func awsTypedFilterValues(filters []terraformutils.ResourceFilter, serviceName, fieldPath string) map[string]bool {
 	serviceName = strings.TrimPrefix(serviceName, "aws_")
 	values := map[string]bool{}
 	for _, filter := range filters {
-		if filter.FieldPath != "id" || filter.ServiceName != serviceName || len(filter.AcceptableValues) == 0 {
+		if filter.FieldPath != fieldPath || filter.ServiceName != serviceName || len(filter.AcceptableValues) == 0 {
 			continue
 		}
 		for _, value := range filter.AcceptableValues {
@@ -25,6 +29,26 @@ func awsTypedIDFilterValues(filters []terraformutils.ResourceFilter, serviceName
 		return nil
 	}
 	return values
+}
+
+func awsHasTypedFilter(filters []terraformutils.ResourceFilter, serviceName string) bool {
+	serviceName = strings.TrimPrefix(serviceName, "aws_")
+	for _, filter := range filters {
+		if filter.ServiceName == serviceName {
+			return true
+		}
+	}
+	return false
+}
+
+func awsHasApplicableFilter(filters []terraformutils.ResourceFilter, serviceName string) bool {
+	serviceName = strings.TrimPrefix(serviceName, "aws_")
+	for _, filter := range filters {
+		if filter.IsApplicable(serviceName) {
+			return true
+		}
+	}
+	return false
 }
 
 func awsIDFilterAllows(values map[string]bool, value string) bool {

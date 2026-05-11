@@ -48,14 +48,16 @@ func (g *QLDBGenerator) loadLedgers(svc *qldb.Client) error {
 			if !awsIDFilterAllows(ledgerIDFilter, ledgerName) {
 				continue
 			}
-			if resource, ok := newQLDBLedgerResource(ledgerName); ok {
+			if resource, ok := newQLDBLedgerResource(ledgerName); ok && qldbShouldEmitLedger(g.Filter, ledgerName) {
 				g.Resources = append(g.Resources, resource)
 			}
 			if ledgerName == "" {
 				continue
 			}
-			if err := g.loadStreams(svc, ledgerName); err != nil {
-				log.Printf("[WARN] Skipping QLDB streams for ledger %s: %v", ledgerName, err)
+			if qldbShouldLoadStreams(g.Filter) {
+				if err := g.loadStreams(svc, ledgerName); err != nil {
+					log.Printf("[WARN] Skipping QLDB streams for ledger %s: %v", ledgerName, err)
+				}
 			}
 		}
 	}
@@ -125,6 +127,25 @@ func qldbStreamImportable(status qldbtypes.StreamStatus) bool {
 	default:
 		return true
 	}
+}
+
+func qldbShouldEmitLedger(filters []terraformutils.ResourceFilter, ledgerName string) bool {
+	if !qldbHasTypedFilter(filters) {
+		return true
+	}
+	if !awsHasApplicableFilter(filters, qldbLedgerResourceType) {
+		return false
+	}
+	return awsIDFilterAllows(awsTypedIDFilterValues(filters, qldbLedgerResourceType), ledgerName)
+}
+
+func qldbHasTypedFilter(filters []terraformutils.ResourceFilter) bool {
+	return awsHasTypedFilter(filters, qldbLedgerResourceType) ||
+		awsHasTypedFilter(filters, qldbStreamResourceType)
+}
+
+func qldbShouldLoadStreams(filters []terraformutils.ResourceFilter) bool {
+	return !qldbHasTypedFilter(filters) || awsHasTypedFilter(filters, qldbStreamResourceType)
 }
 
 func qldbLedgerIDFilter(filters []terraformutils.ResourceFilter) map[string]bool {

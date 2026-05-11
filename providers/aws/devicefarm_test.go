@@ -175,6 +175,65 @@ func TestDeviceFarmProjectIDFilterAllowsAllForUnparseableChildID(t *testing.T) {
 	}
 }
 
+func TestDeviceFarmTypedFiltersLoadOnlyRequestedFamilies(t *testing.T) {
+	service := terraformutils.Service{}
+	service.ParseFilters([]string{
+		"devicefarm_test_grid_project='arn:aws:devicefarm:us-west-2:123456789012:testgrid-project:grid-id'",
+	})
+
+	if deviceFarmShouldLoadProjects(service.Filter) {
+		t.Fatal("test-grid-only filter should not load project-scoped Device Farm resources")
+	}
+	if !deviceFarmShouldLoadTestGridProjects(service.Filter) {
+		t.Fatal("test-grid-only filter should load test grid projects")
+	}
+	if deviceFarmShouldLoadInstanceProfiles(service.Filter) {
+		t.Fatal("test-grid-only filter should not load instance profiles")
+	}
+}
+
+func TestDeviceFarmTypedFiltersUseParentsOnlyForRequestedChildren(t *testing.T) {
+	projectArn := "arn:aws:devicefarm:us-west-2:123456789012:project:project-child"
+	devicePoolArn := "arn:aws:devicefarm:us-west-2:123456789012:devicepool:project-child/device-pool-id"
+	service := terraformutils.Service{}
+	service.ParseFilters([]string{"devicefarm_device_pool='" + devicePoolArn + "'"})
+
+	if !deviceFarmShouldLoadProjects(service.Filter) {
+		t.Fatal("device-pool filter should scan parent projects")
+	}
+	if !deviceFarmShouldLoadDevicePools(service.Filter) {
+		t.Fatal("device-pool filter should load device pools")
+	}
+	if deviceFarmShouldLoadNetworkProfiles(service.Filter) || deviceFarmShouldLoadUploads(service.Filter) {
+		t.Fatal("device-pool filter should not load sibling project-scoped families")
+	}
+	if deviceFarmShouldEmitProject(service.Filter, projectArn) {
+		t.Fatal("device-pool-only filter should not emit parent project resources")
+	}
+	if !awsIDFilterAllows(deviceFarmProjectIDFilter(service.Filter), projectArn) {
+		t.Fatalf("device-pool filter should prefilter to parent project %q", projectArn)
+	}
+}
+
+func TestDeviceFarmProjectTypedFilterDoesNotLoadChildren(t *testing.T) {
+	projectArn := "arn:aws:devicefarm:us-west-2:123456789012:project:project-parent"
+	service := terraformutils.Service{}
+	service.ParseFilters([]string{"devicefarm_project='" + projectArn + "'"})
+
+	if !deviceFarmShouldLoadProjects(service.Filter) {
+		t.Fatal("project filter should load projects")
+	}
+	if !deviceFarmShouldEmitProject(service.Filter, projectArn) {
+		t.Fatal("project filter should emit matching project")
+	}
+	if deviceFarmShouldEmitProject(service.Filter, "arn:aws:devicefarm:us-west-2:123456789012:project:project-other") {
+		t.Fatal("project filter should not emit unrelated projects")
+	}
+	if deviceFarmShouldLoadDevicePools(service.Filter) || deviceFarmShouldLoadNetworkProfiles(service.Filter) || deviceFarmShouldLoadUploads(service.Filter) {
+		t.Fatal("project-only filter should not load project child families")
+	}
+}
+
 func TestDeviceFarmResourceNamesPreserveSegmentBoundaries(t *testing.T) {
 	left := terraformutils.TfSanitize(deviceFarmResourceName("device-pool", "a/b_c"))
 	right := terraformutils.TfSanitize(deviceFarmResourceName("device", "pool/a_b_c"))

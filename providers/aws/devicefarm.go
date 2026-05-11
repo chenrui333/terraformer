@@ -36,17 +36,18 @@ func (g *DeviceFarmGenerator) InitResources() error {
 	}
 	svc := devicefarm.NewFromConfig(config)
 	projectIDFilter := deviceFarmProjectIDFilter(g.Filter)
-	explicitProjectIDFilter := awsTypedIDFilterValues(g.Filter, deviceFarmProjectResourceType)
 
-	if err := g.loadProjects(svc, projectIDFilter); err != nil {
-		return err
+	if deviceFarmShouldLoadProjects(g.Filter) {
+		if err := g.loadProjects(svc, projectIDFilter); err != nil {
+			return err
+		}
 	}
-	if len(explicitProjectIDFilter) == 0 || len(awsTypedIDFilterValues(g.Filter, deviceFarmTestGridProjectResourceType)) > 0 {
+	if deviceFarmShouldLoadTestGridProjects(g.Filter) {
 		if err := g.loadTestGridProjects(svc); err != nil {
 			log.Printf("[WARN] Skipping Device Farm test grid projects: %v", err)
 		}
 	}
-	if len(explicitProjectIDFilter) == 0 || len(awsTypedIDFilterValues(g.Filter, deviceFarmInstanceProfileResourceType)) > 0 {
+	if deviceFarmShouldLoadInstanceProfiles(g.Filter) {
 		if err := g.loadInstanceProfiles(svc); err != nil {
 			log.Printf("[WARN] Skipping Device Farm instance profiles: %v", err)
 		}
@@ -67,20 +68,26 @@ func (g *DeviceFarmGenerator) loadProjects(svc *devicefarm.Client, projectIDFilt
 			if !awsIDFilterAllows(projectIDFilter, projectArn) {
 				continue
 			}
-			if resource, ok := newDeviceFarmProjectResource(project); ok {
+			if resource, ok := newDeviceFarmProjectResource(project); ok && deviceFarmShouldEmitProject(g.Filter, projectArn) {
 				g.Resources = append(g.Resources, resource)
 			}
 			if projectArn == "" {
 				continue
 			}
-			if err := g.loadDevicePools(svc, projectArn); err != nil {
-				log.Printf("[WARN] Skipping Device Farm device pools for project %s: %v", projectArn, err)
+			if deviceFarmShouldLoadDevicePools(g.Filter) {
+				if err := g.loadDevicePools(svc, projectArn); err != nil {
+					log.Printf("[WARN] Skipping Device Farm device pools for project %s: %v", projectArn, err)
+				}
 			}
-			if err := g.loadNetworkProfiles(svc, projectArn); err != nil {
-				log.Printf("[WARN] Skipping Device Farm network profiles for project %s: %v", projectArn, err)
+			if deviceFarmShouldLoadNetworkProfiles(g.Filter) {
+				if err := g.loadNetworkProfiles(svc, projectArn); err != nil {
+					log.Printf("[WARN] Skipping Device Farm network profiles for project %s: %v", projectArn, err)
+				}
 			}
-			if err := g.loadUploads(svc, projectArn); err != nil {
-				log.Printf("[WARN] Skipping Device Farm uploads for project %s: %v", projectArn, err)
+			if deviceFarmShouldLoadUploads(g.Filter) {
+				if err := g.loadUploads(svc, projectArn); err != nil {
+					log.Printf("[WARN] Skipping Device Farm uploads for project %s: %v", projectArn, err)
+				}
 			}
 		}
 	}
@@ -187,6 +194,60 @@ func (g *DeviceFarmGenerator) loadInstanceProfiles(svc *devicefarm.Client) error
 	}
 
 	return nil
+}
+
+func deviceFarmHasTypedFilter(filters []terraformutils.ResourceFilter) bool {
+	for _, resourceType := range []string{
+		deviceFarmProjectResourceType,
+		deviceFarmDevicePoolResourceType,
+		deviceFarmNetworkProfileResourceType,
+		deviceFarmTestGridProjectResourceType,
+		deviceFarmUploadResourceType,
+		deviceFarmInstanceProfileResourceType,
+	} {
+		if awsHasTypedFilter(filters, resourceType) {
+			return true
+		}
+	}
+	return false
+}
+
+func deviceFarmShouldLoadProjects(filters []terraformutils.ResourceFilter) bool {
+	return !deviceFarmHasTypedFilter(filters) ||
+		awsHasTypedFilter(filters, deviceFarmProjectResourceType) ||
+		deviceFarmShouldLoadDevicePools(filters) ||
+		deviceFarmShouldLoadNetworkProfiles(filters) ||
+		deviceFarmShouldLoadUploads(filters)
+}
+
+func deviceFarmShouldEmitProject(filters []terraformutils.ResourceFilter, projectArn string) bool {
+	if !deviceFarmHasTypedFilter(filters) {
+		return true
+	}
+	if !awsHasApplicableFilter(filters, deviceFarmProjectResourceType) {
+		return false
+	}
+	return awsIDFilterAllows(awsTypedIDFilterValues(filters, deviceFarmProjectResourceType), projectArn)
+}
+
+func deviceFarmShouldLoadDevicePools(filters []terraformutils.ResourceFilter) bool {
+	return !deviceFarmHasTypedFilter(filters) || awsHasTypedFilter(filters, deviceFarmDevicePoolResourceType)
+}
+
+func deviceFarmShouldLoadNetworkProfiles(filters []terraformutils.ResourceFilter) bool {
+	return !deviceFarmHasTypedFilter(filters) || awsHasTypedFilter(filters, deviceFarmNetworkProfileResourceType)
+}
+
+func deviceFarmShouldLoadUploads(filters []terraformutils.ResourceFilter) bool {
+	return !deviceFarmHasTypedFilter(filters) || awsHasTypedFilter(filters, deviceFarmUploadResourceType)
+}
+
+func deviceFarmShouldLoadTestGridProjects(filters []terraformutils.ResourceFilter) bool {
+	return !deviceFarmHasTypedFilter(filters) || awsHasTypedFilter(filters, deviceFarmTestGridProjectResourceType)
+}
+
+func deviceFarmShouldLoadInstanceProfiles(filters []terraformutils.ResourceFilter) bool {
+	return !deviceFarmHasTypedFilter(filters) || awsHasTypedFilter(filters, deviceFarmInstanceProfileResourceType)
 }
 
 func deviceFarmProjectIDFilter(filters []terraformutils.ResourceFilter) map[string]bool {

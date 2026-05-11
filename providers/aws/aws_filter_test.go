@@ -59,3 +59,32 @@ func TestAWSMergeIDFilterValues(t *testing.T) {
 		t.Fatalf("empty merged ID filters = %#v, want nil", got)
 	}
 }
+
+func TestAWSTypedFilterValuesAndApplicability(t *testing.T) {
+	service := terraformutils.Service{}
+	service.ParseFilters([]string{
+		"Name=id;Value=global-id",
+		"Type=datapipeline_pipeline_definition;Name=pipeline_id;Value=df-123",
+		"Type=cloud9_environment_membership;Name=id;Value=env-123#arn:aws:iam::123456789012:user/alice",
+	})
+
+	pipelineIDs := awsTypedFilterValues(service.Filter, dataPipelinePipelineDefinitionResourceType, "pipeline_id")
+	if !awsIDFilterAllows(pipelineIDs, "df-123") {
+		t.Fatalf("Data Pipeline typed field filter did not include expected pipeline ID: %#v", pipelineIDs)
+	}
+	if awsIDFilterAllows(pipelineIDs, "df-456") {
+		t.Fatalf("Data Pipeline typed field filter allowed unrelated pipeline ID: %#v", pipelineIDs)
+	}
+	if !awsHasTypedFilter(service.Filter, cloud9EnvironmentMembershipResourceType) {
+		t.Fatal("expected Cloud9 membership typed filter")
+	}
+	if awsHasTypedFilter(service.Filter, qldbLedgerResourceType) {
+		t.Fatal("unexpected QLDB ledger typed filter")
+	}
+	if !awsHasApplicableFilter(service.Filter, qldbLedgerResourceType) {
+		t.Fatal("global filter should be applicable to QLDB ledger")
+	}
+	if !awsHasApplicableFilter(service.Filter, dataPipelinePipelineDefinitionResourceType) {
+		t.Fatal("typed Data Pipeline definition filter should be applicable to definitions")
+	}
+}

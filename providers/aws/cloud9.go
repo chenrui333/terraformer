@@ -41,7 +41,7 @@ func (g *Cloud9Generator) InitResources() error {
 			if !awsIDFilterAllows(environmentIDFilter, environmentID) {
 				continue
 			}
-			if err := g.addEnvironment(svc, environmentID); err != nil {
+			if err := g.addEnvironment(svc, environmentID, cloud9ShouldEmitEnvironment(g.Filter, environmentID)); err != nil {
 				return err
 			}
 		}
@@ -50,7 +50,7 @@ func (g *Cloud9Generator) InitResources() error {
 	return nil
 }
 
-func (g *Cloud9Generator) addEnvironment(svc *cloud9.Client, environmentID string) error {
+func (g *Cloud9Generator) addEnvironment(svc *cloud9.Client, environmentID string, emitEnvironment bool) error {
 	if environmentID == "" {
 		return nil
 	}
@@ -59,9 +59,13 @@ func (g *Cloud9Generator) addEnvironment(svc *cloud9.Client, environmentID strin
 	} else if !importable {
 		return nil
 	}
-	g.Resources = append(g.Resources, newCloud9EnvironmentEC2Resource(environmentID))
-	if err := g.loadEnvironmentMemberships(svc, environmentID); err != nil {
-		log.Printf("[WARN] Skipping Cloud9 environment memberships for %s: %v", environmentID, err)
+	if emitEnvironment {
+		g.Resources = append(g.Resources, newCloud9EnvironmentEC2Resource(environmentID))
+	}
+	if cloud9ShouldLoadEnvironmentMemberships(g.Filter) {
+		if err := g.loadEnvironmentMemberships(svc, environmentID); err != nil {
+			log.Printf("[WARN] Skipping Cloud9 environment memberships for %s: %v", environmentID, err)
+		}
 	}
 
 	return nil
@@ -133,6 +137,25 @@ func newCloud9EnvironmentMembershipResource(membership types.EnvironmentMember) 
 func cloud9EnvironmentMembershipImportable(permissions types.Permissions) bool {
 	// Owner memberships are created by AWS for environment creators and are not independently managed by Terraform.
 	return permissions == types.PermissionsReadOnly || permissions == types.PermissionsReadWrite
+}
+
+func cloud9ShouldEmitEnvironment(filters []terraformutils.ResourceFilter, environmentID string) bool {
+	if !cloud9HasTypedFilter(filters) {
+		return true
+	}
+	if !awsHasApplicableFilter(filters, cloud9EnvironmentEC2ResourceType) {
+		return false
+	}
+	return awsIDFilterAllows(awsTypedIDFilterValues(filters, cloud9EnvironmentEC2ResourceType), environmentID)
+}
+
+func cloud9HasTypedFilter(filters []terraformutils.ResourceFilter) bool {
+	return awsHasTypedFilter(filters, cloud9EnvironmentEC2ResourceType) ||
+		awsHasTypedFilter(filters, cloud9EnvironmentMembershipResourceType)
+}
+
+func cloud9ShouldLoadEnvironmentMemberships(filters []terraformutils.ResourceFilter) bool {
+	return !cloud9HasTypedFilter(filters) || awsHasTypedFilter(filters, cloud9EnvironmentMembershipResourceType)
 }
 
 func cloud9EnvironmentIDFilter(filters []terraformutils.ResourceFilter) map[string]bool {
