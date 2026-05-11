@@ -346,10 +346,12 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_lambda_event_source_mapping`
     * `aws_lambda_function`
     * `aws_lambda_function_event_invoke_config`
+    * `aws_lambda_function_recursion_config`
     * `aws_lambda_function_url`
     * `aws_lambda_layer_version`
     * `aws_lambda_permission`
     * `aws_lambda_provisioned_concurrency_config`
+    * `aws_lambda_runtime_management_config`
 *   `logs`
     * `aws_cloudwatch_log_account_policy`
     * `aws_cloudwatch_log_data_protection_policy`

@@ -19,6 +19,11 @@ import (
 
 var lambdaAllowEmptyValues = []string{"tags."}
 
+const (
+	lambdaFunctionRecursionConfigResourceType = "aws_lambda_function_recursion_config"
+	lambdaRuntimeManagementConfigResourceType = "aws_lambda_runtime_management_config"
+)
+
 type LambdaGenerator struct {
 	AWSService
 }
@@ -57,6 +62,8 @@ func (g *LambdaGenerator) InitResources() error {
 		lambdaOptionalResourceLoader{name: "aliases", load: func() error { return g.addAliases(svc, functions) }},
 		lambdaOptionalResourceLoader{name: "function URLs", load: func() error { return g.addFunctionURLs(svc, functions) }},
 		lambdaOptionalResourceLoader{name: "provisioned concurrency configs", load: func() error { return g.addProvisionedConcurrencyConfigs(svc, functions) }},
+		lambdaOptionalResourceLoader{name: "function recursion configs", load: func() error { return g.addFunctionRecursionConfigs(svc, functions) }},
+		lambdaOptionalResourceLoader{name: "runtime management configs", load: func() error { return g.addRuntimeManagementConfigs(svc, functions) }},
 		lambdaOptionalResourceLoader{name: "code signing configs", load: func() error { return g.addCodeSigningConfigs(svc) }},
 	)
 	err = g.addEventSourceMappings(svc)
@@ -264,6 +271,134 @@ func (g *LambdaGenerator) addFunctionURLs(svc *lambda.Client, functions []lambda
 	return nil
 }
 
+func (g *LambdaGenerator) addFunctionRecursionConfigs(svc *lambda.Client, functions []lambdaFunctionReference) error {
+	for _, function := range functions {
+		config, err := svc.GetFunctionRecursionConfig(context.TODO(), &lambda.GetFunctionRecursionConfigInput{
+			FunctionName: &function.name,
+		})
+		if err != nil {
+			if lambdaResourceNotFound(err) {
+				continue
+			}
+			return err
+		}
+		resource, ok := newLambdaFunctionRecursionConfigResource(function.name, config)
+		if !ok {
+			continue
+		}
+		g.Resources = append(g.Resources, resource)
+	}
+	return nil
+}
+
+func newLambdaFunctionRecursionConfigResource(functionName string, config *lambda.GetFunctionRecursionConfigOutput) (terraformutils.Resource, bool) {
+	if functionName == "" || config == nil {
+		return terraformutils.Resource{}, false
+	}
+	recursiveLoop := string(config.RecursiveLoop)
+	if recursiveLoop == "" {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewResource(
+		lambdaFunctionRecursionConfigImportID(functionName),
+		lambdaResourceNameWithLengths("function_recursion_config", functionName),
+		lambdaFunctionRecursionConfigResourceType,
+		"aws",
+		map[string]string{
+			"function_name":  functionName,
+			"recursive_loop": recursiveLoop,
+		},
+		lambdaAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
+func (g *LambdaGenerator) addRuntimeManagementConfigs(svc *lambda.Client, functions []lambdaFunctionReference) error {
+	for _, function := range functions {
+		if err := g.addRuntimeManagementConfig(svc, function.name, ""); err != nil {
+			return err
+		}
+
+		p := lambda.NewListVersionsByFunctionPaginator(svc, &lambda.ListVersionsByFunctionInput{
+			FunctionName: &function.name,
+		})
+		for p.HasMorePages() {
+			page, err := p.NextPage(context.TODO())
+			if err != nil {
+				if lambdaResourceNotFound(err) {
+					break
+				}
+				return err
+			}
+			for _, version := range page.Versions {
+				qualifier, ok := lambdaRuntimeManagementConfigQualifier(version)
+				if !ok {
+					continue
+				}
+				if err := g.addRuntimeManagementConfig(svc, function.name, qualifier); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (g *LambdaGenerator) addRuntimeManagementConfig(svc *lambda.Client, functionName, qualifier string) error {
+	input := &lambda.GetRuntimeManagementConfigInput{
+		FunctionName: &functionName,
+	}
+	if qualifier != "" {
+		input.Qualifier = &qualifier
+	}
+	config, err := svc.GetRuntimeManagementConfig(context.TODO(), input)
+	if err != nil {
+		if lambdaResourceNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	resource, ok := newLambdaRuntimeManagementConfigResource(functionName, qualifier, config)
+	if !ok {
+		return nil
+	}
+	g.Resources = append(g.Resources, resource)
+	return nil
+}
+
+func lambdaRuntimeManagementConfigQualifier(version lambdatypes.FunctionConfiguration) (string, bool) {
+	qualifier := StringValue(version.Version)
+	if qualifier == "" || qualifier == "$LATEST" {
+		return "", false
+	}
+	return qualifier, true
+}
+
+func newLambdaRuntimeManagementConfigResource(functionName, qualifier string, config *lambda.GetRuntimeManagementConfigOutput) (terraformutils.Resource, bool) {
+	if functionName == "" || config == nil {
+		return terraformutils.Resource{}, false
+	}
+	attributes := map[string]string{
+		"function_name": functionName,
+		"qualifier":     qualifier,
+	}
+	if runtimeVersionARN := StringValue(config.RuntimeVersionArn); runtimeVersionARN != "" {
+		attributes["runtime_version_arn"] = runtimeVersionARN
+	}
+	if updateRuntimeOn := string(config.UpdateRuntimeOn); updateRuntimeOn != "" {
+		attributes["update_runtime_on"] = updateRuntimeOn
+	}
+	return terraformutils.NewResource(
+		lambdaRuntimeManagementConfigImportID(functionName, qualifier),
+		lambdaResourceNameWithLengths("runtime_management_config", functionName, qualifier),
+		lambdaRuntimeManagementConfigResourceType,
+		"aws",
+		attributes,
+		lambdaAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
 func (g *LambdaGenerator) addProvisionedConcurrencyConfigs(svc *lambda.Client, functions []lambdaFunctionReference) error {
 	for _, function := range functions {
 		p := lambda.NewListProvisionedConcurrencyConfigsPaginator(svc, &lambda.ListProvisionedConcurrencyConfigsInput{
@@ -382,6 +517,14 @@ func lambdaProvisionedConcurrencyConfigImportID(functionName, qualifier string) 
 	return functionName + "," + qualifier
 }
 
+func lambdaFunctionRecursionConfigImportID(functionName string) string {
+	return functionName
+}
+
+func lambdaRuntimeManagementConfigImportID(functionName, qualifier string) string {
+	return functionName + "," + qualifier
+}
+
 func lambdaQualifierFromFunctionARN(functionARN, functionName string) string {
 	_, qualifiedName, found := strings.Cut(functionARN, ":function:")
 	if !found || qualifiedName == "" || qualifiedName == functionName {
@@ -412,6 +555,22 @@ func lambdaResourceName(parts ...string) string {
 		name += part
 	}
 	return name
+}
+
+func lambdaResourceNameWithLengths(parts ...string) string {
+	var name strings.Builder
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+		if name.Len() > 0 {
+			name.WriteString("_")
+		}
+		name.WriteString(strconv.Itoa(len(part)))
+		name.WriteString("_")
+		name.WriteString(part)
+	}
+	return name.String()
 }
 
 func lambdaResourceNotFound(err error) bool {
