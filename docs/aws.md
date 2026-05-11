@@ -402,6 +402,8 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_msk_serverless_cluster`
     * `aws_msk_single_scram_secret_association`
     * `aws_msk_vpc_connection`
+*   `mwaa`
+    * `aws_mwaa_environment`
 *   `nacl`
     * `aws_default_network_acl`
     * `aws_network_acl`
