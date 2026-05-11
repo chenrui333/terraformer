@@ -48,9 +48,13 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_lb_target_group`
     * `aws_lb_target_group_attachment`
 *   `api_gateway`
+    * `aws_api_gateway_account`
     * `aws_api_gateway_authorizer`
     * `aws_api_gateway_api_key`
+    * `aws_api_gateway_base_path_mapping`
+    * `aws_api_gateway_client_certificate`
     * `aws_api_gateway_documentation_part`
+    * `aws_api_gateway_documentation_version`
     * `aws_api_gateway_gateway_response`
     * `aws_api_gateway_integration`
     * `aws_api_gateway_integration_response`
@@ -59,8 +63,10 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_api_gateway_model`
     * `aws_api_gateway_resource`
     * `aws_api_gateway_rest_api`
+    * `aws_api_gateway_request_validator`
     * `aws_api_gateway_stage`
     * `aws_api_gateway_usage_plan`
+    * `aws_api_gateway_usage_plan_key`
     * `aws_api_gateway_vpc_link`
 *   `api_gatewayv2`
     * `aws_apigatewayv2_api`

@@ -4,15 +4,36 @@ package aws
 
 import (
 	"context"
+	"errors"
+	"log"
+	"strconv"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway/types"
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/chenrui333/terraformer/terraformutils/terraformerstring"
 )
 
-var apiGatewayAllowEmptyValues = []string{"tags.", "parent_id", "path_part"}
+const (
+	apiGatewayAccountResourceType              = "aws_api_gateway_account"
+	apiGatewayBasePathMappingResourceType      = "aws_api_gateway_base_path_mapping"
+	apiGatewayClientCertificateResourceType    = "aws_api_gateway_client_certificate"
+	apiGatewayDocumentationVersionResourceType = "aws_api_gateway_documentation_version"
+	apiGatewayRequestValidatorResourceType     = "aws_api_gateway_request_validator"
+	apiGatewayResourceResourceType             = "aws_api_gateway_resource"
+	apiGatewayUsagePlanKeyResourceType         = "aws_api_gateway_usage_plan_key"
+	apiGatewayEmptyBasePathMappingValue        = "(none)"
+	apiGatewayResourceIDSeparator              = "/"
+)
+
+var apiGatewayAllowEmptyValues = []string{"tags.", "base_path", "parent_id", "path_part"}
+
+type apiGatewayOptionalResourceLoader struct {
+	name string
+	load func() error
+}
 
 type APIGatewayGenerator struct {
 	AWSService
@@ -24,6 +45,12 @@ func (g *APIGatewayGenerator) InitResources() error {
 		return e
 	}
 	svc := apigateway.NewFromConfig(config)
+
+	g.loadOptionalResources([]apiGatewayOptionalResourceLoader{
+		{name: "account", load: func() error { return g.loadAccount(svc, config) }},
+		{name: "base path mappings", load: func() error { return g.loadDomainBasePathMappings(svc) }},
+		{name: "client certificates", load: func() error { return g.loadClientCertificates(svc) }},
+	})
 
 	if err := g.loadRestApis(svc); err != nil {
 		return err
@@ -39,6 +66,17 @@ func (g *APIGatewayGenerator) InitResources() error {
 	}
 
 	return nil
+}
+
+func (g *APIGatewayGenerator) loadOptionalResources(loaders []apiGatewayOptionalResourceLoader) {
+	for _, loader := range loaders {
+		if err := loader.load(); err != nil {
+			if apiGatewayResourceMissing(err) {
+				continue
+			}
+			log.Printf("Skipping API Gateway %s: %v", loader.name, err)
+		}
+	}
 }
 
 func (g *APIGatewayGenerator) loadRestApis(svc *apigateway.Client) error {
@@ -73,7 +111,13 @@ func (g *APIGatewayGenerator) loadRestApis(svc *apigateway.Client) error {
 			if err := g.loadDocumentationParts(svc, restAPI.Id); err != nil {
 				return err
 			}
+			if err := g.loadDocumentationVersions(svc, restAPI.Id); err != nil {
+				return err
+			}
 			if err := g.loadAuthorizers(svc, restAPI.Id); err != nil {
+				return err
+			}
+			if err := g.loadRequestValidators(svc, restAPI.Id); err != nil {
 				return err
 			}
 		}
@@ -92,6 +136,25 @@ func (g *APIGatewayGenerator) shouldFilterRestAPI(tags map[string]string) bool {
 		}
 	}
 	return false
+}
+
+func (g *APIGatewayGenerator) loadAccount(svc *apigateway.Client, config aws.Config) error {
+	output, err := svc.GetAccount(context.TODO(), &apigateway.GetAccountInput{})
+	if err != nil {
+		return err
+	}
+	if output == nil || StringValue(output.CloudwatchRoleArn) == "" {
+		return nil
+	}
+	account, err := g.getAccountNumber(config)
+	if err != nil {
+		log.Printf("Skipping API Gateway account: unable to get account ID: %v", err)
+		return nil
+	}
+	if resource, ok := newAPIGatewayAccountResource(StringValue(account), output); ok {
+		g.Resources = append(g.Resources, resource)
+	}
+	return nil
 }
 
 func (g *APIGatewayGenerator) loadStages(svc *apigateway.Client, restAPIID *string) error {
@@ -129,21 +192,9 @@ func (g *APIGatewayGenerator) loadResources(svc *apigateway.Client, restAPIID *s
 			return err
 		}
 		for _, resource := range page.Items {
-			resourceID := *restAPIID + "/" + *resource.Id
-			g.Resources = append(g.Resources, terraformutils.NewResource(
-				resourceID,
-				resourceID,
-				"aws_api_gateway_resource",
-				"aws",
-				map[string]string{
-					"path":        StringValue(resource.Path),
-					"path_part":   StringValue(resource.PathPart),
-					"partent_id":  StringValue(resource.ParentId),
-					"rest_api_id": StringValue(restAPIID),
-				},
-				apiGatewayAllowEmptyValues,
-				map[string]interface{}{},
-			))
+			if tfResource, ok := newAPIGatewayResourceResource(StringValue(restAPIID), resource); ok {
+				g.Resources = append(g.Resources, tfResource)
+			}
 			err := g.loadResourceMethods(svc, restAPIID, resource)
 			if err != nil {
 				return err
@@ -345,6 +396,29 @@ func (g *APIGatewayGenerator) loadDocumentationParts(svc *apigateway.Client, res
 	return nil
 }
 
+func (g *APIGatewayGenerator) loadDocumentationVersions(svc *apigateway.Client, restAPIID *string) error {
+	var position *string
+	for {
+		response, err := svc.GetDocumentationVersions(context.TODO(), &apigateway.GetDocumentationVersionsInput{
+			RestApiId: restAPIID,
+			Position:  position,
+		})
+		if err != nil {
+			return err
+		}
+		for _, documentationVersion := range response.Items {
+			if resource, ok := newAPIGatewayDocumentationVersionResource(StringValue(restAPIID), documentationVersion); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+		position = response.Position
+		if position == nil {
+			break
+		}
+	}
+	return nil
+}
+
 func (g *APIGatewayGenerator) loadAuthorizers(svc *apigateway.Client, restAPIID *string) error {
 	var position *string
 	for {
@@ -368,6 +442,29 @@ func (g *APIGatewayGenerator) loadAuthorizers(svc *apigateway.Client, restAPIID 
 				apiGatewayAllowEmptyValues,
 				map[string]interface{}{},
 			))
+		}
+		position = response.Position
+		if position == nil {
+			break
+		}
+	}
+	return nil
+}
+
+func (g *APIGatewayGenerator) loadRequestValidators(svc *apigateway.Client, restAPIID *string) error {
+	var position *string
+	for {
+		response, err := svc.GetRequestValidators(context.TODO(), &apigateway.GetRequestValidatorsInput{
+			RestApiId: restAPIID,
+			Position:  position,
+		})
+		if err != nil {
+			return err
+		}
+		for _, validator := range response.Items {
+			if resource, ok := newAPIGatewayRequestValidatorResource(StringValue(restAPIID), validator); ok {
+				g.Resources = append(g.Resources, resource)
+			}
 		}
 		position = response.Position
 		if position == nil {
@@ -404,12 +501,47 @@ func (g *APIGatewayGenerator) loadUsagePlans(svc *apigateway.Client) error {
 			return err
 		}
 		for _, usagePlan := range page.Items {
+			usagePlanID := StringValue(usagePlan.Id)
+			if usagePlanID == "" {
+				continue
+			}
+			usagePlanName := StringValue(usagePlan.Name)
+			if usagePlanName == "" {
+				usagePlanName = usagePlanID
+			}
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				*usagePlan.Id,
-				*usagePlan.Name,
+				usagePlanID,
+				usagePlanName,
 				"aws_api_gateway_usage_plan",
 				"aws",
 				apiGatewayAllowEmptyValues))
+			if err := g.loadUsagePlanKeys(svc, aws.String(usagePlanID)); err != nil {
+				if !apiGatewayResourceMissing(err) {
+					log.Printf("Skipping API Gateway usage plan keys for %s: %v", usagePlanID, err)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (g *APIGatewayGenerator) loadUsagePlanKeys(svc *apigateway.Client, usagePlanID *string) error {
+	usagePlanIDValue := StringValue(usagePlanID)
+	if usagePlanIDValue == "" {
+		return nil
+	}
+	p := apigateway.NewGetUsagePlanKeysPaginator(svc, &apigateway.GetUsagePlanKeysInput{
+		UsagePlanId: aws.String(usagePlanIDValue),
+	})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, usagePlanKey := range page.Items {
+			if resource, ok := newAPIGatewayUsagePlanKeyResource(usagePlanIDValue, usagePlanKey); ok {
+				g.Resources = append(g.Resources, resource)
+			}
 		}
 	}
 	return nil
@@ -433,4 +565,293 @@ func (g *APIGatewayGenerator) loadAPIKeys(svc *apigateway.Client) error {
 	}
 
 	return nil
+}
+
+func (g *APIGatewayGenerator) loadClientCertificates(svc *apigateway.Client) error {
+	p := apigateway.NewGetClientCertificatesPaginator(svc, &apigateway.GetClientCertificatesInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, certificate := range page.Items {
+			if resource, ok := newAPIGatewayClientCertificateResource(certificate); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+	}
+	return nil
+}
+
+func (g *APIGatewayGenerator) loadDomainBasePathMappings(svc *apigateway.Client) error {
+	p := apigateway.NewGetDomainNamesPaginator(svc, &apigateway.GetDomainNamesInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, domainName := range page.Items {
+			domainNameValue := StringValue(domainName.DomainName)
+			if domainNameValue == "" {
+				continue
+			}
+			if err := g.loadBasePathMappings(svc, domainNameValue, StringValue(domainName.DomainNameId)); err != nil {
+				if !apiGatewayResourceMissing(err) {
+					log.Printf("Skipping API Gateway base path mappings for %s: %v", domainNameValue, err)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (g *APIGatewayGenerator) loadBasePathMappings(svc *apigateway.Client, domainName, domainNameID string) error {
+	input := &apigateway.GetBasePathMappingsInput{
+		DomainName: aws.String(domainName),
+	}
+	if domainNameID != "" {
+		input.DomainNameId = aws.String(domainNameID)
+	}
+	p := apigateway.NewGetBasePathMappingsPaginator(svc, input)
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, mapping := range page.Items {
+			if resource, ok := newAPIGatewayBasePathMappingResource(domainName, domainNameID, mapping); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+	}
+	return nil
+}
+
+func newAPIGatewayAccountResource(accountID string, output *apigateway.GetAccountOutput) (terraformutils.Resource, bool) {
+	cloudwatchRoleARN := ""
+	if output != nil {
+		cloudwatchRoleARN = StringValue(output.CloudwatchRoleArn)
+	}
+	if accountID == "" || cloudwatchRoleARN == "" {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewResource(
+		apiGatewayAccountImportID(accountID),
+		apiGatewayResourceName("account", accountID),
+		apiGatewayAccountResourceType,
+		"aws",
+		map[string]string{
+			"cloudwatch_role_arn": cloudwatchRoleARN,
+		},
+		apiGatewayAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
+func newAPIGatewayBasePathMappingResource(domainName, domainNameID string, mapping types.BasePathMapping) (terraformutils.Resource, bool) {
+	basePath := apiGatewayNormalizeBasePathMappingValue(StringValue(mapping.BasePath))
+	if domainName == "" || StringValue(mapping.RestApiId) == "" || !apiGatewayBasePathMappingImportable(basePath) {
+		return terraformutils.Resource{}, false
+	}
+	attributes := map[string]string{
+		"api_id":      StringValue(mapping.RestApiId),
+		"base_path":   basePath,
+		"domain_name": domainName,
+	}
+	if domainNameID != "" {
+		attributes["domain_name_id"] = domainNameID
+	}
+	if stageName := StringValue(mapping.Stage); stageName != "" {
+		attributes["stage_name"] = stageName
+	}
+	return terraformutils.NewResource(
+		apiGatewayBasePathMappingImportID(domainName, basePath, domainNameID),
+		apiGatewayResourceName("base_path_mapping", domainName, basePath, domainNameID),
+		apiGatewayBasePathMappingResourceType,
+		"aws",
+		attributes,
+		apiGatewayAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
+func newAPIGatewayClientCertificateResource(certificate types.ClientCertificate) (terraformutils.Resource, bool) {
+	certificateID := StringValue(certificate.ClientCertificateId)
+	if certificateID == "" {
+		return terraformutils.Resource{}, false
+	}
+	attributes := map[string]string{}
+	if description := StringValue(certificate.Description); description != "" {
+		attributes["description"] = description
+	}
+	return terraformutils.NewResource(
+		apiGatewayClientCertificateImportID(certificateID),
+		apiGatewayResourceName("client_certificate", certificateID),
+		apiGatewayClientCertificateResourceType,
+		"aws",
+		attributes,
+		apiGatewayAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
+func newAPIGatewayDocumentationVersionResource(restAPIID string, documentationVersion types.DocumentationVersion) (terraformutils.Resource, bool) {
+	version := StringValue(documentationVersion.Version)
+	if restAPIID == "" || version == "" {
+		return terraformutils.Resource{}, false
+	}
+	attributes := map[string]string{
+		"rest_api_id": restAPIID,
+		"version":     version,
+	}
+	if description := StringValue(documentationVersion.Description); description != "" {
+		attributes["description"] = description
+	}
+	return terraformutils.NewResource(
+		apiGatewayDocumentationVersionImportID(restAPIID, version),
+		apiGatewayResourceName("documentation_version", restAPIID, version),
+		apiGatewayDocumentationVersionResourceType,
+		"aws",
+		attributes,
+		apiGatewayAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
+func newAPIGatewayRequestValidatorResource(restAPIID string, validator types.RequestValidator) (terraformutils.Resource, bool) {
+	validatorID := StringValue(validator.Id)
+	validatorName := StringValue(validator.Name)
+	if restAPIID == "" || validatorID == "" || validatorName == "" {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewResource(
+		apiGatewayRequestValidatorStateID(validatorID),
+		apiGatewayResourceName("request_validator", restAPIID, validatorID),
+		apiGatewayRequestValidatorResourceType,
+		"aws",
+		map[string]string{
+			"name":                        validatorName,
+			"rest_api_id":                 restAPIID,
+			"validate_request_body":       strconv.FormatBool(validator.ValidateRequestBody),
+			"validate_request_parameters": strconv.FormatBool(validator.ValidateRequestParameters),
+		},
+		apiGatewayAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
+func newAPIGatewayResourceResource(restAPIID string, resource types.Resource) (terraformutils.Resource, bool) {
+	resourceID := StringValue(resource.Id)
+	parentID := StringValue(resource.ParentId)
+	pathPart := StringValue(resource.PathPart)
+	if restAPIID == "" || resourceID == "" || parentID == "" || pathPart == "" {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewResource(
+		apiGatewayResourceStateID(resourceID),
+		apiGatewayResourceName("resource", restAPIID, resourceID),
+		apiGatewayResourceResourceType,
+		"aws",
+		map[string]string{
+			"path":        StringValue(resource.Path),
+			"path_part":   pathPart,
+			"parent_id":   parentID,
+			"rest_api_id": restAPIID,
+		},
+		apiGatewayAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
+func newAPIGatewayUsagePlanKeyResource(usagePlanID string, usagePlanKey types.UsagePlanKey) (terraformutils.Resource, bool) {
+	keyID := StringValue(usagePlanKey.Id)
+	keyType := StringValue(usagePlanKey.Type)
+	if usagePlanID == "" || keyID == "" || keyType == "" {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewResource(
+		apiGatewayUsagePlanKeyStateID(keyID),
+		apiGatewayResourceName("usage_plan_key", usagePlanID, keyID),
+		apiGatewayUsagePlanKeyResourceType,
+		"aws",
+		map[string]string{
+			"key_id":        keyID,
+			"key_type":      keyType,
+			"usage_plan_id": usagePlanID,
+		},
+		apiGatewayAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
+func apiGatewayResourceMissing(err error) bool {
+	var notFound *types.NotFoundException
+	return errors.As(err, &notFound)
+}
+
+func apiGatewayAccountImportID(accountID string) string {
+	return accountID
+}
+
+func apiGatewayBasePathMappingImportID(domainName, basePath, domainNameID string) string {
+	parts := []string{domainName, basePath}
+	if domainNameID != "" {
+		parts = append(parts, domainNameID)
+	}
+	return strings.Join(parts, apiGatewayResourceIDSeparator)
+}
+
+func apiGatewayClientCertificateImportID(certificateID string) string {
+	return certificateID
+}
+
+func apiGatewayDocumentationVersionImportID(restAPIID, version string) string {
+	return strings.Join([]string{restAPIID, version}, apiGatewayResourceIDSeparator)
+}
+
+func apiGatewayRequestValidatorImportID(restAPIID, validatorID string) string {
+	return strings.Join([]string{restAPIID, validatorID}, apiGatewayResourceIDSeparator)
+}
+
+func apiGatewayRequestValidatorStateID(validatorID string) string {
+	return validatorID
+}
+
+func apiGatewayResourceStateID(resourceID string) string {
+	return resourceID
+}
+
+func apiGatewayUsagePlanKeyImportID(usagePlanID, keyID string) string {
+	return strings.Join([]string{usagePlanID, keyID}, apiGatewayResourceIDSeparator)
+}
+
+func apiGatewayUsagePlanKeyStateID(keyID string) string {
+	return keyID
+}
+
+func apiGatewayNormalizeBasePathMappingValue(basePath string) string {
+	if basePath == apiGatewayEmptyBasePathMappingValue {
+		return ""
+	}
+	return basePath
+}
+
+func apiGatewayBasePathMappingImportable(basePath string) bool {
+	return !strings.Contains(basePath, apiGatewayResourceIDSeparator)
+}
+
+func apiGatewayResourceName(parts ...string) string {
+	var name strings.Builder
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+		if name.Len() > 0 {
+			name.WriteString("_")
+		}
+		name.WriteString(strconv.Itoa(len(part)))
+		name.WriteString("_")
+		name.WriteString(part)
+	}
+	return name.String()
 }
