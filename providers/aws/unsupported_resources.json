@@ -2,6 +2,17 @@
   "version": 1,
   "resources": [
     {
+      "resource": "aws_appflow_connector_profile",
+      "service_family": "appflow",
+      "reason": "AppFlow connector profiles require connector credentials or OAuth/token material that broad discovery cannot safely reconstruct.",
+      "evidence": "Terraform AWS provider models connector_profile_config.connector_profile_credentials with sensitive credential fields for connector profile creation; AppFlow DescribeConnectorProfiles does not return the original secret values needed to seed valid Terraform configuration.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/appflow_connector_profile"
+      ]
+    },
+    {
       "resource": "aws_appstream_directory_config",
       "service_family": "appstream",
       "reason": "AppStream directory configs require service_account_credentials.account_password, which is a sensitive required field that AppStream DescribeDirectoryConfigs does not return.",
@@ -23,6 +34,29 @@
         "https://github.com/chenrui333/terraformer/issues/338",
         "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/athena_database",
         "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/glue_catalog_database"
+      ]
+    },
+    {
+      "resource": "aws_chatbot_teams_channel_configuration",
+      "service_family": "chatbot",
+      "reason": "Chatbot Teams channel configurations cannot be safely discovered into unique Terraform import IDs for every channel configuration.",
+      "evidence": "Terraform AWS provider imports aws_chatbot_teams_channel_configuration by team_id and reads with ListMicrosoftTeamsChannelConfigurations filtered only by TeamId. Broad discovery can return multiple channel configurations for one team, which would collide on the provider import ID and make refresh ambiguous.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/chatbot_teams_channel_configuration"
+      ]
+    },
+    {
+      "resource": "aws_chime_voice_connector_termination_credentials",
+      "service_family": "chime",
+      "reason": "Chime voice connector termination credentials require passwords that AWS list APIs do not return.",
+      "evidence": "Terraform AWS provider requires credentials.password as a sensitive field, while ListVoiceConnectorTerminationCredentials returns usernames only. Terraformer cannot reconstruct valid credential blocks for import output.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/chime_voice_connector_termination_credentials",
+        "https://docs.aws.amazon.com/chime-sdk/latest/APIReference/API_voice-chime_ListVoiceConnectorTerminationCredentials.html"
       ]
     },
     {
@@ -58,6 +92,17 @@
         "https://github.com/chenrui333/terraformer/issues/338",
         "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/config_organization_conformance_pack",
         "https://docs.aws.amazon.com/config/latest/APIReference/API_DescribeOrganizationConformancePacks.html"
+      ]
+    },
+    {
+      "resource": "aws_customerprofiles_profile",
+      "service_family": "customerprofiles",
+      "reason": "Customer Profiles profile records are customer data and are not safely discoverable as stable infrastructure inventory.",
+      "evidence": "Terraform AWS provider imports aws_customerprofiles_profile by domain and profile ID, while Customer Profiles SearchProfiles/GetProfileObject APIs enumerate customer data rather than durable infrastructure configuration.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/customerprofiles_profile"
       ]
     },
     {
@@ -397,6 +442,29 @@
         "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/securityhub_invite_accepter",
         "https://docs.aws.amazon.com/securityhub/1.0/APIReference/API_AcceptInvitation.html",
         "https://docs.aws.amazon.com/securityhub/1.0/APIReference/API_GetMasterAccount.html"
+      ]
+    },
+    {
+      "resource": "aws_sns_platform_application",
+      "service_family": "sns",
+      "reason": "SNS platform applications require platform credentials that SNS list/read APIs do not return.",
+      "evidence": "Terraform AWS provider requires platform_credential and may require platform_principal for platform application creation, while ListPlatformApplications/GetPlatformApplicationAttributes do not return the original credential secret.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sns_platform_application"
+      ]
+    },
+    {
+      "resource": "aws_sns_sms_preferences",
+      "service_family": "sns",
+      "reason": "SNS SMS preferences are account/region defaults and broad discovery cannot distinguish explicit Terraform-owned settings from AWS defaults.",
+      "evidence": "GetSMSAttributes returns effective account SMS attributes, but does not indicate whether values were explicitly configured by the account or are AWS defaults. Importing every effective default would create noisy singleton Terraform management.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sns_sms_preferences",
+        "https://docs.aws.amazon.com/sns/latest/api/API_GetSMSAttributes.html"
       ]
     },
     {

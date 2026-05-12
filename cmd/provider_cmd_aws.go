@@ -3,6 +3,7 @@ package cmd
 
 import (
 	"log"
+	"strings"
 
 	awsterraformer "github.com/chenrui333/terraformer/providers/aws"
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -21,7 +22,7 @@ func newCmdAwsImporter(options ImportOptions) *cobra.Command {
 
 			if len(options.Regions) > 0 {
 				shouldSpecifyPathRegion := len(options.Regions) > 1
-				globalResources, eastOnlyResources, regionalResources := parseAndGroupResources(originalResources)
+				globalResources, eastOnlyResources, chatbotResources, regionalResources := parseAndGroupResources(originalResources)
 				options.Resources = globalResources
 				options.Regions = []string{awsterraformer.GlobalRegion}
 				e := importGlobalResources(options)
@@ -32,6 +33,14 @@ func newCmdAwsImporter(options ImportOptions) *cobra.Command {
 				options.Resources = eastOnlyResources
 				options.Regions = []string{awsterraformer.MainRegionPublicPartition}
 				e = importEastOnlyResources(options)
+				if e != nil {
+					return e
+				}
+
+				chatbotShouldSpecifyPathRegion := shouldSpecifyPathRegion || len(globalResources) > 0 || len(eastOnlyResources) > 0 || len(regionalResources) > 0
+				options.Resources = chatbotResources
+				options.Regions = chatbotImportRegions(originalRegions)
+				e = importChatbotResources(options, originalPathPattern, chatbotShouldSpecifyPathRegion)
 				if e != nil {
 					return e
 				}
@@ -66,20 +75,22 @@ func newCmdAwsImporter(options ImportOptions) *cobra.Command {
 	return cmd
 }
 
-// returns global, east-only, regional resources
-func parseAndGroupResources(allResources []string) ([]string, []string, []string) {
-	var globalResources, eastOnlyResources, regionalResources []string
+// returns global, east-only, chatbot, regional resources
+func parseAndGroupResources(allResources []string) ([]string, []string, []string, []string) {
+	var globalResources, eastOnlyResources, chatbotResources, regionalResources []string
 	for _, resourceName := range allResources {
 		switch {
 		case contains(awsterraformer.SupportedGlobalResources, resourceName):
 			globalResources = append(globalResources, resourceName)
 		case contains(awsterraformer.SupportedEastOnlyResources, resourceName):
 			eastOnlyResources = append(eastOnlyResources, resourceName)
+		case contains(awsterraformer.SupportedChatbotResources, resourceName):
+			chatbotResources = append(chatbotResources, resourceName)
 		default:
 			regionalResources = append(regionalResources, resourceName)
 		}
 	}
-	return globalResources, eastOnlyResources, regionalResources
+	return globalResources, eastOnlyResources, chatbotResources, regionalResources
 }
 
 func importGlobalResources(options ImportOptions) error {
@@ -94,6 +105,46 @@ func importEastOnlyResources(options ImportOptions) error {
 		return importRegionResources(options, options.PathPattern, awsterraformer.MainRegionPublicPartition, false)
 	}
 	return nil
+}
+
+func importChatbotResources(options ImportOptions, originalPathPattern string, shouldSpecifyPathRegion bool) error {
+	if len(options.Resources) == 0 {
+		return nil
+	}
+	pathPattern := chatbotPathPattern(originalPathPattern)
+	for _, region := range options.Regions {
+		if err := importRegionResources(options, pathPattern, region, shouldSpecifyPathRegion); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func chatbotPathPattern(pathPattern string) string {
+	if strings.Contains(pathPattern, "{service}") {
+		return pathPattern
+	}
+	if strings.Contains(pathPattern, "{provider}") {
+		return strings.Replace(pathPattern, "{provider}", "{provider}/{service}", 1)
+	}
+	if strings.HasSuffix(pathPattern, "/") {
+		return pathPattern + "{service}/"
+	}
+	return pathPattern + "/{service}/"
+}
+
+func chatbotImportRegions(regions []string) []string {
+	seen := map[string]bool{}
+	result := make([]string, 0, len(regions))
+	for _, region := range regions {
+		effectiveRegion := awsterraformer.ChatbotAPIRegion(region)
+		if seen[effectiveRegion] {
+			continue
+		}
+		seen[effectiveRegion] = true
+		result = append(result, effectiveRegion)
+	}
+	return result
 }
 
 func importRegionResources(options ImportOptions, originalPathPattern string, region string, shouldSpecifyPathRegion bool) error {

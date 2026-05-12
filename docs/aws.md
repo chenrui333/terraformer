@@ -90,6 +90,9 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_appconfig_extension`
     * `aws_appconfig_extension_association`
     * `aws_appconfig_hosted_configuration_version`
+*   `appintegrations`
+    * `aws_appintegrations_data_integration`
+    * `aws_appintegrations_event_integration`
 *   `appmesh`
     * `aws_appmesh_gateway_route`
     * `aws_appmesh_mesh`
@@ -171,6 +174,20 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_bedrockagent_prompt`
 *   `budgets`
     * `aws_budgets_budget`
+*   `chatbot`
+    * `aws_chatbot_slack_channel_configuration`
+*   `chime`
+    * `aws_chime_voice_connector`
+    * `aws_chime_voice_connector_group`
+    * `aws_chime_voice_connector_logging`
+    * `aws_chime_voice_connector_origination`
+    * `aws_chime_voice_connector_streaming`
+    * `aws_chime_voice_connector_termination`
+*   `chimesdkvoice`
+    * `aws_chimesdkvoice_global_settings`
+    * `aws_chimesdkvoice_sip_media_application`
+    * `aws_chimesdkvoice_sip_rule`
+    * `aws_chimesdkvoice_voice_profile_domain`
 *   `cloud9`
     * `aws_cloud9_environment_ec2`
 *   `cloudformation`
@@ -259,6 +276,8 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_config_retention_configuration`
 *   `customer_gateway`
     * `aws_customer_gateway`
+*   `customerprofiles`
+    * `aws_customerprofiles_domain`
 *   `datapipeline`
     * `aws_datapipeline_pipeline`
 *   `devicefarm`
@@ -532,6 +551,13 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_network_acl`
 *   `nat`
     * `aws_nat_gateway`
+*   `notifications`
+    * `aws_notifications_channel_association`
+    * `aws_notifications_event_rule`
+    * `aws_notifications_notification_configuration`
+    * `aws_notifications_notification_hub`
+*   `notificationscontacts`
+    * `aws_notificationscontacts_email_contact`
 *   `opsworks`
     * `aws_opsworks_application`
     * `aws_opsworks_custom_layer`
@@ -736,6 +762,8 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_security_group_rule` (if a rule cannot be inlined)
 *   `sns`
     * `aws_sns_topic`
+    * `aws_sns_topic_data_protection_policy`
+    * `aws_sns_topic_policy`
     * `aws_sns_topic_subscription`
 *   `ssoadmin`
     * `aws_ssoadmin_account_assignment`

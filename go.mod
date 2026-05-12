@@ -402,6 +402,7 @@ require (
 	github.com/IBM/continuous-delivery-go-sdk/v2 v2.0.8
 	github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.34.3
 	github.com/aws/aws-sdk-go-v2/service/appconfig v1.43.15
+	github.com/aws/aws-sdk-go-v2/service/appintegrations v1.37.9
 	github.com/aws/aws-sdk-go-v2/service/appmesh v1.35.14
 	github.com/aws/aws-sdk-go-v2/service/apprunner v1.39.16
 	github.com/aws/aws-sdk-go-v2/service/appstream v1.58.0
@@ -409,8 +410,11 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/backup v1.55.2
 	github.com/aws/aws-sdk-go-v2/service/bedrock v1.59.2
 	github.com/aws/aws-sdk-go-v2/service/bedrockagent v1.53.2
+	github.com/aws/aws-sdk-go-v2/service/chatbot v1.14.23
+	github.com/aws/aws-sdk-go-v2/service/chimesdkvoice v1.28.15
 	github.com/aws/aws-sdk-go-v2/service/comprehend v1.40.23
 	github.com/aws/aws-sdk-go-v2/service/connect v1.172.1
+	github.com/aws/aws-sdk-go-v2/service/customerprofiles v1.59.2
 	github.com/aws/aws-sdk-go-v2/service/detective v1.38.15
 	github.com/aws/aws-sdk-go-v2/service/directconnect v1.38.17
 	github.com/aws/aws-sdk-go-v2/service/globalaccelerator v1.35.18
@@ -421,6 +425,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/lakeformation v1.47.8
 	github.com/aws/aws-sdk-go-v2/service/mediapackagev2 v1.37.0
 	github.com/aws/aws-sdk-go-v2/service/mwaa v1.40.0
+	github.com/aws/aws-sdk-go-v2/service/notifications v1.7.22
+	github.com/aws/aws-sdk-go-v2/service/notificationscontacts v1.5.25
 	github.com/aws/aws-sdk-go-v2/service/opensearch v1.68.0
 	github.com/aws/aws-sdk-go-v2/service/opensearchserverless v1.30.3
 	github.com/aws/aws-sdk-go-v2/service/pinpoint v1.39.23
