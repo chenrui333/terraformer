@@ -101,27 +101,51 @@ func TestVPCLatticeResourceConstructors(t *testing.T) {
 			name: "service network service association",
 			resource: newTerraformResourceResult(newVPCLatticeServiceNetworkServiceAssociationResource(vpclatticetypes.ServiceNetworkServiceAssociationSummary{
 				Id:               aws.String("snsa-123"),
+				CreatedBy:        aws.String("123456789012"),
 				ServiceId:        aws.String("svc-123"),
 				ServiceNetworkId: aws.String("sn-123"),
 				Status:           vpclatticetypes.ServiceNetworkServiceAssociationStatusActive,
-			})),
+			}, "123456789012")),
 			wantID:     "snsa-123",
 			wantType:   vpclatticeServiceNetworkServiceAssociationResourceType,
 			wantAttr:   map[string]string{"service_identifier": "svc-123", "service_network_identifier": "sn-123"},
 			wantExists: true,
 		},
 		{
+			name: "service network service association from another account",
+			resource: newTerraformResourceResult(newVPCLatticeServiceNetworkServiceAssociationResource(vpclatticetypes.ServiceNetworkServiceAssociationSummary{
+				Id:               aws.String("snsa-123"),
+				CreatedBy:        aws.String("210987654321"),
+				ServiceId:        aws.String("svc-123"),
+				ServiceNetworkId: aws.String("sn-123"),
+				Status:           vpclatticetypes.ServiceNetworkServiceAssociationStatusActive,
+			}, "123456789012")),
+			wantExists: false,
+		},
+		{
 			name: "service network vpc association",
 			resource: newTerraformResourceResult(newVPCLatticeServiceNetworkVpcAssociationResource(vpclatticetypes.ServiceNetworkVpcAssociationSummary{
 				Id:               aws.String("snva-123"),
+				CreatedBy:        aws.String("123456789012"),
 				ServiceNetworkId: aws.String("sn-123"),
 				VpcId:            aws.String("vpc-123"),
 				Status:           vpclatticetypes.ServiceNetworkVpcAssociationStatusActive,
-			})),
+			}, "123456789012")),
 			wantID:     "snva-123",
 			wantType:   vpclatticeServiceNetworkVpcAssociationResourceType,
 			wantAttr:   map[string]string{"service_network_identifier": "sn-123", "vpc_identifier": "vpc-123"},
 			wantExists: true,
+		},
+		{
+			name: "service network vpc association from another account",
+			resource: newTerraformResourceResult(newVPCLatticeServiceNetworkVpcAssociationResource(vpclatticetypes.ServiceNetworkVpcAssociationSummary{
+				Id:               aws.String("snva-123"),
+				CreatedBy:        aws.String("210987654321"),
+				ServiceNetworkId: aws.String("sn-123"),
+				VpcId:            aws.String("vpc-123"),
+				Status:           vpclatticetypes.ServiceNetworkVpcAssociationStatusActive,
+			}, "123456789012")),
+			wantExists: false,
 		},
 		{
 			name:       "auth policy",
@@ -314,12 +338,12 @@ func TestVPCLatticeAssociationLoadersUseServiceNetworkFilters(t *testing.T) {
 			if got := r.URL.Query().Get("serviceNetworkIdentifier"); got != "sn-123" {
 				t.Errorf("serviceNetworkIdentifier query = %q, want sn-123", got)
 			}
-			writeVPCLatticeJSON(w, http.StatusOK, `{"items":[{"id":"snsa-123","serviceId":"svc-123","serviceNetworkId":"sn-123","status":"ACTIVE"}]}`)
+			writeVPCLatticeJSON(w, http.StatusOK, `{"items":[{"id":"snsa-123","createdBy":"123456789012","serviceId":"svc-123","serviceNetworkId":"sn-123","status":"ACTIVE"},{"id":"snsa-shared","createdBy":"210987654321","serviceId":"svc-shared","serviceNetworkId":"sn-123","status":"ACTIVE"}]}`)
 		case "/servicenetworkvpcassociations":
 			if got := r.URL.Query().Get("serviceNetworkIdentifier"); got != "sn-123" {
 				t.Errorf("serviceNetworkIdentifier query = %q, want sn-123", got)
 			}
-			writeVPCLatticeJSON(w, http.StatusOK, `{"items":[{"id":"snva-123","serviceNetworkId":"sn-123","vpcId":"vpc-123","status":"ACTIVE"}]}`)
+			writeVPCLatticeJSON(w, http.StatusOK, `{"items":[{"id":"snva-123","createdBy":"123456789012","serviceNetworkId":"sn-123","vpcId":"vpc-123","status":"ACTIVE"},{"id":"snva-shared","createdBy":"210987654321","serviceNetworkId":"sn-123","vpcId":"vpc-shared","status":"ACTIVE"}]}`)
 		default:
 			t.Errorf("unexpected path %s", r.URL.Path)
 			http.NotFound(w, r)
@@ -329,20 +353,20 @@ func TestVPCLatticeAssociationLoadersUseServiceNetworkFilters(t *testing.T) {
 
 	generator := &VPCLatticeGenerator{}
 	client := newTestVPCLatticeClient(server)
-	if err := generator.loadVPCLatticeServiceNetworkServiceAssociations(client, ""); err != nil {
+	if err := generator.loadVPCLatticeServiceNetworkServiceAssociations(client, "", "123456789012"); err != nil {
 		t.Fatalf("loadVPCLatticeServiceNetworkServiceAssociations empty ID returned error: %v", err)
 	}
-	if err := generator.loadVPCLatticeServiceNetworkVpcAssociations(client, ""); err != nil {
+	if err := generator.loadVPCLatticeServiceNetworkVpcAssociations(client, "", "123456789012"); err != nil {
 		t.Fatalf("loadVPCLatticeServiceNetworkVpcAssociations empty ID returned error: %v", err)
 	}
 	if len(generator.Resources) != 0 {
 		t.Fatalf("len(Resources) after empty IDs = %d, want 0", len(generator.Resources))
 	}
 
-	if err := generator.loadVPCLatticeServiceNetworkServiceAssociations(client, "sn-123"); err != nil {
+	if err := generator.loadVPCLatticeServiceNetworkServiceAssociations(client, "sn-123", "123456789012"); err != nil {
 		t.Fatalf("loadVPCLatticeServiceNetworkServiceAssociations returned error: %v", err)
 	}
-	if err := generator.loadVPCLatticeServiceNetworkVpcAssociations(client, "sn-123"); err != nil {
+	if err := generator.loadVPCLatticeServiceNetworkVpcAssociations(client, "sn-123", "123456789012"); err != nil {
 		t.Fatalf("loadVPCLatticeServiceNetworkVpcAssociations returned error: %v", err)
 	}
 	if got := requests["/servicenetworkserviceassociations"]; got != 1 {

@@ -53,7 +53,7 @@ func (g *VPCLatticeGenerator) InitResources() error {
 	loadResourcePolicies := g.shouldLoadVPCLatticeResource(vpclatticeResourcePolicyResourceType)
 	loadAccessLogSubscriptions := g.shouldLoadVPCLatticeResource(vpclatticeAccessLogSubscriptionResourceType)
 
-	needOwnedResourceFilter := loadServiceNetworks || loadServices || loadListeners || loadListenerRules || loadAuthPolicies || loadResourcePolicies || loadAccessLogSubscriptions
+	needOwnedResourceFilter := loadServiceNetworks || loadServices || loadListeners || loadListenerRules || loadServiceNetworkServiceAssociations || loadServiceNetworkVpcAssociations || loadAuthPolicies || loadResourcePolicies || loadAccessLogSubscriptions
 	callerAccountID := ""
 	if needOwnedResourceFilter {
 		accountID, err := g.getAccountNumber(config)
@@ -94,12 +94,12 @@ func (g *VPCLatticeGenerator) InitResources() error {
 				}
 			}
 			if loadServiceNetworkServiceAssociations {
-				if err := g.loadVPCLatticeServiceNetworkServiceAssociations(svc, resourceID); err != nil {
+				if err := g.loadVPCLatticeServiceNetworkServiceAssociations(svc, resourceID, callerAccountID); err != nil {
 					return err
 				}
 			}
 			if loadServiceNetworkVpcAssociations {
-				if err := g.loadVPCLatticeServiceNetworkVpcAssociations(svc, resourceID); err != nil {
+				if err := g.loadVPCLatticeServiceNetworkVpcAssociations(svc, resourceID, callerAccountID); err != nil {
 					return err
 				}
 			}
@@ -274,7 +274,7 @@ func (g *VPCLatticeGenerator) loadVPCLatticeListenerRules(svc *vpclattice.Client
 	return nil
 }
 
-func (g *VPCLatticeGenerator) loadVPCLatticeServiceNetworkServiceAssociations(svc *vpclattice.Client, serviceNetworkID string) error {
+func (g *VPCLatticeGenerator) loadVPCLatticeServiceNetworkServiceAssociations(svc *vpclattice.Client, serviceNetworkID, accountID string) error {
 	if serviceNetworkID == "" {
 		return nil
 	}
@@ -287,7 +287,7 @@ func (g *VPCLatticeGenerator) loadVPCLatticeServiceNetworkServiceAssociations(sv
 			return err
 		}
 		for _, association := range output.Items {
-			if resource, ok := newVPCLatticeServiceNetworkServiceAssociationResource(association); ok {
+			if resource, ok := newVPCLatticeServiceNetworkServiceAssociationResource(association, accountID); ok {
 				g.Resources = append(g.Resources, resource)
 			}
 		}
@@ -299,7 +299,7 @@ func (g *VPCLatticeGenerator) loadVPCLatticeServiceNetworkServiceAssociations(sv
 	return nil
 }
 
-func (g *VPCLatticeGenerator) loadVPCLatticeServiceNetworkVpcAssociations(svc *vpclattice.Client, serviceNetworkID string) error {
+func (g *VPCLatticeGenerator) loadVPCLatticeServiceNetworkVpcAssociations(svc *vpclattice.Client, serviceNetworkID, accountID string) error {
 	if serviceNetworkID == "" {
 		return nil
 	}
@@ -312,7 +312,7 @@ func (g *VPCLatticeGenerator) loadVPCLatticeServiceNetworkVpcAssociations(svc *v
 			return err
 		}
 		for _, association := range output.Items {
-			if resource, ok := newVPCLatticeServiceNetworkVpcAssociationResource(association); ok {
+			if resource, ok := newVPCLatticeServiceNetworkVpcAssociationResource(association, accountID); ok {
 				g.Resources = append(g.Resources, resource)
 			}
 		}
@@ -496,11 +496,11 @@ func vpclatticeListenerRuleImportID(serviceID, listenerID, ruleID string) string
 	return fmt.Sprintf("%s/%s/%s", serviceID, listenerID, ruleID)
 }
 
-func newVPCLatticeServiceNetworkServiceAssociationResource(association vpclatticetypes.ServiceNetworkServiceAssociationSummary) (terraformutils.Resource, bool) {
+func newVPCLatticeServiceNetworkServiceAssociationResource(association vpclatticetypes.ServiceNetworkServiceAssociationSummary, accountID string) (terraformutils.Resource, bool) {
 	id := StringValue(association.Id)
 	serviceID := StringValue(association.ServiceId)
 	serviceNetworkID := StringValue(association.ServiceNetworkId)
-	if id == "" || serviceID == "" || serviceNetworkID == "" || !vpclatticeServiceNetworkServiceAssociationStatusImportable(association.Status) {
+	if id == "" || serviceID == "" || serviceNetworkID == "" || accountID == "" || StringValue(association.CreatedBy) != accountID || !vpclatticeServiceNetworkServiceAssociationStatusImportable(association.Status) {
 		return terraformutils.Resource{}, false
 	}
 	return terraformutils.NewResource(
@@ -520,11 +520,11 @@ func vpclatticeServiceNetworkServiceAssociationStatusImportable(status vpclattic
 	return status == vpclatticetypes.ServiceNetworkServiceAssociationStatusActive
 }
 
-func newVPCLatticeServiceNetworkVpcAssociationResource(association vpclatticetypes.ServiceNetworkVpcAssociationSummary) (terraformutils.Resource, bool) {
+func newVPCLatticeServiceNetworkVpcAssociationResource(association vpclatticetypes.ServiceNetworkVpcAssociationSummary, accountID string) (terraformutils.Resource, bool) {
 	id := StringValue(association.Id)
 	serviceNetworkID := StringValue(association.ServiceNetworkId)
 	vpcID := StringValue(association.VpcId)
-	if id == "" || serviceNetworkID == "" || vpcID == "" || !vpclatticeServiceNetworkVpcAssociationStatusImportable(association.Status) {
+	if id == "" || serviceNetworkID == "" || vpcID == "" || accountID == "" || StringValue(association.CreatedBy) != accountID || !vpclatticeServiceNetworkVpcAssociationStatusImportable(association.Status) {
 		return terraformutils.Resource{}, false
 	}
 	return terraformutils.NewResource(
