@@ -129,6 +129,23 @@ func TestVPCLatticeResourceConstructors(t *testing.T) {
 			wantExists:     true,
 		},
 		{
+			name: "service network service association with shared service",
+			resource: newTerraformResourceResult(newVPCLatticeServiceNetworkServiceAssociationResource(vpclatticetypes.ServiceNetworkServiceAssociationSummary{
+				Id:                aws.String("snsa-123"),
+				CreatedBy:         aws.String("123456789012"),
+				ServiceArn:        aws.String("arn:aws:vpc-lattice:us-east-1:210987654321:service/svc-123"),
+				ServiceId:         aws.String("svc-123"),
+				ServiceNetworkId:  aws.String("sn-123"),
+				ServiceNetworkArn: aws.String("arn:aws:vpc-lattice:us-east-1:123456789012:servicenetwork/sn-123"),
+				Status:            vpclatticetypes.ServiceNetworkServiceAssociationStatusActive,
+			}, "123456789012")),
+			wantID:         "snsa-123",
+			wantType:       vpclatticeServiceNetworkServiceAssociationResourceType,
+			wantAttr:       map[string]string{"service_identifier": "svc-123", "service_network_identifier": "arn:aws:vpc-lattice:us-east-1:123456789012:servicenetwork/sn-123"},
+			wantAdditional: map[string]interface{}{"service_network_identifier": "arn:aws:vpc-lattice:us-east-1:123456789012:servicenetwork/sn-123"},
+			wantExists:     true,
+		},
+		{
 			name: "service network service association from another account",
 			resource: newTerraformResourceResult(newVPCLatticeServiceNetworkServiceAssociationResource(vpclatticetypes.ServiceNetworkServiceAssociationSummary{
 				Id:               aws.String("snsa-123"),

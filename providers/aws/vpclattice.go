@@ -451,7 +451,7 @@ func vpclatticeResourceOwnedByAccount(resourceARN, accountID string) bool {
 	return parsedARN.AccountID == accountID
 }
 
-func vpclatticeServiceNetworkAssociationIdentifier(serviceNetworkID, serviceNetworkARN, accountID string) (string, map[string]interface{}) {
+func vpclatticeServiceNetworkAssociationIdentifier(serviceNetworkID, serviceNetworkARN, associatedResourceARN, accountID string) (string, map[string]interface{}) {
 	additionalFields := map[string]interface{}{}
 	if serviceNetworkID == "" {
 		return "", additionalFields
@@ -460,7 +460,18 @@ func vpclatticeServiceNetworkAssociationIdentifier(serviceNetworkID, serviceNetw
 		return serviceNetworkID, additionalFields
 	}
 	parsedARN, err := arn.Parse(serviceNetworkARN)
-	if err != nil || parsedARN.AccountID == "" || parsedARN.AccountID == accountID {
+	if err != nil || parsedARN.AccountID == "" {
+		return serviceNetworkID, additionalFields
+	}
+
+	useARN := parsedARN.AccountID != accountID
+	if associatedResourceARN != "" {
+		associatedARN, err := arn.Parse(associatedResourceARN)
+		if err == nil && associatedARN.AccountID != "" && associatedARN.AccountID != parsedARN.AccountID {
+			useARN = true
+		}
+	}
+	if !useARN {
 		return serviceNetworkID, additionalFields
 	}
 
@@ -517,7 +528,7 @@ func newVPCLatticeServiceNetworkServiceAssociationResource(association vpclattic
 	id := StringValue(association.Id)
 	serviceID := StringValue(association.ServiceId)
 	serviceNetworkID := StringValue(association.ServiceNetworkId)
-	serviceNetworkIdentifier, additionalFields := vpclatticeServiceNetworkAssociationIdentifier(serviceNetworkID, StringValue(association.ServiceNetworkArn), accountID)
+	serviceNetworkIdentifier, additionalFields := vpclatticeServiceNetworkAssociationIdentifier(serviceNetworkID, StringValue(association.ServiceNetworkArn), StringValue(association.ServiceArn), accountID)
 	if id == "" || serviceID == "" || serviceNetworkID == "" || accountID == "" || StringValue(association.CreatedBy) != accountID || !vpclatticeServiceNetworkServiceAssociationStatusImportable(association.Status) {
 		return terraformutils.Resource{}, false
 	}
@@ -541,7 +552,7 @@ func vpclatticeServiceNetworkServiceAssociationStatusImportable(status vpclattic
 func newVPCLatticeServiceNetworkVpcAssociationResource(association vpclatticetypes.ServiceNetworkVpcAssociationSummary, accountID string) (terraformutils.Resource, bool) {
 	id := StringValue(association.Id)
 	serviceNetworkID := StringValue(association.ServiceNetworkId)
-	serviceNetworkIdentifier, additionalFields := vpclatticeServiceNetworkAssociationIdentifier(serviceNetworkID, StringValue(association.ServiceNetworkArn), accountID)
+	serviceNetworkIdentifier, additionalFields := vpclatticeServiceNetworkAssociationIdentifier(serviceNetworkID, StringValue(association.ServiceNetworkArn), "", accountID)
 	vpcID := StringValue(association.VpcId)
 	if id == "" || serviceNetworkID == "" || vpcID == "" || accountID == "" || StringValue(association.CreatedBy) != accountID || !vpclatticeServiceNetworkVpcAssociationStatusImportable(association.Status) {
 		return terraformutils.Resource{}, false
