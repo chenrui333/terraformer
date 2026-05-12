@@ -41,6 +41,11 @@ var SupportedEastOnlyResources = []string{
 	"wafv2_cloudfront",
 }
 
+// SupportedChatbotResources should be imported once per effective AWS Chatbot API region.
+var SupportedChatbotResources = []string{
+	"chatbot",
+}
+
 func (p AWSProvider) GetResourceConnections() map[string]map[string][]string {
 	return map[string]map[string][]string{
 		"alb": {

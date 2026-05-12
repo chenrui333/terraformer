@@ -27,7 +27,7 @@ func (g *ChatbotGenerator) InitResources() error {
 	if e != nil {
 		return e
 	}
-	config.Region = chatbotAPIRegion(config.Region)
+	config.Region = ChatbotAPIRegion(config.Region)
 	svc := chatbot.NewFromConfig(config)
 	return g.loadSlackChannelConfigurations(svc)
 }
@@ -89,7 +89,8 @@ func chatbotResourceName(parts ...string) string {
 	return resourceNameWithLengthPrefixes(parts...)
 }
 
-func chatbotAPIRegion(region string) string {
+// ChatbotAPIRegion returns the AWS Chatbot API region used by the Terraform AWS provider.
+func ChatbotAPIRegion(region string) string {
 	switch region {
 	case "us-east-2", "us-west-2", "eu-west-1", "ap-southeast-1":
 		return region
