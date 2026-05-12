@@ -517,6 +517,7 @@ github.com/envoyproxy/go-control-plane/ratelimit v0.1.0 h1:/G9QYbddjL25KvtKTv3an
 github.com/envoyproxy/go-control-plane/ratelimit v0.1.0/go.mod h1:Wk+tMFAFbCXaJPzVVHnPgRKdUdwW/KdbRt94AzgRee4=
 github.com/envoyproxy/protoc-gen-validate v1.3.3 h1:MVQghNeW+LZcmXe7SY1V36Z+WFMDjpqGAGacLe2T0ds=
 github.com/envoyproxy/protoc-gen-validate v1.3.3/go.mod h1:TsndJ/ngyIdQRhMcVVGDDHINPLWB7C82oDArY51KfB0=
+github.com/fastly/go-fastly/v14 v14.2.0/go.mod h1:y8i+aF/rOFCAc++u6QLDiHbLV+cMHHkDnXwR5Jq7QVY=
 github.com/fastly/go-fastly/v7 v7.5.5 h1:M3ePbU6a8BTPZzjaPoU4+O+pQspiBalF5HgVNomHlJI=
 github.com/fastly/go-fastly/v7 v7.5.5/go.mod h1:/Z2GD7NuxV3vVMAyrtckg1WvZVnCuM2Z8ok/z70XTEQ=
 github.com/fatih/color v1.13.0/go.mod h1:kLAiJbzzSOZDVNGyDpeOxJ47H46qBXwg5ILebYFFOfk=
