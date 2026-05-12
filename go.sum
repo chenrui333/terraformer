@@ -180,6 +180,7 @@ github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:l
 github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef/go.mod h1:WaHUgvxTVq04UNunO+XhnAqY/wQc+bxr74GqbsZ/Jqw=
 github.com/auth0/go-auth0 v1.40.0 h1:3uIoLXSOrL3ww83gg16tfOz0jJa32s5Rgtv5oWwEAHQ=
 github.com/auth0/go-auth0 v1.40.0/go.mod h1:32sQB1uAn+99fJo6N819EniKq8h785p0ag0lMWhiTaE=
+github.com/auth0/go-auth0/v2 v2.10.0/go.mod h1:Q/Y3VZVoI3sw87VyTPhx2TQL6Sq4Q/iCP67rW2gcn+M=
 github.com/avast/retry-go v3.0.0+incompatible h1:4SOWQ7Qs+oroOTQOYnAHqelpCO0biHSxpiH9JdtuBj0=
 github.com/avast/retry-go v3.0.0+incompatible/go.mod h1:XtSnn+n/sHqQIpZ10K1qAevBhOOCWBLXXy3hyiqqBrY=
 github.com/aws/aws-sdk-go v1.34.28/go.mod h1:H7NKnBqNVzoTJpGfLrQkkD+ytBA93eiDYi/+8rV9s48=
