@@ -10,6 +10,7 @@ import (
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
+	"github.com/aws/aws-sdk-go-v2/aws/arn"
 	"github.com/aws/aws-sdk-go-v2/service/vpclattice"
 	vpclatticetypes "github.com/aws/aws-sdk-go-v2/service/vpclattice/types"
 	"github.com/aws/smithy-go"
@@ -52,6 +53,16 @@ func (g *VPCLatticeGenerator) InitResources() error {
 	loadResourcePolicies := g.shouldLoadVPCLatticeResource(vpclatticeResourcePolicyResourceType)
 	loadAccessLogSubscriptions := g.shouldLoadVPCLatticeResource(vpclatticeAccessLogSubscriptionResourceType)
 
+	needOwnedResourceFilter := loadServiceNetworks || loadServices || loadListeners || loadListenerRules || loadAuthPolicies || loadResourcePolicies || loadAccessLogSubscriptions
+	callerAccountID := ""
+	if needOwnedResourceFilter {
+		accountID, err := g.getAccountNumber(config)
+		if err != nil {
+			return err
+		}
+		callerAccountID = StringValue(accountID)
+	}
+
 	needServiceNetworks := loadServiceNetworks || loadServiceNetworkServiceAssociations || loadServiceNetworkVpcAssociations || loadAuthPolicies || loadResourcePolicies || loadAccessLogSubscriptions
 	if needServiceNetworks {
 		serviceNetworks, err := g.listVPCLatticeServiceNetworks(svc)
@@ -59,24 +70,25 @@ func (g *VPCLatticeGenerator) InitResources() error {
 			return err
 		}
 		for _, serviceNetwork := range serviceNetworks {
-			if loadServiceNetworks {
+			resourceID := StringValue(serviceNetwork.Id)
+			resourceARN := StringValue(serviceNetwork.Arn)
+			resourceOwnedByAccount := vpclatticeResourceOwnedByAccount(resourceARN, callerAccountID)
+			if loadServiceNetworks && resourceOwnedByAccount {
 				if resource, ok := newVPCLatticeServiceNetworkResource(serviceNetwork); ok {
 					g.Resources = append(g.Resources, resource)
 				}
 			}
-			resourceID := StringValue(serviceNetwork.Id)
-			resourceARN := StringValue(serviceNetwork.Arn)
-			if loadAuthPolicies {
+			if loadAuthPolicies && resourceOwnedByAccount {
 				if err := g.loadVPCLatticeAuthPolicy(svc, resourceARN); err != nil {
 					return err
 				}
 			}
-			if loadResourcePolicies {
+			if loadResourcePolicies && resourceOwnedByAccount {
 				if err := g.loadVPCLatticeResourcePolicy(svc, resourceARN); err != nil {
 					return err
 				}
 			}
-			if loadAccessLogSubscriptions {
+			if loadAccessLogSubscriptions && resourceOwnedByAccount {
 				if err := g.loadVPCLatticeAccessLogSubscriptions(svc, resourceID); err != nil {
 					return err
 				}
@@ -104,13 +116,16 @@ func (g *VPCLatticeGenerator) InitResources() error {
 			if !vpclatticeServiceStatusImportable(service.Status) {
 				continue
 			}
+			serviceID := StringValue(service.Id)
+			serviceARN := StringValue(service.Arn)
+			if !vpclatticeResourceOwnedByAccount(serviceARN, callerAccountID) {
+				continue
+			}
 			if loadServices {
 				if resource, ok := newVPCLatticeServiceResource(service); ok {
 					g.Resources = append(g.Resources, resource)
 				}
 			}
-			serviceID := StringValue(service.Id)
-			serviceARN := StringValue(service.Arn)
 			if loadAuthPolicies {
 				if err := g.loadVPCLatticeAuthPolicy(svc, serviceARN); err != nil {
 					return err
@@ -423,6 +438,17 @@ func newVPCLatticeTargetGroupResource(targetGroup vpclatticetypes.TargetGroupSum
 
 func vpclatticeTargetGroupStatusImportable(status vpclatticetypes.TargetGroupStatus) bool {
 	return status == vpclatticetypes.TargetGroupStatusActive
+}
+
+func vpclatticeResourceOwnedByAccount(resourceARN, accountID string) bool {
+	if resourceARN == "" || accountID == "" {
+		return false
+	}
+	parsedARN, err := arn.Parse(resourceARN)
+	if err != nil {
+		return false
+	}
+	return parsedARN.AccountID == accountID
 }
 
 func newVPCLatticeListenerResource(serviceID string, listener vpclatticetypes.ListenerSummary) (terraformutils.Resource, bool) {

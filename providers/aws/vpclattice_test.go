@@ -207,6 +207,54 @@ func TestVPCLatticeResourceNameWithLengthsAvoidsSanitizedCollisions(t *testing.T
 	}
 }
 
+func TestVPCLatticeResourceOwnedByAccount(t *testing.T) {
+	tests := []struct {
+		name      string
+		arn       string
+		accountID string
+		want      bool
+	}{
+		{
+			name:      "owned service network",
+			arn:       "arn:aws:vpc-lattice:us-east-1:123456789012:servicenetwork/sn-123",
+			accountID: "123456789012",
+			want:      true,
+		},
+		{
+			name:      "shared service network",
+			arn:       "arn:aws:vpc-lattice:us-east-1:210987654321:servicenetwork/sn-123",
+			accountID: "123456789012",
+			want:      false,
+		},
+		{
+			name:      "owned service",
+			arn:       "arn:aws:vpc-lattice:us-east-1:123456789012:service/svc-123",
+			accountID: "123456789012",
+			want:      true,
+		},
+		{
+			name:      "empty account",
+			arn:       "arn:aws:vpc-lattice:us-east-1:123456789012:service/svc-123",
+			accountID: "",
+			want:      false,
+		},
+		{
+			name:      "invalid arn",
+			arn:       "svc-123",
+			accountID: "123456789012",
+			want:      false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := vpclatticeResourceOwnedByAccount(tt.arn, tt.accountID); got != tt.want {
+				t.Fatalf("vpclatticeResourceOwnedByAccount() = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestVPCLatticeOptionalResourceUnavailable(t *testing.T) {
 	tests := []struct {
 		name string
