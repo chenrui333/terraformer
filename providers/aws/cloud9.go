@@ -159,11 +159,19 @@ func cloud9ShouldLoadEnvironmentMemberships(filters []terraformutils.ResourceFil
 }
 
 func cloud9EnvironmentIDFilter(filters []terraformutils.ResourceFilter) map[string]bool {
+	if cloud9HasEnvironmentScanAttributeFilter(filters) {
+		return nil
+	}
 	membershipEnvironmentIDs, ok := cloud9EnvironmentIDsFromMembershipFilterValues(awsTypedIDFilterValues(filters, cloud9EnvironmentMembershipResourceType))
 	if !ok {
 		return nil
 	}
 	return awsMergeIDFilterValues(awsTypedIDFilterValues(filters, cloud9EnvironmentEC2ResourceType), membershipEnvironmentIDs)
+}
+
+func cloud9HasEnvironmentScanAttributeFilter(filters []terraformutils.ResourceFilter) bool {
+	return awsHasApplicableNonIDFilter(filters, cloud9EnvironmentEC2ResourceType) ||
+		awsHasApplicableNonIDFilter(filters, cloud9EnvironmentMembershipResourceType)
 }
 
 func cloud9EnvironmentIDsFromMembershipFilterValues(membershipIDs map[string]bool) (map[string]bool, bool) {

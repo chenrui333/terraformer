@@ -193,8 +193,12 @@ func dataPipelineDefinitionPipelineID(resource terraformutils.Resource) string {
 }
 
 func dataPipelinePipelineIDFilter(filters []terraformutils.ResourceFilter) map[string]bool {
+	pipelineIDs := awsTypedIDFilterValues(filters, dataPipelinePipelineResourceType)
+	if len(pipelineIDs) == 0 && awsHasApplicableNonIDFilter(filters, dataPipelinePipelineResourceType) {
+		return nil
+	}
 	return awsMergeIDFilterValues(
-		awsTypedIDFilterValues(filters, dataPipelinePipelineResourceType),
+		pipelineIDs,
 		dataPipelineDefinitionPipelineIDFilter(filters),
 	)
 }

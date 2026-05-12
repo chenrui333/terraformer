@@ -251,7 +251,7 @@ func deviceFarmShouldLoadInstanceProfiles(filters []terraformutils.ResourceFilte
 }
 
 func deviceFarmProjectIDFilter(filters []terraformutils.ResourceFilter) map[string]bool {
-	if deviceFarmHasProjectScopedChildAttributeFilter(filters) {
+	if deviceFarmHasProjectScanAttributeFilter(filters) {
 		return nil
 	}
 	projectARNs, ok := deviceFarmProjectARNsFromChildFilterValues(filters)
@@ -261,13 +261,14 @@ func deviceFarmProjectIDFilter(filters []terraformutils.ResourceFilter) map[stri
 	return awsMergeIDFilterValues(awsTypedIDFilterValues(filters, deviceFarmProjectResourceType), projectARNs)
 }
 
-func deviceFarmHasProjectScopedChildAttributeFilter(filters []terraformutils.ResourceFilter) bool {
+func deviceFarmHasProjectScanAttributeFilter(filters []terraformutils.ResourceFilter) bool {
 	for _, resourceType := range []string{
+		deviceFarmProjectResourceType,
 		deviceFarmDevicePoolResourceType,
 		deviceFarmNetworkProfileResourceType,
 		deviceFarmUploadResourceType,
 	} {
-		if awsHasTypedNonIDFilter(filters, resourceType) {
+		if awsHasApplicableNonIDFilter(filters, resourceType) {
 			return true
 		}
 	}

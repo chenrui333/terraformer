@@ -85,6 +85,19 @@ func TestDataPipelinePipelineIDFilterIncludesDefinitionIDs(t *testing.T) {
 	}
 }
 
+func TestDataPipelinePipelineIDFilterAllowsAllForPipelineAttributeFilters(t *testing.T) {
+	service := terraformutils.Service{}
+	service.ParseFilters([]string{
+		"Type=datapipeline_pipeline;Name=name;Value=daily-import",
+		"Type=datapipeline_pipeline_definition;Name=pipeline_id;Value=df-456",
+	})
+
+	filter := dataPipelinePipelineIDFilter(service.Filter)
+	if !awsIDFilterAllows(filter, "df-123") {
+		t.Fatalf("Data Pipeline pipeline attribute filter should disable prefilter: %#v", filter)
+	}
+}
+
 func TestDataPipelineShouldEmitPipelineSkipsDefinitionOnlyFilters(t *testing.T) {
 	service := terraformutils.Service{}
 	service.ParseFilters([]string{"Type=datapipeline_pipeline_definition;Name=pipeline_id;Value=df-123"})

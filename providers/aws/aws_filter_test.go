@@ -64,6 +64,7 @@ func TestAWSTypedFilterValuesAndApplicability(t *testing.T) {
 	service := terraformutils.Service{}
 	service.ParseFilters([]string{
 		"Name=id;Value=global-id",
+		"Name=name;Value=global-name",
 		"Type=datapipeline_pipeline_definition;Name=pipeline_id;Value=df-123",
 		"Type=cloud9_environment_membership;Name=id;Value=env-123#arn:aws:iam::123456789012:user/alice",
 	})
@@ -80,6 +81,9 @@ func TestAWSTypedFilterValuesAndApplicability(t *testing.T) {
 	}
 	if !awsHasTypedNonIDFilter(service.Filter, dataPipelinePipelineDefinitionResourceType) {
 		t.Fatal("expected Data Pipeline definition typed non-ID filter")
+	}
+	if !awsHasApplicableNonIDFilter(service.Filter, qldbLedgerResourceType) {
+		t.Fatal("expected global non-ID filter to apply to QLDB ledger")
 	}
 	if awsHasTypedNonIDFilter(service.Filter, cloud9EnvironmentMembershipResourceType) {
 		t.Fatal("unexpected Cloud9 membership typed non-ID filter")

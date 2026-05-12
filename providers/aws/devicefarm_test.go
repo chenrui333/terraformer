@@ -191,6 +191,32 @@ func TestDeviceFarmProjectIDFilterAllowsAllForChildAttributeFilters(t *testing.T
 	}
 }
 
+func TestDeviceFarmProjectIDFilterAllowsAllForProjectAttributeFilters(t *testing.T) {
+	service := terraformutils.Service{}
+	service.ParseFilters([]string{
+		"Type=devicefarm_project;Name=name;Value=core",
+		"devicefarm_device_pool='arn:aws:devicefarm:us-west-2:123456789012:devicepool:project-child/device-pool-id'",
+	})
+
+	filter := deviceFarmProjectIDFilter(service.Filter)
+	if !awsIDFilterAllows(filter, "arn:aws:devicefarm:us-west-2:123456789012:project:project-other") {
+		t.Fatalf("Device Farm project attribute filters should disable project prefilter: %#v", filter)
+	}
+}
+
+func TestDeviceFarmProjectIDFilterAllowsAllForGlobalAttributeFilters(t *testing.T) {
+	service := terraformutils.Service{}
+	service.ParseFilters([]string{
+		"Name=name;Value=core",
+		"devicefarm_device_pool='arn:aws:devicefarm:us-west-2:123456789012:devicepool:project-child/device-pool-id'",
+	})
+
+	filter := deviceFarmProjectIDFilter(service.Filter)
+	if !awsIDFilterAllows(filter, "arn:aws:devicefarm:us-west-2:123456789012:project:project-other") {
+		t.Fatalf("global Device Farm attribute filters should disable project prefilter: %#v", filter)
+	}
+}
+
 func TestDeviceFarmTypedFiltersLoadOnlyRequestedFamilies(t *testing.T) {
 	service := terraformutils.Service{}
 	service.ParseFilters([]string{
