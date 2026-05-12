@@ -177,15 +177,15 @@ func TestEfsResourceConstructors(t *testing.T) {
 			wantExists: true,
 		},
 		{
-			name: "replication configuration local destination",
+			name: "replication configuration destination region uses canonical source",
 			resource: newTerraformResourceResult(newEFSReplicationConfigurationResource(efstypes.ReplicationConfigurationDescription{
 				SourceFileSystemId: aws.String("fs-source"),
 				Destinations: []efstypes.Destination{
 					{FileSystemId: aws.String("fs-destination"), Region: aws.String("us-west-2"), Status: efstypes.ReplicationStatusEnabled},
 				},
 			}, "us-west-2")),
-			wantID:     "fs-destination",
-			wantName:   terraformutils.TfSanitize("fs-destination"),
+			wantID:     "fs-source",
+			wantName:   terraformutils.TfSanitize("fs-source"),
 			wantType:   efsReplicationConfigurationResourceType,
 			wantAttr:   map[string]string{"source_file_system_id": "fs-source"},
 			wantExists: true,
@@ -199,18 +199,18 @@ func TestEfsResourceConstructors(t *testing.T) {
 					{FileSystemId: aws.String("fs-destination"), Region: aws.String("us-west-2"), Status: efstypes.ReplicationStatusEnabled},
 				},
 			}, "us-west-2")),
-			wantID:     "fs-destination",
-			wantName:   terraformutils.TfSanitize("fs-destination"),
+			wantID:     "fs-source",
+			wantName:   terraformutils.TfSanitize("fs-source"),
 			wantType:   efsReplicationConfigurationResourceType,
 			wantAttr:   map[string]string{"source_file_system_id": "fs-source"},
 			wantExists: true,
 		},
 		{
-			name: "replication configuration skips transient local destination",
+			name: "replication configuration skips when no destination is importable",
 			resource: newTerraformResourceResult(newEFSReplicationConfigurationResource(efstypes.ReplicationConfigurationDescription{
 				SourceFileSystemId: aws.String("fs-source"),
 				Destinations: []efstypes.Destination{
-					{FileSystemId: aws.String("fs-other"), Region: aws.String("us-east-1"), Status: efstypes.ReplicationStatusEnabled},
+					{FileSystemId: aws.String("fs-other"), Region: aws.String("us-east-1"), Status: efstypes.ReplicationStatusDeleting},
 					{FileSystemId: aws.String("fs-destination"), Region: aws.String("us-west-2"), Status: efstypes.ReplicationStatusDeleting},
 				},
 			}, "us-west-2")),

@@ -261,12 +261,12 @@ func efsBackupPolicyStatusImportable(status efstypes.Status) bool {
 	return status == efstypes.StatusEnabled || status == efstypes.StatusDisabled
 }
 
-func newEFSReplicationConfigurationResource(replication efstypes.ReplicationConfigurationDescription, localRegion string) (terraformutils.Resource, bool) {
+func newEFSReplicationConfigurationResource(replication efstypes.ReplicationConfigurationDescription, _ string) (terraformutils.Resource, bool) {
 	sourceFileSystemID := StringValue(replication.SourceFileSystemId)
 	if sourceFileSystemID == "" {
 		return terraformutils.Resource{}, false
 	}
-	importID, ok := efsReplicationConfigurationImportID(replication, localRegion)
+	importID, ok := efsReplicationConfigurationImportID(replication)
 	if !ok {
 		return terraformutils.Resource{}, false
 	}
@@ -282,22 +282,10 @@ func newEFSReplicationConfigurationResource(replication efstypes.ReplicationConf
 		map[string]interface{}{}), true
 }
 
-func efsReplicationConfigurationImportID(replication efstypes.ReplicationConfigurationDescription, localRegion string) (string, bool) {
+func efsReplicationConfigurationImportID(replication efstypes.ReplicationConfigurationDescription) (string, bool) {
 	sourceFileSystemID := StringValue(replication.SourceFileSystemId)
 	if sourceFileSystemID == "" {
 		return "", false
-	}
-	if localRegion != "" {
-		for _, destination := range replication.Destinations {
-			destinationFileSystemID := StringValue(destination.FileSystemId)
-			if destinationFileSystemID == "" || StringValue(destination.Region) != localRegion {
-				continue
-			}
-			if !efsReplicationStatusImportable(destination.Status) {
-				return "", false
-			}
-			return destinationFileSystemID, true
-		}
 	}
 	for _, destination := range replication.Destinations {
 		destinationFileSystemID := StringValue(destination.FileSystemId)
