@@ -362,6 +362,7 @@ func (p *AWSProvider) GetSupportedService() map[string]terraformutils.ServiceGen
 		"lakeformation":         &AwsFacade{service: &LakeFormationGenerator{}},
 		"lambda":                &AwsFacade{service: &LambdaGenerator{}},
 		"logs":                  &AwsFacade{service: &LogsGenerator{}},
+		"media_convert":         &AwsFacade{service: &MediaConvertGenerator{}},
 		"media_package":         &AwsFacade{service: &MediaPackageGenerator{}},
 		"media_packagev2":       &AwsFacade{service: &MediaPackageV2Generator{}},
 		"media_store":           &AwsFacade{service: &MediaStoreGenerator{}},

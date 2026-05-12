@@ -41,12 +41,14 @@ type ProviderWrapper struct {
 	schema       *providerproto.GetProviderSchemaResponse
 	retryCount   int
 	retrySleepMs int
+	verbose      bool
 }
 
 func NewProviderWrapper(providerName string, providerConfig cty.Value, verbose bool, options ...map[string]int) (*ProviderWrapper, error) {
 	p := &ProviderWrapper{retryCount: 5, retrySleepMs: 300}
 	p.providerName = providerName
 	p.config = providerConfig
+	p.verbose = verbose
 
 	if len(options) > 0 {
 		retryCount, hasOption := options[0]["retryCount"]
@@ -65,7 +67,9 @@ func NewProviderWrapper(providerName string, providerConfig cty.Value, verbose b
 }
 
 func (p *ProviderWrapper) Kill() {
-	p.client.Kill()
+	if p.client != nil {
+		p.client.Kill()
+	}
 }
 
 func (p *ProviderWrapper) GetSchema() *providerproto.GetProviderSchemaResponse {
@@ -302,6 +306,33 @@ func (p *ProviderWrapper) initProvider(verbose bool) error {
 
 	p.Provider = raw.(*providerproto.GRPCProvider)
 
+	return p.configureProvider()
+}
+
+func (p *ProviderWrapper) Restart() error {
+	replacement := &ProviderWrapper{
+		providerName: p.providerName,
+		config:       p.config,
+		retryCount:   p.retryCount,
+		retrySleepMs: p.retrySleepMs,
+		verbose:      p.verbose,
+	}
+	if err := replacement.initProvider(p.verbose); err != nil {
+		replacement.Kill()
+		return err
+	}
+
+	if p.client != nil {
+		p.client.Kill()
+	}
+	p.Provider = replacement.Provider
+	p.client = replacement.client
+	p.rpcClient = replacement.rpcClient
+	p.schema = replacement.schema
+	return nil
+}
+
+func (p *ProviderWrapper) configureProvider() error {
 	config, err := p.GetSchema().Provider.Block.CoerceValue(p.config)
 	if err != nil {
 		return err
@@ -313,7 +344,6 @@ func (p *ProviderWrapper) initProvider(verbose bool) error {
 	if configureResp.Diagnostics.HasErrors() {
 		return configureResp.Diagnostics.Err()
 	}
-
 	return nil
 }
 

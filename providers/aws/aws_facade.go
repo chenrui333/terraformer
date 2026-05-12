@@ -78,3 +78,12 @@ func (s *AwsFacade) PostConvertHook() error {
 func (s *AwsFacade) PopulateIgnoreKeys(providerWrapper *providerwrapper.ProviderWrapper) {
 	s.service.PopulateIgnoreKeys(providerWrapper)
 }
+
+func (s *AwsFacade) ConfigureImportProvider(providerWrapper *providerwrapper.ProviderWrapper) error {
+	if configurer, ok := s.service.(interface {
+		ConfigureImportProvider(*providerwrapper.ProviderWrapper) error
+	}); ok {
+		return configurer.ConfigureImportProvider(providerWrapper)
+	}
+	return nil
+}

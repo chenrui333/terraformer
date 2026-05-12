@@ -10,6 +10,10 @@ import (
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
+const (
+	qldbLedgerResourceType = "aws_qldb_ledger"
+)
+
 var qldbAllowEmptyValues = []string{"tags."}
 
 type QLDBGenerator struct {
@@ -22,8 +26,12 @@ func (g *QLDBGenerator) InitResources() error {
 		return e
 	}
 	svc := qldb.NewFromConfig(config)
+	return g.loadLedgers(svc)
+}
+
+func (g *QLDBGenerator) loadLedgers(svc *qldb.Client) error {
+	ledgerIDFilter := awsTypedIDFilterValues(g.Filter, qldbLedgerResourceType)
 	p := qldb.NewListLedgersPaginator(svc, &qldb.ListLedgersInput{})
-	var resources []terraformutils.Resource
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
 		if err != nil {
@@ -31,14 +39,29 @@ func (g *QLDBGenerator) InitResources() error {
 		}
 		for _, ledger := range page.Ledgers {
 			ledgerName := StringValue(ledger.Name)
-			resources = append(resources, terraformutils.NewSimpleResource(
-				ledgerName,
-				ledgerName,
-				"aws_qldb_ledger",
-				"aws",
-				qldbAllowEmptyValues))
+			if !awsIDFilterAllows(ledgerIDFilter, ledgerName) {
+				continue
+			}
+			if resource, ok := newQLDBLedgerResource(ledgerName); ok {
+				g.Resources = append(g.Resources, resource)
+			}
 		}
 	}
-	g.Resources = resources
 	return nil
+}
+
+func newQLDBLedgerResource(ledgerName string) (terraformutils.Resource, bool) {
+	if ledgerName == "" {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewSimpleResource(
+		qldbLedgerImportID(ledgerName),
+		ledgerName,
+		qldbLedgerResourceType,
+		"aws",
+		qldbAllowEmptyValues), true
+}
+
+func qldbLedgerImportID(ledgerName string) string {
+	return ledgerName
 }
