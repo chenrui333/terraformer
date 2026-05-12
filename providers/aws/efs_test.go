@@ -122,9 +122,23 @@ func TestEfsResourceConstructors(t *testing.T) {
 				Destinations: []efstypes.Destination{
 					{FileSystemId: aws.String("fs-destination"), Status: efstypes.ReplicationStatusEnabled},
 				},
-			})),
+			}, "us-east-1")),
 			wantID:     "fs-source",
 			wantName:   terraformutils.TfSanitize("fs-source"),
+			wantType:   efsReplicationConfigurationResourceType,
+			wantAttr:   map[string]string{"source_file_system_id": "fs-source"},
+			wantExists: true,
+		},
+		{
+			name: "replication configuration local destination",
+			resource: newTerraformResourceResult(newEFSReplicationConfigurationResource(efstypes.ReplicationConfigurationDescription{
+				SourceFileSystemId: aws.String("fs-source"),
+				Destinations: []efstypes.Destination{
+					{FileSystemId: aws.String("fs-destination"), Region: aws.String("us-west-2"), Status: efstypes.ReplicationStatusEnabled},
+				},
+			}, "us-west-2")),
+			wantID:     "fs-destination",
+			wantName:   terraformutils.TfSanitize("fs-destination"),
 			wantType:   efsReplicationConfigurationResourceType,
 			wantAttr:   map[string]string{"source_file_system_id": "fs-source"},
 			wantExists: true,
@@ -135,7 +149,7 @@ func TestEfsResourceConstructors(t *testing.T) {
 				Destinations: []efstypes.Destination{
 					{FileSystemId: aws.String("fs-destination"), Status: efstypes.ReplicationStatusEnabled},
 				},
-			})),
+			}, "us-east-1")),
 			wantExists: false,
 		},
 		{
@@ -145,7 +159,7 @@ func TestEfsResourceConstructors(t *testing.T) {
 				Destinations: []efstypes.Destination{
 					{FileSystemId: aws.String("fs-destination"), Status: efstypes.ReplicationStatusDeleting},
 				},
-			})),
+			}, "us-east-1")),
 			wantExists: false,
 		},
 	}

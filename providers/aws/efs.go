@@ -49,7 +49,7 @@ func (g *EfsGenerator) InitResources() error {
 		}
 	}
 	if g.shouldLoadEFSResource(efsReplicationConfigurationResourceType) {
-		if err := g.loadReplicationConfigurations(svc); err != nil {
+		if err := g.loadReplicationConfigurations(svc, config.Region); err != nil {
 			return err
 		}
 	}
@@ -154,7 +154,7 @@ func (g *EfsGenerator) loadBackupPolicies(svc *efs.Client) error {
 	return nil
 }
 
-func (g *EfsGenerator) loadReplicationConfigurations(svc *efs.Client) error {
+func (g *EfsGenerator) loadReplicationConfigurations(svc *efs.Client, localRegion string) error {
 	p := efs.NewDescribeReplicationConfigurationsPaginator(svc, &efs.DescribeReplicationConfigurationsInput{})
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
@@ -165,7 +165,7 @@ func (g *EfsGenerator) loadReplicationConfigurations(svc *efs.Client) error {
 			return err
 		}
 		for _, replication := range page.Replications {
-			if resource, ok := newEFSReplicationConfigurationResource(replication); ok {
+			if resource, ok := newEFSReplicationConfigurationResource(replication, localRegion); ok {
 				g.Resources = append(g.Resources, resource)
 			}
 		}
@@ -244,7 +244,7 @@ func efsBackupPolicyStatusImportable(status efstypes.Status) bool {
 	return status == efstypes.StatusEnabled || status == efstypes.StatusDisabled
 }
 
-func newEFSReplicationConfigurationResource(replication efstypes.ReplicationConfigurationDescription) (terraformutils.Resource, bool) {
+func newEFSReplicationConfigurationResource(replication efstypes.ReplicationConfigurationDescription, localRegion string) (terraformutils.Resource, bool) {
 	sourceFileSystemID := StringValue(replication.SourceFileSystemId)
 	if sourceFileSystemID == "" || len(replication.Destinations) == 0 {
 		return terraformutils.Resource{}, false
@@ -253,9 +253,13 @@ func newEFSReplicationConfigurationResource(replication efstypes.ReplicationConf
 	if !efsReplicationStatusImportable(destination.Status) {
 		return terraformutils.Resource{}, false
 	}
+	importID := efsReplicationConfigurationImportID(replication, localRegion)
+	if importID == "" {
+		return terraformutils.Resource{}, false
+	}
 	return terraformutils.NewResource(
-		sourceFileSystemID,
-		sourceFileSystemID,
+		importID,
+		importID,
 		efsReplicationConfigurationResourceType,
 		"aws",
 		map[string]string{
@@ -263,6 +267,19 @@ func newEFSReplicationConfigurationResource(replication efstypes.ReplicationConf
 		},
 		efsAllowEmptyValues,
 		map[string]interface{}{}), true
+}
+
+func efsReplicationConfigurationImportID(replication efstypes.ReplicationConfigurationDescription, localRegion string) string {
+	for _, destination := range replication.Destinations {
+		destinationFileSystemID := StringValue(destination.FileSystemId)
+		if destinationFileSystemID == "" {
+			continue
+		}
+		if localRegion != "" && StringValue(destination.Region) == localRegion {
+			return destinationFileSystemID
+		}
+	}
+	return StringValue(replication.SourceFileSystemId)
 }
 
 func efsReplicationStatusImportable(status efstypes.ReplicationStatus) bool {

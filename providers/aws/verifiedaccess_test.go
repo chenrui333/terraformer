@@ -63,7 +63,7 @@ func TestVerifiedAccessResourceConstructors(t *testing.T) {
 			})),
 			wantID:     "vae-123",
 			wantType:   verifiedAccessEndpointResourceType,
-			wantAttr:   map[string]string{"verifiedaccess_group_id": "vag-123"},
+			wantAttr:   map[string]string{"verified_access_group_id": "vag-123"},
 			wantExists: true,
 		},
 		{

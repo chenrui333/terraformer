@@ -165,7 +165,7 @@ func newVerifiedAccessEndpointResource(endpoint ec2types.VerifiedAccessEndpoint)
 		verifiedAccessEndpointResourceType,
 		"aws",
 		map[string]string{
-			"verifiedaccess_group_id": groupID,
+			"verified_access_group_id": groupID,
 		},
 		verifiedAccessAllowEmptyValues,
 		map[string]interface{}{}), true
