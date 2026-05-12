@@ -451,6 +451,23 @@ func vpclatticeResourceOwnedByAccount(resourceARN, accountID string) bool {
 	return parsedARN.AccountID == accountID
 }
 
+func vpclatticeServiceNetworkAssociationIdentifier(serviceNetworkID, serviceNetworkARN, accountID string) (string, map[string]interface{}) {
+	additionalFields := map[string]interface{}{}
+	if serviceNetworkID == "" {
+		return "", additionalFields
+	}
+	if serviceNetworkARN == "" || accountID == "" {
+		return serviceNetworkID, additionalFields
+	}
+	parsedARN, err := arn.Parse(serviceNetworkARN)
+	if err != nil || parsedARN.AccountID == "" || parsedARN.AccountID == accountID {
+		return serviceNetworkID, additionalFields
+	}
+
+	additionalFields["service_network_identifier"] = serviceNetworkARN
+	return serviceNetworkARN, additionalFields
+}
+
 func newVPCLatticeListenerResource(serviceID string, listener vpclatticetypes.ListenerSummary) (terraformutils.Resource, bool) {
 	listenerID := StringValue(listener.Id)
 	if serviceID == "" || listenerID == "" {
@@ -500,6 +517,7 @@ func newVPCLatticeServiceNetworkServiceAssociationResource(association vpclattic
 	id := StringValue(association.Id)
 	serviceID := StringValue(association.ServiceId)
 	serviceNetworkID := StringValue(association.ServiceNetworkId)
+	serviceNetworkIdentifier, additionalFields := vpclatticeServiceNetworkAssociationIdentifier(serviceNetworkID, StringValue(association.ServiceNetworkArn), accountID)
 	if id == "" || serviceID == "" || serviceNetworkID == "" || accountID == "" || StringValue(association.CreatedBy) != accountID || !vpclatticeServiceNetworkServiceAssociationStatusImportable(association.Status) {
 		return terraformutils.Resource{}, false
 	}
@@ -510,10 +528,10 @@ func newVPCLatticeServiceNetworkServiceAssociationResource(association vpclattic
 		"aws",
 		map[string]string{
 			"service_identifier":         serviceID,
-			"service_network_identifier": serviceNetworkID,
+			"service_network_identifier": serviceNetworkIdentifier,
 		},
 		vpclatticeAllowEmptyValues,
-		map[string]interface{}{}), true
+		additionalFields), true
 }
 
 func vpclatticeServiceNetworkServiceAssociationStatusImportable(status vpclatticetypes.ServiceNetworkServiceAssociationStatus) bool {
@@ -523,6 +541,7 @@ func vpclatticeServiceNetworkServiceAssociationStatusImportable(status vpclattic
 func newVPCLatticeServiceNetworkVpcAssociationResource(association vpclatticetypes.ServiceNetworkVpcAssociationSummary, accountID string) (terraformutils.Resource, bool) {
 	id := StringValue(association.Id)
 	serviceNetworkID := StringValue(association.ServiceNetworkId)
+	serviceNetworkIdentifier, additionalFields := vpclatticeServiceNetworkAssociationIdentifier(serviceNetworkID, StringValue(association.ServiceNetworkArn), accountID)
 	vpcID := StringValue(association.VpcId)
 	if id == "" || serviceNetworkID == "" || vpcID == "" || accountID == "" || StringValue(association.CreatedBy) != accountID || !vpclatticeServiceNetworkVpcAssociationStatusImportable(association.Status) {
 		return terraformutils.Resource{}, false
@@ -533,11 +552,11 @@ func newVPCLatticeServiceNetworkVpcAssociationResource(association vpclatticetyp
 		vpclatticeServiceNetworkVpcAssociationResourceType,
 		"aws",
 		map[string]string{
-			"service_network_identifier": serviceNetworkID,
+			"service_network_identifier": serviceNetworkIdentifier,
 			"vpc_identifier":             vpcID,
 		},
 		vpclatticeAllowEmptyValues,
-		map[string]interface{}{}), true
+		additionalFields), true
 }
 
 func vpclatticeServiceNetworkVpcAssociationStatusImportable(status vpclatticetypes.ServiceNetworkVpcAssociationStatus) bool {
