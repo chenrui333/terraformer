@@ -189,7 +189,7 @@ func newVerifiedAccessTrustProviderResource(trustProvider ec2types.VerifiedAcces
 }
 
 func verifiedAccessTrustProviderRequiresSecret(trustProvider ec2types.VerifiedAccessTrustProvider) bool {
-	return trustProvider.OidcOptions != nil
+	return trustProvider.OidcOptions != nil || trustProvider.NativeApplicationOidcOptions != nil
 }
 
 func verifiedAccessResourceName(parts ...string) string {

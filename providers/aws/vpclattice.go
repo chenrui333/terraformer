@@ -67,7 +67,7 @@ func (g *VPCLatticeGenerator) InitResources() error {
 			resourceID := StringValue(serviceNetwork.Id)
 			resourceARN := StringValue(serviceNetwork.Arn)
 			if loadAuthPolicies {
-				if err := g.loadVPCLatticeAuthPolicy(svc, resourceID); err != nil {
+				if err := g.loadVPCLatticeAuthPolicy(svc, resourceARN); err != nil {
 					return err
 				}
 			}
@@ -102,7 +102,7 @@ func (g *VPCLatticeGenerator) InitResources() error {
 			serviceID := StringValue(service.Id)
 			serviceARN := StringValue(service.Arn)
 			if loadAuthPolicies {
-				if err := g.loadVPCLatticeAuthPolicy(svc, serviceID); err != nil {
+				if err := g.loadVPCLatticeAuthPolicy(svc, serviceARN); err != nil {
 					return err
 				}
 			}

@@ -121,10 +121,10 @@ func TestVPCLatticeResourceConstructors(t *testing.T) {
 		},
 		{
 			name:       "auth policy",
-			resource:   newTerraformResourceResult(newVPCLatticeAuthPolicyResource("svc-123", `{"Version":"2012-10-17"}`)),
-			wantID:     "svc-123",
+			resource:   newTerraformResourceResult(newVPCLatticeAuthPolicyResource("arn:aws:vpc-lattice:us-east-1:123456789012:service/svc-123", `{"Version":"2012-10-17"}`)),
+			wantID:     "arn:aws:vpc-lattice:us-east-1:123456789012:service/svc-123",
 			wantType:   vpclatticeAuthPolicyResourceType,
-			wantAttr:   map[string]string{"resource_identifier": "svc-123", "policy": `{"Version":"2012-10-17"}`},
+			wantAttr:   map[string]string{"resource_identifier": "arn:aws:vpc-lattice:us-east-1:123456789012:service/svc-123", "policy": `{"Version":"2012-10-17"}`},
 			wantExists: true,
 		},
 		{

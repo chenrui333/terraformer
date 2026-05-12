@@ -96,6 +96,14 @@ func TestVerifiedAccessResourceConstructors(t *testing.T) {
 			})),
 			wantExists: false,
 		},
+		{
+			name: "trust provider native oidc skipped",
+			resource: newTerraformResourceResult(newVerifiedAccessTrustProviderResource(ec2types.VerifiedAccessTrustProvider{
+				VerifiedAccessTrustProviderId: aws.String("vatp-123"),
+				NativeApplicationOidcOptions:  &ec2types.NativeApplicationOidcOptions{},
+			})),
+			wantExists: false,
+		},
 	}
 
 	for _, tt := range tests {
