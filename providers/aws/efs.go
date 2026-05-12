@@ -249,15 +249,11 @@ func efsBackupPolicyStatusImportable(status efstypes.Status) bool {
 
 func newEFSReplicationConfigurationResource(replication efstypes.ReplicationConfigurationDescription, localRegion string) (terraformutils.Resource, bool) {
 	sourceFileSystemID := StringValue(replication.SourceFileSystemId)
-	if sourceFileSystemID == "" || len(replication.Destinations) == 0 {
+	if sourceFileSystemID == "" {
 		return terraformutils.Resource{}, false
 	}
-	destination := replication.Destinations[0]
-	if !efsReplicationStatusImportable(destination.Status) {
-		return terraformutils.Resource{}, false
-	}
-	importID := efsReplicationConfigurationImportID(replication, localRegion)
-	if importID == "" {
+	importID, ok := efsReplicationConfigurationImportID(replication, localRegion)
+	if !ok {
 		return terraformutils.Resource{}, false
 	}
 	return terraformutils.NewResource(
@@ -272,17 +268,31 @@ func newEFSReplicationConfigurationResource(replication efstypes.ReplicationConf
 		map[string]interface{}{}), true
 }
 
-func efsReplicationConfigurationImportID(replication efstypes.ReplicationConfigurationDescription, localRegion string) string {
-	for _, destination := range replication.Destinations {
-		destinationFileSystemID := StringValue(destination.FileSystemId)
-		if destinationFileSystemID == "" {
-			continue
-		}
-		if localRegion != "" && StringValue(destination.Region) == localRegion {
-			return destinationFileSystemID
+func efsReplicationConfigurationImportID(replication efstypes.ReplicationConfigurationDescription, localRegion string) (string, bool) {
+	sourceFileSystemID := StringValue(replication.SourceFileSystemId)
+	if sourceFileSystemID == "" {
+		return "", false
+	}
+	if localRegion != "" {
+		for _, destination := range replication.Destinations {
+			destinationFileSystemID := StringValue(destination.FileSystemId)
+			if destinationFileSystemID == "" || StringValue(destination.Region) != localRegion {
+				continue
+			}
+			if !efsReplicationStatusImportable(destination.Status) {
+				return "", false
+			}
+			return destinationFileSystemID, true
 		}
 	}
-	return StringValue(replication.SourceFileSystemId)
+	for _, destination := range replication.Destinations {
+		destinationFileSystemID := StringValue(destination.FileSystemId)
+		if destinationFileSystemID == "" || !efsReplicationStatusImportable(destination.Status) {
+			continue
+		}
+		return sourceFileSystemID, true
+	}
+	return "", false
 }
 
 func efsReplicationStatusImportable(status efstypes.ReplicationStatus) bool {
