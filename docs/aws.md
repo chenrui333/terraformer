@@ -353,9 +353,11 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_ecs_task_set`
 *   `efs`
     * `aws_efs_access_point`
+    * `aws_efs_backup_policy`
     * `aws_efs_file_system`
     * `aws_efs_file_system_policy`
     * `aws_efs_mount_target`
+    * `aws_efs_replication_configuration`
 *   `eip`
     * `aws_eip`
 *   `eks`
@@ -801,10 +803,26 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_ec2_transit_gateway`
     * `aws_ec2_transit_gateway_route_table`
     * `aws_ec2_transit_gateway_vpc_attachment`
+*   `verifiedaccess`
+    * `aws_verifiedaccess_endpoint`
+    * `aws_verifiedaccess_group`
+    * `aws_verifiedaccess_instance`
+    * `aws_verifiedaccess_trust_provider`
 *   `vpc`
     * `aws_vpc`
 *   `vpc_endpoint`
     * `aws_vpc_endpoint`
+*   `vpclattice`
+    * `aws_vpclattice_access_log_subscription`
+    * `aws_vpclattice_auth_policy`
+    * `aws_vpclattice_listener`
+    * `aws_vpclattice_listener_rule`
+    * `aws_vpclattice_resource_policy`
+    * `aws_vpclattice_service`
+    * `aws_vpclattice_service_network`
+    * `aws_vpclattice_service_network_service_association`
+    * `aws_vpclattice_service_network_vpc_association`
+    * `aws_vpclattice_target_group`
 *   `vpc_peering`
     * `aws_vpc_peering_connection`
 *   `vpn_connection`
