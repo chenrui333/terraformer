@@ -3,6 +3,7 @@ package cmd
 
 import (
 	"log"
+	"strings"
 
 	awsterraformer "github.com/chenrui333/terraformer/providers/aws"
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -110,12 +111,26 @@ func importChatbotResources(options ImportOptions, originalPathPattern string, s
 	if len(options.Resources) == 0 {
 		return nil
 	}
+	pathPattern := chatbotPathPattern(originalPathPattern)
 	for _, region := range options.Regions {
-		if err := importRegionResources(options, originalPathPattern, region, shouldSpecifyPathRegion); err != nil {
+		if err := importRegionResources(options, pathPattern, region, shouldSpecifyPathRegion); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func chatbotPathPattern(pathPattern string) string {
+	if strings.Contains(pathPattern, "{service}") {
+		return pathPattern
+	}
+	if strings.Contains(pathPattern, "{provider}") {
+		return strings.Replace(pathPattern, "{provider}", "{provider}/{service}", 1)
+	}
+	if strings.HasSuffix(pathPattern, "/") {
+		return pathPattern + "{service}/"
+	}
+	return pathPattern + "/{service}/"
 }
 
 func chatbotImportRegions(regions []string) []string {
