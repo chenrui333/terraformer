@@ -4,12 +4,14 @@ package aws
 
 import (
 	"reflect"
+	"regexp"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/datapipeline"
 	datapipelinetypes "github.com/aws/aws-sdk-go-v2/service/datapipeline/types"
 	"github.com/chenrui333/terraformer/terraformutils"
+	"github.com/zclconf/go-cty/cty"
 )
 
 func TestNewDataPipelinePipelineResource(t *testing.T) {
@@ -26,6 +28,45 @@ func TestNewDataPipelinePipelineDefinitionResource(t *testing.T) {
 	assertDataPipelineResource(t, resource, true, "df-1234567890ABC", dataPipelineResourceName("pipeline-definition", "daily-import", "df-1234567890ABC"), dataPipelinePipelineDefinitionResourceType)
 	assertDataPipelineAttribute(t, resource, "name", "daily-import")
 	assertDataPipelineAttribute(t, resource, "pipeline_id", "df-1234567890ABC")
+}
+
+func TestDataPipelineDefinitionAllowEmptyValuesPreservesRequiredStringValues(t *testing.T) {
+	attributes := map[string]string{
+		"parameter_object.#":                              "1",
+		"parameter_object.100.attribute.#":                "1",
+		"parameter_object.100.attribute.200.key":          "param-key",
+		"parameter_object.100.attribute.200.string_value": "",
+		"parameter_object.100.id":                         "param-object",
+		"parameter_value.#":                               "1",
+		"parameter_value.300.id":                          "param-value",
+		"parameter_value.300.string_value":                "",
+		"pipeline_object.#":                               "1",
+		"pipeline_object.400.field.#":                     "1",
+		"pipeline_object.400.field.500.key":               "optional-empty",
+		"pipeline_object.400.field.500.string_value":      "",
+		"pipeline_object.400.id":                          "Default",
+		"pipeline_object.400.name":                        "Default",
+	}
+	parser := terraformutils.NewFlatmapParser(attributes, nil, dataPipelineAllowEmptyRegexes(dataPipelineDefinitionAllowEmptyValues))
+	result, err := parser.Parse(dataPipelineDefinitionTestType())
+	if err != nil {
+		t.Fatalf("Parse error: %v", err)
+	}
+
+	parameterValue := result["parameter_value"].([]interface{})[0].(map[string]interface{})
+	if got := parameterValue["string_value"]; got != "" {
+		t.Fatalf("parameter_value string_value = %v, want empty string", got)
+	}
+	parameterObject := result["parameter_object"].([]interface{})[0].(map[string]interface{})
+	attribute := parameterObject["attribute"].([]interface{})[0].(map[string]interface{})
+	if got := attribute["string_value"]; got != "" {
+		t.Fatalf("parameter_object attribute string_value = %v, want empty string", got)
+	}
+	pipelineObject := result["pipeline_object"].([]interface{})[0].(map[string]interface{})
+	field := pipelineObject["field"].([]interface{})[0].(map[string]interface{})
+	if _, ok := field["string_value"]; ok {
+		t.Fatal("optional pipeline_object field string_value should not be preserved when empty")
+	}
 }
 
 func TestDataPipelineDefinitionImportable(t *testing.T) {
@@ -206,6 +247,38 @@ func dataPipelineDefinitionResourceForCleanup(pipelineID, pipelineName string) t
 	resource := newDataPipelinePipelineDefinitionResource(pipelineID, pipelineName)
 	resource.InstanceState.Attributes = map[string]string{"pipeline_id": pipelineID}
 	return resource
+}
+
+func dataPipelineAllowEmptyRegexes(patterns []string) []*regexp.Regexp {
+	regexes := make([]*regexp.Regexp, 0, len(patterns))
+	for _, pattern := range patterns {
+		regexes = append(regexes, regexp.MustCompile(pattern))
+	}
+	return regexes
+}
+
+func dataPipelineDefinitionTestType() cty.Type {
+	return cty.Object(map[string]cty.Type{
+		"parameter_object": cty.Set(cty.Object(map[string]cty.Type{
+			"attribute": cty.Set(cty.Object(map[string]cty.Type{
+				"key":          cty.String,
+				"string_value": cty.String,
+			})),
+			"id": cty.String,
+		})),
+		"parameter_value": cty.Set(cty.Object(map[string]cty.Type{
+			"id":           cty.String,
+			"string_value": cty.String,
+		})),
+		"pipeline_object": cty.Set(cty.Object(map[string]cty.Type{
+			"field": cty.Set(cty.Object(map[string]cty.Type{
+				"key":          cty.String,
+				"string_value": cty.String,
+			})),
+			"id":   cty.String,
+			"name": cty.String,
+		})),
+	})
 }
 
 func assertDataPipelineResourceIDs(t *testing.T, resources []terraformutils.Resource, want []string) {

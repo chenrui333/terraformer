@@ -19,6 +19,11 @@ const (
 
 var datapipelineAllowEmptyValues = []string{"tags."}
 
+var dataPipelineDefinitionAllowEmptyValues = []string{
+	`^parameter_object\.[^.]+\.attribute\.[^.]+\.string_value$`,
+	`^parameter_value\.[^.]+\.string_value$`,
+}
+
 type DataPipelineGenerator struct {
 	AWSService
 }
@@ -141,7 +146,7 @@ func newDataPipelinePipelineDefinitionResource(pipelineID, pipelineName string) 
 			"name":        pipelineName,
 			"pipeline_id": pipelineID,
 		},
-		datapipelineAllowEmptyValues,
+		dataPipelineDefinitionAllowEmptyValues,
 		map[string]interface{}{})
 }
 
