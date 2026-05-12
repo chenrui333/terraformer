@@ -16,6 +16,30 @@ func TestChatbotImportIDs(t *testing.T) {
 	}
 }
 
+func TestChatbotAPIRegion(t *testing.T) {
+	tests := []struct {
+		name   string
+		region string
+		want   string
+	}{
+		{name: "supported us-east-2", region: "us-east-2", want: "us-east-2"},
+		{name: "supported us-west-2", region: "us-west-2", want: "us-west-2"},
+		{name: "supported eu-west-1", region: "eu-west-1", want: "eu-west-1"},
+		{name: "supported ap-southeast-1", region: "ap-southeast-1", want: "ap-southeast-1"},
+		{name: "unsupported us-east-1", region: "us-east-1", want: chatbotDefaultRegion},
+		{name: "unsupported eu-central-1", region: "eu-central-1", want: chatbotDefaultRegion},
+		{name: "empty", region: "", want: chatbotDefaultRegion},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := chatbotAPIRegion(tt.region); got != tt.want {
+				t.Fatalf("chatbotAPIRegion(%q) = %q, want %q", tt.region, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestNewChatbotSlackChannelConfigurationResource(t *testing.T) {
 	arn := "arn:aws:chatbot::123456789012:chat-configuration/slack-channel/support"
 	resource, ok := newChatbotSlackChannelConfigurationResource(chatbottypes.SlackChannelConfiguration{

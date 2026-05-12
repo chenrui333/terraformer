@@ -13,6 +13,7 @@ import (
 
 const (
 	chatbotSlackChannelConfigurationResourceType = "aws_chatbot_slack_channel_configuration"
+	chatbotDefaultRegion                         = "us-west-2"
 )
 
 var chatbotAllowEmptyValues = []string{"tags."}
@@ -26,6 +27,7 @@ func (g *ChatbotGenerator) InitResources() error {
 	if e != nil {
 		return e
 	}
+	config.Region = chatbotAPIRegion(config.Region)
 	svc := chatbot.NewFromConfig(config)
 	return g.loadSlackChannelConfigurations(svc)
 }
@@ -85,6 +87,15 @@ func chatbotSlackChannelConfigurationImportID(arn string) string {
 
 func chatbotResourceName(parts ...string) string {
 	return resourceNameWithLengthPrefixes(parts...)
+}
+
+func chatbotAPIRegion(region string) string {
+	switch region {
+	case "us-east-2", "us-west-2", "eu-west-1", "ap-southeast-1":
+		return region
+	default:
+		return chatbotDefaultRegion
+	}
 }
 
 func chatbotNotFound(err error) bool {
