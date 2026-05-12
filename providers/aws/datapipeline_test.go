@@ -164,6 +164,32 @@ func TestDataPipelineShouldEmitPipelineHonorsPipelineFilters(t *testing.T) {
 	}
 }
 
+func TestDataPipelineShouldLoadDefinitionsOnlyWhenRequestedByTypedFilters(t *testing.T) {
+	tests := []struct {
+		name    string
+		filters []string
+		want    bool
+	}{
+		{name: "no filters", want: true},
+		{name: "global name filter", filters: []string{"Name=name;Value=daily-import"}, want: true},
+		{name: "typed pipeline ID only", filters: []string{"datapipeline_pipeline=df-123"}, want: false},
+		{name: "typed pipeline ID with global name filter", filters: []string{"datapipeline_pipeline=df-123", "Name=name;Value=daily-import"}, want: true},
+		{name: "typed pipeline name filter", filters: []string{"Type=datapipeline_pipeline;Name=name;Value=daily-import"}, want: true},
+		{name: "typed definition ID filter", filters: []string{"datapipeline_pipeline_definition=df-123"}, want: true},
+		{name: "typed definition pipeline ID filter", filters: []string{"Type=datapipeline_pipeline_definition;Name=pipeline_id;Value=df-123"}, want: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			service := terraformutils.Service{}
+			service.ParseFilters(tt.filters)
+			if got := dataPipelineShouldLoadDefinitions(service.Filter); got != tt.want {
+				t.Fatalf("dataPipelineShouldLoadDefinitions(%v) = %t, want %t", tt.filters, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestDataPipelinePostRefreshCleanupKeepsDefinitionForMatchedPipelineName(t *testing.T) {
 	pipeline := dataPipelinePipelineResourceForCleanup("df-123", "daily-import")
 	otherPipeline := dataPipelinePipelineResourceForCleanup("df-456", "hourly-import")

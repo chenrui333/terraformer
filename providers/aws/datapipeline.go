@@ -35,6 +35,7 @@ func (g *DataPipelineGenerator) InitResources() error {
 	}
 	svc := datapipeline.NewFromConfig(config)
 	pipelineIDFilter := dataPipelinePipelineIDFilter(g.Filter)
+	loadDefinitions := dataPipelineShouldLoadDefinitions(g.Filter)
 	p := datapipeline.NewListPipelinesPaginator(svc, &datapipeline.ListPipelinesInput{})
 	var resources []terraformutils.Resource
 	for p.HasMorePages() {
@@ -50,6 +51,9 @@ func (g *DataPipelineGenerator) InitResources() error {
 			}
 			if resource, ok := newDataPipelinePipelineResource(pipelineID, pipelineName); ok && dataPipelineShouldEmitPipeline(g.Filter, pipelineID) {
 				resources = append(resources, resource)
+			}
+			if !loadDefinitions {
+				continue
 			}
 			resource, ok, err := getDataPipelinePipelineDefinitionResource(svc, pipelineID, pipelineName)
 			if err != nil {
@@ -228,6 +232,16 @@ func dataPipelineShouldEmitPipeline(filters []terraformutils.ResourceFilter, pip
 func dataPipelineHasTypedFilter(filters []terraformutils.ResourceFilter) bool {
 	return awsHasTypedFilter(filters, dataPipelinePipelineResourceType) ||
 		awsHasTypedFilter(filters, dataPipelinePipelineDefinitionResourceType)
+}
+
+func dataPipelineShouldLoadDefinitions(filters []terraformutils.ResourceFilter) bool {
+	if !dataPipelineHasTypedFilter(filters) {
+		return true
+	}
+	if awsHasTypedFilter(filters, dataPipelinePipelineDefinitionResourceType) {
+		return true
+	}
+	return awsHasApplicableNonIDFilter(filters, dataPipelinePipelineResourceType)
 }
 
 func dataPipelineShouldPruneDefinitionsToMatchedPipelines(filters []terraformutils.ResourceFilter) bool {
