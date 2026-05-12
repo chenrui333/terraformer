@@ -324,6 +324,29 @@ func TestEfsFileSystemPolicyMissing(t *testing.T) {
 	}
 }
 
+func TestEfsBackupPolicyUnavailable(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "typed policy not found", err: &efstypes.PolicyNotFound{}, want: true},
+		{name: "typed validation", err: &efstypes.ValidationException{}, want: true},
+		{name: "api error validation", err: &smithy.GenericAPIError{Code: "ValidationException"}, want: true},
+		{name: "access denied", err: &smithy.GenericAPIError{Code: "AccessDeniedException"}, want: false},
+		{name: "generic error", err: errors.New("boom"), want: false},
+		{name: "nil error", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := efsBackupPolicyUnavailable(tt.err); got != tt.want {
+				t.Fatalf("efsBackupPolicyUnavailable() = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
 func newTestEfsClient(server *httptest.Server) *efs.Client {
 	config := aws.Config{
 		Region:           "us-east-1",

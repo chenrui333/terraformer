@@ -140,7 +140,7 @@ func (g *EfsGenerator) loadBackupPolicies(svc *efs.Client) error {
 			backupResponse, err := svc.DescribeBackupPolicy(context.TODO(), &efs.DescribeBackupPolicyInput{
 				FileSystemId: fileSystem.FileSystemId,
 			})
-			if efsFileSystemPolicyMissing(err) {
+			if efsBackupPolicyUnavailable(err) {
 				continue
 			}
 			if err != nil {
@@ -184,6 +184,20 @@ func efsFileSystemPolicyMissing(err error) bool {
 
 	var apiErr smithy.APIError
 	return errors.As(err, &apiErr) && apiErr.ErrorCode() == "PolicyNotFound"
+}
+
+func efsBackupPolicyUnavailable(err error) bool {
+	if efsFileSystemPolicyMissing(err) {
+		return true
+	}
+
+	var validation *efstypes.ValidationException
+	if errors.As(err, &validation) {
+		return true
+	}
+
+	var apiErr smithy.APIError
+	return errors.As(err, &apiErr) && apiErr.ErrorCode() == "ValidationException"
 }
 
 func efsReplicationConfigurationMissing(err error) bool {
