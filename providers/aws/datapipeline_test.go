@@ -207,6 +207,24 @@ func TestDataPipelinePostRefreshCleanupKeepsDefinitionForMatchedPipelineName(t *
 	})
 }
 
+func TestDataPipelinePostRefreshCleanupKeepsExplicitDefinitionForMatchedGlobalPipeline(t *testing.T) {
+	pipeline := dataPipelinePipelineResourceForCleanup("df-123", "daily-import")
+	definition := dataPipelineDefinitionResourceForCleanup("df-123", "daily-import")
+	generator := &DataPipelineGenerator{}
+	generator.Resources = []terraformutils.Resource{pipeline, definition}
+	generator.ParseFilters([]string{
+		"Name=name;Value=daily-import",
+		"datapipeline_pipeline_definition=df-123",
+	})
+
+	generator.PostRefreshCleanup()
+
+	assertDataPipelineResourceIDs(t, generator.Resources, []string{
+		dataPipelinePipelineResourceType + "/df-123",
+		dataPipelinePipelineDefinitionResourceType + "/df-123",
+	})
+}
+
 func TestDataPipelinePostRefreshCleanupPrunesDefinitionsForTypedPipelineNameFilter(t *testing.T) {
 	pipeline := dataPipelinePipelineResourceForCleanup("df-123", "daily-import")
 	otherPipeline := dataPipelinePipelineResourceForCleanup("df-456", "hourly-import")

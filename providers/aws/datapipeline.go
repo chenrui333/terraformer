@@ -95,12 +95,13 @@ func (g *DataPipelineGenerator) PostRefreshCleanup() {
 	if dataPipelineShouldPruneDefinitionsToMatchedPipelines(g.Filter) {
 		g.Resources = dataPipelineResourcesWithDefinitionsForPipelineIDs(g.Resources, matchedPipelineIDs)
 	}
-	if !awsHasTypedFilter(g.Filter, dataPipelinePipelineDefinitionResourceType) {
-		for pipelineID := range matchedPipelineIDs {
-			for _, resource := range definitionsByPipelineID[pipelineID] {
-				if !terraformutils.ContainsResource(g.Resources, resource) {
-					g.Resources = append(g.Resources, resource)
-				}
+	for pipelineID := range matchedPipelineIDs {
+		if !dataPipelineShouldRestoreDefinitionForMatchedPipeline(g.Filter, pipelineID) {
+			continue
+		}
+		for _, resource := range definitionsByPipelineID[pipelineID] {
+			if !terraformutils.ContainsResource(g.Resources, resource) {
+				g.Resources = append(g.Resources, resource)
 			}
 		}
 	}
@@ -247,6 +248,14 @@ func dataPipelineShouldLoadDefinitions(filters []terraformutils.ResourceFilter) 
 func dataPipelineShouldPruneDefinitionsToMatchedPipelines(filters []terraformutils.ResourceFilter) bool {
 	return awsHasTypedNonIDFilter(filters, dataPipelinePipelineResourceType) &&
 		!awsHasTypedFilter(filters, dataPipelinePipelineDefinitionResourceType)
+}
+
+func dataPipelineShouldRestoreDefinitionForMatchedPipeline(filters []terraformutils.ResourceFilter, pipelineID string) bool {
+	if !awsHasTypedFilter(filters, dataPipelinePipelineDefinitionResourceType) {
+		return true
+	}
+	definitionPipelineIDs := dataPipelineDefinitionPipelineIDFilter(filters)
+	return len(definitionPipelineIDs) > 0 && definitionPipelineIDs[pipelineID]
 }
 
 func dataPipelinePipelineImportID(pipelineID string) string {
