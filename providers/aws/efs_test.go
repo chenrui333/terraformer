@@ -165,7 +165,8 @@ func TestEfsResourceConstructors(t *testing.T) {
 		{
 			name: "replication configuration",
 			resource: newTerraformResourceResult(newEFSReplicationConfigurationResource(efstypes.ReplicationConfigurationDescription{
-				SourceFileSystemId: aws.String("fs-source"),
+				SourceFileSystemId:     aws.String("fs-source"),
+				SourceFileSystemRegion: aws.String("us-east-1"),
 				Destinations: []efstypes.Destination{
 					{FileSystemId: aws.String("fs-destination"), Status: efstypes.ReplicationStatusEnabled},
 				},
@@ -177,15 +178,16 @@ func TestEfsResourceConstructors(t *testing.T) {
 			wantExists: true,
 		},
 		{
-			name: "replication configuration destination region uses canonical source",
+			name: "replication configuration destination region uses local destination",
 			resource: newTerraformResourceResult(newEFSReplicationConfigurationResource(efstypes.ReplicationConfigurationDescription{
-				SourceFileSystemId: aws.String("fs-source"),
+				SourceFileSystemId:     aws.String("fs-source"),
+				SourceFileSystemRegion: aws.String("us-east-1"),
 				Destinations: []efstypes.Destination{
 					{FileSystemId: aws.String("fs-destination"), Region: aws.String("us-west-2"), Status: efstypes.ReplicationStatusEnabled},
 				},
 			}, "us-west-2")),
-			wantID:     "fs-source",
-			wantName:   terraformutils.TfSanitize("fs-source"),
+			wantID:     "fs-destination",
+			wantName:   terraformutils.TfSanitize("fs-destination"),
 			wantType:   efsReplicationConfigurationResourceType,
 			wantAttr:   map[string]string{"source_file_system_id": "fs-source"},
 			wantExists: true,
@@ -193,14 +195,15 @@ func TestEfsResourceConstructors(t *testing.T) {
 		{
 			name: "replication configuration skips transient first destination",
 			resource: newTerraformResourceResult(newEFSReplicationConfigurationResource(efstypes.ReplicationConfigurationDescription{
-				SourceFileSystemId: aws.String("fs-source"),
+				SourceFileSystemId:     aws.String("fs-source"),
+				SourceFileSystemRegion: aws.String("us-east-1"),
 				Destinations: []efstypes.Destination{
 					{FileSystemId: aws.String("fs-deleting"), Region: aws.String("us-east-1"), Status: efstypes.ReplicationStatusDeleting},
 					{FileSystemId: aws.String("fs-destination"), Region: aws.String("us-west-2"), Status: efstypes.ReplicationStatusEnabled},
 				},
 			}, "us-west-2")),
-			wantID:     "fs-source",
-			wantName:   terraformutils.TfSanitize("fs-source"),
+			wantID:     "fs-destination",
+			wantName:   terraformutils.TfSanitize("fs-destination"),
 			wantType:   efsReplicationConfigurationResourceType,
 			wantAttr:   map[string]string{"source_file_system_id": "fs-source"},
 			wantExists: true,
@@ -208,12 +211,24 @@ func TestEfsResourceConstructors(t *testing.T) {
 		{
 			name: "replication configuration skips when no destination is importable",
 			resource: newTerraformResourceResult(newEFSReplicationConfigurationResource(efstypes.ReplicationConfigurationDescription{
-				SourceFileSystemId: aws.String("fs-source"),
+				SourceFileSystemId:     aws.String("fs-source"),
+				SourceFileSystemRegion: aws.String("us-east-1"),
 				Destinations: []efstypes.Destination{
 					{FileSystemId: aws.String("fs-other"), Region: aws.String("us-east-1"), Status: efstypes.ReplicationStatusDeleting},
 					{FileSystemId: aws.String("fs-destination"), Region: aws.String("us-west-2"), Status: efstypes.ReplicationStatusDeleting},
 				},
 			}, "us-west-2")),
+			wantExists: false,
+		},
+		{
+			name: "replication configuration skips remote source without local destination",
+			resource: newTerraformResourceResult(newEFSReplicationConfigurationResource(efstypes.ReplicationConfigurationDescription{
+				SourceFileSystemId:     aws.String("fs-source"),
+				SourceFileSystemRegion: aws.String("us-east-1"),
+				Destinations: []efstypes.Destination{
+					{FileSystemId: aws.String("fs-destination"), Region: aws.String("us-west-2"), Status: efstypes.ReplicationStatusEnabled},
+				},
+			}, "eu-west-1")),
 			wantExists: false,
 		},
 		{
