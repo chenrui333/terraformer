@@ -234,6 +234,24 @@ func TestDeviceFarmTypedFiltersLoadOnlyRequestedFamilies(t *testing.T) {
 	}
 }
 
+func TestDeviceFarmUploadsAreFilterOnly(t *testing.T) {
+	if deviceFarmShouldLoadUploads(nil) {
+		t.Fatal("default Device Farm discovery should not load upload artifacts")
+	}
+
+	globalService := terraformutils.Service{}
+	globalService.ParseFilters([]string{"Name=name;Value=app.apk"})
+	if deviceFarmShouldLoadUploads(globalService.Filter) {
+		t.Fatal("global filters should not load upload artifacts")
+	}
+
+	uploadService := terraformutils.Service{}
+	uploadService.ParseFilters([]string{"devicefarm_upload='arn:aws:devicefarm:us-west-2:123456789012:upload:project-id/upload-id'"})
+	if !deviceFarmShouldLoadUploads(uploadService.Filter) {
+		t.Fatal("upload-specific filters should load upload artifacts")
+	}
+}
+
 func TestDeviceFarmTypedFiltersUseParentsOnlyForRequestedChildren(t *testing.T) {
 	projectArn := "arn:aws:devicefarm:us-west-2:123456789012:project:project-child"
 	devicePoolArn := "arn:aws:devicefarm:us-west-2:123456789012:devicepool:project-child/device-pool-id"

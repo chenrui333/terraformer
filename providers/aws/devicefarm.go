@@ -239,7 +239,7 @@ func deviceFarmShouldLoadNetworkProfiles(filters []terraformutils.ResourceFilter
 }
 
 func deviceFarmShouldLoadUploads(filters []terraformutils.ResourceFilter) bool {
-	return !deviceFarmHasTypedFilter(filters) || awsHasTypedFilter(filters, deviceFarmUploadResourceType)
+	return awsHasTypedFilter(filters, deviceFarmUploadResourceType)
 }
 
 func deviceFarmShouldLoadTestGridProjects(filters []terraformutils.ResourceFilter) bool {
