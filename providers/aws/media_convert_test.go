@@ -213,6 +213,51 @@ func TestMediaConvertSetAndRestoreAccountEndpoint(t *testing.T) {
 	})
 }
 
+func TestMediaConvertGeneratorRestoreAccountEndpoint(t *testing.T) {
+	t.Run("restores previous value and clears generator state", func(t *testing.T) {
+		preserveMediaConvertEndpointEnv(t)
+		previousEndpoint := "https://previous.mediaconvert.us-west-2.amazonaws.com"
+		endpoint := "https://abcd.mediaconvert.us-east-1.amazonaws.com"
+		if err := os.Setenv(mediaConvertEndpointEnvVar, endpoint); err != nil {
+			t.Fatalf("Setenv returned error: %v", err)
+		}
+		generator := &MediaConvertGenerator{
+			accountEndpoint:     endpoint,
+			previousEndpoint:    previousEndpoint,
+			hadPreviousEndpoint: true,
+		}
+
+		if err := generator.restoreAccountEndpoint(); err != nil {
+			t.Fatalf("restoreAccountEndpoint returned error: %v", err)
+		}
+		if got := os.Getenv(mediaConvertEndpointEnvVar); got != previousEndpoint {
+			t.Fatalf("%s = %q, want restored %q", mediaConvertEndpointEnvVar, got, previousEndpoint)
+		}
+		if generator.accountEndpoint != "" || generator.previousEndpoint != "" || generator.hadPreviousEndpoint {
+			t.Fatalf("generator endpoint state was not cleared: %#v", generator)
+		}
+	})
+
+	t.Run("unsets absent value", func(t *testing.T) {
+		preserveMediaConvertEndpointEnv(t)
+		endpoint := "https://abcd.mediaconvert.us-east-1.amazonaws.com"
+		if err := os.Setenv(mediaConvertEndpointEnvVar, endpoint); err != nil {
+			t.Fatalf("Setenv returned error: %v", err)
+		}
+		generator := &MediaConvertGenerator{accountEndpoint: endpoint}
+
+		if err := generator.restoreAccountEndpoint(); err != nil {
+			t.Fatalf("restoreAccountEndpoint returned error: %v", err)
+		}
+		if got, ok := os.LookupEnv(mediaConvertEndpointEnvVar); ok {
+			t.Fatalf("%s = %q, want unset", mediaConvertEndpointEnvVar, got)
+		}
+		if generator.accountEndpoint != "" {
+			t.Fatalf("generator endpoint state was not cleared: %#v", generator)
+		}
+	})
+}
+
 func preserveMediaConvertEndpointEnv(t *testing.T) {
 	t.Helper()
 	previousEndpoint, hadPreviousEndpoint := os.LookupEnv(mediaConvertEndpointEnvVar)

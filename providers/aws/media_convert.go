@@ -56,9 +56,11 @@ func (g *MediaConvertGenerator) InitResources() error {
 		g.accountEndpoint = endpoint
 		g.previousEndpoint = previousEndpoint
 		g.hadPreviousEndpoint = hadPreviousEndpoint
-		return g.loadQueues(mediaconvert.NewFromConfig(config, func(o *mediaconvert.Options) {
+		if err := g.loadQueues(mediaconvert.NewFromConfig(config, func(o *mediaconvert.Options) {
 			o.BaseEndpoint = aws.String(endpoint)
-		}))
+		})); err != nil {
+			return errors.Join(err, g.restoreAccountEndpoint())
+		}
 	}
 	return nil
 }
@@ -69,14 +71,27 @@ func (g *MediaConvertGenerator) ConfigureImportProvider(providerWrapper *provide
 	}
 	// The Terraform AWS provider reads service endpoint environment variables when
 	// its plugin process starts, so refresh needs a restart after endpoint bootstrap.
-	return providerWrapper.Restart()
+	if err := providerWrapper.Restart(); err != nil {
+		return errors.Join(err, g.restoreAccountEndpoint())
+	}
+	return nil
 }
 
 func (g *MediaConvertGenerator) PostConvertHook() error {
+	return g.restoreAccountEndpoint()
+}
+
+func (g *MediaConvertGenerator) restoreAccountEndpoint() error {
 	if g.accountEndpoint == "" {
 		return nil
 	}
-	return mediaConvertRestoreAccountEndpoint(g.previousEndpoint, g.hadPreviousEndpoint)
+	if err := mediaConvertRestoreAccountEndpoint(g.previousEndpoint, g.hadPreviousEndpoint); err != nil {
+		return err
+	}
+	g.accountEndpoint = ""
+	g.previousEndpoint = ""
+	g.hadPreviousEndpoint = false
+	return nil
 }
 
 func (g *MediaConvertGenerator) loadQueues(svc *mediaconvert.Client) error {
