@@ -331,7 +331,9 @@ func TestEfsBackupPolicyUnavailable(t *testing.T) {
 		want bool
 	}{
 		{name: "typed policy not found", err: &efstypes.PolicyNotFound{}, want: true},
+		{name: "wrapped policy not found", err: errors.Join(errors.New("lookup failed"), &efstypes.PolicyNotFound{}), want: true},
 		{name: "typed validation", err: &efstypes.ValidationException{}, want: true},
+		{name: "wrapped validation", err: errors.Join(errors.New("lookup failed"), &efstypes.ValidationException{}), want: true},
 		{name: "api error validation", err: &smithy.GenericAPIError{Code: "ValidationException"}, want: true},
 		{name: "access denied", err: &smithy.GenericAPIError{Code: "AccessDeniedException"}, want: false},
 		{name: "generic error", err: errors.New("boom"), want: false},
