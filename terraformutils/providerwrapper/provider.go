@@ -310,14 +310,26 @@ func (p *ProviderWrapper) initProvider(verbose bool) error {
 }
 
 func (p *ProviderWrapper) Restart() error {
+	replacement := &ProviderWrapper{
+		providerName: p.providerName,
+		config:       p.config,
+		retryCount:   p.retryCount,
+		retrySleepMs: p.retrySleepMs,
+		verbose:      p.verbose,
+	}
+	if err := replacement.initProvider(p.verbose); err != nil {
+		replacement.Kill()
+		return err
+	}
+
 	if p.client != nil {
 		p.client.Kill()
 	}
-	p.Provider = nil
-	p.client = nil
-	p.rpcClient = nil
-	p.schema = nil
-	return p.initProvider(p.verbose)
+	p.Provider = replacement.Provider
+	p.client = replacement.client
+	p.rpcClient = replacement.rpcClient
+	p.schema = replacement.schema
+	return nil
 }
 
 func (p *ProviderWrapper) configureProvider() error {

@@ -11,9 +11,31 @@ import (
 
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat/configschema"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat/providerproto"
 	"github.com/chenrui333/terraformer/terraformutils/typedjson"
 	"github.com/zclconf/go-cty/cty"
 )
+
+func TestRestartPreservesCurrentProviderOnInitError(t *testing.T) {
+	currentProvider := &providerproto.GRPCProvider{}
+	currentSchema := &providerproto.GetProviderSchemaResponse{}
+	provider := &ProviderWrapper{
+		Provider:     currentProvider,
+		providerName: "missing-provider-for-restart-test",
+		config:       cty.EmptyObjectVal,
+		schema:       currentSchema,
+	}
+
+	if err := provider.Restart(); err == nil {
+		t.Fatal("Restart() error = nil, want provider initialization error")
+	}
+	if provider.Provider != currentProvider {
+		t.Fatal("Restart() replaced the current provider after initialization failed")
+	}
+	if provider.schema != currentSchema {
+		t.Fatal("Restart() replaced the current schema after initialization failed")
+	}
+}
 
 func TestIgnoredAttributes(t *testing.T) {
 	attributes := map[string]*configschema.Attribute{
