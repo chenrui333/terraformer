@@ -4,12 +4,16 @@ package aws
 
 import (
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/vpclattice"
 	vpclatticetypes "github.com/aws/aws-sdk-go-v2/service/vpclattice/types"
 	"github.com/aws/smithy-go"
 )
@@ -251,4 +255,73 @@ func TestVPCLatticePostConvertHookWrapsPolicies(t *testing.T) {
 	if !strings.Contains(policy, "$${aws:PrincipalAccount}") {
 		t.Fatalf("policy interpolation was not escaped: %q", policy)
 	}
+}
+
+func TestVPCLatticeAssociationLoadersUseServiceNetworkFilters(t *testing.T) {
+	requests := map[string]int{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests[r.URL.Path]++
+		switch r.URL.Path {
+		case "/servicenetworkserviceassociations":
+			if got := r.URL.Query().Get("serviceNetworkIdentifier"); got != "sn-123" {
+				t.Errorf("serviceNetworkIdentifier query = %q, want sn-123", got)
+			}
+			writeVPCLatticeJSON(w, http.StatusOK, `{"items":[{"id":"snsa-123","serviceId":"svc-123","serviceNetworkId":"sn-123","status":"ACTIVE"}]}`)
+		case "/servicenetworkvpcassociations":
+			if got := r.URL.Query().Get("serviceNetworkIdentifier"); got != "sn-123" {
+				t.Errorf("serviceNetworkIdentifier query = %q, want sn-123", got)
+			}
+			writeVPCLatticeJSON(w, http.StatusOK, `{"items":[{"id":"snva-123","serviceNetworkId":"sn-123","vpcId":"vpc-123","status":"ACTIVE"}]}`)
+		default:
+			t.Errorf("unexpected path %s", r.URL.Path)
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	generator := &VPCLatticeGenerator{}
+	client := newTestVPCLatticeClient(server)
+	if err := generator.loadVPCLatticeServiceNetworkServiceAssociations(client, ""); err != nil {
+		t.Fatalf("loadVPCLatticeServiceNetworkServiceAssociations empty ID returned error: %v", err)
+	}
+	if err := generator.loadVPCLatticeServiceNetworkVpcAssociations(client, ""); err != nil {
+		t.Fatalf("loadVPCLatticeServiceNetworkVpcAssociations empty ID returned error: %v", err)
+	}
+	if len(generator.Resources) != 0 {
+		t.Fatalf("len(Resources) after empty IDs = %d, want 0", len(generator.Resources))
+	}
+
+	if err := generator.loadVPCLatticeServiceNetworkServiceAssociations(client, "sn-123"); err != nil {
+		t.Fatalf("loadVPCLatticeServiceNetworkServiceAssociations returned error: %v", err)
+	}
+	if err := generator.loadVPCLatticeServiceNetworkVpcAssociations(client, "sn-123"); err != nil {
+		t.Fatalf("loadVPCLatticeServiceNetworkVpcAssociations returned error: %v", err)
+	}
+	if got := requests["/servicenetworkserviceassociations"]; got != 1 {
+		t.Fatalf("service association requests = %d, want 1", got)
+	}
+	if got := requests["/servicenetworkvpcassociations"]; got != 1 {
+		t.Fatalf("vpc association requests = %d, want 1", got)
+	}
+	if len(generator.Resources) != 2 {
+		t.Fatalf("len(Resources) = %d, want 2", len(generator.Resources))
+	}
+}
+
+func newTestVPCLatticeClient(server *httptest.Server) *vpclattice.Client {
+	config := aws.Config{
+		Region:           "us-east-1",
+		Credentials:      credentials.NewStaticCredentialsProvider("test", "test", ""),
+		HTTPClient:       server.Client(),
+		RetryMaxAttempts: 1,
+	}
+	return vpclattice.NewFromConfig(config, func(options *vpclattice.Options) {
+		options.BaseEndpoint = aws.String(server.URL)
+	})
+}
+
+func writeVPCLatticeJSON(w http.ResponseWriter, status int, body string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_, _ = w.Write([]byte(body))
 }

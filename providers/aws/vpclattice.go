@@ -52,7 +52,7 @@ func (g *VPCLatticeGenerator) InitResources() error {
 	loadResourcePolicies := g.shouldLoadVPCLatticeResource(vpclatticeResourcePolicyResourceType)
 	loadAccessLogSubscriptions := g.shouldLoadVPCLatticeResource(vpclatticeAccessLogSubscriptionResourceType)
 
-	needServiceNetworks := loadServiceNetworks || loadAuthPolicies || loadResourcePolicies || loadAccessLogSubscriptions
+	needServiceNetworks := loadServiceNetworks || loadServiceNetworkServiceAssociations || loadServiceNetworkVpcAssociations || loadAuthPolicies || loadResourcePolicies || loadAccessLogSubscriptions
 	if needServiceNetworks {
 		serviceNetworks, err := g.listVPCLatticeServiceNetworks(svc)
 		if err != nil {
@@ -78,6 +78,16 @@ func (g *VPCLatticeGenerator) InitResources() error {
 			}
 			if loadAccessLogSubscriptions {
 				if err := g.loadVPCLatticeAccessLogSubscriptions(svc, resourceID); err != nil {
+					return err
+				}
+			}
+			if loadServiceNetworkServiceAssociations {
+				if err := g.loadVPCLatticeServiceNetworkServiceAssociations(svc, resourceID); err != nil {
+					return err
+				}
+			}
+			if loadServiceNetworkVpcAssociations {
+				if err := g.loadVPCLatticeServiceNetworkVpcAssociations(svc, resourceID); err != nil {
 					return err
 				}
 			}
@@ -126,16 +136,6 @@ func (g *VPCLatticeGenerator) InitResources() error {
 
 	if loadTargetGroups {
 		if err := g.loadVPCLatticeTargetGroups(svc); err != nil {
-			return err
-		}
-	}
-	if loadServiceNetworkServiceAssociations {
-		if err := g.loadVPCLatticeServiceNetworkServiceAssociations(svc); err != nil {
-			return err
-		}
-	}
-	if loadServiceNetworkVpcAssociations {
-		if err := g.loadVPCLatticeServiceNetworkVpcAssociations(svc); err != nil {
 			return err
 		}
 	}
@@ -259,8 +259,13 @@ func (g *VPCLatticeGenerator) loadVPCLatticeListenerRules(svc *vpclattice.Client
 	return nil
 }
 
-func (g *VPCLatticeGenerator) loadVPCLatticeServiceNetworkServiceAssociations(svc *vpclattice.Client) error {
-	input := &vpclattice.ListServiceNetworkServiceAssociationsInput{}
+func (g *VPCLatticeGenerator) loadVPCLatticeServiceNetworkServiceAssociations(svc *vpclattice.Client, serviceNetworkID string) error {
+	if serviceNetworkID == "" {
+		return nil
+	}
+	input := &vpclattice.ListServiceNetworkServiceAssociationsInput{
+		ServiceNetworkIdentifier: &serviceNetworkID,
+	}
 	for {
 		output, err := svc.ListServiceNetworkServiceAssociations(context.TODO(), input)
 		if err != nil {
@@ -279,8 +284,13 @@ func (g *VPCLatticeGenerator) loadVPCLatticeServiceNetworkServiceAssociations(sv
 	return nil
 }
 
-func (g *VPCLatticeGenerator) loadVPCLatticeServiceNetworkVpcAssociations(svc *vpclattice.Client) error {
-	input := &vpclattice.ListServiceNetworkVpcAssociationsInput{}
+func (g *VPCLatticeGenerator) loadVPCLatticeServiceNetworkVpcAssociations(svc *vpclattice.Client, serviceNetworkID string) error {
+	if serviceNetworkID == "" {
+		return nil
+	}
+	input := &vpclattice.ListServiceNetworkVpcAssociationsInput{
+		ServiceNetworkIdentifier: &serviceNetworkID,
+	}
 	for {
 		output, err := svc.ListServiceNetworkVpcAssociations(context.TODO(), input)
 		if err != nil {
