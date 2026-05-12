@@ -16,7 +16,20 @@ import (
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
-var glueAllowEmptyValues = []string{"tags."}
+const (
+	glueConnectionResourceType                    = "aws_glue_connection"
+	glueDataCatalogEncryptionSettingsResourceType = "aws_glue_data_catalog_encryption_settings"
+	glueSchemaResourceType                        = "aws_glue_schema"
+	gluePartitionIndexResourceType                = "aws_glue_partition_index"
+	glueCatalogTableOptimizerResourceType         = "aws_glue_catalog_table_optimizer"
+	glueCatalogTableOptimizerIDSeparator          = ","
+)
+
+var glueAllowEmptyValues = []string{
+	"tags.",
+	"data_catalog_encryption_settings.*.connection_password_encryption.*.return_connection_password_encrypted",
+	"configuration.*.enabled",
+}
 
 type GlueGenerator struct {
 	AWSService
@@ -109,6 +122,12 @@ func (g *GlueGenerator) loadGlueCatalogTable(svc *glue.Client, account *string, 
 				"aws",
 				glueAllowEmptyValues)
 			g.Resources = append(g.Resources, resource)
+			if err := g.loadGluePartitionIndexes(svc, account, databaseName, catalogTable.Name); err != nil {
+				log.Printf("Skipping Glue partition indexes for %s: %v", databaseTable, err)
+			}
+			if err := g.loadGlueCatalogTableOptimizers(svc, account, databaseName, catalogTable.Name); err != nil {
+				log.Printf("Skipping Glue catalog table optimizers for %s: %v", databaseTable, err)
+			}
 		}
 	}
 	return nil
@@ -330,6 +349,108 @@ func (g *GlueGenerator) loadGlueDataQualityRulesets(svc *glue.Client) error {
 	return nil
 }
 
+func (g *GlueGenerator) loadGlueConnections(svc *glue.Client, account *string) error {
+	p := glue.NewGetConnectionsPaginator(svc, &glue.GetConnectionsInput{CatalogId: account})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, connection := range page.ConnectionList {
+			if resource, ok := newGlueConnectionResource(StringValue(account), connection); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+	}
+	return nil
+}
+
+func (g *GlueGenerator) loadGlueDataCatalogEncryptionSettings(svc *glue.Client, account *string) error {
+	catalogID := StringValue(account)
+	if catalogID == "" {
+		return nil
+	}
+	output, err := svc.GetDataCatalogEncryptionSettings(context.TODO(), &glue.GetDataCatalogEncryptionSettingsInput{
+		CatalogId: account,
+	})
+	if err != nil {
+		return err
+	}
+	if resource, ok := newGlueDataCatalogEncryptionSettingsResource(catalogID, output.DataCatalogEncryptionSettings); ok {
+		g.Resources = append(g.Resources, resource)
+	}
+	return nil
+}
+
+func (g *GlueGenerator) loadGlueSchemas(svc *glue.Client) error {
+	p := glue.NewListSchemasPaginator(svc, &glue.ListSchemasInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, schema := range page.Schemas {
+			if resource, ok := newGlueSchemaResource(schema); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+	}
+	return nil
+}
+
+func (g *GlueGenerator) loadGluePartitionIndexes(svc *glue.Client, account *string, databaseName *string, tableName *string) error {
+	catalogID := StringValue(account)
+	database := StringValue(databaseName)
+	table := StringValue(tableName)
+	if catalogID == "" || database == "" || table == "" {
+		return nil
+	}
+	p := glue.NewGetPartitionIndexesPaginator(svc, &glue.GetPartitionIndexesInput{
+		CatalogId:    account,
+		DatabaseName: databaseName,
+		TableName:    tableName,
+	})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, index := range page.PartitionIndexDescriptorList {
+			if resource, ok := newGluePartitionIndexResource(catalogID, database, table, index); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+	}
+	return nil
+}
+
+func (g *GlueGenerator) loadGlueCatalogTableOptimizers(svc *glue.Client, account *string, databaseName *string, tableName *string) error {
+	catalogID := StringValue(account)
+	database := StringValue(databaseName)
+	table := StringValue(tableName)
+	if catalogID == "" || database == "" || table == "" {
+		return nil
+	}
+	for _, optimizerType := range (gluetypes.TableOptimizerType("")).Values() {
+		output, err := svc.GetTableOptimizer(context.TODO(), &glue.GetTableOptimizerInput{
+			CatalogId:    account,
+			DatabaseName: databaseName,
+			TableName:    tableName,
+			Type:         optimizerType,
+		})
+		if glueResourceMissing(err) {
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		if resource, ok := newGlueCatalogTableOptimizerResource(catalogID, database, table, optimizerType, output.TableOptimizer); ok {
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
 func (g *GlueGenerator) loadGlueUserDefinedFunctions(svc *glue.Client, account *string, databaseName *string) error {
 	pattern := ".*"
 	p := glue.NewGetUserDefinedFunctionsPaginator(svc, &glue.GetUserDefinedFunctionsInput{
@@ -398,6 +519,97 @@ func (g *GlueGenerator) loadGlueResourcePolicy(svc *glue.Client, region string) 
 	return nil
 }
 
+func newGlueConnectionResource(catalogID string, connection gluetypes.Connection) (terraformutils.Resource, bool) {
+	connectionName := StringValue(connection.Name)
+	if catalogID == "" || connectionName == "" || !glueConnectionImportable(connection) {
+		return terraformutils.Resource{}, false
+	}
+	id := glueConnectionImportID(catalogID, connectionName)
+	return terraformutils.NewSimpleResource(
+		id,
+		glueResourceName(catalogID, connectionName),
+		glueConnectionResourceType,
+		"aws",
+		glueAllowEmptyValues,
+	), true
+}
+
+func newGlueDataCatalogEncryptionSettingsResource(catalogID string, settings *gluetypes.DataCatalogEncryptionSettings) (terraformutils.Resource, bool) {
+	if catalogID == "" || !glueDataCatalogEncryptionSettingsImportable(settings) {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewResource(
+		catalogID,
+		"data_catalog_encryption_settings",
+		glueDataCatalogEncryptionSettingsResourceType,
+		"aws",
+		map[string]string{"catalog_id": catalogID},
+		glueAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
+func newGlueSchemaResource(schema gluetypes.SchemaListItem) (terraformutils.Resource, bool) {
+	schemaARN := StringValue(schema.SchemaArn)
+	schemaName := StringValue(schema.SchemaName)
+	if schemaARN == "" || schemaName == "" || schema.SchemaStatus != gluetypes.SchemaStatusAvailable {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewSimpleResource(
+		schemaARN,
+		glueResourceName(StringValue(schema.RegistryName), schemaName),
+		glueSchemaResourceType,
+		"aws",
+		glueAllowEmptyValues,
+	), true
+}
+
+func newGluePartitionIndexResource(catalogID string, databaseName string, tableName string, index gluetypes.PartitionIndexDescriptor) (terraformutils.Resource, bool) {
+	indexName := StringValue(index.IndexName)
+	if catalogID == "" || databaseName == "" || tableName == "" || indexName == "" || !gluePartitionIndexImportable(index) {
+		return terraformutils.Resource{}, false
+	}
+	id := gluePartitionIndexImportID(catalogID, databaseName, tableName, indexName)
+	return terraformutils.NewSimpleResource(
+		id,
+		glueResourceName(catalogID, databaseName, tableName, indexName),
+		gluePartitionIndexResourceType,
+		"aws",
+		glueAllowEmptyValues,
+	), true
+}
+
+func newGlueCatalogTableOptimizerResource(catalogID string, databaseName string, tableName string, optimizerType gluetypes.TableOptimizerType, optimizer *gluetypes.TableOptimizer) (terraformutils.Resource, bool) {
+	if catalogID == "" || databaseName == "" || tableName == "" || optimizerType == "" || !glueCatalogTableOptimizerImportable(optimizer) {
+		return terraformutils.Resource{}, false
+	}
+	id := glueCatalogTableOptimizerImportID(catalogID, databaseName, tableName, string(optimizerType))
+	resource := terraformutils.NewResource(
+		id,
+		glueResourceName(catalogID, databaseName, tableName, string(optimizerType)),
+		glueCatalogTableOptimizerResourceType,
+		"aws",
+		map[string]string{
+			"catalog_id":    catalogID,
+			"database_name": databaseName,
+			"table_name":    tableName,
+			"type":          string(optimizerType),
+		},
+		glueAllowEmptyValues,
+		map[string]interface{}{},
+	)
+	setAwsFrameworkResourcePreserveIDAfterRefresh(&resource)
+	return resource, true
+}
+
+func glueCatalogTableOptimizerImportable(optimizer *gluetypes.TableOptimizer) bool {
+	if optimizer == nil || optimizer.Configuration == nil {
+		return false
+	}
+	configuration := optimizer.Configuration
+	return StringValue(configuration.RoleArn) != "" && configuration.Enabled != nil
+}
+
 func glueClassifierName(classifier gluetypes.Classifier) string {
 	switch {
 	case classifier.CsvClassifier != nil:
@@ -431,8 +643,54 @@ func glueRegistryImportable(registry gluetypes.RegistryListItem) bool {
 	return registry.Status == gluetypes.RegistryStatusAvailable
 }
 
+func glueConnectionImportable(connection gluetypes.Connection) bool {
+	if connection.Status != "" && connection.Status != gluetypes.ConnectionStatusReady {
+		return false
+	}
+	return !glueConnectionHasSensitiveConfiguration(connection)
+}
+
+func glueConnectionHasSensitiveConfiguration(connection gluetypes.Connection) bool {
+	if connection.AuthenticationConfiguration != nil {
+		return true
+	}
+	for _, properties := range []map[string]string{
+		connection.AthenaProperties,
+		connection.ConnectionProperties,
+		connection.PythonProperties,
+		connection.SparkProperties,
+	} {
+		for key, value := range properties {
+			if containsSensitiveToken(key) || containsSensitiveToken(value) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func glueDataCatalogEncryptionSettingsImportable(settings *gluetypes.DataCatalogEncryptionSettings) bool {
+	return settings != nil && settings.ConnectionPasswordEncryption != nil && settings.EncryptionAtRest != nil
+}
+
+func gluePartitionIndexImportable(index gluetypes.PartitionIndexDescriptor) bool {
+	return index.IndexStatus == gluetypes.PartitionIndexStatusActive
+}
+
 func glueUserDefinedFunctionImportID(catalogID string, databaseName string, functionName string) string {
 	return fmt.Sprintf("%s:%s:%s", catalogID, databaseName, functionName)
+}
+
+func glueConnectionImportID(catalogID string, connectionName string) string {
+	return fmt.Sprintf("%s:%s", catalogID, connectionName)
+}
+
+func gluePartitionIndexImportID(catalogID string, databaseName string, tableName string, indexName string) string {
+	return fmt.Sprintf("%s:%s:%s:%s", catalogID, databaseName, tableName, indexName)
+}
+
+func glueCatalogTableOptimizerImportID(catalogID string, databaseName string, tableName string, optimizerType string) string {
+	return strings.Join([]string{catalogID, databaseName, tableName, optimizerType}, glueCatalogTableOptimizerIDSeparator)
 }
 
 func glueResourceName(parts ...string) string {
@@ -500,12 +758,15 @@ func (g *GlueGenerator) InitResources() error {
 
 	g.loadOptionalResources([]glueOptionalResourceLoader{
 		{name: "classifiers", load: func() error { return g.loadGlueClassifiers(svc) }},
+		{name: "connections", load: func() error { return g.loadGlueConnections(svc, account) }},
 		{name: "workflows", load: func() error { return g.loadGlueWorkflows(svc) }},
 		{name: "security configurations", load: func() error { return g.loadGlueSecurityConfigurations(svc) }},
 		{name: "dev endpoints", load: func() error { return g.loadGlueDevEndpoints(svc) }},
 		{name: "ML transforms", load: func() error { return g.loadGlueMLTransforms(svc) }},
 		{name: "registries", load: func() error { return g.loadGlueRegistries(svc) }},
+		{name: "schemas", load: func() error { return g.loadGlueSchemas(svc) }},
 		{name: "data quality rulesets", load: func() error { return g.loadGlueDataQualityRulesets(svc) }},
+		{name: "data catalog encryption settings", load: func() error { return g.loadGlueDataCatalogEncryptionSettings(svc, account) }},
 		{name: "resource policy", load: func() error { return g.loadGlueResourcePolicy(svc, config.Region) }},
 	})
 

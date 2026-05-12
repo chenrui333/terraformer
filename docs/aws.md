@@ -124,6 +124,12 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_appsync_resolver`
     * `aws_appsync_source_api_association`
     * `aws_appsync_type`
+*   `athena`
+    * `aws_athena_capacity_reservation`
+    * `aws_athena_data_catalog`
+    * `aws_athena_named_query`
+    * `aws_athena_prepared_statement`
+    * `aws_athena_workgroup`
 *   `auto_scaling`
     * `aws_autoscaling_group`
     * `aws_launch_configuration`
@@ -376,14 +382,19 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
 *   `glue`
     * `aws_glue_catalog_database`
     * `aws_glue_catalog_table`
+    * `aws_glue_catalog_table_optimizer`
     * `aws_glue_classifier`
+    * `aws_glue_connection`
     * `aws_glue_crawler`
+    * `aws_glue_data_catalog_encryption_settings`
     * `aws_glue_data_quality_ruleset`
     * `aws_glue_dev_endpoint`
     * `aws_glue_job`
     * `aws_glue_ml_transform`
+    * `aws_glue_partition_index`
     * `aws_glue_registry`
     * `aws_glue_resource_policy`
+    * `aws_glue_schema`
     * `aws_glue_security_configuration`
     * `aws_glue_trigger`
     * `aws_glue_user_defined_function`
@@ -455,6 +466,12 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_kms_key`
     * `aws_kms_alias`
     * `aws_kms_grant`
+*   `lakeformation`
+    * `aws_lakeformation_data_cells_filter`
+    * `aws_lakeformation_data_lake_settings`
+    * `aws_lakeformation_identity_center_configuration`
+    * `aws_lakeformation_lf_tag`
+    * `aws_lakeformation_lf_tag_expression`
 *   `lambda`
     * `aws_lambda_alias`
     * `aws_lambda_code_signing_config`
