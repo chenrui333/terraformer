@@ -4,6 +4,7 @@ package aws
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -75,6 +76,9 @@ func cloud9EnvironmentImportable(svc *cloud9.Client, environmentID string) (bool
 	details, err := svc.DescribeEnvironmentStatus(context.TODO(), &cloud9.DescribeEnvironmentStatusInput{
 		EnvironmentId: &environmentID,
 	})
+	if cloud9EnvironmentNotFound(err) {
+		return false, nil
+	}
 	if err != nil {
 		return false, fmt.Errorf("describe Cloud9 environment status for %s: %w", environmentID, err)
 	}
@@ -83,6 +87,11 @@ func cloud9EnvironmentImportable(svc *cloud9.Client, environmentID string) (bool
 		return false, nil
 	}
 	return true, nil
+}
+
+func cloud9EnvironmentNotFound(err error) bool {
+	var notFound *types.NotFoundException
+	return errors.As(err, &notFound)
 }
 
 func newCloud9EnvironmentEC2Resource(environmentID string) terraformutils.Resource {

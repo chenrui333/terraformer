@@ -3,6 +3,7 @@
 package aws
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -52,6 +53,27 @@ func TestCloud9EnvironmentMembershipImportable(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := cloud9EnvironmentMembershipImportable(tt.permissions); got != tt.want {
 				t.Fatalf("cloud9EnvironmentMembershipImportable(%q) = %t, want %t", tt.permissions, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCloud9EnvironmentNotFound(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "nil", want: false},
+		{name: "not found", err: &types.NotFoundException{}, want: true},
+		{name: "wrapped not found", err: errors.Join(errors.New("lookup failed"), &types.NotFoundException{}), want: true},
+		{name: "generic", err: errors.New("boom"), want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := cloud9EnvironmentNotFound(tt.err); got != tt.want {
+				t.Fatalf("cloud9EnvironmentNotFound(%v) = %t, want %t", tt.err, got, tt.want)
 			}
 		})
 	}
