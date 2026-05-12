@@ -87,15 +87,18 @@ func (g *EfsGenerator) loadFileSystem(svc *efs.Client, loadFileSystems, loadMoun
 			}
 
 			if loadMountTargets {
-				targetsResponse, err := svc.DescribeMountTargets(context.TODO(), &efs.DescribeMountTargetsInput{
+				mountTargetPaginator := efs.NewDescribeMountTargetsPaginator(svc, &efs.DescribeMountTargetsInput{
 					FileSystemId: fileSystem.FileSystemId,
 				})
-				if err != nil {
-					return fmt.Errorf("describe efs mount targets for %s: %w", fileSystemID, err)
-				}
-				for _, mountTarget := range targetsResponse.MountTargets {
-					if resource, ok := newEFSMountTargetResource(StringValue(mountTarget.MountTargetId)); ok {
-						g.Resources = append(g.Resources, resource)
+				for mountTargetPaginator.HasMorePages() {
+					targetsResponse, err := mountTargetPaginator.NextPage(context.TODO())
+					if err != nil {
+						return fmt.Errorf("describe efs mount targets for %s: %w", fileSystemID, err)
+					}
+					for _, mountTarget := range targetsResponse.MountTargets {
+						if resource, ok := newEFSMountTargetResource(StringValue(mountTarget.MountTargetId)); ok {
+							g.Resources = append(g.Resources, resource)
+						}
 					}
 				}
 			}

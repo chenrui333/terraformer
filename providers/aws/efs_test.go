@@ -86,6 +86,53 @@ func TestEfsLoadFileSystemSkipsMissingPolicy(t *testing.T) {
 	}
 }
 
+func TestEfsLoadFileSystemPaginatesMountTargets(t *testing.T) {
+	mountTargetRequests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/2015-02-01/file-systems":
+			writeEfsJSON(w, http.StatusOK, "{\"FileSystems\":[{\"FileSystemId\":\"fs-123\"}]}")
+		case "/2015-02-01/mount-targets":
+			if got := r.URL.Query().Get("FileSystemId"); got != "fs-123" {
+				t.Errorf("FileSystemId query = %q, want %q", got, "fs-123")
+			}
+			mountTargetRequests++
+			switch mountTargetRequests {
+			case 1:
+				writeEfsJSON(w, http.StatusOK, "{\"MountTargets\":[{\"MountTargetId\":\"mt-1\"}],\"NextMarker\":\"page-2\"}")
+			case 2:
+				if got := r.URL.Query().Get("Marker"); got != "page-2" {
+					t.Errorf("Marker query = %q, want %q", got, "page-2")
+				}
+				writeEfsJSON(w, http.StatusOK, "{\"MountTargets\":[{\"MountTargetId\":\"mt-2\"}]}")
+			default:
+				t.Errorf("unexpected mount target request %d", mountTargetRequests)
+				writeEfsJSON(w, http.StatusOK, "{\"MountTargets\":[]}")
+			}
+		default:
+			t.Errorf("unexpected path %s", r.URL.Path)
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	generator := &EfsGenerator{}
+	if err := generator.loadFileSystem(newTestEfsClient(server), false, true, false); err != nil {
+		t.Fatalf("loadFileSystem returned error: %v", err)
+	}
+	if mountTargetRequests != 2 {
+		t.Fatalf("mount target requests = %d, want 2", mountTargetRequests)
+	}
+	if len(generator.Resources) != 2 {
+		t.Fatalf("len(Resources) = %d, want 2", len(generator.Resources))
+	}
+	for i, wantID := range []string{"mt-1", "mt-2"} {
+		if got := generator.Resources[i].InstanceState.ID; got != wantID {
+			t.Fatalf("resource[%d] ID = %q, want %q", i, got, wantID)
+		}
+	}
+}
+
 func TestEfsResourceConstructors(t *testing.T) {
 	tests := []struct {
 		name       string
