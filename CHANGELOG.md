@@ -1,5 +1,67 @@
 # Changelog
 
+## 0.12.0
+
+`0.12.0` is a broad AWS provider import-coverage release. It closes a large
+set of safe Terraform AWS provider gaps, adds framework support needed by
+endpoint-specific imports, and tightens discovery/filter behavior so generated
+resources stay scoped and refreshable.
+
+## What's Changed
+
+### AWS Provider Import Coverage
+
+* Expand AWS application, messaging, and integration coverage across API Gateway,
+  EventBridge Scheduler and Pipes, Lambda child resources, ECS, App Runner, Batch,
+  SESv2, chatbot, Chime, notifications, and customer engagement services such as
+  Connect and Pinpoint.
+* Expand AWS data and analytics coverage across DMS, DynamoDB global tables, Glue,
+  Lake Formation, Athena, OpenSearch, Redshift Serverless, S3 Tables, and S3
+  Control access points.
+* Expand AWS security, identity, and governance coverage across SSO Admin,
+  Identity Store, Access Analyzer, GuardDuty, Security Hub, Verified Access, IAM
+  federation/account settings, and related governance resources.
+* Expand AWS infrastructure and edge coverage across CloudWatch Logs, Route 53 and
+  Resolver, Global Accelerator, EC2/VPC adjunct resources, EFS, storage/network
+  management resources, and VPC Lattice.
+* Add long-tail and media service coverage for AppStream, MWAA, IVS, IVS Chat,
+  MediaStore, MediaPackage v2, MediaLive, Device Farm, Cloud9, DataPipeline, MQ,
+  QLDB ledgers, and MediaConvert queues.
+* Add AI, search, and end-user platform coverage for Bedrock, Bedrock Agent,
+  SageMaker AI, Kendra, Comprehend, Transcribe, Rekognition, and related service
+  families.
+
+### Discovery, Filtering, And Import Safety
+
+* Add AWS provider gap inventory tooling and unsupported-resource tracking so
+  high-risk resources are documented instead of advertised as partial support.
+* Improve typed filter handling for parent/child resources, including scoped
+  discovery for relationship resources and high-cardinality definition resources.
+* Add import-time provider configuration support for services that need endpoint
+  bootstrap or service-specific provider reconfiguration during refresh.
+* Harden discovery paths to skip provider-managed, system-managed, deleted,
+  incomplete, or not independently importable resources while continuing to import
+  customer-owned resources.
+* Preserve provider refresh identity and important empty values for resources
+  whose Terraform provider read paths require seeded state.
+
+### Dependencies, CI, And Repository Maintenance
+
+* Refresh AWS, GCP, Auth0, DigitalOcean, Azure, TencentCloud, Keycloak, Okta,
+  Yandex Cloud, and related provider dependencies.
+* Update GoReleaser workflow tooling and keep release automation on the
+  `v`-prefixed tag path introduced in `v0.11.0`.
+* Enable conservative Renovate automerge for dependency maintenance PRs.
+
+### Follow-Up Tracking
+
+* Continue AWS provider parity work in #338. The current wave intentionally keeps
+  unsafe resources on the unsupported list when the Terraform provider lacks an
+  importer, the service API cannot return required state, or resources are
+  system-managed rather than customer-owned.
+
+**Full Changelog**: https://github.com/chenrui333/terraformer/compare/v0.11.0...v0.12.0
+
 ## 0.11.0
 
 `0.11.0` is a large provider-coverage and Terraform compatibility release. It
