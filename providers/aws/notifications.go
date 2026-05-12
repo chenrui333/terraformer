@@ -8,6 +8,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/notifications"
 	notificationstypes "github.com/aws/aws-sdk-go-v2/service/notifications/types"
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -42,6 +43,7 @@ func (g *NotificationsGenerator) InitResources() error {
 	if e != nil {
 		return e
 	}
+	config = notificationsEastOnlyConfig(config)
 	svc := notifications.NewFromConfig(config)
 	if err := g.loadNotificationHubs(svc); err != nil {
 		return err
@@ -255,6 +257,11 @@ func notificationsListNotificationConfigurationsInput() *notifications.ListNotif
 	return &notifications.ListNotificationConfigurationsInput{
 		Subtype: notificationstypes.NotificationConfigurationSubtypeAccount,
 	}
+}
+
+func notificationsEastOnlyConfig(config aws.Config) aws.Config {
+	config.Region = MainRegionPublicPartition
+	return config
 }
 
 func notificationsHubImportable(hub notificationstypes.NotificationHubOverview) bool {

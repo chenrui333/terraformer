@@ -31,6 +31,26 @@ func TestNotificationsImportIDs(t *testing.T) {
 	}
 }
 
+func TestNotificationsEastOnlyConfig(t *testing.T) {
+	tests := []struct {
+		name   string
+		region string
+	}{
+		{name: "no region", region: NoRegion},
+		{name: "ambient west", region: "us-west-2"},
+		{name: "already east", region: MainRegionPublicPartition},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := notificationsEastOnlyConfig(aws.Config{Region: tt.region})
+			if config.Region != MainRegionPublicPartition {
+				t.Fatalf("Region = %q, want %q", config.Region, MainRegionPublicPartition)
+			}
+		})
+	}
+}
+
 func TestNewNotificationsResources(t *testing.T) {
 	configurationARN := "arn:aws:notifications::123456789012:configuration/config-123"
 	configuration, ok := newNotificationsNotificationConfigurationResource(notificationstypes.NotificationConfigurationStructure{

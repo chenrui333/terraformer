@@ -24,6 +24,7 @@ func (g *NotificationsContactsGenerator) InitResources() error {
 	if e != nil {
 		return e
 	}
+	config = notificationsEastOnlyConfig(config)
 	svc := notificationscontacts.NewFromConfig(config)
 	p := notificationscontacts.NewListEmailContactsPaginator(svc, &notificationscontacts.ListEmailContactsInput{})
 	for p.HasMorePages() {
