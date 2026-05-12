@@ -3,6 +3,7 @@
 package aws
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -212,11 +213,12 @@ func assertDataPipelineResourceIDs(t *testing.T, resources []terraformutils.Reso
 	if len(resources) != len(want) {
 		t.Fatalf("resources len = %d, want %d: %#v", len(resources), len(want), resources)
 	}
-	for i, resource := range resources {
-		got := resource.InstanceInfo.Type + "/" + resource.InstanceState.ID
-		if got != want[i] {
-			t.Fatalf("resource[%d] = %q, want %q", i, got, want[i])
-		}
+	got := make([]string, 0, len(resources))
+	for _, resource := range resources {
+		got = append(got, resource.InstanceInfo.Type+"/"+resource.InstanceState.ID)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("resources = %v, want %v", got, want)
 	}
 }
 
