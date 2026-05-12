@@ -455,6 +455,18 @@
       ]
     },
     {
+      "resource": "aws_qldb_stream",
+      "service_family": "qldb",
+      "reason": "Terraform AWS provider v6.44.0 does not support importing QLDB streams, so Terraformer cannot seed a provider-recognized import state.",
+      "evidence": "The Terraform AWS provider aws_qldb_stream resource source has no ResourceImporter and the provider documentation has no Import section; its stream ID is assigned during Create.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/qldb_stream",
+        "https://docs.aws.amazon.com/qldb/latest/developerguide/streams.html"
+      ]
+    },
+    {
       "resource": "aws_sagemaker_human_task_ui",
       "service_family": "sagemaker",
       "reason": "SageMaker Human Task UI imports cannot reconstruct the required ui_template.content field from SageMaker APIs.",

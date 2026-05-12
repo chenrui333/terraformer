@@ -610,7 +610,6 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_pipes_pipe`
 *   `qldb`
     * `aws_qldb_ledger`
-    * `aws_qldb_stream`
 *   `rds`
     * `aws_db_instance`
     * `aws_db_instance_role_association`
