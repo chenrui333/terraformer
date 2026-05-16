@@ -80,7 +80,18 @@ func (g *TransitGatewayGenerator) getTransitGatewayVpcAttachments(svc *ec2.Clien
 	return nil
 }
 
+func (g *TransitGatewayGenerator) localTGWIDs() map[string]struct{} {
+	ids := make(map[string]struct{})
+	for _, r := range g.Resources {
+		if r.InstanceInfo.Type == "aws_ec2_transit_gateway" {
+			ids[r.InstanceState.ID] = struct{}{}
+		}
+	}
+	return ids
+}
+
 func (g *TransitGatewayGenerator) getTransitGatewayPeeringAttachments(svc *ec2.Client) error {
+	localTGWs := g.localTGWIDs()
 	p := ec2.NewDescribeTransitGatewayPeeringAttachmentsPaginator(svc, &ec2.DescribeTransitGatewayPeeringAttachmentsInput{})
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
@@ -96,10 +107,29 @@ func (g *TransitGatewayGenerator) getTransitGatewayPeeringAttachments(svc *ec2.C
 				att.State == types.TransitGatewayAttachmentStateFailing {
 				continue
 			}
+
+			requesterTGW := ""
+			if att.RequesterTgwInfo != nil && att.RequesterTgwInfo.TransitGatewayId != nil {
+				requesterTGW = *att.RequesterTgwInfo.TransitGatewayId
+			}
+			accepterTGW := ""
+			if att.AccepterTgwInfo != nil && att.AccepterTgwInfo.TransitGatewayId != nil {
+				accepterTGW = *att.AccepterTgwInfo.TransitGatewayId
+			}
+
+			resourceType := ""
+			if _, isLocal := localTGWs[requesterTGW]; isLocal {
+				resourceType = "aws_ec2_transit_gateway_peering_attachment"
+			} else if _, isLocal := localTGWs[accepterTGW]; isLocal {
+				resourceType = "aws_ec2_transit_gateway_peering_attachment_accepter"
+			} else {
+				continue
+			}
+
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
 				StringValue(att.TransitGatewayAttachmentId),
 				StringValue(att.TransitGatewayAttachmentId),
-				"aws_ec2_transit_gateway_peering_attachment",
+				resourceType,
 				"aws",
 				tgwAllowEmptyValues,
 			))
@@ -116,6 +146,9 @@ func (g *TransitGatewayGenerator) getTransitGatewayRouteTableAssociations(svc *e
 			return err
 		}
 		for _, rt := range rtPage.TransitGatewayRouteTables {
+			if rt.State != types.TransitGatewayRouteTableStateAvailable {
+				continue
+			}
 			isDefaultAssociation := rt.DefaultAssociationRouteTable != nil && *rt.DefaultAssociationRouteTable
 			isDefaultPropagation := rt.DefaultPropagationRouteTable != nil && *rt.DefaultPropagationRouteTable
 
