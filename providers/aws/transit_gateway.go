@@ -44,7 +44,7 @@ func (g *TransitGatewayGenerator) getTransitGatewayRouteTables(svc *ec2.Client) 
 			return err
 		}
 		for _, tgwrt := range page.TransitGatewayRouteTables {
-			if *tgwrt.DefaultAssociationRouteTable {
+			if tgwrt.DefaultAssociationRouteTable != nil && *tgwrt.DefaultAssociationRouteTable {
 				continue
 			}
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
