@@ -23,47 +23,13 @@ func (g *VpcEndpointGenerator) createResources(vpceps *ec2.DescribeVpcEndpointsO
 		if vpcEndpoint.State == types.StateDeleted || vpcEndpoint.State == types.StateDeleting {
 			continue
 		}
-
-		vpceID := StringValue(vpcEndpoint.VpcEndpointId)
 		resources = append(resources, terraformutils.NewSimpleResource(
-			vpceID,
-			vpceID,
+			StringValue(vpcEndpoint.VpcEndpointId),
+			StringValue(vpcEndpoint.VpcEndpointId),
 			"aws_vpc_endpoint",
 			"aws",
 			VpcEndpointAllowEmptyValues,
 		))
-
-		for _, rtID := range vpcEndpoint.RouteTableIds {
-			id := vpceID + "/" + rtID
-			resources = append(resources, terraformutils.NewResource(
-				id,
-				id,
-				"aws_vpc_endpoint_route_table_association",
-				"aws",
-				map[string]string{
-					"vpc_endpoint_id": vpceID,
-					"route_table_id":  rtID,
-				},
-				VpcEndpointAllowEmptyValues,
-				map[string]interface{}{},
-			))
-		}
-
-		for _, subnetID := range vpcEndpoint.SubnetIds {
-			id := vpceID + "/" + subnetID
-			resources = append(resources, terraformutils.NewResource(
-				id,
-				id,
-				"aws_vpc_endpoint_subnet_association",
-				"aws",
-				map[string]string{
-					"vpc_endpoint_id": vpceID,
-					"subnet_id":       subnetID,
-				},
-				VpcEndpointAllowEmptyValues,
-				map[string]interface{}{},
-			))
-		}
 	}
 	return resources
 }
