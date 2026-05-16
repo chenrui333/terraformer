@@ -1,0 +1,32 @@
+CLAUDE.md
+  s_1a09cedff3b272::t_982de241d60e3c 1-751
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "6a676cbc7cc31ff7e8e64b61cc363bed19189117",
+  "prompts": {
+    "06e94997a7ab0d08": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dfb55-46c8-7491-80bb-5b91c3172034",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>",
+      "total_additions": 611,
+      "total_deletions": 15,
+      "accepted_lines": 601,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_1a09cedff3b272": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4ce10e50-05ce-4770-85ab-6ffce91c7f7b",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
