@@ -116,63 +116,66 @@ func (g *TransitGatewayGenerator) getTransitGatewayRouteTableAssociations(svc *e
 			return err
 		}
 		for _, rt := range rtPage.TransitGatewayRouteTables {
-			if rt.DefaultAssociationRouteTable != nil && *rt.DefaultAssociationRouteTable {
-				continue
+			isDefaultAssociation := rt.DefaultAssociationRouteTable != nil && *rt.DefaultAssociationRouteTable
+			isDefaultPropagation := rt.DefaultPropagationRouteTable != nil && *rt.DefaultPropagationRouteTable
+
+			if !isDefaultAssociation {
+				assocPages := ec2.NewGetTransitGatewayRouteTableAssociationsPaginator(svc, &ec2.GetTransitGatewayRouteTableAssociationsInput{
+					TransitGatewayRouteTableId: rt.TransitGatewayRouteTableId,
+				})
+				for assocPages.HasMorePages() {
+					assocPage, err := assocPages.NextPage(context.TODO())
+					if err != nil {
+						return err
+					}
+					for _, assoc := range assocPage.Associations {
+						if assoc.State != types.TransitGatewayAssociationStateAssociated {
+							continue
+						}
+						id := StringValue(rt.TransitGatewayRouteTableId) + "_" + StringValue(assoc.TransitGatewayAttachmentId)
+						g.Resources = append(g.Resources, terraformutils.NewResource(
+							id,
+							id,
+							"aws_ec2_transit_gateway_route_table_association",
+							"aws",
+							map[string]string{
+								"transit_gateway_attachment_id":  StringValue(assoc.TransitGatewayAttachmentId),
+								"transit_gateway_route_table_id": StringValue(rt.TransitGatewayRouteTableId),
+							},
+							tgwAllowEmptyValues,
+							map[string]interface{}{},
+						))
+					}
+				}
 			}
 
-			assocPages := ec2.NewGetTransitGatewayRouteTableAssociationsPaginator(svc, &ec2.GetTransitGatewayRouteTableAssociationsInput{
-				TransitGatewayRouteTableId: rt.TransitGatewayRouteTableId,
-			})
-			for assocPages.HasMorePages() {
-				assocPage, err := assocPages.NextPage(context.TODO())
-				if err != nil {
-					return err
-				}
-				for _, assoc := range assocPage.Associations {
-					if assoc.State != types.TransitGatewayAssociationStateAssociated {
-						continue
+			if !isDefaultPropagation {
+				propPages := ec2.NewGetTransitGatewayRouteTablePropagationsPaginator(svc, &ec2.GetTransitGatewayRouteTablePropagationsInput{
+					TransitGatewayRouteTableId: rt.TransitGatewayRouteTableId,
+				})
+				for propPages.HasMorePages() {
+					propPage, err := propPages.NextPage(context.TODO())
+					if err != nil {
+						return err
 					}
-					id := StringValue(rt.TransitGatewayRouteTableId) + "_" + StringValue(assoc.TransitGatewayAttachmentId)
-					g.Resources = append(g.Resources, terraformutils.NewResource(
-						id,
-						id,
-						"aws_ec2_transit_gateway_route_table_association",
-						"aws",
-						map[string]string{
-							"transit_gateway_attachment_id":  StringValue(assoc.TransitGatewayAttachmentId),
-							"transit_gateway_route_table_id": StringValue(rt.TransitGatewayRouteTableId),
-						},
-						tgwAllowEmptyValues,
-						map[string]interface{}{},
-					))
-				}
-			}
-
-			propPages := ec2.NewGetTransitGatewayRouteTablePropagationsPaginator(svc, &ec2.GetTransitGatewayRouteTablePropagationsInput{
-				TransitGatewayRouteTableId: rt.TransitGatewayRouteTableId,
-			})
-			for propPages.HasMorePages() {
-				propPage, err := propPages.NextPage(context.TODO())
-				if err != nil {
-					return err
-				}
-				for _, prop := range propPage.TransitGatewayRouteTablePropagations {
-					if prop.State != types.TransitGatewayPropagationStateEnabled {
-						continue
+					for _, prop := range propPage.TransitGatewayRouteTablePropagations {
+						if prop.State != types.TransitGatewayPropagationStateEnabled {
+							continue
+						}
+						id := StringValue(rt.TransitGatewayRouteTableId) + "_" + StringValue(prop.TransitGatewayAttachmentId)
+						g.Resources = append(g.Resources, terraformutils.NewResource(
+							id,
+							id,
+							"aws_ec2_transit_gateway_route_table_propagation",
+							"aws",
+							map[string]string{
+								"transit_gateway_attachment_id":  StringValue(prop.TransitGatewayAttachmentId),
+								"transit_gateway_route_table_id": StringValue(rt.TransitGatewayRouteTableId),
+							},
+							tgwAllowEmptyValues,
+							map[string]interface{}{},
+						))
 					}
-					id := StringValue(rt.TransitGatewayRouteTableId) + "_" + StringValue(prop.TransitGatewayAttachmentId)
-					g.Resources = append(g.Resources, terraformutils.NewResource(
-						id,
-						id,
-						"aws_ec2_transit_gateway_route_table_propagation",
-						"aws",
-						map[string]string{
-							"transit_gateway_attachment_id":  StringValue(prop.TransitGatewayAttachmentId),
-							"transit_gateway_route_table_id": StringValue(rt.TransitGatewayRouteTableId),
-						},
-						tgwAllowEmptyValues,
-						map[string]interface{}{},
-					))
 				}
 			}
 		}
