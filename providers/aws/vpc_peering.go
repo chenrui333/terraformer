@@ -8,6 +8,7 @@ import (
 	"github.com/chenrui333/terraformer/terraformutils"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 )
 
 var peeringAllowEmptyValues = []string{"tags."}
@@ -19,6 +20,16 @@ type VpcPeeringConnectionGenerator struct {
 func (g *VpcPeeringConnectionGenerator) createResources(peerings *ec2.DescribeVpcPeeringConnectionsOutput) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 	for _, peering := range peerings.VpcPeeringConnections {
+		if peering.Status != nil {
+			code := peering.Status.Code
+			if code == types.VpcPeeringConnectionStateReasonCodeDeleted ||
+				code == types.VpcPeeringConnectionStateReasonCodeDeleting ||
+				code == types.VpcPeeringConnectionStateReasonCodeRejected ||
+				code == types.VpcPeeringConnectionStateReasonCodeExpired ||
+				code == types.VpcPeeringConnectionStateReasonCodeFailed {
+				continue
+			}
+		}
 		resources = append(resources, terraformutils.NewSimpleResource(
 			StringValue(peering.VpcPeeringConnectionId),
 			StringValue(peering.VpcPeeringConnectionId),

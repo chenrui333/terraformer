@@ -14,8 +14,8 @@ func TestVpcEndpointCreateResources(t *testing.T) {
 	g := VpcEndpointGenerator{}
 	output := &ec2.DescribeVpcEndpointsOutput{
 		VpcEndpoints: []types.VpcEndpoint{
-			{VpcEndpointId: aws.String("vpce-111")},
-			{VpcEndpointId: aws.String("vpce-222")},
+			{VpcEndpointId: aws.String("vpce-111"), State: types.StateAvailable},
+			{VpcEndpointId: aws.String("vpce-222"), State: types.StateAvailable},
 		},
 	}
 
@@ -30,10 +30,80 @@ func TestVpcEndpointCreateResources(t *testing.T) {
 	if resources[1].InstanceState.ID != "vpce-222" {
 		t.Errorf("expected vpce-222, got %s", resources[1].InstanceState.ID)
 	}
-	for _, r := range resources {
-		if r.InstanceInfo.Type != "aws_vpc_endpoint" {
-			t.Errorf("expected type aws_vpc_endpoint, got %s", r.InstanceInfo.Type)
-		}
+}
+
+func TestVpcEndpointFilterDeletedState(t *testing.T) {
+	g := VpcEndpointGenerator{}
+	output := &ec2.DescribeVpcEndpointsOutput{
+		VpcEndpoints: []types.VpcEndpoint{
+			{VpcEndpointId: aws.String("vpce-alive"), State: types.StateAvailable},
+			{VpcEndpointId: aws.String("vpce-dead"), State: types.StateDeleted},
+			{VpcEndpointId: aws.String("vpce-dying"), State: types.StateDeleting},
+		},
+	}
+
+	resources := g.createResources(output)
+
+	if len(resources) != 1 {
+		t.Fatalf("expected 1 resource, got %d", len(resources))
+	}
+	if resources[0].InstanceState.ID != "vpce-alive" {
+		t.Errorf("expected vpce-alive, got %s", resources[0].InstanceState.ID)
+	}
+}
+
+func TestVpcEndpointRouteTableAssociations(t *testing.T) {
+	g := VpcEndpointGenerator{}
+	output := &ec2.DescribeVpcEndpointsOutput{
+		VpcEndpoints: []types.VpcEndpoint{
+			{
+				VpcEndpointId: aws.String("vpce-gw"),
+				State:         types.StateAvailable,
+				RouteTableIds: []string{"rtb-111", "rtb-222"},
+			},
+		},
+	}
+
+	resources := g.createResources(output)
+
+	// 1 endpoint + 2 route table associations
+	if len(resources) != 3 {
+		t.Fatalf("expected 3 resources, got %d", len(resources))
+	}
+	if resources[1].InstanceInfo.Type != "aws_vpc_endpoint_route_table_association" {
+		t.Errorf("expected route_table_association, got %s", resources[1].InstanceInfo.Type)
+	}
+	if resources[1].InstanceState.ID != "vpce-gw/rtb-111" {
+		t.Errorf("expected vpce-gw/rtb-111, got %s", resources[1].InstanceState.ID)
+	}
+	if resources[2].InstanceState.ID != "vpce-gw/rtb-222" {
+		t.Errorf("expected vpce-gw/rtb-222, got %s", resources[2].InstanceState.ID)
+	}
+}
+
+func TestVpcEndpointSubnetAssociations(t *testing.T) {
+	g := VpcEndpointGenerator{}
+	output := &ec2.DescribeVpcEndpointsOutput{
+		VpcEndpoints: []types.VpcEndpoint{
+			{
+				VpcEndpointId: aws.String("vpce-iface"),
+				State:         types.StateAvailable,
+				SubnetIds:     []string{"subnet-aaa", "subnet-bbb"},
+			},
+		},
+	}
+
+	resources := g.createResources(output)
+
+	// 1 endpoint + 2 subnet associations
+	if len(resources) != 3 {
+		t.Fatalf("expected 3 resources, got %d", len(resources))
+	}
+	if resources[1].InstanceInfo.Type != "aws_vpc_endpoint_subnet_association" {
+		t.Errorf("expected subnet_association, got %s", resources[1].InstanceInfo.Type)
+	}
+	if resources[1].InstanceState.ID != "vpce-iface/subnet-aaa" {
+		t.Errorf("expected vpce-iface/subnet-aaa, got %s", resources[1].InstanceState.ID)
 	}
 }
 
@@ -41,7 +111,7 @@ func TestVpcEndpointAllowEmptyValues(t *testing.T) {
 	g := VpcEndpointGenerator{}
 	output := &ec2.DescribeVpcEndpointsOutput{
 		VpcEndpoints: []types.VpcEndpoint{
-			{VpcEndpointId: aws.String("vpce-111")},
+			{VpcEndpointId: aws.String("vpce-111"), State: types.StateAvailable},
 		},
 	}
 

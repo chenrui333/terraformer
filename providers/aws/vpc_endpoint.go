@@ -8,6 +8,7 @@ import (
 	"github.com/chenrui333/terraformer/terraformutils"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 )
 
 var VpcEndpointAllowEmptyValues = []string{"tags."}
@@ -19,13 +20,50 @@ type VpcEndpointGenerator struct {
 func (g *VpcEndpointGenerator) createResources(vpceps *ec2.DescribeVpcEndpointsOutput) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 	for _, vpcEndpoint := range vpceps.VpcEndpoints {
+		if vpcEndpoint.State == types.StateDeleted || vpcEndpoint.State == types.StateDeleting {
+			continue
+		}
+
+		vpceID := StringValue(vpcEndpoint.VpcEndpointId)
 		resources = append(resources, terraformutils.NewSimpleResource(
-			StringValue(vpcEndpoint.VpcEndpointId),
-			StringValue(vpcEndpoint.VpcEndpointId),
+			vpceID,
+			vpceID,
 			"aws_vpc_endpoint",
 			"aws",
 			VpcEndpointAllowEmptyValues,
 		))
+
+		for _, rtID := range vpcEndpoint.RouteTableIds {
+			id := vpceID + "/" + rtID
+			resources = append(resources, terraformutils.NewResource(
+				id,
+				id,
+				"aws_vpc_endpoint_route_table_association",
+				"aws",
+				map[string]string{
+					"vpc_endpoint_id": vpceID,
+					"route_table_id":  rtID,
+				},
+				VpcEndpointAllowEmptyValues,
+				map[string]interface{}{},
+			))
+		}
+
+		for _, subnetID := range vpcEndpoint.SubnetIds {
+			id := vpceID + "/" + subnetID
+			resources = append(resources, terraformutils.NewResource(
+				id,
+				id,
+				"aws_vpc_endpoint_subnet_association",
+				"aws",
+				map[string]string{
+					"vpc_endpoint_id": vpceID,
+					"subnet_id":       subnetID,
+				},
+				VpcEndpointAllowEmptyValues,
+				map[string]interface{}{},
+			))
+		}
 	}
 	return resources
 }
