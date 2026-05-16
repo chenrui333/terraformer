@@ -78,7 +78,6 @@ func (g *IamGenerator) InitResources() error {
 		{name: "OpenID Connect providers", load: func() error { return g.getOpenIDConnectProviders(svc) }},
 		{name: "SAML providers", load: func() error { return g.getSAMLProviders(svc) }},
 		{name: "service-linked roles", load: func() error { return g.getServiceLinkedRoles(svc) }},
-		{name: "server certificates", load: func() error { return g.getServerCertificates(svc) }},
 	})
 
 	return nil
@@ -206,6 +205,9 @@ func (g *IamGenerator) getRoles(svc *iam.Client) error {
 			return err
 		}
 		for _, role := range page.Roles {
+			if strings.HasPrefix(StringValue(role.Path), "/aws-service-role/") {
+				continue
+			}
 			roleName := StringValue(role.RoleName)
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
 				roleName,
@@ -539,29 +541,6 @@ func (g *IamGenerator) getServiceLinkedRoles(svc *iam.Client) error {
 				roleARN,
 				iamResourceName("slr", roleName),
 				"aws_iam_service_linked_role",
-				"aws",
-				IamAllowEmptyValues))
-		}
-	}
-	return nil
-}
-
-func (g *IamGenerator) getServerCertificates(svc *iam.Client) error {
-	p := iam.NewListServerCertificatesPaginator(svc, &iam.ListServerCertificatesInput{})
-	for p.HasMorePages() {
-		page, err := p.NextPage(context.TODO())
-		if err != nil {
-			return err
-		}
-		for _, cert := range page.ServerCertificateMetadataList {
-			certName := StringValue(cert.ServerCertificateName)
-			if certName == "" {
-				continue
-			}
-			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				certName,
-				iamResourceName("cert", certName),
-				"aws_iam_server_certificate",
 				"aws",
 				IamAllowEmptyValues))
 		}
