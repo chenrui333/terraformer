@@ -1,0 +1,21 @@
+providers/aws/cloudtrail_test.go
+  s_229e27b3dd8b77::t_cae0dd6219f779 11-14,16-21,23-24
+providers/aws/cloudtrail.go
+  s_229e27b3dd8b77::t_f44de7501d7077 54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "aab72284637bd549a5e54389bf42a41f62024036",
+  "prompts": {},
+  "sessions": {
+    "s_229e27b3dd8b77": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2a6e23e4-a556-4f5a-b364-e5c431b2ccf7",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
