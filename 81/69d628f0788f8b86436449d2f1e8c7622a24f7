@@ -1,0 +1,21 @@
+providers/aws/transit_gateway.go
+  s_fdb6ca9cb392bd::t_18cbe6fbc08566 91-98
+  s_fdb6ca9cb392bd::t_9eba642c39d74a 119-122,132-134,160-162
+  s_fdb6ca9cb392bd::t_e9f643ff5d7ba9 11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "8169d628f0788f8b86436449d2f1e8c7622a24f7",
+  "prompts": {},
+  "sessions": {
+    "s_fdb6ca9cb392bd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9d31f326-2a4f-4931-8493-6f9b22b16830",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
