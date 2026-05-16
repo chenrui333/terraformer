@@ -61,6 +61,10 @@ strings are emitted:
 Native APIs with typed client support but no registered Terraform provider type
 (e.g. `Event`, `Lease`) are silently skipped without a verbose reason.
 
+These behaviors are enforced by `TestKubernetes133To135APIDiscoveryMatrix`,
+`TestVerboseSkipLoggingForNativeAPIs`, and `TestCRDManifestFallbackNotBroken`
+in `providers/kubernetes/utils_test.go`.
+
 Common supported resources include:
 
 *   `annotations`
