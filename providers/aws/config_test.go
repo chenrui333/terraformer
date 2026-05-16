@@ -233,3 +233,4 @@ func TestConfigRemediationConfigurationDependencySanitizesRuleName(t *testing.T)
 		t.Fatalf("depends_on = %#v, want [%q]", dependsOn, want)
 	}
 }
+
