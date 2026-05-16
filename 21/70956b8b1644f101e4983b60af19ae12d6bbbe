@@ -1,0 +1,19 @@
+docs/kubernetes.md
+  s_0264be4fe4228a::t_3c3a6c3872a3da 64-67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "2170956b8b1644f101e4983b60af19ae12d6bbbe",
+  "prompts": {},
+  "sessions": {
+    "s_0264be4fe4228a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bf336c01-fe4c-4245-ac63-1964c8b6ba0a",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
