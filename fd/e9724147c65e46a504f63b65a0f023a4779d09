@@ -1,0 +1,39 @@
+providers/aws/nat_gateway.go
+  s_fdb6ca9cb392bd::t_18e1013a45c9b2 12,24-26,47-49,51-54
+  s_fdb6ca9cb392bd::t_8c4c38a66d28a0 10,50
+providers/aws/aws_provider.go
+  s_fdb6ca9cb392bd::t_be90d49be80367 93-96
+  s_fdb6ca9cb392bd::t_a9a8bfe3cd1906 118-121
+  s_fdb6ca9cb392bd::t_4c68c496eeb23b 161-166
+  s_fdb6ca9cb392bd::t_eca6f1289b3f7d 77-79
+providers/aws/transit_gateway.go
+  s_fdb6ca9cb392bd::t_3b796a12c0e809 82-125,127-150,152-164,172-173,176,179-185
+  s_fdb6ca9cb392bd::t_72e2185977276f 126,151
+providers/aws/vpc_endpoint_test.go
+  s_fdb6ca9cb392bd::t_2f21ea04e4a761 27-28,30-31
+  s_fdb6ca9cb392bd::t_45eee42bb24fbc 1-26,29,32-63
+providers/aws/nat_gateway_test.go
+  s_fdb6ca9cb392bd::t_ed208487197016 52
+  s_fdb6ca9cb392bd::t_7b43f91e946a0f 1-51,53-72
+providers/aws/vpc_endpoint.go
+  s_fdb6ca9cb392bd::t_524fcf661107f7 27,42-48
+providers/aws/transit_gateway_test.go
+  s_fdb6ca9cb392bd::t_fd69e06b370c16 1-19,24-25,30-48,51-77,81-82
+  s_fdb6ca9cb392bd::t_00306d1999dec5 20-23,26-29,49-50,78-80
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "fde9724147c65e46a504f63b65a0f023a4779d09",
+  "prompts": {},
+  "sessions": {
+    "s_fdb6ca9cb392bd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9d31f326-2a4f-4931-8493-6f9b22b16830",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
