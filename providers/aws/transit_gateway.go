@@ -8,6 +8,7 @@ import (
 	"github.com/chenrui333/terraformer/terraformutils"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 )
 
 var tgwAllowEmptyValues = []string{"tags."}
@@ -87,6 +88,14 @@ func (g *TransitGatewayGenerator) getTransitGatewayPeeringAttachments(svc *ec2.C
 			return err
 		}
 		for _, att := range page.TransitGatewayPeeringAttachments {
+			if att.State == types.TransitGatewayAttachmentStateDeleted ||
+				att.State == types.TransitGatewayAttachmentStateDeleting ||
+				att.State == types.TransitGatewayAttachmentStateRejected ||
+				att.State == types.TransitGatewayAttachmentStateRejecting ||
+				att.State == types.TransitGatewayAttachmentStateFailed ||
+				att.State == types.TransitGatewayAttachmentStateFailing {
+				continue
+			}
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
 				StringValue(att.TransitGatewayAttachmentId),
 				StringValue(att.TransitGatewayAttachmentId),
@@ -107,6 +116,10 @@ func (g *TransitGatewayGenerator) getTransitGatewayRouteTableAssociations(svc *e
 			return err
 		}
 		for _, rt := range rtPage.TransitGatewayRouteTables {
+			if rt.DefaultAssociationRouteTable != nil && *rt.DefaultAssociationRouteTable {
+				continue
+			}
+
 			assocPages := ec2.NewGetTransitGatewayRouteTableAssociationsPaginator(svc, &ec2.GetTransitGatewayRouteTableAssociationsInput{
 				TransitGatewayRouteTableId: rt.TransitGatewayRouteTableId,
 			})
@@ -116,6 +129,9 @@ func (g *TransitGatewayGenerator) getTransitGatewayRouteTableAssociations(svc *e
 					return err
 				}
 				for _, assoc := range assocPage.Associations {
+					if assoc.State != types.TransitGatewayAssociationStateAssociated {
+						continue
+					}
 					id := StringValue(rt.TransitGatewayRouteTableId) + "_" + StringValue(assoc.TransitGatewayAttachmentId)
 					g.Resources = append(g.Resources, terraformutils.NewResource(
 						id,
@@ -141,6 +157,9 @@ func (g *TransitGatewayGenerator) getTransitGatewayRouteTableAssociations(svc *e
 					return err
 				}
 				for _, prop := range propPage.TransitGatewayRouteTablePropagations {
+					if prop.State != types.TransitGatewayPropagationStateEnabled {
+						continue
+					}
 					id := StringValue(rt.TransitGatewayRouteTableId) + "_" + StringValue(prop.TransitGatewayAttachmentId)
 					g.Resources = append(g.Resources, terraformutils.NewResource(
 						id,
