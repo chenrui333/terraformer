@@ -25,6 +25,9 @@ func (g *TransitGatewayGenerator) getTransitGateways(svc *ec2.Client) error {
 			return err
 		}
 		for _, tgw := range page.TransitGateways {
+			if tgw.State == types.TransitGatewayStateDeleted || tgw.State == types.TransitGatewayStateDeleting {
+				continue
+			}
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
 				StringValue(tgw.TransitGatewayId),
 				StringValue(tgw.TransitGatewayId),

@@ -7,7 +7,9 @@ import (
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 )
 
 var VpnAllowEmptyValues = []string{"tags."}
@@ -16,9 +18,12 @@ type VpnGatewayGenerator struct {
 	AWSService
 }
 
-func (VpnGatewayGenerator) createResources(vpnGws *ec2.DescribeVpnGatewaysOutput) []terraformutils.Resource {
+func (g *VpnGatewayGenerator) createResources(vpnGws *ec2.DescribeVpnGatewaysOutput) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 	for _, vpnGw := range vpnGws.VpnGateways {
+		if vpnGw.State == types.VpnStateDeleted || vpnGw.State == types.VpnStateDeleting {
+			continue
+		}
 		resources = append(resources, terraformutils.NewSimpleResource(
 			StringValue(vpnGw.VpnGatewayId),
 			StringValue(vpnGw.VpnGatewayId),
@@ -39,7 +44,14 @@ func (g *VpnGatewayGenerator) InitResources() error {
 		return e
 	}
 	svc := ec2.NewFromConfig(config)
-	vpnGws, err := svc.DescribeVpnGateways(context.TODO(), &ec2.DescribeVpnGatewaysInput{})
+	vpnGws, err := svc.DescribeVpnGateways(context.TODO(), &ec2.DescribeVpnGatewaysInput{
+		Filters: []types.Filter{
+			{
+				Name:   aws.String("state"),
+				Values: []string{"pending", "available"},
+			},
+		},
+	})
 	if err != nil {
 		return err
 	}
