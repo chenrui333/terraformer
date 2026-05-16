@@ -1,0 +1,36 @@
+providers/aws/customer_gateway.go
+  s_fdb6ca9cb392bd::t_d0d99a0c586b69 10,12,21-26,28-29,47-54
+providers/aws/vpc_peering_test.go
+  s_fdb6ca9cb392bd::t_fd3a8cddaba548 1-85
+providers/aws/customer_gateway_test.go
+  s_fdb6ca9cb392bd::t_411c8a050080b3 1-57
+providers/aws/vpn_connection_test.go
+  s_fdb6ca9cb392bd::t_98e53cd8fbdb5d 1-55
+providers/aws/vpc_endpoint.go
+  s_fdb6ca9cb392bd::t_2fc743ceeba5a6 11,23-27,29-30,35-66
+providers/aws/vpn_connection.go
+  s_fdb6ca9cb392bd::t_65c83786ea646d 10,12,21,24-26,47-54
+providers/aws/vpc_endpoint_test.go
+  s_fdb6ca9cb392bd::t_b15cb3205e88f9 17-18,33-106,114
+providers/aws/aws_provider.go
+  s_fdb6ca9cb392bd::t_4853d28de5a34e 174-179,184
+  s_fdb6ca9cb392bd::t_1f2bbd04565ff1 153
+providers/aws/vpc_peering.go
+  s_fdb6ca9cb392bd::t_e675a15228918f 11,23-32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "df21102f68242dfafd63785fca62c60833650aa8",
+  "prompts": {},
+  "sessions": {
+    "s_fdb6ca9cb392bd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9d31f326-2a4f-4931-8493-6f9b22b16830",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
