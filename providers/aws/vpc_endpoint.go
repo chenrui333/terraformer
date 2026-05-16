@@ -24,7 +24,7 @@ func (g *VpcEndpointGenerator) createResources(vpceps *ec2.DescribeVpcEndpointsO
 			StringValue(vpcEndpoint.VpcEndpointId),
 			"aws_vpc_endpoint",
 			"aws",
-			VpcAllowEmptyValues,
+			VpcEndpointAllowEmptyValues,
 		))
 	}
 	return resources
@@ -39,10 +39,13 @@ func (g *VpcEndpointGenerator) InitResources() error {
 		return e
 	}
 	svc := ec2.NewFromConfig(config)
-	vpceps, err := svc.DescribeVpcEndpoints(context.TODO(), &ec2.DescribeVpcEndpointsInput{})
-	if err != nil {
-		return err
+	p := ec2.NewDescribeVpcEndpointsPaginator(svc, &ec2.DescribeVpcEndpointsInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		g.Resources = append(g.Resources, g.createResources(page)...)
 	}
-	g.Resources = g.createResources(vpceps)
 	return nil
 }
