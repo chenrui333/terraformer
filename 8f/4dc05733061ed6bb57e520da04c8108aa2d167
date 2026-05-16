@@ -1,0 +1,29 @@
+providers/aws/rds.go
+  s_229e27b3dd8b77::t_94a7ca67338bb5 291
+  s_229e27b3dd8b77::t_df1bc47058bb2f 36-43
+  s_229e27b3dd8b77::t_b355f11b65e407 53
+providers/aws/dynamodb_test.go
+  s_229e27b3dd8b77::t_7a0c6821bc3a98 121-123
+providers/aws/ec2.go
+  s_229e27b3dd8b77::t_8977a8bc7c1b63 28-33
+providers/aws/dynamodb.go
+  s_229e27b3dd8b77::t_c625e483e0a691 346
+providers/aws/rds_test.go
+  s_229e27b3dd8b77::t_772f1b6efda0a1 149-171
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "8f4dc05733061ed6bb57e520da04c8108aa2d167",
+  "prompts": {},
+  "sessions": {
+    "s_229e27b3dd8b77": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2a6e23e4-a556-4f5a-b364-e5c431b2ccf7",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
