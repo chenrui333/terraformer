@@ -74,6 +74,9 @@ func (p AWSProvider) GetResourceConnections() map[string]map[string][]string {
 		"ebs": {
 			// TF EBS attachment logic doesn't work well with references (doesn't interpolate)
 		},
+		"eip": {
+			"eni": []string{"network_interface_id", "id"},
+		},
 		"ecs": {
 			// ECS is not able anymore to support references (doesn't interpolate)
 			"subnet": []string{"network_configuration.subnets", "id"},
@@ -86,6 +89,10 @@ func (p AWSProvider) GetResourceConnections() map[string]map[string][]string {
 		"elb": {
 			"sg":     []string{"security_groups", "id"},
 			"subnet": []string{"subnets", "id"},
+		},
+		"eni": {
+			"subnet": []string{"subnet_id", "id"},
+			"sg":     []string{"security_groups", "id"},
 		},
 		"globalaccelerator": {
 			"globalaccelerator": []string{
@@ -107,6 +114,10 @@ func (p AWSProvider) GetResourceConnections() map[string]map[string][]string {
 		"nacl": {
 			"subnet": []string{"subnet_ids", "id"},
 			"vpc":    []string{"vpc_id", "id"},
+		},
+		"nat": {
+			"subnet": []string{"subnet_id", "id"},
+			"eip":    []string{"allocation_id", "id"},
 		},
 		"organization": {
 			"organization": []string{
@@ -147,6 +158,12 @@ func (p AWSProvider) GetResourceConnections() map[string]map[string][]string {
 			},
 		},
 		"subnet": {"vpc": []string{"vpc_id", "id"}},
+		"vpc_endpoint": {
+			"vpc":         []string{"vpc_id", "id"},
+			"subnet":      []string{"subnet_ids", "id"},
+			"sg":          []string{"security_group_ids", "id"},
+			"route_table": []string{"route_table_ids", "id"},
+		},
 		"transit_gateway": {
 			"vpc":             []string{"vpc_id", "id"},
 			"transit_gateway": []string{"transit_gateway_id", "id"},
