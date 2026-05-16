@@ -1,0 +1,25 @@
+providers/aws/iam.go
+  s_229e27b3dd8b77::t_6544b59f93763e 562
+providers/aws/cloudtrail_test.go
+  s_229e27b3dd8b77::t_c943a2cd4aafd2 25,27-34,37-38,40-46,48-49,55-64
+providers/aws/cloudtrail.go
+  s_229e27b3dd8b77::t_dcbbe99039d50e 53-70,79-80
+providers/aws/kms_test.go
+  s_229e27b3dd8b77::t_0daf02604c8b42 11,15-16,26-27,34,36-43,46-50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "f0311332f3bfd5d92fd6f1f0810bc51a7f6229e7",
+  "prompts": {},
+  "sessions": {
+    "s_229e27b3dd8b77": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2a6e23e4-a556-4f5a-b364-e5c431b2ccf7",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
