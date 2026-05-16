@@ -48,19 +48,34 @@ func (g *KmsGenerator) addKeys(client *kms.Client) error {
 				continue
 			}
 			if keyDescription.KeyMetadata.KeyManager == types.KeyManagerTypeCustomer {
+				keyID := *key.KeyId
 				resource := terraformutils.NewResource(
-					*key.KeyId,
-					*key.KeyId,
+					keyID,
+					keyID,
 					"aws_kms_key",
 					"aws",
 					map[string]string{
-						"key_id": *key.KeyId,
+						"key_id": keyID,
 					},
 					kmsAllowEmptyValues,
 					map[string]interface{}{},
 				)
 				resource.SlowQueryRequired = true
 				g.Resources = append(g.Resources, resource)
+
+				policyResource := terraformutils.NewResource(
+					keyID,
+					keyID+"_policy",
+					"aws_kms_key_policy",
+					"aws",
+					map[string]string{
+						"key_id": keyID,
+					},
+					kmsAllowEmptyValues,
+					map[string]interface{}{},
+				)
+				policyResource.SlowQueryRequired = true
+				g.Resources = append(g.Resources, policyResource)
 
 				g.addGrants(key.KeyId, client)
 			}

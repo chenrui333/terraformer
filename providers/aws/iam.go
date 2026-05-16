@@ -77,6 +77,8 @@ func (g *IamGenerator) InitResources() error {
 		{name: "account password policy", load: func() error { return g.getAccountPasswordPolicy(svc) }},
 		{name: "OpenID Connect providers", load: func() error { return g.getOpenIDConnectProviders(svc) }},
 		{name: "SAML providers", load: func() error { return g.getSAMLProviders(svc) }},
+		{name: "service-linked roles", load: func() error { return g.getServiceLinkedRoles(svc) }},
+		{name: "server certificates", load: func() error { return g.getServerCertificates(svc) }},
 	})
 
 	return nil
@@ -512,6 +514,57 @@ func (g *IamGenerator) getUserAccessKey(svc *iam.Client, userName *string, userI
 				map[string]interface{}{
 					"depends_on": []string{"aws_iam_user.tfer--" + userID},
 				}))
+		}
+	}
+	return nil
+}
+
+func (g *IamGenerator) getServiceLinkedRoles(svc *iam.Client) error {
+	slrPathPrefix := "/aws-service-role/"
+	p := iam.NewListRolesPaginator(svc, &iam.ListRolesInput{
+		PathPrefix: &slrPathPrefix,
+	})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, role := range page.Roles {
+			roleARN := StringValue(role.Arn)
+			if roleARN == "" {
+				continue
+			}
+			roleName := StringValue(role.RoleName)
+			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
+				roleARN,
+				iamResourceName("slr", roleName),
+				"aws_iam_service_linked_role",
+				"aws",
+				IamAllowEmptyValues))
+		}
+	}
+	return nil
+}
+
+func (g *IamGenerator) getServerCertificates(svc *iam.Client) error {
+	p := iam.NewListServerCertificatesPaginator(svc, &iam.ListServerCertificatesInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, cert := range page.ServerCertificateMetadataList {
+			certName := StringValue(cert.ServerCertificateName)
+			if certName == "" {
+				continue
+			}
+			certARN := StringValue(cert.Arn)
+			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
+				certARN,
+				iamResourceName("cert", certName),
+				"aws_iam_server_certificate",
+				"aws",
+				IamAllowEmptyValues))
 		}
 	}
 	return nil
