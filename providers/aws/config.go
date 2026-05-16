@@ -56,7 +56,6 @@ func (g *ConfigGenerator) InitResources() error {
 		{name: "organization config rules", load: func() error { return g.addOrganizationConfigRules(client) }},
 		{name: "remediation configurations", load: func() error { return g.addRemediationConfigurations(client, configRuleNames) }},
 		{name: "retention configurations", load: func() error { return g.addRetentionConfigurations(client) }},
-		{name: "conformance packs", load: func() error { return g.addConformancePacks(client) }},
 	})
 
 	return nil
@@ -426,29 +425,6 @@ func configRemediationConfigurationMissing(err error) bool {
 	}
 	var noRemediation *configtypes.NoSuchRemediationConfigurationException
 	return errors.As(err, &noRemediation)
-}
-
-func (g *ConfigGenerator) addConformancePacks(client *configservice.Client) error {
-	p := configservice.NewDescribeConformancePacksPaginator(client, &configservice.DescribeConformancePacksInput{})
-	for p.HasMorePages() {
-		page, err := p.NextPage(context.TODO())
-		if err != nil {
-			return err
-		}
-		for _, pack := range page.ConformancePackDetails {
-			packName := StringValue(pack.ConformancePackName)
-			if packName == "" {
-				continue
-			}
-			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				packName,
-				packName,
-				"aws_config_conformance_pack",
-				"aws",
-				configAllowEmptyValues))
-		}
-	}
-	return nil
 }
 
 func chunkStrings(values []string, size int) [][]string {
