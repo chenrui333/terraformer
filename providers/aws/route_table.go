@@ -36,7 +36,7 @@ func (g *RouteTableGenerator) createRouteTablesResources(svc *ec2.Client) ([]ter
 			))
 
 			for _, assoc := range table.Associations {
-				if *assoc.Main {
+				if assoc.Main != nil && *assoc.Main {
 					// main route table association
 					resources = append(resources, terraformutils.NewResource(
 						StringValue(assoc.RouteTableAssociationId),
