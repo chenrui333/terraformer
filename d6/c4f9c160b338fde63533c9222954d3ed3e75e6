@@ -1,0 +1,27 @@
+providers/aws/transit_gateway.go
+  s_fdb6ca9cb392bd::t_08f470ba93504c 28-30
+providers/aws/vgw.go
+  s_fdb6ca9cb392bd::t_b11d57431db1c2 10,12,21,24-26,47-54
+providers/aws/vgw_test.go
+  s_fdb6ca9cb392bd::t_89ece2efdcb81c 1-38
+providers/aws/route_table.go
+  s_fdb6ca9cb392bd::t_3a42efeed0eff5 39
+providers/aws/route_table_test.go
+  s_fdb6ca9cb392bd::t_a2cccdf8f7f022 1-50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "d6c4f9c160b338fde63533c9222954d3ed3e75e6",
+  "prompts": {},
+  "sessions": {
+    "s_fdb6ca9cb392bd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9d31f326-2a4f-4931-8493-6f9b22b16830",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
