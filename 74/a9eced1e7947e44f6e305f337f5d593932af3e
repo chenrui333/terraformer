@@ -1,0 +1,19 @@
+providers/aws/iam.go
+  s_229e27b3dd8b77::t_35ac163f3cdbf0 208-210
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "74a9eced1e7947e44f6e305f337f5d593932af3e",
+  "prompts": {},
+  "sessions": {
+    "s_229e27b3dd8b77": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2a6e23e4-a556-4f5a-b364-e5c431b2ccf7",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
