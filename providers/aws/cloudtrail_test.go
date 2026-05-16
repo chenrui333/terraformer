@@ -2,51 +2,28 @@
 
 package aws
 
-import (
-	"testing"
+import "testing"
 
-	"github.com/aws/aws-sdk-go-v2/service/cloudtrail/types"
-)
+func TestCloudTrailEventDataStoreResource(t *testing.T) {
+	arn := "arn:aws:cloudtrail:us-east-1:123456789012:eventdatastore/abc-123"
+	resource := eventDataStoreToResource(arn, "my-eds")
 
-func TestCloudTrailEventDataStoreEmitted(t *testing.T) {
-	eds := types.EventDataStore{
-		EventDataStoreArn: strPtr("arn:aws:cloudtrail:us-east-1:123456789012:eventdatastore/abc-123"),
-		Name:              strPtr("my-eds"),
-	}
-	resource, ok := eventDataStoreToResource(eds)
-	if !ok {
-		t.Fatal("expected resource to be emitted")
-	}
-	if got := resource.InstanceState.ID; got != "arn:aws:cloudtrail:us-east-1:123456789012:eventdatastore/abc-123" {
-		t.Fatalf("resource ID = %q, want ARN", got)
+	if got := resource.InstanceState.ID; got != arn {
+		t.Fatalf("resource ID = %q, want %q", got, arn)
 	}
 	if got := resource.ResourceName; got != "tfer--my-eds" {
 		t.Fatalf("resource name = %q, want %q", got, "tfer--my-eds")
 	}
-}
-
-func TestCloudTrailEventDataStoreNilARNSkipped(t *testing.T) {
-	eds := types.EventDataStore{
-		EventDataStoreArn: nil,
-		Name:              strPtr("no-arn"),
-	}
-	if _, ok := eventDataStoreToResource(eds); ok {
-		t.Fatal("expected nil ARN to be skipped")
+	if got := resource.InstanceInfo.Type; got != "aws_cloudtrail_event_data_store" {
+		t.Fatalf("resource type = %q, want %q", got, "aws_cloudtrail_event_data_store")
 	}
 }
 
 func TestCloudTrailEventDataStoreFallbackName(t *testing.T) {
 	arn := "arn:aws:cloudtrail:us-east-1:123456789012:eventdatastore/abc-123"
-	resource, ok := eventDataStoreToResource(types.EventDataStore{
-		EventDataStoreArn: &arn,
-		Name:              strPtr(""),
-	})
-	if !ok {
-		t.Fatal("expected resource to be emitted")
-	}
+	resource := eventDataStoreToResource(arn, "")
+
 	if got := resource.ResourceName; got != "tfer--abc-123" {
 		t.Fatalf("resource name = %q, want %q", got, "tfer--abc-123")
 	}
 }
-
-func strPtr(s string) *string { return &s }

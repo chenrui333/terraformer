@@ -50,22 +50,17 @@ func (g *CloudTrailGenerator) addTrails(svc *cloudtrail.Client) error {
 	return nil
 }
 
-func eventDataStoreToResource(eds types.EventDataStore) (terraformutils.Resource, bool) {
-	if eds.EventDataStoreArn == nil {
-		return terraformutils.Resource{}, false
-	}
-	edsARN := *eds.EventDataStoreArn
-	edsName := StringValue(eds.Name)
-	if edsName == "" {
-		edsName = arnLastSegment(edsARN, "/")
+func eventDataStoreToResource(arn, name string) terraformutils.Resource {
+	if name == "" {
+		name = arnLastSegment(arn, "/")
 	}
 	return terraformutils.NewSimpleResource(
-		edsARN,
-		edsName,
+		arn,
+		name,
 		"aws_cloudtrail_event_data_store",
 		"aws",
 		cloudtrailAllowEmptyValues,
-	), true
+	)
 }
 
 func (g *CloudTrailGenerator) addEventDataStores(svc *cloudtrail.Client) error {
@@ -76,9 +71,21 @@ func (g *CloudTrailGenerator) addEventDataStores(svc *cloudtrail.Client) error {
 			return err
 		}
 		for _, eds := range page.EventDataStores {
-			if resource, ok := eventDataStoreToResource(eds); ok {
-				g.Resources = append(g.Resources, resource)
+			if eds.EventDataStoreArn == nil {
+				continue
 			}
+			edsARN := *eds.EventDataStoreArn
+			detail, err := svc.GetEventDataStore(context.TODO(), &cloudtrail.GetEventDataStoreInput{
+				EventDataStore: &edsARN,
+			})
+			if err != nil {
+				log.Printf("Skipping event data store %s: %v", edsARN, err)
+				continue
+			}
+			if detail.Status == types.EventDataStoreStatusPendingDeletion {
+				continue
+			}
+			g.Resources = append(g.Resources, eventDataStoreToResource(edsARN, StringValue(detail.Name)))
 		}
 	}
 	return nil
