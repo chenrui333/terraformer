@@ -1,0 +1,21 @@
+providers/aws/route_table.go
+  s_fdb6ca9cb392bd::t_acb7d440a3e4a5 12,21-77,86
+providers/aws/route_table_test.go
+  s_fdb6ca9cb392bd::t_160ddbbc49eba6 13-14,16-33,35-59,61-68,72,74-79,81-82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "6938a727f39b47ecc854788bb18c4d04ae54d53f",
+  "prompts": {},
+  "sessions": {
+    "s_fdb6ca9cb392bd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9d31f326-2a4f-4931-8493-6f9b22b16830",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
