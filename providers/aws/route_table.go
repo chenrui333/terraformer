@@ -9,12 +9,70 @@ import (
 	"github.com/chenrui333/terraformer/terraformutils"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 )
 
 var rtbAllowEmptyValues = []string{"tags."}
 
 type RouteTableGenerator struct {
 	AWSService
+}
+
+func (g *RouteTableGenerator) createResourcesFromTables(tables []types.RouteTable) []terraformutils.Resource {
+	var resources []terraformutils.Resource
+	for _, table := range tables {
+		resources = append(resources, terraformutils.NewSimpleResource(
+			StringValue(table.RouteTableId),
+			StringValue(table.RouteTableId),
+			"aws_route_table",
+			"aws",
+			rtbAllowEmptyValues,
+		))
+
+		for _, assoc := range table.Associations {
+			if assoc.Main != nil && *assoc.Main {
+				resources = append(resources, terraformutils.NewResource(
+					StringValue(assoc.RouteTableAssociationId),
+					StringValue(table.VpcId),
+					"aws_main_route_table_association",
+					"aws",
+					map[string]string{
+						"vpc_id":         StringValue(table.VpcId),
+						"route_table_id": StringValue(table.RouteTableId),
+					},
+					rtbAllowEmptyValues,
+					map[string]interface{}{},
+				))
+			} else if v := assoc.SubnetId; v != nil {
+				resources = append(resources, terraformutils.NewResource(
+					StringValue(assoc.RouteTableAssociationId),
+					StringValue(v),
+					"aws_route_table_association",
+					"aws",
+					map[string]string{
+						"subnet_id":      StringValue(v),
+						"route_table_id": StringValue(table.RouteTableId),
+					},
+					rtbAllowEmptyValues,
+					map[string]interface{}{},
+				))
+			} else if v := assoc.GatewayId; v != nil {
+				resources = append(resources, terraformutils.NewResource(
+					StringValue(assoc.RouteTableAssociationId),
+					StringValue(v),
+					"aws_route_table_association",
+					"aws",
+					map[string]string{
+						"gateway_id":     StringValue(v),
+						"route_table_id": StringValue(table.RouteTableId),
+					},
+					rtbAllowEmptyValues,
+					map[string]interface{}{},
+				))
+			}
+		}
+	}
+	return resources
 }
 
 func (g *RouteTableGenerator) createRouteTablesResources(svc *ec2.Client) ([]terraformutils.Resource, error) {
@@ -25,61 +83,7 @@ func (g *RouteTableGenerator) createRouteTablesResources(svc *ec2.Client) ([]ter
 		if err != nil {
 			return nil, fmt.Errorf("describe route tables: %w", err)
 		}
-		for _, table := range page.RouteTables {
-			// route table
-			resources = append(resources, terraformutils.NewSimpleResource(
-				StringValue(table.RouteTableId),
-				StringValue(table.RouteTableId),
-				"aws_route_table",
-				"aws",
-				rtbAllowEmptyValues,
-			))
-
-			for _, assoc := range table.Associations {
-				if assoc.Main != nil && *assoc.Main {
-					// main route table association
-					resources = append(resources, terraformutils.NewResource(
-						StringValue(assoc.RouteTableAssociationId),
-						StringValue(table.VpcId),
-						"aws_main_route_table_association",
-						"aws",
-						map[string]string{
-							"vpc_id":         StringValue(table.VpcId),
-							"route_table_id": StringValue(table.RouteTableId),
-						},
-						rtbAllowEmptyValues,
-						map[string]interface{}{},
-					))
-				} else if v := assoc.SubnetId; v != nil {
-					// subnet-specific route table association
-					resources = append(resources, terraformutils.NewResource(
-						StringValue(assoc.RouteTableAssociationId),
-						StringValue(v),
-						"aws_route_table_association",
-						"aws",
-						map[string]string{
-							"subnet_id":      StringValue(v),
-							"route_table_id": StringValue(table.RouteTableId),
-						},
-						rtbAllowEmptyValues,
-						map[string]interface{}{},
-					))
-				} else if v := assoc.GatewayId; v != nil {
-					resources = append(resources, terraformutils.NewResource(
-						StringValue(assoc.RouteTableAssociationId),
-						StringValue(v),
-						"aws_route_table_association",
-						"aws",
-						map[string]string{
-							"gateway_id":     StringValue(v),
-							"route_table_id": StringValue(table.RouteTableId),
-						},
-						rtbAllowEmptyValues,
-						map[string]interface{}{},
-					))
-				}
-			}
-		}
+		resources = append(resources, g.createResourcesFromTables(page.RouteTables)...)
 	}
 	return resources, nil
 }
