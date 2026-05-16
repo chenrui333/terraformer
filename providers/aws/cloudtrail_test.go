@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/service/cloudtrail/types"
-	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 func TestCloudTrailEventDataStoreSkipsPendingDeletion(t *testing.T) {
@@ -23,40 +22,46 @@ func TestCloudTrailEventDataStoreSkipsPendingDeletion(t *testing.T) {
 		},
 	}
 
-	var resources []terraformutils.Resource
+	var count int
 	for _, eds := range edsList {
-		if eds.EventDataStoreArn == nil {
-			continue
+		if resource, ok := eventDataStoreToResource(eds); ok {
+			count++
+			if got := resource.InstanceState.ID; got != "arn:aws:cloudtrail:us-east-1:123456789012:eventdatastore/abc-123" {
+				t.Fatalf("resource ID = %q, want ARN of enabled EDS", got)
+			}
+			if got := resource.ResourceName; got != "tfer--my-eds" {
+				t.Fatalf("resource name = %q, want %q", got, "tfer--my-eds")
+			}
 		}
-		if eds.Status == types.EventDataStoreStatusPendingDeletion {
-			continue
-		}
-		edsARN := *eds.EventDataStoreArn
-		edsName := StringValue(eds.Name)
-		if edsName == "" {
-			edsName = arnLastSegment(edsARN, "/")
-		}
-		resources = append(resources, terraformutils.NewSimpleResource(
-			edsARN, edsName, "aws_cloudtrail_event_data_store", "aws", cloudtrailAllowEmptyValues))
 	}
+	if count != 1 {
+		t.Fatalf("expected 1 resource, got %d", count)
+	}
+}
 
-	if len(resources) != 1 {
-		t.Fatalf("expected 1 resource, got %d", len(resources))
+func TestCloudTrailEventDataStoreNilARNSkipped(t *testing.T) {
+	eds := types.EventDataStore{
+		EventDataStoreArn: nil,
+		Name:              strPtr("no-arn"),
+		Status:            types.EventDataStoreStatusEnabled,
 	}
-	if got := resources[0].InstanceState.ID; got != "arn:aws:cloudtrail:us-east-1:123456789012:eventdatastore/abc-123" {
-		t.Fatalf("resource ID = %q, want ARN of enabled EDS", got)
-	}
-	if got := resources[0].ResourceName; got != "tfer--my-eds" {
-		t.Fatalf("resource name = %q, want %q", got, "tfer--my-eds")
+	if _, ok := eventDataStoreToResource(eds); ok {
+		t.Fatal("expected nil ARN to be skipped")
 	}
 }
 
 func TestCloudTrailEventDataStoreFallbackName(t *testing.T) {
 	arn := "arn:aws:cloudtrail:us-east-1:123456789012:eventdatastore/abc-123"
-	got := arnLastSegment(arn, "/")
-	want := "abc-123"
-	if got != want {
-		t.Fatalf("arnLastSegment() = %q, want %q", got, want)
+	resource, ok := eventDataStoreToResource(types.EventDataStore{
+		EventDataStoreArn: &arn,
+		Name:              strPtr(""),
+		Status:            types.EventDataStoreStatusEnabled,
+	})
+	if !ok {
+		t.Fatal("expected resource to be emitted")
+	}
+	if got := resource.ResourceName; got != "tfer--abc-123" {
+		t.Fatalf("resource name = %q, want %q", got, "tfer--abc-123")
 	}
 }
 

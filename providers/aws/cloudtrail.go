@@ -50,6 +50,24 @@ func (g *CloudTrailGenerator) addTrails(svc *cloudtrail.Client) error {
 	return nil
 }
 
+func eventDataStoreToResource(eds types.EventDataStore) (terraformutils.Resource, bool) {
+	if eds.EventDataStoreArn == nil || eds.Status == types.EventDataStoreStatusPendingDeletion {
+		return terraformutils.Resource{}, false
+	}
+	edsARN := *eds.EventDataStoreArn
+	edsName := StringValue(eds.Name)
+	if edsName == "" {
+		edsName = arnLastSegment(edsARN, "/")
+	}
+	return terraformutils.NewSimpleResource(
+		edsARN,
+		edsName,
+		"aws_cloudtrail_event_data_store",
+		"aws",
+		cloudtrailAllowEmptyValues,
+	), true
+}
+
 func (g *CloudTrailGenerator) addEventDataStores(svc *cloudtrail.Client) error {
 	p := cloudtrail.NewListEventDataStoresPaginator(svc, &cloudtrail.ListEventDataStoresInput{})
 	for p.HasMorePages() {
@@ -58,23 +76,9 @@ func (g *CloudTrailGenerator) addEventDataStores(svc *cloudtrail.Client) error {
 			return err
 		}
 		for _, eds := range page.EventDataStores {
-			if eds.EventDataStoreArn == nil {
-				continue
+			if resource, ok := eventDataStoreToResource(eds); ok {
+				g.Resources = append(g.Resources, resource)
 			}
-			if eds.Status == types.EventDataStoreStatusPendingDeletion {
-				continue
-			}
-			edsARN := *eds.EventDataStoreArn
-			edsName := StringValue(eds.Name)
-			if edsName == "" {
-				edsName = arnLastSegment(edsARN, "/")
-			}
-			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				edsARN,
-				edsName,
-				"aws_cloudtrail_event_data_store",
-				"aws",
-				cloudtrailAllowEmptyValues))
 		}
 	}
 	return nil

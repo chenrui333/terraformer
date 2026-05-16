@@ -8,12 +8,12 @@ import (
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
-func TestKmsKeyPolicyResourceID(t *testing.T) {
+func TestKmsKeyResourceID(t *testing.T) {
 	keyID := "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 	resource := terraformutils.NewResource(
 		keyID,
-		keyID+"_policy",
-		"aws_kms_key_policy",
+		keyID,
+		"aws_kms_key",
 		"aws",
 		map[string]string{"key_id": keyID},
 		kmsAllowEmptyValues,
@@ -23,29 +23,30 @@ func TestKmsKeyPolicyResourceID(t *testing.T) {
 	if got := resource.InstanceState.ID; got != keyID {
 		t.Fatalf("resource ID = %q, want %q", got, keyID)
 	}
-	if got := resource.ResourceName; got != "tfer--"+keyID+"_policy" {
-		t.Fatalf("resource name = %q, want %q", got, "tfer--"+keyID+"_policy")
-	}
-	if got := resource.InstanceInfo.Type; got != "aws_kms_key_policy" {
-		t.Fatalf("resource type = %q, want %q", got, "aws_kms_key_policy")
+	if got := resource.InstanceInfo.Type; got != "aws_kms_key" {
+		t.Fatalf("resource type = %q, want %q", got, "aws_kms_key")
 	}
 	if got := resource.InstanceState.Attributes["key_id"]; got != keyID {
 		t.Fatalf("key_id attribute = %q, want %q", got, keyID)
 	}
 }
 
-func TestKmsKeyAndPolicyResourceNamesDoNotCollide(t *testing.T) {
+func TestKmsGrantResourceID(t *testing.T) {
 	keyID := "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
-	keyResource := terraformutils.NewResource(
-		keyID, keyID, "aws_kms_key", "aws",
-		map[string]string{"key_id": keyID}, kmsAllowEmptyValues, map[string]interface{}{},
-	)
-	policyResource := terraformutils.NewResource(
-		keyID, keyID+"_policy", "aws_kms_key_policy", "aws",
-		map[string]string{"key_id": keyID}, kmsAllowEmptyValues, map[string]interface{}{},
+	grantID := "grant-123"
+	compositeID := keyID + ":" + grantID
+	resource := terraformutils.NewSimpleResource(
+		compositeID,
+		compositeID,
+		"aws_kms_grant",
+		"aws",
+		kmsAllowEmptyValues,
 	)
 
-	if keyResource.ResourceName == policyResource.ResourceName {
-		t.Fatalf("key and policy resource names collide: %q", keyResource.ResourceName)
+	if got := resource.InstanceState.ID; got != compositeID {
+		t.Fatalf("resource ID = %q, want %q", got, compositeID)
+	}
+	if got := resource.InstanceInfo.Type; got != "aws_kms_grant" {
+		t.Fatalf("resource type = %q, want %q", got, "aws_kms_grant")
 	}
 }

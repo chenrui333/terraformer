@@ -558,9 +558,8 @@ func (g *IamGenerator) getServerCertificates(svc *iam.Client) error {
 			if certName == "" {
 				continue
 			}
-			certARN := StringValue(cert.Arn)
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				certARN,
+				certName,
 				iamResourceName("cert", certName),
 				"aws_iam_server_certificate",
 				"aws",

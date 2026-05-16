@@ -63,20 +63,6 @@ func (g *KmsGenerator) addKeys(client *kms.Client) error {
 				resource.SlowQueryRequired = true
 				g.Resources = append(g.Resources, resource)
 
-				policyResource := terraformutils.NewResource(
-					keyID,
-					keyID+"_policy",
-					"aws_kms_key_policy",
-					"aws",
-					map[string]string{
-						"key_id": keyID,
-					},
-					kmsAllowEmptyValues,
-					map[string]interface{}{},
-				)
-				policyResource.SlowQueryRequired = true
-				g.Resources = append(g.Resources, policyResource)
-
 				g.addGrants(key.KeyId, client)
 			}
 		}
