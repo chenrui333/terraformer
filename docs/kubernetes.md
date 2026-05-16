@@ -21,6 +21,46 @@ When `configmaps` and `configmapdata` are selected together, Terraformer keeps t
 When `secrets` and `secretdata` are selected together, Terraformer keeps the full `secrets` import and skips overlapping data-only resources to avoid duplicate Terraform ownership of the same Secret data.
 Because `kubernetes_secret_v1_data` only accepts string data, `secretdata` skips Secrets containing non-UTF-8 payloads instead of emitting lossy configuration.
 
+#### Kubernetes 1.33–1.35 support window
+
+This provider's native API policy is scoped to Kubernetes 1.33 through 1.35.
+Every API resource discovered from the cluster is classified into exactly one
+behavior class:
+
+| Behavior class | Description | Example |
+|---|---|---|
+| First-class Terraform resource | Imported via the typed or dynamic Kubernetes client with a dedicated provider resource type (e.g. `kubernetes_deployment_v1`). | `apps/v1 Deployment`, `v1 Service`, `storage.k8s.io/v1 StorageClass` |
+| Explicit native `kubernetes_manifest` selector | A native Kubernetes API that is explicitly allowlisted for manifest-backed import because no first-class provider type covers it. | `admissionregistration.k8s.io/v1 MutatingAdmissionPolicy`, `resource.k8s.io/v1 DeviceClass`, `apps/v1 ReplicaSet` |
+| CRD/custom-resource manifest fallback | Any non-native API group (CRDs, operator resources, third-party extensions) is imported through `kubernetes_manifest` automatically. | `example.com/v1 Widget`, `serving.knative.dev/v1 Service` |
+| Runtime/controller-generated skip | Native APIs whose objects are created by kubelets, controllers, or drivers and should not become Terraform-owned configuration. | `resource.k8s.io/v1 ResourceSlice`, `certificates.k8s.io/v1beta1 PodCertificateRequest`, `storage.k8s.io/v1 VolumeAttachment` |
+| Policy skip | Native APIs that are manageable but intentionally not imported: either no Terraform provider type exists, or the API is outside the explicit manifest selector allowlist. | `events.k8s.io/v1 Event`, `coordination.k8s.io/v1 Lease`, `resource.k8s.io/v1alpha2 ResourceClass` |
+
+**Why non-declarative resources are skipped:**
+Resources like `PodCertificateRequest`, `ResourceSlice`, `PodSchedulingContext`,
+`IPAddress`, `ControllerRevision`, `LeaseCandidate`, `CSINode`, and
+`VolumeAttachment` are generated at runtime by kubelets, schedulers, CSI
+drivers, or controllers. Their specs contain ephemeral proof material, node
+bindings, or scheduling state that would create noisy, non-idempotent Terraform
+plans. Importing them would not produce meaningful infrastructure-as-code.
+
+**Why token/request/action-style resources are not imported:**
+Resources like `TokenRequest`, `TokenReview`, `SubjectAccessReview`,
+`SelfSubjectAccessReview`, and `LocalSubjectAccessReview` are action-style APIs
+that create ephemeral tokens or perform one-shot authorization checks. They do
+not represent persistent cluster state and cannot be meaningfully managed as
+Terraform resources. These are skipped because the Terraform provider does not
+expose them as resource types and the native manifest policy does not allowlist
+them.
+
+**`--verbose` skip logging:**
+Run with `--verbose` to see which native APIs are skipped and why. Two reason
+strings are emitted:
+- `"runtime/controller-generated native API is not importable as Terraform-managed configuration"` — for explicitly skipped generated resources.
+- `"native API is outside the explicit manifest import policy"` — for manageable native APIs without typed client support that are not in the manifest allowlist.
+
+Native APIs with typed client support but no registered Terraform provider type
+(e.g. `Event`, `Lease`) are silently skipped without a verbose reason.
+
 Common supported resources include:
 
 *   `annotations`
