@@ -8,6 +8,7 @@ import (
 	"github.com/chenrui333/terraformer/terraformutils"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 )
 
 var VpcEndpointAllowEmptyValues = []string{"tags."}
@@ -19,6 +20,9 @@ type VpcEndpointGenerator struct {
 func (g *VpcEndpointGenerator) createResources(vpceps *ec2.DescribeVpcEndpointsOutput) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 	for _, vpcEndpoint := range vpceps.VpcEndpoints {
+		if vpcEndpoint.State == types.StateDeleted || vpcEndpoint.State == types.StateDeleting {
+			continue
+		}
 		resources = append(resources, terraformutils.NewSimpleResource(
 			StringValue(vpcEndpoint.VpcEndpointId),
 			StringValue(vpcEndpoint.VpcEndpointId),

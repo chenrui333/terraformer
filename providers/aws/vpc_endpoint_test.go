@@ -14,8 +14,8 @@ func TestVpcEndpointCreateResources(t *testing.T) {
 	g := VpcEndpointGenerator{}
 	output := &ec2.DescribeVpcEndpointsOutput{
 		VpcEndpoints: []types.VpcEndpoint{
-			{VpcEndpointId: aws.String("vpce-111")},
-			{VpcEndpointId: aws.String("vpce-222")},
+			{VpcEndpointId: aws.String("vpce-111"), State: types.StateAvailable},
+			{VpcEndpointId: aws.String("vpce-222"), State: types.StateAvailable},
 		},
 	}
 
@@ -37,11 +37,31 @@ func TestVpcEndpointCreateResources(t *testing.T) {
 	}
 }
 
+func TestVpcEndpointFilterDeletedState(t *testing.T) {
+	g := VpcEndpointGenerator{}
+	output := &ec2.DescribeVpcEndpointsOutput{
+		VpcEndpoints: []types.VpcEndpoint{
+			{VpcEndpointId: aws.String("vpce-alive"), State: types.StateAvailable},
+			{VpcEndpointId: aws.String("vpce-dead"), State: types.StateDeleted},
+			{VpcEndpointId: aws.String("vpce-dying"), State: types.StateDeleting},
+		},
+	}
+
+	resources := g.createResources(output)
+
+	if len(resources) != 1 {
+		t.Fatalf("expected 1 resource, got %d", len(resources))
+	}
+	if resources[0].InstanceState.ID != "vpce-alive" {
+		t.Errorf("expected vpce-alive, got %s", resources[0].InstanceState.ID)
+	}
+}
+
 func TestVpcEndpointAllowEmptyValues(t *testing.T) {
 	g := VpcEndpointGenerator{}
 	output := &ec2.DescribeVpcEndpointsOutput{
 		VpcEndpoints: []types.VpcEndpoint{
-			{VpcEndpointId: aws.String("vpce-111")},
+			{VpcEndpointId: aws.String("vpce-111"), State: types.StateAvailable},
 		},
 	}
 
