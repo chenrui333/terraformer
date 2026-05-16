@@ -146,3 +146,26 @@ func TestRDSDefaultDBProxyTargetGroup(t *testing.T) {
 		t.Fatal("rdsDefaultDBProxyTargetGroup() = true for nil flag, want false")
 	}
 }
+
+func TestRDSStatusImportable(t *testing.T) {
+	tests := []struct {
+		status string
+		want   bool
+	}{
+		{"available", true},
+		{"backing-up", true},
+		{"stopped", true},
+		{"deleting", false},
+		{"creating", false},
+		{"failed", false},
+		{"migration-failed", false},
+		{"", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.status, func(t *testing.T) {
+			if got := rdsStatusImportable(tt.status); got != tt.want {
+				t.Fatalf("rdsStatusImportable(%q) = %v, want %v", tt.status, got, tt.want)
+			}
+		})
+	}
+}

@@ -118,6 +118,9 @@ func TestDynamoDBTableExportImportable(t *testing.T) {
 	if !dynamodbTableExportImportable(dynamodbtypes.ExportSummary{ExportStatus: dynamodbtypes.ExportStatusFailed}) {
 		t.Fatal("failed table export should be importable")
 	}
+	if dynamodbTableExportImportable(dynamodbtypes.ExportSummary{ExportStatus: dynamodbtypes.ExportStatusInProgress}) {
+		t.Fatal("in-progress table export should not be importable")
+	}
 	if dynamodbTableExportImportable(dynamodbtypes.ExportSummary{}) {
 		t.Fatal("empty table export status should not be importable")
 	}

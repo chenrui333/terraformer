@@ -25,7 +25,12 @@ func (g *Ec2Generator) InitResources() error {
 		return e
 	}
 	svc := ec2.NewFromConfig(config)
-	var filters []types.Filter
+	filters := []types.Filter{
+		{
+			Name:   aws.String("instance-state-name"),
+			Values: []string{"running", "stopped"},
+		},
+	}
 	for _, filter := range g.Filter {
 		if strings.HasPrefix(filter.FieldPath, "tags.") && filter.IsApplicable("instance") {
 			filters = append(filters, types.Filter{

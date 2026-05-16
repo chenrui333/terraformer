@@ -343,7 +343,7 @@ func dynamodbKinesisStreamingDestinationImportable(destination dynamodbtypes.Kin
 }
 
 func dynamodbTableExportImportable(export dynamodbtypes.ExportSummary) bool {
-	return export.ExportStatus != ""
+	return export.ExportStatus != "" && export.ExportStatus != dynamodbtypes.ExportStatusInProgress
 }
 
 func dynamodbGlobalTableStatusImportable(status dynamodbtypes.GlobalTableStatus) bool {
