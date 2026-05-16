@@ -233,3 +233,16 @@ func TestConfigRemediationConfigurationDependencySanitizesRuleName(t *testing.T)
 		t.Fatalf("depends_on = %#v, want [%q]", dependsOn, want)
 	}
 }
+
+func TestConfigConformancePackResource(t *testing.T) {
+	packName := "my-conformance-pack"
+	resource := terraformutils.NewSimpleResource(
+		packName, packName, "aws_config_conformance_pack", "aws", configAllowEmptyValues)
+
+	if got := resource.InstanceState.ID; got != packName {
+		t.Fatalf("resource ID = %q, want %q", got, packName)
+	}
+	if got := resource.InstanceInfo.Type; got != "aws_config_conformance_pack" {
+		t.Fatalf("resource type = %q, want %q", got, "aws_config_conformance_pack")
+	}
+}
