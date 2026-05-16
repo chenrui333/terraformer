@@ -1,0 +1,29 @@
+providers/aws/config.go
+  s_229e27b3dd8b77::t_5e39f3633eede7 431-453
+  s_229e27b3dd8b77::t_beafb422a61581 59
+providers/aws/config_test.go
+  s_229e27b3dd8b77::t_3c6184e09c36c7 236-248
+providers/aws/cloudwatch.go
+  s_229e27b3dd8b77::t_716dc14610057c 100-129
+  s_229e27b3dd8b77::t_13d57558b3a20f 11
+  s_229e27b3dd8b77::t_3ee9d66103a6d5 40-43
+providers/aws/cloudwatch_test.go
+  s_229e27b3dd8b77::t_bc7bb7057bdeb2 5-9
+  s_229e27b3dd8b77::t_23ed1ef7ea86d7 77-89
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "44ac9619f9ab5fb2485343e5338480dfb5893025",
+  "prompts": {},
+  "sessions": {
+    "s_229e27b3dd8b77": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2a6e23e4-a556-4f5a-b364-e5c431b2ccf7",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
