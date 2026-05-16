@@ -51,7 +51,7 @@ func (g *CloudTrailGenerator) addTrails(svc *cloudtrail.Client) error {
 }
 
 func eventDataStoreToResource(eds types.EventDataStore) (terraformutils.Resource, bool) {
-	if eds.EventDataStoreArn == nil || eds.Status == types.EventDataStoreStatusPendingDeletion {
+	if eds.EventDataStoreArn == nil {
 		return terraformutils.Resource{}, false
 	}
 	edsARN := *eds.EventDataStoreArn
