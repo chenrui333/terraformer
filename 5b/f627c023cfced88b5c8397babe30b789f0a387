@@ -1,0 +1,21 @@
+providers/aws/vpc_endpoint.go
+  s_fdb6ca9cb392bd::t_3ba029f410a12b 27-28
+providers/aws/vpc_endpoint_test.go
+  s_fdb6ca9cb392bd::t_b7396f428ef302 33-37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "5bf627c023cfced88b5c8397babe30b789f0a387",
+  "prompts": {},
+  "sessions": {
+    "s_fdb6ca9cb392bd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9d31f326-2a4f-4931-8493-6f9b22b16830",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
