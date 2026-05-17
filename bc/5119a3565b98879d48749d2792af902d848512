@@ -1,0 +1,23 @@
+CLAUDE.md
+  s_997126c8a51b24::t_dbc427116e676b 5-7
+README.md
+  s_997126c8a51b24::t_92ec0accc93abd 310-314
+docs/provider-architecture.md
+  s_997126c8a51b24::t_92ec0accc93abd 1-160
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "bc5119a3565b98879d48749d2792af902d848512",
+  "prompts": {},
+  "sessions": {
+    "s_997126c8a51b24": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e384b-fb46-7cc1-a8a9-a4949600116e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
