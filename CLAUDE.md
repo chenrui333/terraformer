@@ -2,6 +2,9 @@
 
 Use this skill for provider-focused work in `chenrui333/terraformer`: feature gap audits, new resource importers, provider-specific bug fixes, docs updates, review iteration, and scoped cleanup.
 
+For repo-level provider architecture and lifecycle guidance, see
+[docs/provider-architecture.md](docs/provider-architecture.md).
+
 ## Default Operating Mode
 
 1. Confirm repo scope, branch, remotes, and dirty state before editing.
