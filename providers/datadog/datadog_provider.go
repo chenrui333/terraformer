@@ -191,6 +191,9 @@ func (p *DatadogProvider) GetSupportedService() map[string]terraformutils.Servic
 		"downtime":                                 &DowntimeGenerator{},
 		"downtime_schedule":                        &DowntimeScheduleGenerator{},
 		"gcp_uc_config":                            &GCPUCConfigGenerator{},
+		"incident_notification_rule":               &IncidentNotificationRuleGenerator{},
+		"incident_notification_template":           &IncidentNotificationTemplateGenerator{},
+		"incident_type":                            &IncidentTypeGenerator{},
 		"ip_allowlist":                             &IPAllowlistGenerator{},
 		"logs_archive":                             &LogsArchiveGenerator{},
 		"logs_archive_order":                       &LogsArchiveOrderGenerator{},
@@ -263,6 +266,8 @@ func (p *DatadogProvider) GetSupportedService() map[string]terraformutils.Servic
 		"team_permission_setting":                  &TeamPermissionSettingGenerator{},
 		"team_sync":                                &TeamSyncGenerator{},
 		"user":                                     &UserGenerator{},
+		"webhook":                                  &WebhookGenerator{},
+		"workflow_automation":                      &WorkflowAutomationGenerator{},
 		"role":                                     &RoleGenerator{},
 	}
 }

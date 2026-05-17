@@ -153,6 +153,15 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `gcp_uc_config`
     * `datadog_gcp_uc_config`
         * **_NOTE:_** Requires DataDog/datadog provider 3.39.0 or newer.
+*   `incident_notification_rule`
+    * `datadog_incident_notification_rule`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
+*   `incident_notification_template`
+    * `datadog_incident_notification_template`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
+*   `incident_type`
+    * `datadog_incident_type`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
 *   `integration_aws`
     * `datadog_integration_aws`
 *   `integration_aws_lambda_arn`
@@ -347,6 +356,14 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
         * **_NOTE:_** The Datadog provider currently supports the GitHub team sync source
 *   `user`
     * `datadog_user`
+*   `webhook`
+    * `datadog_webhook`
+        * **_NOTE:_** The Datadog API does not expose a webhook list endpoint; pass webhook names explicitly, for example `--filter=webhook=example-webhook`
+*   `workflow_automation`
+    * `datadog_workflow_automation`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
+        * **_NOTE:_** The Datadog API does not expose a workflow list endpoint; pass workflow IDs explicitly, for example `--filter=workflow_automation=11111111-2222-3333-4444-555555555555`
+        * **_NOTE:_** Workflow webhook secrets are not returned by the Datadog API; workflows that use webhook triggers may need `webhook_secret` to be set manually after import.
 
 ## Unsupported / Deferred Resources
 
