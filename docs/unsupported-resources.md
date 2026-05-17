@@ -84,19 +84,19 @@ For provider resource PRs, use the pull request checklist to confirm that eviden
 
 ## Inventory
 
-This static inventory reflects the current provider tree. Providers without metadata should remain `not present yet` until an evidence-backed unsupported resource has been investigated.
+This inventory is an informational coverage snapshot. The source of truth is the discovered `providers/*/unsupported_resources.json` files validated by the Go test. Providers without metadata should remain `not present yet` until an evidence-backed unsupported resource has been investigated.
 
 | Provider | Has `unsupported_resources.json` | Has provider-local `unsupported_resources_test.go` | Notes |
 | --- | --- | --- | --- |
 | alicloud | no | no | not present yet |
 | auth0 | no | no | not present yet |
-| aws | yes | no | 47 entries; statuses: deferred, not-importable, unsupported |
+| aws | yes | no | metadata present |
 | azure | no | no | not present yet |
 | azuread | no | no | not present yet |
 | azuredevops | no | no | not present yet |
-| cloudflare | yes | yes | 19 entries; statuses: cloudflare-managed, deferred, not-importable, request-style, secret-required; provider-specific assertions |
+| cloudflare | yes | yes | metadata present; provider-specific assertions |
 | commercetools | no | no | not present yet |
-| datadog | yes | no | 9 entries; statuses: deferred, unsupported |
+| datadog | yes | no | metadata present |
 | digitalocean | no | no | not present yet |
 | equinixmetal | no | no | not present yet |
 | fastly | no | no | not present yet |
@@ -110,8 +110,8 @@ This static inventory reflects the current provider tree. Providers without meta
 | ibm | no | no | not present yet |
 | ionoscloud | no | no | not present yet |
 | keycloak | no | no | not present yet |
-| kubernetes | yes | yes | 35 entries; statuses: not-importable, policy-skip, runtime-generated; provider-specific assertions |
-| launchdarkly | yes | no | 4 entries; statuses: deferred, unsupported |
+| kubernetes | yes | yes | metadata present; provider-specific assertions |
+| launchdarkly | yes | no | metadata present |
 | linode | no | no | not present yet |
 | logzio | no | no | not present yet |
 | mackerel | no | no | not present yet |
