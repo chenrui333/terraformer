@@ -98,6 +98,9 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_cloud_inventory_sync_config`
         * **_NOTE:_** Requires DataDog/datadog provider 3.86.0 or newer.
         * **_NOTE:_** Importing resource requires resource ID's to be passed via [Filter][1] option
+*   `domain_allowlist`
+    * `datadog_domain_allowlist`
+        * **_NOTE:_** Singleton resource. Any filter value is accepted since there is only one domain allowlist per org.
 *   `downtime`
     * `datadog_downtime`
 *   `integration_aws`
@@ -119,6 +122,9 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `integration_slack_channel`
     * `datadog_integration_slack_channel`
         * **_NOTE:_** Importing resource requires resource ID or `account_name` to be passed via [Filter][1] option
+*   `ip_allowlist`
+    * `datadog_ip_allowlist`
+        * **_NOTE:_** Singleton resource. Any filter value is accepted since there is only one IP allowlist per org.
 *   `logs_archive`
     * `datadog_logs_archive`
 *   `logs_archive_order`
@@ -165,6 +171,18 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_on_call_user_notification_rule`
         * **_NOTE:_** Importing a single On-Call user notification rule by ID requires quoting the `user_id:rule_id` filter value, for example `--filter="on_call_user_notification_rule='user-id:rule-id'"`
         * **_NOTE:_** To import notification rules for one user, filter by `user_id`, for example `--filter="Type=on_call_user_notification_rule;Name=user_id;Value=user-id"`
+*   `org_connection`
+    * `datadog_org_connection`
+*   `org_group`
+    * `datadog_org_group`
+*   `org_group_membership`
+    * `datadog_org_group_membership`
+*   `org_group_policy`
+    * `datadog_org_group_policy`
+        * **_NOTE:_** Policies are discovered per org group. Import ID is the policy UUID.
+*   `organization_settings`
+    * `datadog_organization_settings`
+        * **_NOTE:_** Singleton-like. Lists org(s) via V1 API and imports each by public ID.
 *   `rum_application`
     * `datadog_rum_application`
 *   `rum_metric`
