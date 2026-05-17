@@ -1,0 +1,30 @@
+docs/cloudflare.md
+  s_3d09ca71ac8e09::t_3f5267b692e95d 76-82
+providers/cloudflare/security.go
+  s_3d09ca71ac8e09::t_a6b5852080e3be 1-429
+providers/cloudflare/cloudflare_provider.go
+  s_3d09ca71ac8e09::t_70b82aa9f71853 47
+providers/cloudflare/unsupported_resources.json
+  s_3d09ca71ac8e09::t_1e52743fb767fe 38-83
+  s_3d09ca71ac8e09::t_5f7002cc3bc7e4 96-105
+  s_3d09ca71ac8e09::t_a439ec8fff3cfb 129-149
+  s_3d09ca71ac8e09::t_34a90d0a80da6b 217-237
+providers/cloudflare/security_test.go
+  s_3d09ca71ac8e09::t_895ab3c3bcbb42 1-399
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "cac871c37ef8797bc7a8f977ad195f2c43de7241",
+  "prompts": {},
+  "sessions": {
+    "s_3d09ca71ac8e09": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35de-16ee-7f00-8d3b-0aa925793c5e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
