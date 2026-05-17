@@ -52,7 +52,6 @@ func TestUnsupportedResourcesMetadata(t *testing.T) {
 	sort.Strings(metadataFiles)
 
 	for _, metadataFile := range metadataFiles {
-		metadataFile := metadataFile
 		t.Run(filepath.Dir(metadataFile), func(t *testing.T) {
 			validateUnsupportedResourcesMetadataFile(t, metadataFile)
 		})
