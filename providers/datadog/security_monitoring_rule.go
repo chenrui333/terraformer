@@ -33,7 +33,7 @@ func (g *SecurityMonitoringRuleGenerator) createResources(rulesResponse []datado
 			}
 		}
 		if rule.SecurityMonitoringStandardRuleResponse != nil {
-			if !rule.SecurityMonitoringStandardRuleResponse.GetIsDefault() {
+			if !rule.SecurityMonitoringStandardRuleResponse.GetIsDefault() && rule.SecurityMonitoringStandardRuleResponse.GetType() != datadogV2.SECURITYMONITORINGRULETYPEREAD_CLOUD_CONFIGURATION {
 				resourceName := rule.SecurityMonitoringStandardRuleResponse.GetId()
 				resources = append(resources, g.createResource(resourceName, rule.SecurityMonitoringStandardRuleResponse.GetIsEnabled()))
 			}
@@ -61,31 +61,13 @@ func (g *SecurityMonitoringRuleGenerator) createResource(ruleID string, ruleEnab
 // from each SecurityMonitoringRule create 1 TerraformResource.
 // Need SecurityMonitoringRule ID as ID for terraform resource
 func (g *SecurityMonitoringRuleGenerator) InitResources() error {
-	var securityMonitoringRuleResponses []datadogV2.SecurityMonitoringRuleResponse
-
 	datadogClient := g.Args["datadogClient"].(*datadog.APIClient)
 	auth := g.Args["auth"].(context.Context)
 	api := datadogV2.NewSecurityMonitoringApi(datadogClient)
 
-	pageSize := int64(1000)
-	pageNumber := int64(0)
-	remaining := int64(1)
-
-	for remaining > int64(0) {
-		resp, httpResp, err := api.ListSecurityMonitoringRules(auth,
-			*datadogV2.NewListSecurityMonitoringRulesOptionalParameters().
-				WithPageNumber(pageNumber).
-				WithPageSize(pageSize))
-		if httpResp != nil && httpResp.Body != nil {
-			_ = httpResp.Body.Close()
-		}
-		if err != nil {
-			return err
-		}
-		securityMonitoringRuleResponses = append(securityMonitoringRuleResponses, resp.GetData()...)
-
-		remaining = resp.Meta.Page.GetTotalCount() - pageSize*(pageNumber+1)
-		pageNumber++
+	securityMonitoringRuleResponses, err := listSecurityMonitoringRules(auth, api)
+	if err != nil {
+		return err
 	}
 
 	g.Resources = g.createResources(securityMonitoringRuleResponses)

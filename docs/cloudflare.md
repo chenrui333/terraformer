@@ -73,6 +73,13 @@ List of supported Cloudflare services:
   * `cloudflare_pages_project`
 * `ruleset`
   * `cloudflare_ruleset`
+* `security`
+  * `cloudflare_api_shield`
+  * `cloudflare_api_shield_operation`
+  * `cloudflare_page_shield_policy`
+  * `cloudflare_schema_validation_schemas`
+  * `cloudflare_vulnerability_scanner_credential_set`
+  * `cloudflare_vulnerability_scanner_target_environment`
 * `settings`
   * `cloudflare_account_dns_settings_internal_view`
   * `cloudflare_argo_smart_routing`
