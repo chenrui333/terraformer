@@ -20,6 +20,15 @@ type DomainAllowlistGenerator struct {
 	DatadogService
 }
 
+func (g *DomainAllowlistGenerator) PostConvertHook() error {
+	for _, r := range g.Resources {
+		if r.Item["domains"] == nil {
+			r.Item["domains"] = []string{}
+		}
+	}
+	return nil
+}
+
 func (g *DomainAllowlistGenerator) InitResources() error {
 	datadogClient := g.Args["datadogClient"].(*datadog.APIClient)
 	auth := g.Args["auth"].(context.Context)
