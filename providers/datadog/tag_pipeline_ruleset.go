@@ -52,6 +52,9 @@ func (g *TagPipelineRulesetGenerator) InitResources() error {
 
 	resources := []terraformutils.Resource{}
 	for _, ruleset := range resp.GetData() {
+		if ruleset.GetId() == "" {
+			continue
+		}
 		resources = append(resources, g.createResource(ruleset))
 	}
 	g.Resources = resources

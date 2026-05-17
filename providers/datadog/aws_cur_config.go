@@ -52,6 +52,9 @@ func (g *AwsCURConfigGenerator) InitResources() error {
 
 	resources := []terraformutils.Resource{}
 	for _, config := range resp.GetData() {
+		if config.GetId() == "" {
+			continue
+		}
 		resources = append(resources, g.createResource(config))
 	}
 	g.Resources = resources

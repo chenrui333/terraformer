@@ -52,6 +52,9 @@ func (g *CustomAllocationRuleGenerator) InitResources() error {
 
 	resources := []terraformutils.Resource{}
 	for _, rule := range resp.GetData() {
+		if rule.GetId() == "" {
+			continue
+		}
 		resources = append(resources, g.createResource(rule))
 	}
 	g.Resources = resources

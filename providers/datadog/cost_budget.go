@@ -52,6 +52,9 @@ func (g *CostBudgetGenerator) InitResources() error {
 
 	resources := []terraformutils.Resource{}
 	for _, budget := range resp.GetData() {
+		if budget.GetId() == "" {
+			continue
+		}
 		resources = append(resources, g.createResource(budget))
 	}
 	g.Resources = resources

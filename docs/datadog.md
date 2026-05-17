@@ -106,8 +106,10 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
         * **_NOTE:_** Importing resource requires resource ID's to be passed via [Filter][1] option
 *   `cost_budget`
     * `datadog_cost_budget`
+        * **_NOTE:_** Requires DataDog/datadog provider 3.39.0 or newer.
 *   `custom_allocation_rule`
     * `datadog_custom_allocation_rule`
+        * **_NOTE:_** Requires DataDog/datadog provider 3.39.0 or newer.
 *   `downtime`
     * `datadog_downtime`
 *   `gcp_uc_config`
@@ -223,6 +225,7 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_synthetics_test`
 *   `tag_pipeline_ruleset`
     * `datadog_tag_pipeline_ruleset`
+        * **_NOTE:_** Requires DataDog/datadog provider 3.39.0 or newer.
 *   `team`
     * `datadog_team`
 *   `team_connection`
