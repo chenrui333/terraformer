@@ -90,6 +90,28 @@ func TestIncidentResourceConstructionMissingID(t *testing.T) {
 	}
 }
 
+func TestIncidentTypeAllowEmptyValuesPreservesZeroValues(t *testing.T) {
+	allowEmptyValues := allowEmptyValueRegexps(IncidentTypeAllowEmptyValues)
+	parser := terraformutils.NewFlatmapParser(map[string]string{
+		"description": "",
+		"is_default":  "",
+	}, nil, allowEmptyValues)
+	incidentType := cty.Object(map[string]cty.Type{
+		"description": cty.String,
+		"is_default":  cty.Bool,
+	})
+
+	result, err := parser.Parse(incidentType)
+	if err != nil {
+		t.Fatalf("Parse returned error: %v", err)
+	}
+	for _, field := range []string{"description", "is_default"} {
+		if _, ok := result[field]; !ok {
+			t.Fatalf("%s was not preserved", field)
+		}
+	}
+}
+
 func TestIncidentNotificationTemplateAllowEmptyValuesPreservesRequiredStrings(t *testing.T) {
 	allowEmptyValues := allowEmptyValueRegexps(IncidentNotificationTemplateAllowEmptyValues)
 	parser := terraformutils.NewFlatmapParser(map[string]string{
@@ -356,6 +378,24 @@ func TestWorkflowAutomationCreateResource(t *testing.T) {
 	}
 	if resource.InstanceInfo.Type != "datadog_workflow_automation" {
 		t.Fatalf("resource type = %q, want datadog_workflow_automation", resource.InstanceInfo.Type)
+	}
+}
+
+func TestWorkflowAutomationAllowEmptyValuesPreservesRequiredPublished(t *testing.T) {
+	allowEmptyValues := allowEmptyValueRegexps(WorkflowAutomationAllowEmptyValues)
+	parser := terraformutils.NewFlatmapParser(map[string]string{
+		"published": "",
+	}, nil, allowEmptyValues)
+	workflowType := cty.Object(map[string]cty.Type{
+		"published": cty.Bool,
+	})
+
+	result, err := parser.Parse(workflowType)
+	if err != nil {
+		t.Fatalf("Parse returned error: %v", err)
+	}
+	if _, ok := result["published"]; !ok {
+		t.Fatal("published was not preserved")
 	}
 }
 

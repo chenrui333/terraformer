@@ -15,7 +15,7 @@ import (
 
 var (
 	// WorkflowAutomationAllowEmptyValues ...
-	WorkflowAutomationAllowEmptyValues = []string{"description"}
+	WorkflowAutomationAllowEmptyValues = []string{"description", "published"}
 )
 
 // WorkflowAutomationGenerator ...
