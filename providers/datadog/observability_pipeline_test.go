@@ -275,6 +275,75 @@ func TestObservabilityPipelinePostConvertHookPreservesEmptyVariantBlocks(t *test
 	requireEmptyBlockList(t, onMatch, "redact")
 }
 
+func TestObservabilityPipelinePostConvertHookPreservesEmptyListsAndScopeVariants(t *testing.T) {
+	resource := observabilityPipelineResourceWithItem(map[string]interface{}{
+		"config": []interface{}{
+			map[string]interface{}{
+				"processor_group": []interface{}{
+					map[string]interface{}{
+						"processor": []interface{}{
+							map[string]interface{}{
+								"id": "reduce",
+								"reduce": []interface{}{
+									map[string]interface{}{},
+								},
+							},
+							map[string]interface{}{
+								"id": "scanner",
+								"sensitive_data_scanner": []interface{}{
+									map[string]interface{}{
+										"rule": []interface{}{
+											map[string]interface{}{
+												"scope": []interface{}{
+													map[string]interface{}{},
+												},
+											},
+											map[string]interface{}{
+												"scope": []interface{}{
+													map[string]interface{}{},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+	resource.InstanceState.Attributes = map[string]string{
+		"config.0.processor_group.0.processor.0.reduce.#":                                                   "1",
+		"config.0.processor_group.0.processor.0.reduce.0.group_by.#":                                        "0",
+		"config.0.processor_group.0.processor.1.sensitive_data_scanner.0.rule.0.scope.0.include.#":          "1",
+		"config.0.processor_group.0.processor.1.sensitive_data_scanner.0.rule.0.scope.0.include.0.fields.#": "0",
+		"config.0.processor_group.0.processor.1.sensitive_data_scanner.0.rule.1.scope.0.exclude.#":          "1",
+		"config.0.processor_group.0.processor.1.sensitive_data_scanner.0.rule.1.scope.0.exclude.0.fields.#": "0",
+	}
+	generator := &ObservabilityPipelineGenerator{}
+	generator.Resources = []terraformutils.Resource{resource}
+
+	if err := generator.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook returned error: %v", err)
+	}
+
+	config := requireMapInList(t, generator.Resources[0].Item, "config", 0)
+	processorGroup := requireMapInList(t, config, "processor_group", 0)
+	reduceProcessor := requireMapInList(t, processorGroup, "processor", 0)
+	reduce := requireMapInList(t, reduceProcessor, "reduce", 0)
+	requireEmptyList(t, reduce, "group_by")
+
+	scannerProcessor := requireMapInList(t, processorGroup, "processor", 1)
+	scanner := requireMapInList(t, scannerProcessor, "sensitive_data_scanner", 0)
+	includeRule := requireMapInList(t, scanner, "rule", 0)
+	includeScope := requireMapInList(t, includeRule, "scope", 0)
+	requireEmptyBlockList(t, includeScope, "include")
+	excludeRule := requireMapInList(t, scanner, "rule", 1)
+	excludeScope := requireMapInList(t, excludeRule, "scope", 0)
+	requireEmptyBlockList(t, excludeScope, "exclude")
+}
+
 func TestObservabilityPipelinePostConvertHookDoesNotInventMissingVariantBlocks(t *testing.T) {
 	resource := observabilityPipelineResourceWithItem(map[string]interface{}{
 		"config": []interface{}{
@@ -544,6 +613,14 @@ func requireMapInList(t *testing.T, parent map[string]interface{}, key string, i
 		t.Fatalf("%s[%d] = %T, want map[string]interface{}", key, index, list[index])
 	}
 	return item
+}
+
+func requireEmptyList(t *testing.T, parent map[string]interface{}, key string) {
+	t.Helper()
+	list := requireList(t, parent, key)
+	if len(list) != 0 {
+		t.Fatalf("%s length = %d, want 0", key, len(list))
+	}
 }
 
 func requireEmptyBlockList(t *testing.T, parent map[string]interface{}, key string) {

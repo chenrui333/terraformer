@@ -98,6 +98,8 @@ var (
 		"config.processor_group.processor.sample":                                    {},
 		"config.processor_group.processor.sensitive_data_scanner":                    {},
 		"config.processor_group.processor.sensitive_data_scanner.rule.on_match.hash": {},
+		"config.processor_group.processor.sensitive_data_scanner.rule.scope.exclude": {},
+		"config.processor_group.processor.sensitive_data_scanner.rule.scope.include": {},
 		"config.processor_group.processor.split_array":                               {},
 		"config.processor_group.processor.throttle":                                  {},
 		"config.source.amazon_data_firehose":                                         {},
@@ -117,6 +119,10 @@ var (
 		"config.source.splunk_tcp":                                                   {},
 		"config.source.sumo_logic":                                                   {},
 		"config.source.syslog_ng":                                                    {},
+	}
+
+	observabilityPipelineEmptyListPaths = map[string]struct{}{
+		"config.processor_group.processor.reduce.group_by": {},
 	}
 )
 
@@ -169,15 +175,24 @@ func preserveObservabilityPipelineEmptyVariantBlocks(resource *terraformutils.Re
 			continue
 		}
 		normalizedPath := observabilityPipelineNormalizeFlatmapPath(flatmapPath)
-		if !observabilityPipelineIsEmptyVariantBlockPath(normalizedPath) {
+		count, err := strconv.Atoi(countValue)
+		if err != nil {
 			continue
 		}
-		count, err := strconv.Atoi(countValue)
-		if err != nil || count <= 0 {
+		if count == 0 && observabilityPipelineIsEmptyListPath(normalizedPath) {
+			observabilityPipelineEnsureEmptyList(resource.Item, flatmapPath)
+			continue
+		}
+		if count <= 0 || !observabilityPipelineIsEmptyVariantBlockPath(normalizedPath) {
 			continue
 		}
 		observabilityPipelineEnsureEmptyBlockList(resource.Item, flatmapPath, count)
 	}
+}
+
+func observabilityPipelineIsEmptyListPath(path string) bool {
+	_, ok := observabilityPipelineEmptyListPaths[path]
+	return ok
 }
 
 func observabilityPipelineIsEmptyVariantBlockPath(path string) bool {
@@ -221,6 +236,43 @@ func observabilityPipelineEnsureEmptyBlockList(item map[string]interface{}, flat
 				}
 			}
 			current[name] = observabilityPipelineEmptyBlocks(count)
+			return
+		}
+
+		if i+1 >= len(parts) {
+			return
+		}
+		index, err := strconv.Atoi(parts[i+1])
+		if err != nil || index < 0 {
+			return
+		}
+		list, ok := observabilityPipelineEnsureList(current, name, index+1)
+		if !ok {
+			return
+		}
+		child, ok := list[index].(map[string]interface{})
+		if !ok {
+			if list[index] != nil {
+				return
+			}
+			child = map[string]interface{}{}
+			list[index] = child
+		}
+		current = child
+		i += 2
+	}
+}
+
+func observabilityPipelineEnsureEmptyList(item map[string]interface{}, flatmapPath string) {
+	parts := strings.Split(flatmapPath, ".")
+	current := item
+	for i := 0; i < len(parts); {
+		name := parts[i]
+		if i == len(parts)-1 {
+			if _, ok := current[name]; ok {
+				return
+			}
+			current[name] = []interface{}{}
 			return
 		}
 
