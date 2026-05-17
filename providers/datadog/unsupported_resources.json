@@ -146,6 +146,41 @@
       ]
     },
     {
+      "resource": "datadog_child_organization",
+      "service_family": "organization",
+      "reason": "Child organizations cannot be safely reconstructed from broad import.",
+      "evidence": "Provider v4.9.0 creates a child organization and returns generated api_key, application_key, and user credentials. The provider Read method is a no-op because Datadog does not expose a way to fetch the created organization details, and Delete only logs that deletion is unsupported.",
+      "status": "unsupported",
+      "references": [
+        "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/child_organization",
+        "https://github.com/DataDog/terraform-provider-datadog/blob/v4.9.0/datadog/resource_datadog_child_organization.go"
+      ]
+    },
+    {
+      "resource": "datadog_compliance_custom_framework",
+      "service_family": "compliance",
+      "reason": "No broad list API exists for custom framework handles and versions.",
+      "evidence": "Provider v4.9.0 reads custom frameworks by handle and version using GetCustomFramework. The Datadog v2 API client exposes create, get, update, and delete methods for a known handle/version, but no ListCustomFrameworks method to discover all import IDs.",
+      "status": "deferred",
+      "references": [
+        "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/compliance_custom_framework",
+        "https://github.com/DataDog/terraform-provider-datadog/blob/v4.9.0/datadog/fwprovider/resource_datadog_compliance_custom_framework.go",
+        "https://github.com/DataDog/datadog-api-client-go/blob/v2.59.0/api/datadogV2/api_security_monitoring.go"
+      ]
+    },
+    {
+      "resource": "datadog_compliance_resource_evaluation_filter",
+      "service_family": "compliance",
+      "reason": "Resource filters require selector-scoped discovery rather than broad import.",
+      "evidence": "Provider v4.9.0 reads resource evaluation filters through GetResourceEvaluationFilters, whose optional parameters are cloud_provider and account_id and whose response is scoped to selected resources. The API does not expose a broad inventory of all resources with configured evaluation filters, so Terraformer cannot safely discover stable IDs without a dedicated explicit-filter design.",
+      "status": "deferred",
+      "references": [
+        "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/compliance_resource_evaluation_filter",
+        "https://github.com/DataDog/terraform-provider-datadog/blob/v4.9.0/datadog/fwprovider/resource_datadog_compliance_resource_evaluation_filter.go",
+        "https://github.com/DataDog/datadog-api-client-go/blob/v2.59.0/api/datadogV2/api_security_monitoring.go"
+      ]
+    },
+    {
       "resource": "datadog_cloud_workload_security_agent_rule",
       "service_family": "csm_threats",
       "reason": "Deprecated resource duplicates the currently registered CSM threats agent rule ownership path.",
@@ -154,6 +189,43 @@
       "references": [
         "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/cloud_workload_security_agent_rule",
         "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/csm_threats_agent_rule"
+      ]
+    },
+    {
+      "resource": "datadog_restriction_policy",
+      "service_family": "restriction_policy",
+      "reason": "Restriction policies can only be read by a known resource ID.",
+      "evidence": "Provider v4.9.0 imports the resource_id directly and Read calls GetRestrictionPolicy(resource_id). The Datadog v2 API client exposes get, update, and delete methods for a known resource_id but no list method to discover all restriction policy resource IDs across supported products.",
+      "status": "deferred",
+      "references": [
+        "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/restriction_policy",
+        "https://github.com/DataDog/terraform-provider-datadog/blob/v4.9.0/datadog/fwprovider/resource_datadog_restriction_policy.go",
+        "https://github.com/DataDog/datadog-api-client-go/blob/v2.59.0/api/datadogV2/api_restriction_policies.go"
+      ]
+    },
+    {
+      "resource": "datadog_security_monitoring_rule_json",
+      "service_family": "security_monitoring",
+      "reason": "Required JSON configuration cannot be reconstructed from provider import/read.",
+      "evidence": "Provider v4.9.0 requires the json argument and its Read path starts by unmarshalling the existing state json to decide which fields to keep. A broad ID import has no prior json value, so Terraformer cannot reconstruct a valid required configuration document. The resource also manages the same remote rules as datadog_security_monitoring_rule.",
+      "status": "unsupported",
+      "references": [
+        "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/security_monitoring_rule_json",
+        "https://github.com/DataDog/terraform-provider-datadog/blob/v4.9.0/datadog/resource_datadog_security_monitoring_rule_json.go",
+        "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/security_monitoring_rule"
+      ]
+    },
+    {
+      "resource": "datadog_user_role",
+      "service_family": "access_management",
+      "reason": "Broad import would duplicate role ownership already imported through user and service account resources.",
+      "evidence": "Provider v4.9.0 documents that datadog_user_role conflicts with datadog_user.roles and datadog_service_account.roles. Terraformer already registers user and service_account importers that include role relationships, so broad-importing separate user_role resources would create duplicate Terraform ownership for the same assignments.",
+      "status": "deferred",
+      "references": [
+        "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/user_role",
+        "https://github.com/DataDog/terraform-provider-datadog/blob/v4.9.0/datadog/fwprovider/resource_datadog_user_role.go",
+        "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/user",
+        "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/service_account"
       ]
     }
   ]
