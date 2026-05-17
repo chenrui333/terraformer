@@ -147,6 +147,9 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
         * **_NOTE:_** Singleton resource. Only one domain allowlist per org.
 *   `downtime`
     * `datadog_downtime`
+*   `downtime_schedule`
+    * `datadog_downtime_schedule`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
 *   `gcp_uc_config`
     * `datadog_gcp_uc_config`
         * **_NOTE:_** Requires DataDog/datadog provider 3.39.0 or newer.
@@ -298,11 +301,18 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_slo_correction`
 *   `spans_metric`
     * `datadog_spans_metric`
+*   `synthetics_concurrency_cap`
+    * `datadog_synthetics_concurrency_cap`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
+        * **_NOTE:_** Singleton resource. The Datadog provider stores the import ID as `synthetics-concurrency-cap`.
 *   `synthetics_global_variable`
     * `datadog_synthetics_global_variable`
         * **_NOTE:_** Importing resource requires resource ID's to be passed via [Filter][1] option
 *   `synthetics_private_location`
     * `datadog_synthetics_private_location`
+*   `synthetics_suite`
+    * `datadog_synthetics_suite`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
 *   `synthetics_test`
     * `datadog_synthetics_test`
 *   `tag_pipeline_ruleset`

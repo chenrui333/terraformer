@@ -189,6 +189,7 @@ func (p *DatadogProvider) GetSupportedService() map[string]terraformutils.Servic
 		"dashboard_v2":                             &DashboardV2Generator{},
 		"domain_allowlist":                         &DomainAllowlistGenerator{},
 		"downtime":                                 &DowntimeGenerator{},
+		"downtime_schedule":                        &DowntimeScheduleGenerator{},
 		"gcp_uc_config":                            &GCPUCConfigGenerator{},
 		"ip_allowlist":                             &IPAllowlistGenerator{},
 		"logs_archive":                             &LogsArchiveGenerator{},
@@ -247,9 +248,11 @@ func (p *DatadogProvider) GetSupportedService() map[string]terraformutils.Servic
 		"service_level_objective":                  &ServiceLevelObjectiveGenerator{},
 		"slo_correction":                           &SLOCorrectionGenerator{},
 		"spans_metric":                             &SpansMetricGenerator{},
-		"synthetics_test":                          &SyntheticsTestGenerator{},
+		"synthetics_concurrency_cap":               &SyntheticsConcurrencyCapGenerator{},
 		"synthetics_global_variable":               &SyntheticsGlobalVariableGenerator{},
 		"synthetics_private_location":              &SyntheticsPrivateLocationGenerator{},
+		"synthetics_suite":                         &SyntheticsSuiteGenerator{},
+		"synthetics_test":                          &SyntheticsTestGenerator{},
 		"tag_pipeline_ruleset":                     &TagPipelineRulesetGenerator{},
 		"team":                                     &TeamGenerator{},
 		"team_connection":                          &TeamConnectionGenerator{},
@@ -301,6 +304,14 @@ func (p DatadogProvider) GetResourceConnections() map[string]map[string][]string
 			},
 			"monitor_json": {
 				"monitor_id", "id",
+			},
+		},
+		"downtime_schedule": {
+			"monitor": {
+				"monitor_identifier.monitor_id", "id",
+			},
+			"monitor_json": {
+				"monitor_identifier.monitor_id", "id",
 			},
 		},
 		"on_call_escalation_policy": {
@@ -439,6 +450,11 @@ func (p DatadogProvider) GetResourceConnections() map[string]map[string][]string
 		"synthetics_test": {
 			"synthetics_private_location": {
 				"locations", "id",
+			},
+		},
+		"synthetics_suite": {
+			"synthetics_test": {
+				"tests.public_id", "id",
 			},
 		},
 		"synthetics_global_variable": {
