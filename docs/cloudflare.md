@@ -5,7 +5,7 @@ Example using a Cloudflare API Key and corresponding email:
 export CLOUDFLARE_API_KEY=[CLOUDFLARE_API_KEY]
 export CLOUDFLARE_EMAIL=[CLOUDFLARE_EMAIL]
 export CLOUDFLARE_ACCOUNT_ID=[CLOUDFLARE_ACCOUNT_ID]
-./terraformer import cloudflare --resources=dns,firewall,ruleset,access,storage
+./terraformer import cloudflare --resources=dns,firewall,ruleset,access,storage,settings
 ```
 
 or using a Cloudflare API Token:
@@ -13,7 +13,7 @@ or using a Cloudflare API Token:
 ```bash
 export CLOUDFLARE_API_TOKEN=[CLOUDFLARE_API_TOKEN]
 export CLOUDFLARE_ACCOUNT_ID=[CLOUDFLARE_ACCOUNT_ID]
-./terraformer import cloudflare --resources=dns,firewall,ruleset,access,storage
+./terraformer import cloudflare --resources=dns,firewall,ruleset,access,storage,settings
 ```
 
 List of supported Cloudflare services:
@@ -73,6 +73,34 @@ List of supported Cloudflare services:
   * `cloudflare_pages_project`
 * `ruleset`
   * `cloudflare_ruleset`
+* `settings`
+  * `cloudflare_account_dns_settings_internal_view`
+  * `cloudflare_argo_smart_routing`
+  * `cloudflare_argo_tiered_caching`
+  * `cloudflare_authenticated_origin_pulls_settings`
+  * `cloudflare_custom_hostname_fallback_origin`
+  * `cloudflare_dns_firewall`
+  * `cloudflare_dns_zone_transfers_acl`
+  * `cloudflare_dns_zone_transfers_incoming`
+  * `cloudflare_dns_zone_transfers_outgoing`
+  * `cloudflare_dns_zone_transfers_peer`
+  * `cloudflare_leaked_credential_check`
+  * `cloudflare_logpull_retention`
+  * `cloudflare_managed_transforms`
+  * `cloudflare_regional_tiered_cache`
+  * `cloudflare_tiered_cache`
+  * `cloudflare_total_tls`
+  * `cloudflare_universal_ssl_setting`
+  * `cloudflare_url_normalization_settings`
+  * `cloudflare_waiting_room_settings`
+  * `cloudflare_zone_cache_reserve`
+  * `cloudflare_zone_cache_variants`
+  * `cloudflare_zone_hold`
+
+  Account-scoped settings and DNS transfer resources require `CLOUDFLARE_ACCOUNT_ID`.
+  Zone singleton settings are imported only when Terraformer can see durable, non-default
+  user-owned configuration. Cloudflare defaults are skipped so generated Terraform does not
+  claim ownership of unset account or zone settings.
 * `storage`
   * `cloudflare_d1_database`
   * `cloudflare_queue`
