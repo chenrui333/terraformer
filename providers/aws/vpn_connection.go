@@ -7,7 +7,9 @@ import (
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 )
 
 var VpnConnectionAllowEmptyValues = []string{"tags."}
@@ -16,9 +18,12 @@ type VpnConnectionGenerator struct {
 	AWSService
 }
 
-func (VpnConnectionGenerator) createResources(vpncs *ec2.DescribeVpnConnectionsOutput) []terraformutils.Resource {
+func (g *VpnConnectionGenerator) createResources(vpncs *ec2.DescribeVpnConnectionsOutput) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 	for _, vpnc := range vpncs.VpnConnections {
+		if vpnc.State == types.VpnStateDeleted || vpnc.State == types.VpnStateDeleting {
+			continue
+		}
 		resources = append(resources, terraformutils.NewSimpleResource(
 			StringValue(vpnc.VpnConnectionId),
 			StringValue(vpnc.VpnConnectionId),
@@ -39,7 +44,14 @@ func (g *VpnConnectionGenerator) InitResources() error {
 		return e
 	}
 	svc := ec2.NewFromConfig(config)
-	vpncs, err := svc.DescribeVpnConnections(context.TODO(), &ec2.DescribeVpnConnectionsInput{})
+	vpncs, err := svc.DescribeVpnConnections(context.TODO(), &ec2.DescribeVpnConnectionsInput{
+		Filters: []types.Filter{
+			{
+				Name:   aws.String("state"),
+				Values: []string{"pending", "available"},
+			},
+		},
+	})
 	if err != nil {
 		return err
 	}

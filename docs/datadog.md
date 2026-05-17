@@ -83,11 +83,28 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 
 ## Supported Datadog resources
 
+*   `agentless_scanning_aws_scan_options`
+    * `datadog_agentless_scanning_aws_scan_options`
+*   `agentless_scanning_azure_scan_options`
+    * `datadog_agentless_scanning_azure_scan_options`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
+*   `agentless_scanning_gcp_scan_options`
+    * `datadog_agentless_scanning_gcp_scan_options`
 *   `apm_retention_filter`
     * `datadog_apm_retention_filter`
 *   `apm_retention_filter_order`
     * `datadog_apm_retention_filter_order`
         * **_NOTE:_** Importing a single retention filter order by ID accepts any value because the Datadog provider stores it as `filtersOrderID`, for example `--filter=apm_retention_filter_order=any-value`
+*   `appsec_waf_custom_rule`
+    * `datadog_appsec_waf_custom_rule`
+*   `appsec_waf_exclusion_filter`
+    * `datadog_appsec_waf_exclusion_filter`
+*   `aws_cur_config`
+    * `datadog_aws_cur_config`
+        * **_NOTE:_** Requires DataDog/datadog provider 3.39.0 or newer.
+*   `azure_uc_config`
+    * `datadog_azure_uc_config`
+        * **_NOTE:_** Requires DataDog/datadog provider 3.39.0 or newer.
 *   `dashboard`
     * `datadog_dashboard`
 *   `dashboard_json`
@@ -98,11 +115,25 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_cloud_inventory_sync_config`
         * **_NOTE:_** Requires DataDog/datadog provider 3.86.0 or newer.
         * **_NOTE:_** Importing resource requires resource ID's to be passed via [Filter][1] option
+*   `cost_budget`
+    * `datadog_cost_budget`
+        * **_NOTE:_** Requires DataDog/datadog provider 3.39.0 or newer.
+*   `csm_threats_agent_rule`
+    * `datadog_csm_threats_agent_rule`
+        * **_NOTE:_** For policy-scoped rules, filter IDs use `policy_id:rule_id` format, for example `--filter="csm_threats_agent_rule='policy-abc:rule-123'"`; unscoped rules accept bare rule IDs
+*   `csm_threats_policy`
+    * `datadog_csm_threats_policy`
+*   `custom_allocation_rule`
+    * `datadog_custom_allocation_rule`
+        * **_NOTE:_** Requires DataDog/datadog provider 3.39.0 or newer.
 *   `domain_allowlist`
     * `datadog_domain_allowlist`
         * **_NOTE:_** Singleton resource. Only one domain allowlist per org.
 *   `downtime`
     * `datadog_downtime`
+*   `gcp_uc_config`
+    * `datadog_gcp_uc_config`
+        * **_NOTE:_** Requires DataDog/datadog provider 3.39.0 or newer.
 *   `integration_aws`
     * `datadog_integration_aws`
 *   `integration_aws_lambda_arn`
@@ -112,9 +143,17 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `integration_azure`
     * `datadog_integration_azure`
         * **_NOTE:_** Sensitive field `client_secret` is not generated and needs to be manually set
+*   `integration_confluent_resource`
+    * `datadog_integration_confluent_resource`
+        * **_NOTE:_** Import ID is composite `account_id:resource_id`. Discovery lists resources across all Confluent accounts.
+*   `integration_fastly_service`
+    * `datadog_integration_fastly_service`
+        * **_NOTE:_** Import ID is composite `account_id:service_id`. Discovery lists services across all Fastly accounts.
 *   `integration_gcp`
     * `datadog_integration_gcp`
         * **_NOTE:_** Sensitive fields `private_key, private_key_id, client_id` is not generated and needs to be manually set
+*   `integration_ms_teams_tenant_based_handle`
+    * `datadog_integration_ms_teams_tenant_based_handle`
 *   `integration_pagerduty`
     * `datadog_integration_pagerduty`
 *   `integration_pagerduty_service_object`
@@ -228,6 +267,9 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_synthetics_private_location`
 *   `synthetics_test`
     * `datadog_synthetics_test`
+*   `tag_pipeline_ruleset`
+    * `datadog_tag_pipeline_ruleset`
+        * **_NOTE:_** Requires DataDog/datadog provider 3.39.0 or newer.
 *   `team`
     * `datadog_team`
 *   `team_connection`
@@ -257,5 +299,19 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
         * **_NOTE:_** The Datadog provider currently supports the GitHub team sync source
 *   `user`
     * `datadog_user`
+
+## Unsupported / Deferred Resources
+
+The following Terraform provider resources have been evaluated and cannot be safely imported by Terraformer:
+
+| Resource | Reason |
+|----------|--------|
+| `datadog_integration_aws_account` | Wildcard `--resources=*` conflicts with legacy `integration_aws` generator; required empty blocks (`lambda_forwarder`, `namespace_filters`, `xray_services`) are dropped by Terraformer's flatmap parser before `AllowEmptyValues` is consulted. Revisit after legacy generator is removed. |
+| `datadog_integration_aws_event_bridge` | List API returns full event source names (with assigned suffix); provider's required `event_generator_name` is the user-supplied prefix only, and there is no safe way to derive it. |
+| `datadog_integration_cloudflare_account` | `api_key` is required and sensitive; read API does not return it. |
+| `datadog_integration_confluent_account` | `api_secret` is required and sensitive; read API does not return it. |
+| `datadog_integration_fastly_account` | `api_key` is required and sensitive; read API does not return it. |
+| `datadog_integration_ms_teams_workflows_webhook_handle` | `url` is required and sensitive; read API does not return it. |
+| `datadog_integration_opsgenie_service_object` | `opsgenie_api_key` is required and sensitive; Datadog API explicitly never returns it. |
 
 [1]: https://github.com/chenrui333/terraformer/blob/main/README.md#filtering

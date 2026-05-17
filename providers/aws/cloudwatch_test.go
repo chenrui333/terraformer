@@ -2,7 +2,11 @@
 
 package aws
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/chenrui333/terraformer/terraformutils"
+)
 
 func TestCloudWatchEventRuleImportID(t *testing.T) {
 	tests := []struct {
@@ -68,5 +72,18 @@ func TestCloudWatchEventResourceName(t *testing.T) {
 				t.Fatalf("cloudwatchEventResourceName() = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestCloudWatchCompositeAlarmResourceType(t *testing.T) {
+	alarmName := "high-level-alarm"
+	resource := terraformutils.NewSimpleResource(
+		alarmName, alarmName, "aws_cloudwatch_composite_alarm", "aws", cloudwatchAllowEmptyValues)
+
+	if got := resource.InstanceState.ID; got != alarmName {
+		t.Fatalf("resource ID = %q, want %q", got, alarmName)
+	}
+	if got := resource.InstanceInfo.Type; got != "aws_cloudwatch_composite_alarm" {
+		t.Fatalf("resource type = %q, want %q", got, "aws_cloudwatch_composite_alarm")
 	}
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
+	cloudwatchtypes "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchevents"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
@@ -33,6 +34,10 @@ func (g *CloudWatchGenerator) InitResources() error {
 
 	cloudwatchSvc := cloudwatch.NewFromConfig(config)
 	err := g.createMetricAlarms(cloudwatchSvc)
+	if err != nil {
+		return err
+	}
+	err = g.createCompositeAlarms(cloudwatchSvc)
 	if err != nil {
 		return err
 	}
@@ -81,6 +86,36 @@ func (g *CloudWatchGenerator) createMetricAlarms(cloudwatchSvc *cloudwatch.Clien
 				*metricAlarm.AlarmName,
 				*metricAlarm.AlarmName,
 				"aws_cloudwatch_metric_alarm",
+				"aws",
+				cloudwatchAllowEmptyValues))
+		}
+		nextToken = output.NextToken
+		if !awsHasMorePages(nextToken) {
+			break
+		}
+	}
+	return nil
+}
+
+func (g *CloudWatchGenerator) createCompositeAlarms(cloudwatchSvc *cloudwatch.Client) error {
+	var nextToken *string
+	for {
+		output, err := cloudwatchSvc.DescribeAlarms(context.TODO(), &cloudwatch.DescribeAlarmsInput{
+			AlarmTypes: []cloudwatchtypes.AlarmType{cloudwatchtypes.AlarmTypeCompositeAlarm},
+			NextToken:  nextToken,
+		})
+		if err != nil {
+			return err
+		}
+		for _, alarm := range output.CompositeAlarms {
+			alarmName := StringValue(alarm.AlarmName)
+			if alarmName == "" {
+				continue
+			}
+			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
+				alarmName,
+				alarmName,
+				"aws_cloudwatch_composite_alarm",
 				"aws",
 				cloudwatchAllowEmptyValues))
 		}

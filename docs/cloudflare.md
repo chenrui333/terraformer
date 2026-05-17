@@ -94,3 +94,6 @@ List of supported Cloudflare services:
   * `cloudflare_workers_custom_domain`
   * `cloudflare_workers_for_platforms_dispatch_namespace`
   * `cloudflare_workers_route`
+
+Unsupported and deferred Cloudflare import decisions are tracked in
+[unsupported_resources.json](../providers/cloudflare/unsupported_resources.json).

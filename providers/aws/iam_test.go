@@ -65,6 +65,22 @@ func TestIamResourceName(t *testing.T) {
 	}
 }
 
+func TestIamServiceLinkedRoleResourceName(t *testing.T) {
+	tests := []struct {
+		roleName string
+		want     string
+	}{
+		{roleName: "AWSServiceRoleForECS", want: "slr/AWSServiceRoleForECS"},
+		{roleName: "AWSServiceRoleForElasticLoadBalancing", want: "slr/AWSServiceRoleForElasticLoadBalancing"},
+	}
+	for _, tt := range tests {
+		got := iamResourceName("slr", tt.roleName)
+		if got != tt.want {
+			t.Fatalf("iamResourceName(slr, %q) = %q, want %q", tt.roleName, got, tt.want)
+		}
+	}
+}
+
 func TestIamResourceMissing(t *testing.T) {
 	tests := []struct {
 		name string

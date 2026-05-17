@@ -33,6 +33,14 @@ func (g *RDSGenerator) loadOptionalResources(loaders []rdsOptionalResourceLoader
 	}
 }
 
+func rdsStatusImportable(status string) bool {
+	switch strings.ToLower(status) {
+	case "deleting", "creating", "failed", "migration-failed":
+		return false
+	}
+	return status != ""
+}
+
 func (g *RDSGenerator) loadDBClusters(svc *rds.Client) error {
 	p := rds.NewDescribeDBClustersPaginator(svc, &rds.DescribeDBClustersInput{})
 	for p.HasMorePages() {
@@ -42,7 +50,7 @@ func (g *RDSGenerator) loadDBClusters(svc *rds.Client) error {
 		}
 		for _, cluster := range page.DBClusters {
 			resourceName := StringValue(cluster.DBClusterIdentifier)
-			if resourceName == "" {
+			if resourceName == "" || !rdsStatusImportable(StringValue(cluster.Status)) {
 				continue
 			}
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
@@ -280,7 +288,7 @@ func (g *RDSGenerator) loadDBInstances(svc *rds.Client) error {
 		}
 		for _, db := range page.DBInstances {
 			resourceName := StringValue(db.DBInstanceIdentifier)
-			if resourceName == "" {
+			if resourceName == "" || !rdsStatusImportable(StringValue(db.DBInstanceStatus)) {
 				continue
 			}
 			r := terraformutils.NewSimpleResource(

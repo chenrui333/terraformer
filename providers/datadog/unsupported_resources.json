@@ -2,6 +2,83 @@
   "version": 1,
   "resources": [
     {
+      "resource": "datadog_integration_aws_account",
+      "service_family": "integration_aws",
+      "reason": "Wildcard --resources=* conflicts with legacy integration_aws generator; required empty blocks are dropped by Terraformer's flatmap parser before AllowEmptyValues is consulted.",
+      "evidence": "Provider v4 validators require logs_config.lambda_forwarder, metrics_config.namespace_filters, and traces_config.xray_services blocks even when empty. Terraformer's FlatmapParser.fromFlatmapList drops zero-count children before isValueAllowed can preserve them. Additionally, running alongside integration_aws generates duplicate ownership for the same AWS accounts.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/336",
+        "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/integration_aws_account"
+      ]
+    },
+    {
+      "resource": "datadog_integration_aws_event_bridge",
+      "service_family": "integration_aws",
+      "reason": "Cannot derive the required event_generator_name from the full event source name returned by the list API.",
+      "evidence": "ListAWSEventBridgeSources returns full event source names (user prefix + assigned suffix). The Terraform provider's required event_generator_name field is the user-supplied prefix only. There is no API to retrieve the original prefix, and the suffix boundary is not deterministic.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/336",
+        "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/integration_aws_event_bridge"
+      ]
+    },
+    {
+      "resource": "datadog_integration_cloudflare_account",
+      "service_family": "integration_cloudflare",
+      "reason": "Required api_key field is sensitive and not returned by the read API.",
+      "evidence": "Provider schema marks api_key as Required + Sensitive. The Cloudflare integration list/get API does not return the API key or token value. Generated HCL would be missing a required field and fail validation.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/336",
+        "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/integration_cloudflare_account"
+      ]
+    },
+    {
+      "resource": "datadog_integration_confluent_account",
+      "service_family": "integration_confluent",
+      "reason": "Required api_secret field is sensitive and not returned by the read API.",
+      "evidence": "Provider schema marks api_secret as Required + Sensitive. The Confluent account list/get API does not return the API secret. Generated HCL would be missing a required field and fail validation.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/336",
+        "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/integration_confluent_account"
+      ]
+    },
+    {
+      "resource": "datadog_integration_fastly_account",
+      "service_family": "integration_fastly",
+      "reason": "Required api_key field is sensitive and not returned by the read API.",
+      "evidence": "Provider schema requires one of api_key or api_key_wo (both Sensitive). The Fastly account list/get API does not return the API key. Generated HCL would be missing a required field and fail validation.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/336",
+        "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/integration_fastly_account"
+      ]
+    },
+    {
+      "resource": "datadog_integration_ms_teams_workflows_webhook_handle",
+      "service_family": "integration_ms_teams",
+      "reason": "Required url field is sensitive and not returned by the read API.",
+      "evidence": "Provider schema marks url as Required + Sensitive. The MS Teams workflows webhook handle list/get API does not return the webhook URL. Generated HCL would be missing a required field and fail validation.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/336",
+        "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/integration_ms_teams_workflows_webhook_handle"
+      ]
+    },
+    {
+      "resource": "datadog_integration_opsgenie_service_object",
+      "service_family": "integration_opsgenie",
+      "reason": "Required opsgenie_api_key field is sensitive and explicitly never returned by the API.",
+      "evidence": "Provider schema marks opsgenie_api_key as Required + Sensitive. Provider docs explicitly state: 'Since the Datadog API never returns Opsgenie API keys, it is impossible to detect drifts.' Generated HCL would be missing a required field and fail validation.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/336",
+        "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/integration_opsgenie_service_object"
+      ]
+    },
+    {
       "resource": "datadog_org_group_policy_override",
       "service_family": "org_group",
       "reason": "Destructive delete semantics and auto-created noise make broad discovery unsafe.",

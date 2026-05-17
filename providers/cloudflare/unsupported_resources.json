@@ -1,0 +1,214 @@
+{
+  "version": 1,
+  "resources": [
+    {
+      "resource": "cloudflare_account_dns_settings",
+      "service_family": "dns",
+      "reason": "Account DNS defaults are singleton settings that need scoped follow-up before broad import.",
+      "evidence": "Issue #335 tracks account and zone DNS settings as a dedicated PR bucket. Terraformer currently imports Cloudflare DNS records and zones, while this resource owns account-level DNS defaults whose API state can include inherited defaults versus explicit account configuration.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/account_dns_settings"
+      ]
+    },
+    {
+      "resource": "cloudflare_account_subscription",
+      "service_family": "billing",
+      "reason": "Billing subscription state is Cloudflare/account commerce-managed and should not be blindly emitted as Terraform-owned configuration.",
+      "evidence": "The Terraform provider resource requires Billing Read/Write permissions and models rate_plan, renewal frequency, price, state, current billing periods, and externally_managed rate-plan metadata. Broad discovery would turn Cloudflare billing lifecycle state into generated infrastructure configuration.",
+      "status": "cloudflare-managed",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/account_subscription"
+      ]
+    },
+    {
+      "resource": "cloudflare_authenticated_origin_pulls_certificate",
+      "service_family": "certificates",
+      "reason": "Authenticated Origin Pull certificates require private key material that Cloudflare APIs cannot safely return.",
+      "evidence": "The Terraform provider schema requires certificate, private_key, and zone_id. The private_key field is Sensitive private material, so Terraformer cannot reconstruct valid HCL from a discovered certificate ID alone.",
+      "status": "secret-required",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/authenticated_origin_pulls_certificate"
+      ]
+    },
+    {
+      "resource": "cloudflare_cloudforce_one_request",
+      "service_family": "cloudforce_one",
+      "reason": "Cloudforce One requests represent submitted analysis work rather than stable infrastructure inventory.",
+      "evidence": "The Terraform provider resource creates or tracks a request with content, priority, request_type, summary, and TLP while exposing mutable request status, token counts, and completion timestamps as read-only data.",
+      "status": "request-style",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/cloudforce_one_request"
+      ]
+    },
+    {
+      "resource": "cloudflare_cloudforce_one_request_message",
+      "service_family": "cloudforce_one",
+      "reason": "Request messages are action-style updates to an existing Cloudforce One request.",
+      "evidence": "The Terraform provider resource requires a request_id and optional message content, then reads author, message ID, creation time, and follow-on request status. Importing every message would reproduce request history instead of durable configuration.",
+      "status": "request-style",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/cloudforce_one_request_message"
+      ]
+    },
+    {
+      "resource": "cloudflare_list_item",
+      "service_family": "lists",
+      "reason": "Standalone list-item import would duplicate Terraformer's existing inline cloudflare_list item ownership.",
+      "evidence": "The Cloudflare Lists generator enumerates /accounts/{account_id}/rules/lists/{list_id}/items and emits those entries under cloudflare_list items.# attributes. A separate cloudflare_list_item importer would create a second Terraform ownership path for the same list entries.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/list_item"
+      ]
+    },
+    {
+      "resource": "cloudflare_logpush_ownership_challenge",
+      "service_family": "logpush",
+      "reason": "Logpush ownership challenge is a verification action rather than durable configuration.",
+      "evidence": "The Terraform provider resource requires a sensitive destination_conf and returns challenge filename, message, and valid status. Terraformer already imports durable cloudflare_logpush_job resources, so challenge generation should not be part of broad import.",
+      "status": "request-style",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/logpush_ownership_challenge"
+      ]
+    },
+    {
+      "resource": "cloudflare_snippet",
+      "service_family": "snippets",
+      "reason": "Snippet resources require source files and the Terraform provider does not currently support import.",
+      "evidence": "The Terraform provider docs require snippet files, metadata, and snippet_name, and explicitly state that cloudflare_snippet does not currently support terraform import.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/snippet"
+      ]
+    },
+    {
+      "resource": "cloudflare_stream_download",
+      "service_family": "stream",
+      "reason": "Stream download resources represent generated media output state instead of durable infrastructure configuration.",
+      "evidence": "The Terraform provider resource requires a media identifier and reads download status, percent_complete, and generated URLs for audio/default downloads. Broad import would capture runtime generation progress rather than desired configuration.",
+      "status": "request-style",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/stream_download"
+      ]
+    },
+    {
+      "resource": "cloudflare_vulnerability_scanner_credential",
+      "service_family": "vulnerability_scanner",
+      "reason": "Scanner credentials require write-only secret material.",
+      "evidence": "The Terraform provider schema requires value as a Sensitive credential value and documents it as write-only and never returned in responses. Terraformer cannot discover the required value for generated HCL.",
+      "status": "secret-required",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/vulnerability_scanner_credential"
+      ]
+    },
+    {
+      "resource": "cloudflare_worker_version",
+      "service_family": "workers",
+      "reason": "Worker version resources couple runtime version state to code modules, assets, and bindings that broad discovery cannot safely reconstruct.",
+      "evidence": "The Terraform provider resource includes modules, main_module, assets, bindings, migrations, and sensitive asset or binding values. Terraformer currently imports Workers routes, custom domains, cron triggers, and dispatch namespaces, but not script body or version ownership.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/worker_version"
+      ]
+    },
+    {
+      "resource": "cloudflare_workers_deployment",
+      "service_family": "workers",
+      "reason": "Workers deployment resources model active rollout/version state and can conflict with separate script or version ownership.",
+      "evidence": "The Terraform provider resource requires script_name, rollout strategy, and version percentage mappings. Issue #335 calls out Workers/Scripts/Snippets/Workflows body and version resources as needing careful handling before import.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/workers_deployment"
+      ]
+    },
+    {
+      "resource": "cloudflare_workers_kv",
+      "service_family": "storage",
+      "reason": "Workers KV entries are high-cardinality content records, not stable provider-level infrastructure inventory.",
+      "evidence": "The Terraform provider resource requires namespace_id, key_name, and value for each KV pair, with values up to 25 MiB. Terraformer currently imports cloudflare_workers_kv_namespace, leaving individual KV content records out of broad storage import.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/workers_kv"
+      ]
+    },
+    {
+      "resource": "cloudflare_workers_script",
+      "service_family": "workers",
+      "reason": "Worker scripts can include source code, assets, modules, and sensitive binding material that should not be reconstructed blindly.",
+      "evidence": "The Terraform provider resource accepts content/content_file, assets, bindings, migrations, and sensitive asset or binding fields. Terraformer currently imports Workers routes, custom domains, cron triggers, and dispatch namespaces, but not script body ownership.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/workers_script"
+      ]
+    },
+    {
+      "resource": "cloudflare_workflow",
+      "service_family": "workers",
+      "reason": "Workflow resources are tied to Worker script/class ownership and runtime execution state.",
+      "evidence": "The Terraform provider resource requires workflow_name, class_name, and script_name, while read state includes runtime instance counters, deletion state, trigger timestamps, and version_id. Import should be handled together with Workers script/version ownership decisions.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/workflow"
+      ]
+    },
+    {
+      "resource": "cloudflare_zone_dns_settings",
+      "service_family": "dns",
+      "reason": "Zone DNS settings are zone-scoped singleton settings that need explicit ownership and default-handling review.",
+      "evidence": "Issue #335 tracks DNS settings as follow-up work. This resource owns a full zone DNS settings object, including nameserver, SOA, multi-provider, secondary DNS, and internal DNS options that may reflect API defaults rather than explicit Terraform intent.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zone_dns_settings"
+      ]
+    },
+    {
+      "resource": "cloudflare_zone_dnssec",
+      "service_family": "dns",
+      "reason": "Zone DNSSEC is a zone singleton with desired settings mixed with Cloudflare-generated DNSSEC metadata.",
+      "evidence": "The Terraform provider resource requires zone_id and optional desired DNSSEC settings, while read state includes generated DS/public-key fields, digest values, key tags, and modified timestamps. Import needs scoped handling to avoid treating Cloudflare-generated key material as user-authored configuration.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zone_dnssec"
+      ]
+    },
+    {
+      "resource": "cloudflare_zone_setting",
+      "service_family": "zone_settings",
+      "reason": "Generic zone setting imports need per-setting review for plan availability, value shape, and default-versus-explicit ownership.",
+      "evidence": "The Terraform provider exposes many setting_id values with different value types and plan-level availability. Issue #335 lists zone settings as a dedicated follow-up bucket rather than a safe broad parity import.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zone_setting"
+      ]
+    },
+    {
+      "resource": "cloudflare_zone_subscription",
+      "service_family": "billing",
+      "reason": "Zone subscription state is Cloudflare billing lifecycle state and should not be imported as routine infrastructure configuration.",
+      "evidence": "The Terraform provider resource requires Billing Read/Write permissions and models frequency, rate_plan, price, current billing periods, subscription state, and externally_managed rate-plan metadata.",
+      "status": "cloudflare-managed",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zone_subscription"
+      ]
+    }
+  ]
+}

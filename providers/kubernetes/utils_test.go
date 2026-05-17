@@ -1254,6 +1254,652 @@ func TestSupportsNativeManifestResource(t *testing.T) {
 	}
 }
 
+// TestKubernetes133To135APIDiscoveryMatrix is a comprehensive fixture that
+// classifies every relevant Kubernetes 1.33–1.35 API resource into exactly one
+// behavior class. This test is the definition of done for the native API policy.
+func TestKubernetes133To135APIDiscoveryMatrix(t *testing.T) {
+	clientset := fake.NewSimpleClientset()
+	manageableVerbs := []string{"create", "delete", "get", "list", "patch", "update"}
+
+	// allProviderTypes simulates a provider that has both first-class and
+	// manifest resource types available.
+	allProviderTypes := map[string]struct{}{
+		"kubernetes_api_service_v1":                      {},
+		"kubernetes_certificate_signing_request_v1":      {},
+		"kubernetes_cluster_role_v1":                     {},
+		"kubernetes_cluster_role_binding_v1":             {},
+		"kubernetes_config_map_v1":                       {},
+		"kubernetes_cron_job_v1":                         {},
+		"kubernetes_csi_driver_v1":                       {},
+		"kubernetes_daemon_set_v1":                       {},
+		"kubernetes_default_service_account_v1":          {},
+		"kubernetes_deployment_v1":                       {},
+		"kubernetes_endpoint_slice_v1":                   {},
+		"kubernetes_endpoints_v1":                        {},
+		"kubernetes_horizontal_pod_autoscaler_v2":        {},
+		"kubernetes_ingress_class_v1":                    {},
+		"kubernetes_ingress_v1":                          {},
+		"kubernetes_job_v1":                              {},
+		"kubernetes_limit_range_v1":                      {},
+		manifestTerraformResourceName:                    {},
+		"kubernetes_mutating_webhook_configuration_v1":   {},
+		"kubernetes_namespace_v1":                        {},
+		"kubernetes_network_policy_v1":                   {},
+		"kubernetes_node_taint":                          {},
+		"kubernetes_persistent_volume_claim_v1":          {},
+		"kubernetes_persistent_volume_v1":                {},
+		"kubernetes_pod_disruption_budget_v1":            {},
+		"kubernetes_pod_v1":                              {},
+		"kubernetes_priority_class_v1":                   {},
+		"kubernetes_replication_controller_v1":           {},
+		"kubernetes_resource_quota_v1":                   {},
+		"kubernetes_role_binding_v1":                     {},
+		"kubernetes_role_v1":                             {},
+		"kubernetes_runtime_class_v1":                    {},
+		"kubernetes_secret_v1":                           {},
+		"kubernetes_service_account_v1":                  {},
+		"kubernetes_service_v1":                          {},
+		"kubernetes_stateful_set_v1":                     {},
+		"kubernetes_storage_class_v1":                    {},
+		"kubernetes_validating_admission_policy_v1":      {},
+		"kubernetes_validating_webhook_configuration_v1": {},
+	}
+	hasType := func(name string) bool {
+		_, ok := allProviderTypes[name]
+		return ok
+	}
+
+	type behaviorClass string
+	const (
+		firstClass     behaviorClass = "first-class Terraform resource"
+		nativeManifest behaviorClass = "explicit native kubernetes_manifest selector"
+		crdFallback    behaviorClass = "CRD/custom-resource manifest fallback"
+		runtimeSkip    behaviorClass = "runtime/controller-generated skip"
+		policySkip     behaviorClass = "native API outside manifest import policy"
+	)
+
+	tests := []struct {
+		name     string
+		group    string
+		version  string
+		resource metav1.APIResource
+		class    behaviorClass
+	}{
+		// === First-class Terraform resources ===
+		{
+			name:     "core/v1 Service → first-class",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "services", Kind: "Service", Verbs: manageableVerbs},
+			class:    firstClass,
+		},
+		{
+			name:     "core/v1 ConfigMap → first-class",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "configmaps", Kind: "ConfigMap", Namespaced: true, Verbs: manageableVerbs},
+			class:    firstClass,
+		},
+		{
+			name:     "core/v1 Secret → first-class",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "secrets", Kind: "Secret", Namespaced: true, Verbs: manageableVerbs},
+			class:    firstClass,
+		},
+		{
+			name:     "core/v1 Namespace → first-class",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "namespaces", Kind: "Namespace", Verbs: manageableVerbs},
+			class:    firstClass,
+		},
+		{
+			name:     "core/v1 Pod → first-class",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "pods", Kind: "Pod", Namespaced: true, Verbs: manageableVerbs},
+			class:    firstClass,
+		},
+		{
+			name:     "apps/v1 Deployment → first-class",
+			group:    "apps",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "deployments", Kind: "Deployment", Namespaced: true, Verbs: manageableVerbs},
+			class:    firstClass,
+		},
+		{
+			name:     "apps/v1 DaemonSet → first-class",
+			group:    "apps",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "daemonsets", Kind: "DaemonSet", Namespaced: true, Verbs: manageableVerbs},
+			class:    firstClass,
+		},
+		{
+			name:     "apps/v1 StatefulSet → first-class",
+			group:    "apps",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "statefulsets", Kind: "StatefulSet", Namespaced: true, Verbs: manageableVerbs},
+			class:    firstClass,
+		},
+		{
+			name:     "batch/v1 CronJob → first-class",
+			group:    "batch",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "cronjobs", Kind: "CronJob", Namespaced: true, Verbs: manageableVerbs},
+			class:    firstClass,
+		},
+		{
+			name:     "batch/v1 Job → first-class",
+			group:    "batch",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "jobs", Kind: "Job", Namespaced: true, Verbs: manageableVerbs},
+			class:    firstClass,
+		},
+		{
+			name:     "networking.k8s.io/v1 Ingress → first-class",
+			group:    "networking.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "ingresses", Kind: "Ingress", Namespaced: true, Verbs: manageableVerbs},
+			class:    firstClass,
+		},
+		{
+			name:     "networking.k8s.io/v1 NetworkPolicy → first-class",
+			group:    "networking.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "networkpolicies", Kind: "NetworkPolicy", Namespaced: true, Verbs: manageableVerbs},
+			class:    firstClass,
+		},
+		{
+			name:     "storage.k8s.io/v1 StorageClass → first-class",
+			group:    "storage.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "storageclasses", Kind: "StorageClass", Verbs: manageableVerbs},
+			class:    firstClass,
+		},
+		{
+			name:     "storage.k8s.io/v1 CSIDriver → first-class",
+			group:    "storage.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "csidrivers", Kind: "CSIDriver", Verbs: manageableVerbs},
+			class:    firstClass,
+		},
+		{
+			name:     "admissionregistration.k8s.io/v1 ValidatingAdmissionPolicy → first-class",
+			group:    "admissionregistration.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "validatingadmissionpolicies", Kind: "ValidatingAdmissionPolicy", Verbs: manageableVerbs},
+			class:    firstClass,
+		},
+		{
+			name:     "apiregistration.k8s.io/v1 APIService → first-class (dynamic)",
+			group:    "apiregistration.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "apiservices", Kind: "APIService", Verbs: manageableVerbs},
+			class:    firstClass,
+		},
+		{
+			name:     "autoscaling/v2 HorizontalPodAutoscaler → first-class",
+			group:    "autoscaling",
+			version:  "v2",
+			resource: metav1.APIResource{Name: "horizontalpodautoscalers", Kind: "HorizontalPodAutoscaler", Namespaced: true, Verbs: manageableVerbs},
+			class:    firstClass,
+		},
+		{
+			name:     "scheduling.k8s.io/v1 PriorityClass → first-class",
+			group:    "scheduling.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "priorityclasses", Kind: "PriorityClass", Verbs: manageableVerbs},
+			class:    firstClass,
+		},
+		{
+			name:     "rbac.authorization.k8s.io/v1 ClusterRole → first-class",
+			group:    "rbac.authorization.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "clusterroles", Kind: "ClusterRole", Verbs: manageableVerbs},
+			class:    firstClass,
+		},
+		{
+			name:     "rbac.authorization.k8s.io/v1 ClusterRoleBinding → first-class",
+			group:    "rbac.authorization.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "clusterrolebindings", Kind: "ClusterRoleBinding", Verbs: manageableVerbs},
+			class:    firstClass,
+		},
+		{
+			name:     "rbac.authorization.k8s.io/v1 Role → first-class",
+			group:    "rbac.authorization.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "roles", Kind: "Role", Namespaced: true, Verbs: manageableVerbs},
+			class:    firstClass,
+		},
+		{
+			name:     "rbac.authorization.k8s.io/v1 RoleBinding → first-class",
+			group:    "rbac.authorization.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "rolebindings", Kind: "RoleBinding", Namespaced: true, Verbs: manageableVerbs},
+			class:    firstClass,
+		},
+		{
+			name:     "policy/v1 PodDisruptionBudget → first-class",
+			group:    "policy",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "poddisruptionbudgets", Kind: "PodDisruptionBudget", Namespaced: true, Verbs: manageableVerbs},
+			class:    firstClass,
+		},
+
+		// === Explicit native kubernetes_manifest selectors ===
+		{
+			name:     "admissionregistration.k8s.io/v1 MutatingAdmissionPolicy → native manifest",
+			group:    "admissionregistration.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "mutatingadmissionpolicies", Kind: "MutatingAdmissionPolicy", Verbs: manageableVerbs},
+			class:    nativeManifest,
+		},
+		{
+			name:     "admissionregistration.k8s.io/v1 MutatingAdmissionPolicyBinding → native manifest",
+			group:    "admissionregistration.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "mutatingadmissionpolicybindings", Kind: "MutatingAdmissionPolicyBinding", Verbs: manageableVerbs},
+			class:    nativeManifest,
+		},
+		{
+			name:     "admissionregistration.k8s.io/v1 ValidatingAdmissionPolicyBinding → native manifest",
+			group:    "admissionregistration.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "validatingadmissionpolicybindings", Kind: "ValidatingAdmissionPolicyBinding", Verbs: manageableVerbs},
+			class:    nativeManifest,
+		},
+		{
+			name:     "apps/v1 ReplicaSet → native manifest",
+			group:    "apps",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "replicasets", Kind: "ReplicaSet", Namespaced: true, Verbs: manageableVerbs},
+			class:    nativeManifest,
+		},
+		{
+			name:     "certificates.k8s.io/v1beta1 ClusterTrustBundle → native manifest",
+			group:    "certificates.k8s.io",
+			version:  "v1beta1",
+			resource: metav1.APIResource{Name: "clustertrustbundles", Kind: "ClusterTrustBundle", Verbs: manageableVerbs},
+			class:    nativeManifest,
+		},
+		{
+			name:     "flowcontrol.apiserver.k8s.io/v1 FlowSchema → native manifest",
+			group:    "flowcontrol.apiserver.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "flowschemas", Kind: "FlowSchema", Verbs: manageableVerbs},
+			class:    nativeManifest,
+		},
+		{
+			name:     "flowcontrol.apiserver.k8s.io/v1 PriorityLevelConfiguration → native manifest",
+			group:    "flowcontrol.apiserver.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "prioritylevelconfigurations", Kind: "PriorityLevelConfiguration", Verbs: manageableVerbs},
+			class:    nativeManifest,
+		},
+		{
+			name:     "networking.k8s.io/v1 ServiceCIDR → native manifest",
+			group:    "networking.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "servicecidrs", Kind: "ServiceCIDR", Verbs: manageableVerbs},
+			class:    nativeManifest,
+		},
+		{
+			name:     "resource.k8s.io/v1 DeviceClass → native manifest",
+			group:    "resource.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "deviceclasses", Kind: "DeviceClass", Verbs: manageableVerbs},
+			class:    nativeManifest,
+		},
+		{
+			name:     "resource.k8s.io/v1 ResourceClaim → native manifest",
+			group:    "resource.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "resourceclaims", Kind: "ResourceClaim", Namespaced: true, Verbs: manageableVerbs},
+			class:    nativeManifest,
+		},
+		{
+			name:     "resource.k8s.io/v1 ResourceClaimTemplate → native manifest",
+			group:    "resource.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "resourceclaimtemplates", Kind: "ResourceClaimTemplate", Namespaced: true, Verbs: manageableVerbs},
+			class:    nativeManifest,
+		},
+		{
+			name:     "resource.k8s.io/v1beta2 DeviceTaintRule → native manifest",
+			group:    "resource.k8s.io",
+			version:  "v1beta2",
+			resource: metav1.APIResource{Name: "devicetaintrules", Kind: "DeviceTaintRule", Verbs: manageableVerbs},
+			class:    nativeManifest,
+		},
+		{
+			name:     "resource.k8s.io/v1alpha3 DeviceTaintRule → native manifest",
+			group:    "resource.k8s.io",
+			version:  "v1alpha3",
+			resource: metav1.APIResource{Name: "devicetaintrules", Kind: "DeviceTaintRule", Verbs: manageableVerbs},
+			class:    nativeManifest,
+		},
+		{
+			name:     "scheduling.k8s.io/v1alpha2 Workload → native manifest",
+			group:    "scheduling.k8s.io",
+			version:  "v1alpha2",
+			resource: metav1.APIResource{Name: "workloads", Kind: "Workload", Namespaced: true, Verbs: manageableVerbs},
+			class:    nativeManifest,
+		},
+		{
+			name:     "storage.k8s.io/v1 VolumeAttributesClass → native manifest",
+			group:    "storage.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "volumeattributesclasses", Kind: "VolumeAttributesClass", Verbs: manageableVerbs},
+			class:    nativeManifest,
+		},
+		{
+			name:     "storagemigration.k8s.io/v1beta1 StorageVersionMigration → native manifest",
+			group:    "storagemigration.k8s.io",
+			version:  "v1beta1",
+			resource: metav1.APIResource{Name: "storageversionmigrations", Kind: "StorageVersionMigration", Verbs: manageableVerbs},
+			class:    nativeManifest,
+		},
+		{
+			name:     "v1 PodTemplate → native manifest",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "podtemplates", Kind: "PodTemplate", Namespaced: true, Verbs: manageableVerbs},
+			class:    nativeManifest,
+		},
+
+		// === CRD/custom-resource manifest fallback ===
+		{
+			name:     "example.com/v1 Widget → CRD fallback",
+			group:    "example.com",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "widgets", Kind: "Widget", Namespaced: true, Verbs: manageableVerbs},
+			class:    crdFallback,
+		},
+		{
+			name:     "serving.knative.dev/v1 Service → CRD fallback",
+			group:    "serving.knative.dev",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "services", Kind: "Service", Namespaced: true, Verbs: manageableVerbs},
+			class:    crdFallback,
+		},
+		{
+			name:     "argoproj.io/v1alpha1 Application → CRD fallback",
+			group:    "argoproj.io",
+			version:  "v1alpha1",
+			resource: metav1.APIResource{Name: "applications", Kind: "Application", Namespaced: true, Verbs: manageableVerbs},
+			class:    crdFallback,
+		},
+
+		// === Runtime/controller-generated skip ===
+		{
+			name:     "apps/v1 ControllerRevision → runtime skip",
+			group:    "apps",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "controllerrevisions", Kind: "ControllerRevision", Namespaced: true, Verbs: manageableVerbs},
+			class:    runtimeSkip,
+		},
+		{
+			name:     "certificates.k8s.io/v1beta1 PodCertificateRequest → runtime skip",
+			group:    "certificates.k8s.io",
+			version:  "v1beta1",
+			resource: metav1.APIResource{Name: "podcertificaterequests", Kind: "PodCertificateRequest", Namespaced: true, Verbs: manageableVerbs},
+			class:    runtimeSkip,
+		},
+		{
+			name:     "coordination.k8s.io/v1beta1 LeaseCandidate → runtime skip",
+			group:    "coordination.k8s.io",
+			version:  "v1beta1",
+			resource: metav1.APIResource{Name: "leasecandidates", Kind: "LeaseCandidate", Namespaced: true, Verbs: manageableVerbs},
+			class:    runtimeSkip,
+		},
+		{
+			name:     "networking.k8s.io/v1 IPAddress → runtime skip",
+			group:    "networking.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "ipaddresses", Kind: "IPAddress", Verbs: manageableVerbs},
+			class:    runtimeSkip,
+		},
+		{
+			name:     "resource.k8s.io/v1 ResourceSlice → runtime skip",
+			group:    "resource.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "resourceslices", Kind: "ResourceSlice", Verbs: manageableVerbs},
+			class:    runtimeSkip,
+		},
+		{
+			name:     "resource.k8s.io/v1alpha3 PodSchedulingContext → runtime skip",
+			group:    "resource.k8s.io",
+			version:  "v1alpha3",
+			resource: metav1.APIResource{Name: "podschedulingcontexts", Kind: "PodSchedulingContext", Namespaced: true, Verbs: manageableVerbs},
+			class:    runtimeSkip,
+		},
+		{
+			name:     "scheduling.k8s.io/v1alpha2 PodGroup → runtime skip",
+			group:    "scheduling.k8s.io",
+			version:  "v1alpha2",
+			resource: metav1.APIResource{Name: "podgroups", Kind: "PodGroup", Namespaced: true, Verbs: manageableVerbs},
+			class:    runtimeSkip,
+		},
+		{
+			name:     "storage.k8s.io/v1 CSINode → runtime skip",
+			group:    "storage.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "csinodes", Kind: "CSINode", Verbs: manageableVerbs},
+			class:    runtimeSkip,
+		},
+		{
+			name:     "storage.k8s.io/v1 CSIStorageCapacity → runtime skip",
+			group:    "storage.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "csistoragecapacities", Kind: "CSIStorageCapacity", Namespaced: true, Verbs: manageableVerbs},
+			class:    runtimeSkip,
+		},
+		{
+			name:     "storage.k8s.io/v1 VolumeAttachment → runtime skip",
+			group:    "storage.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "volumeattachments", Kind: "VolumeAttachment", Verbs: manageableVerbs},
+			class:    runtimeSkip,
+		},
+		{
+			name:     "internal.apiserver.k8s.io/v1alpha1 StorageVersion → runtime skip",
+			group:    "internal.apiserver.k8s.io",
+			version:  "v1alpha1",
+			resource: metav1.APIResource{Name: "storageversions", Kind: "StorageVersion", Verbs: manageableVerbs},
+			class:    runtimeSkip,
+		},
+
+		// === Native API outside explicit manifest import policy ===
+		// These are skipped because the typed client exists in the pinned
+		// client-go but no Terraform provider type is registered.
+		{
+			name:     "events.k8s.io/v1 Event → policy skip (no provider type)",
+			group:    "events.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "events", Kind: "Event", Namespaced: true, Verbs: manageableVerbs},
+			class:    policySkip,
+		},
+		{
+			name:     "coordination.k8s.io/v1 Lease → policy skip (no provider type)",
+			group:    "coordination.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "leases", Kind: "Lease", Namespaced: true, Verbs: manageableVerbs},
+			class:    policySkip,
+		},
+		// This legacy resource has no typed client and triggers the verbose
+		// skip reason.
+		{
+			name:     "resource.k8s.io/v1alpha2 ResourceClass → policy skip (verbose)",
+			group:    "resource.k8s.io",
+			version:  "v1alpha2",
+			resource: metav1.APIResource{Name: "resourceclasses", Kind: "ResourceClass", Verbs: manageableVerbs},
+			class:    policySkip,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tfName, _, ok := selectImportResourceName(clientset, tt.group, tt.version, tt.resource, hasType)
+			reason := importSkipPolicyReason(clientset, tt.group, tt.version, tt.resource, hasType)
+
+			var got behaviorClass
+			switch {
+			case ok && tfName != manifestTerraformResourceName:
+				got = firstClass
+			case ok && tfName == manifestTerraformResourceName && isNativeAPIGroup(tt.group):
+				got = nativeManifest
+			case ok && tfName == manifestTerraformResourceName && !isNativeAPIGroup(tt.group):
+				got = crdFallback
+			case !ok && reason == "runtime/controller-generated native API is not importable as Terraform-managed configuration":
+				got = runtimeSkip
+			case !ok && isNativeAPIGroup(tt.group):
+				// Native APIs that are not imported: either verbose policy
+				// skip (no typed client, reason != "") or silent skip (typed
+				// client exists but no provider type, reason == "").
+				got = policySkip
+			}
+
+			if got != tt.class {
+				t.Fatalf("API %s/%s/%s classified as %q, want %q (tfName=%q, ok=%t, reason=%q)",
+					tt.group, tt.version, tt.resource.Kind, got, tt.class, tfName, ok, reason)
+			}
+		})
+	}
+}
+
+// TestVerboseSkipLoggingForNativeAPIs verifies that importSkipPolicyReason
+// returns the expected reason strings for the two skip categories, enabling
+// --verbose logging to explain why native APIs are not imported.
+func TestVerboseSkipLoggingForNativeAPIs(t *testing.T) {
+	clientset := fake.NewSimpleClientset()
+	manageableVerbs := []string{"create", "delete", "get", "list", "patch", "update"}
+	hasManifestType := func(name string) bool {
+		return name == manifestTerraformResourceName
+	}
+
+	tests := []struct {
+		name       string
+		group      string
+		version    string
+		resource   metav1.APIResource
+		wantReason string
+	}{
+		{
+			name:       "runtime skip reason for ResourceSlice",
+			group:      "resource.k8s.io",
+			version:    "v1",
+			resource:   metav1.APIResource{Name: "resourceslices", Kind: "ResourceSlice", Verbs: manageableVerbs},
+			wantReason: "runtime/controller-generated native API is not importable as Terraform-managed configuration",
+		},
+		{
+			name:       "runtime skip reason for PodCertificateRequest",
+			group:      "certificates.k8s.io",
+			version:    "v1beta1",
+			resource:   metav1.APIResource{Name: "podcertificaterequests", Kind: "PodCertificateRequest", Namespaced: true, Verbs: manageableVerbs},
+			wantReason: "runtime/controller-generated native API is not importable as Terraform-managed configuration",
+		},
+		{
+			name:       "runtime skip reason for VolumeAttachment",
+			group:      "storage.k8s.io",
+			version:    "v1",
+			resource:   metav1.APIResource{Name: "volumeattachments", Kind: "VolumeAttachment", Verbs: manageableVerbs},
+			wantReason: "runtime/controller-generated native API is not importable as Terraform-managed configuration",
+		},
+		{
+			name:       "no verbose reason for Event (typed client exists but no provider type)",
+			group:      "events.k8s.io",
+			version:    "v1",
+			resource:   metav1.APIResource{Name: "events", Kind: "Event", Namespaced: true, Verbs: manageableVerbs},
+			wantReason: "",
+		},
+		{
+			name:       "no verbose reason for Lease (typed client exists but no provider type)",
+			group:      "coordination.k8s.io",
+			version:    "v1",
+			resource:   metav1.APIResource{Name: "leases", Kind: "Lease", Namespaced: true, Verbs: manageableVerbs},
+			wantReason: "",
+		},
+		{
+			name:       "policy skip reason for legacy ResourceClass",
+			group:      "resource.k8s.io",
+			version:    "v1alpha2",
+			resource:   metav1.APIResource{Name: "resourceclasses", Kind: "ResourceClass", Verbs: manageableVerbs},
+			wantReason: "native API is outside the explicit manifest import policy",
+		},
+		{
+			name:       "no skip reason for allowlisted native manifest resource",
+			group:      "resource.k8s.io",
+			version:    "v1",
+			resource:   metav1.APIResource{Name: "resourceclaims", Kind: "ResourceClaim", Namespaced: true, Verbs: manageableVerbs},
+			wantReason: "",
+		},
+		{
+			name:       "no skip reason for CRD/custom resource",
+			group:      "example.com",
+			version:    "v1",
+			resource:   metav1.APIResource{Name: "widgets", Kind: "Widget", Namespaced: true, Verbs: manageableVerbs},
+			wantReason: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := importSkipPolicyReason(clientset, tt.group, tt.version, tt.resource, hasManifestType)
+			if got != tt.wantReason {
+				t.Fatalf("importSkipPolicyReason() = %q, want %q", got, tt.wantReason)
+			}
+		})
+	}
+}
+
+// TestCRDManifestFallbackNotBroken verifies that CRDs and custom resources
+// continue to use the generic manifest fallback path regardless of the native
+// API policy.
+func TestCRDManifestFallbackNotBroken(t *testing.T) {
+	clientset := fake.NewSimpleClientset()
+	manageableVerbs := []string{"create", "delete", "get", "list", "patch", "update"}
+	hasManifestType := func(name string) bool {
+		return name == manifestTerraformResourceName
+	}
+
+	tests := []struct {
+		name    string
+		group   string
+		version string
+		kind    string
+		plural  string
+	}{
+		{name: "typical CRD", group: "example.com", version: "v1", kind: "Widget", plural: "widgets"},
+		{name: "knative service", group: "serving.knative.dev", version: "v1", kind: "Service", plural: "services"},
+		{name: "argo application", group: "argoproj.io", version: "v1alpha1", kind: "Application", plural: "applications"},
+		{name: "cert-manager certificate", group: "cert-manager.io", version: "v1", kind: "Certificate", plural: "certificates"},
+		{name: "istio virtual service", group: "networking.istio.io", version: "v1", kind: "VirtualService", plural: "virtualservices"},
+		{name: "custom group sharing native prefix", group: "apps.example.com", version: "v1", kind: "Deployment", plural: "deployments"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resource := metav1.APIResource{
+				Name:       tt.plural,
+				Kind:       tt.kind,
+				Namespaced: true,
+				Verbs:      manageableVerbs,
+			}
+			tfName, dynamic, ok := selectImportResourceName(clientset, tt.group, tt.version, resource, hasManifestType)
+			if !ok {
+				t.Fatalf("CRD %s/%s/%s was not imported, want manifest fallback", tt.group, tt.version, tt.kind)
+			}
+			if tfName != manifestTerraformResourceName {
+				t.Fatalf("CRD terraform type = %q, want %q", tfName, manifestTerraformResourceName)
+			}
+			if !dynamic {
+				t.Fatal("CRD dynamic = false, want true")
+			}
+
+			reason := importSkipPolicyReason(clientset, tt.group, tt.version, resource, hasManifestType)
+			if reason != "" {
+				t.Fatalf("CRD should have no skip reason, got %q", reason)
+			}
+		})
+	}
+}
+
 func TestSupportsManifestResource(t *testing.T) {
 	manageableVerbs := []string{"create", "delete", "get", "list", "patch", "update"}
 	tests := []struct {
