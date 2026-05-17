@@ -5,11 +5,14 @@ package kafka
 import (
 	"errors"
 	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 	"testing"
 
 	"github.com/IBM/sarama"
+	"github.com/chenrui333/terraformer/terraformutils"
+	"github.com/zclconf/go-cty/cty"
 )
 
 type mockAdmin struct {
@@ -397,6 +400,52 @@ func TestTopicConfigAuthorizationErrorIsSkippable(t *testing.T) {
 	}
 	if _, ok := generator.Resources[0].InstanceState.Attributes["config.%"]; ok {
 		t.Fatal("topic config was exported after authorization failure")
+	}
+	for key, want := range map[string]interface{}{
+		"name":               "orders",
+		"partitions":         3,
+		"replication_factor": 2,
+	} {
+		if got := generator.Resources[0].AdditionalFields[key]; got != want {
+			t.Fatalf("AdditionalFields[%q] = %#v, want %#v", key, got, want)
+		}
+	}
+}
+
+func TestTopicConfigAuthorizationPreservesRequiredFieldsAfterImportFallback(t *testing.T) {
+	resource := TopicGenerator{}.createResources([]Topic{{
+		Name:              "orders",
+		Partitions:        3,
+		ReplicationFactor: 2,
+		ConfigUnavailable: true,
+	}})[0]
+
+	resource.InstanceState.Attributes = map[string]string{"id": "orders"}
+	parser := terraformutils.NewFlatmapParser(
+		resource.InstanceState.Attributes,
+		[]*regexp.Regexp{regexp.MustCompile("^id$")},
+		nil,
+	)
+	if err := resource.ParseTFstate(parser, cty.Object(map[string]cty.Type{
+		"id":                 cty.String,
+		"name":               cty.String,
+		"partitions":         cty.Number,
+		"replication_factor": cty.Number,
+	})); err != nil {
+		t.Fatalf("ParseTFstate() error = %v", err)
+	}
+
+	for key, want := range map[string]interface{}{
+		"name":               "orders",
+		"partitions":         3,
+		"replication_factor": 2,
+	} {
+		if got := resource.Item[key]; got != want {
+			t.Fatalf("Item[%q] = %#v, want %#v", key, got, want)
+		}
+	}
+	if _, ok := resource.Item["id"]; ok {
+		t.Fatal("id attribute was not filtered from generated config item")
 	}
 }
 

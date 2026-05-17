@@ -26,6 +26,7 @@ type Topic struct {
 	Partitions        int32
 	ReplicationFactor int16
 	Config            map[string]string
+	ConfigUnavailable bool
 }
 
 var TopicAllowEmptyValues = []string{}
@@ -135,18 +136,21 @@ func (g *TopicGenerator) topicFromMetadata(admin adminClient, metadata *sarama.T
 		return Topic{}, err
 	}
 	config, err := topicConfig(admin, name, providerConfig)
+	configUnavailable := false
 	if err != nil {
 		if !isSkippableTopicConfigError(err) {
 			return Topic{}, fmt.Errorf("kafka topic %q: describe config: %w", name, err)
 		}
 		log.Printf("kafka: skipping topic config for %q: %v", name, err)
 		config = map[string]string{}
+		configUnavailable = true
 	}
 	return Topic{
 		Name:              name,
 		Partitions:        partitions,
 		ReplicationFactor: replicationFactor,
 		Config:            config,
+		ConfigUnavailable: configUnavailable,
 	}, nil
 }
 
@@ -166,18 +170,21 @@ func (g *TopicGenerator) topicFromDetail(admin adminClient, name string, detail 
 		}
 	}
 	config, err := topicConfig(admin, name, providerConfig)
+	configUnavailable := false
 	if err != nil {
 		if !isSkippableTopicConfigError(err) {
 			return Topic{}, fmt.Errorf("kafka topic %q: describe config: %w", name, err)
 		}
 		log.Printf("kafka: skipping topic config for %q: %v", name, err)
 		config = map[string]string{}
+		configUnavailable = true
 	}
 	return Topic{
 		Name:              name,
 		Partitions:        partitions,
 		ReplicationFactor: replicationFactor,
 		Config:            config,
+		ConfigUnavailable: configUnavailable,
 	}, nil
 }
 
@@ -355,6 +362,11 @@ func (g TopicGenerator) createResources(topics []Topic) []terraformutils.Resourc
 			"replication_factor": strconv.Itoa(int(topic.ReplicationFactor)),
 		}
 		additionalFields := map[string]interface{}{}
+		if topic.ConfigUnavailable {
+			additionalFields["name"] = topic.Name
+			additionalFields["partitions"] = int(topic.Partitions)
+			additionalFields["replication_factor"] = int(topic.ReplicationFactor)
+		}
 		if len(topic.Config) > 0 {
 			attributes["config.%"] = strconv.Itoa(len(topic.Config))
 			config := map[string]interface{}{}
