@@ -1,0 +1,22 @@
+providers/datadog/observability_pipeline.go
+  s_147381facf0cb2::t_7622e43ac9dc4c 139,156-164
+  s_147381facf0cb2::t_01c37e743ec558 140,151-155
+providers/datadog/observability_pipeline_test.go
+  s_147381facf0cb2::t_a9e47c772ac185 90-96,118-119
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "080ce8525335e311f8d1b016892947b7d7cc562f",
+  "prompts": {},
+  "sessions": {
+    "s_147381facf0cb2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35d4-5c2a-7410-97bd-53923272d33e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
