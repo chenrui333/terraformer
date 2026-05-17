@@ -114,6 +114,9 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `azure_uc_config`
     * `datadog_azure_uc_config`
         * **_NOTE:_** Requires DataDog/datadog provider 3.39.0 or newer.
+*   `cloud_configuration_rule`
+    * `datadog_cloud_configuration_rule`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
 *   `dashboard`
     * `datadog_dashboard`
 *   `dashboard_json`
@@ -262,6 +265,9 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_role`
 *   `security_monitoring_default_rule`
     * `datadog_security_monitoring_default_rule`
+*   `security_monitoring_critical_asset`
+    * `datadog_security_monitoring_critical_asset`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
 *   `security_monitoring_filter`
     * `datadog_security_monitoring_filter`
 *   `security_monitoring_rule`
@@ -269,6 +275,9 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `security_monitoring_suppression`
     * `datadog_security_monitoring_suppression`
         * **_NOTE:_** Requires DataDog/datadog provider 3.36.0 or newer.
+*   `security_notification_rule`
+    * `datadog_security_notification_rule`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
 *   `sensitive_data_scanner_group`
     * `datadog_sensitive_data_scanner_group`
         * **_NOTE:_** Requires DataDog/datadog provider 3.90.0 or newer.
@@ -348,6 +357,12 @@ The following Terraform provider resources have been evaluated and cannot be saf
 | `datadog_webhook_custom_variable` | Provider import seeds only `id`, but provider read looks up the variable by `name`; Terraformer cannot safely refresh the required name/value state from a broad ID import. |
 | `datadog_integration_aws_external_id` | Creates a short-lived external ID operation; provider read is a no-op and delete only removes Terraform state. |
 | `datadog_action_connection` | Deferred until a dedicated importer handles AWS versus HTTP credential-backed variants and the HTTP token-auth read path that omits sensitive token values. |
+| `datadog_child_organization` | The provider read path is a no-op after create, delete is not supported, and create returns sensitive generated API/application key material that cannot be reconstructed by broad import. |
 | `datadog_cloud_workload_security_agent_rule` | Deprecated in favor of the already registered `datadog_csm_threats_agent_rule`, so broad import would risk duplicate ownership of the same agent rules. |
+| `datadog_compliance_custom_framework` | Deferred because the API supports get/update/delete by `handle/version` but exposes no broad list endpoint to discover custom framework handles and versions. |
+| `datadog_compliance_resource_evaluation_filter` | Deferred because the API requires cloud/resource selectors to list filters and does not provide a broad inventory of all resources with configured evaluation filters. |
+| `datadog_restriction_policy` | Deferred because the API reads a policy only by known `resource_id` and does not expose a broad list endpoint for restriction policy resource IDs. |
+| `datadog_security_monitoring_rule_json` | The provider requires a `json` configuration document but its import/read flow cannot reconstruct that document from an ID alone, and it duplicates `datadog_security_monitoring_rule` ownership. |
+| `datadog_user_role` | Deferred because broad import would create separate role-assignment resources that conflict with the already supported `datadog_user.roles` and `datadog_service_account.roles` ownership paths. |
 
 [1]: https://github.com/chenrui333/terraformer/blob/main/README.md#filtering
