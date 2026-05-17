@@ -514,6 +514,8 @@ Rules:
 - Add explicit helper functions for import ID construction.
 - Add tests for every composite import ID shape.
 - Use stable resource names that include enough parent/child context to avoid sanitized name collisions.
+- Treat composite and tuple ID filters as literal import identities; do not pass them through generic parsers that split on delimiters which may also appear inside tuple fields unless the provider format guarantees escaping.
+- If a discovered identity contains a delimiter that the upstream importer cannot escape or represent, skip or defer it with evidence instead of emitting a broken import ID.
 - If provider refresh normalizes or drops an import ID, use the project's ID preservation metadata only after verifying the behavior.
 
 ## Parent/Child Dependency References
