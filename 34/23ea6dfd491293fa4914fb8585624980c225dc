@@ -1,0 +1,49 @@
+providers/datadog/downtime_schedule_test.go
+  s_a75fc68bdbca0a::t_12f2f6da558c03 1-107
+  s_a75fc68bdbca0a::t_c7c99b888f6f98 108
+providers/datadog/synthetics_concurrency_cap.go
+  s_a75fc68bdbca0a::t_fe077e9390d94a 1-75
+docs/datadog.md
+  s_e4ea9158a430e1::t_d84446c0f281a0 195-196,356-361
+  s_a75fc68bdbca0a::t_4f8a6b3a402507 147-149,295-298,304-306
+providers/datadog/synthetics_suite.go
+  s_a75fc68bdbca0a::t_fe077e9390d94a 1-38,41-96,99-114,117-136,139-152
+  s_a75fc68bdbca0a::t_fa9749a27110ae 97-98,115-116,137-138
+providers/datadog/synthetics_concurrency_cap_test.go
+  s_a75fc68bdbca0a::t_12f2f6da558c03 1-89
+providers/datadog/datadog_provider_test.go
+  s_a75fc68bdbca0a::t_8053042ae299d4 213-217,228-249
+providers/datadog/downtime_schedule.go
+  s_a75fc68bdbca0a::t_fe077e9390d94a 1-39,42-141,145-151
+  s_a75fc68bdbca0a::t_fa9749a27110ae 142-144
+providers/datadog/synthetics_suite_test.go
+  s_a75fc68bdbca0a::t_12f2f6da558c03 1-104
+  s_a75fc68bdbca0a::t_f1e5889874ec8d 105
+providers/datadog/datadog_provider.go
+  s_a75fc68bdbca0a::t_cd29d53783183a 304-305,306-313,452-456
+  s_a75fc68bdbca0a::t_361fef56a57dd6 191,248,251-252
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "3423ea6dfd491293fa4914fb8585624980c225dc",
+  "prompts": {},
+  "sessions": {
+    "s_a75fc68bdbca0a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35d4-4978-78a1-8707-4482f4e1fd38",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    },
+    "s_e4ea9158a430e1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35d4-bceb-7663-a76b-1b80c979b03b",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
