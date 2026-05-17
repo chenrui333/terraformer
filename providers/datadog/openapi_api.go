@@ -93,6 +93,7 @@ func (g *OpenapiAPIGenerator) getOpenapiAPIID(auth context.Context, api *datadog
 	if err != nil {
 		return "", err
 	}
+	//nolint:staticcheck // Datadog provider v4.9.0 still imports openapi_api through this endpoint.
 	_, httpResp, err := api.GetOpenAPI(auth, parsedAPIID)
 	closeDatadogResponseBody(httpResp)
 	if err != nil {
@@ -110,6 +111,7 @@ func (g *OpenapiAPIGenerator) listOpenapiAPIIDs(auth context.Context, api *datad
 			WithPageLimit(datadogOpenapiAPIPageLimit).
 			WithPageOffset(offset)
 
+		//nolint:staticcheck // Datadog provider v4.9.0 still discovers openapi_api through this endpoint.
 		resp, httpResp, err := api.ListAPIs(auth, *opts)
 		closeDatadogResponseBody(httpResp)
 		if err != nil {

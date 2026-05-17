@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -680,13 +681,12 @@ func productPlatformListServer(t *testing.T, path, body string) *httptest.Server
 func assertProductPlatformResourceIDs(t *testing.T, resources []terraformutils.Resource, want []string) {
 	t.Helper()
 
-	if len(resources) != len(want) {
-		t.Fatalf("resource count = %d, want %d", len(resources), len(want))
+	got := make([]string, 0, len(resources))
+	for _, resource := range resources {
+		got = append(got, resource.InstanceState.ID)
 	}
-	for i, resource := range resources {
-		if resource.InstanceState.ID != want[i] {
-			t.Fatalf("resource[%d] ID = %q, want %q", i, resource.InstanceState.ID, want[i])
-		}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("resource IDs = %v, want %v", got, want)
 	}
 }
 
