@@ -307,6 +307,11 @@ https://www.terraform.io/docs/configuration/providers.html
 
 
 ## High-Level steps to add new provider
+
+See [docs/provider-architecture.md](docs/provider-architecture.md) for the
+provider lifecycle, wiring checklist, importability model, and close-out
+expectations.
+
  * Initialize provider details in cmd/root.go and create a provider initialization file in the terraformer/cmd folder
  * Create a folder under terraformer/providers/ for your provider
  * Create two files under this folder
