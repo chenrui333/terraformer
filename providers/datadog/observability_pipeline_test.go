@@ -53,6 +53,135 @@ func TestObservabilityPipelineAllowEmptyValuesPreservesFalseBooleans(t *testing.
 	}
 }
 
+func TestObservabilityPipelinePostConvertHookPreservesEmptyVariantBlocks(t *testing.T) {
+	resource := observabilityPipelineResourceWithItem(map[string]interface{}{
+		"config": []interface{}{
+			map[string]interface{}{
+				"destination": []interface{}{
+					map[string]interface{}{"id": "logs", "inputs": []interface{}{"source"}},
+					map[string]interface{}{"id": "metrics", "inputs": []interface{}{"source"}},
+				},
+				"processor_group": []interface{}{
+					map[string]interface{}{
+						"processor": []interface{}{
+							map[string]interface{}{"id": "filter"},
+							map[string]interface{}{"id": "hostname"},
+							map[string]interface{}{
+								"id": "scanner",
+								"sensitive_data_scanner": []interface{}{
+									map[string]interface{}{
+										"rule": []interface{}{
+											map[string]interface{}{
+												"on_match": []interface{}{
+													map[string]interface{}{},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+	resource.InstanceState.Attributes = map[string]string{
+		"config.0.destination.0.datadog_logs.#":                                                    "1",
+		"config.0.destination.1.datadog_metrics.#":                                                 "1",
+		"config.0.processor_group.0.processor.0.filter.#":                                          "1",
+		"config.0.processor_group.0.processor.1.add_hostname.#":                                    "1",
+		"config.0.processor_group.0.processor.2.sensitive_data_scanner.0.rule.0.on_match.0.hash.#": "1",
+	}
+	generator := &ObservabilityPipelineGenerator{}
+	generator.Resources = []terraformutils.Resource{resource}
+
+	if err := generator.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook returned error: %v", err)
+	}
+
+	config := requireMapInList(t, generator.Resources[0].Item, "config", 0)
+	requireEmptyBlockList(t, requireMapInList(t, config, "destination", 0), "datadog_logs")
+	requireEmptyBlockList(t, requireMapInList(t, config, "destination", 1), "datadog_metrics")
+
+	processorGroup := requireMapInList(t, config, "processor_group", 0)
+	requireEmptyBlockList(t, requireMapInList(t, processorGroup, "processor", 0), "filter")
+	requireEmptyBlockList(t, requireMapInList(t, processorGroup, "processor", 1), "add_hostname")
+
+	scannerProcessor := requireMapInList(t, processorGroup, "processor", 2)
+	scanner := requireMapInList(t, scannerProcessor, "sensitive_data_scanner", 0)
+	rule := requireMapInList(t, scanner, "rule", 0)
+	onMatch := requireMapInList(t, rule, "on_match", 0)
+	requireEmptyBlockList(t, onMatch, "hash")
+}
+
+func TestObservabilityPipelinePostConvertHookDoesNotInventMissingVariantBlocks(t *testing.T) {
+	resource := observabilityPipelineResourceWithItem(map[string]interface{}{
+		"config": []interface{}{
+			map[string]interface{}{
+				"destination": []interface{}{
+					map[string]interface{}{"id": "logs", "inputs": []interface{}{"source"}},
+				},
+			},
+		},
+	})
+	resource.InstanceState.Attributes = map[string]string{"id": "pipeline-123"}
+	generator := &ObservabilityPipelineGenerator{}
+	generator.Resources = []terraformutils.Resource{resource}
+
+	if err := generator.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook returned error: %v", err)
+	}
+
+	config := requireMapInList(t, generator.Resources[0].Item, "config", 0)
+	destination := requireMapInList(t, config, "destination", 0)
+	if _, ok := destination["datadog_logs"]; ok {
+		t.Fatal("PostConvertHook added datadog_logs without a matching state count marker")
+	}
+}
+
+func TestObservabilityPipelinePostConvertHookDoesNotOverwriteExistingVariantBlocks(t *testing.T) {
+	existing := []interface{}{
+		map[string]interface{}{"routes": []interface{}{"route-a"}},
+	}
+	resource := observabilityPipelineResourceWithItem(map[string]interface{}{
+		"config": []interface{}{
+			map[string]interface{}{
+				"destination": []interface{}{
+					map[string]interface{}{
+						"id":           "logs",
+						"inputs":       []interface{}{"source"},
+						"datadog_logs": existing,
+					},
+				},
+			},
+		},
+	})
+	resource.InstanceState.Attributes = map[string]string{
+		"config.0.destination.0.datadog_logs.#": "1",
+	}
+	generator := &ObservabilityPipelineGenerator{}
+	generator.Resources = []terraformutils.Resource{resource}
+
+	if err := generator.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook returned error: %v", err)
+	}
+
+	config := requireMapInList(t, generator.Resources[0].Item, "config", 0)
+	destination := requireMapInList(t, config, "destination", 0)
+	got := requireList(t, destination, "datadog_logs")
+	if len(got) != 1 {
+		t.Fatalf("datadog_logs length = %d, want 1", len(got))
+	}
+	block, ok := got[0].(map[string]interface{})
+	if !ok {
+		t.Fatalf("datadog_logs[0] = %T, want map[string]interface{}", got[0])
+	}
+	if _, ok := block["routes"]; !ok {
+		t.Fatalf("datadog_logs = %#v, want existing routes preserved", got)
+	}
+}
+
 func TestObservabilityPipelineInitResourcesListsPipelinesWithPagination(t *testing.T) {
 	requestPages := []string{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -221,4 +350,53 @@ func observabilityPipelineData(id string) datadogV2.ObservabilityPipelineData {
 		id,
 		"pipelines",
 	)
+}
+
+func observabilityPipelineResourceWithItem(item map[string]interface{}) terraformutils.Resource {
+	resource := terraformutils.NewSimpleResource(
+		"pipeline-123",
+		"observability_pipeline_pipeline-123",
+		"datadog_observability_pipeline",
+		"datadog",
+		ObservabilityPipelineAllowEmptyValues,
+	)
+	resource.Item = item
+	return resource
+}
+
+func requireList(t *testing.T, parent map[string]interface{}, key string) []interface{} {
+	t.Helper()
+	list, ok := parent[key].([]interface{})
+	if !ok {
+		t.Fatalf("%s = %T, want []interface{}", key, parent[key])
+	}
+	return list
+}
+
+func requireMapInList(t *testing.T, parent map[string]interface{}, key string, index int) map[string]interface{} {
+	t.Helper()
+	list := requireList(t, parent, key)
+	if len(list) <= index {
+		t.Fatalf("%s length = %d, want index %d", key, len(list), index)
+	}
+	item, ok := list[index].(map[string]interface{})
+	if !ok {
+		t.Fatalf("%s[%d] = %T, want map[string]interface{}", key, index, list[index])
+	}
+	return item
+}
+
+func requireEmptyBlockList(t *testing.T, parent map[string]interface{}, key string) {
+	t.Helper()
+	list := requireList(t, parent, key)
+	if len(list) != 1 {
+		t.Fatalf("%s length = %d, want 1", key, len(list))
+	}
+	block, ok := list[0].(map[string]interface{})
+	if !ok {
+		t.Fatalf("%s[0] = %T, want map[string]interface{}", key, list[0])
+	}
+	if len(block) != 0 {
+		t.Fatalf("%s[0] = %#v, want empty block", key, block)
+	}
 }
