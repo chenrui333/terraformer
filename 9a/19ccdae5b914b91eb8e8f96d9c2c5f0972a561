@@ -1,0 +1,37 @@
+providers/datadog/integration_modern_test.go
+  s_ad2cde2451f5fe::t_7d369e562baded 1-152
+providers/datadog/integration_aws_account.go
+  s_ad2cde2451f5fe::t_1f115a5df63c17 27
+  s_ad2cde2451f5fe::t_6fda37b800b5e8 1-26,28-62
+providers/datadog/integration_aws_event_bridge.go
+  s_ad2cde2451f5fe::t_19ca48c7da2e35 1-60
+providers/datadog/integration_fastly_service.go
+  s_ad2cde2451f5fe::t_5a83ada7a18e1e 1-74
+providers/datadog/datadog_provider.go
+  s_ad2cde2451f5fe::t_e289022792b103 183-195
+docs/datadog.md
+  s_ad2cde2451f5fe::t_0a57f4ec920ca8 118-123,127-128
+  s_ad2cde2451f5fe::t_17fd16969d6558 105-110
+providers/datadog/integration_ms_teams_tenant_based_handle.go
+  s_ad2cde2451f5fe::t_9f453b13ef702c 23
+  s_ad2cde2451f5fe::t_41cb0ff8fdbb87 1-22,24-26,28-62
+  s_ad2cde2451f5fe::t_8c18f89d8dca29 27
+providers/datadog/integration_confluent_resource.go
+  s_ad2cde2451f5fe::t_b06257b0c5648d 1-74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "9a19ccdae5b914b91eb8e8f96d9c2c5f0972a561",
+  "prompts": {},
+  "sessions": {
+    "s_ad2cde2451f5fe": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e5e5a739-89aa-4196-9223-c274cd1e20ca",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
