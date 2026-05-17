@@ -69,7 +69,7 @@ func zeroTrustGatewaySingletonResource(accountID, resourceName, resourceType str
 func zeroTrustGatewayOptionalUnavailableError(err error) bool {
 	var notFoundErr *cf.NotFoundError
 	if errors.As(err, &notFoundErr) {
-		return true
+		return zeroTrustGatewayUnavailableMessage(notFoundErr.Error(), notFoundErr.ErrorMessages())
 	}
 
 	var requestErr *cf.RequestError
@@ -86,9 +86,7 @@ func zeroTrustGatewayUnavailableMessage(message string, errorMessages []string) 
 		normalized := strings.ToLower(msg)
 		for _, marker := range []string{
 			"not enabled",
-			"not found",
 			"not configured",
-			"does not exist",
 			"feature is not available",
 			"zero trust account",
 		} {

@@ -2,7 +2,11 @@
 
 package cloudflare
 
-import "testing"
+import (
+	"testing"
+
+	cf "github.com/cloudflare/cloudflare-go"
+)
 
 func TestZeroTrustGatewayAccountResourceUsesCompositeImportID(t *testing.T) {
 	resource := zeroTrustGatewayAccountResource(
@@ -76,6 +80,69 @@ func TestZeroTrustNetworkHostnameRouteImportable(t *testing.T) {
 				t.Fatalf("zeroTrustNetworkHostnameRouteImportable() = %t, want %t", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestZeroTrustGatewayOptionalUnavailableError(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{
+			name: "generic not found propagates",
+			err:  testCloudflareNotFoundError("not found"),
+			want: false,
+		},
+		{
+			name: "missing endpoint propagates",
+			err:  testCloudflareNotFoundError("The requested endpoint was not found"),
+			want: false,
+		},
+		{
+			name: "zero trust account not configured is optional",
+			err:  testCloudflareNotFoundError("Zero Trust account is not configured"),
+			want: true,
+		},
+		{
+			name: "zero trust feature unavailable request is optional",
+			err:  testCloudflareRequestError("feature is not available for this Zero Trust account"),
+			want: true,
+		},
+		{
+			name: "generic request not found propagates",
+			err:  testCloudflareRequestError("not found"),
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := zeroTrustGatewayOptionalUnavailableError(tt.err); got != tt.want {
+				t.Fatalf("zeroTrustGatewayOptionalUnavailableError() = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
+func testCloudflareNotFoundError(messages ...string) error {
+	err := cf.NewNotFoundError(testCloudflareError(messages...))
+	return &err
+}
+
+func testCloudflareRequestError(messages ...string) error {
+	err := cf.NewRequestError(testCloudflareError(messages...))
+	return &err
+}
+
+func testCloudflareError(messages ...string) *cf.Error {
+	responseInfo := make([]cf.ResponseInfo, 0, len(messages))
+	for _, message := range messages {
+		responseInfo = append(responseInfo, cf.ResponseInfo{Message: message})
+	}
+	return &cf.Error{
+		Errors:        responseInfo,
+		ErrorMessages: messages,
 	}
 }
 
