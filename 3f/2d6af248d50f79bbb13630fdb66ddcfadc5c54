@@ -1,0 +1,19 @@
+.github/pull_request_template.md
+  s_a56ecfbf36e9e3::t_06708a55071a4a 10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "3f2d6af248d50f79bbb13630fdb66ddcfadc5c54",
+  "prompts": {},
+  "sessions": {
+    "s_a56ecfbf36e9e3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3426-d0e0-7cc2-a544-48f707cf5f2b",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
