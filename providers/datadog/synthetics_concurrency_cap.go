@@ -56,6 +56,12 @@ func (g *SyntheticsConcurrencyCapGenerator) createResource(resp datadogV2.OnDema
 // datadog_synthetics_concurrency_cap is a singleton; the provider read path
 // ignores the import ID and stores synthetics-concurrency-cap.
 func (g *SyntheticsConcurrencyCapGenerator) InitResources() error {
+	for i, filter := range g.Filter {
+		if filter.FieldPath == "id" && filter.IsApplicable("synthetics_concurrency_cap") {
+			g.Filter[i].AcceptableValues = []string{syntheticsConcurrencyCapID}
+		}
+	}
+
 	datadogClient := g.Args["datadogClient"].(*datadog.APIClient)
 	auth := g.Args["auth"].(context.Context)
 	api := datadogV2.NewSyntheticsApi(datadogClient)

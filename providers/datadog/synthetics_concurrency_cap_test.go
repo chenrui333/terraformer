@@ -87,3 +87,51 @@ func TestSyntheticsConcurrencyCapInitResources(t *testing.T) {
 		t.Fatalf("resource ID = %q, want %q", generator.Resources[0].InstanceState.ID, syntheticsConcurrencyCapID)
 	}
 }
+
+func TestSyntheticsConcurrencyCapInitResourcesNormalizesIDFilter(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v2/synthetics/settings/on_demand_concurrency_cap" {
+			t.Errorf("unexpected path %s", r.URL.Path)
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte("{\"data\":{\"type\":\"on_demand_concurrency_cap\",\"attributes\":{\"on_demand_concurrency_cap\":3}}}"))
+	}))
+	t.Cleanup(server.Close)
+
+	config := datadog.NewConfiguration()
+	config.Servers = datadog.ServerConfigurations{{URL: server.URL}}
+	config.HTTPClient = server.Client()
+
+	generator := &SyntheticsConcurrencyCapGenerator{
+		DatadogService: DatadogService{
+			Service: terraformutils.Service{
+				Args: map[string]interface{}{
+					"auth":          context.Background(),
+					"datadogClient": datadog.NewAPIClient(config),
+				},
+				Filter: []terraformutils.ResourceFilter{
+					{
+						ServiceName:      "synthetics_concurrency_cap",
+						FieldPath:        "id",
+						AcceptableValues: []string{"this"},
+					},
+				},
+			},
+		},
+	}
+
+	if err := generator.InitResources(); err != nil {
+		t.Fatalf("InitResources returned error: %v", err)
+	}
+	if got := generator.Filter[0].AcceptableValues; len(got) != 1 || got[0] != syntheticsConcurrencyCapID {
+		t.Fatalf("rewritten id filter = %v, want [%s]", got, syntheticsConcurrencyCapID)
+	}
+	if len(generator.Resources) != 1 {
+		t.Fatalf("resource count = %d, want %d", len(generator.Resources), 1)
+	}
+	if !generator.Filter[0].Filter(generator.Resources[0]) {
+		t.Fatal("expected normalized ID filter to keep synthetics concurrency cap resource")
+	}
+}
