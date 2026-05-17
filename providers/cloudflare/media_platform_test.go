@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -270,6 +271,46 @@ func TestListCloudflareMediaPlatformResourcesPaginates(t *testing.T) {
 	}
 }
 
+func TestListCloudflareMediaPlatformResourcesPaginatesFullV4PagesWithoutTotalPages(t *testing.T) {
+	api := newCloudflareMediaPlatformTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/accounts/account-123/pipelines/v1/pipelines" {
+			t.Fatalf("path = %q, want /accounts/account-123/pipelines/v1/pipelines", r.URL.Path)
+		}
+		if cursor := r.URL.Query().Get("cursor"); cursor != "" {
+			t.Fatalf("cursor query = %q, want empty", cursor)
+		}
+
+		switch r.URL.Query().Get("page") {
+		case "1":
+			writeCloudflareMediaPlatformTestResponse(t, w, cloudflareMediaPlatformTestResources("pipeline", 50), map[string]interface{}{
+				"page":     1,
+				"per_page": 50,
+			})
+		case "2":
+			writeCloudflareMediaPlatformTestResponse(t, w, cloudflareMediaPlatformTestResources("pipeline-final", 1), map[string]interface{}{
+				"page":     2,
+				"per_page": 50,
+			})
+		default:
+			t.Fatalf("page query = %q, want 1 or 2", r.URL.Query().Get("page"))
+		}
+	}))
+
+	resources, err := listCloudflareMediaPlatformResources(context.Background(), api, "/accounts/account-123/pipelines/v1/pipelines")
+	if err != nil {
+		t.Fatalf("listCloudflareMediaPlatformResources() error = %v", err)
+	}
+	if len(resources) != 51 {
+		t.Fatalf("resource count = %d, want 51", len(resources))
+	}
+	if got := cloudflareMediaPlatformString(resources[0], "id"); got != "pipeline-1" {
+		t.Fatalf("first id = %q, want pipeline-1", got)
+	}
+	if got := cloudflareMediaPlatformString(resources[50], "id"); got != "pipeline-final-1" {
+		t.Fatalf("last id = %q, want pipeline-final-1", got)
+	}
+}
+
 func TestListCloudflareMediaPlatformResourcesHandlesEmptyResult(t *testing.T) {
 	api := newCloudflareMediaPlatformTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		writeCloudflareMediaPlatformTestResponse(t, w, nil, nil)
@@ -415,6 +456,14 @@ func newCloudflareMediaPlatformTestAPI(t *testing.T, handler http.Handler) *cf.A
 		t.Fatalf("create Cloudflare test API: %v", err)
 	}
 	return api
+}
+
+func cloudflareMediaPlatformTestResources(prefix string, count int) []map[string]string {
+	resources := make([]map[string]string, count)
+	for i := range resources {
+		resources[i] = map[string]string{"id": fmt.Sprintf("%s-%d", prefix, i+1)}
+	}
+	return resources
 }
 
 func writeCloudflareMediaPlatformTestResponse(t *testing.T, w http.ResponseWriter, result interface{}, resultInfo interface{}) {
