@@ -27,7 +27,7 @@ func newCmdKafkaImporter(options ImportOptions) *cobra.Command {
 	}
 
 	cmd.AddCommand(listCmd(newKafkaProvider()))
-	baseProviderFlags(cmd.PersistentFlags(), &options, "topics", "topic=topic1:topic2")
+	baseProviderFlags(cmd.PersistentFlags(), &options, "topics,acls", "topic=topic1:topic2")
 	cmd.PersistentFlags().StringSliceVar(&config.BootstrapServers, "bootstrap-servers", config.BootstrapServers, "Kafka bootstrap servers or KAFKA_BOOTSTRAP_SERVERS")
 	cmd.PersistentFlags().StringVar(&config.KafkaVersion, "kafka-version", config.KafkaVersion, "Kafka protocol version or KAFKA_VERSION")
 	cmd.PersistentFlags().BoolVar(&config.TLSEnabled, "tls-enabled", config.TLSEnabled, "Enable TLS or KAFKA_ENABLE_TLS")

@@ -83,8 +83,17 @@ func TestProviderSafeConfigHandling(t *testing.T) {
 func TestProviderSupportedServices(t *testing.T) {
 	provider := &Provider{}
 	services := provider.GetSupportedService()
+	if _, ok := services["acls"]; !ok {
+		t.Fatalf("acls service not registered: %#v", services)
+	}
 	if _, ok := services["topics"]; !ok {
 		t.Fatalf("topics service not registered: %#v", services)
+	}
+	if err := provider.InitService("acls", false); err != nil {
+		t.Fatalf("InitService(acls) error = %v", err)
+	}
+	if provider.GetService() == nil {
+		t.Fatal("InitService(acls) did not set service")
 	}
 	if err := provider.InitService("topics", false); err != nil {
 		t.Fatalf("InitService(topics) error = %v", err)
