@@ -432,6 +432,7 @@ func TestAppBuilderAppInitResourcesListsPages(t *testing.T) {
 
 func TestOpenapiAPIInitResourcesListsPages(t *testing.T) {
 	offsets := []string{}
+	nextOffset := fmt.Sprint(datadogOpenapiAPIPageLimit)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v2/apicatalog/api" {
 			t.Errorf("unexpected path %s", r.URL.Path)
@@ -446,12 +447,12 @@ func TestOpenapiAPIInitResourcesListsPages(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		switch offset {
 		case "0":
-			_, _ = w.Write([]byte(openapiAPIListResponseJSON(2, "00000000-0000-0000-0000-000000000010")))
-		case "100":
-			_, _ = w.Write([]byte(openapiAPIListResponseJSON(2, "00000000-0000-0000-0000-000000000011")))
+			_, _ = w.Write([]byte(openapiAPIListResponseJSON(3, "00000000-0000-0000-0000-000000000000", "00000000-0000-0000-0000-000000000010")))
+		case nextOffset:
+			_, _ = w.Write([]byte(openapiAPIListResponseJSON(3, "00000000-0000-0000-0000-000000000011")))
 		default:
 			t.Errorf("unexpected offset %q", offset)
-			_, _ = w.Write([]byte(openapiAPIListResponseJSON(2)))
+			_, _ = w.Write([]byte(openapiAPIListResponseJSON(3)))
 		}
 	}))
 	t.Cleanup(server.Close)
@@ -461,8 +462,8 @@ func TestOpenapiAPIInitResourcesListsPages(t *testing.T) {
 		t.Fatalf("InitResources returned error: %v", err)
 	}
 	assertProductPlatformResourceIDs(t, resources(), []string{"00000000-0000-0000-0000-000000000010", "00000000-0000-0000-0000-000000000011"})
-	if strings.Join(offsets, ",") != "0,100" {
-		t.Fatalf("offsets = %v, want [0 100]", offsets)
+	if strings.Join(offsets, ",") != "0,"+nextOffset {
+		t.Fatalf("offsets = %v, want [0 %s]", offsets, nextOffset)
 	}
 }
 
@@ -525,6 +526,7 @@ func TestDatastoreInitResourcesList(t *testing.T) {
 
 func TestReferenceTableInitResourcesListsPages(t *testing.T) {
 	offsets := []string{}
+	nextOffset := fmt.Sprint(datadogReferenceTablePageLimit)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v2/reference-tables/tables" {
 			t.Errorf("unexpected path %s", r.URL.Path)
@@ -540,7 +542,7 @@ func TestReferenceTableInitResourcesListsPages(t *testing.T) {
 		switch offset {
 		case "0":
 			_, _ = w.Write([]byte(referenceTableListResponseJSON(repeatedIDs("table", int(datadogReferenceTablePageLimit))...)))
-		case "100":
+		case nextOffset:
 			_, _ = w.Write([]byte(referenceTableListResponseJSON("table-100")))
 		default:
 			t.Errorf("unexpected offset %q", offset)
@@ -556,8 +558,8 @@ func TestReferenceTableInitResourcesListsPages(t *testing.T) {
 	if len(resources()) != int(datadogReferenceTablePageLimit)+1 {
 		t.Fatalf("resource count = %d, want %d", len(resources()), int(datadogReferenceTablePageLimit)+1)
 	}
-	if strings.Join(offsets, ",") != "0,100" {
-		t.Fatalf("offsets = %v, want [0 100]", offsets)
+	if strings.Join(offsets, ",") != "0,"+nextOffset {
+		t.Fatalf("offsets = %v, want [0 %s]", offsets, nextOffset)
 	}
 }
 

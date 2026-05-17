@@ -126,11 +126,14 @@ func (g *OpenapiAPIGenerator) listOpenapiAPIIDs(auth context.Context, api *datad
 			}
 			ids = append(ids, apiID.String())
 		}
+		if len(apis) == 0 {
+			break
+		}
 
 		meta := resp.GetMeta()
 		pagination := meta.GetPagination()
 		if totalCount, ok := pagination.GetTotalCountOk(); ok {
-			if int64(len(ids)) >= *totalCount {
+			if offset+int64(len(apis)) >= *totalCount {
 				break
 			}
 		} else if int64(len(apis)) < datadogOpenapiAPIPageLimit {
