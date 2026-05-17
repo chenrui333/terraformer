@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -95,6 +96,42 @@ func TestListWorkersPaginates(t *testing.T) {
 	}
 	if workers[0].ID != "worker-1" || workers[1].ID != "worker-2" {
 		t.Fatalf("workers = %#v, want worker-1 and worker-2", workers)
+	}
+}
+
+func TestListWorkersPaginatesPageOnlyResultInfo(t *testing.T) {
+	api := newCloudflareWorkersTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/accounts/account-123/workers/workers" {
+			t.Fatalf("path = %q, want /accounts/account-123/workers/workers", r.URL.Path)
+		}
+		if got := r.URL.Query().Get("cursor"); got != "" {
+			t.Fatalf("cursor query = %q, want empty", got)
+		}
+		switch r.URL.Query().Get("page") {
+		case "1":
+			writeCloudflareWorkersTestResponse(t, w, cloudflareWorkersForTest(cloudflarePageSize), map[string]interface{}{
+				"page":     1,
+				"per_page": cloudflarePageSize,
+			})
+		case "2":
+			writeCloudflareWorkersTestResponse(t, w, []cloudflareWorker{{ID: "worker-last", Name: "last"}}, map[string]interface{}{
+				"page":     2,
+				"per_page": cloudflarePageSize,
+			})
+		default:
+			t.Fatalf("page query = %q, want 1 or 2", r.URL.Query().Get("page"))
+		}
+	}))
+
+	workers, err := listWorkers(context.Background(), api, "account-123")
+	if err != nil {
+		t.Fatalf("listWorkers() error = %v", err)
+	}
+	if len(workers) != cloudflarePageSize+1 {
+		t.Fatalf("worker count = %d, want %d", len(workers), cloudflarePageSize+1)
+	}
+	if workers[cloudflarePageSize].ID != "worker-last" {
+		t.Fatalf("last worker = %#v, want worker-last", workers[cloudflarePageSize])
 	}
 }
 
@@ -208,4 +245,15 @@ func writeCloudflareWorkersTestResponse(t *testing.T, w http.ResponseWriter, res
 	if err := json.NewEncoder(w).Encode(payload); err != nil {
 		t.Fatalf("encode test response: %v", err)
 	}
+}
+
+func cloudflareWorkersForTest(count int) []cloudflareWorker {
+	workers := make([]cloudflareWorker, count)
+	for i := range workers {
+		workers[i] = cloudflareWorker{
+			ID:   fmt.Sprintf("worker-%d", i),
+			Name: fmt.Sprintf("worker-%d", i),
+		}
+	}
+	return workers
 }

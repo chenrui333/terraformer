@@ -124,11 +124,29 @@ func listWorkers(ctx context.Context, api *cf.API, accountID string) ([]cloudfla
 			return nil, err
 		}
 		workers = append(workers, pageWorkers...)
-		if !cloudflareAdvancePagination(response.ResultInfo, &page, &cursor) {
+		if !cloudflareAdvanceWorkersPagination(response.ResultInfo, &page, &cursor, len(pageWorkers)) {
 			break
 		}
 	}
 	return workers, nil
+}
+
+func cloudflareAdvanceWorkersPagination(info *cf.ResultInfo, page *int, cursor *string, itemCount int) bool {
+	if cloudflareAdvancePagination(info, page, cursor) {
+		return true
+	}
+	if *cursor != "" {
+		return false
+	}
+	pageSize := cloudflarePageSize
+	if info != nil && info.PerPage > 0 {
+		pageSize = info.PerPage
+	}
+	if itemCount < pageSize {
+		return false
+	}
+	*page++
+	return true
 }
 
 func listWorkerCustomDomains(ctx context.Context, api *cf.API, accountID string) ([]cf.WorkersDomain, error) {
