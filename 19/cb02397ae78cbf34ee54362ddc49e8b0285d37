@@ -1,0 +1,21 @@
+providers/kafka/topic.go
+  s_18ec7284ef804a::t_839a14a7fc6ac9 29,139,146,153,173,180,187,365-369
+providers/kafka/topic_test.go
+  s_18ec7284ef804a::t_c1c821fc0bc398 14-15,404-448
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "19cb02397ae78cbf34ee54362ddc49e8b0285d37",
+  "prompts": {},
+  "sessions": {
+    "s_18ec7284ef804a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3602-0e28-7841-87b1-545a6cd73d26",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
