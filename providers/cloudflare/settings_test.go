@@ -4,6 +4,7 @@ package cloudflare
 
 import (
 	"errors"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -384,6 +385,140 @@ func TestCloudflareZoneDNSSECResource(t *testing.T) {
 	}
 }
 
+func TestCloudflareZoneSettingShouldImport(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		setting cf.ZoneSetting
+		want    bool
+	}{
+		{name: "empty", setting: cf.ZoneSetting{}, want: false},
+		{
+			name: "supported modified editable string",
+			setting: cf.ZoneSetting{
+				ID:         "always_use_https",
+				Editable:   true,
+				ModifiedOn: "2026-05-17T12:00:00Z",
+				Value:      "on",
+			},
+			want: true,
+		},
+		{
+			name: "supported but default effective state",
+			setting: cf.ZoneSetting{
+				ID:         "always_use_https",
+				Editable:   true,
+				ModifiedOn: "2026-05-17T12:00:00Z",
+				Value:      "off",
+			},
+			want: false,
+		},
+		{
+			name: "supported non default without modified timestamp",
+			setting: cf.ZoneSetting{
+				ID:       "always_use_https",
+				Editable: true,
+				Value:    "on",
+			},
+			want: true,
+		},
+		{
+			name: "supported but not editable",
+			setting: cf.ZoneSetting{
+				ID:         "always_use_https",
+				ModifiedOn: "2026-05-17T12:00:00Z",
+				Value:      "on",
+			},
+			want: false,
+		},
+		{
+			name: "unsupported setting",
+			setting: cf.ZoneSetting{
+				ID:         "development_mode",
+				Editable:   true,
+				ModifiedOn: "2026-05-17T12:00:00Z",
+				Value:      "on",
+			},
+			want: false,
+		},
+		{
+			name: "non string value",
+			setting: cf.ZoneSetting{
+				ID:         "browser_cache_ttl",
+				Editable:   true,
+				ModifiedOn: "2026-05-17T12:00:00Z",
+				Value:      14400,
+			},
+			want: false,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := cloudflareZoneSettingShouldImport(tt.setting); got != tt.want {
+				t.Fatalf("cloudflareZoneSettingShouldImport() = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCloudflareZoneSettingResource(t *testing.T) {
+	zone := cf.Zone{ID: "zone-123", Name: "example.com"}
+	resource := cloudflareZoneSettingResource(zone, cf.ZoneSetting{
+		ID:         "always_use_https",
+		Editable:   true,
+		ModifiedOn: "2026-05-17T12:00:00Z",
+		Value:      "on",
+	})
+
+	if resource.InstanceInfo.Type != "cloudflare_zone_setting" {
+		t.Fatalf("resource type = %q, want cloudflare_zone_setting", resource.InstanceInfo.Type)
+	}
+	if got, want := resource.ResourceName, terraformutils.TfSanitize(cloudflareResourceName("example.com", "zone-123", "zone_setting", "always_use_https")); got != want {
+		t.Fatalf("resource name = %q, want %s", got, want)
+	}
+	if got := resource.InstanceState.ID; got != "always_use_https" {
+		t.Fatalf("resource ID = %q, want always_use_https", got)
+	}
+	if got := resource.InstanceState.Attributes["zone_id"]; got != "zone-123" {
+		t.Fatalf("zone_id = %q, want zone-123", got)
+	}
+	if got := resource.InstanceState.Attributes["setting_id"]; got != "always_use_https" {
+		t.Fatalf("setting_id = %q, want always_use_https", got)
+	}
+	if got := resource.InstanceState.Attributes["value"]; got != "on" {
+		t.Fatalf("value = %q, want on", got)
+	}
+	if got := resource.InstanceState.Meta["import_id"]; got != "zone-123/always_use_https" {
+		t.Fatalf("import_id = %v, want zone-123/always_use_https", got)
+	}
+	if got := resource.AdditionalFields["value"]; got != "on" {
+		t.Fatalf("AdditionalFields value = %#v, want on", got)
+	}
+	for _, key := range cloudflareZoneSettingIgnoredKeys {
+		if !cloudflareResourceIgnoresKey(resource, key) {
+			t.Fatalf("zone setting resource should ignore key %q", key)
+		}
+	}
+
+	resource.InstanceState.Attributes["editable"] = "true"
+	resource.InstanceState.Attributes["modified_on"] = "2026-05-17T12:00:00Z"
+	parser := terraformutils.NewFlatmapParser(resource.InstanceState.Attributes, cloudflareResourceIgnoreRegexps(resource), nil)
+	impliedType := cty.Object(map[string]cty.Type{
+		"editable":    cty.Bool,
+		"modified_on": cty.String,
+		"setting_id":  cty.String,
+		"value":       cty.DynamicPseudoType,
+		"zone_id":     cty.String,
+	})
+	if err := resource.ParseTFstate(parser, impliedType); err != nil {
+		t.Fatalf("ParseTFstate() error = %v", err)
+	}
+	if got := resource.Item["value"]; got != "on" {
+		t.Fatalf("parsed value = %#v, want on", got)
+	}
+	if _, ok := resource.Item["editable"]; ok {
+		t.Fatal("computed editable field should be ignored")
+	}
+}
+
 func cloudflareResourceIgnoresKey(resource terraformutils.Resource, key string) bool {
 	for _, ignoreKey := range resource.IgnoreKeys {
 		if ignoreKey == key {
@@ -391,6 +526,14 @@ func cloudflareResourceIgnoresKey(resource terraformutils.Resource, key string) 
 		}
 	}
 	return false
+}
+
+func cloudflareResourceIgnoreRegexps(resource terraformutils.Resource) []*regexp.Regexp {
+	regexps := make([]*regexp.Regexp, 0, len(resource.IgnoreKeys))
+	for _, ignoreKey := range resource.IgnoreKeys {
+		regexps = append(regexps, regexp.MustCompile(ignoreKey))
+	}
+	return regexps
 }
 
 func TestCloudflareZoneHoldAttributes(t *testing.T) {

@@ -86,6 +86,32 @@ var cloudflareZoneDNSSECComputedKeys = []string{
 	"^public_key$",
 }
 
+var cloudflareZoneSettingDefaultValues = map[string]string{
+	"always_online":       "off",
+	"always_use_https":    "off",
+	"brotli":              "on",
+	"browser_check":       "on",
+	"cache_level":         "aggressive",
+	"email_obfuscation":   "on",
+	"hotlink_protection":  "off",
+	"ip_geolocation":      "on",
+	"min_tls_version":     "1.0",
+	"rocket_loader":       "off",
+	"security_level":      "medium",
+	"server_side_exclude": "on",
+	"tls_1_3":             "on",
+	"websockets":          "on",
+}
+
+var cloudflareZoneSettingIgnoredKeys = []string{
+	"^id$",
+	"^editable$",
+	"^enabled$",
+	"^modified_on$",
+	"^time_remaining$",
+	"^value$",
+}
+
 func (g *SettingsGenerator) InitResources() error {
 	ctx := context.Background()
 	api, err := g.initializeAPI()
@@ -145,6 +171,7 @@ func (g *SettingsGenerator) appendZoneSettingsResources(ctx context.Context, api
 		g.appendZoneCacheReserveResource,
 		g.appendZoneCacheVariantsResource,
 		g.appendZoneDNSSECResource,
+		g.appendZoneSettingResources,
 		g.appendZoneHoldResource,
 		g.appendDNSZoneTransfersIncomingResource,
 		g.appendDNSZoneTransfersOutgoingResource,
@@ -523,6 +550,26 @@ func (g *SettingsGenerator) appendZoneDNSSECResource(ctx context.Context, api *c
 	return nil
 }
 
+func (g *SettingsGenerator) appendZoneSettingResources(ctx context.Context, api *cf.API, zone cf.Zone) error {
+	response, err := api.ZoneSettings(ctx, zone.ID)
+	if err != nil {
+		if cloudflareOptionalSettingsMissing(err) {
+			return nil
+		}
+		return fmt.Errorf("list zone settings for zone %q: %w", zone.ID, err)
+	}
+	if response == nil {
+		return nil
+	}
+	for _, setting := range response.Result {
+		if !cloudflareZoneSettingShouldImport(setting) {
+			continue
+		}
+		g.Resources = append(g.Resources, cloudflareZoneSettingResource(zone, setting))
+	}
+	return nil
+}
+
 func (g *SettingsGenerator) appendZoneHoldResource(ctx context.Context, api *cf.API, zone cf.Zone) error {
 	setting, err := api.GetZoneHold(ctx, cf.ZoneIdentifier(zone.ID), cf.GetZoneHoldParams{})
 	if err != nil {
@@ -800,6 +847,38 @@ func cloudflareZoneDNSSECDesiredStatus(status string) string {
 	default:
 		return ""
 	}
+}
+
+func cloudflareZoneSettingShouldImport(setting cf.ZoneSetting) bool {
+	defaultValue, ok := cloudflareZoneSettingDefaultValues[setting.ID]
+	if !ok {
+		return false
+	}
+	if !setting.Editable {
+		return false
+	}
+	value, ok := setting.Value.(string)
+	return ok && !strings.EqualFold(value, defaultValue)
+}
+
+func cloudflareZoneSettingResource(zone cf.Zone, setting cf.ZoneSetting) terraformutils.Resource {
+	value, _ := setting.Value.(string)
+	resource := terraformutils.NewResource(
+		setting.ID,
+		cloudflareResourceName(zone.Name, zone.ID, "zone_setting", setting.ID),
+		"cloudflare_zone_setting",
+		"cloudflare",
+		map[string]string{
+			"setting_id": setting.ID,
+			"value":      value,
+			"zone_id":    zone.ID,
+		},
+		[]string{},
+		map[string]interface{}{"value": value},
+	)
+	setCloudflareImportID(&resource, zone.ID+"/"+setting.ID)
+	resource.IgnoreKeys = append(resource.IgnoreKeys, cloudflareZoneSettingIgnoredKeys...)
+	return resource
 }
 
 func cloudflareSetBoolPointerAttribute(attributes map[string]string, key string, value *bool) {
