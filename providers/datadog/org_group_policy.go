@@ -58,7 +58,7 @@ func (g *OrgGroupPolicyGenerator) InitResources() error {
 			continue
 		}
 
-		var pageNumber int64 = 1
+		var pageNumber int64
 		const pageSize int64 = 100
 
 		for {
