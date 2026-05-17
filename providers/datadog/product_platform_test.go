@@ -477,6 +477,38 @@ func TestAppBuilderAppInitResourcesListsPages(t *testing.T) {
 	}
 }
 
+func TestAppBuilderAppInitResourcesStopsAfterSkippedIDs(t *testing.T) {
+	pages := []string{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v2/app-builder/apps" {
+			t.Errorf("unexpected path %s", r.URL.Path)
+			http.NotFound(w, r)
+			return
+		}
+		page := r.URL.Query().Get("page")
+		pages = append(pages, page)
+		w.Header().Set("Content-Type", "application/json")
+		switch page {
+		case "0":
+			_, _ = w.Write([]byte(appBuilderAppListResponseJSON(3, "00000000-0000-0000-0000-000000000000", "00000000-0000-0000-0000-000000000001")))
+		case "1":
+			_, _ = w.Write([]byte(appBuilderAppListResponseJSON(3, "00000000-0000-0000-0000-000000000002")))
+		default:
+			http.Error(w, "unexpected page", http.StatusInternalServerError)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	initResources, resources := newAppBuilderAppTestGenerator(server, nil)
+	if err := initResources(); err != nil {
+		t.Fatalf("InitResources returned error: %v", err)
+	}
+	assertProductPlatformResourceIDs(t, resources(), []string{"00000000-0000-0000-0000-000000000001", "00000000-0000-0000-0000-000000000002"})
+	if strings.Join(pages, ",") != "0,1" {
+		t.Fatalf("pages = %v, want [0 1]", pages)
+	}
+}
+
 func TestOpenapiAPIInitResourcesListsPages(t *testing.T) {
 	offsets := []string{}
 	nextOffset := fmt.Sprint(datadogOpenapiAPIPageLimit)
@@ -666,6 +698,38 @@ func TestObservabilityPipelineInitResourcesListsPages(t *testing.T) {
 		default:
 			t.Errorf("unexpected page %q", page)
 			_, _ = w.Write([]byte(observabilityPipelineListResponseJSON(2)))
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	initResources, resources := newObservabilityPipelineTestGenerator(server, nil)
+	if err := initResources(); err != nil {
+		t.Fatalf("InitResources returned error: %v", err)
+	}
+	assertProductPlatformResourceIDs(t, resources(), []string{"pipeline-1", "pipeline-2"})
+	if strings.Join(pages, ",") != "0,1" {
+		t.Fatalf("pages = %v, want [0 1]", pages)
+	}
+}
+
+func TestObservabilityPipelineInitResourcesStopsAfterSkippedIDs(t *testing.T) {
+	pages := []string{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v2/obs-pipelines/pipelines" {
+			t.Errorf("unexpected path %s", r.URL.Path)
+			http.NotFound(w, r)
+			return
+		}
+		page := r.URL.Query().Get("page[number]")
+		pages = append(pages, page)
+		w.Header().Set("Content-Type", "application/json")
+		switch page {
+		case "0":
+			_, _ = w.Write([]byte(observabilityPipelineListResponseJSON(3, "", "pipeline-1")))
+		case "1":
+			_, _ = w.Write([]byte(observabilityPipelineListResponseJSON(3, "pipeline-2")))
+		default:
+			http.Error(w, "unexpected page", http.StatusInternalServerError)
 		}
 	}))
 	t.Cleanup(server.Close)

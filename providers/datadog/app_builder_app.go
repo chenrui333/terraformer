@@ -219,6 +219,7 @@ func (g *AppBuilderAppGenerator) getAppBuilderAppID(auth context.Context, api *d
 func (g *AppBuilderAppGenerator) listAppBuilderAppIDs(auth context.Context, api *datadogV2.AppBuilderApi) ([]string, error) {
 	ids := []string{}
 	pageNumber := int64(0)
+	appsSeen := int64(0)
 
 	for {
 		opts := datadogV2.NewListAppsOptionalParameters().
@@ -239,11 +240,15 @@ func (g *AppBuilderAppGenerator) listAppBuilderAppIDs(auth context.Context, api 
 			}
 			ids = append(ids, appID.String())
 		}
+		if len(apps) == 0 {
+			break
+		}
+		appsSeen += int64(len(apps))
 
 		meta := resp.GetMeta()
 		pageMeta := meta.GetPage()
 		if totalFiltered, ok := pageMeta.GetTotalFilteredCountOk(); ok {
-			if int64(len(ids)) >= *totalFiltered {
+			if appsSeen >= *totalFiltered {
 				break
 			}
 		} else if int64(len(apps)) < datadogAppBuilderAppPageLimit {

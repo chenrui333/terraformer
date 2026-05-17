@@ -102,6 +102,7 @@ func (g *ObservabilityPipelineGenerator) getObservabilityPipelineID(auth context
 func (g *ObservabilityPipelineGenerator) listObservabilityPipelineIDs(auth context.Context, api *datadogV2.ObservabilityPipelinesApi) ([]string, error) {
 	ids := []string{}
 	pageNumber := int64(0)
+	pipelinesSeen := int64(0)
 
 	for {
 		opts := datadogV2.NewListPipelinesOptionalParameters().
@@ -122,10 +123,14 @@ func (g *ObservabilityPipelineGenerator) listObservabilityPipelineIDs(auth conte
 			}
 			ids = append(ids, pipelineID)
 		}
+		if len(pipelines) == 0 {
+			break
+		}
+		pipelinesSeen += int64(len(pipelines))
 
 		meta := resp.GetMeta()
 		if totalCount, ok := meta.GetTotalCountOk(); ok {
-			if int64(len(ids)) >= *totalCount {
+			if pipelinesSeen >= *totalCount {
 				break
 			}
 		} else if int64(len(pipelines)) < datadogObservabilityPipelinePageSize {
