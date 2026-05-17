@@ -24,6 +24,17 @@
       ]
     },
     {
+      "resource": "cloudflare_ai_search_token",
+      "service_family": "ai",
+      "reason": "AI Search tokens require Cloudflare API credential material that broad import cannot safely reconstruct.",
+      "evidence": "Terraform provider v5.19.1 marks cf_api_key as Sensitive and no_refresh, and import verification ignores cf_api_key. Terraformer cannot discover or emit a valid token resource without the required API key value.",
+      "status": "secret-required",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/ai_search_token"
+      ]
+    },
+    {
       "resource": "cloudflare_authenticated_origin_pulls_certificate",
       "service_family": "certificates",
       "reason": "Authenticated Origin Pull certificates require private key material that Cloudflare APIs cannot safely return.",
@@ -57,6 +68,17 @@
       ]
     },
     {
+      "resource": "cloudflare_hyperdrive_config",
+      "service_family": "storage",
+      "reason": "Hyperdrive configs require write-only origin credential material.",
+      "evidence": "Terraform provider v5.19.1 requires origin.password and documents it as Sensitive with the API never returning this write-only value. origin.access_client_secret is also Sensitive and write-only when Cloudflare Access credentials are configured.",
+      "status": "secret-required",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/hyperdrive_config"
+      ]
+    },
+    {
       "resource": "cloudflare_list_item",
       "service_family": "lists",
       "reason": "Standalone list-item import would duplicate Terraformer's existing inline cloudflare_list item ownership.",
@@ -79,6 +101,39 @@
       ]
     },
     {
+      "resource": "cloudflare_pipeline_sink",
+      "service_family": "platform",
+      "reason": "Pipeline sink config can contain write-only authentication material that broad import cannot reconstruct.",
+      "evidence": "Terraform provider v5.19.1 marks config.credentials.secret_access_key and config.token as Sensitive/no_refresh, and provider import verification ignores config. Terraformer cannot safely emit credential-bearing sink configuration from discovery alone.",
+      "status": "secret-required",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/pipeline_sink"
+      ]
+    },
+    {
+      "resource": "cloudflare_r2_bucket_sippy",
+      "service_family": "storage",
+      "reason": "R2 Sippy replication requires source or destination credential material that cannot be safely reconstructed.",
+      "evidence": "Terraform provider v5.19.1 documents cloudflare_r2_bucket_sippy as not supporting terraform import and marks source/destination secret_access_key plus GCS private_key fields as Sensitive/no_refresh.",
+      "status": "secret-required",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/r2_bucket_sippy"
+      ]
+    },
+    {
+      "resource": "cloudflare_r2_managed_domain",
+      "service_family": "storage",
+      "reason": "R2 managed domain provider semantics do not expose a usable broad import/read path.",
+      "evidence": "Terraform provider v5.19.1 documents cloudflare_r2_managed_domain as not supporting terraform import, and the generated resource has empty Read and Delete methods while warning that the managed domain cannot be destroyed from Terraform.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/r2_managed_domain"
+      ]
+    },
+    {
       "resource": "cloudflare_snippet",
       "service_family": "snippets",
       "reason": "Snippet resources require source files and the Terraform provider does not currently support import.",
@@ -98,6 +153,39 @@
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/stream_download"
+      ]
+    },
+    {
+      "resource": "cloudflare_stream_key",
+      "service_family": "stream",
+      "reason": "Stream signing keys expose generated private key material that broad import should not materialize.",
+      "evidence": "Terraform provider v5.19.1 supports account-scoped import, but the jwk and pem attributes are Sensitive/no_refresh generated signing keys. Broad import would capture generated secret key material rather than reconstruct user-authored configuration.",
+      "status": "secret-required",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/stream_key"
+      ]
+    },
+    {
+      "resource": "cloudflare_stream_live_input",
+      "service_family": "stream",
+      "reason": "Stream live input resources expose generated streaming credentials and the provider does not support import.",
+      "evidence": "Terraform provider v5.19.1 documents cloudflare_stream_live_input as not supporting terraform import and marks generated RTMPS/SRT/WebRTC URLs, stream keys, and passphrases as Sensitive.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/stream_live_input"
+      ]
+    },
+    {
+      "resource": "cloudflare_stream_webhook",
+      "service_family": "stream",
+      "reason": "Stream webhook resources expose generated verification secret material and the provider does not support import.",
+      "evidence": "Terraform provider v5.19.1 documents cloudflare_stream_webhook as not supporting terraform import and marks the generated webhook secret as Sensitive.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/stream_webhook"
       ]
     },
     {

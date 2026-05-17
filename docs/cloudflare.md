@@ -76,7 +76,14 @@ List of supported Cloudflare services:
 * `storage`
   * `cloudflare_d1_database`
   * `cloudflare_queue`
+  * `cloudflare_queue_consumer`
   * `cloudflare_r2_bucket`
+  * `cloudflare_r2_bucket_cors`
+  * `cloudflare_r2_bucket_event_notification`
+  * `cloudflare_r2_bucket_lifecycle`
+  * `cloudflare_r2_bucket_lock`
+  * `cloudflare_r2_custom_domain`
+  * `cloudflare_r2_data_catalog`
   * `cloudflare_workers_kv_namespace`
 * `turnstile`
   * `cloudflare_turnstile_widget`
