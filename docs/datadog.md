@@ -90,6 +90,10 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
         * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
 *   `agentless_scanning_gcp_scan_options`
     * `datadog_agentless_scanning_gcp_scan_options`
+*   `api_key`
+    * `datadog_api_key`
+*   `application_key`
+    * `datadog_application_key`
 *   `apm_retention_filter`
     * `datadog_apm_retention_filter`
 *   `apm_retention_filter_order`
@@ -99,6 +103,8 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_appsec_waf_custom_rule`
 *   `appsec_waf_exclusion_filter`
     * `datadog_appsec_waf_exclusion_filter`
+*   `authn_mapping`
+    * `datadog_authn_mapping`
 *   `aws_cur_config`
     * `datadog_aws_cur_config`
         * **_NOTE:_** Requires DataDog/datadog provider 3.39.0 or newer.
@@ -178,6 +184,8 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_logs_integration_pipeline`
 *   `logs_pipeline_order`
     * `datadog_logs_pipeline_order`
+*   `logs_restriction_query`
+    * `datadog_logs_restriction_query`
 *   `metric_metadata`
     * `datadog_metric_metadata`
         * **_NOTE:_** Importing resource requires resource ID's to be passed via [Filter][1] option
@@ -254,6 +262,11 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `sensitive_data_scanner_rule`
     * `datadog_sensitive_data_scanner_rule`
         * **_NOTE:_** Requires DataDog/datadog provider 3.90.0 or newer.
+*   `service_account`
+    * `datadog_service_account`
+*   `service_account_application_key`
+    * `datadog_service_account_application_key`
+        * **_NOTE:_** Importing requires `service_account_id` filter or composite `service_account_id:key_id` ID filter, for example `--filter="Type=service_account_application_key;Name=service_account_id;Value=sa-id"` or `--filter="service_account_application_key='sa-id:key-id'"`
 *   `service_level_objective`
     * `datadog_service_level_objective`
 *   `slo_correction`

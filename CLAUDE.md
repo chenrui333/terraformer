@@ -749,3 +749,27 @@ go build -v
 - When review comments arrive, reproduce or inspect the exact code path before patching.
 - Add follow-up commits on squash-merge PR branches unless a force-push is explicitly needed.
 - After merge, refresh `main` before starting the next provider gap.
+
+## Terraformer Framework Gotchas
+
+Durable lessons from provider-gap implementation that prevent repeated review cycles.
+
+### AllowEmptyValues for Required Booleans
+
+Terraformer's flatmap parser drops zero-value attributes unless they appear in `AllowEmptyValues`. When a Terraform resource has required boolean fields that can legitimately be `false`, list them in `AllowEmptyValues` or the generated HCL omits required arguments and `terraform plan` fails.
+
+### AcceptableValues Rewrite for Composite ID Filters
+
+Terraformer's `InitialCleanup` compares `filter.AcceptableValues` against `resource.InstanceState.ID`. When a filter uses a composite format (e.g., `parent_id:child_id`) but the resource state ID is only the child part, rewrite `g.Filter[filterIndex].AcceptableValues` to bare IDs after parsing. See `rum_retention_filter.go` for the canonical pattern.
+
+### Terraformer Strips the id Attribute During HCL Conversion
+
+Terraformer unconditionally ignores `InstanceState.Attributes["id"]` when generating HCL. If a Terraform resource's only Required configuration argument is literally `id`, it cannot produce valid HCL through Terraformer. Mark such resources as unsupported with evidence.
+
+### Metadata-Only Key Imports
+
+API key, application key, and similar secret-bearing resources are importable when the Terraform provider marks the secret field as `Computed+Sensitive` (not `Required`). The provider refresh works without the original secret value; generated HCL contains only metadata (name, dates). Document this behavior in `docs/<provider>.md`. Never export actual key/secret values.
+
+### Unstable API Operations
+
+Some SDK endpoints are gated behind `configuration.SetUnstableOperationEnabled`. When a list/get API requires this, call it on the client configuration before creating the API instance. Document the unstable status in a code comment and test helper.

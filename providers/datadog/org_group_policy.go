@@ -90,4 +90,3 @@ func (g *OrgGroupPolicyGenerator) InitResources() error {
 	g.Resources = resources
 	return nil
 }
-

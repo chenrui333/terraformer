@@ -87,4 +87,3 @@ func (g *OrgGroupMembershipGenerator) InitResources() error {
 	g.Resources = resources
 	return nil
 }
-
