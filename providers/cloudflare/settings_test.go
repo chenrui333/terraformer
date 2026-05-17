@@ -226,8 +226,11 @@ func TestCloudflareManagedTransformsStatePreservesEmptyRequiredSets(t *testing.T
 
 func TestCloudflareZoneHoldConfigured(t *testing.T) {
 	hold := true
+	released := false
 	includeSubdomains := true
-	holdAfter := time.Now().UTC()
+	now := time.Date(2026, time.May, 17, 12, 0, 0, 0, time.UTC)
+	futureHoldAfter := now.Add(time.Hour)
+	pastHoldAfter := now.Add(-time.Hour)
 
 	for _, tt := range []struct {
 		name    string
@@ -235,12 +238,15 @@ func TestCloudflareZoneHoldConfigured(t *testing.T) {
 		want    bool
 	}{
 		{name: "empty", setting: cf.ZoneHold{}, want: false},
-		{name: "hold", setting: cf.ZoneHold{Hold: &hold}, want: true},
-		{name: "include subdomains", setting: cf.ZoneHold{IncludeSubdomains: &includeSubdomains}, want: true},
-		{name: "hold after", setting: cf.ZoneHold{HoldAfter: &holdAfter}, want: true},
+		{name: "active hold", setting: cf.ZoneHold{Hold: &hold}, want: true},
+		{name: "include subdomains without hold signal", setting: cf.ZoneHold{IncludeSubdomains: &includeSubdomains}, want: true},
+		{name: "future hold after without hold signal", setting: cf.ZoneHold{HoldAfter: &futureHoldAfter}, want: true},
+		{name: "released hold without hold after", setting: cf.ZoneHold{Hold: &released, IncludeSubdomains: &includeSubdomains}, want: false},
+		{name: "released hold with past hold after", setting: cf.ZoneHold{Hold: &released, IncludeSubdomains: &includeSubdomains, HoldAfter: &pastHoldAfter}, want: false},
+		{name: "released hold with future hold after", setting: cf.ZoneHold{Hold: &released, HoldAfter: &futureHoldAfter}, want: true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := cloudflareZoneHoldConfigured(tt.setting); got != tt.want {
+			if got := cloudflareZoneHoldConfiguredAt(tt.setting, now); got != tt.want {
 				t.Fatalf("cloudflareZoneHoldConfigured() = %t, want %t", got, tt.want)
 			}
 		})
@@ -249,9 +255,22 @@ func TestCloudflareZoneHoldConfigured(t *testing.T) {
 
 func TestCloudflareZoneHoldAttributes(t *testing.T) {
 	includeSubdomains := true
-	attributes := cloudflareZoneHoldAttributes(cf.ZoneHold{IncludeSubdomains: &includeSubdomains})
+	now := time.Date(2026, time.May, 17, 12, 0, 0, 0, time.UTC)
+	futureHoldAfter := now.Add(time.Hour)
+	pastHoldAfter := now.Add(-time.Hour)
+	attributes := cloudflareZoneHoldAttributesAt(cf.ZoneHold{
+		IncludeSubdomains: &includeSubdomains,
+		HoldAfter:         &futureHoldAfter,
+	}, now)
 	if got := attributes["include_subdomains"]; got != "true" {
 		t.Fatalf("include_subdomains = %q, want true", got)
+	}
+	if got := attributes["hold_after"]; got != futureHoldAfter.Format(time.RFC3339Nano) {
+		t.Fatalf("hold_after = %q, want %q", got, futureHoldAfter.Format(time.RFC3339Nano))
+	}
+	attributes = cloudflareZoneHoldAttributesAt(cf.ZoneHold{HoldAfter: &pastHoldAfter}, now)
+	if _, ok := attributes["hold_after"]; ok {
+		t.Fatal("past hold_after should not be seeded")
 	}
 }
 

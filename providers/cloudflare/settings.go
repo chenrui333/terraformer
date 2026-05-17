@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
@@ -701,15 +702,32 @@ func cloudflareZoneCacheVariantsConfigured(value cf.ZoneCacheVariantsValues) boo
 }
 
 func cloudflareZoneHoldConfigured(setting cf.ZoneHold) bool {
-	return (setting.Hold != nil && *setting.Hold) ||
-		(setting.IncludeSubdomains != nil && *setting.IncludeSubdomains) ||
-		setting.HoldAfter != nil
+	return cloudflareZoneHoldConfiguredAt(setting, time.Now())
+}
+
+func cloudflareZoneHoldConfiguredAt(setting cf.ZoneHold, now time.Time) bool {
+	if setting.Hold != nil {
+		return *setting.Hold || cloudflareZoneHoldAfterIsFuture(setting, now)
+	}
+	return (setting.IncludeSubdomains != nil && *setting.IncludeSubdomains) ||
+		cloudflareZoneHoldAfterIsFuture(setting, now)
+}
+
+func cloudflareZoneHoldAfterIsFuture(setting cf.ZoneHold, now time.Time) bool {
+	return setting.HoldAfter != nil && setting.HoldAfter.After(now)
 }
 
 func cloudflareZoneHoldAttributes(setting cf.ZoneHold) map[string]string {
+	return cloudflareZoneHoldAttributesAt(setting, time.Now())
+}
+
+func cloudflareZoneHoldAttributesAt(setting cf.ZoneHold, now time.Time) map[string]string {
 	attributes := map[string]string{}
 	if setting.IncludeSubdomains != nil {
 		attributes["include_subdomains"] = strconv.FormatBool(*setting.IncludeSubdomains)
+	}
+	if cloudflareZoneHoldAfterIsFuture(setting, now) {
+		attributes["hold_after"] = setting.HoldAfter.Format(time.RFC3339Nano)
 	}
 	return attributes
 }
