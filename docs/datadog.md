@@ -410,12 +410,14 @@ The following Terraform provider resources have been evaluated and cannot be saf
 | `datadog_integration_fastly_account` | `api_key` is required and sensitive; read API does not return it. |
 | `datadog_integration_ms_teams_workflows_webhook_handle` | `url` is required and sensitive; read API does not return it. |
 | `datadog_integration_opsgenie_service_object` | `opsgenie_api_key` is required and sensitive; Datadog API explicitly never returns it. |
+| `datadog_logs_custom_destination` | Deferred because credential-backed destination variants preserve secret values from existing Terraform state and the Datadog API does not return those values. |
 | `datadog_secure_embed_dashboard` | Deferred because Datadog exposes secure embeds by `dashboard_id:token` only; the API and provider import path require the token and do not provide a list/token discovery endpoint. |
 | `datadog_app_key_registration` | Required `id` configuration attribute is stripped during Terraformer HCL conversion, producing an empty resource block that fails validation. |
 | `datadog_org_group_policy_override` | Delete resets the target org config value to the parent policy, and server-created overrides make broad discovery noisy and potentially ephemeral. |
 | `datadog_webhook_custom_variable` | Provider import seeds only `id`, but provider read looks up the variable by `name`; Terraformer cannot safely refresh the required name/value state from a broad ID import. |
 | `datadog_integration_aws_external_id` | Creates a short-lived external ID operation; provider read is a no-op and delete only removes Terraform state. |
 | `datadog_action_connection` | Deferred until a dedicated importer handles AWS versus HTTP credential-backed variants and the HTTP token-auth read path that omits sensitive token values. |
+| `datadog_datastore_item` | Datastore items are high-cardinality datastore row data; broad import would turn arbitrary data-plane records into Terraform-owned configuration. |
 | `datadog_child_organization` | The provider read path is a no-op after create, delete is not supported, and create returns sensitive generated API/application key material that cannot be reconstructed by broad import. |
 | `datadog_cloud_workload_security_agent_rule` | Deprecated in favor of the already registered `datadog_csm_threats_agent_rule`, so broad import would risk duplicate ownership of the same agent rules. |
 | `datadog_compliance_custom_framework` | Deferred because the API supports get/update/delete by `handle/version` but exposes no broad list endpoint to discover custom framework handles and versions. |
