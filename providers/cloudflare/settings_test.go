@@ -334,16 +334,12 @@ func TestCloudflareZoneDNSSECResource(t *testing.T) {
 		t.Fatal("nil dnssec_use_nsec3 should not be seeded")
 	}
 	for _, key := range cloudflareZoneDNSSECComputedKeys {
-		found := false
-		for _, ignoreKey := range resource.IgnoreKeys {
-			if ignoreKey == key {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !cloudflareResourceIgnoresKey(resource, key) {
 			t.Fatalf("DNSSEC resource should ignore computed key %q", key)
 		}
+	}
+	if cloudflareResourceIgnoresKey(resource, "^status$") {
+		t.Fatal("configurable DNSSEC status should not be ignored")
 	}
 
 	transitionalResource := cloudflareZoneDNSSECResource(zone, cloudflareZoneDNSSECSetting{
@@ -356,6 +352,18 @@ func TestCloudflareZoneDNSSECResource(t *testing.T) {
 	if got := transitionalResource.InstanceState.Attributes["dnssec_use_nsec3"]; got != "true" {
 		t.Fatalf("dnssec_use_nsec3 = %q, want true", got)
 	}
+	if !cloudflareResourceIgnoresKey(transitionalResource, "^status$") {
+		t.Fatal("transitional DNSSEC status should be ignored after provider refresh")
+	}
+}
+
+func cloudflareResourceIgnoresKey(resource terraformutils.Resource, key string) bool {
+	for _, ignoreKey := range resource.IgnoreKeys {
+		if ignoreKey == key {
+			return true
+		}
+	}
+	return false
 }
 
 func TestCloudflareZoneHoldAttributes(t *testing.T) {
