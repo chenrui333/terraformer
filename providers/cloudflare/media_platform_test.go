@@ -22,87 +22,6 @@ func TestCloudflareProviderIncludesMediaPlatformService(t *testing.T) {
 	}
 }
 
-func TestNewCloudflareAIGatewayResource(t *testing.T) {
-	resource, ok := newCloudflareAIGatewayResource("account-123", cloudflareMediaPlatformRawResource{
-		"id":                         "gateway-123",
-		"cache_invalidate_on_update": true,
-		"cache_ttl":                  float64(600),
-		"collect_logs":               true,
-		"rate_limiting_interval":     float64(60),
-		"rate_limiting_limit":        float64(1000),
-	})
-	if !ok {
-		t.Fatal("expected AI Gateway resource")
-	}
-	if resource.InstanceInfo.Type != "cloudflare_ai_gateway" {
-		t.Fatalf("resource type = %q, want cloudflare_ai_gateway", resource.InstanceInfo.Type)
-	}
-	if got := resource.InstanceState.Meta["import_id"]; got != "account-123/gateway-123" {
-		t.Fatalf("import_id = %q, want account-123/gateway-123", got)
-	}
-	for key, want := range map[string]interface{}{
-		"id":                     "gateway-123",
-		"cache_ttl":              600,
-		"rate_limiting_interval": 60,
-		"rate_limiting_limit":    1000,
-	} {
-		if got := resource.AdditionalFields[key]; got != want {
-			t.Fatalf("AdditionalFields[%s] = %#v, want %#v", key, got, want)
-		}
-	}
-	for key, want := range map[string]string{
-		"account_id":                 "account-123",
-		"cache_invalidate_on_update": "true",
-		"cache_ttl":                  "600",
-		"collect_logs":               "true",
-		"rate_limiting_interval":     "60",
-		"rate_limiting_limit":        "1000",
-	} {
-		if got := resource.InstanceState.Attributes[key]; got != want {
-			t.Fatalf("attribute %s = %q, want %q", key, got, want)
-		}
-	}
-	for _, key := range []string{
-		"cache_invalidate_on_update",
-		"cache_ttl",
-		"collect_logs",
-		"rate_limiting_interval",
-		"rate_limiting_limit",
-	} {
-		assertCloudflareMediaPlatformAllowEmptyValue(t, resource, key)
-	}
-}
-
-func TestNewCloudflareAIGatewayResourcePreservesNullableRequiredFields(t *testing.T) {
-	resource, ok := newCloudflareAIGatewayResource("account-123", cloudflareMediaPlatformRawResource{
-		"id":                     "gateway-null",
-		"cache_ttl":              nil,
-		"rate_limiting_interval": nil,
-		"rate_limiting_limit":    nil,
-	})
-	if !ok {
-		t.Fatal("expected AI Gateway resource")
-	}
-	for key, want := range map[string]interface{}{
-		"cache_ttl":              0,
-		"rate_limiting_interval": 0,
-		"rate_limiting_limit":    0,
-	} {
-		if got := resource.AdditionalFields[key]; got != want {
-			t.Fatalf("AdditionalFields[%s] = %#v, want %#v", key, got, want)
-		}
-	}
-	for key, want := range map[string]string{
-		"cache_ttl":              "0",
-		"rate_limiting_interval": "0",
-		"rate_limiting_limit":    "0",
-	} {
-		if got := resource.InstanceState.Attributes[key]; got != want {
-			t.Fatalf("attribute %s = %q, want %q", key, got, want)
-		}
-	}
-}
-
 func TestCloudflareMediaPlatformOptionalErrorMessageDoesNotHideGenericNotFound(t *testing.T) {
 	if cloudflareMediaPlatformOptionalErrorMessage("not found", nil) {
 		t.Fatal("generic not found should not be treated as optional")
@@ -143,35 +62,6 @@ func TestCloudflareMediaPlatformOptionalDiscoveryErrorDoesNotHideGenericNotFound
 	}
 	if !cloudflareMediaPlatformOptionalDiscoveryError(testCloudflareNotFoundError("feature is not available for this account")) {
 		t.Fatal("feature-gated not found errors should be treated as optional")
-	}
-}
-
-func TestCloudflareAIGatewayImportableSkipsCredentialBackedConfig(t *testing.T) {
-	tests := []struct {
-		name    string
-		gateway cloudflareMediaPlatformRawResource
-		want    bool
-	}{
-		{name: "plain", gateway: cloudflareMediaPlatformRawResource{"id": "gateway-123"}, want: true},
-		{name: "stripe", gateway: cloudflareMediaPlatformRawResource{
-			"id":     "gateway-123",
-			"stripe": map[string]interface{}{"authorization": "Bearer secret"},
-		}, want: false},
-		{name: "redacted stripe", gateway: cloudflareMediaPlatformRawResource{
-			"id":     "gateway-123",
-			"stripe": map[string]interface{}{},
-		}, want: false},
-		{name: "otel", gateway: cloudflareMediaPlatformRawResource{
-			"id":   "gateway-123",
-			"otel": []interface{}{map[string]interface{}{"authorization": "Bearer secret"}},
-		}, want: false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := cloudflareMediaPlatformAIGatewayImportable(tt.gateway); got != tt.want {
-				t.Fatalf("cloudflareMediaPlatformAIGatewayImportable() = %v, want %v", got, tt.want)
-			}
-		})
 	}
 }
 
@@ -256,9 +146,6 @@ func TestNewCloudflarePipelineStreamResource(t *testing.T) {
 }
 
 func TestCloudflareMediaPlatformResourceConstructorsSkipMissingRequiredFields(t *testing.T) {
-	if _, ok := newCloudflareAIGatewayResource("account-123", cloudflareMediaPlatformRawResource{}); ok {
-		t.Fatal("expected AI Gateway without ID to be skipped")
-	}
 	if _, ok := newCloudflareImageVariantResource("account-123", cloudflareMediaPlatformRawResource{"id": "thumb"}); ok {
 		t.Fatal("expected image variant without options to be skipped")
 	}
@@ -407,17 +294,6 @@ func TestListCloudflareImageVariantResourcesHandlesMapResponse(t *testing.T) {
 func TestAppendMediaPlatformResourcesDiscoversSupportedResources(t *testing.T) {
 	api := newCloudflareMediaPlatformTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/accounts/account-123/ai-gateway/gateways":
-			writeCloudflareMediaPlatformTestResponse(t, w, []map[string]interface{}{
-				{
-					"id":                         "gateway-123",
-					"cache_invalidate_on_update": false,
-					"cache_ttl":                  60,
-					"collect_logs":               true,
-					"rate_limiting_interval":     10,
-					"rate_limiting_limit":        100,
-				},
-			}, nil)
 		case "/accounts/account-123/images/v1/variants":
 			writeCloudflareMediaPlatformTestResponse(t, w, map[string]interface{}{
 				"variants": map[string]interface{}{
@@ -451,15 +327,14 @@ func TestAppendMediaPlatformResourcesDiscoversSupportedResources(t *testing.T) {
 	if err := g.appendMediaPlatformResources(context.Background(), api, "account-123"); err != nil {
 		t.Fatalf("appendMediaPlatformResources() error = %v", err)
 	}
-	if len(g.Resources) != 4 {
-		t.Fatalf("resource count = %d, want 4", len(g.Resources))
+	if len(g.Resources) != 3 {
+		t.Fatalf("resource count = %d, want 3", len(g.Resources))
 	}
 	got := map[string]string{}
 	for _, resource := range g.Resources {
 		got[resource.InstanceInfo.Type] = resource.InstanceState.Meta["import_id"].(string)
 	}
 	for resourceType, wantImportID := range map[string]string{
-		"cloudflare_ai_gateway":      "account-123/gateway-123",
 		"cloudflare_image_variant":   "account-123/thumb",
 		"cloudflare_pipeline":        "account-123/pipeline-123",
 		"cloudflare_pipeline_stream": "account-123/stream-123",
@@ -484,6 +359,7 @@ func TestMediaPlatformUnsupportedResourcesMetadata(t *testing.T) {
 		seen[resource.Resource] = true
 	}
 	for _, resource := range []string{
+		"cloudflare_ai_gateway",
 		"cloudflare_ai_search_instance",
 		"cloudflare_calls_sfu_app",
 		"cloudflare_calls_turn_app",
@@ -497,17 +373,6 @@ func TestMediaPlatformUnsupportedResourcesMetadata(t *testing.T) {
 			t.Fatalf("unsupported metadata is missing %s", resource)
 		}
 	}
-}
-
-func assertCloudflareMediaPlatformAllowEmptyValue(t *testing.T, resource terraformutils.Resource, key string) {
-	t.Helper()
-
-	for _, value := range resource.AllowEmptyValues {
-		if value == key {
-			return
-		}
-	}
-	t.Fatalf("AllowEmptyValues = %#v, want %q", resource.AllowEmptyValues, key)
 }
 
 func newCloudflareMediaPlatformTestAPI(t *testing.T, handler http.Handler) *cf.API {

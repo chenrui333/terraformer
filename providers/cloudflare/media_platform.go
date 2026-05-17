@@ -218,48 +218,6 @@ func cloudflareMediaPlatformBoolAttribute(resource cloudflareMediaPlatformRawRes
 	return strconv.FormatBool(value)
 }
 
-func cloudflareMediaPlatformIntAttribute(resource cloudflareMediaPlatformRawResource, key string) string {
-	switch value := resource[key].(type) {
-	case int:
-		return strconv.Itoa(value)
-	case int64:
-		return strconv.FormatInt(value, 10)
-	case float64:
-		return strconv.FormatInt(int64(value), 10)
-	case json.Number:
-		return value.String()
-	case string:
-		if value != "" {
-			return value
-		}
-	}
-	return "0"
-}
-
-func cloudflareMediaPlatformIntAdditionalField(resource cloudflareMediaPlatformRawResource, key string) int {
-	switch value := resource[key].(type) {
-	case int:
-		return value
-	case int64:
-		return int(value)
-	case float64:
-		return int(value)
-	case json.Number:
-		parsed, err := strconv.ParseFloat(value.String(), 64)
-		if err == nil {
-			return int(parsed)
-		}
-	case string:
-		if value != "" {
-			parsed, err := strconv.ParseFloat(value, 64)
-			if err == nil {
-				return int(parsed)
-			}
-		}
-	}
-	return 0
-}
-
 func cloudflareMediaPlatformFloatAttribute(resource cloudflareMediaPlatformRawResource, key string) (string, bool) {
 	switch value := resource[key].(type) {
 	case int:
@@ -290,46 +248,6 @@ func cloudflareMediaPlatformObject(resource cloudflareMediaPlatformRawResource, 
 		return nil, false
 	}
 	return cloudflareMediaPlatformRawResource(object), true
-}
-
-func cloudflareMediaPlatformAIGatewayImportable(gateway cloudflareMediaPlatformRawResource) bool {
-	if value, ok := gateway["stripe"]; ok && value != nil {
-		return false
-	}
-	if otel, ok := gateway["otel"].([]interface{}); ok && len(otel) > 0 {
-		return false
-	}
-	return true
-}
-
-func newCloudflareAIGatewayResource(accountID string, gateway cloudflareMediaPlatformRawResource) (terraformutils.Resource, bool) {
-	id := cloudflareMediaPlatformString(gateway, "id")
-	if id == "" || !cloudflareMediaPlatformAIGatewayImportable(gateway) {
-		return terraformutils.Resource{}, false
-	}
-	attributes := map[string]string{
-		"cache_invalidate_on_update": cloudflareMediaPlatformBoolAttribute(gateway, "cache_invalidate_on_update"),
-		"cache_ttl":                  cloudflareMediaPlatformIntAttribute(gateway, "cache_ttl"),
-		"collect_logs":               cloudflareMediaPlatformBoolAttribute(gateway, "collect_logs"),
-		"rate_limiting_interval":     cloudflareMediaPlatformIntAttribute(gateway, "rate_limiting_interval"),
-		"rate_limiting_limit":        cloudflareMediaPlatformIntAttribute(gateway, "rate_limiting_limit"),
-	}
-	resource, ok := cloudflareAccountMediaPlatformResource(accountID, id, "cloudflare_ai_gateway", "ai_gateway", attributes)
-	if !ok {
-		return resource, false
-	}
-	resource.AllowEmptyValues = append(resource.AllowEmptyValues,
-		"cache_invalidate_on_update",
-		"cache_ttl",
-		"collect_logs",
-		"rate_limiting_interval",
-		"rate_limiting_limit",
-	)
-	resource.AdditionalFields["id"] = id
-	resource.AdditionalFields["cache_ttl"] = cloudflareMediaPlatformIntAdditionalField(gateway, "cache_ttl")
-	resource.AdditionalFields["rate_limiting_interval"] = cloudflareMediaPlatformIntAdditionalField(gateway, "rate_limiting_interval")
-	resource.AdditionalFields["rate_limiting_limit"] = cloudflareMediaPlatformIntAdditionalField(gateway, "rate_limiting_limit")
-	return resource, true
 }
 
 func newCloudflareImageVariantResource(accountID string, variant cloudflareMediaPlatformRawResource) (terraformutils.Resource, bool) {
@@ -391,24 +309,6 @@ func newCloudflarePipelineStreamResource(accountID string, stream cloudflareMedi
 	return cloudflareAccountMediaPlatformResource(accountID, id, "cloudflare_pipeline_stream", "pipeline_stream", attributes, name)
 }
 
-func (g *MediaPlatformGenerator) appendAIGatewayResources(ctx context.Context, api *cf.API, accountID string) error {
-	gateways, err := listCloudflareMediaPlatformResources(ctx, api, fmt.Sprintf("/accounts/%s/ai-gateway/gateways", accountID))
-	if err != nil {
-		return err
-	}
-	for _, gateway := range gateways {
-		resource, ok := newCloudflareAIGatewayResource(accountID, gateway)
-		if !ok {
-			if cloudflareMediaPlatformString(gateway, "id") != "" {
-				log.Printf("Skipping Cloudflare AI Gateway %s because it has credential-backed OTEL or Stripe configuration", cloudflareMediaPlatformString(gateway, "id"))
-			}
-			continue
-		}
-		g.Resources = append(g.Resources, resource)
-	}
-	return nil
-}
-
 func (g *MediaPlatformGenerator) appendImageVariantResources(ctx context.Context, api *cf.API, accountID string) error {
 	variants, err := listCloudflareImageVariantResources(ctx, api, accountID)
 	if err != nil {
@@ -456,14 +356,6 @@ func (g *MediaPlatformGenerator) appendPipelineStreamResources(ctx context.Conte
 
 func (g *MediaPlatformGenerator) appendMediaPlatformResources(ctx context.Context, api *cf.API, accountID string) error {
 	return runCloudflareMediaPlatformDiscoveries([]cloudflareMediaPlatformDiscovery{
-		{
-			name:      "AI Gateway",
-			scope:     accountID,
-			resources: &g.Resources,
-			discover: func() error {
-				return g.appendAIGatewayResources(ctx, api, accountID)
-			},
-		},
 		{
 			name:      "Images variants",
 			scope:     accountID,

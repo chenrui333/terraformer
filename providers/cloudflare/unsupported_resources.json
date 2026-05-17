@@ -46,6 +46,17 @@
       ]
     },
     {
+      "resource": "cloudflare_ai_gateway",
+      "service_family": "ai",
+      "reason": "AI Gateway read state does not currently round-trip safely for broad Terraformer import.",
+      "evidence": "Terraform provider v5.19.1 supports account_id/id import, but common gateways with unset DLP, Stripe, OTEL, cache, or rate-limit fields refresh with null or empty nested objects that Terraformer cannot distinguish from user-authored configuration. Emitting zero-valued nullable limits or omitting empty nested objects produces immediate in-place plan drift, while Stripe and OTEL integrations may require unrecoverable credential material.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/ai_gateway"
+      ]
+    },
+    {
       "resource": "cloudflare_ai_search_instance",
       "service_family": "ai",
       "reason": "AI Search instances can include user-authored no-refresh prompt and summarization configuration that broad import cannot fully reconstruct.",
