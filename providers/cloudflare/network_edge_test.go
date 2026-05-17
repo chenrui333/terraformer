@@ -194,6 +194,44 @@ func TestRunCloudflareNetworkEdgeDiscoveriesContinuesAfterOptionalError(t *testi
 	}
 }
 
+func TestAppendNetworkEdgeResourcesContinuesToAccountResourcesAfterZoneListingError(t *testing.T) {
+	api := newCloudflareNetworkEdgeTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/accounts/account-123/addressing/address_maps":
+			writeCloudflareNetworkEdgeTestResponse(t, w, []map[string]string{
+				{"id": "map-123", "description": "production"},
+			}, nil)
+		case "/accounts/account-123/mnm/rules", "/accounts/account-123/magic/sites":
+			writeCloudflareNetworkEdgeTestResponse(t, w, []map[string]string{}, nil)
+		default:
+			t.Fatalf("unexpected account discovery path %q", r.URL.Path)
+		}
+	}))
+	g := &NetworkEdgeGenerator{}
+
+	err := g.appendNetworkEdgeResources(context.Background(), api, nil, errors.New("zone read denied"), "account-123")
+	if err != nil {
+		t.Fatalf("appendNetworkEdgeResources() error = %v, want nil", err)
+	}
+	if len(g.Resources) != 1 {
+		t.Fatalf("resource count = %d, want 1", len(g.Resources))
+	}
+	if got := g.Resources[0].InstanceInfo.Type; got != "cloudflare_address_map" {
+		t.Fatalf("resource type = %q, want cloudflare_address_map", got)
+	}
+	if got := g.Resources[0].InstanceState.Meta["import_id"]; got != "account-123/map-123" {
+		t.Fatalf("import_id = %q, want account-123/map-123", got)
+	}
+}
+
+func TestAppendNetworkEdgeResourcesReturnsZoneListingErrorWithoutAccountID(t *testing.T) {
+	g := &NetworkEdgeGenerator{}
+	err := g.appendNetworkEdgeResources(context.Background(), nil, nil, errors.New("zone read denied"), "")
+	if err == nil {
+		t.Fatal("expected zone listing error without account ID")
+	}
+}
+
 func TestCloudflareNetworkEdgeOptionalErrorMessageDoesNotHideGenericNotFound(t *testing.T) {
 	if cloudflareNetworkEdgeOptionalErrorMessage("not found", nil) {
 		t.Fatal("generic not found should not be treated as optional")

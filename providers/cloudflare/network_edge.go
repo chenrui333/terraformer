@@ -543,6 +543,32 @@ func (g *NetworkEdgeGenerator) appendAccountNetworkEdgeResources(ctx context.Con
 	})
 }
 
+func (g *NetworkEdgeGenerator) appendNetworkEdgeResources(
+	ctx context.Context,
+	api *cf.API,
+	zones []cf.Zone,
+	zonesErr error,
+	accountID string,
+) error {
+	if zonesErr != nil {
+		if accountID == "" {
+			return zonesErr
+		}
+		log.Printf("Skipping Cloudflare network edge zone discovery: %v", zonesErr)
+	} else {
+		for _, zone := range zones {
+			if err := g.appendZoneNetworkEdgeResources(ctx, api, zone); err != nil {
+				return err
+			}
+		}
+	}
+
+	if accountID == "" {
+		return nil
+	}
+	return g.appendAccountNetworkEdgeResources(ctx, api, accountID)
+}
+
 func (g *NetworkEdgeGenerator) InitResources() error {
 	ctx := context.Background()
 	api, err := g.initializeAPI()
@@ -550,19 +576,6 @@ func (g *NetworkEdgeGenerator) InitResources() error {
 		return err
 	}
 
-	zones, err := cloudflareZones(ctx, api)
-	if err != nil {
-		return err
-	}
-	for _, zone := range zones {
-		if err := g.appendZoneNetworkEdgeResources(ctx, api, zone); err != nil {
-			return err
-		}
-	}
-
-	accountID := g.accountID()
-	if accountID == "" {
-		return nil
-	}
-	return g.appendAccountNetworkEdgeResources(ctx, api, accountID)
+	zones, zonesErr := cloudflareZones(ctx, api)
+	return g.appendNetworkEdgeResources(ctx, api, zones, zonesErr, g.accountID())
 }
