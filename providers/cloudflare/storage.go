@@ -26,6 +26,55 @@ type r2BucketListResult struct {
 	Buckets []cf.R2Bucket
 }
 
+type cloudflareQueueConsumer struct {
+	ConsumerID      string `json:"consumer_id"`
+	DeadLetterQueue string `json:"dead_letter_queue"`
+	ScriptName      string `json:"script_name"`
+	Type            string `json:"type"`
+}
+
+type cloudflareR2RulesResponse struct {
+	Rules []json.RawMessage `json:"rules"`
+}
+
+type cloudflareR2BucketEventNotificationList struct {
+	Queues []cloudflareR2BucketEventNotificationQueue `json:"queues"`
+}
+
+type cloudflareR2BucketEventNotificationQueue struct {
+	QueueID   string                                    `json:"queueId"`
+	QueueName string                                    `json:"queueName"`
+	Rules     []cloudflareR2BucketEventNotificationRule `json:"rules"`
+}
+
+type cloudflareR2BucketEventNotificationRule struct {
+	Actions     []string `json:"actions"`
+	Description string   `json:"description"`
+	Prefix      string   `json:"prefix"`
+	Suffix      string   `json:"suffix"`
+}
+
+type cloudflareR2CustomDomainList struct {
+	Domains []cloudflareR2CustomDomain `json:"domains"`
+}
+
+type cloudflareR2CustomDomain struct {
+	Ciphers  []string `json:"ciphers"`
+	Domain   string   `json:"domain"`
+	Enabled  bool     `json:"enabled"`
+	MinTLS   string   `json:"minTLS"`
+	ZoneID   string   `json:"zoneId"`
+	ZoneName string   `json:"zoneName"`
+}
+
+type cloudflareR2DataCatalog struct {
+	Bucket           string `json:"bucket"`
+	CredentialStatus string `json:"credential_status"`
+	ID               string `json:"id"`
+	Name             string `json:"name"`
+	Status           string `json:"status"`
+}
+
 func cloudflareUnsupportedJurisdictionError(err error) bool {
 	var notFoundErr *cf.NotFoundError
 	if errors.As(err, &notFoundErr) {
@@ -52,6 +101,33 @@ func cloudflareErrorIndicatesUnsupportedJurisdiction(message string, errorMessag
 		}
 	}
 	return false
+}
+
+func cloudflareR2JurisdictionHeaders(jurisdiction string) http.Header {
+	headers := http.Header{}
+	if jurisdiction != "" {
+		headers.Set("cf-r2-jurisdiction", jurisdiction)
+	}
+	return headers
+}
+
+func cloudflareRawGetOptional(
+	ctx context.Context,
+	api *cf.API,
+	path string,
+	headers http.Header,
+) (json.RawMessage, bool, error) {
+	response, err := api.Raw(ctx, http.MethodGet, path, nil, headers)
+	if err != nil {
+		if cloudflareNotFoundError(err) || cloudflareUnsupportedJurisdictionError(err) {
+			return nil, false, nil
+		}
+		return nil, false, err
+	}
+	if len(response.Result) == 0 || string(response.Result) == "null" {
+		return nil, false, nil
+	}
+	return response.Result, true, nil
 }
 
 func listR2BucketsInJurisdiction(
@@ -98,6 +174,188 @@ func listR2BucketsInJurisdiction(
 	return buckets, nil
 }
 
+func addCloudflareStringListAttributes(attributes map[string]string, name string, values []string) {
+	attributes[name+".#"] = strconv.Itoa(len(values))
+	for i, value := range values {
+		attributes[fmt.Sprintf("%s.%d", name, i)] = value
+	}
+}
+
+func newCloudflareQueueConsumerResource(
+	accountID string,
+	queue cf.Queue,
+	consumer cloudflareQueueConsumer,
+) (terraformutils.Resource, bool) {
+	if queue.ID == "" || consumer.ConsumerID == "" || consumer.Type == "" {
+		return terraformutils.Resource{}, false
+	}
+	attributes := map[string]string{
+		"account_id":  accountID,
+		"consumer_id": consumer.ConsumerID,
+		"queue_id":    queue.ID,
+		"type":        consumer.Type,
+	}
+	if consumer.DeadLetterQueue != "" {
+		attributes["dead_letter_queue"] = consumer.DeadLetterQueue
+	}
+	if consumer.ScriptName != "" {
+		attributes["script_name"] = consumer.ScriptName
+	}
+	return terraformutils.NewResource(
+		cloudflareResourceName(accountID, queue.ID, consumer.ConsumerID),
+		cloudflareResourceName(accountID, queue.Name, queue.ID, consumer.ConsumerID),
+		"cloudflare_queue_consumer",
+		"cloudflare",
+		attributes,
+		[]string{},
+		map[string]interface{}{},
+	), true
+}
+
+func newCloudflareR2BucketConfigResource(
+	accountID string,
+	bucketName string,
+	jurisdiction string,
+	resourceType string,
+) terraformutils.Resource {
+	resourceName := strings.TrimPrefix(resourceType, "cloudflare_")
+	return terraformutils.NewResource(
+		cloudflareResourceName(accountID, bucketName, jurisdiction, resourceName),
+		cloudflareResourceName(accountID, jurisdiction, bucketName, resourceName),
+		resourceType,
+		"cloudflare",
+		map[string]string{
+			"account_id":   accountID,
+			"bucket_name":  bucketName,
+			"jurisdiction": jurisdiction,
+		},
+		[]string{},
+		map[string]interface{}{},
+	)
+}
+
+func newCloudflareR2BucketEventNotificationResource(
+	accountID string,
+	bucketName string,
+	jurisdiction string,
+	queue cloudflareR2BucketEventNotificationQueue,
+) (terraformutils.Resource, bool) {
+	if queue.QueueID == "" {
+		return terraformutils.Resource{}, false
+	}
+	attributes := map[string]string{
+		"account_id":   accountID,
+		"bucket_name":  bucketName,
+		"jurisdiction": jurisdiction,
+		"queue_id":     queue.QueueID,
+	}
+	if queue.QueueName != "" {
+		attributes["queue_name"] = queue.QueueName
+	}
+	validRules := 0
+	for _, rule := range queue.Rules {
+		if len(rule.Actions) == 0 {
+			continue
+		}
+		prefix := fmt.Sprintf("rules.%d", validRules)
+		addCloudflareStringListAttributes(attributes, prefix+".actions", rule.Actions)
+		if rule.Description != "" {
+			attributes[prefix+".description"] = rule.Description
+		}
+		if rule.Prefix != "" {
+			attributes[prefix+".prefix"] = rule.Prefix
+		}
+		if rule.Suffix != "" {
+			attributes[prefix+".suffix"] = rule.Suffix
+		}
+		validRules++
+	}
+	if validRules == 0 {
+		return terraformutils.Resource{}, false
+	}
+	attributes["rules.#"] = strconv.Itoa(validRules)
+	return terraformutils.NewResource(
+		cloudflareResourceName(accountID, bucketName, jurisdiction, queue.QueueID),
+		cloudflareResourceName(accountID, jurisdiction, bucketName, queue.QueueName, queue.QueueID),
+		"cloudflare_r2_bucket_event_notification",
+		"cloudflare",
+		attributes,
+		[]string{},
+		map[string]interface{}{},
+	), true
+}
+
+func newCloudflareR2CustomDomainResource(
+	accountID string,
+	bucketName string,
+	jurisdiction string,
+	domain cloudflareR2CustomDomain,
+) (terraformutils.Resource, bool) {
+	if domain.Domain == "" || domain.ZoneID == "" {
+		return terraformutils.Resource{}, false
+	}
+	attributes := map[string]string{
+		"account_id":   accountID,
+		"bucket_name":  bucketName,
+		"domain":       domain.Domain,
+		"enabled":      strconv.FormatBool(domain.Enabled),
+		"jurisdiction": jurisdiction,
+		"zone_id":      domain.ZoneID,
+	}
+	if domain.MinTLS != "" {
+		attributes["min_tls"] = domain.MinTLS
+	}
+	if len(domain.Ciphers) > 0 {
+		addCloudflareStringListAttributes(attributes, "ciphers", domain.Ciphers)
+	}
+	if domain.ZoneName != "" {
+		attributes["zone_name"] = domain.ZoneName
+	}
+	return terraformutils.NewResource(
+		cloudflareResourceName(accountID, bucketName, jurisdiction, domain.Domain),
+		cloudflareResourceName(accountID, jurisdiction, bucketName, domain.Domain),
+		"cloudflare_r2_custom_domain",
+		"cloudflare",
+		attributes,
+		[]string{},
+		map[string]interface{}{},
+	), true
+}
+
+func newCloudflareR2DataCatalogResource(
+	accountID string,
+	bucketName string,
+	catalog cloudflareR2DataCatalog,
+) (terraformutils.Resource, bool) {
+	if catalog.Status != "active" {
+		return terraformutils.Resource{}, false
+	}
+	if catalog.Bucket != "" {
+		bucketName = catalog.Bucket
+	}
+	if bucketName == "" {
+		return terraformutils.Resource{}, false
+	}
+	resourceID := catalog.ID
+	if resourceID == "" {
+		resourceID = bucketName
+	}
+	resource := terraformutils.NewResource(
+		resourceID,
+		cloudflareResourceName(accountID, bucketName, "data_catalog"),
+		"cloudflare_r2_data_catalog",
+		"cloudflare",
+		map[string]string{
+			"account_id":  accountID,
+			"bucket_name": bucketName,
+		},
+		[]string{},
+		map[string]interface{}{},
+	)
+	setCloudflareImportID(&resource, accountID+"/"+bucketName)
+	return resource, true
+}
+
 func (g *StorageGenerator) appendWorkersKVNamespaceResources(ctx context.Context, api *cf.API, accountID string) error {
 	params := cf.ListWorkersKVNamespacesParams{ResultInfo: cf.ResultInfo{Page: 1, PerPage: cloudflarePageSize}}
 	for {
@@ -126,6 +384,37 @@ func (g *StorageGenerator) appendWorkersKVNamespaceResources(ctx context.Context
 	return nil
 }
 
+func (g *StorageGenerator) appendQueueConsumerResources(
+	ctx context.Context,
+	api *cf.API,
+	accountID string,
+	queue cf.Queue,
+) error {
+	if queue.ID == "" {
+		return nil
+	}
+	path := fmt.Sprintf(
+		"/accounts/%s/queues/%s/consumers",
+		accountID,
+		url.PathEscape(queue.ID),
+	)
+	result, found, err := cloudflareRawGetOptional(ctx, api, path, nil)
+	if err != nil || !found {
+		return err
+	}
+	var consumers []cloudflareQueueConsumer
+	if err := json.Unmarshal(result, &consumers); err != nil {
+		return err
+	}
+	for _, consumer := range consumers {
+		resource, ok := newCloudflareQueueConsumerResource(accountID, queue, consumer)
+		if ok {
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
 func (g *StorageGenerator) appendQueueResources(ctx context.Context, api *cf.API, accountID string) error {
 	params := cf.ListQueuesParams{ResultInfo: cf.ResultInfo{Page: 1, PerPage: cloudflarePageSize}}
 	for {
@@ -145,6 +434,9 @@ func (g *StorageGenerator) appendQueueResources(ctx context.Context, api *cf.API
 			)
 			setCloudflareImportID(&resource, accountID+"/"+queue.ID)
 			g.Resources = append(g.Resources, resource)
+			if err := g.appendQueueConsumerResources(ctx, api, accountID, queue); err != nil {
+				return err
+			}
 		}
 		if info == nil || !info.HasMorePages() {
 			break
@@ -154,7 +446,155 @@ func (g *StorageGenerator) appendQueueResources(ctx context.Context, api *cf.API
 	return nil
 }
 
+func (g *StorageGenerator) appendR2BucketConfigChildResources(
+	ctx context.Context,
+	api *cf.API,
+	accountID string,
+	bucketName string,
+	jurisdiction string,
+) error {
+	for _, config := range []struct {
+		resourceType string
+		pathSuffix   string
+	}{
+		{resourceType: "cloudflare_r2_bucket_cors", pathSuffix: "cors"},
+		{resourceType: "cloudflare_r2_bucket_lifecycle", pathSuffix: "lifecycle"},
+		{resourceType: "cloudflare_r2_bucket_lock", pathSuffix: "lock"},
+	} {
+		path := fmt.Sprintf(
+			"/accounts/%s/r2/buckets/%s/%s",
+			accountID,
+			url.PathEscape(bucketName),
+			config.pathSuffix,
+		)
+		result, found, err := cloudflareRawGetOptional(ctx, api, path, cloudflareR2JurisdictionHeaders(jurisdiction))
+		if err != nil {
+			return err
+		}
+		if !found {
+			continue
+		}
+		var rules cloudflareR2RulesResponse
+		if err := json.Unmarshal(result, &rules); err != nil {
+			return err
+		}
+		if len(rules.Rules) == 0 {
+			continue
+		}
+		g.Resources = append(g.Resources, newCloudflareR2BucketConfigResource(accountID, bucketName, jurisdiction, config.resourceType))
+	}
+	return nil
+}
+
+func (g *StorageGenerator) appendR2BucketEventNotificationResources(
+	ctx context.Context,
+	api *cf.API,
+	accountID string,
+	bucketName string,
+	jurisdiction string,
+) error {
+	path := fmt.Sprintf(
+		"/accounts/%s/event_notifications/r2/%s/configuration",
+		accountID,
+		url.PathEscape(bucketName),
+	)
+	result, found, err := cloudflareRawGetOptional(ctx, api, path, cloudflareR2JurisdictionHeaders(jurisdiction))
+	if err != nil || !found {
+		return err
+	}
+	var notifications cloudflareR2BucketEventNotificationList
+	if err := json.Unmarshal(result, &notifications); err != nil {
+		return err
+	}
+	for _, queue := range notifications.Queues {
+		resource, ok := newCloudflareR2BucketEventNotificationResource(accountID, bucketName, jurisdiction, queue)
+		if ok {
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
+func (g *StorageGenerator) appendR2CustomDomainResources(
+	ctx context.Context,
+	api *cf.API,
+	accountID string,
+	bucketName string,
+	jurisdiction string,
+) error {
+	path := fmt.Sprintf(
+		"/accounts/%s/r2/buckets/%s/domains/custom",
+		accountID,
+		url.PathEscape(bucketName),
+	)
+	result, found, err := cloudflareRawGetOptional(ctx, api, path, cloudflareR2JurisdictionHeaders(jurisdiction))
+	if err != nil || !found {
+		return err
+	}
+	var domains cloudflareR2CustomDomainList
+	if err := json.Unmarshal(result, &domains); err != nil {
+		return err
+	}
+	for _, domain := range domains.Domains {
+		resource, ok := newCloudflareR2CustomDomainResource(accountID, bucketName, jurisdiction, domain)
+		if ok {
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
+func (g *StorageGenerator) appendR2DataCatalogResource(
+	ctx context.Context,
+	api *cf.API,
+	accountID string,
+	bucketName string,
+) error {
+	path := fmt.Sprintf(
+		"/accounts/%s/r2-catalog/%s",
+		accountID,
+		url.PathEscape(bucketName),
+	)
+	result, found, err := cloudflareRawGetOptional(ctx, api, path, nil)
+	if err != nil || !found {
+		return err
+	}
+	var catalog cloudflareR2DataCatalog
+	if err := json.Unmarshal(result, &catalog); err != nil {
+		return err
+	}
+	resource, ok := newCloudflareR2DataCatalogResource(accountID, bucketName, catalog)
+	if ok {
+		g.Resources = append(g.Resources, resource)
+	}
+	return nil
+}
+
+func (g *StorageGenerator) appendR2BucketChildResources(
+	ctx context.Context,
+	api *cf.API,
+	accountID string,
+	bucketName string,
+	jurisdiction string,
+	includeDataCatalog bool,
+) error {
+	for _, f := range []func(context.Context, *cf.API, string, string, string) error{
+		g.appendR2BucketConfigChildResources,
+		g.appendR2BucketEventNotificationResources,
+		g.appendR2CustomDomainResources,
+	} {
+		if err := f(ctx, api, accountID, bucketName, jurisdiction); err != nil {
+			return err
+		}
+	}
+	if includeDataCatalog {
+		return g.appendR2DataCatalogResource(ctx, api, accountID, bucketName)
+	}
+	return nil
+}
+
 func (g *StorageGenerator) appendR2BucketResources(ctx context.Context, api *cf.API, accountID string) error {
+	seenDataCatalogBuckets := map[string]bool{}
 	for _, jurisdiction := range r2BucketJurisdictions {
 		buckets, err := listR2BucketsInJurisdiction(ctx, api, accountID, jurisdiction)
 		if err != nil {
@@ -176,6 +616,12 @@ func (g *StorageGenerator) appendR2BucketResources(ctx context.Context, api *cf.
 			)
 			setCloudflareImportID(&resource, accountID+"/"+bucket.Name+"/"+jurisdiction)
 			g.Resources = append(g.Resources, resource)
+
+			includeDataCatalog := !seenDataCatalogBuckets[bucket.Name]
+			seenDataCatalogBuckets[bucket.Name] = true
+			if err := g.appendR2BucketChildResources(ctx, api, accountID, bucket.Name, jurisdiction, includeDataCatalog); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
