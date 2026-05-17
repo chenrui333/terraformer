@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -341,7 +342,12 @@ func (g *SettingsGenerator) appendManagedTransformsResource(ctx context.Context,
 	if !cloudflareManagedTransformsConfigured(setting) {
 		return nil
 	}
-	g.appendZoneSingletonSettingResource(zone, "cloudflare_managed_transforms", "managed_transforms")
+	g.appendZoneSingletonSettingResourceWithAttributes(
+		zone,
+		"cloudflare_managed_transforms",
+		"managed_transforms",
+		cloudflareManagedTransformsAttributes(setting),
+	)
 	return nil
 }
 
@@ -476,7 +482,12 @@ func (g *SettingsGenerator) appendZoneHoldResource(ctx context.Context, api *cf.
 	if !cloudflareZoneHoldConfigured(setting) {
 		return nil
 	}
-	g.appendZoneSingletonSettingResource(zone, "cloudflare_zone_hold", "zone_hold")
+	g.appendZoneSingletonSettingResourceWithAttributes(
+		zone,
+		"cloudflare_zone_hold",
+		"zone_hold",
+		cloudflareZoneHoldAttributes(setting),
+	)
 	return nil
 }
 
@@ -511,12 +522,21 @@ func (g *SettingsGenerator) appendDNSZoneTransfersOutgoingResource(ctx context.C
 }
 
 func (g *SettingsGenerator) appendZoneSingletonSettingResource(zone cf.Zone, resourceType, resourceNameSuffix string) {
+	g.appendZoneSingletonSettingResourceWithAttributes(zone, resourceType, resourceNameSuffix, map[string]string{})
+}
+
+func (g *SettingsGenerator) appendZoneSingletonSettingResourceWithAttributes(zone cf.Zone, resourceType, resourceNameSuffix string, attributes map[string]string) {
+	if attributes == nil {
+		attributes = map[string]string{}
+	}
+	attributes["zone_id"] = zone.ID
+
 	resource := terraformutils.NewResource(
 		zone.ID,
 		cloudflareResourceName(zone.Name, resourceNameSuffix),
 		resourceType,
 		"cloudflare",
-		map[string]string{"zone_id": zone.ID},
+		attributes,
 		[]string{},
 		map[string]interface{}{},
 	)
@@ -568,16 +588,37 @@ func cloudflareSettingIsOn(value string) bool {
 
 func cloudflareManagedTransformsConfigured(setting cloudflareManagedTransformsSetting) bool {
 	for _, header := range setting.ManagedRequestHeaders {
-		if header.Enabled {
+		if header.Enabled && header.ID != "" {
 			return true
 		}
 	}
 	for _, header := range setting.ManagedResponseHeaders {
-		if header.Enabled {
+		if header.Enabled && header.ID != "" {
 			return true
 		}
 	}
 	return false
+}
+
+func cloudflareManagedTransformsAttributes(setting cloudflareManagedTransformsSetting) map[string]string {
+	attributes := map[string]string{}
+	cloudflareAddEnabledManagedTransformAttributes(attributes, "managed_request_headers", setting.ManagedRequestHeaders)
+	cloudflareAddEnabledManagedTransformAttributes(attributes, "managed_response_headers", setting.ManagedResponseHeaders)
+	return attributes
+}
+
+func cloudflareAddEnabledManagedTransformAttributes(attributes map[string]string, prefix string, headers []cloudflareManagedTransformHeader) {
+	index := 0
+	for _, header := range headers {
+		if !header.Enabled || header.ID == "" {
+			continue
+		}
+		key := fmt.Sprintf("%s.%d", prefix, index)
+		attributes[key+".id"] = header.ID
+		attributes[key+".enabled"] = strconv.FormatBool(header.Enabled)
+		index++
+	}
+	attributes[prefix+".#"] = strconv.Itoa(index)
 }
 
 func cloudflareUniversalSSLSettingShouldImport(setting cf.UniversalSSLSetting) bool {
@@ -609,6 +650,14 @@ func cloudflareZoneHoldConfigured(setting cf.ZoneHold) bool {
 	return (setting.Hold != nil && *setting.Hold) ||
 		(setting.IncludeSubdomains != nil && *setting.IncludeSubdomains) ||
 		setting.HoldAfter != nil
+}
+
+func cloudflareZoneHoldAttributes(setting cf.ZoneHold) map[string]string {
+	attributes := map[string]string{}
+	if setting.IncludeSubdomains != nil {
+		attributes["include_subdomains"] = strconv.FormatBool(*setting.IncludeSubdomains)
+	}
+	return attributes
 }
 
 func cloudflareDNSZoneTransferConfigured(setting cloudflareDNSZoneTransferConfig) bool {

@@ -72,6 +72,11 @@ func TestCloudflareSettingsDefaultImportPolicy(t *testing.T) {
 		t.Fatal("enabled managed transform should be imported")
 	}
 	if cloudflareManagedTransformsConfigured(cloudflareManagedTransformsSetting{
+		ManagedRequestHeaders: []cloudflareManagedTransformHeader{{Enabled: true}},
+	}) {
+		t.Fatal("enabled managed transform without an ID should be skipped")
+	}
+	if cloudflareManagedTransformsConfigured(cloudflareManagedTransformsSetting{
 		ManagedRequestHeaders:  []cloudflareManagedTransformHeader{{ID: "add_true_client_ip_headers", Enabled: false}},
 		ManagedResponseHeaders: []cloudflareManagedTransformHeader{{ID: "add_security_headers", Enabled: false}},
 	}) {
@@ -82,6 +87,36 @@ func TestCloudflareSettingsDefaultImportPolicy(t *testing.T) {
 	}
 	if cloudflareZoneCacheVariantsConfigured(cf.ZoneCacheVariantsValues{}) {
 		t.Fatal("empty cache variants should be skipped")
+	}
+}
+
+func TestCloudflareManagedTransformsAttributes(t *testing.T) {
+	attributes := cloudflareManagedTransformsAttributes(cloudflareManagedTransformsSetting{
+		ManagedRequestHeaders: []cloudflareManagedTransformHeader{
+			{ID: "add_true_client_ip_headers", Enabled: true},
+			{ID: "remove_visitor_ip_headers", Enabled: false},
+			{Enabled: true},
+		},
+		ManagedResponseHeaders: []cloudflareManagedTransformHeader{
+			{ID: "add_security_headers", Enabled: true},
+		},
+	})
+
+	want := map[string]string{
+		"managed_request_headers.#":          "1",
+		"managed_request_headers.0.id":       "add_true_client_ip_headers",
+		"managed_request_headers.0.enabled":  "true",
+		"managed_response_headers.#":         "1",
+		"managed_response_headers.0.id":      "add_security_headers",
+		"managed_response_headers.0.enabled": "true",
+	}
+	for key, wantValue := range want {
+		if got := attributes[key]; got != wantValue {
+			t.Fatalf("attribute %s = %q, want %q", key, got, wantValue)
+		}
+	}
+	if _, ok := attributes["managed_request_headers.1.id"]; ok {
+		t.Fatal("disabled or invalid request transform should not be seeded")
 	}
 }
 
@@ -105,6 +140,14 @@ func TestCloudflareZoneHoldConfigured(t *testing.T) {
 				t.Fatalf("cloudflareZoneHoldConfigured() = %t, want %t", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestCloudflareZoneHoldAttributes(t *testing.T) {
+	includeSubdomains := true
+	attributes := cloudflareZoneHoldAttributes(cf.ZoneHold{IncludeSubdomains: &includeSubdomains})
+	if got := attributes["include_subdomains"]; got != "true" {
+		t.Fatalf("include_subdomains = %q, want true", got)
 	}
 }
 
