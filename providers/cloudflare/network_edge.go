@@ -49,6 +49,16 @@ func cloudflareNetworkEdgeOptionalDiscoveryError(err error) bool {
 		return cloudflareNetworkEdgeOptionalErrorMessage(requestErr.Error(), requestErr.ErrorMessages())
 	}
 
+	var authenticationErr *cf.AuthenticationError
+	if errors.As(err, &authenticationErr) {
+		return cloudflareNetworkEdgeOptionalErrorMessage(authenticationErr.Error(), authenticationErr.ErrorMessages())
+	}
+
+	var authorizationErr *cf.AuthorizationError
+	if errors.As(err, &authorizationErr) {
+		return cloudflareNetworkEdgeOptionalErrorMessage(authorizationErr.Error(), authorizationErr.ErrorMessages())
+	}
+
 	return false
 }
 

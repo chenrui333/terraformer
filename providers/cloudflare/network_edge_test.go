@@ -203,6 +203,18 @@ func TestCloudflareNetworkEdgeOptionalErrorMessageDoesNotHideGenericNotFound(t *
 	}
 }
 
+func TestCloudflareNetworkEdgeOptionalDiscoveryErrorHandlesAuthErrors(t *testing.T) {
+	authenticationErr := cf.NewAuthenticationError(&cf.Error{ErrorMessages: []string{"not authorized"}})
+	if !cloudflareNetworkEdgeOptionalDiscoveryError(&authenticationErr) {
+		t.Fatal("authentication errors should be treated as optional when they match optional markers")
+	}
+
+	authorizationErr := cf.NewAuthorizationError(&cf.Error{ErrorMessages: []string{"missing permission"}})
+	if !cloudflareNetworkEdgeOptionalDiscoveryError(&authorizationErr) {
+		t.Fatal("authorization errors should be treated as optional when they match optional markers")
+	}
+}
+
 func TestListCloudflareNetworkEdgeResourcesPaginates(t *testing.T) {
 	api := newCloudflareNetworkEdgeTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/accounts/account-123/addressing/address_maps" {
