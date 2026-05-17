@@ -654,17 +654,6 @@
       ]
     },
     {
-      "resource": "cloudflare_zone_dnssec",
-      "service_family": "dns",
-      "reason": "Zone DNSSEC is a zone singleton with desired settings mixed with Cloudflare-generated DNSSEC metadata.",
-      "evidence": "The Terraform provider resource requires zone_id and optional desired DNSSEC settings, while read state includes generated DS/public-key fields, digest values, key tags, and modified timestamps. Import needs scoped handling to avoid treating Cloudflare-generated key material as user-authored configuration.",
-      "status": "deferred",
-      "references": [
-        "https://github.com/chenrui333/terraformer/issues/335",
-        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zone_dnssec"
-      ]
-    },
-    {
       "resource": "cloudflare_zone_setting",
       "service_family": "zone_settings",
       "reason": "Generic zone setting imports need per-setting review for plan availability, value shape, and default-versus-explicit ownership.",

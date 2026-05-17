@@ -66,6 +66,26 @@ type cloudflareManagedTransformHeader struct {
 	Enabled bool   `json:"enabled"`
 }
 
+type cloudflareZoneDNSSECSetting struct {
+	Status            string `json:"status"`
+	DNSSECMultiSigner *bool  `json:"dnssec_multi_signer"`
+	DNSSECPresigned   *bool  `json:"dnssec_presigned"`
+	DNSSECUseNsec3    *bool  `json:"dnssec_use_nsec3"`
+}
+
+var cloudflareZoneDNSSECComputedKeys = []string{
+	"^algorithm$",
+	"^digest$",
+	"^digest_algorithm$",
+	"^digest_type$",
+	"^ds$",
+	"^flags$",
+	"^key_tag$",
+	"^key_type$",
+	"^modified_on$",
+	"^public_key$",
+}
+
 func (g *SettingsGenerator) InitResources() error {
 	ctx := context.Background()
 	api, err := g.initializeAPI()
@@ -124,6 +144,7 @@ func (g *SettingsGenerator) appendZoneSettingsResources(ctx context.Context, api
 		g.appendWaitingRoomSettingsResource,
 		g.appendZoneCacheReserveResource,
 		g.appendZoneCacheVariantsResource,
+		g.appendZoneDNSSECResource,
 		g.appendZoneHoldResource,
 		g.appendDNSZoneTransfersIncomingResource,
 		g.appendDNSZoneTransfersOutgoingResource,
@@ -487,6 +508,21 @@ func (g *SettingsGenerator) appendZoneCacheVariantsResource(ctx context.Context,
 	return nil
 }
 
+func (g *SettingsGenerator) appendZoneDNSSECResource(ctx context.Context, api *cf.API, zone cf.Zone) error {
+	setting := cloudflareZoneDNSSECSetting{}
+	if err := cloudflareReadRawSetting(ctx, api, fmt.Sprintf("/zones/%s/dnssec", zone.ID), &setting); err != nil {
+		if cloudflareOptionalSettingsMissing(err) {
+			return nil
+		}
+		return fmt.Errorf("get Zone DNSSEC setting for zone %q: %w", zone.ID, err)
+	}
+	if !cloudflareZoneDNSSECShouldImport(setting) {
+		return nil
+	}
+	g.Resources = append(g.Resources, cloudflareZoneDNSSECResource(zone, setting))
+	return nil
+}
+
 func (g *SettingsGenerator) appendZoneHoldResource(ctx context.Context, api *cf.API, zone cf.Zone) error {
 	setting, err := api.GetZoneHold(ctx, cf.ZoneIdentifier(zone.ID), cf.GetZoneHoldParams{})
 	if err != nil {
@@ -706,6 +742,75 @@ func cloudflareZoneCacheVariantsConfigured(value cf.ZoneCacheVariantsValues) boo
 		len(value.Tif) > 0 ||
 		len(value.Tiff) > 0 ||
 		len(value.Webp) > 0
+}
+
+func cloudflareZoneDNSSECShouldImport(setting cloudflareZoneDNSSECSetting) bool {
+	desiredStatus := cloudflareZoneDNSSECDesiredStatus(setting.Status)
+	if desiredStatus == "active" || strings.EqualFold(setting.Status, "pending-disabled") {
+		return true
+	}
+	if setting.Status != "" && desiredStatus == "" {
+		return false
+	}
+	if cloudflareBoolPointerValue(setting.DNSSECMultiSigner) ||
+		cloudflareBoolPointerValue(setting.DNSSECPresigned) ||
+		cloudflareBoolPointerValue(setting.DNSSECUseNsec3) {
+		return true
+	}
+	return false
+}
+
+func cloudflareZoneDNSSECAttributes(setting cloudflareZoneDNSSECSetting) map[string]string {
+	attributes := map[string]string{}
+	if status := cloudflareZoneDNSSECDesiredStatus(setting.Status); status != "" {
+		attributes["status"] = status
+	}
+	cloudflareSetBoolPointerAttribute(attributes, "dnssec_multi_signer", setting.DNSSECMultiSigner)
+	cloudflareSetBoolPointerAttribute(attributes, "dnssec_presigned", setting.DNSSECPresigned)
+	cloudflareSetBoolPointerAttribute(attributes, "dnssec_use_nsec3", setting.DNSSECUseNsec3)
+	return attributes
+}
+
+func cloudflareZoneDNSSECResource(zone cf.Zone, setting cloudflareZoneDNSSECSetting) terraformutils.Resource {
+	resource := cloudflareZoneSingletonSettingResourceWithAttributesAndAdditionalFields(
+		zone,
+		"cloudflare_zone_dnssec",
+		"zone_dnssec",
+		cloudflareZoneDNSSECAttributes(setting),
+		cloudflareZoneDNSSECAdditionalFields(setting),
+	)
+	resource.IgnoreKeys = append(resource.IgnoreKeys, cloudflareZoneDNSSECComputedKeys...)
+	return resource
+}
+
+func cloudflareZoneDNSSECAdditionalFields(setting cloudflareZoneDNSSECSetting) map[string]interface{} {
+	additionalFields := map[string]interface{}{}
+	if status := cloudflareZoneDNSSECDesiredStatus(setting.Status); status != "" {
+		additionalFields["status"] = status
+	}
+	return additionalFields
+}
+
+func cloudflareZoneDNSSECDesiredStatus(status string) string {
+	switch strings.ToLower(status) {
+	case "active", "pending":
+		return "active"
+	case "disabled", "pending-disabled":
+		return "disabled"
+	default:
+		return ""
+	}
+}
+
+func cloudflareSetBoolPointerAttribute(attributes map[string]string, key string, value *bool) {
+	if value == nil {
+		return
+	}
+	attributes[key] = strconv.FormatBool(*value)
+}
+
+func cloudflareBoolPointerValue(value *bool) bool {
+	return value != nil && *value
 }
 
 func cloudflareZoneHoldConfigured(setting cf.ZoneHold) bool {

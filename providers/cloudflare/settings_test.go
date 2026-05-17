@@ -49,6 +49,8 @@ func TestAppendZoneSingletonSettingResource(t *testing.T) {
 }
 
 func TestCloudflareSettingsDefaultImportPolicy(t *testing.T) {
+	trueValue := true
+
 	if !cloudflareSettingIsOn("on") {
 		t.Fatal("cloudflareSettingIsOn(on) = false, want true")
 	}
@@ -91,6 +93,27 @@ func TestCloudflareSettingsDefaultImportPolicy(t *testing.T) {
 	}
 	if cloudflareZoneCacheVariantsConfigured(cf.ZoneCacheVariantsValues{}) {
 		t.Fatal("empty cache variants should be skipped")
+	}
+	if !cloudflareZoneDNSSECShouldImport(cloudflareZoneDNSSECSetting{Status: "active"}) {
+		t.Fatal("active DNSSEC should be imported")
+	}
+	if cloudflareZoneDNSSECShouldImport(cloudflareZoneDNSSECSetting{Status: "disabled"}) {
+		t.Fatal("disabled DNSSEC without explicit options should be skipped")
+	}
+	if !cloudflareZoneDNSSECShouldImport(cloudflareZoneDNSSECSetting{Status: "pending"}) {
+		t.Fatal("pending DNSSEC should be imported")
+	}
+	if !cloudflareZoneDNSSECShouldImport(cloudflareZoneDNSSECSetting{Status: "pending", DNSSECMultiSigner: &trueValue}) {
+		t.Fatal("explicit DNSSEC options should be imported for transitional statuses")
+	}
+	if !cloudflareZoneDNSSECShouldImport(cloudflareZoneDNSSECSetting{Status: "pending-disabled"}) {
+		t.Fatal("pending-disabled DNSSEC should be imported")
+	}
+	if cloudflareZoneDNSSECShouldImport(cloudflareZoneDNSSECSetting{Status: "unknown", DNSSECMultiSigner: &trueValue}) {
+		t.Fatal("unknown DNSSEC status should be skipped")
+	}
+	if !cloudflareZoneDNSSECShouldImport(cloudflareZoneDNSSECSetting{Status: "disabled", DNSSECMultiSigner: &trueValue}) {
+		t.Fatal("explicit DNSSEC options should be imported")
 	}
 }
 
@@ -283,6 +306,91 @@ func TestCloudflareZoneHoldConfigured(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCloudflareZoneDNSSECResource(t *testing.T) {
+	trueValue := true
+	falseValue := false
+	zone := cf.Zone{ID: "zone-123", Name: "example.com"}
+	resource := cloudflareZoneDNSSECResource(zone, cloudflareZoneDNSSECSetting{
+		Status:            "ACTIVE",
+		DNSSECMultiSigner: &trueValue,
+		DNSSECPresigned:   &falseValue,
+	})
+
+	if resource.InstanceInfo.Type != "cloudflare_zone_dnssec" {
+		t.Fatalf("resource type = %q, want cloudflare_zone_dnssec", resource.InstanceInfo.Type)
+	}
+	if got, want := resource.ResourceName, terraformutils.TfSanitize(cloudflareResourceName("example.com", "zone_dnssec")); got != want {
+		t.Fatalf("resource name = %q, want %s", got, want)
+	}
+	if got := resource.InstanceState.Attributes["zone_id"]; got != "zone-123" {
+		t.Fatalf("zone_id = %q, want zone-123", got)
+	}
+	if got := resource.InstanceState.Attributes["status"]; got != "active" {
+		t.Fatalf("status = %q, want active", got)
+	}
+	if got := resource.InstanceState.Attributes["dnssec_multi_signer"]; got != "true" {
+		t.Fatalf("dnssec_multi_signer = %q, want true", got)
+	}
+	if got := resource.InstanceState.Attributes["dnssec_presigned"]; got != "false" {
+		t.Fatalf("dnssec_presigned = %q, want false", got)
+	}
+	if _, ok := resource.InstanceState.Attributes["dnssec_use_nsec3"]; ok {
+		t.Fatal("nil dnssec_use_nsec3 should not be seeded")
+	}
+	for _, key := range cloudflareZoneDNSSECComputedKeys {
+		if !cloudflareResourceIgnoresKey(resource, key) {
+			t.Fatalf("DNSSEC resource should ignore computed key %q", key)
+		}
+	}
+	if cloudflareResourceIgnoresKey(resource, "^status$") {
+		t.Fatal("configurable DNSSEC status should not be ignored")
+	}
+
+	transitionalResource := cloudflareZoneDNSSECResource(zone, cloudflareZoneDNSSECSetting{
+		Status:         "pending",
+		DNSSECUseNsec3: &trueValue,
+	})
+	if got := transitionalResource.InstanceState.Attributes["status"]; got != "active" {
+		t.Fatalf("transitional DNSSEC status = %q, want active", got)
+	}
+	if got := transitionalResource.InstanceState.Attributes["dnssec_use_nsec3"]; got != "true" {
+		t.Fatalf("dnssec_use_nsec3 = %q, want true", got)
+	}
+	if cloudflareResourceIgnoresKey(transitionalResource, "^status$") {
+		t.Fatal("transitional DNSSEC desired status should not be ignored")
+	}
+	if got := transitionalResource.AdditionalFields["status"]; got != "active" {
+		t.Fatalf("transitional DNSSEC AdditionalFields status = %#v, want active", got)
+	}
+
+	transitionalResource.InstanceState.Attributes["status"] = "pending"
+	parser := terraformutils.NewFlatmapParser(transitionalResource.InstanceState.Attributes, nil, nil)
+	impliedType := cty.Object(map[string]cty.Type{
+		"status":  cty.String,
+		"zone_id": cty.String,
+	})
+	if err := transitionalResource.ParseTFstate(parser, impliedType); err != nil {
+		t.Fatalf("ParseTFstate() error = %v", err)
+	}
+	if got := transitionalResource.Item["status"]; got != "active" {
+		t.Fatalf("parsed transitional DNSSEC status = %q, want active", got)
+	}
+
+	disablingResource := cloudflareZoneDNSSECResource(zone, cloudflareZoneDNSSECSetting{Status: "pending-disabled"})
+	if got := disablingResource.InstanceState.Attributes["status"]; got != "disabled" {
+		t.Fatalf("pending-disabled DNSSEC status = %q, want disabled", got)
+	}
+}
+
+func cloudflareResourceIgnoresKey(resource terraformutils.Resource, key string) bool {
+	for _, ignoreKey := range resource.IgnoreKeys {
+		if ignoreKey == key {
+			return true
+		}
+	}
+	return false
 }
 
 func TestCloudflareZoneHoldAttributes(t *testing.T) {
