@@ -112,8 +112,8 @@ func TestCloudflareDNSZoneTransferConfigured(t *testing.T) {
 		want    bool
 	}{
 		{name: "empty", setting: cloudflareDNSZoneTransferConfig{}, want: false},
-		{name: "id", setting: cloudflareDNSZoneTransferConfig{ID: "transfer-123"}, want: true},
-		{name: "name", setting: cloudflareDNSZoneTransferConfig{Name: "example.com"}, want: true},
+		{name: "id only", setting: cloudflareDNSZoneTransferConfig{ID: "transfer-123"}, want: false},
+		{name: "name only", setting: cloudflareDNSZoneTransferConfig{Name: "example.com"}, want: false},
 		{name: "peers", setting: cloudflareDNSZoneTransferConfig{Peers: []string{"peer-123"}}, want: true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

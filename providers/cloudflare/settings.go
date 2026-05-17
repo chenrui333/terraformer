@@ -612,5 +612,5 @@ func cloudflareZoneHoldConfigured(setting cf.ZoneHold) bool {
 }
 
 func cloudflareDNSZoneTransferConfigured(setting cloudflareDNSZoneTransferConfig) bool {
-	return setting.ID != "" || setting.Name != "" || len(setting.Peers) > 0
+	return len(setting.Peers) > 0
 }
