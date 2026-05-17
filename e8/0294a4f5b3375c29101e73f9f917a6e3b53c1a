@@ -1,0 +1,21 @@
+CLAUDE.md
+  s_f31c92060751c4::t_065aa3ec213719 590-602
+AGENTS.md
+  s_f31c92060751c4::t_eb2359f7533ebe 26-29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "e80294a4f5b3375c29101e73f9f917a6e3b53c1a",
+  "prompts": {},
+  "sessions": {
+    "s_f31c92060751c4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35d5-3c2f-7021-bcbf-b8734abac0db",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
