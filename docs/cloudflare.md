@@ -63,6 +63,15 @@ List of supported Cloudflare services:
   * `cloudflare_magic_wan_gre_tunnel`
   * `cloudflare_magic_wan_ipsec_tunnel`
   * `cloudflare_magic_wan_static_route`
+* `media_platform`
+  * `cloudflare_ai_gateway`
+  * `cloudflare_image_variant`
+  * `cloudflare_pipeline`
+  * `cloudflare_pipeline_stream`
+
+  `media_platform` requires `CLOUDFLARE_ACCOUNT_ID`. AI Gateway resources with
+  credential-backed OTEL or Stripe configuration are skipped because broad import
+  cannot safely reconstruct those authorization values.
 * `network_edge`
   * `cloudflare_address_map`
   * `cloudflare_magic_network_monitoring_rule`

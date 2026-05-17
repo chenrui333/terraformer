@@ -46,6 +46,17 @@
       ]
     },
     {
+      "resource": "cloudflare_ai_search_instance",
+      "service_family": "ai",
+      "reason": "AI Search instances can include user-authored no-refresh prompt and summarization configuration that broad import cannot fully reconstruct.",
+      "evidence": "Terraform provider v5.19.1 supports account_id/id import, but import verification ignores no_refresh fields including summarization_model, system_prompt_aisearch, system_prompt_index_summarization, system_prompt_rewrite_query, chunk, summarization, and index_method fields because the API read path does not return them. Terraformer cannot tell whether omitted values are defaults or user-authored search configuration.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/ai_search_instance"
+      ]
+    },
+    {
       "resource": "cloudflare_ai_search_token",
       "service_family": "ai",
       "reason": "AI Search tokens require Cloudflare API credential material that broad import cannot safely reconstruct.",
@@ -170,6 +181,28 @@
       ]
     },
     {
+      "resource": "cloudflare_calls_sfu_app",
+      "service_family": "calls",
+      "reason": "Calls SFU apps expose generated secret material and the Terraform provider does not support import.",
+      "evidence": "Terraform provider v5.19.1 does not implement ResourceWithImportState for cloudflare_calls_sfu_app, and the resource schema exposes secret as Sensitive/no_refresh generated material. Terraformer cannot reconstruct or safely emit this app resource from broad discovery.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/calls_sfu_app"
+      ]
+    },
+    {
+      "resource": "cloudflare_calls_turn_app",
+      "service_family": "calls",
+      "reason": "Calls TURN apps expose generated key material and the Terraform provider does not support import.",
+      "evidence": "Terraform provider v5.19.1 does not implement ResourceWithImportState for cloudflare_calls_turn_app, and the resource schema exposes key as Sensitive/no_refresh generated material. Terraformer cannot reconstruct or safely emit this TURN app resource from broad discovery.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/calls_turn_app"
+      ]
+    },
+    {
       "resource": "cloudflare_cloudforce_one_request",
       "service_family": "cloudforce_one",
       "reason": "Cloudforce One requests represent submitted analysis work rather than stable infrastructure inventory.",
@@ -244,6 +277,17 @@
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/hyperdrive_config"
+      ]
+    },
+    {
+      "resource": "cloudflare_image",
+      "service_family": "images",
+      "reason": "Cloudflare Images assets are high-cardinality media content and can require unrecoverable source file or URL material.",
+      "evidence": "Terraform provider v5.19.1 supports account_id/image_id import, but file, url, and metadata are optional no_refresh source fields while list/read returns media inventory such as filename, uploaded time, variants, and meta. Broad import would turn image content records into incomplete infrastructure configuration.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/image"
       ]
     },
     {
@@ -401,6 +445,39 @@
       ]
     },
     {
+      "resource": "cloudflare_stream",
+      "service_family": "stream",
+      "reason": "Stream videos are high-cardinality media content and runtime processing state, not durable infrastructure configuration.",
+      "evidence": "Terraform provider v5.19.1 does not implement ResourceWithImportState for cloudflare_stream. The resource models media identifiers, live input links, upload inputs, preview/thumbnail URLs, duration, status, and watermark details, so broad import would capture content inventory and processing state rather than user-authored infrastructure.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/stream"
+      ]
+    },
+    {
+      "resource": "cloudflare_stream_audio_track",
+      "service_family": "stream",
+      "reason": "Stream audio tracks are media content children whose provider resource does not expose a usable broad import path.",
+      "evidence": "Terraform provider v5.19.1 does not implement ResourceWithImportState for cloudflare_stream_audio_track, and label, default, status, uid, and audio state are marked no_refresh or computed around a media item. Terraformer should not import per-video audio content as infrastructure configuration.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/stream_audio_track"
+      ]
+    },
+    {
+      "resource": "cloudflare_stream_caption_language",
+      "service_family": "stream",
+      "reason": "Stream caption resources require caption file/source content and the Terraform provider does not support import.",
+      "evidence": "Terraform provider v5.19.1 does not implement ResourceWithImportState for cloudflare_stream_caption_language, and the WebVTT file attribute is optional/no_refresh while read state exposes generated caption status. Terraformer cannot reconstruct caption content from broad discovery.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/stream_caption_language"
+      ]
+    },
+    {
       "resource": "cloudflare_stream_download",
       "service_family": "stream",
       "reason": "Stream download resources represent generated media output state instead of durable infrastructure configuration.",
@@ -431,6 +508,17 @@
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/stream_live_input"
+      ]
+    },
+    {
+      "resource": "cloudflare_stream_watermark",
+      "service_family": "stream",
+      "reason": "Stream watermark resources can require unrecoverable source image URL/upload content and the Terraform provider does not support import.",
+      "evidence": "Terraform provider v5.19.1 does not implement ResourceWithImportState for cloudflare_stream_watermark. The url source is optional/no_refresh and read state only reports downloaded_from, dimensions, position, and profile metadata, so Terraformer cannot reliably rebuild the watermark source configuration.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/stream_watermark"
       ]
     },
     {
