@@ -1,0 +1,21 @@
+providers/datadog/unsupported_resources.json
+  s_e4ea9158a430e1::t_d84446c0f281a0 102-145
+docs/datadog.md
+  s_e4ea9158a430e1::t_d84446c0f281a0 185-186,331-336
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "c76ebc9b1bbee513fd9bcb57abcae90344f4887f",
+  "prompts": {},
+  "sessions": {
+    "s_e4ea9158a430e1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35d4-bceb-7663-a76b-1b80c979b03b",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
