@@ -77,6 +77,17 @@
         "https://github.com/chenrui333/terraformer/issues/336",
         "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/integration_opsgenie_service_object"
       ]
+    },
+    {
+      "resource": "datadog_app_key_registration",
+      "service_family": "app_key_registration",
+      "reason": "Required id configuration attribute is stripped during Terraformer HCL conversion.",
+      "evidence": "The Terraform provider schema marks id as the only Required configuration argument. Terraformer unconditionally ignores the top-level id attribute during HCL generation, producing an empty resource block that fails validation.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/336",
+        "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/app_key_registration"
+      ]
     }
   ]
 }
