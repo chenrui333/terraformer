@@ -34,7 +34,7 @@ func TestProductPlatformCreateResource(t *testing.T) {
 			create:       (&AppBuilderAppGenerator{}).createResource,
 		},
 		{name: datadogOpenapiAPIServiceName, id: "00000000-0000-0000-0000-000000000010", resourceType: "datadog_openapi_api", create: (&OpenapiAPIGenerator{}).createResource},
-		{name: datadogDeploymentGateServiceName, id: "gate-1", resourceType: "datadog_deployment_gate", create: (&DeploymentGateGenerator{}).createResource},
+		{name: datadogDeploymentGateServiceName, id: "gate-1", resourceType: "datadog_deployment_gate", create: newDeploymentGateResourceForTest},
 		{name: datadogDatasetServiceName, id: "dataset-1", resourceType: "datadog_dataset", create: newDatasetResourceForTest},
 		{name: datadogDatastoreServiceName, id: "datastore-1", resourceType: "datadog_datastore", create: (&DatastoreGenerator{}).createResource},
 		{name: datadogReferenceTableServiceName, id: "table-1", resourceType: "datadog_reference_table", create: (&ReferenceTableGenerator{}).createResource},
@@ -67,7 +67,7 @@ func TestProductPlatformCreateResourceMissingID(t *testing.T) {
 	}{
 		{name: datadogAppBuilderAppServiceName, create: (&AppBuilderAppGenerator{}).createResource},
 		{name: datadogOpenapiAPIServiceName, create: (&OpenapiAPIGenerator{}).createResource},
-		{name: datadogDeploymentGateServiceName, create: (&DeploymentGateGenerator{}).createResource},
+		{name: datadogDeploymentGateServiceName, create: newDeploymentGateResourceForTest},
 		{name: datadogDatasetServiceName, create: newDatasetResourceForTest},
 		{name: datadogDatastoreServiceName, create: (&DatastoreGenerator{}).createResource},
 		{name: datadogReferenceTableServiceName, create: (&ReferenceTableGenerator{}).createResource},
@@ -81,6 +81,35 @@ func TestProductPlatformCreateResourceMissingID(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDeploymentGateCreateResourcePopulatesRules(t *testing.T) {
+	rules := deploymentGateRulesForTest(t, "gate-1",
+		deploymentGateRuleJSON("gate-1", "rule-monitor", "Monitor rule", "monitor", false, `{"duration":300,"query":"status:alert service:svc"}`),
+		deploymentGateRuleJSON("gate-1", "rule-fdd", "FDD rule", "faulty_deployment_detection", true, `{"duration":600,"excluded_resources":["job-a","job-b"]}`),
+	)
+	resource, err := (&DeploymentGateGenerator{}).createResource("gate-1", rules)
+	if err != nil {
+		t.Fatalf("createResource returned error: %v", err)
+	}
+
+	attributes := resource.InstanceState.Attributes
+	assertProductPlatformAttribute(t, attributes, "id", "gate-1")
+	assertProductPlatformAttribute(t, attributes, "rule.#", "2")
+	assertProductPlatformAttribute(t, attributes, "rule.0.id", "rule-monitor")
+	assertProductPlatformAttribute(t, attributes, "rule.0.name", "Monitor rule")
+	assertProductPlatformAttribute(t, attributes, "rule.0.type", "monitor")
+	assertProductPlatformAttribute(t, attributes, "rule.0.dry_run", "false")
+	assertProductPlatformAttribute(t, attributes, "rule.0.options.duration", "300")
+	assertProductPlatformAttribute(t, attributes, "rule.0.options.query", "status:alert service:svc")
+	assertProductPlatformAttribute(t, attributes, "rule.1.id", "rule-fdd")
+	assertProductPlatformAttribute(t, attributes, "rule.1.name", "FDD rule")
+	assertProductPlatformAttribute(t, attributes, "rule.1.type", "faulty_deployment_detection")
+	assertProductPlatformAttribute(t, attributes, "rule.1.dry_run", "true")
+	assertProductPlatformAttribute(t, attributes, "rule.1.options.duration", "600")
+	assertProductPlatformAttribute(t, attributes, "rule.1.options.excluded_resources.#", "2")
+	assertProductPlatformAttribute(t, attributes, "rule.1.options.excluded_resources.0", "job-a")
+	assertProductPlatformAttribute(t, attributes, "rule.1.options.excluded_resources.1", "job-b")
 }
 
 func TestDatasetCreateResourcePopulatesRequiredAttributes(t *testing.T) {
@@ -202,6 +231,7 @@ func TestProductPlatformInitResourcesIDFilters(t *testing.T) {
 		id      string
 		path    string
 		body    string
+		paths   []string
 		factory productPlatformGeneratorFactory
 	}{
 		{
@@ -220,7 +250,15 @@ func TestProductPlatformInitResourcesIDFilters(t *testing.T) {
 			body:    "openapi: 3.0.0\n",
 			factory: newOpenapiAPITestGenerator,
 		},
-		{name: "deployment_gate", service: datadogDeploymentGateServiceName, id: "gate-1", path: "/api/v2/deployment_gates/gate-1", body: deploymentGateResponseJSON("gate-1"), factory: newDeploymentGateTestGenerator},
+		{
+			name:    "deployment_gate",
+			service: datadogDeploymentGateServiceName,
+			id:      "gate-1",
+			path:    "/api/v2/deployment_gates/gate-1",
+			body:    deploymentGateResponseJSON("gate-1"),
+			paths:   []string{"/api/v2/deployment_gates/gate-1", "/api/v2/deployment_gates/gate-1/rules"},
+			factory: newDeploymentGateTestGenerator,
+		},
 		{name: "dataset", service: datadogDatasetServiceName, id: "dataset-1", path: "/api/v2/datasets/dataset-1", body: datasetSingleResponseJSON("dataset-1"), factory: newDatasetTestGenerator},
 		{name: "datastore", service: datadogDatastoreServiceName, id: "datastore-1", path: "/api/v2/actions-datastores/datastore-1", body: datastoreResponseJSON("datastore-1"), factory: newDatastoreTestGenerator},
 		{name: "reference_table", service: datadogReferenceTableServiceName, id: "table-1", path: "/api/v2/reference-tables/tables/table-1", body: referenceTableResponseJSON("table-1"), factory: newReferenceTableTestGenerator},
@@ -232,6 +270,11 @@ func TestProductPlatformInitResourcesIDFilters(t *testing.T) {
 			requestedPaths := []string{}
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				requestedPaths = append(requestedPaths, r.URL.Path)
+				if tt.name == "deployment_gate" && r.URL.Path == tt.path+"/rules" {
+					w.Header().Set("Content-Type", "application/json")
+					_, _ = w.Write([]byte(deploymentGateRulesResponseJSON(tt.id)))
+					return
+				}
 				if r.URL.Path != tt.path {
 					t.Errorf("unexpected path %s", r.URL.Path)
 					http.NotFound(w, r)
@@ -261,8 +304,12 @@ func TestProductPlatformInitResourcesIDFilters(t *testing.T) {
 			if got := resources()[0].InstanceState.ID; got != tt.id {
 				t.Fatalf("resource ID = %q, want %q", got, tt.id)
 			}
-			if len(requestedPaths) != 1 {
-				t.Fatalf("requested paths = %v, want only filter read path", requestedPaths)
+			wantPaths := tt.paths
+			if wantPaths == nil {
+				wantPaths = []string{tt.path}
+			}
+			if !reflect.DeepEqual(requestedPaths, wantPaths) {
+				t.Fatalf("requested paths = %v, want %v", requestedPaths, wantPaths)
 			}
 		})
 	}
@@ -469,7 +516,21 @@ func TestOpenapiAPIInitResourcesListsPages(t *testing.T) {
 
 func TestDeploymentGateInitResourcesListsCursorPages(t *testing.T) {
 	cursors := []string{}
+	rulePaths := []string{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/api/v2/deployment_gates/") && strings.HasSuffix(r.URL.Path, "/rules") {
+			rulePaths = append(rulePaths, r.URL.Path)
+			w.Header().Set("Content-Type", "application/json")
+			if r.URL.Path == "/api/v2/deployment_gates/gate-1/rules" {
+				_, _ = w.Write([]byte(deploymentGateRulesResponseJSON(
+					"gate-1",
+					deploymentGateRuleJSON("gate-1", "rule-1", "Monitor rule", "monitor", false, `{"duration":300,"query":"status:alert service:svc"}`),
+				)))
+				return
+			}
+			_, _ = w.Write([]byte(deploymentGateRulesResponseJSON("gate-2")))
+			return
+		}
 		if r.URL.Path != "/api/v2/deployment_gates" {
 			t.Errorf("unexpected path %s", r.URL.Path)
 			http.NotFound(w, r)
@@ -498,8 +559,14 @@ func TestDeploymentGateInitResourcesListsCursorPages(t *testing.T) {
 		t.Fatalf("InitResources returned error: %v", err)
 	}
 	assertProductPlatformResourceIDs(t, resources(), []string{"gate-1", "gate-2"})
+	assertProductPlatformAttribute(t, resources()[0].InstanceState.Attributes, "rule.#", "1")
+	assertProductPlatformAttribute(t, resources()[0].InstanceState.Attributes, "rule.0.id", "rule-1")
+	assertProductPlatformAttribute(t, resources()[0].InstanceState.Attributes, "rule.0.options.query", "status:alert service:svc")
 	if strings.Join(cursors, ",") != ",cursor-2" {
 		t.Fatalf("cursors = %v, want [ cursor-2]", cursors)
+	}
+	if !reflect.DeepEqual(rulePaths, []string{"/api/v2/deployment_gates/gate-1/rules", "/api/v2/deployment_gates/gate-2/rules"}) {
+		t.Fatalf("rule paths = %v, want gate rule read paths", rulePaths)
 	}
 }
 
@@ -732,6 +799,30 @@ func openapiAPIListResponseJSON(total int, ids ...string) string {
 
 func deploymentGateResponseJSON(id string) string {
 	return fmt.Sprintf(`{"data":%s}`, deploymentGateDataJSON(id))
+}
+
+func deploymentGateRulesResponseJSON(gateID string, rules ...string) string {
+	return fmt.Sprintf(`{"data":{"id":%q,"type":"list_deployment_rules","attributes":{"rules":[%s]}}}`, gateID, strings.Join(rules, ","))
+}
+
+func deploymentGateRuleJSON(gateID, ruleID, name, ruleType string, dryRun bool, options string) string {
+	return fmt.Sprintf(`{"id":%q,"created_at":"2024-01-01T00:00:00Z","created_by":{"id":"user-1"},"dry_run":%t,"gate_id":%q,"name":%q,"options":%s,"type":%q}`, ruleID, dryRun, gateID, name, options, ruleType)
+}
+
+func deploymentGateRulesForTest(t *testing.T, gateID string, rules ...string) []datadogV2.DeploymentRuleResponseDataAttributes {
+	t.Helper()
+
+	response := datadogV2.DeploymentGateRulesResponse{}
+	if err := json.Unmarshal([]byte(deploymentGateRulesResponseJSON(gateID, rules...)), &response); err != nil {
+		t.Fatalf("deployment gate rules unmarshal error: %v", err)
+	}
+	data := response.GetData()
+	attributes := data.GetAttributes()
+	return attributes.GetRules()
+}
+
+func newDeploymentGateResourceForTest(id string) (terraformutils.Resource, error) {
+	return (&DeploymentGateGenerator{}).createResource(id, nil)
 }
 
 func deploymentGateListResponseJSON(nextCursor string, ids ...string) string {
