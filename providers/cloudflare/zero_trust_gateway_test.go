@@ -90,14 +90,14 @@ func TestZeroTrustGatewayOptionalUnavailableError(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "generic not found propagates",
+			name: "generic not found is optional",
 			err:  testCloudflareNotFoundError("not found"),
-			want: false,
+			want: true,
 		},
 		{
-			name: "missing endpoint propagates",
+			name: "missing endpoint is optional",
 			err:  testCloudflareNotFoundError("The requested endpoint was not found"),
-			want: false,
+			want: true,
 		},
 		{
 			name: "zero trust account not configured is optional",

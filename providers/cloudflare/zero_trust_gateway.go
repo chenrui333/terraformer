@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
@@ -19,6 +20,12 @@ type ZeroTrustGatewayGenerator struct {
 }
 
 type zeroTrustGatewayRawResource map[string]interface{}
+
+type zeroTrustGatewayDiscovery struct {
+	name     string
+	account  string
+	discover func() error
+}
 
 func zeroTrustGatewayString(resource zeroTrustGatewayRawResource, key string) string {
 	value, ok := resource[key].(string)
@@ -69,7 +76,7 @@ func zeroTrustGatewaySingletonResource(accountID, resourceName, resourceType str
 func zeroTrustGatewayOptionalUnavailableError(err error) bool {
 	var notFoundErr *cf.NotFoundError
 	if errors.As(err, &notFoundErr) {
-		return zeroTrustGatewayUnavailableMessage(notFoundErr.Error(), notFoundErr.ErrorMessages())
+		return true
 	}
 
 	var requestErr *cf.RequestError
@@ -78,6 +85,17 @@ func zeroTrustGatewayOptionalUnavailableError(err error) bool {
 	}
 
 	return false
+}
+
+func runZeroTrustGatewayDiscoveries(discoveries []zeroTrustGatewayDiscovery) {
+	for _, discovery := range discoveries {
+		if discovery.discover == nil {
+			continue
+		}
+		if err := discovery.discover(); err != nil {
+			log.Printf("Skipping Cloudflare Zero Trust Gateway %s discovery for %s: %v", discovery.name, discovery.account, err)
+		}
+	}
 }
 
 func zeroTrustGatewayUnavailableMessage(message string, errorMessages []string) bool {
@@ -353,20 +371,70 @@ func (g *ZeroTrustGatewayGenerator) InitResources() error {
 	if err != nil {
 		return err
 	}
-	for _, f := range []func(context.Context, *cf.API, string) error{
-		g.appendDNSLocationResources,
-		g.appendGatewayCertificateResources,
-		g.appendGatewayLoggingResource,
-		g.appendGatewayPacfileResources,
-		g.appendGatewayPolicyResources,
-		g.appendGatewayProxyEndpointResources,
-		g.appendGatewaySettingsResource,
-		g.appendZeroTrustListResources,
-		g.appendNetworkHostnameRouteResources,
-	} {
-		if err := f(ctx, api, account.Identifier); err != nil {
-			return err
-		}
-	}
+	runZeroTrustGatewayDiscoveries([]zeroTrustGatewayDiscovery{
+		{
+			name:    "DNS locations",
+			account: account.Identifier,
+			discover: func() error {
+				return g.appendDNSLocationResources(ctx, api, account.Identifier)
+			},
+		},
+		{
+			name:    "Gateway certificates",
+			account: account.Identifier,
+			discover: func() error {
+				return g.appendGatewayCertificateResources(ctx, api, account.Identifier)
+			},
+		},
+		{
+			name:    "Gateway logging",
+			account: account.Identifier,
+			discover: func() error {
+				return g.appendGatewayLoggingResource(ctx, api, account.Identifier)
+			},
+		},
+		{
+			name:    "Gateway PAC files",
+			account: account.Identifier,
+			discover: func() error {
+				return g.appendGatewayPacfileResources(ctx, api, account.Identifier)
+			},
+		},
+		{
+			name:    "Gateway policies",
+			account: account.Identifier,
+			discover: func() error {
+				return g.appendGatewayPolicyResources(ctx, api, account.Identifier)
+			},
+		},
+		{
+			name:    "Gateway proxy endpoints",
+			account: account.Identifier,
+			discover: func() error {
+				return g.appendGatewayProxyEndpointResources(ctx, api, account.Identifier)
+			},
+		},
+		{
+			name:    "Gateway settings",
+			account: account.Identifier,
+			discover: func() error {
+				return g.appendGatewaySettingsResource(ctx, api, account.Identifier)
+			},
+		},
+		{
+			name:    "Zero Trust lists",
+			account: account.Identifier,
+			discover: func() error {
+				return g.appendZeroTrustListResources(ctx, api, account.Identifier)
+			},
+		},
+		{
+			name:    "hostname routes",
+			account: account.Identifier,
+			discover: func() error {
+				return g.appendNetworkHostnameRouteResources(ctx, api, account.Identifier)
+			},
+		},
+	})
 	return nil
 }
