@@ -5,6 +5,7 @@ package cloudflare
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -623,7 +624,13 @@ func cloudflareReadRawSetting(ctx context.Context, api *cf.API, path string, tar
 }
 
 func cloudflareOptionalSettingsMissing(err error) bool {
-	return cloudflareNotFoundError(err)
+	return cloudflareNotFoundError(err) || cloudflareForbiddenError(err)
+}
+
+func cloudflareForbiddenError(err error) bool {
+	// cloudflare-go maps HTTP 403 responses to AuthenticationError.
+	var forbiddenErr *cf.AuthenticationError
+	return errors.As(err, &forbiddenErr)
 }
 
 func cloudflareSettingIsOn(value string) bool {

@@ -3,6 +3,7 @@
 package cloudflare
 
 import (
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -91,6 +92,37 @@ func TestCloudflareSettingsDefaultImportPolicy(t *testing.T) {
 	if cloudflareZoneCacheVariantsConfigured(cf.ZoneCacheVariantsValues{}) {
 		t.Fatal("empty cache variants should be skipped")
 	}
+}
+
+func TestCloudflareOptionalSettingsMissing(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "not found", err: testCloudflareNotFoundError("not found"), want: true},
+		{name: "forbidden", err: testCloudflareForbiddenError("permission denied"), want: true},
+		{name: "request error", err: testCloudflareRequestError("bad request"), want: false},
+		{name: "generic error", err: errors.New("boom"), want: false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := cloudflareOptionalSettingsMissing(tt.err); got != tt.want {
+				t.Fatalf("cloudflareOptionalSettingsMissing() = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
+func testCloudflareForbiddenError(messages ...string) error {
+	responseInfo := make([]cf.ResponseInfo, 0, len(messages))
+	for _, message := range messages {
+		responseInfo = append(responseInfo, cf.ResponseInfo{Message: message})
+	}
+	err := cf.NewAuthenticationError(&cf.Error{
+		Errors:        responseInfo,
+		ErrorMessages: messages,
+	})
+	return &err
 }
 
 func TestAppendLeakedCredentialCheckZoneResourcePreservesID(t *testing.T) {
