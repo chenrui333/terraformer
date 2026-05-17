@@ -3,7 +3,7 @@
 package kafka
 
 import (
-	"crypto/sha1" //nolint:gosec // deterministic resource-name suffix, not security-sensitive.
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"log"
@@ -124,7 +124,11 @@ func topicShapeFromDetail(detail sarama.TopicDetail) (int32, int16, error) {
 	partitions := detail.NumPartitions
 	replicationFactor := detail.ReplicationFactor
 	if partitions <= 0 && len(detail.ReplicaAssignment) > 0 {
-		partitions = int32(len(detail.ReplicaAssignment))
+		converted, err := safePartitionCount(len(detail.ReplicaAssignment))
+		if err != nil {
+			return 0, 0, err
+		}
+		partitions = converted
 	}
 	if replicationFactor <= 0 && len(detail.ReplicaAssignment) > 0 {
 		for _, replicas := range detail.ReplicaAssignment {
@@ -132,10 +136,18 @@ func topicShapeFromDetail(detail sarama.TopicDetail) (int32, int16, error) {
 				continue
 			}
 			if replicationFactor == 0 || replicationFactor == -1 {
-				replicationFactor = int16(len(replicas))
+				converted, err := safeReplicationFactor(len(replicas))
+				if err != nil {
+					return 0, 0, err
+				}
+				replicationFactor = converted
 				continue
 			}
-			if replicationFactor != int16(len(replicas)) {
+			converted, err := safeReplicationFactor(len(replicas))
+			if err != nil {
+				return 0, 0, err
+			}
+			if replicationFactor != converted {
 				return 0, 0, fmt.Errorf("inconsistent replication factor %d != %d", replicationFactor, len(replicas))
 			}
 		}
@@ -154,17 +166,28 @@ func topicShapeFromMetadata(name string, topics []*sarama.TopicMetadata) (int32,
 		if metadata == nil || metadata.Name != name {
 			continue
 		}
-		partitions := int32(len(metadata.Partitions))
+		partitions, err := safePartitionCount(len(metadata.Partitions))
+		if err != nil {
+			return 0, 0, fmt.Errorf("kafka topic %q: %w", name, err)
+		}
 		var replicationFactor int16
 		for _, partition := range metadata.Partitions {
 			if partition == nil || len(partition.Replicas) == 0 {
 				continue
 			}
 			if replicationFactor == 0 {
-				replicationFactor = int16(len(partition.Replicas))
+				converted, err := safeReplicationFactor(len(partition.Replicas))
+				if err != nil {
+					return 0, 0, fmt.Errorf("kafka topic %q: %w", name, err)
+				}
+				replicationFactor = converted
 				continue
 			}
-			if replicationFactor != int16(len(partition.Replicas)) {
+			converted, err := safeReplicationFactor(len(partition.Replicas))
+			if err != nil {
+				return 0, 0, fmt.Errorf("kafka topic %q: %w", name, err)
+			}
+			if replicationFactor != converted {
 				return 0, 0, fmt.Errorf("kafka topic %q: inconsistent replication factor %d != %d", name, replicationFactor, len(partition.Replicas))
 			}
 		}
@@ -174,6 +197,24 @@ func topicShapeFromMetadata(name string, topics []*sarama.TopicMetadata) (int32,
 		return partitions, replicationFactor, nil
 	}
 	return 0, 0, fmt.Errorf("kafka topic %q: metadata not found", name)
+}
+
+func safePartitionCount(value int) (int32, error) {
+	const maxInt32 = 2147483647
+	if value > maxInt32 {
+		return 0, fmt.Errorf("partition count %d exceeds int32 max", value)
+	}
+	converted := int32(value) //nolint:gosec // value is bounds checked above.
+	return converted, nil
+}
+
+func safeReplicationFactor(value int) (int16, error) {
+	const maxInt16 = 32767
+	if value > maxInt16 {
+		return 0, fmt.Errorf("replication factor %d exceeds int16 max", value)
+	}
+	converted := int16(value) //nolint:gosec // value is bounds checked above.
+	return converted, nil
 }
 
 func topicConfig(admin adminClient, name string, providerConfig Config) (map[string]string, error) {
@@ -264,7 +305,7 @@ func (g TopicGenerator) createResources(topics []Topic) []terraformutils.Resourc
 }
 
 func kafkaTopicResourceName(topicName string) string {
-	hash := sha1.Sum([]byte(topicName))
+	hash := sha256.Sum256([]byte(topicName))
 	return "topic_" + normalizeTopicResourceName(topicName) + "_" + hex.EncodeToString(hash[:4])
 }
 
@@ -277,7 +318,7 @@ func normalizeTopicResourceName(topicName string) string {
 		case unicode.IsSpace(r):
 			builder.WriteByte('_')
 		default:
-			builder.WriteString(fmt.Sprintf("_x%04X_", r))
+			fmt.Fprintf(&builder, "_x%04X_", r)
 		}
 	}
 	name := strings.Trim(builder.String(), "_")

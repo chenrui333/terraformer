@@ -72,6 +72,8 @@ func TestOAuthBearerUsesTokenURLProvider(t *testing.T) {
 func TestOAuthBearerRejectsPremintedTokenOnly(t *testing.T) {
 	t.Setenv("KAFKA_SASL_MECHANISM", "oauthbearer")
 	t.Setenv("KAFKA_SASL_OAUTH_TOKEN", "preminted-token")
+	t.Setenv("KAFKA_SASL_TOKEN_URL", "")
+	t.Setenv("TOKEN_URL", "")
 
 	config := ConfigFromEnv()
 	_, err := config.newSaramaConfig()

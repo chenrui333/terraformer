@@ -50,13 +50,13 @@ type Config struct {
 	ClientCert                             string
 	Timeout                                int
 
-	ClientKey           string
-	ClientKeyPassphrase string
-	SASLPassword        string
-	SASLAWSAccessKey    string
-	SASLAWSSecretKey    string
-	SASLAWSSessionToken string
-	SASLAWSCredsDebug   bool
+	ClientKey           string `json:"-"`
+	ClientKeyPassphrase string `json:"-"`
+	SASLPassword        string `json:"-"`
+	SASLAWSAccessKey    string `json:"-"`
+	SASLAWSSecretKey    string `json:"-"`
+	SASLAWSSessionToken string `json:"-"`
+	SASLAWSCredsDebug   bool   `json:"-"`
 }
 
 func ConfigFromEnv() Config {
@@ -90,7 +90,10 @@ func ConfigFromEnv() Config {
 }
 
 func EncodeConfig(config Config) string {
-	encoded, _ := json.Marshal(config)
+	encoded, err := json.Marshal(config)
+	if err != nil {
+		return "{}"
+	}
 	return string(encoded)
 }
 
@@ -277,7 +280,7 @@ type xdgSCRAMClient struct {
 }
 
 func (x *xdgSCRAMClient) Begin(userName, password, authzID string) error {
-	client, err := x.HashGeneratorFcn.NewClient(userName, password, authzID)
+	client, err := x.NewClient(userName, password, authzID)
 	if err != nil {
 		return err
 	}
@@ -365,8 +368,8 @@ func newTLSConfig(clientCert, clientKey, caCert, clientKeyPassphrase string) (*t
 		if err != nil {
 			return nil, err
 		}
-		if x509.IsEncryptedPEMBlock(keyBlock) {
-			decrypted, err := x509.DecryptPEMBlock(keyBlock, []byte(clientKeyPassphrase))
+		if x509.IsEncryptedPEMBlock(keyBlock) { //nolint:staticcheck // Legacy encrypted PEM keys are supported for Kafka provider compatibility.
+			decrypted, err := x509.DecryptPEMBlock(keyBlock, []byte(clientKeyPassphrase)) //nolint:staticcheck // Legacy encrypted PEM keys are supported for Kafka provider compatibility.
 			if err != nil {
 				return nil, err
 			}
