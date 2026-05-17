@@ -1,0 +1,21 @@
+providers/datadog/dashboarding_test.go
+  s_147381facf0cb2::t_2bf187c1528009 98-125
+providers/datadog/powerpack.go
+  s_147381facf0cb2::t_2b5b8e0ed789a1 17,19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "7507c15203a9bf25a3629509e435751d2f0177d3",
+  "prompts": {},
+  "sessions": {
+    "s_147381facf0cb2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35d4-5c2a-7410-97bd-53923272d33e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
