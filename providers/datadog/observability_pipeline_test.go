@@ -49,10 +49,14 @@ func TestObservabilityPipelineAllowEmptyValuesMatchesIndexedFlatmapPaths(t *test
 		"config.0.processor_group.0.include",
 		"config.0.processor_group.0.enabled",
 		"config.0.processor_group.0.processor.0.include",
+		"config.0.processor_group.0.processor.0.custom_processor.0.remap.0.include",
 		"config.0.processor_group.0.processor.0.custom_processor.0.remap.0.drop_on_error",
 		"config.0.processor_group.0.processor.0.custom_processor.0.remap.0.enabled",
 		"config.0.processor_group.0.processor.0.enabled",
 		"config.0.processor_group.0.processor.0.enrichment_table.0.file.0.encoding.0.includes_headers",
+		"config.0.processor_group.0.processor.0.generate_datadog_metrics.0.metric.0.include",
+		"config.0.processor_group.0.processor.0.metric_tags.0.rule.0.include",
+		"config.0.processor_group.0.processor.0.ocsf_mapper.0.mapping.0.include",
 		"config.0.processor_group.0.processor.0.ocsf_mapper.0.keep_unmatched",
 		"config.0.processor_group.0.processor.0.parse_grok.0.disable_library_rules",
 		"config.0.processor_group.0.processor.0.parse_xml.0.always_use_text_key",
@@ -65,6 +69,7 @@ func TestObservabilityPipelineAllowEmptyValuesMatchesIndexedFlatmapPaths(t *test
 		"config.0.processor_group.0.processor.0.rename_fields.0.field.0.preserve_source",
 		"config.0.processor_group.0.processor.0.sensitive_data_scanner.0.rule.0.pattern.0.library.0.use_recommended_keywords",
 		"config.0.processor_group.0.processor.0.sensitive_data_scanner.0.rule.0.scope.0.all",
+		"config.0.processor_group.0.processor.0.split_array.0.array.0.include",
 		"config.0.source.0.splunk_hec.0.store_hec_token",
 		"config.0.use_legacy_search_syntax",
 	}
@@ -84,18 +89,33 @@ func TestObservabilityPipelineAllowEmptyValuesMatchesIndexedFlatmapPaths(t *test
 
 func TestObservabilityPipelineAllowEmptyValuesPreservesRequiredIncludeQueries(t *testing.T) {
 	parser := terraformutils.NewFlatmapParser(map[string]string{
-		"config.#":                                               "1",
-		"config.0.destination.#":                                 "1",
-		"config.0.destination.0.id":                              "datadog-logs",
-		"config.0.destination.0.datadog_logs.#":                  "1",
-		"config.0.destination.0.datadog_logs.0.routes.#":         "1",
-		"config.0.destination.0.datadog_logs.0.routes.0.include": "",
-		"config.0.processor_group.#":                             "1",
-		"config.0.processor_group.0.id":                          "processor-group",
-		"config.0.processor_group.0.include":                     "",
-		"config.0.processor_group.0.processor.#":                 "1",
-		"config.0.processor_group.0.processor.0.id":              "processor",
-		"config.0.processor_group.0.processor.0.include":         "",
+		"config.#":                                                                           "1",
+		"config.0.destination.#":                                                             "1",
+		"config.0.destination.0.id":                                                          "datadog-logs",
+		"config.0.destination.0.datadog_logs.#":                                              "1",
+		"config.0.destination.0.datadog_logs.0.routes.#":                                     "1",
+		"config.0.destination.0.datadog_logs.0.routes.0.include":                             "",
+		"config.0.processor_group.#":                                                         "1",
+		"config.0.processor_group.0.id":                                                      "processor-group",
+		"config.0.processor_group.0.include":                                                 "",
+		"config.0.processor_group.0.processor.#":                                             "1",
+		"config.0.processor_group.0.processor.0.id":                                          "processor",
+		"config.0.processor_group.0.processor.0.include":                                     "",
+		"config.0.processor_group.0.processor.0.custom_processor.#":                          "1",
+		"config.0.processor_group.0.processor.0.custom_processor.0.remap.#":                  "1",
+		"config.0.processor_group.0.processor.0.custom_processor.0.remap.0.include":          "",
+		"config.0.processor_group.0.processor.0.generate_datadog_metrics.#":                  "1",
+		"config.0.processor_group.0.processor.0.generate_datadog_metrics.0.metric.#":         "1",
+		"config.0.processor_group.0.processor.0.generate_datadog_metrics.0.metric.0.include": "",
+		"config.0.processor_group.0.processor.0.metric_tags.#":                               "1",
+		"config.0.processor_group.0.processor.0.metric_tags.0.rule.#":                        "1",
+		"config.0.processor_group.0.processor.0.metric_tags.0.rule.0.include":                "",
+		"config.0.processor_group.0.processor.0.ocsf_mapper.#":                               "1",
+		"config.0.processor_group.0.processor.0.ocsf_mapper.0.mapping.#":                     "1",
+		"config.0.processor_group.0.processor.0.ocsf_mapper.0.mapping.0.include":             "",
+		"config.0.processor_group.0.processor.0.split_array.#":                               "1",
+		"config.0.processor_group.0.processor.0.split_array.0.array.#":                       "1",
+		"config.0.processor_group.0.processor.0.split_array.0.array.0.include":               "",
 	}, nil, allowEmptyValueRegexps(ObservabilityPipelineAllowEmptyValues))
 	pipelineType := cty.Object(map[string]cty.Type{
 		"config": cty.List(cty.Object(map[string]cty.Type{
@@ -113,6 +133,31 @@ func TestObservabilityPipelineAllowEmptyValuesPreservesRequiredIncludeQueries(t 
 				"processor": cty.List(cty.Object(map[string]cty.Type{
 					"id":      cty.String,
 					"include": cty.String,
+					"custom_processor": cty.List(cty.Object(map[string]cty.Type{
+						"remap": cty.List(cty.Object(map[string]cty.Type{
+							"include": cty.String,
+						})),
+					})),
+					"generate_datadog_metrics": cty.List(cty.Object(map[string]cty.Type{
+						"metric": cty.List(cty.Object(map[string]cty.Type{
+							"include": cty.String,
+						})),
+					})),
+					"metric_tags": cty.List(cty.Object(map[string]cty.Type{
+						"rule": cty.List(cty.Object(map[string]cty.Type{
+							"include": cty.String,
+						})),
+					})),
+					"ocsf_mapper": cty.List(cty.Object(map[string]cty.Type{
+						"mapping": cty.List(cty.Object(map[string]cty.Type{
+							"include": cty.String,
+						})),
+					})),
+					"split_array": cty.List(cty.Object(map[string]cty.Type{
+						"array": cty.List(cty.Object(map[string]cty.Type{
+							"include": cty.String,
+						})),
+					})),
 				})),
 			})),
 		})),
@@ -136,6 +181,31 @@ func TestObservabilityPipelineAllowEmptyValuesPreservesRequiredIncludeQueries(t 
 	processor := requireMapInList(t, processorGroup, "processor", 0)
 	if processor["include"] != "" {
 		t.Fatalf("processor include = %v, want empty string", processor["include"])
+	}
+	customProcessor := requireMapInList(t, processor, "custom_processor", 0)
+	remap := requireMapInList(t, customProcessor, "remap", 0)
+	if remap["include"] != "" {
+		t.Fatalf("custom processor remap include = %v, want empty string", remap["include"])
+	}
+	generatedMetrics := requireMapInList(t, processor, "generate_datadog_metrics", 0)
+	metric := requireMapInList(t, generatedMetrics, "metric", 0)
+	if metric["include"] != "" {
+		t.Fatalf("generated metric include = %v, want empty string", metric["include"])
+	}
+	metricTags := requireMapInList(t, processor, "metric_tags", 0)
+	rule := requireMapInList(t, metricTags, "rule", 0)
+	if rule["include"] != "" {
+		t.Fatalf("metric tags rule include = %v, want empty string", rule["include"])
+	}
+	ocsfMapper := requireMapInList(t, processor, "ocsf_mapper", 0)
+	mapping := requireMapInList(t, ocsfMapper, "mapping", 0)
+	if mapping["include"] != "" {
+		t.Fatalf("ocsf mapping include = %v, want empty string", mapping["include"])
+	}
+	splitArray := requireMapInList(t, processor, "split_array", 0)
+	array := requireMapInList(t, splitArray, "array", 0)
+	if array["include"] != "" {
+		t.Fatalf("split array include = %v, want empty string", array["include"])
 	}
 }
 
