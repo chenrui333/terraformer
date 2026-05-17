@@ -290,7 +290,12 @@ func newCloudflareAIGatewayResource(accountID string, gateway cloudflareMediaPla
 		"rate_limiting_interval":     cloudflareMediaPlatformIntAttribute(gateway, "rate_limiting_interval"),
 		"rate_limiting_limit":        cloudflareMediaPlatformIntAttribute(gateway, "rate_limiting_limit"),
 	}
-	return cloudflareAccountMediaPlatformResource(accountID, id, "cloudflare_ai_gateway", "ai_gateway", attributes)
+	resource, ok := cloudflareAccountMediaPlatformResource(accountID, id, "cloudflare_ai_gateway", "ai_gateway", attributes)
+	if !ok {
+		return resource, false
+	}
+	resource.AdditionalFields["id"] = id
+	return resource, true
 }
 
 func newCloudflareImageVariantResource(accountID string, variant cloudflareMediaPlatformRawResource) (terraformutils.Resource, bool) {
@@ -319,7 +324,13 @@ func newCloudflareImageVariantResource(accountID string, variant cloudflareMedia
 		"options.metadata":          metadata,
 		"options.width":             width,
 	}
-	return cloudflareAccountMediaPlatformResource(accountID, id, "cloudflare_image_variant", "image_variant", attributes)
+	resource, ok := cloudflareAccountMediaPlatformResource(accountID, id, "cloudflare_image_variant", "image_variant", attributes)
+	if !ok {
+		return resource, false
+	}
+	resource.AdditionalFields["id"] = id
+	setCloudflarePreserveIDAfterRefresh(&resource)
+	return resource, true
 }
 
 func newCloudflarePipelineResource(accountID string, pipeline cloudflareMediaPlatformRawResource) (terraformutils.Resource, bool) {

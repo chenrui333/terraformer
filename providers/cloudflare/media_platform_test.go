@@ -40,6 +40,9 @@ func TestNewCloudflareAIGatewayResource(t *testing.T) {
 	if got := resource.InstanceState.Meta["import_id"]; got != "account-123/gateway-123" {
 		t.Fatalf("import_id = %q, want account-123/gateway-123", got)
 	}
+	if got := resource.AdditionalFields["id"]; got != "gateway-123" {
+		t.Fatalf("AdditionalFields[id] = %q, want gateway-123", got)
+	}
 	for key, want := range map[string]string{
 		"account_id":                 "account-123",
 		"cache_invalidate_on_update": "true",
@@ -103,6 +106,10 @@ func TestNewCloudflareImageVariantResourceSeedsOptions(t *testing.T) {
 	if got := resource.InstanceState.Meta["import_id"]; got != "account-123/thumb" {
 		t.Fatalf("import_id = %q, want account-123/thumb", got)
 	}
+	if got := resource.AdditionalFields["id"]; got != "thumb" {
+		t.Fatalf("AdditionalFields[id] = %q, want thumb", got)
+	}
+	assertCloudflarePreservesID(t, resource)
 	for key, want := range map[string]string{
 		"account_id":                "account-123",
 		"never_require_signed_urls": "true",
