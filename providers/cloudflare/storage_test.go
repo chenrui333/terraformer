@@ -3,12 +3,40 @@
 package cloudflare
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 	cf "github.com/cloudflare/cloudflare-go"
 )
+
+func TestRunCloudflareStorageChildDiscoveriesContinuesAfterError(t *testing.T) {
+	calls := []string{}
+	runCloudflareStorageChildDiscoveries([]cloudflareStorageChildDiscovery{
+		{
+			name:   "fails",
+			parent: "parent",
+			discover: func() error {
+				calls = append(calls, "fails")
+				return errors.New("permission denied")
+			},
+		},
+		{
+			name:   "succeeds",
+			parent: "parent",
+			discover: func() error {
+				calls = append(calls, "succeeds")
+				return nil
+			},
+		},
+		{name: "nil discoverer", parent: "parent"},
+	})
+
+	if len(calls) != 2 || calls[0] != "fails" || calls[1] != "succeeds" {
+		t.Fatalf("discoveries called in order = %#v, want [fails succeeds]", calls)
+	}
+}
 
 func TestNewCloudflareQueueConsumerResource(t *testing.T) {
 	queue := cf.Queue{ID: "queue-id", Name: "orders"}

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -74,6 +75,23 @@ type cloudflareR2DataCatalog struct {
 	ID               string `json:"id"`
 	Name             string `json:"name"`
 	Status           string `json:"status"`
+}
+
+type cloudflareStorageChildDiscovery struct {
+	name     string
+	parent   string
+	discover func() error
+}
+
+func runCloudflareStorageChildDiscoveries(discoveries []cloudflareStorageChildDiscovery) {
+	for _, discovery := range discoveries {
+		if discovery.discover == nil {
+			continue
+		}
+		if err := discovery.discover(); err != nil {
+			log.Printf("Skipping Cloudflare storage %s discovery for %s: %v", discovery.name, discovery.parent, err)
+		}
+	}
 }
 
 func cloudflareUnsupportedJurisdictionError(err error) bool {
@@ -453,9 +471,13 @@ func (g *StorageGenerator) appendQueueResources(ctx context.Context, api *cf.API
 			)
 			setCloudflareImportID(&resource, accountID+"/"+queue.ID)
 			g.Resources = append(g.Resources, resource)
-			if err := g.appendQueueConsumerResources(ctx, api, accountID, queue); err != nil {
-				return err
-			}
+			runCloudflareStorageChildDiscoveries([]cloudflareStorageChildDiscovery{{
+				name:   "queue consumers",
+				parent: cloudflareResourceName(accountID, queue.ID),
+				discover: func() error {
+					return g.appendQueueConsumerResources(ctx, api, accountID, queue)
+				},
+			}})
 		}
 		if info == nil || !info.HasMorePages() {
 			break
@@ -465,43 +487,33 @@ func (g *StorageGenerator) appendQueueResources(ctx context.Context, api *cf.API
 	return nil
 }
 
-func (g *StorageGenerator) appendR2BucketConfigChildResources(
+func (g *StorageGenerator) appendR2BucketConfigChildResource(
 	ctx context.Context,
 	api *cf.API,
 	accountID string,
 	bucketName string,
 	jurisdiction string,
+	resourceType string,
+	pathSuffix string,
 ) error {
-	for _, config := range []struct {
-		resourceType string
-		pathSuffix   string
-	}{
-		{resourceType: "cloudflare_r2_bucket_cors", pathSuffix: "cors"},
-		{resourceType: "cloudflare_r2_bucket_lifecycle", pathSuffix: "lifecycle"},
-		{resourceType: "cloudflare_r2_bucket_lock", pathSuffix: "lock"},
-	} {
-		path := fmt.Sprintf(
-			"/accounts/%s/r2/buckets/%s/%s",
-			accountID,
-			url.PathEscape(bucketName),
-			config.pathSuffix,
-		)
-		result, found, err := cloudflareRawGetOptional(ctx, api, path, cloudflareR2JurisdictionHeaders(jurisdiction))
-		if err != nil {
-			return err
-		}
-		if !found {
-			continue
-		}
-		var rules cloudflareR2RulesResponse
-		if err := json.Unmarshal(result, &rules); err != nil {
-			return err
-		}
-		if len(rules.Rules) == 0 {
-			continue
-		}
-		g.Resources = append(g.Resources, newCloudflareR2BucketConfigResource(accountID, bucketName, jurisdiction, config.resourceType))
+	path := fmt.Sprintf(
+		"/accounts/%s/r2/buckets/%s/%s",
+		accountID,
+		url.PathEscape(bucketName),
+		pathSuffix,
+	)
+	result, found, err := cloudflareRawGetOptional(ctx, api, path, cloudflareR2JurisdictionHeaders(jurisdiction))
+	if err != nil || !found {
+		return err
 	}
+	var rules cloudflareR2RulesResponse
+	if err := json.Unmarshal(result, &rules); err != nil {
+		return err
+	}
+	if len(rules.Rules) == 0 {
+		return nil
+	}
+	g.Resources = append(g.Resources, newCloudflareR2BucketConfigResource(accountID, bucketName, jurisdiction, resourceType))
 	return nil
 }
 
@@ -596,20 +608,55 @@ func (g *StorageGenerator) appendR2BucketChildResources(
 	bucketName string,
 	jurisdiction string,
 	includeDataCatalog bool,
-) error {
-	for _, f := range []func(context.Context, *cf.API, string, string, string) error{
-		g.appendR2BucketConfigChildResources,
-		g.appendR2BucketEventNotificationResources,
-		g.appendR2CustomDomainResources,
-	} {
-		if err := f(ctx, api, accountID, bucketName, jurisdiction); err != nil {
-			return err
-		}
+) {
+	parent := cloudflareResourceName(accountID, bucketName, jurisdiction)
+	discoveries := []cloudflareStorageChildDiscovery{
+		{
+			name:   "R2 bucket CORS",
+			parent: parent,
+			discover: func() error {
+				return g.appendR2BucketConfigChildResource(ctx, api, accountID, bucketName, jurisdiction, "cloudflare_r2_bucket_cors", "cors")
+			},
+		},
+		{
+			name:   "R2 bucket lifecycle",
+			parent: parent,
+			discover: func() error {
+				return g.appendR2BucketConfigChildResource(ctx, api, accountID, bucketName, jurisdiction, "cloudflare_r2_bucket_lifecycle", "lifecycle")
+			},
+		},
+		{
+			name:   "R2 bucket lock",
+			parent: parent,
+			discover: func() error {
+				return g.appendR2BucketConfigChildResource(ctx, api, accountID, bucketName, jurisdiction, "cloudflare_r2_bucket_lock", "lock")
+			},
+		},
+		{
+			name:   "R2 bucket event notifications",
+			parent: parent,
+			discover: func() error {
+				return g.appendR2BucketEventNotificationResources(ctx, api, accountID, bucketName, jurisdiction)
+			},
+		},
+		{
+			name:   "R2 custom domains",
+			parent: parent,
+			discover: func() error {
+				return g.appendR2CustomDomainResources(ctx, api, accountID, bucketName, jurisdiction)
+			},
+		},
 	}
 	if includeDataCatalog {
-		return g.appendR2DataCatalogResource(ctx, api, accountID, bucketName)
+		discoveries = append(discoveries, cloudflareStorageChildDiscovery{
+			name:   "R2 data catalog",
+			parent: parent,
+			discover: func() error {
+				return g.appendR2DataCatalogResource(ctx, api, accountID, bucketName)
+			},
+		})
 	}
-	return nil
+	runCloudflareStorageChildDiscoveries(discoveries)
 }
 
 func (g *StorageGenerator) appendR2BucketResources(ctx context.Context, api *cf.API, accountID string) error {
@@ -638,9 +685,7 @@ func (g *StorageGenerator) appendR2BucketResources(ctx context.Context, api *cf.
 
 			includeDataCatalog := !seenDataCatalogBuckets[bucket.Name]
 			seenDataCatalogBuckets[bucket.Name] = true
-			if err := g.appendR2BucketChildResources(ctx, api, accountID, bucket.Name, jurisdiction, includeDataCatalog); err != nil {
-				return err
-			}
+			g.appendR2BucketChildResources(ctx, api, accountID, bucket.Name, jurisdiction, includeDataCatalog)
 		}
 	}
 	return nil
