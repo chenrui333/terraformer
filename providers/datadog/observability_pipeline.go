@@ -5,7 +5,6 @@ package datadog
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
@@ -142,9 +141,6 @@ func listObservabilityPipelines(auth context.Context, api *datadogV2.Observabili
 		response, httpResp, err := api.ListPipelines(auth, *optionalParams)
 		closeDatadogResponseBody(httpResp)
 		if err != nil {
-			if pageNumber == 0 && isDatadogOptionalDiscoveryStatus(httpResp) {
-				return pipelines, nil
-			}
 			return nil, err
 		}
 
@@ -162,8 +158,4 @@ func listObservabilityPipelines(auth context.Context, api *datadogV2.Observabili
 		pageNumber++
 	}
 	return pipelines, nil
-}
-
-func isDatadogOptionalDiscoveryStatus(response *http.Response) bool {
-	return response != nil && (response.StatusCode == http.StatusForbidden || response.StatusCode == http.StatusNotFound)
 }

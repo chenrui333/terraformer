@@ -109,7 +109,7 @@ func TestObservabilityPipelineInitResourcesHandlesEmptyResponse(t *testing.T) {
 	}
 }
 
-func TestObservabilityPipelineInitResourcesTreatsForbiddenListAsEmpty(t *testing.T) {
+func TestObservabilityPipelineInitResourcesReturnsForbiddenListError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if r.URL.Path != "/api/v2/obs-pipelines/pipelines" {
@@ -121,11 +121,8 @@ func TestObservabilityPipelineInitResourcesTreatsForbiddenListAsEmpty(t *testing
 	defer server.Close()
 
 	generator := newObservabilityPipelineTestGenerator(server, nil)
-	if err := generator.InitResources(); err != nil {
-		t.Fatalf("InitResources returned error: %v", err)
-	}
-	if len(generator.Resources) != 0 {
-		t.Fatalf("resources length = %d, want 0", len(generator.Resources))
+	if err := generator.InitResources(); err == nil {
+		t.Fatal("InitResources returned nil error, want forbidden error")
 	}
 }
 
