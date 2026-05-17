@@ -51,3 +51,5 @@ List of supported Kafka services:
 
 * topics
     * kafka_topic
+
+Unsupported Kafka resources with evidence-backed import limitations are tracked in [unsupported_resources.json](../providers/kafka/unsupported_resources.json). Terraformer does not emit `kafka_quota` because Mongey/kafka v0.13.1 documents an import form but does not expose a resource importer, and it does not emit `kafka_user_scram_credential` because refresh cannot recover the required password material that Terraformer must not export or synthesize.
