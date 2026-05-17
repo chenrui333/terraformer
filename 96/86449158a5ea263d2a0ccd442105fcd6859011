@@ -1,0 +1,26 @@
+providers/datadog/security_monitoring_critical_asset.go
+  s_147381facf0cb2::t_5c1c26dce7e4f7 140-146,152,155,159-162,166,169,172,175,179,184
+  s_147381facf0cb2::t_b959199ab84027 126,147
+  s_147381facf0cb2::t_fc8e92addf770e 118-125
+providers/datadog/security_notification_rule.go
+  s_147381facf0cb2::t_c62edf43889be2 121-124,126,141-145,152-156,161,164,168,172-175,179,182,185,188,192,198
+  s_147381facf0cb2::t_eef4e46cd19f53 125
+providers/datadog/security_platform_test.go
+  s_147381facf0cb2::t_05fa7f40408b15 141,151-153,166-177,208,220-222,235-269,279-280
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "9686449158a5ea263d2a0ccd442105fcd6859011",
+  "prompts": {},
+  "sessions": {
+    "s_147381facf0cb2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35d4-5c2a-7410-97bd-53923272d33e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
