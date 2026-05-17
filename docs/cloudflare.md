@@ -63,6 +63,16 @@ List of supported Cloudflare services:
   * `cloudflare_magic_wan_gre_tunnel`
   * `cloudflare_magic_wan_ipsec_tunnel`
   * `cloudflare_magic_wan_static_route`
+* `network_edge`
+  * `cloudflare_address_map`
+  * `cloudflare_magic_network_monitoring_rule`
+  * `cloudflare_magic_transit_site`
+  * `cloudflare_magic_transit_site_acl`
+  * `cloudflare_magic_transit_site_lan`
+  * `cloudflare_magic_transit_site_wan`
+  * `cloudflare_regional_hostname`
+  * `cloudflare_spectrum_application`
+  * `cloudflare_web3_hostname`
 * `notifications`
   * `cloudflare_notification_policy`
   * `cloudflare_notification_policy_webhooks`

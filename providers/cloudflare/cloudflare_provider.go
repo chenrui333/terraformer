@@ -41,6 +41,7 @@ func (p *CloudflareProvider) GetSupportedService() map[string]terraformutils.Ser
 		"load_balancing":     &LoadBalancingGenerator{},
 		"logpush":            &LogpushGenerator{},
 		"magic_wan":          &MagicWANGenerator{},
+		"network_edge":       &NetworkEdgeGenerator{},
 		"notifications":      &NotificationsGenerator{},
 		"pages":              &PagesGenerator{},
 		"ruleset":            &RulesetGenerator{},

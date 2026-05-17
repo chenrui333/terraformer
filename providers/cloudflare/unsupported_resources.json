@@ -104,6 +104,17 @@
       ]
     },
     {
+      "resource": "cloudflare_byo_ip_prefix",
+      "service_family": "network_edge",
+      "reason": "BYOIP prefixes are onboarding and validation lifecycle resources rather than safe broad-import inventory.",
+      "evidence": "Terraform provider v5.19.1 requires ASN and CIDR and optionally an LOA document or delegated LOA creation, while read state exposes approval, ownership, IRR, RPKI validation states, and an ownership validation token. Broad import would turn prefix onboarding and validation workflow state into Terraform-owned configuration.",
+      "status": "request-style",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/byo_ip_prefix"
+      ]
+    },
+    {
       "resource": "cloudflare_cloudforce_one_request",
       "service_family": "cloudforce_one",
       "reason": "Cloudforce One requests represent submitted analysis work rather than stable infrastructure inventory.",
@@ -178,6 +189,28 @@
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/logpush_ownership_challenge"
+      ]
+    },
+    {
+      "resource": "cloudflare_magic_network_monitoring_configuration",
+      "service_family": "network_edge",
+      "reason": "Magic Network Monitoring account configuration does not expose a provider import contract.",
+      "evidence": "Terraform provider v5.19.1 implements read/create/update/delete for cloudflare_magic_network_monitoring_configuration but does not implement ResourceWithImportState or document terraform import. The resource owns account-level router and WARP-device monitoring configuration, so Terraformer cannot safely seed it through provider import.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/magic_network_monitoring_configuration"
+      ]
+    },
+    {
+      "resource": "cloudflare_magic_transit_connector",
+      "service_family": "network_edge",
+      "reason": "Magic Transit connectors can require generated or write-only license material that broad import cannot reconstruct.",
+      "evidence": "Terraform provider v5.19.1 marks license_key as Sensitive and documents it is only returned on creation, while device.provision_license is a write-only creation field. Provider import verification ignores these fields, so Terraformer cannot emit a complete connector resource from discovery alone.",
+      "status": "secret-required",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/magic_transit_connector"
       ]
     },
     {
