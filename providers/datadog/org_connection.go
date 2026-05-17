@@ -5,6 +5,7 @@ package datadog
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
@@ -25,12 +26,25 @@ func (g *OrgConnectionGenerator) createResource(conn datadogV2.OrgConnection) te
 	resourceName := fmt.Sprintf("org_connection_%s", id)
 
 	attrs := map[string]string{}
+
 	rels := conn.GetRelationships()
-	if sinkOrg := rels.GetSinkOrg(); sinkOrg.Data != nil {
+	sinkOrg := rels.GetSinkOrg()
+	if sinkOrg.Data != nil {
 		sinkData := sinkOrg.GetData()
 		if sinkID := (&sinkData).GetId(); sinkID != "" {
 			attrs["sink_org_id"] = sinkID
 		}
+	}
+
+	connAttrs := conn.GetAttributes()
+	connTypes := (&connAttrs).GetConnectionTypes()
+	typeStrs := make([]string, 0, len(connTypes))
+	for _, ct := range connTypes {
+		typeStrs = append(typeStrs, string(ct))
+	}
+	attrs["connection_types.#"] = fmt.Sprintf("%d", len(typeStrs))
+	for i, t := range typeStrs {
+		attrs[fmt.Sprintf("connection_types.%d", i)] = t
 	}
 
 	return terraformutils.NewResource(
@@ -49,21 +63,37 @@ func (g *OrgConnectionGenerator) InitResources() error {
 	auth := g.Args["auth"].(context.Context)
 	api := datadogV2.NewOrgConnectionsApi(datadogClient)
 
-	resp, httpResp, err := api.ListOrgConnections(auth)
-	if httpResp != nil && httpResp.Body != nil {
-		_ = httpResp.Body.Close()
-	}
-	if err != nil {
-		return err
+	resources := []terraformutils.Resource{}
+	var offset int64
+	const limit int64 = 100
+
+	for {
+		opts := datadogV2.NewListOrgConnectionsOptionalParameters().WithLimit(limit).WithOffset(offset)
+		resp, httpResp, err := api.ListOrgConnections(auth, *opts)
+		if httpResp != nil && httpResp.Body != nil {
+			_ = httpResp.Body.Close()
+		}
+		if err != nil {
+			if strings.Contains(err.Error(), "403") || strings.Contains(err.Error(), "404") {
+				break
+			}
+			return err
+		}
+
+		data := resp.GetData()
+		for _, conn := range data {
+			if conn.GetId().String() == "00000000-0000-0000-0000-000000000000" {
+				continue
+			}
+			resources = append(resources, g.createResource(conn))
+		}
+
+		if int64(len(data)) < limit {
+			break
+		}
+		offset += limit
 	}
 
-	resources := []terraformutils.Resource{}
-	for _, conn := range resp.GetData() {
-		if conn.GetId().String() == "00000000-0000-0000-0000-000000000000" {
-			continue
-		}
-		resources = append(resources, g.createResource(conn))
-	}
 	g.Resources = resources
 	return nil
 }

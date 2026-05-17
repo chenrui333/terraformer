@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	DomainAllowlistAllowEmptyValues = []string{}
+	DomainAllowlistAllowEmptyValues = []string{"domains."}
 )
 
 type DomainAllowlistGenerator struct {

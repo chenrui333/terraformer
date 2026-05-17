@@ -42,37 +42,74 @@ func (g *OrgGroupMembershipGenerator) InitResources() error {
 	datadogClient.GetConfig().SetUnstableOperationEnabled("v2.ListOrgGroupMemberships", true)
 	api := datadogV2.NewOrgGroupsApi(datadogClient)
 
-	groupsResp, httpResp, err := api.ListOrgGroups(auth)
-	if httpResp != nil && httpResp.Body != nil {
-		_ = httpResp.Body.Close()
-	}
+	groups, err := g.listAllOrgGroups(auth, api)
 	if err != nil {
 		return err
 	}
 
 	resources := []terraformutils.Resource{}
-	for _, group := range groupsResp.GetData() {
+	for _, group := range groups {
 		groupID := group.GetId()
 		if groupID == uuid.Nil {
 			continue
 		}
 
-		opts := datadogV2.NewListOrgGroupMembershipsOptionalParameters().WithFilterOrgGroupId(groupID)
-		membershipsResp, httpResp, err := api.ListOrgGroupMemberships(auth, *opts)
-		if httpResp != nil && httpResp.Body != nil {
-			_ = httpResp.Body.Close()
-		}
-		if err != nil {
-			return err
-		}
+		var pageNumber int64 = 1
+		const pageSize int64 = 100
 
-		for _, membership := range membershipsResp.GetData() {
-			if membership.GetId() == uuid.Nil {
-				continue
+		for {
+			opts := datadogV2.NewListOrgGroupMembershipsOptionalParameters().
+				WithFilterOrgGroupId(groupID).
+				WithPageNumber(pageNumber).
+				WithPageSize(pageSize)
+			resp, httpResp, err := api.ListOrgGroupMemberships(auth, *opts)
+			if httpResp != nil && httpResp.Body != nil {
+				_ = httpResp.Body.Close()
 			}
-			resources = append(resources, g.createResource(membership))
+			if err != nil {
+				return err
+			}
+
+			data := resp.GetData()
+			for _, membership := range data {
+				if membership.GetId() == uuid.Nil {
+					continue
+				}
+				resources = append(resources, g.createResource(membership))
+			}
+
+			if int64(len(data)) < pageSize {
+				break
+			}
+			pageNumber++
 		}
 	}
 	g.Resources = resources
 	return nil
+}
+
+func (g *OrgGroupMembershipGenerator) listAllOrgGroups(ctx context.Context, api *datadogV2.OrgGroupsApi) ([]datadogV2.OrgGroupData, error) {
+	var all []datadogV2.OrgGroupData
+	var pageNumber int64 = 1
+	const pageSize int64 = 100
+
+	for {
+		opts := datadogV2.NewListOrgGroupsOptionalParameters().WithPageNumber(pageNumber).WithPageSize(pageSize)
+		resp, httpResp, err := api.ListOrgGroups(ctx, *opts)
+		if httpResp != nil && httpResp.Body != nil {
+			_ = httpResp.Body.Close()
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		data := resp.GetData()
+		all = append(all, data...)
+
+		if int64(len(data)) < pageSize {
+			break
+		}
+		pageNumber++
+	}
+	return all, nil
 }

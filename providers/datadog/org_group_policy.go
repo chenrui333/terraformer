@@ -46,36 +46,73 @@ func (g *OrgGroupPolicyGenerator) InitResources() error {
 	datadogClient.GetConfig().SetUnstableOperationEnabled("v2.ListOrgGroupPolicies", true)
 	api := datadogV2.NewOrgGroupsApi(datadogClient)
 
-	groupsResp, httpResp, err := api.ListOrgGroups(auth)
-	if httpResp != nil && httpResp.Body != nil {
-		_ = httpResp.Body.Close()
-	}
+	groups, err := g.listAllOrgGroups(auth, api)
 	if err != nil {
 		return err
 	}
 
 	resources := []terraformutils.Resource{}
-	for _, group := range groupsResp.GetData() {
+	for _, group := range groups {
 		groupID := group.GetId()
 		if groupID == uuid.Nil {
 			continue
 		}
 
-		policiesResp, httpResp, err := api.ListOrgGroupPolicies(auth, groupID)
-		if httpResp != nil && httpResp.Body != nil {
-			_ = httpResp.Body.Close()
-		}
-		if err != nil {
-			return err
-		}
+		var pageNumber int64 = 1
+		const pageSize int64 = 100
 
-		for _, policy := range policiesResp.GetData() {
-			if policy.GetId() == uuid.Nil {
-				continue
+		for {
+			opts := datadogV2.NewListOrgGroupPoliciesOptionalParameters().
+				WithPageNumber(pageNumber).
+				WithPageSize(pageSize)
+			resp, httpResp, err := api.ListOrgGroupPolicies(auth, groupID, *opts)
+			if httpResp != nil && httpResp.Body != nil {
+				_ = httpResp.Body.Close()
 			}
-			resources = append(resources, g.createResource(policy, groupID.String()))
+			if err != nil {
+				return err
+			}
+
+			data := resp.GetData()
+			for _, policy := range data {
+				if policy.GetId() == uuid.Nil {
+					continue
+				}
+				resources = append(resources, g.createResource(policy, groupID.String()))
+			}
+
+			if int64(len(data)) < pageSize {
+				break
+			}
+			pageNumber++
 		}
 	}
 	g.Resources = resources
 	return nil
+}
+
+func (g *OrgGroupPolicyGenerator) listAllOrgGroups(ctx context.Context, api *datadogV2.OrgGroupsApi) ([]datadogV2.OrgGroupData, error) {
+	var all []datadogV2.OrgGroupData
+	var pageNumber int64 = 1
+	const pageSize int64 = 100
+
+	for {
+		opts := datadogV2.NewListOrgGroupsOptionalParameters().WithPageNumber(pageNumber).WithPageSize(pageSize)
+		resp, httpResp, err := api.ListOrgGroups(ctx, *opts)
+		if httpResp != nil && httpResp.Body != nil {
+			_ = httpResp.Body.Close()
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		data := resp.GetData()
+		all = append(all, data...)
+
+		if int64(len(data)) < pageSize {
+			break
+		}
+		pageNumber++
+	}
+	return all, nil
 }

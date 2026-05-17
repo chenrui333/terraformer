@@ -8,6 +8,7 @@ import (
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"github.com/google/uuid"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 )
@@ -44,21 +45,34 @@ func (g *OrgGroupGenerator) InitResources() error {
 	datadogClient.GetConfig().SetUnstableOperationEnabled("v2.ListOrgGroups", true)
 	api := datadogV2.NewOrgGroupsApi(datadogClient)
 
-	resp, httpResp, err := api.ListOrgGroups(auth)
-	if httpResp != nil && httpResp.Body != nil {
-		_ = httpResp.Body.Close()
-	}
-	if err != nil {
-		return err
+	resources := []terraformutils.Resource{}
+	var pageNumber int64 = 1
+	const pageSize int64 = 100
+
+	for {
+		opts := datadogV2.NewListOrgGroupsOptionalParameters().WithPageNumber(pageNumber).WithPageSize(pageSize)
+		resp, httpResp, err := api.ListOrgGroups(auth, *opts)
+		if httpResp != nil && httpResp.Body != nil {
+			_ = httpResp.Body.Close()
+		}
+		if err != nil {
+			return err
+		}
+
+		data := resp.GetData()
+		for _, group := range data {
+			if group.GetId() == uuid.Nil {
+				continue
+			}
+			resources = append(resources, g.createResource(group))
+		}
+
+		if int64(len(data)) < pageSize {
+			break
+		}
+		pageNumber++
 	}
 
-	resources := []terraformutils.Resource{}
-	for _, group := range resp.GetData() {
-		if group.GetId().String() == "00000000-0000-0000-0000-000000000000" {
-			continue
-		}
-		resources = append(resources, g.createResource(group))
-	}
 	g.Resources = resources
 	return nil
 }
