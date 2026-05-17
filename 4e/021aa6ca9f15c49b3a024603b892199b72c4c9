@@ -1,0 +1,35 @@
+providers/kafka/acl.go
+  s_b66bcd9648b29e::t_fb343855b6bc0c 1-504
+docs/kafka.md
+  s_b66bcd9648b29e::t_fb343855b6bc0c 10-11,52-53,56-57
+providers/kafka/kafka_service.go
+  s_b66bcd9648b29e::t_fb343855b6bc0c 13
+providers/kafka/acl_test.go
+  s_b66bcd9648b29e::t_fb343855b6bc0c 1-279
+cmd/provider_cmd_kafka.go
+  s_b66bcd9648b29e::t_fb343855b6bc0c 30
+cmd/provider_cmd_kafka_test.go
+  s_b66bcd9648b29e::t_fb343855b6bc0c 15-17
+providers/kafka/kafka_provider_test.go
+  s_b66bcd9648b29e::t_fb343855b6bc0c 86-88,92-96
+providers/kafka/topic_test.go
+  s_b66bcd9648b29e::t_fb343855b6bc0c 23,26,112-189
+providers/kafka/kafka_provider.go
+  s_b66bcd9648b29e::t_fb343855b6bc0c 62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "4e021aa6ca9f15c49b3a024603b892199b72c4c9",
+  "prompts": {},
+  "sessions": {
+    "s_b66bcd9648b29e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e37e9-11ca-7342-bc92-70d1cef54e07",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
