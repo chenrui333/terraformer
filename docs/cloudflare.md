@@ -104,7 +104,14 @@ List of supported Cloudflare services:
 * `storage`
   * `cloudflare_d1_database`
   * `cloudflare_queue`
+  * `cloudflare_queue_consumer`
   * `cloudflare_r2_bucket`
+  * `cloudflare_r2_bucket_cors`
+  * `cloudflare_r2_bucket_event_notification`
+  * `cloudflare_r2_bucket_lifecycle`
+  * `cloudflare_r2_bucket_lock`
+  * `cloudflare_r2_custom_domain`
+  * `cloudflare_r2_data_catalog`
   * `cloudflare_workers_kv_namespace`
 * `turnstile`
   * `cloudflare_turnstile_widget`
@@ -122,6 +129,16 @@ List of supported Cloudflare services:
   * `cloudflare_workers_custom_domain`
   * `cloudflare_workers_for_platforms_dispatch_namespace`
   * `cloudflare_workers_route`
+* `zero_trust_gateway`
+  * `cloudflare_zero_trust_dns_location`
+  * `cloudflare_zero_trust_gateway_certificate`
+  * `cloudflare_zero_trust_gateway_logging`
+  * `cloudflare_zero_trust_gateway_pacfile`
+  * `cloudflare_zero_trust_gateway_policy`
+  * `cloudflare_zero_trust_gateway_proxy_endpoint`
+  * `cloudflare_zero_trust_gateway_settings`
+  * `cloudflare_zero_trust_list`
+  * `cloudflare_zero_trust_network_hostname_route`
 
 Unsupported and deferred Cloudflare import decisions are tracked in
 [unsupported_resources.json](../providers/cloudflare/unsupported_resources.json).

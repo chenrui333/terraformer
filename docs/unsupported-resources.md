@@ -66,7 +66,7 @@ Examples in this repository:
 
 - [AWS](../providers/aws/unsupported_resources.json) records resources with import/read reconstruction issues, duplicate ownership, and unsupported provider semantics.
 - [Datadog](../providers/datadog/unsupported_resources.json) records integration resources where generator ownership and provider schema behavior need dedicated handling.
-- [Cloudflare](../providers/cloudflare/unsupported_resources.json) records account, zone, and managed resources that need follow-up or should remain provider-managed.
+- [Cloudflare](../providers/cloudflare/unsupported_resources.json) records account, zone, storage, platform, and managed resources that need follow-up or should remain provider-managed.
 - [Kubernetes](../providers/kubernetes/unsupported_resources.json) records native APIs that are runtime-generated, policy-skipped, or not importable as Terraform-managed configuration.
 - [LaunchDarkly](../providers/launchdarkly/unsupported_resources.json) records beta, singleton, and event/report resources that need scoped follow-up.
 

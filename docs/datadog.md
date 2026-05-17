@@ -16,7 +16,7 @@ terraform {
   required_providers {
     datadog = {
       source  = "DataDog/datadog"
-      version = ">= 3.86.0"
+      version = ">= 4.9.0"
     }
   }
 }
@@ -75,6 +75,9 @@ Filtering based on resource ID:
 # Import dashboard based on the dashboard ID
 ./terraformer import datadog --resources=dashboard --filter=dashboard=some-id
 
+# Import dashboard_v2 based on the dashboard ID
+./terraformer import datadog --resources=dashboard_v2 --filter=dashboard_v2=some-id
+
 # Import based on multiple resource IDs
  ./terraformer import datadog --resources=monitor --filter=monitor=id1:id2:id4
 ```
@@ -117,6 +120,10 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_dashboard_json`
 *   `dashboard_list`
     * `datadog_dashboard_list`
+*   `dashboard_v2`
+    * `datadog_dashboard_v2`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
+        * **_NOTE:_** Discovers the same dashboard IDs as `dashboard` and `dashboard_json`; select one dashboard resource representation for each imported dashboard to avoid duplicate Terraform ownership.
 *   `cloud_inventory_sync_config`
     * `datadog_cloud_inventory_sync_config`
         * **_NOTE:_** Requires DataDog/datadog provider 3.86.0 or newer.
@@ -182,6 +189,8 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_logs_index_order`
 *   `logs_integration_pipeline`
     * `datadog_logs_integration_pipeline`
+*   `logs_metric`
+    * `datadog_logs_metric`
 *   `logs_pipeline_order`
     * `datadog_logs_pipeline_order`
 *   `logs_restriction_query`
@@ -232,6 +241,13 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `organization_settings`
     * `datadog_organization_settings`
         * **_NOTE:_** Singleton-like. Lists org(s) via V1 API and imports each by public ID.
+*   `powerpack`
+    * `datadog_powerpack`
+        * **_NOTE:_** Discovers the same powerpack IDs as `powerpack_v2`; select one powerpack resource representation for each imported powerpack to avoid duplicate Terraform ownership.
+*   `powerpack_v2`
+    * `datadog_powerpack_v2`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
+        * **_NOTE:_** Discovers the same powerpack IDs as `powerpack`; select one powerpack resource representation for each imported powerpack to avoid duplicate Terraform ownership.
 *   `rum_application`
     * `datadog_rum_application`
 *   `rum_metric`
@@ -326,5 +342,12 @@ The following Terraform provider resources have been evaluated and cannot be saf
 | `datadog_integration_fastly_account` | `api_key` is required and sensitive; read API does not return it. |
 | `datadog_integration_ms_teams_workflows_webhook_handle` | `url` is required and sensitive; read API does not return it. |
 | `datadog_integration_opsgenie_service_object` | `opsgenie_api_key` is required and sensitive; Datadog API explicitly never returns it. |
+| `datadog_secure_embed_dashboard` | Deferred because Datadog exposes secure embeds by `dashboard_id:token` only; the API and provider import path require the token and do not provide a list/token discovery endpoint. |
+| `datadog_app_key_registration` | Required `id` configuration attribute is stripped during Terraformer HCL conversion, producing an empty resource block that fails validation. |
+| `datadog_org_group_policy_override` | Delete resets the target org config value to the parent policy, and server-created overrides make broad discovery noisy and potentially ephemeral. |
+| `datadog_webhook_custom_variable` | Provider import seeds only `id`, but provider read looks up the variable by `name`; Terraformer cannot safely refresh the required name/value state from a broad ID import. |
+| `datadog_integration_aws_external_id` | Creates a short-lived external ID operation; provider read is a no-op and delete only removes Terraform state. |
+| `datadog_action_connection` | Deferred until a dedicated importer handles AWS versus HTTP credential-backed variants and the HTTP token-auth read path that omits sensitive token values. |
+| `datadog_cloud_workload_security_agent_rule` | Deprecated in favor of the already registered `datadog_csm_threats_agent_rule`, so broad import would risk duplicate ownership of the same agent rules. |
 
 [1]: https://github.com/chenrui333/terraformer/blob/main/README.md#filtering
