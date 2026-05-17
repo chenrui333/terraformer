@@ -133,6 +133,26 @@ func TestSASLCredentialsRequiredForPlainAndSCRAM(t *testing.T) {
 	}
 }
 
+func TestSCRAMMechanismsEnableSASLWithoutCredentials(t *testing.T) {
+	for _, mechanism := range []string{"scram-sha256", "scram-sha512"} {
+		t.Run(mechanism, func(t *testing.T) {
+			config := Config{
+				KafkaVersion:     defaultKafkaVersion,
+				Timeout:          defaultKafkaTimeout,
+				SASLMechanism:    mechanism,
+				BootstrapServers: []string{"broker1.example.com:9092"},
+			}
+			_, err := config.newSaramaConfig()
+			if err == nil {
+				t.Fatal("expected missing sasl credentials error")
+			}
+			if !strings.Contains(err.Error(), "sasl username and password are required") {
+				t.Fatalf("error = %q, want sasl credential requirement", err)
+			}
+		})
+	}
+}
+
 func TestTLSRequiresClientCertAndKeyTogether(t *testing.T) {
 	for _, testCase := range []struct {
 		name       string

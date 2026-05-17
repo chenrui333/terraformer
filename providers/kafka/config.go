@@ -205,6 +205,8 @@ func (c Config) newSaramaConfig() (*sarama.Config, error) {
 func (c Config) saslEnabled() bool {
 	return c.SASLMechanism == "aws-iam" ||
 		c.SASLMechanism == "oauthbearer" ||
+		c.SASLMechanism == "scram-sha256" ||
+		c.SASLMechanism == "scram-sha512" ||
 		c.SASLUsername != "" ||
 		c.SASLPassword != ""
 }

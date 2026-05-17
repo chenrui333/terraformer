@@ -70,7 +70,8 @@ func (g *TopicGenerator) ParseFilters(rawFilters []string) {
 }
 
 func (g *TopicGenerator) listTopics(admin adminClient, config Config) ([]Topic, error) {
-	metadata, err := admin.DescribeTopics(nil)
+	explicitTopics := g.explicitlyRequestedTopics()
+	metadata, err := admin.DescribeTopics(explicitTopicNames(explicitTopics))
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +88,6 @@ func (g *TopicGenerator) listTopics(admin adminClient, config Config) ([]Topic, 
 		return metadata[i].Name < metadata[j].Name
 	})
 
-	explicitTopics := g.explicitlyRequestedTopics()
 	topics := make([]Topic, 0, len(metadata))
 	for _, topicMetadata := range metadata {
 		if topicMetadata == nil {
@@ -131,6 +131,18 @@ func (g *TopicGenerator) explicitlyRequestedTopics() map[string]bool {
 		}
 	}
 	return explicitTopics
+}
+
+func explicitTopicNames(explicitTopics map[string]bool) []string {
+	if len(explicitTopics) == 0 {
+		return nil
+	}
+	names := make([]string, 0, len(explicitTopics))
+	for name := range explicitTopics {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
 }
 
 func (g *TopicGenerator) topicFromMetadata(admin adminClient, metadata *sarama.TopicMetadata, providerConfig Config) (Topic, error) {

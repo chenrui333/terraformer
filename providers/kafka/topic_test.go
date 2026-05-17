@@ -335,6 +335,9 @@ func TestTopicInitResourcesIncludesExplicitInternalTopicFilter(t *testing.T) {
 	if err := generator.InitResources(); err != nil {
 		t.Fatalf("InitResources() error = %v", err)
 	}
+	if !reflect.DeepEqual(admin.describeTopics, [][]string{{"__consumer_offsets"}}) {
+		t.Fatalf("DescribeTopics calls = %#v, want only __consumer_offsets", admin.describeTopics)
+	}
 	generator.InitialCleanup()
 	if len(generator.Resources) != 1 {
 		t.Fatalf("resources len = %d, want 1", len(generator.Resources))
@@ -368,6 +371,9 @@ func TestTopicInitResourcesAppliesIDFilterBeforeConfigDescribe(t *testing.T) {
 
 	if err := generator.InitResources(); err != nil {
 		t.Fatalf("InitResources() error = %v", err)
+	}
+	if !reflect.DeepEqual(admin.describeTopics, [][]string{{"orders"}}) {
+		t.Fatalf("DescribeTopics calls = %#v, want only orders", admin.describeTopics)
 	}
 	if len(generator.Resources) != 1 {
 		t.Fatalf("resources len = %d, want 1", len(generator.Resources))
