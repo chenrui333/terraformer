@@ -1,0 +1,22 @@
+providers/datadog/unsupported_resources.json
+  s_ad2cde2451f5fe::t_d450fd81dadd02 4
+providers/datadog/datadog_provider.go
+  s_ad2cde2451f5fe::t_fe760270014765 219-223
+  s_ad2cde2451f5fe::t_b11b9b1075bf79 185-188
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "52ee2fb8b3f0459f10841a205d9b6346ea217e5a",
+  "prompts": {},
+  "sessions": {
+    "s_ad2cde2451f5fe": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e5e5a739-89aa-4196-9223-c274cd1e20ca",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
