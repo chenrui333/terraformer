@@ -316,7 +316,7 @@
       "resource": "cloudflare_image",
       "service_family": "images",
       "reason": "Cloudflare Images assets are high-cardinality media content and can require unrecoverable source file or URL material.",
-      "evidence": "Terraform provider v5.19.1 does not document terraform import support for cloudflare_image. The resource owns media upload/source fields such as file, url, and require_signed_urls plus metadata that broad Terraformer discovery cannot reconstruct safely as infrastructure configuration.",
+      "evidence": "Terraform provider v5.19.1 supports import by account_id/image_id, but the resource owns media upload/source fields such as file, url, and require_signed_urls plus metadata that broad Terraformer discovery cannot reconstruct safely as infrastructure configuration.",
       "status": "deferred",
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
