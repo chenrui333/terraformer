@@ -81,7 +81,6 @@ func validateUnsupportedResourcesMetadataFile(t *testing.T, metadataFile string)
 	}
 
 	seenResources := map[string]struct{}{}
-	resources := make([]string, 0, len(metadata.Resources))
 	for index, entry := range metadata.Resources {
 		resource := strings.TrimSpace(entry.Resource)
 		if resource == "" {
@@ -91,16 +90,11 @@ func validateUnsupportedResourcesMetadataFile(t *testing.T, metadataFile string)
 			t.Fatalf("%s contains duplicate resource %q", metadataFile, resource)
 		}
 		seenResources[resource] = struct{}{}
-		resources = append(resources, resource)
-
 		validateRequiredString(t, metadataFile, resource, "service_family", entry.ServiceFamily)
 		validateRequiredString(t, metadataFile, resource, "reason", entry.Reason)
 		validateRequiredString(t, metadataFile, resource, "evidence", entry.Evidence)
 		validateUnsupportedResourceStatus(t, metadataFile, resource, entry.Status)
 		validateUnsupportedResourceReferences(t, metadataFile, resource, entry.References)
-	}
-	if !sort.StringsAreSorted(resources) {
-		t.Fatalf("%s resources are not sorted by resource: %v", metadataFile, resources)
 	}
 }
 

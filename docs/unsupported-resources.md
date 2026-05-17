@@ -12,7 +12,7 @@ Do not add speculative entries. Do not use metadata as a substitute for investig
 
 ## Schema
 
-Each provider file uses version `1` and a sorted `resources` array:
+Each provider file uses version `1` and a `resources` array:
 
 ```json
 {
@@ -78,7 +78,7 @@ Run the shared validation with:
 go test ./providers
 ```
 
-The repo-wide test discovers every `providers/*/unsupported_resources.json` file and validates JSON decoding, schema version, required fields, non-empty references, allowed statuses, duplicate resources, and sorted resource entries. Provider-local tests may still add provider-specific assertions, such as expected Kubernetes skip-policy coverage.
+The repo-wide test discovers every `providers/*/unsupported_resources.json` file and validates JSON decoding, schema version, required fields, non-empty references, allowed statuses, and duplicate resources. Provider-local tests may still add provider-specific assertions, such as expected Kubernetes skip-policy coverage.
 
 For provider resource PRs, use the pull request checklist to confirm that evidence-backed unsupported resources discovered during the work were added to the provider-local metadata file, or that no metadata update was needed.
 
@@ -96,7 +96,7 @@ This static inventory reflects the current provider tree. Providers without meta
 | azuredevops | no | no | not present yet |
 | cloudflare | yes | yes | 19 entries; statuses: cloudflare-managed, deferred, not-importable, request-style, secret-required; provider-specific assertions |
 | commercetools | no | no | not present yet |
-| datadog | yes | no | 7 entries; statuses: deferred, unsupported |
+| datadog | yes | no | 9 entries; statuses: deferred, unsupported |
 | digitalocean | no | no | not present yet |
 | equinixmetal | no | no | not present yet |
 | fastly | no | no | not present yet |
