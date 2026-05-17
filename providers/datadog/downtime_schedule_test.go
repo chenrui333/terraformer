@@ -175,6 +175,59 @@ func TestDowntimeSchedulePostConvertHookRemovesEmptyOneTimeScheduleState(t *test
 	}
 }
 
+func TestDowntimeSchedulePostConvertHookPreservesEmptyNotificationDefaults(t *testing.T) {
+	resource := terraformutils.NewSimpleResource(
+		"downtime-3",
+		"downtime_schedule_downtime-3",
+		"datadog_downtime_schedule",
+		"datadog",
+		DowntimeScheduleAllowEmptyValues,
+	)
+	resource.Item = map[string]interface{}{
+		"id": "downtime-3",
+		downtimeScheduleOneTimeKey: map[string]interface{}{
+			"start": "2026-05-17T14:00:00Z",
+		},
+	}
+	resource.InstanceState.Attributes = map[string]string{
+		"id":                      "downtime-3",
+		"one_time_schedule.start": "2026-05-17T14:00:00Z",
+	}
+	resource.InstanceState.SetTypedAttributes(json.RawMessage("{\"display_timezone\":\"UTC\",\"id\":\"downtime-3\",\"notify_end_states\":null,\"one_time_schedule\":{\"end\":null,\"start\":\"2026-05-17T14:00:00Z\"}}"))
+
+	generator := &DowntimeScheduleGenerator{
+		DatadogService: DatadogService{
+			Service: terraformutils.Service{
+				Resources: []terraformutils.Resource{resource},
+			},
+		},
+	}
+
+	if err := generator.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook returned error: %v", err)
+	}
+
+	updatedResource := generator.Resources[0]
+	assertEmptyDowntimeScheduleItemList(t, updatedResource, downtimeScheduleNotifyEndStatesKey)
+	assertEmptyDowntimeScheduleItemList(t, updatedResource, downtimeScheduleNotifyEndTypesKey)
+	if got := updatedResource.InstanceState.Attributes["notify_end_states.#"]; got != "0" {
+		t.Fatalf("notify_end_states.# = %q, want 0", got)
+	}
+	if got := updatedResource.InstanceState.Attributes["notify_end_types.#"]; got != "0" {
+		t.Fatalf("notify_end_types.# = %q, want 0", got)
+	}
+	typedAttributes := decodeDowntimeScheduleTypedAttributes(t, updatedResource.InstanceState.TypedAttributes)
+	if got := string(typedAttributes[downtimeScheduleNotifyEndStatesKey]); got != "[]" {
+		t.Fatalf("typed notify_end_states = %s, want []", got)
+	}
+	if got := string(typedAttributes[downtimeScheduleNotifyEndTypesKey]); got != "[]" {
+		t.Fatalf("typed notify_end_types = %s, want []", got)
+	}
+	if _, ok := typedAttributes[downtimeScheduleOneTimeKey]; !ok {
+		t.Fatal("PostConvertHook removed active one_time_schedule typed state")
+	}
+}
+
 func TestDowntimeScheduleInitResourcesList(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v2/downtime" {
@@ -227,4 +280,16 @@ func decodeDowntimeScheduleTypedAttributes(t *testing.T, rawAttributes json.RawM
 		t.Fatalf("typed attributes unmarshal error: %v", err)
 	}
 	return attributes
+}
+
+func assertEmptyDowntimeScheduleItemList(t *testing.T, resource terraformutils.Resource, key string) {
+	t.Helper()
+
+	items, ok := resource.Item[key].([]interface{})
+	if !ok {
+		t.Fatalf("%s item type = %T, want []interface{}", key, resource.Item[key])
+	}
+	if len(items) != 0 {
+		t.Fatalf("%s length = %d, want 0", key, len(items))
+	}
 }

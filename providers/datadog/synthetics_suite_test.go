@@ -4,6 +4,7 @@ package datadog
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -61,6 +62,54 @@ func TestSyntheticsSuiteCreateResources(t *testing.T) {
 	}
 }
 
+func TestSyntheticsSuitePostConvertHookPreservesEmptyTags(t *testing.T) {
+	resource := terraformutils.NewSimpleResource(
+		"suite-1",
+		"synthetics_suite_suite-1",
+		"datadog_synthetics_suite",
+		"datadog",
+		SyntheticsSuiteAllowEmptyValues,
+	)
+	resource.Item = map[string]interface{}{
+		"id":   "suite-1",
+		"name": "suite one",
+	}
+	resource.InstanceState.Attributes = map[string]string{
+		"id":     "suite-1",
+		"name":   "suite one",
+		"tags.#": "0",
+	}
+	resource.InstanceState.SetTypedAttributes(json.RawMessage("{\"id\":\"suite-1\",\"name\":\"suite one\",\"tags\":[]}"))
+
+	generator := &SyntheticsSuiteGenerator{
+		DatadogService: DatadogService{
+			Service: terraformutils.Service{
+				Resources: []terraformutils.Resource{resource},
+			},
+		},
+	}
+
+	if err := generator.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook returned error: %v", err)
+	}
+
+	updatedResource := generator.Resources[0]
+	tags, ok := updatedResource.Item[syntheticsSuiteTagsKey].([]interface{})
+	if !ok {
+		t.Fatalf("tags item type = %T, want []interface{}", updatedResource.Item[syntheticsSuiteTagsKey])
+	}
+	if len(tags) != 0 {
+		t.Fatalf("tags length = %d, want 0", len(tags))
+	}
+	if got := updatedResource.InstanceState.Attributes["tags.#"]; got != "0" {
+		t.Fatalf("tags.# = %q, want 0", got)
+	}
+	typedAttributes := decodeSyntheticsSuiteTypedAttributes(t, updatedResource.InstanceState.TypedAttributes)
+	if got := string(typedAttributes[syntheticsSuiteTagsKey]); got != "[]" {
+		t.Fatalf("typed tags = %s, want []", got)
+	}
+}
+
 func TestSyntheticsSuiteInitResourcesList(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v2/synthetics/suites/search" {
@@ -103,4 +152,14 @@ func TestSyntheticsSuiteInitResourcesList(t *testing.T) {
 	if generator.Resources[0].InstanceState.ID != "suite-1" {
 		t.Fatalf("resource ID = %q, want %q", generator.Resources[0].InstanceState.ID, "suite-1")
 	}
+}
+
+func decodeSyntheticsSuiteTypedAttributes(t *testing.T, rawAttributes json.RawMessage) map[string]json.RawMessage {
+	t.Helper()
+
+	attributes := map[string]json.RawMessage{}
+	if err := json.Unmarshal(rawAttributes, &attributes); err != nil {
+		t.Fatalf("typed attributes unmarshal error: %v", err)
+	}
+	return attributes
 }

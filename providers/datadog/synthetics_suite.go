@@ -3,7 +3,9 @@
 package datadog
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
@@ -13,6 +15,8 @@ import (
 )
 
 const datadogSyntheticsSuitePageSize = int64(100)
+
+const syntheticsSuiteTagsKey = "tags"
 
 var (
 	// SyntheticsSuiteAllowEmptyValues ...
@@ -36,6 +40,136 @@ func (g *SyntheticsSuiteGenerator) createResource(suiteID string) (terraformutil
 		"datadog",
 		SyntheticsSuiteAllowEmptyValues,
 	), nil
+}
+
+func (g *SyntheticsSuiteGenerator) PostConvertHook() error {
+	for i := range g.Resources {
+		resource := &g.Resources[i]
+		if err := preserveSyntheticsSuiteEmptyTags(resource); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func preserveSyntheticsSuiteEmptyTags(resource *terraformutils.Resource) error {
+	hasEmptyTags, err := syntheticsSuiteStateHasEmptyTags(resource)
+	if err != nil {
+		return err
+	}
+	if !hasEmptyTags {
+		return nil
+	}
+	if resource.Item == nil {
+		resource.Item = map[string]interface{}{}
+	}
+	if value, ok := resource.Item[syntheticsSuiteTagsKey]; !ok || !syntheticsSuiteValueHasValue(value) {
+		resource.Item[syntheticsSuiteTagsKey] = []interface{}{}
+	}
+	return preserveSyntheticsSuiteEmptyTagsState(resource)
+}
+
+func syntheticsSuiteStateHasEmptyTags(resource *terraformutils.Resource) (bool, error) {
+	if resource == nil || resource.InstanceState == nil {
+		return false, nil
+	}
+	if resource.InstanceState.Attributes != nil {
+		if count, ok := resource.InstanceState.Attributes[syntheticsSuiteTagsKey+".#"]; ok && count == "0" {
+			return true, nil
+		}
+	}
+	if len(resource.InstanceState.TypedAttributes) == 0 {
+		return false, nil
+	}
+	typedAttributes := map[string]json.RawMessage{}
+	if err := json.Unmarshal(resource.InstanceState.TypedAttributes, &typedAttributes); err != nil {
+		return false, fmt.Errorf("decode synthetics suite typed attributes: %w", err)
+	}
+	rawTags, ok := typedAttributes[syntheticsSuiteTagsKey]
+	if !ok {
+		return false, nil
+	}
+	tagsHaveValue, err := syntheticsSuiteRawMessageHasValue(rawTags)
+	if err != nil {
+		return false, fmt.Errorf("decode synthetics suite tags state: %w", err)
+	}
+	return !tagsHaveValue, nil
+}
+
+func preserveSyntheticsSuiteEmptyTagsState(resource *terraformutils.Resource) error {
+	if resource == nil || resource.InstanceState == nil {
+		return nil
+	}
+	if resource.InstanceState.Attributes == nil {
+		resource.InstanceState.Attributes = map[string]string{}
+	}
+	resource.InstanceState.Attributes[syntheticsSuiteTagsKey+".#"] = "0"
+	if len(resource.InstanceState.TypedAttributes) == 0 {
+		return nil
+	}
+
+	typedAttributes := map[string]json.RawMessage{}
+	if err := json.Unmarshal(resource.InstanceState.TypedAttributes, &typedAttributes); err != nil {
+		return fmt.Errorf("decode synthetics suite typed attributes: %w", err)
+	}
+	rawTags, ok := typedAttributes[syntheticsSuiteTagsKey]
+	tagsHaveValue := false
+	if ok {
+		var err error
+		tagsHaveValue, err = syntheticsSuiteRawMessageHasValue(rawTags)
+		if err != nil {
+			return fmt.Errorf("decode synthetics suite tags state: %w", err)
+		}
+	}
+	if tagsHaveValue {
+		return nil
+	}
+	typedAttributes[syntheticsSuiteTagsKey] = json.RawMessage("[]")
+	rawAttributes, err := json.Marshal(typedAttributes)
+	if err != nil {
+		return fmt.Errorf("encode synthetics suite typed attributes: %w", err)
+	}
+	resource.InstanceState.SetTypedAttributes(rawAttributes)
+	return nil
+}
+
+func syntheticsSuiteRawMessageHasValue(rawValue json.RawMessage) (bool, error) {
+	if len(bytes.TrimSpace(rawValue)) == 0 {
+		return false, nil
+	}
+
+	var value interface{}
+	decoder := json.NewDecoder(bytes.NewReader(rawValue))
+	decoder.UseNumber()
+	if err := decoder.Decode(&value); err != nil {
+		return false, err
+	}
+	return syntheticsSuiteValueHasValue(value), nil
+}
+
+func syntheticsSuiteValueHasValue(value interface{}) bool {
+	switch value := value.(type) {
+	case nil:
+		return false
+	case string:
+		return value != ""
+	case []interface{}:
+		for _, item := range value {
+			if syntheticsSuiteValueHasValue(item) {
+				return true
+			}
+		}
+		return false
+	case map[string]interface{}:
+		for _, item := range value {
+			if syntheticsSuiteValueHasValue(item) {
+				return true
+			}
+		}
+		return false
+	default:
+		return true
+	}
 }
 
 func (g *SyntheticsSuiteGenerator) createResources(suites []datadogV2.SyntheticsSuite) ([]terraformutils.Resource, error) {

@@ -18,8 +18,10 @@ import (
 const datadogDowntimeSchedulePageLimit = int64(100)
 
 const (
-	downtimeScheduleOneTimeKey   = "one_time_schedule"
-	downtimeScheduleRecurringKey = "recurring_schedule"
+	downtimeScheduleNotifyEndStatesKey = "notify_end_states"
+	downtimeScheduleNotifyEndTypesKey  = "notify_end_types"
+	downtimeScheduleOneTimeKey         = "one_time_schedule"
+	downtimeScheduleRecurringKey       = "recurring_schedule"
 )
 
 var (
@@ -51,6 +53,10 @@ func (g *DowntimeScheduleGenerator) PostConvertHook() error {
 	for i := range g.Resources {
 		resource := &g.Resources[i]
 		removeDowntimeScheduleEmptyAlternateItem(resource)
+		preserveDowntimeScheduleEmptyNotificationItems(resource)
+		if err := preserveDowntimeScheduleEmptyNotificationState(resource); err != nil {
+			return err
+		}
 		if err := removeDowntimeScheduleEmptyAlternateState(resource); err != nil {
 			return err
 		}
@@ -74,6 +80,70 @@ func removeDowntimeScheduleEmptyAlternateItem(resource *terraformutils.Resource)
 	if recurringScheduleHasValue && hasOneTimeSchedule && !oneTimeScheduleHasValue {
 		delete(resource.Item, downtimeScheduleOneTimeKey)
 	}
+}
+
+func preserveDowntimeScheduleEmptyNotificationItems(resource *terraformutils.Resource) {
+	if resource == nil {
+		return
+	}
+	if resource.Item == nil {
+		resource.Item = map[string]interface{}{}
+	}
+
+	for _, key := range []string{downtimeScheduleNotifyEndStatesKey, downtimeScheduleNotifyEndTypesKey} {
+		if value, ok := resource.Item[key]; ok && downtimeScheduleValueHasValue(value) {
+			continue
+		}
+		resource.Item[key] = []interface{}{}
+	}
+}
+
+func preserveDowntimeScheduleEmptyNotificationState(resource *terraformutils.Resource) error {
+	if resource == nil || resource.InstanceState == nil {
+		return nil
+	}
+	if resource.InstanceState.Attributes == nil {
+		resource.InstanceState.Attributes = map[string]string{}
+	}
+
+	typedAttributes := map[string]json.RawMessage{}
+	hasTypedAttributes := len(resource.InstanceState.TypedAttributes) > 0
+	if hasTypedAttributes {
+		if err := json.Unmarshal(resource.InstanceState.TypedAttributes, &typedAttributes); err != nil {
+			return fmt.Errorf("decode downtime schedule typed attributes: %w", err)
+		}
+	}
+
+	changedTypedAttributes := false
+	for _, key := range []string{downtimeScheduleNotifyEndStatesKey, downtimeScheduleNotifyEndTypesKey} {
+		rawValueHasValue := false
+		if rawValue, ok := typedAttributes[key]; ok {
+			var err error
+			rawValueHasValue, err = downtimeScheduleRawMessageHasValue(rawValue)
+			if err != nil {
+				return fmt.Errorf("decode downtime schedule %s state: %w", key, err)
+			}
+		}
+		if rawValueHasValue || downtimeScheduleFlatmapSetHasValue(resource, key) {
+			continue
+		}
+
+		resource.InstanceState.Attributes[key+".#"] = "0"
+		if hasTypedAttributes {
+			typedAttributes[key] = json.RawMessage("[]")
+			changedTypedAttributes = true
+		}
+	}
+
+	if !changedTypedAttributes {
+		return nil
+	}
+	rawAttributes, err := json.Marshal(typedAttributes)
+	if err != nil {
+		return fmt.Errorf("encode downtime schedule typed attributes: %w", err)
+	}
+	resource.InstanceState.SetTypedAttributes(rawAttributes)
+	return nil
 }
 
 func removeDowntimeScheduleEmptyAlternateState(resource *terraformutils.Resource) error {
@@ -130,6 +200,24 @@ func removeDowntimeScheduleStateAttributes(resource *terraformutils.Resource, bl
 			delete(resource.InstanceState.Attributes, key)
 		}
 	}
+}
+
+func downtimeScheduleFlatmapSetHasValue(resource *terraformutils.Resource, key string) bool {
+	if resource == nil || resource.InstanceState == nil || resource.InstanceState.Attributes == nil {
+		return false
+	}
+	if count, ok := resource.InstanceState.Attributes[key+".#"]; ok && count != "" && count != "0" {
+		return true
+	}
+	for attributeKey, attributeValue := range resource.InstanceState.Attributes {
+		if attributeKey == key+".#" || !strings.HasPrefix(attributeKey, key+".") {
+			continue
+		}
+		if attributeValue != "" {
+			return true
+		}
+	}
+	return false
 }
 
 func downtimeScheduleRawMessageHasValue(rawValue json.RawMessage) (bool, error) {
