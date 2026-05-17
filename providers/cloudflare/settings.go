@@ -772,14 +772,23 @@ func cloudflareZoneDNSSECAttributes(setting cloudflareZoneDNSSECSetting) map[str
 }
 
 func cloudflareZoneDNSSECResource(zone cf.Zone, setting cloudflareZoneDNSSECSetting) terraformutils.Resource {
-	resource := cloudflareZoneSingletonSettingResourceWithAttributes(
+	resource := cloudflareZoneSingletonSettingResourceWithAttributesAndAdditionalFields(
 		zone,
 		"cloudflare_zone_dnssec",
 		"zone_dnssec",
 		cloudflareZoneDNSSECAttributes(setting),
+		cloudflareZoneDNSSECAdditionalFields(setting),
 	)
 	resource.IgnoreKeys = append(resource.IgnoreKeys, cloudflareZoneDNSSECComputedKeys...)
 	return resource
+}
+
+func cloudflareZoneDNSSECAdditionalFields(setting cloudflareZoneDNSSECSetting) map[string]interface{} {
+	additionalFields := map[string]interface{}{}
+	if status := cloudflareZoneDNSSECDesiredStatus(setting.Status); status != "" {
+		additionalFields["status"] = status
+	}
+	return additionalFields
 }
 
 func cloudflareZoneDNSSECDesiredStatus(status string) string {

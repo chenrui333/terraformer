@@ -361,6 +361,22 @@ func TestCloudflareZoneDNSSECResource(t *testing.T) {
 	if cloudflareResourceIgnoresKey(transitionalResource, "^status$") {
 		t.Fatal("transitional DNSSEC desired status should not be ignored")
 	}
+	if got := transitionalResource.AdditionalFields["status"]; got != "active" {
+		t.Fatalf("transitional DNSSEC AdditionalFields status = %#v, want active", got)
+	}
+
+	transitionalResource.InstanceState.Attributes["status"] = "pending"
+	parser := terraformutils.NewFlatmapParser(transitionalResource.InstanceState.Attributes, nil, nil)
+	impliedType := cty.Object(map[string]cty.Type{
+		"status":  cty.String,
+		"zone_id": cty.String,
+	})
+	if err := transitionalResource.ParseTFstate(parser, impliedType); err != nil {
+		t.Fatalf("ParseTFstate() error = %v", err)
+	}
+	if got := transitionalResource.Item["status"]; got != "active" {
+		t.Fatalf("parsed transitional DNSSEC status = %q, want active", got)
+	}
 
 	disablingResource := cloudflareZoneDNSSECResource(zone, cloudflareZoneDNSSECSetting{Status: "pending-disabled"})
 	if got := disablingResource.InstanceState.Attributes["status"]; got != "disabled" {
