@@ -5,6 +5,7 @@ package kafka
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"log"
 	"sort"
@@ -130,6 +131,9 @@ func (g *TopicGenerator) topicFromDetail(admin adminClient, name string, detail 
 	}
 	config, err := topicConfig(admin, name, providerConfig)
 	if err != nil {
+		if !isSkippableTopicConfigError(err) {
+			return Topic{}, fmt.Errorf("kafka topic %q: describe config: %w", name, err)
+		}
 		log.Printf("kafka: skipping topic config for %q: %v", name, err)
 		config = map[string]string{}
 	}
@@ -236,6 +240,18 @@ func safeReplicationFactor(value int) (int16, error) {
 	}
 	converted := int16(value) //nolint:gosec // value is bounds checked above.
 	return converted, nil
+}
+
+func isSkippableTopicConfigError(err error) bool {
+	if errors.Is(err, sarama.ErrTopicAuthorizationFailed) ||
+		errors.Is(err, sarama.ErrClusterAuthorizationFailed) ||
+		errors.Is(err, sarama.ErrUnsupportedVersion) {
+		return true
+	}
+	lower := strings.ToLower(err.Error())
+	return strings.Contains(lower, "authorization failed") ||
+		strings.Contains(lower, "not authorized") ||
+		strings.Contains(lower, "unsupported version")
 }
 
 func topicConfig(admin adminClient, name string, providerConfig Config) (map[string]string, error) {

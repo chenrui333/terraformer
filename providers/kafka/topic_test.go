@@ -3,6 +3,7 @@
 package kafka
 
 import (
+	"errors"
 	"reflect"
 	"strings"
 	"testing"
@@ -14,6 +15,7 @@ type mockAdmin struct {
 	topics          map[string]sarama.TopicDetail
 	metadata        map[string]*sarama.TopicMetadata
 	configs         map[string][]sarama.ConfigEntry
+	configErrors    map[string]error
 	describeConfigs []sarama.ConfigResource
 	closed          bool
 }
@@ -34,6 +36,9 @@ func (m *mockAdmin) DescribeTopics(names []string) ([]*sarama.TopicMetadata, err
 
 func (m *mockAdmin) DescribeConfig(resource sarama.ConfigResource) ([]sarama.ConfigEntry, error) {
 	m.describeConfigs = append(m.describeConfigs, resource)
+	if err := m.configErrors[resource.Name]; err != nil {
+		return nil, err
+	}
 	return m.configs[resource.Name], nil
 }
 
@@ -223,6 +228,58 @@ func TestTopicFallsBackToMetadataShape(t *testing.T) {
 	}
 	if topic.ReplicationFactor != 2 {
 		t.Fatalf("replication factor = %d, want 2", topic.ReplicationFactor)
+	}
+}
+
+func TestTopicConfigAuthorizationErrorIsSkippable(t *testing.T) {
+	admin := &mockAdmin{
+		topics: map[string]sarama.TopicDetail{
+			"orders": {
+				NumPartitions:     3,
+				ReplicationFactor: 2,
+			},
+		},
+		configErrors: map[string]error{"orders": sarama.ErrTopicAuthorizationFailed},
+	}
+	generator := &TopicGenerator{}
+	generator.SetArgs(map[string]interface{}{
+		"config": Config{BootstrapServers: []string{"broker1.example.com:9092"}},
+	})
+	generator.newAdmin = func(Config) (adminClient, error) { return admin, nil }
+
+	if err := generator.InitResources(); err != nil {
+		t.Fatalf("InitResources() error = %v", err)
+	}
+	if len(generator.Resources) != 1 {
+		t.Fatalf("resources len = %d, want 1", len(generator.Resources))
+	}
+	if _, ok := generator.Resources[0].InstanceState.Attributes["config.%"]; ok {
+		t.Fatal("topic config was exported after authorization failure")
+	}
+}
+
+func TestTopicConfigUnexpectedErrorFailsImport(t *testing.T) {
+	admin := &mockAdmin{
+		topics: map[string]sarama.TopicDetail{
+			"orders": {
+				NumPartitions:     3,
+				ReplicationFactor: 2,
+			},
+		},
+		configErrors: map[string]error{"orders": errors.New("broker connection reset")},
+	}
+	generator := &TopicGenerator{}
+	generator.SetArgs(map[string]interface{}{
+		"config": Config{BootstrapServers: []string{"broker1.example.com:9092"}},
+	})
+	generator.newAdmin = func(Config) (adminClient, error) { return admin, nil }
+
+	err := generator.InitResources()
+	if err == nil {
+		t.Fatal("expected unexpected topic config error")
+	}
+	if !strings.Contains(err.Error(), "describe config") {
+		t.Fatalf("error = %q, want describe config context", err)
 	}
 }
 

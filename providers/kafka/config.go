@@ -221,13 +221,22 @@ func (c Config) configureSASL(config *sarama.Config) error {
 
 	switch mechanism {
 	case "plain":
+		if err := c.requireSASLCredentials(mechanism); err != nil {
+			return err
+		}
 		config.Net.SASL.Mechanism = sarama.SASLTypePlaintext
 	case "scram-sha256":
+		if err := c.requireSASLCredentials(mechanism); err != nil {
+			return err
+		}
 		config.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA256
 		config.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient {
 			return &xdgSCRAMClient{HashGeneratorFcn: scram.SHA256}
 		}
 	case "scram-sha512":
+		if err := c.requireSASLCredentials(mechanism); err != nil {
+			return err
+		}
 		config.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA512
 		config.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient {
 			return &xdgSCRAMClient{HashGeneratorFcn: scram.SHA512}
@@ -247,6 +256,13 @@ func (c Config) configureSASL(config *sarama.Config) error {
 		config.Net.SASL.TokenProvider = tokenProvider
 	default:
 		return fmt.Errorf("kafka: unsupported sasl mechanism %q", mechanism)
+	}
+	return nil
+}
+
+func (c Config) requireSASLCredentials(mechanism string) error {
+	if c.SASLUsername == "" || c.SASLPassword == "" {
+		return fmt.Errorf("kafka: sasl username and password are required for %s authentication", mechanism)
 	}
 	return nil
 }
@@ -359,6 +375,9 @@ func (p oauthBearerTokenProvider) Token() (*sarama.AccessToken, error) {
 
 func newTLSConfig(clientCert, clientKey, caCert, clientKeyPassphrase string) (*tls.Config, error) {
 	tlsConfig := &tls.Config{}
+	if (clientCert == "") != (clientKey == "") {
+		return nil, errors.New("kafka: client certificate and client key must be provided together")
+	}
 	if clientCert != "" && clientKey != "" {
 		certBytes, err := pemBytes(clientCert)
 		if err != nil {

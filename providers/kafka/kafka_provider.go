@@ -40,9 +40,6 @@ func (p *Provider) GetBasicConfig() cty.Value {
 
 func (p *Provider) GetProviderData(_ ...string) map[string]interface{} {
 	providerConfig := p.safeConfigMap()
-	if len(providerConfig) == 0 {
-		return map[string]interface{}{}
-	}
 	return map[string]interface{}{
 		"provider": map[string]interface{}{
 			"kafka": providerConfig,
