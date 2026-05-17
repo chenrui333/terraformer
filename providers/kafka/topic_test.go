@@ -456,12 +456,11 @@ func TestTopicConfigAuthorizationErrorIsSkippable(t *testing.T) {
 	}
 }
 
-func TestTopicConfigAuthorizationPreservesRequiredFieldsAfterImportFallback(t *testing.T) {
+func TestTopicPreservesRequiredFieldsAfterImportFallback(t *testing.T) {
 	resource := TopicGenerator{}.createResources([]Topic{{
 		Name:              "orders",
 		Partitions:        3,
 		ReplicationFactor: 2,
-		ConfigUnavailable: true,
 	}})[0]
 
 	resource.InstanceState.Attributes = map[string]string{"id": "orders"}
