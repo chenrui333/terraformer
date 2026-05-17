@@ -38,6 +38,58 @@ func TestRunCloudflareStorageChildDiscoveriesContinuesAfterError(t *testing.T) {
 	}
 }
 
+func TestRunCloudflareStorageFamilyDiscoveriesContinuesAfterError(t *testing.T) {
+	calls := []string{}
+	err := runCloudflareStorageFamilyDiscoveries([]cloudflareStorageFamilyDiscovery{
+		{
+			name:    "queues",
+			account: "account-id",
+			discover: func() error {
+				calls = append(calls, "queues")
+				return errors.New("permission denied")
+			},
+		},
+		{
+			name:    "R2 buckets",
+			account: "account-id",
+			discover: func() error {
+				calls = append(calls, "r2")
+				return nil
+			},
+		},
+		{name: "nil discoverer", account: "account-id"},
+	})
+	if err != nil {
+		t.Fatalf("runCloudflareStorageFamilyDiscoveries() error = %v, want nil", err)
+	}
+	if len(calls) != 2 || calls[0] != "queues" || calls[1] != "r2" {
+		t.Fatalf("discoveries called in order = %#v, want [queues r2]", calls)
+	}
+}
+
+func TestRunCloudflareStorageFamilyDiscoveriesReturnsErrorWhenAllFail(t *testing.T) {
+	wantErr := errors.New("permission denied")
+	err := runCloudflareStorageFamilyDiscoveries([]cloudflareStorageFamilyDiscovery{
+		{
+			name:    "queues",
+			account: "account-id",
+			discover: func() error {
+				return wantErr
+			},
+		},
+		{
+			name:    "R2 buckets",
+			account: "account-id",
+			discover: func() error {
+				return errors.New("forbidden")
+			},
+		},
+	})
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("runCloudflareStorageFamilyDiscoveries() error = %v, want %v", err, wantErr)
+	}
+}
+
 func TestNewCloudflareQueueConsumerResource(t *testing.T) {
 	queue := cf.Queue{ID: "queue-id", Name: "orders"}
 	consumer := cloudflareQueueConsumer{

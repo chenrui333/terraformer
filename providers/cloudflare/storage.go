@@ -83,6 +83,12 @@ type cloudflareStorageChildDiscovery struct {
 	discover func() error
 }
 
+type cloudflareStorageFamilyDiscovery struct {
+	name     string
+	account  string
+	discover func() error
+}
+
 func runCloudflareStorageChildDiscoveries(discoveries []cloudflareStorageChildDiscovery) {
 	for _, discovery := range discoveries {
 		if discovery.discover == nil {
@@ -92,6 +98,28 @@ func runCloudflareStorageChildDiscoveries(discoveries []cloudflareStorageChildDi
 			log.Printf("Skipping Cloudflare storage %s discovery for %s: %v", discovery.name, discovery.parent, err)
 		}
 	}
+}
+
+func runCloudflareStorageFamilyDiscoveries(discoveries []cloudflareStorageFamilyDiscovery) error {
+	successes := 0
+	var firstErr error
+	for _, discovery := range discoveries {
+		if discovery.discover == nil {
+			continue
+		}
+		if err := discovery.discover(); err != nil {
+			if firstErr == nil {
+				firstErr = err
+			}
+			log.Printf("Skipping Cloudflare storage %s discovery for %s: %v", discovery.name, discovery.account, err)
+			continue
+		}
+		successes++
+	}
+	if successes == 0 && firstErr != nil {
+		return firstErr
+	}
+	return nil
 }
 
 func cloudflareUnsupportedJurisdictionError(err error) bool {
@@ -729,15 +757,34 @@ func (g *StorageGenerator) InitResources() error {
 	if err != nil {
 		return err
 	}
-	for _, f := range []func(context.Context, *cf.API, string) error{
-		g.appendWorkersKVNamespaceResources,
-		g.appendQueueResources,
-		g.appendR2BucketResources,
-		g.appendD1DatabaseResources,
-	} {
-		if err := f(ctx, api, account.Identifier); err != nil {
-			return err
-		}
-	}
-	return nil
+	return runCloudflareStorageFamilyDiscoveries([]cloudflareStorageFamilyDiscovery{
+		{
+			name:    "Workers KV namespaces",
+			account: account.Identifier,
+			discover: func() error {
+				return g.appendWorkersKVNamespaceResources(ctx, api, account.Identifier)
+			},
+		},
+		{
+			name:    "queues",
+			account: account.Identifier,
+			discover: func() error {
+				return g.appendQueueResources(ctx, api, account.Identifier)
+			},
+		},
+		{
+			name:    "R2 buckets",
+			account: account.Identifier,
+			discover: func() error {
+				return g.appendR2BucketResources(ctx, api, account.Identifier)
+			},
+		},
+		{
+			name:    "D1 databases",
+			account: account.Identifier,
+			discover: func() error {
+				return g.appendD1DatabaseResources(ctx, api, account.Identifier)
+			},
+		},
+	})
 }

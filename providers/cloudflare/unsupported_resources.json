@@ -71,7 +71,7 @@
       "resource": "cloudflare_hyperdrive_config",
       "service_family": "storage",
       "reason": "Hyperdrive configs require write-only origin credential material.",
-      "evidence": "Terraform provider v5.19.1 requires origin.password and documents it as Sensitive with the API never returning this write-only value. origin.access_client_secret is also Sensitive and write-only when Cloudflare Access credentials are configured.",
+      "evidence": "Terraform provider v5.19.1 requires origin.password and documents it as Sensitive with the API never returning this write-only value. The provider read path can only preserve write-only origin.password and origin.access_client_secret from prior state, which broad Terraformer discovery does not have.",
       "status": "secret-required",
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
