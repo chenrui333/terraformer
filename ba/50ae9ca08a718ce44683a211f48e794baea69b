@@ -1,0 +1,26 @@
+docs/datadog.md
+  s_0fb33ec13dc59f::t_8626febf477aba 122
+providers/datadog/csm_threats_test.go
+  s_0fb33ec13dc59f::t_954839e8a99eb7 13,18-19,31,39-41,46
+  s_0fb33ec13dc59f::t_f71a2116e3bb61 57,59-61,64-70
+providers/datadog/csm_threats_agent_rule.go
+  s_0fb33ec13dc59f::t_31b0b8bf6df02a 54-57
+  s_0fb33ec13dc59f::t_934a473172e548 21,27,30,34,58,69-70,79-81,84-85,89,96-107
+  s_0fb33ec13dc59f::t_e63d72783e4c49 110-113,115
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "ba50ae9ca08a718ce44683a211f48e794baea69b",
+  "prompts": {},
+  "sessions": {
+    "s_0fb33ec13dc59f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d1ea9520-81a1-4fe9-af43-b9ba16c9150f",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
