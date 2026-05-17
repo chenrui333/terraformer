@@ -1,0 +1,21 @@
+providers/cloudflare/network_edge.go
+  s_778489c4593c2c::t_8653d08bc83d7a 182-185
+providers/cloudflare/network_edge_test.go
+  s_778489c4593c2c::t_18590906c867d6 56-61
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "15beec6277961f49993a10f5305e3f17fe485271",
+  "prompts": {},
+  "sessions": {
+    "s_778489c4593c2c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35dd-f828-7a23-81dc-00d6511bb01a",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
