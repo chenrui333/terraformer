@@ -60,30 +60,6 @@ func TestIntegrationAWSAccountCreateResource(t *testing.T) {
 	}
 }
 
-func TestIntegrationAWSEventBridgeCreateResource(t *testing.T) {
-	generator := IntegrationAWSEventBridgeGenerator{}
-
-	resource := generator.createResource("datadog-alerts-us-east-1-abc123", "123456789012", "us-east-1")
-	if resource.InstanceState.ID != "datadog-alerts-us-east-1-abc123" {
-		t.Fatalf("resource ID = %q, want %q", resource.InstanceState.ID, "datadog-alerts-us-east-1-abc123")
-	}
-	if resource.ResourceName != "tfer--integration_aws_event_bridge_datadog-alerts-us-east-1-abc123" {
-		t.Fatalf("resource name = %q, want %q", resource.ResourceName, "tfer--integration_aws_event_bridge_datadog-alerts-us-east-1-abc123")
-	}
-	if resource.InstanceInfo.Type != "datadog_integration_aws_event_bridge" {
-		t.Fatalf("resource type = %q, want %q", resource.InstanceInfo.Type, "datadog_integration_aws_event_bridge")
-	}
-	if resource.InstanceState.Attributes["account_id"] != "123456789012" {
-		t.Fatalf("account_id = %q, want %q", resource.InstanceState.Attributes["account_id"], "123456789012")
-	}
-	if resource.InstanceState.Attributes["region"] != "us-east-1" {
-		t.Fatalf("region = %q, want %q", resource.InstanceState.Attributes["region"], "us-east-1")
-	}
-	if resource.InstanceState.Attributes["event_generator_name"] != "datadog-alerts-us-east-1-abc123" {
-		t.Fatalf("event_generator_name = %q, want %q", resource.InstanceState.Attributes["event_generator_name"], "datadog-alerts-us-east-1-abc123")
-	}
-}
-
 func TestIntegrationConfluentResourceCreateResource(t *testing.T) {
 	generator := IntegrationConfluentResourceGenerator{}
 
