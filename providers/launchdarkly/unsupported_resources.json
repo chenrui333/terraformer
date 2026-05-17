@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "resources": [
+    {
+      "resource": "launchdarkly_ip_allowlist_config",
+      "service_family": "ip_allowlist",
+      "reason": "Enterprise-only beta account singleton; defer until broad import handles feature-gated account-level settings.",
+      "evidence": "Terraform provider docs describe one IP allowlist configuration per account and mark the resource as beta. The current LaunchDarkly provider service map has no IP allowlist generator, so future support should explicitly handle account singleton ownership, beta API use, and accounts where IP allowlists are unavailable.",
+      "status": "deferred",
+      "references": [
+        "https://registry.terraform.io/providers/launchdarkly/launchdarkly/latest/docs/resources/ip_allowlist_config"
+      ]
+    },
+    {
+      "resource": "launchdarkly_ip_allowlist_entry",
+      "service_family": "ip_allowlist",
+      "reason": "Enterprise-only beta IP allowlist entries need dedicated beta API discovery and feature-availability handling.",
+      "evidence": "Terraform provider docs mark IP allowlist entries as beta and Enterprise-only. The current LaunchDarkly Terraformer implementation has no IP allowlist generator, so future support should first verify the beta API returns every required entry field and can skip accounts where the feature is not enabled.",
+      "status": "deferred",
+      "references": [
+        "https://registry.terraform.io/providers/launchdarkly/launchdarkly/latest/docs/resources/ip_allowlist_entry"
+      ]
+    },
+    {
+      "resource": "launchdarkly_team_role_mapping",
+      "service_family": "teams",
+      "reason": "Team role mappings overlap with custom role ownership on launchdarkly_team.",
+      "evidence": "Terraform provider docs recommend launchdarkly_team when Terraform creates and manages the team, and reserve team_role_mapping for externally managed teams such as SCIM-synced teams. Terraformer already emits launchdarkly_team resources from TeamsApi.GetTeams, so broad import would duplicate custom_role_keys ownership unless future logic explicitly chooses an external-team path.",
+      "status": "deferred",
+      "references": [
+        "https://registry.terraform.io/providers/launchdarkly/launchdarkly/latest/docs/resources/team",
+        "https://registry.terraform.io/providers/launchdarkly/launchdarkly/latest/docs/resources/team_role_mapping"
+      ]
+    },
+    {
+      "resource": "launchdarkly_view_filter_links",
+      "service_family": "views",
+      "reason": "Filter-based view links capture apply-time actions rather than discoverable stable link configuration.",
+      "evidence": "Terraform provider docs state view_filter_links resolves filters at apply time, is point-in-time by default, and has no drift detection for resolved keys. The provider read path intentionally does not read resolved keys back, while Terraformer already supports explicit view ownership through launchdarkly_view_links and view_keys on feature flags and segments. Terraformer cannot reconstruct the original filter expressions from LaunchDarkly linked-resource APIs.",
+      "status": "action-style",
+      "references": [
+        "https://registry.terraform.io/providers/launchdarkly/launchdarkly/latest/docs/resources/view_filter_links",
+        "https://registry.terraform.io/providers/launchdarkly/launchdarkly/latest/docs/resources/view_links"
+      ]
+    }
+  ]
+}

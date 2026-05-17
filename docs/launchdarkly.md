@@ -17,6 +17,9 @@ as centralized `launchdarkly_view_links` blocks. Avoid importing `viewLinks`
 together with `featureFlag` or `segment`, because those resources can manage the
 same associations through `view_keys`.
 
+Unsupported or deferred LaunchDarkly resource decisions are tracked in
+[unsupported_resources.json](../providers/launchdarkly/unsupported_resources.json).
+
 List of supported LaunchDarkly resources:
 
 *   `accessToken`
