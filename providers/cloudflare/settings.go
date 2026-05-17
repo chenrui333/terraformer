@@ -745,16 +745,12 @@ func cloudflareZoneCacheVariantsConfigured(value cf.ZoneCacheVariantsValues) boo
 }
 
 func cloudflareZoneDNSSECShouldImport(setting cloudflareZoneDNSSECSetting) bool {
-	status := strings.ToLower(setting.Status)
-	if status == "active" {
+	if cloudflareBoolPointerValue(setting.DNSSECMultiSigner) ||
+		cloudflareBoolPointerValue(setting.DNSSECPresigned) ||
+		cloudflareBoolPointerValue(setting.DNSSECUseNsec3) {
 		return true
 	}
-	if status != "" && status != "disabled" {
-		return false
-	}
-	return cloudflareBoolPointerValue(setting.DNSSECMultiSigner) ||
-		cloudflareBoolPointerValue(setting.DNSSECPresigned) ||
-		cloudflareBoolPointerValue(setting.DNSSECUseNsec3)
+	return strings.ToLower(setting.Status) == "active"
 }
 
 func cloudflareZoneDNSSECAttributes(setting cloudflareZoneDNSSECSetting) map[string]string {

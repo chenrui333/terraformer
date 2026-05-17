@@ -103,6 +103,9 @@ func TestCloudflareSettingsDefaultImportPolicy(t *testing.T) {
 	if cloudflareZoneDNSSECShouldImport(cloudflareZoneDNSSECSetting{Status: "pending"}) {
 		t.Fatal("unsupported DNSSEC status should be skipped")
 	}
+	if !cloudflareZoneDNSSECShouldImport(cloudflareZoneDNSSECSetting{Status: "pending", DNSSECMultiSigner: &trueValue}) {
+		t.Fatal("explicit DNSSEC options should be imported for transitional statuses")
+	}
 	if !cloudflareZoneDNSSECShouldImport(cloudflareZoneDNSSECSetting{Status: "disabled", DNSSECMultiSigner: &trueValue}) {
 		t.Fatal("explicit DNSSEC options should be imported")
 	}
@@ -341,6 +344,17 @@ func TestCloudflareZoneDNSSECResource(t *testing.T) {
 		if !found {
 			t.Fatalf("DNSSEC resource should ignore computed key %q", key)
 		}
+	}
+
+	transitionalResource := cloudflareZoneDNSSECResource(zone, cloudflareZoneDNSSECSetting{
+		Status:         "pending",
+		DNSSECUseNsec3: &trueValue,
+	})
+	if _, ok := transitionalResource.InstanceState.Attributes["status"]; ok {
+		t.Fatal("transitional DNSSEC status should not be seeded")
+	}
+	if got := transitionalResource.InstanceState.Attributes["dnssec_use_nsec3"]; got != "true" {
+		t.Fatalf("dnssec_use_nsec3 = %q, want true", got)
 	}
 }
 
