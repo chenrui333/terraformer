@@ -1,0 +1,27 @@
+providers/datadog/reference_table.go
+  s_a75fc68bdbca0a::t_ad0069d33c5112 74,78-80,91,95,98-100,103,105
+  s_a75fc68bdbca0a::t_5c848cc065e1fc 125-127,143-158
+docs/datadog.md
+  s_a75fc68bdbca0a::t_c759a692f56611 281
+providers/datadog/product_platform_test.go
+  s_a75fc68bdbca0a::t_a0dfa08c620385 671-675
+  s_a75fc68bdbca0a::t_1e72b0d0e09668 447-460
+providers/datadog/dataset.go
+  s_a75fc68bdbca0a::t_b4b02733566005 14,18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "9fc6fa6fdf62b441afb2a30d7dc4728efcf4ba64",
+  "prompts": {},
+  "sessions": {
+    "s_a75fc68bdbca0a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35d4-4978-78a1-8707-4482f4e1fd38",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
