@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "resources": [
+    {
+      "resource": "kafka_quota",
+      "service_family": "quotas",
+      "reason": "Quota imports are not safe until the upstream provider exposes a real importer with a verified ID shape.",
+      "evidence": "Mongey/kafka v0.13.1 documents terraform import as entity_type:entity_name, but kafkaQuotaResource does not define a ResourceImporter. The source ID shape is entity_name|entity_type or entity-default|entity_type, and quotaRead expects entity_type and entity_name to already be seeded in state.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/481",
+        "https://github.com/Mongey/terraform-provider-kafka/blob/v0.13.1/docs/resources/quota.md",
+        "https://github.com/Mongey/terraform-provider-kafka/blob/v0.13.1/kafka/resource_kafka_quota.go",
+        "https://github.com/Mongey/terraform-provider-kafka/blob/v0.13.1/kafka/kafka_quotas.go"
+      ]
+    },
+    {
+      "resource": "kafka_user_scram_credential",
+      "service_family": "scram_credentials",
+      "reason": "SCRAM credential configuration requires password material that Kafka describe APIs and provider refresh cannot return.",
+      "evidence": "Mongey/kafka v0.13.1 accepts two-part username|scram_mechanism imports and legacy three-part imports, but the docs note that the password must be provided because it cannot be read from Kafka. The resource CustomizeDiff requires password or password_wo for configuration, while userScramCredentialRead only restores username, scram_mechanism, and scram_iterations; Sarama DescribeUserScramCredentials responses expose mechanism and iterations but no password.",
+      "status": "secret-required",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/481",
+        "https://github.com/Mongey/terraform-provider-kafka/blob/v0.13.1/docs/resources/user_scram_credential.md",
+        "https://github.com/Mongey/terraform-provider-kafka/blob/v0.13.1/kafka/resource_kafka_user_scram_credential.go",
+        "https://github.com/Mongey/terraform-provider-kafka/blob/v0.13.1/kafka/kafka_user_scram_credentials.go",
+        "https://github.com/IBM/sarama/blob/v1.46.1/describe_user_scram_credentials_response.go"
+      ]
+    }
+  ]
+}
