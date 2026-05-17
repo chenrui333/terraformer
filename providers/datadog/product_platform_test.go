@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
+	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 )
@@ -33,7 +34,7 @@ func TestProductPlatformCreateResource(t *testing.T) {
 		},
 		{name: datadogOpenapiAPIServiceName, id: "00000000-0000-0000-0000-000000000010", resourceType: "datadog_openapi_api", create: (&OpenapiAPIGenerator{}).createResource},
 		{name: datadogDeploymentGateServiceName, id: "gate-1", resourceType: "datadog_deployment_gate", create: (&DeploymentGateGenerator{}).createResource},
-		{name: datadogDatasetServiceName, id: "dataset-1", resourceType: "datadog_dataset", create: (&DatasetGenerator{}).createResource},
+		{name: datadogDatasetServiceName, id: "dataset-1", resourceType: "datadog_dataset", create: newDatasetResourceForTest},
 		{name: datadogDatastoreServiceName, id: "datastore-1", resourceType: "datadog_datastore", create: (&DatastoreGenerator{}).createResource},
 		{name: datadogReferenceTableServiceName, id: "table-1", resourceType: "datadog_reference_table", create: (&ReferenceTableGenerator{}).createResource},
 		{name: datadogObservabilityPipelineServiceName, id: "pipeline-1", resourceType: "datadog_observability_pipeline", create: (&ObservabilityPipelineGenerator{}).createResource},
@@ -66,7 +67,7 @@ func TestProductPlatformCreateResourceMissingID(t *testing.T) {
 		{name: datadogAppBuilderAppServiceName, create: (&AppBuilderAppGenerator{}).createResource},
 		{name: datadogOpenapiAPIServiceName, create: (&OpenapiAPIGenerator{}).createResource},
 		{name: datadogDeploymentGateServiceName, create: (&DeploymentGateGenerator{}).createResource},
-		{name: datadogDatasetServiceName, create: (&DatasetGenerator{}).createResource},
+		{name: datadogDatasetServiceName, create: newDatasetResourceForTest},
 		{name: datadogDatastoreServiceName, create: (&DatastoreGenerator{}).createResource},
 		{name: datadogReferenceTableServiceName, create: (&ReferenceTableGenerator{}).createResource},
 		{name: datadogObservabilityPipelineServiceName, create: (&ObservabilityPipelineGenerator{}).createResource},
@@ -78,6 +79,118 @@ func TestProductPlatformCreateResourceMissingID(t *testing.T) {
 				t.Fatal("createResource returned nil error, want missing id error")
 			}
 		})
+	}
+}
+
+func TestDatasetCreateResourcePopulatesRequiredAttributes(t *testing.T) {
+	productFilters := []datadogV2.FiltersPerProduct{
+		*datadogV2.NewFiltersPerProduct([]string{"@env:prod"}, "logs"),
+	}
+	resource, err := (&DatasetGenerator{}).createResource(datasetResponseForTest(
+		"dataset-1",
+		"Restricted Dataset",
+		[]string{"role:abc", "team:def"},
+		productFilters,
+	))
+	if err != nil {
+		t.Fatalf("createResource returned error: %v", err)
+	}
+
+	attributes := resource.InstanceState.Attributes
+	assertProductPlatformAttribute(t, attributes, "id", "dataset-1")
+	assertProductPlatformAttribute(t, attributes, "name", "Restricted Dataset")
+	assertProductPlatformAttribute(t, attributes, datasetPrincipalsKey+".#", "2")
+	assertProductPlatformAttribute(t, attributes, datasetPrincipalsKey+".0", "role:abc")
+	assertProductPlatformAttribute(t, attributes, datasetPrincipalsKey+".1", "team:def")
+	assertProductPlatformAttribute(t, attributes, datasetProductFiltersKey+".#", "1")
+	assertProductPlatformAttribute(t, attributes, datasetProductFiltersKey+".0.product", "logs")
+	assertProductPlatformAttribute(t, attributes, datasetProductFiltersKey+".0."+datasetFiltersKey+".#", "1")
+	assertProductPlatformAttribute(t, attributes, datasetProductFiltersKey+".0."+datasetFiltersKey+".0", "@env:prod")
+}
+
+func TestDatasetCreateResourceRequiresProviderRequiredAttributes(t *testing.T) {
+	tests := []struct {
+		name     string
+		dataset  datadogV2.DatasetResponse
+		wantText string
+	}{
+		{
+			name:     "missing name",
+			dataset:  datasetResponseForTest("dataset-1", "", []string{"role:abc"}, nil),
+			wantText: "missing required name",
+		},
+		{
+			name:     "missing principals",
+			dataset:  datasetResponseForTest("dataset-1", "dataset", nil, nil),
+			wantText: "missing required principals",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, err := (&DatasetGenerator{}).createResource(tt.dataset); err == nil || !strings.Contains(err.Error(), tt.wantText) {
+				t.Fatalf("createResource error = %v, want text %q", err, tt.wantText)
+			}
+		})
+	}
+}
+
+func TestDatasetPostConvertHookPreservesEmptyRequiredSets(t *testing.T) {
+	resource := terraformutils.NewResource(
+		"dataset-empty",
+		"dataset_dataset-empty",
+		"datadog_dataset",
+		"datadog",
+		map[string]string{
+			"id":                                    "dataset-empty",
+			"name":                                  "Empty Dataset",
+			datasetPrincipalsKey + ".#":             "0",
+			datasetProductFiltersKey + ".#":         "1",
+			datasetProductFiltersKey + ".0.product": "logs",
+			datasetProductFiltersKey + ".0." + datasetFiltersKey + ".#": "0",
+		},
+		DatasetAllowEmptyValues,
+		map[string]interface{}{},
+	)
+	resource.Item = map[string]interface{}{
+		"id":   "dataset-empty",
+		"name": "Empty Dataset",
+		datasetProductFiltersKey: []interface{}{
+			map[string]interface{}{"product": "logs"},
+		},
+	}
+
+	generator := &DatasetGenerator{
+		DatadogService: DatadogService{
+			Service: terraformutils.Service{Resources: []terraformutils.Resource{resource}},
+		},
+	}
+	if err := generator.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook returned error: %v", err)
+	}
+
+	updatedResource := generator.Resources[0]
+	principals, ok := updatedResource.Item[datasetPrincipalsKey].([]interface{})
+	if !ok {
+		t.Fatalf("principals item type = %T, want []interface{}", updatedResource.Item[datasetPrincipalsKey])
+	}
+	if len(principals) != 0 {
+		t.Fatalf("principals length = %d, want 0", len(principals))
+	}
+	productFilters, ok := updatedResource.Item[datasetProductFiltersKey].([]interface{})
+	if !ok || len(productFilters) != 1 {
+		t.Fatalf("product_filters item = %#v, want one block", updatedResource.Item[datasetProductFiltersKey])
+	}
+	filterBlock, ok := productFilters[0].(map[string]interface{})
+	if !ok {
+		t.Fatalf("product_filters[0] type = %T, want map[string]interface{}", productFilters[0])
+	}
+	filters, ok := filterBlock[datasetFiltersKey].([]interface{})
+	if !ok {
+		t.Fatalf("filters item type = %T, want []interface{}", filterBlock[datasetFiltersKey])
+	}
+	if len(filters) != 0 {
+		t.Fatalf("filters length = %d, want 0", len(filters))
 	}
 }
 
@@ -395,6 +508,9 @@ func TestDatasetInitResourcesList(t *testing.T) {
 		t.Fatalf("InitResources returned error: %v", err)
 	}
 	assertProductPlatformResourceIDs(t, resources(), []string{"dataset-1", "dataset-2"})
+	assertProductPlatformAttribute(t, resources()[0].InstanceState.Attributes, "name", "dataset")
+	assertProductPlatformAttribute(t, resources()[0].InstanceState.Attributes, datasetPrincipalsKey+".#", "1")
+	assertProductPlatformAttribute(t, resources()[0].InstanceState.Attributes, datasetPrincipalsKey+".0", "role:abc")
 }
 
 func TestDatastoreInitResourcesList(t *testing.T) {
@@ -574,6 +690,14 @@ func assertProductPlatformResourceIDs(t *testing.T, resources []terraformutils.R
 	}
 }
 
+func assertProductPlatformAttribute(t *testing.T, attributes map[string]string, key, want string) {
+	t.Helper()
+
+	if got := attributes[key]; got != want {
+		t.Fatalf("attribute %s = %q, want %q", key, got, want)
+	}
+}
+
 func decodeProductPlatformTypedAttributes(t *testing.T, rawAttributes json.RawMessage) map[string]json.RawMessage {
 	t.Helper()
 
@@ -637,6 +761,29 @@ func datasetListResponseJSON(ids ...string) string {
 		datasets = append(datasets, fmt.Sprintf(`{"id":%q,"type":"dataset","attributes":{"name":"dataset","principals":["role:abc"]}}`, id))
 	}
 	return fmt.Sprintf(`{"data":[%s]}`, strings.Join(datasets, ","))
+}
+
+func newDatasetResourceForTest(id string) (terraformutils.Resource, error) {
+	return (&DatasetGenerator{}).createResource(datasetResponseForTest(id, "dataset", []string{"role:abc"}, nil))
+}
+
+func datasetResponseForTest(id, name string, principals []string, productFilters []datadogV2.FiltersPerProduct) datadogV2.DatasetResponse {
+	dataset := datadogV2.NewDatasetResponse()
+	dataset.SetId(id)
+
+	attributes := datadogV2.NewDatasetAttributesResponse()
+	if name != "" {
+		attributes.SetName(name)
+	}
+	if principals != nil {
+		attributes.SetPrincipals(principals)
+	}
+	if productFilters != nil {
+		attributes.SetProductFilters(productFilters)
+	}
+	dataset.SetAttributes(*attributes)
+
+	return *dataset
 }
 
 func datastoreResponseJSON(id string) string {
