@@ -23,6 +23,9 @@
 - Keep generated HCL secret-free. Prefer environment variables, profiles, or existing provider config paths for authentication, and keep refresh-time auth config separate from generated provider data.
 - Apply filters before broad, expensive, or permission-sensitive reads. Skip system, internal, default, or provider-managed resources unless explicitly filtered and verified as safely user-owned.
 - Preserve required identity and shape fields through refresh/import fallback. Defer resources with unrecoverable write-only fields, importer mismatches, or unreadable required config into unsupported metadata with evidence.
+- Before closing a provider gap issue, compare provider registration, docs, unsupported metadata, and the issue's resource buckets; detect stale or superseded PR branches after parallel provider lanes merge.
+- Preserve empty-but-meaningful provider fields, nested state, and source variant markers required for refresh-stable HCL. Reject discovered resources whose source shape is not supported by the Terraform provider.
+- Import durable configuration metadata only. Classify high-cardinality row, item, event, or runtime data as unsupported or deferred unless provider read can reconstruct stable configuration.
 
 ## Validation
 
