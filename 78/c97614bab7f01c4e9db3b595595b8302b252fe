@@ -1,0 +1,23 @@
+providers/cloudflare/unsupported_resources.json
+  s_f31c92060751c4::t_3bbd6e862753a1 613-622
+  s_f31c92060751c4::t_9ef7d9f504520d 184-204,216-226,238-246
+  s_f31c92060751c4::t_1616652de39aff 702-722,734-744,833-841
+  s_f31c92060751c4::t_9ffe97e0725e52 49-58
+  s_f31c92060751c4::t_1e7581545d3475 481-512,546-554
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "78c97614bab7f01c4e9db3b595595b8302b252fe",
+  "prompts": {},
+  "sessions": {
+    "s_f31c92060751c4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35d5-3c2f-7021-bcbf-b8734abac0db",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
