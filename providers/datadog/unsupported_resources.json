@@ -79,6 +79,18 @@
       ]
     },
     {
+      "resource": "datadog_logs_custom_destination",
+      "service_family": "logs",
+      "reason": "Credential-backed destination variants cannot be reconstructed from import/read state.",
+      "evidence": "Provider v4.9.0 imports by destination ID and Read calls GetLogsCustomDestination. The provider read mapping explicitly preserves existing state for HTTP basic auth, HTTP custom header values, Elasticsearch basic auth, and Splunk access tokens because those values are not returned by the API. The resource config validators require exactly one destination/auth variant, so broad import would generate invalid HCL for credential-backed destinations. Microsoft Sentinel destinations may be reconstructible but need a variant-aware importer to avoid silently skipping credential-backed destinations.",
+      "status": "deferred",
+      "references": [
+        "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/logs_custom_destination",
+        "https://github.com/DataDog/terraform-provider-datadog/blob/v4.9.0/datadog/fwprovider/resource_datadog_logs_custom_destination.go",
+        "https://github.com/DataDog/datadog-api-client-go/blob/v2.59.0/api/datadogV2/api_logs_custom_destinations.go"
+      ]
+    },
+    {
       "resource": "datadog_app_key_registration",
       "service_family": "app_key_registration",
       "reason": "Required id configuration attribute is stripped during Terraformer HCL conversion.",

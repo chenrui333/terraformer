@@ -224,6 +224,9 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `monitor_notification_rule`
     * `datadog_monitor_notification_rule`
         * **_NOTE:_** Requires DataDog/datadog provider 3.83.0 or newer.
+*   `observability_pipeline`
+    * `datadog_observability_pipeline`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
 *   `on_call_escalation_policy`
     * `datadog_on_call_escalation_policy`
         * **_NOTE:_** The Datadog API does not expose a list endpoint for On-Call escalation policies; pass IDs explicitly, for example `--filter=on_call_escalation_policy=policy-id`

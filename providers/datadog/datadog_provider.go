@@ -221,6 +221,7 @@ func (p *DatadogProvider) GetSupportedService() map[string]terraformutils.Servic
 		"monitor_config_policy":                    &MonitorConfigPolicyGenerator{},
 		"monitor_json":                             &MonitorJSONGenerator{},
 		"monitor_notification_rule":                &MonitorNotificationRuleGenerator{},
+		"observability_pipeline":                   &ObservabilityPipelineGenerator{},
 		"on_call_escalation_policy":                &OnCallEscalationPolicyGenerator{},
 		"on_call_schedule":                         &OnCallScheduleGenerator{},
 		"on_call_team_routing_rules":               &OnCallTeamRoutingRulesGenerator{},
