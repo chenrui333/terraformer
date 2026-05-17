@@ -1,0 +1,38 @@
+docs/datadog.md
+  s_a75fc68bdbca0a::t_4f8a6b3a402507 140-142,281-284,290-292
+providers/datadog/synthetics_suite_test.go
+  s_a75fc68bdbca0a::t_12f2f6da558c03 1-106
+providers/datadog/synthetics_suite.go
+  s_a75fc68bdbca0a::t_fa9749a27110ae 97-98,115-116,137-138
+  s_a75fc68bdbca0a::t_fe077e9390d94a 1-96,99-114,117-136,139-152
+providers/datadog/downtime_schedule.go
+  s_a75fc68bdbca0a::t_fe077e9390d94a 1-141,145-151
+  s_a75fc68bdbca0a::t_fa9749a27110ae 142-144
+providers/datadog/synthetics_concurrency_cap.go
+  s_a75fc68bdbca0a::t_fe077e9390d94a 1-75
+providers/datadog/downtime_schedule_test.go
+  s_a75fc68bdbca0a::t_12f2f6da558c03 1-109
+providers/datadog/datadog_provider_test.go
+  s_a75fc68bdbca0a::t_8053042ae299d4 213-217,228-249
+providers/datadog/datadog_provider.go
+  s_a75fc68bdbca0a::t_361fef56a57dd6 190,245,248-249
+  s_a75fc68bdbca0a::t_cd29d53783183a 303-310,449-451
+providers/datadog/synthetics_concurrency_cap_test.go
+  s_a75fc68bdbca0a::t_12f2f6da558c03 1-89
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "cafab00c4e2dbbcc2c227fae0dc4ab6e136fa030",
+  "prompts": {},
+  "sessions": {
+    "s_a75fc68bdbca0a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35d4-4978-78a1-8707-4482f4e1fd38",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
