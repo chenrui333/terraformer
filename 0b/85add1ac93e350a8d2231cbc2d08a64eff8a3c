@@ -1,0 +1,64 @@
+providers/datadog/service_account_application_key_test.go
+  s_0fb33ec13dc59f::t_8c2784244a7623 1-190
+providers/datadog/authn_mapping_test.go
+  s_0fb33ec13dc59f::t_9e37253fd30f6f 1-130
+providers/datadog/datadog_provider.go
+  s_0fb33ec13dc59f::t_b9ca29fa1670e9 233-234
+  s_0fb33ec13dc59f::t_37ad977683d3b9 171-173,178
+  s_0fb33ec13dc59f::t_f840e80215203c 199
+docs/datadog.md
+  s_0fb33ec13dc59f::t_278273fa3e1295 108-109
+  s_0fb33ec13dc59f::t_ca45f14bf95663 93-98
+  s_0fb33ec13dc59f::t_aed454d43bd0de 183-184
+  s_0fb33ec13dc59f::t_d9ba1cdac75e63 247-251
+providers/datadog/authn_mapping.go
+  s_0fb33ec13dc59f::t_4b4d6dafa6c5e8 1-122
+providers/datadog/service_account_application_key.go
+  s_0fb33ec13dc59f::t_0bb3ac7f124df4 135-138
+  s_0fb33ec13dc59f::t_9b0b1a1ab7d13c 1-134,139-153
+providers/datadog/application_key_test.go
+  s_0fb33ec13dc59f::t_ab8a140dab7c2e 1-127
+providers/datadog/application_key.go
+  s_0fb33ec13dc59f::t_91c61cdec911a8 39
+  s_0fb33ec13dc59f::t_0395e7edd533f4 1-38,40-87,90-107,112-119
+  s_0fb33ec13dc59f::t_3b9cf2e45348e7 88-89,108-111
+providers/datadog/logs_restriction_query_test.go
+  s_0fb33ec13dc59f::t_f17fba455068ca 80
+  s_0fb33ec13dc59f::t_83ceaad94de0c5 1-79,81-101
+providers/datadog/logs_restriction_query.go
+  s_0fb33ec13dc59f::t_f2956ddf8957c1 1-38,40-55,58-75
+  s_0fb33ec13dc59f::t_4c49d470b21a5a 56-57
+  s_0fb33ec13dc59f::t_3add15dceee972 39
+providers/datadog/app_key_registration_test.go
+  s_0fb33ec13dc59f::t_2c92d929258d37 1-127
+providers/datadog/app_key_registration.go
+  s_0fb33ec13dc59f::t_790b42bee12267 108-110
+  s_0fb33ec13dc59f::t_182fffdf0c6444 42
+  s_0fb33ec13dc59f::t_32792bc569a795 1-41,43-107,111-118
+providers/datadog/api_key.go
+  s_0fb33ec13dc59f::t_210122077f0b76 39
+  s_0fb33ec13dc59f::t_daf26a668c43bf 1-38,40-87,90-107,112-119
+  s_0fb33ec13dc59f::t_abe967d5365517 88-89,108-111
+providers/datadog/service_account_test.go
+  s_0fb33ec13dc59f::t_18c8061ff6f0a9 1-132
+providers/datadog/api_key_test.go
+  s_0fb33ec13dc59f::t_38090b62d9a20c 1-130
+providers/datadog/service_account.go
+  s_0fb33ec13dc59f::t_5c04b481ed34c5 1-115
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "0b85add1ac93e350a8d2231cbc2d08a64eff8a3c",
+  "prompts": {},
+  "sessions": {
+    "s_0fb33ec13dc59f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d1ea9520-81a1-4fe9-af43-b9ba16c9150f",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
