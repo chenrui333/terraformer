@@ -7,7 +7,9 @@ import (
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 )
 
 var ngwAllowEmptyValues = []string{"tags."}
@@ -19,6 +21,9 @@ type NatGatewayGenerator struct {
 func (g *NatGatewayGenerator) createResources(ngws *ec2.DescribeNatGatewaysOutput) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 	for _, ngw := range ngws.NatGateways {
+		if ngw.State == types.NatGatewayStateDeleted || ngw.State == types.NatGatewayStateDeleting {
+			continue
+		}
 		resources = append(resources, terraformutils.NewSimpleResource(
 			StringValue(ngw.NatGatewayId),
 			StringValue(ngw.NatGatewayId),
@@ -39,7 +44,14 @@ func (g *NatGatewayGenerator) InitResources() error {
 		return e
 	}
 	svc := ec2.NewFromConfig(config)
-	p := ec2.NewDescribeNatGatewaysPaginator(svc, &ec2.DescribeNatGatewaysInput{})
+	p := ec2.NewDescribeNatGatewaysPaginator(svc, &ec2.DescribeNatGatewaysInput{
+		Filter: []types.Filter{
+			{
+				Name:   aws.String("state"),
+				Values: []string{"available", "pending", "failed"},
+			},
+		},
+	})
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
 		if err != nil {

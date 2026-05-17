@@ -8,6 +8,7 @@ import (
 	"github.com/chenrui333/terraformer/terraformutils"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 )
 
 var VpcEndpointAllowEmptyValues = []string{"tags."}
@@ -19,12 +20,15 @@ type VpcEndpointGenerator struct {
 func (g *VpcEndpointGenerator) createResources(vpceps *ec2.DescribeVpcEndpointsOutput) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 	for _, vpcEndpoint := range vpceps.VpcEndpoints {
+		if vpcEndpoint.State == types.StateDeleted || vpcEndpoint.State == types.StateDeleting {
+			continue
+		}
 		resources = append(resources, terraformutils.NewSimpleResource(
 			StringValue(vpcEndpoint.VpcEndpointId),
 			StringValue(vpcEndpoint.VpcEndpointId),
 			"aws_vpc_endpoint",
 			"aws",
-			VpcAllowEmptyValues,
+			VpcEndpointAllowEmptyValues,
 		))
 	}
 	return resources
@@ -39,10 +43,13 @@ func (g *VpcEndpointGenerator) InitResources() error {
 		return e
 	}
 	svc := ec2.NewFromConfig(config)
-	vpceps, err := svc.DescribeVpcEndpoints(context.TODO(), &ec2.DescribeVpcEndpointsInput{})
-	if err != nil {
-		return err
+	p := ec2.NewDescribeVpcEndpointsPaginator(svc, &ec2.DescribeVpcEndpointsInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		g.Resources = append(g.Resources, g.createResources(page)...)
 	}
-	g.Resources = g.createResources(vpceps)
 	return nil
 }

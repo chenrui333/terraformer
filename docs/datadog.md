@@ -88,6 +88,12 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `apm_retention_filter_order`
     * `datadog_apm_retention_filter_order`
         * **_NOTE:_** Importing a single retention filter order by ID accepts any value because the Datadog provider stores it as `filtersOrderID`, for example `--filter=apm_retention_filter_order=any-value`
+*   `aws_cur_config`
+    * `datadog_aws_cur_config`
+        * **_NOTE:_** Requires DataDog/datadog provider 3.39.0 or newer.
+*   `azure_uc_config`
+    * `datadog_azure_uc_config`
+        * **_NOTE:_** Requires DataDog/datadog provider 3.39.0 or newer.
 *   `dashboard`
     * `datadog_dashboard`
 *   `dashboard_json`
@@ -98,8 +104,17 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_cloud_inventory_sync_config`
         * **_NOTE:_** Requires DataDog/datadog provider 3.86.0 or newer.
         * **_NOTE:_** Importing resource requires resource ID's to be passed via [Filter][1] option
+*   `cost_budget`
+    * `datadog_cost_budget`
+        * **_NOTE:_** Requires DataDog/datadog provider 3.39.0 or newer.
+*   `custom_allocation_rule`
+    * `datadog_custom_allocation_rule`
+        * **_NOTE:_** Requires DataDog/datadog provider 3.39.0 or newer.
 *   `downtime`
     * `datadog_downtime`
+*   `gcp_uc_config`
+    * `datadog_gcp_uc_config`
+        * **_NOTE:_** Requires DataDog/datadog provider 3.39.0 or newer.
 *   `integration_aws`
     * `datadog_integration_aws`
 *   `integration_aws_lambda_arn`
@@ -216,6 +231,9 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_synthetics_private_location`
 *   `synthetics_test`
     * `datadog_synthetics_test`
+*   `tag_pipeline_ruleset`
+    * `datadog_tag_pipeline_ruleset`
+        * **_NOTE:_** Requires DataDog/datadog provider 3.39.0 or newer.
 *   `team`
     * `datadog_team`
 *   `team_connection`
