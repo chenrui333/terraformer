@@ -1,0 +1,22 @@
+providers/kafka/acl_test.go
+  s_b66bcd9648b29e::t_044dec1d86b4e0 290-291
+  s_b66bcd9648b29e::t_b43c389084d0fa 280-289,292-337
+providers/kafka/kafka_service.go
+  s_b66bcd9648b29e::t_b43c389084d0fa 6-8,32-82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "4725b42cd6a35bbdd30f5c8bb420a5e6e5523fee",
+  "prompts": {},
+  "sessions": {
+    "s_b66bcd9648b29e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e37e9-11ca-7342-bc92-70d1cef54e07",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
