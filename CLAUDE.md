@@ -66,6 +66,18 @@ Mark a resource unsupported when:
 - the resource represents an operation rather than stable inventory;
 - the resource represents an acceptance or handshake lifecycle that cannot be inferred safely from discovery.
 
+## Provider Gap Close-Out And Data Shape Checks
+
+Before claiming a provider gap issue is complete, compare all four sources of truth: Terraformer provider registration, provider docs, provider-local unsupported metadata, and the issue's resource buckets. Also check whether open or stale PR branches were superseded by later merged lanes before continuing work.
+
+When evaluating product, platform, dataset, table, pipeline, API-definition, or deployment-style resources:
+
+- preserve empty-but-meaningful strings, lists, maps, nested blocks, and variant markers when provider refresh needs them for stable HCL;
+- seed nested state that provider read only reconciles when it is already present, such as rule or schedule blocks;
+- validate source-shape restrictions before appending discovered IDs, and skip or document source variants the Terraform provider cannot validate or refresh;
+- import durable configuration metadata, not high-cardinality rows, items, events, or runtime observations;
+- prefer unsupported or deferred metadata over exposing a resource that produces invalid, lossy, or destructive follow-up plans.
+
 ## Duplicate Ownership Across Related Resources
 
 Before adding a resource, check whether another Terraformer-supported resource already owns the same upstream object or configuration.
