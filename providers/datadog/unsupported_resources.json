@@ -111,6 +111,50 @@
         "https://github.com/DataDog/terraform-provider-datadog/blob/v4.9.0/datadog/fwprovider/resource_datadog_secure_embed_dashboard.go",
         "https://github.com/DataDog/datadog-api-client-go/blob/v2.59.0/api/datadogV2/api_dashboard_secure_embed.go"
       ]
+    },
+    {
+      "resource": "datadog_webhook_custom_variable",
+      "service_family": "webhook",
+      "reason": "Provider import does not seed the name required by the read path, and the required value is sensitive.",
+      "evidence": "The Terraform provider import only passes through id, but Read calls GetWebhooksIntegrationCustomVariable with state.name instead of id. Terraformer broad import would seed only the remote ID and cannot safely refresh the required name/value state, especially for secret custom variables.",
+      "status": "unsupported",
+      "references": [
+        "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/webhook_custom_variable",
+        "https://github.com/DataDog/terraform-provider-datadog/blob/master/datadog/fwprovider/resource_datadog_webhook_custom_variable.go"
+      ]
+    },
+    {
+      "resource": "datadog_integration_aws_external_id",
+      "service_family": "integration_aws",
+      "reason": "Resource creates a short-lived external ID operation rather than stable discoverable inventory.",
+      "evidence": "The Terraform provider Create path calls CreateNewAWSExternalID and warns that the value expires if not used within 48 hours. Read is a no-op and Delete only removes Terraform state, so broad import would record an operation result without a durable Datadog object to discover or reconcile.",
+      "status": "unsupported",
+      "references": [
+        "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/integration_aws_external_id",
+        "https://github.com/DataDog/terraform-provider-datadog/blob/master/datadog/fwprovider/resource_datadog_integration_aws_external_id.go"
+      ]
+    },
+    {
+      "resource": "datadog_action_connection",
+      "service_family": "action_connection",
+      "reason": "Connection variants need a dedicated importer because API/read behavior differs for AWS and HTTP credential-backed connections.",
+      "evidence": "The Terraform provider resource requires exactly one AWS or HTTP connection block, and HTTP token-auth connections can contain sensitive token values. Provider read reconstructs token names and types but not token values, and the data source is ID-based, so broad discovery needs variant-specific handling before Terraformer can emit reliable HCL.",
+      "status": "deferred",
+      "references": [
+        "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/action_connection",
+        "https://github.com/DataDog/terraform-provider-datadog/blob/master/datadog/fwprovider/resource_datadog_action_connection.go"
+      ]
+    },
+    {
+      "resource": "datadog_cloud_workload_security_agent_rule",
+      "service_family": "csm_threats",
+      "reason": "Deprecated resource duplicates the currently registered CSM threats agent rule ownership path.",
+      "evidence": "The Terraform provider marks datadog_cloud_workload_security_agent_rule deprecated in favor of datadog_csm_threats_agent_rule. Terraformer already registers csm_threats_agent_rule for the same CSM threats agent-rule API, so adding the deprecated resource would risk duplicate Terraform ownership for the same remote rules.",
+      "status": "deferred",
+      "references": [
+        "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/cloud_workload_security_agent_rule",
+        "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/csm_threats_agent_rule"
+      ]
     }
   ]
 }

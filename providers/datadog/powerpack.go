@@ -123,10 +123,17 @@ func initPowerpackResources(
 	api := datadogV2.NewPowerpackApi(datadogClient)
 
 	resources := []terraformutils.Resource{}
+	hasAnyIDFilter := false
+	hasApplicableIDFilter := false
 	for _, filter := range service.Filter {
-		if filter.FieldPath != "id" || !filter.IsApplicable(serviceName) {
+		if filter.FieldPath != "id" {
 			continue
 		}
+		hasAnyIDFilter = true
+		if !filter.IsApplicable(serviceName) {
+			continue
+		}
+		hasApplicableIDFilter = true
 
 		for _, value := range filter.AcceptableValues {
 			powerpack, err := getPowerpack(auth, api, value)
@@ -139,6 +146,11 @@ func initPowerpackResources(
 			}
 			resources = append(resources, resource)
 		}
+	}
+
+	if hasAnyIDFilter && !hasApplicableIDFilter {
+		service.Resources = resources
+		return nil
 	}
 
 	if len(resources) > 0 {

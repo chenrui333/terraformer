@@ -30,44 +30,78 @@ func TestDashboardV2CreateResource(t *testing.T) {
 	}
 }
 
-func TestDashboardV2InitResourcesListsDashboards(t *testing.T) {
-	requestStarts := []string{}
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if r.URL.Path != "/api/v1/dashboard" {
-			http.NotFound(w, r)
-			return
-		}
-		if got := r.URL.Query().Get("count"); got != "100" {
-			http.Error(w, fmt.Sprintf("count = %q, want 100", got), http.StatusBadRequest)
-			return
-		}
+func TestDashboardInitResourcesListsDashboardsWithPagination(t *testing.T) {
+	tests := []struct {
+		name string
+		init func(*httptest.Server) ([]terraformutils.Resource, error)
+	}{
+		{
+			name: "dashboard",
+			init: func(server *httptest.Server) ([]terraformutils.Resource, error) {
+				generator := newDashboardTestGenerator(server, nil)
+				err := generator.InitResources()
+				return generator.Resources, err
+			},
+		},
+		{
+			name: "dashboard_json",
+			init: func(server *httptest.Server) ([]terraformutils.Resource, error) {
+				generator := newDashboardJSONTestGenerator(server, nil)
+				err := generator.InitResources()
+				return generator.Resources, err
+			},
+		},
+		{
+			name: "dashboard_v2",
+			init: func(server *httptest.Server) ([]terraformutils.Resource, error) {
+				generator := newDashboardV2TestGenerator(server, nil)
+				err := generator.InitResources()
+				return generator.Resources, err
+			},
+		},
+	}
 
-		start := r.URL.Query().Get("start")
-		requestStarts = append(requestStarts, start)
-		switch start {
-		case "":
-			_, _ = fmt.Fprint(w, dashboardSummaryResponseJSON(dashboardSummaryIDs("dashboard", 0, 100)...))
-		case "100":
-			_, _ = fmt.Fprint(w, dashboardSummaryResponseJSON("dashboard-100"))
-		default:
-			http.Error(w, fmt.Sprintf("start = %q, want empty or 100", start), http.StatusBadRequest)
-		}
-	}))
-	defer server.Close()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			requestStarts := []string{}
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				if r.URL.Path != "/api/v1/dashboard" {
+					http.NotFound(w, r)
+					return
+				}
+				if got := r.URL.Query().Get("count"); got != "100" {
+					http.Error(w, fmt.Sprintf("count = %q, want 100", got), http.StatusBadRequest)
+					return
+				}
 
-	generator := newDashboardV2TestGenerator(server, nil)
-	if err := generator.InitResources(); err != nil {
-		t.Fatalf("InitResources returned error: %v", err)
-	}
-	if len(generator.Resources) != 101 {
-		t.Fatalf("expected 101 resources, got %d", len(generator.Resources))
-	}
-	if got := strings.Join(requestStarts, ","); got != ",100" {
-		t.Fatalf("request starts = %q, want ,100", got)
-	}
-	if generator.Resources[0].InstanceState.ID != "dashboard-0" || generator.Resources[100].InstanceState.ID != "dashboard-100" {
-		t.Fatalf("unexpected resource IDs: %s, %s", generator.Resources[0].InstanceState.ID, generator.Resources[100].InstanceState.ID)
+				start := r.URL.Query().Get("start")
+				requestStarts = append(requestStarts, start)
+				switch start {
+				case "":
+					_, _ = fmt.Fprint(w, dashboardSummaryResponseJSON(dashboardSummaryIDs("dashboard", 0, 100)...))
+				case "100":
+					_, _ = fmt.Fprint(w, dashboardSummaryResponseJSON("dashboard-100"))
+				default:
+					http.Error(w, fmt.Sprintf("start = %q, want empty or 100", start), http.StatusBadRequest)
+				}
+			}))
+			defer server.Close()
+
+			resources, err := tt.init(server)
+			if err != nil {
+				t.Fatalf("InitResources returned error: %v", err)
+			}
+			if len(resources) != 101 {
+				t.Fatalf("expected 101 resources, got %d", len(resources))
+			}
+			if got := strings.Join(requestStarts, ","); got != ",100" {
+				t.Fatalf("request starts = %q, want ,100", got)
+			}
+			if resources[0].InstanceState.ID != "dashboard-0" || resources[100].InstanceState.ID != "dashboard-100" {
+				t.Fatalf("unexpected resource IDs: %s, %s", resources[0].InstanceState.ID, resources[100].InstanceState.ID)
+			}
+		})
 	}
 }
 
@@ -217,6 +251,69 @@ func TestPowerpackV2InitResourcesFiltersByID(t *testing.T) {
 	if generator.Resources[0].InstanceState.ID != "powerpack-1" {
 		t.Fatalf("resource ID = %q, want powerpack-1", generator.Resources[0].InstanceState.ID)
 	}
+}
+
+func TestPowerpackInitResourcesSkipsListForSiblingIDFilter(t *testing.T) {
+	tests := []struct {
+		name          string
+		filterService string
+		init          func(*httptest.Server, []terraformutils.ResourceFilter) ([]terraformutils.Resource, error)
+	}{
+		{
+			name:          "powerpack",
+			filterService: "powerpack_v2",
+			init: func(server *httptest.Server, filters []terraformutils.ResourceFilter) ([]terraformutils.Resource, error) {
+				generator := newPowerpackTestGenerator(server, filters)
+				err := generator.InitResources()
+				return generator.Resources, err
+			},
+		},
+		{
+			name:          "powerpack_v2",
+			filterService: "powerpack",
+			init: func(server *httptest.Server, filters []terraformutils.ResourceFilter) ([]terraformutils.Resource, error) {
+				generator := newPowerpackV2TestGenerator(server, filters)
+				err := generator.InitResources()
+				return generator.Resources, err
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			requests := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requests++
+				http.Error(w, "unexpected request", http.StatusInternalServerError)
+			}))
+			defer server.Close()
+
+			resources, err := tt.init(server, []terraformutils.ResourceFilter{
+				{
+					ServiceName:      tt.filterService,
+					FieldPath:        "id",
+					AcceptableValues: []string{"powerpack-1"},
+				},
+			})
+			if err != nil {
+				t.Fatalf("InitResources returned error: %v", err)
+			}
+			if len(resources) != 0 {
+				t.Fatalf("expected 0 resources, got %d", len(resources))
+			}
+			if requests != 0 {
+				t.Fatalf("expected no API requests, got %d", requests)
+			}
+		})
+	}
+}
+
+func newDashboardTestGenerator(server *httptest.Server, filter []terraformutils.ResourceFilter) *DashboardGenerator {
+	return &DashboardGenerator{DatadogService: newDashboardingTestService(server, filter)}
+}
+
+func newDashboardJSONTestGenerator(server *httptest.Server, filter []terraformutils.ResourceFilter) *DashboardJSONGenerator {
+	return &DashboardJSONGenerator{DatadogService: newDashboardingTestService(server, filter)}
 }
 
 func newDashboardV2TestGenerator(server *httptest.Server, filter []terraformutils.ResourceFilter) *DashboardV2Generator {
