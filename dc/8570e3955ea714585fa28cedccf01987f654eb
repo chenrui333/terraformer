@@ -1,0 +1,21 @@
+providers/datadog/ip_allowlist.go
+  s_ad2cde2451f5fe::t_4e9b02d5fe0986 15
+providers/datadog/domain_allowlist.go
+  s_ad2cde2451f5fe::t_52138dec537fcd 16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "dc8570e3955ea714585fa28cedccf01987f654eb",
+  "prompts": {},
+  "sessions": {
+    "s_ad2cde2451f5fe": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e5e5a739-89aa-4196-9223-c274cd1e20ca",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
