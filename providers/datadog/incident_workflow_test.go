@@ -244,23 +244,26 @@ func TestIncidentInitResourcesFiltersByID(t *testing.T) {
 	}
 }
 
-func TestIncidentInitResourcesSkipsListForSiblingIDFilter(t *testing.T) {
+func TestIncidentInitResourcesListsWithUnrelatedIDFilter(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "unexpected API request", http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path != "/api/v2/incidents/config/types" {
+			http.NotFound(w, r)
+			return
+		}
+		_, _ = fmt.Fprint(w, incidentTypeListResponseJSON("incident-type-1"))
 	}))
 	defer server.Close()
 
 	generator := newIncidentTypeTestGenerator(server, []terraformutils.ResourceFilter{{
-		ServiceName:      "webhook",
+		ServiceName:      "team",
 		FieldPath:        "id",
-		AcceptableValues: []string{"example-webhook"},
+		AcceptableValues: []string{"team-1"},
 	}})
 	if err := generator.InitResources(); err != nil {
 		t.Fatalf("InitResources returned error: %v", err)
 	}
-	if len(generator.Resources) != 0 {
-		t.Fatalf("expected no resources for sibling ID filter, got %d", len(generator.Resources))
-	}
+	assertResourceIDs(t, generator.Resources, []string{"incident-type-1"})
 }
 
 func TestWebhookCreateResource(t *testing.T) {
@@ -280,18 +283,39 @@ func TestWebhookCreateResource(t *testing.T) {
 	}
 }
 
-func TestWebhookInitResourcesRequiresIDFilter(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "unexpected API request", http.StatusInternalServerError)
-	}))
-	defer server.Close()
-
-	generator := newWebhookTestGenerator(server, nil)
-	if err := generator.InitResources(); err != nil {
-		t.Fatalf("InitResources returned error: %v", err)
+func TestWebhookInitResourcesRequiresApplicableIDFilter(t *testing.T) {
+	tests := []struct {
+		name   string
+		filter []terraformutils.ResourceFilter
+	}{
+		{
+			name: "no filter",
+		},
+		{
+			name: "unrelated ID filter",
+			filter: []terraformutils.ResourceFilter{{
+				ServiceName:      "incident_type",
+				FieldPath:        "id",
+				AcceptableValues: []string{"incident-type-1"},
+			}},
+		},
 	}
-	if len(generator.Resources) != 0 {
-		t.Fatalf("expected no resources without ID filter, got %d", len(generator.Resources))
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				http.Error(w, "unexpected API request", http.StatusInternalServerError)
+			}))
+			defer server.Close()
+
+			generator := newWebhookTestGenerator(server, tt.filter)
+			if err := generator.InitResources(); err != nil {
+				t.Fatalf("InitResources returned error: %v", err)
+			}
+			if len(generator.Resources) != 0 {
+				t.Fatalf("expected no resources without applicable ID filter, got %d", len(generator.Resources))
+			}
+		})
 	}
 }
 
@@ -335,18 +359,39 @@ func TestWorkflowAutomationCreateResource(t *testing.T) {
 	}
 }
 
-func TestWorkflowAutomationInitResourcesRequiresIDFilter(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "unexpected API request", http.StatusInternalServerError)
-	}))
-	defer server.Close()
-
-	generator := newWorkflowAutomationTestGenerator(server, nil)
-	if err := generator.InitResources(); err != nil {
-		t.Fatalf("InitResources returned error: %v", err)
+func TestWorkflowAutomationInitResourcesRequiresApplicableIDFilter(t *testing.T) {
+	tests := []struct {
+		name   string
+		filter []terraformutils.ResourceFilter
+	}{
+		{
+			name: "no filter",
+		},
+		{
+			name: "unrelated ID filter",
+			filter: []terraformutils.ResourceFilter{{
+				ServiceName:      "incident_type",
+				FieldPath:        "id",
+				AcceptableValues: []string{"incident-type-1"},
+			}},
+		},
 	}
-	if len(generator.Resources) != 0 {
-		t.Fatalf("expected no resources without ID filter, got %d", len(generator.Resources))
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				http.Error(w, "unexpected API request", http.StatusInternalServerError)
+			}))
+			defer server.Close()
+
+			generator := newWorkflowAutomationTestGenerator(server, tt.filter)
+			if err := generator.InitResources(); err != nil {
+				t.Fatalf("InitResources returned error: %v", err)
+			}
+			if len(generator.Resources) != 0 {
+				t.Fatalf("expected no resources without applicable ID filter, got %d", len(generator.Resources))
+			}
+		})
 	}
 }
 

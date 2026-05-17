@@ -71,14 +71,12 @@ func (g *WorkflowAutomationGenerator) InitResources() error {
 	api := datadogV2.NewWorkflowAutomationApi(datadogClient)
 
 	resources := []terraformutils.Resource{}
-	seenIDFilter := false
 	matchedIDFilter := false
 
 	for _, filter := range g.Filter {
 		if filter.FieldPath != "id" {
 			continue
 		}
-		seenIDFilter = true
 		if !filter.IsApplicable("workflow_automation") {
 			continue
 		}
@@ -97,7 +95,7 @@ func (g *WorkflowAutomationGenerator) InitResources() error {
 		}
 	}
 
-	if matchedIDFilter || seenIDFilter {
+	if matchedIDFilter {
 		g.Resources = resources
 		return nil
 	}

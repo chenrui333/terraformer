@@ -47,14 +47,12 @@ func (g *WebhookGenerator) InitResources() error {
 	api := datadogV1.NewWebhooksIntegrationApi(datadogClient)
 
 	resources := []terraformutils.Resource{}
-	seenIDFilter := false
 	matchedIDFilter := false
 
 	for _, filter := range g.Filter {
 		if filter.FieldPath != "id" {
 			continue
 		}
-		seenIDFilter = true
 		if !filter.IsApplicable("webhook") {
 			continue
 		}
@@ -73,7 +71,7 @@ func (g *WebhookGenerator) InitResources() error {
 		}
 	}
 
-	if matchedIDFilter || seenIDFilter {
+	if matchedIDFilter {
 		g.Resources = resources
 		return nil
 	}

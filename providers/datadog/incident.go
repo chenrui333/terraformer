@@ -96,16 +96,16 @@ func (g *IncidentTypeGenerator) InitResources() error {
 
 func (g *IncidentTypeGenerator) filteredResources(auth context.Context, api *datadogV2.IncidentsApi) ([]terraformutils.Resource, bool, error) {
 	resources := []terraformutils.Resource{}
-	seenIDFilter := false
+	matchedIDFilter := false
 
 	for _, filter := range g.Filter {
 		if filter.FieldPath != "id" {
 			continue
 		}
-		seenIDFilter = true
 		if !filter.IsApplicable("incident_type") {
 			continue
 		}
+		matchedIDFilter = true
 
 		for _, value := range filter.AcceptableValues {
 			incidentType, err := getIncidentType(auth, api, value)
@@ -120,7 +120,7 @@ func (g *IncidentTypeGenerator) filteredResources(auth context.Context, api *dat
 		}
 	}
 
-	return resources, seenIDFilter, nil
+	return resources, matchedIDFilter, nil
 }
 
 func getIncidentType(auth context.Context, api *datadogV2.IncidentsApi, incidentTypeID string) (datadogV2.IncidentTypeObject, error) {
@@ -200,16 +200,16 @@ func (g *IncidentNotificationTemplateGenerator) InitResources() error {
 
 func (g *IncidentNotificationTemplateGenerator) filteredResources(auth context.Context, api *datadogV2.IncidentsApi) ([]terraformutils.Resource, bool, error) {
 	resources := []terraformutils.Resource{}
-	seenIDFilter := false
+	matchedIDFilter := false
 
 	for _, filter := range g.Filter {
 		if filter.FieldPath != "id" {
 			continue
 		}
-		seenIDFilter = true
 		if !filter.IsApplicable("incident_notification_template") {
 			continue
 		}
+		matchedIDFilter = true
 
 		for _, value := range filter.AcceptableValues {
 			template, err := getIncidentNotificationTemplate(auth, api, value)
@@ -224,7 +224,7 @@ func (g *IncidentNotificationTemplateGenerator) filteredResources(auth context.C
 		}
 	}
 
-	return resources, seenIDFilter, nil
+	return resources, matchedIDFilter, nil
 }
 
 func getIncidentNotificationTemplate(auth context.Context, api *datadogV2.IncidentsApi, templateID string) (datadogV2.IncidentNotificationTemplateResponseData, error) {
@@ -309,16 +309,16 @@ func (g *IncidentNotificationRuleGenerator) InitResources() error {
 
 func (g *IncidentNotificationRuleGenerator) filteredResources(auth context.Context, api *datadogV2.IncidentsApi) ([]terraformutils.Resource, bool, error) {
 	resources := []terraformutils.Resource{}
-	seenIDFilter := false
+	matchedIDFilter := false
 
 	for _, filter := range g.Filter {
 		if filter.FieldPath != "id" {
 			continue
 		}
-		seenIDFilter = true
 		if !filter.IsApplicable("incident_notification_rule") {
 			continue
 		}
+		matchedIDFilter = true
 
 		for _, value := range filter.AcceptableValues {
 			rule, err := getIncidentNotificationRule(auth, api, value)
@@ -333,7 +333,7 @@ func (g *IncidentNotificationRuleGenerator) filteredResources(auth context.Conte
 		}
 	}
 
-	return resources, seenIDFilter, nil
+	return resources, matchedIDFilter, nil
 }
 
 func getIncidentNotificationRule(auth context.Context, api *datadogV2.IncidentsApi, ruleID string) (datadogV2.IncidentNotificationRuleResponseData, error) {
