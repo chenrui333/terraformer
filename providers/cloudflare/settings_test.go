@@ -3,7 +3,9 @@
 package cloudflare
 
 import (
+	"encoding/json"
 	"errors"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -384,6 +386,221 @@ func TestCloudflareZoneDNSSECResource(t *testing.T) {
 	}
 }
 
+func TestCloudflareZoneSettingShouldImport(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		setting cloudflareZoneSetting
+		want    bool
+	}{
+		{name: "empty", setting: cloudflareZoneSetting{}, want: false},
+		{
+			name: "supported modified editable string",
+			setting: cloudflareZoneSetting{
+				ID:         "always_use_https",
+				Editable:   true,
+				ModifiedOn: "2026-05-17T12:00:00Z",
+				Value:      json.RawMessage(`"on"`),
+			},
+			want: true,
+		},
+		{
+			name: "supported modified default value",
+			setting: cloudflareZoneSetting{
+				ID:         "always_use_https",
+				Editable:   true,
+				ModifiedOn: "2026-05-17T12:00:00Z",
+				Value:      json.RawMessage(`"off"`),
+			},
+			want: true,
+		},
+		{
+			name: "supported non default without modified timestamp",
+			setting: cloudflareZoneSetting{
+				ID:       "always_use_https",
+				Editable: true,
+				Value:    json.RawMessage(`"on"`),
+			},
+			want: false,
+		},
+		{
+			name: "supported but not editable",
+			setting: cloudflareZoneSetting{
+				ID:         "always_use_https",
+				ModifiedOn: "2026-05-17T12:00:00Z",
+				Value:      json.RawMessage(`"on"`),
+			},
+			want: false,
+		},
+		{
+			name: "unsupported setting",
+			setting: cloudflareZoneSetting{
+				ID:         "development_mode",
+				Editable:   true,
+				ModifiedOn: "2026-05-17T12:00:00Z",
+				Value:      json.RawMessage(`"on"`),
+			},
+			want: false,
+		},
+		{
+			name: "non string value",
+			setting: cloudflareZoneSetting{
+				ID:         "always_use_https",
+				Editable:   true,
+				ModifiedOn: "2026-05-17T12:00:00Z",
+				Value:      json.RawMessage(`14400`),
+			},
+			want: false,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := cloudflareZoneSettingShouldImport(tt.setting); got != tt.want {
+				t.Fatalf("cloudflareZoneSettingShouldImport() = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCloudflareZoneSettingSkipsUnmodifiedDefaultResponses(t *testing.T) {
+	for _, tt := range []struct {
+		settingID    string
+		defaultValue string
+	}{
+		{settingID: "always_online", defaultValue: "off"},
+		{settingID: "brotli", defaultValue: "off"},
+		{settingID: "tls_1_3", defaultValue: "on"},
+		{settingID: "websockets", defaultValue: "on"},
+	} {
+		t.Run(tt.settingID, func(t *testing.T) {
+			setting := cloudflareZoneSetting{
+				ID:       tt.settingID,
+				Editable: true,
+				Value:    cloudflareZoneSettingTestStringValue(tt.defaultValue),
+			}
+			if cloudflareZoneSettingShouldImport(setting) {
+				t.Fatalf("%s unmodified default value %q should not import", tt.settingID, tt.defaultValue)
+			}
+		})
+	}
+}
+
+func TestCloudflareZoneSettingImportsModifiedAllowlistedValues(t *testing.T) {
+	for _, tt := range []struct {
+		settingID string
+		value     string
+	}{
+		{settingID: "always_online", value: "on"},
+		{settingID: "brotli", value: "on"},
+		{settingID: "tls_1_3", value: "off"},
+		{settingID: "websockets", value: "off"},
+	} {
+		t.Run(tt.settingID, func(t *testing.T) {
+			setting := cloudflareZoneSetting{
+				ID:         tt.settingID,
+				Editable:   true,
+				ModifiedOn: "2026-05-17T12:00:00Z",
+				Value:      cloudflareZoneSettingTestStringValue(tt.value),
+			}
+			if !cloudflareZoneSettingShouldImport(setting) {
+				t.Fatalf("%s modified value %q should import", tt.settingID, tt.value)
+			}
+		})
+	}
+}
+
+func TestCloudflareZoneSettingRawNullModifiedOnSkipsDefaultResponses(t *testing.T) {
+	response := []byte("[{\"id\":\"always_online\",\"editable\":true,\"modified_on\":null,\"value\":\"off\"},{\"id\":\"tls_1_3\",\"editable\":true,\"modified_on\":null,\"value\":\"on\"},{\"id\":\"websockets\",\"editable\":true,\"modified_on\":null,\"value\":\"on\"}]")
+	var settings []cloudflareZoneSetting
+	if err := json.Unmarshal(response, &settings); err != nil {
+		t.Fatalf("unmarshal zone settings response = %v", err)
+	}
+	for _, setting := range settings {
+		if cloudflareZoneSettingShouldImport(setting) {
+			t.Fatalf("%s with null modified_on should not import", setting.ID)
+		}
+	}
+}
+
+func TestCloudflareZoneSettingResource(t *testing.T) {
+	zone := cf.Zone{ID: "zone-123", Name: "example.com"}
+	resource := cloudflareZoneSettingResource(zone, cloudflareZoneSetting{
+		ID:         "always_use_https",
+		Editable:   true,
+		ModifiedOn: "2026-05-17T12:00:00Z",
+		Value:      json.RawMessage(`"on"`),
+	})
+
+	if resource.InstanceInfo.Type != "cloudflare_zone_setting" {
+		t.Fatalf("resource type = %q, want cloudflare_zone_setting", resource.InstanceInfo.Type)
+	}
+	if got, want := resource.ResourceName, terraformutils.TfSanitize(cloudflareResourceName("example.com", "zone-123", "zone_setting", "always_use_https")); got != want {
+		t.Fatalf("resource name = %q, want %s", got, want)
+	}
+	if got := resource.InstanceState.ID; got != "always_use_https" {
+		t.Fatalf("resource ID = %q, want always_use_https", got)
+	}
+	if got := resource.InstanceState.Attributes["zone_id"]; got != "zone-123" {
+		t.Fatalf("zone_id = %q, want zone-123", got)
+	}
+	if got := resource.InstanceState.Attributes["setting_id"]; got != "always_use_https" {
+		t.Fatalf("setting_id = %q, want always_use_https", got)
+	}
+	if got := resource.InstanceState.Attributes["value"]; got != "on" {
+		t.Fatalf("value = %q, want on", got)
+	}
+	if got := resource.InstanceState.Meta["import_id"]; got != "zone-123/always_use_https" {
+		t.Fatalf("import_id = %v, want zone-123/always_use_https", got)
+	}
+	if got := resource.AdditionalFields["value"]; got != "on" {
+		t.Fatalf("AdditionalFields value = %#v, want on", got)
+	}
+	for _, key := range cloudflareZoneSettingIgnoredKeys {
+		if !cloudflareResourceIgnoresKey(resource, key) {
+			t.Fatalf("zone setting resource should ignore key %q", key)
+		}
+	}
+
+	resource.InstanceState.Attributes["editable"] = "true"
+	resource.InstanceState.Attributes["modified_on"] = "2026-05-17T12:00:00Z"
+	parser := terraformutils.NewFlatmapParser(resource.InstanceState.Attributes, cloudflareResourceIgnoreRegexps(resource), nil)
+	impliedType := cty.Object(map[string]cty.Type{
+		"editable":    cty.Bool,
+		"modified_on": cty.String,
+		"setting_id":  cty.String,
+		"value":       cty.DynamicPseudoType,
+		"zone_id":     cty.String,
+	})
+	if err := resource.ParseTFstate(parser, impliedType); err != nil {
+		t.Fatalf("ParseTFstate() error = %v", err)
+	}
+	if got := resource.Item["value"]; got != "on" {
+		t.Fatalf("parsed value = %#v, want on", got)
+	}
+	if _, ok := resource.Item["editable"]; ok {
+		t.Fatal("computed editable field should be ignored")
+	}
+}
+
+func TestCloudflareZoneSettingRawResponseIgnoresBooleanTimeRemaining(t *testing.T) {
+	response := []byte("[{\"id\":\"development_mode\",\"editable\":true,\"modified_on\":\"2026-05-17T12:00:00Z\",\"value\":\"off\",\"time_remaining\":false},{\"id\":\"always_use_https\",\"editable\":true,\"modified_on\":\"2026-05-17T12:00:00Z\",\"value\":\"on\",\"time_remaining\":0}]")
+	var settings []cloudflareZoneSetting
+	if err := json.Unmarshal(response, &settings); err != nil {
+		t.Fatalf("unmarshal zone settings response = %v", err)
+	}
+	if len(settings) != 2 {
+		t.Fatalf("settings length = %d, want 2", len(settings))
+	}
+	if cloudflareZoneSettingShouldImport(settings[0]) {
+		t.Fatal("development_mode should remain outside the zone setting allowlist")
+	}
+	if !cloudflareZoneSettingShouldImport(settings[1]) {
+		t.Fatal("always_use_https non-default value should import")
+	}
+}
+
+func cloudflareZoneSettingTestStringValue(value string) json.RawMessage {
+	return json.RawMessage(`"` + value + `"`)
+}
+
 func cloudflareResourceIgnoresKey(resource terraformutils.Resource, key string) bool {
 	for _, ignoreKey := range resource.IgnoreKeys {
 		if ignoreKey == key {
@@ -391,6 +608,14 @@ func cloudflareResourceIgnoresKey(resource terraformutils.Resource, key string) 
 		}
 	}
 	return false
+}
+
+func cloudflareResourceIgnoreRegexps(resource terraformutils.Resource) []*regexp.Regexp {
+	regexps := make([]*regexp.Regexp, 0, len(resource.IgnoreKeys))
+	for _, ignoreKey := range resource.IgnoreKeys {
+		regexps = append(regexps, regexp.MustCompile(ignoreKey))
+	}
+	return regexps
 }
 
 func TestCloudflareZoneHoldAttributes(t *testing.T) {

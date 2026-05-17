@@ -110,6 +110,7 @@ This inventory is an informational coverage snapshot. The source of truth is the
 | ibm | no | no | not present yet |
 | ionoscloud | no | no | not present yet |
 | keycloak | no | no | not present yet |
+| kafka | yes | yes | metadata present; provider-specific assertions |
 | kubernetes | yes | yes | metadata present; provider-specific assertions |
 | launchdarkly | yes | no | metadata present |
 | linode | no | no | not present yet |

@@ -97,6 +97,9 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_api_key`
 *   `application_key`
     * `datadog_application_key`
+*   `app_builder_app`
+    * `datadog_app_builder_app`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
 *   `apm_retention_filter`
     * `datadog_apm_retention_filter`
 *   `apm_retention_filter_order`
@@ -142,9 +145,19 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `custom_allocation_rule`
     * `datadog_custom_allocation_rule`
         * **_NOTE:_** Requires DataDog/datadog provider 3.39.0 or newer.
+*   `dataset`
+    * `datadog_dataset`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
+*   `datastore`
+    * `datadog_datastore`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
+        * **_NOTE:_** Imports datastore configuration metadata. Datastore items are not part of this Terraform resource.
 *   `domain_allowlist`
     * `datadog_domain_allowlist`
         * **_NOTE:_** Singleton resource. Only one domain allowlist per org.
+*   `deployment_gate`
+    * `datadog_deployment_gate`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
 *   `downtime`
     * `datadog_downtime`
 *   `downtime_schedule`
@@ -224,6 +237,9 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `monitor_notification_rule`
     * `datadog_monitor_notification_rule`
         * **_NOTE:_** Requires DataDog/datadog provider 3.83.0 or newer.
+*   `observability_pipeline`
+    * `datadog_observability_pipeline`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
 *   `on_call_escalation_policy`
     * `datadog_on_call_escalation_policy`
         * **_NOTE:_** The Datadog API does not expose a list endpoint for On-Call escalation policies; pass IDs explicitly, for example `--filter=on_call_escalation_policy=policy-id`
@@ -242,6 +258,10 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_on_call_user_notification_rule`
         * **_NOTE:_** Importing a single On-Call user notification rule by ID requires quoting the `user_id:rule_id` filter value, for example `--filter="on_call_user_notification_rule='user-id:rule-id'"`
         * **_NOTE:_** To import notification rules for one user, filter by `user_id`, for example `--filter="Type=on_call_user_notification_rule;Name=user_id;Value=user-id"`
+*   `openapi_api`
+    * `datadog_openapi_api`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
+        * **_NOTE:_** The DataDog/datadog provider marks this resource as deprecated.
 *   `org_connection`
     * `datadog_org_connection`
 *   `org_group`
@@ -263,6 +283,11 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_powerpack_v2`
         * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
         * **_NOTE:_** Discovers the same powerpack IDs as `powerpack`; select one powerpack resource representation for each imported powerpack to avoid duplicate Terraform ownership.
+*   `reference_table`
+    * `datadog_reference_table`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
+        * **_NOTE:_** Imports reference table configuration. Reference table row data is not part of this Terraform resource.
+        * **_NOTE:_** Local file reference tables are skipped because the DataDog/datadog provider validates `source` as `S3`, `GCS`, or `AZURE`.
 *   `rum_application`
     * `datadog_rum_application`
 *   `rum_metric`
@@ -385,12 +410,14 @@ The following Terraform provider resources have been evaluated and cannot be saf
 | `datadog_integration_fastly_account` | `api_key` is required and sensitive; read API does not return it. |
 | `datadog_integration_ms_teams_workflows_webhook_handle` | `url` is required and sensitive; read API does not return it. |
 | `datadog_integration_opsgenie_service_object` | `opsgenie_api_key` is required and sensitive; Datadog API explicitly never returns it. |
+| `datadog_logs_custom_destination` | Deferred because credential-backed destination variants preserve secret values from existing Terraform state and the Datadog API does not return those values. |
 | `datadog_secure_embed_dashboard` | Deferred because Datadog exposes secure embeds by `dashboard_id:token` only; the API and provider import path require the token and do not provide a list/token discovery endpoint. |
 | `datadog_app_key_registration` | Required `id` configuration attribute is stripped during Terraformer HCL conversion, producing an empty resource block that fails validation. |
 | `datadog_org_group_policy_override` | Delete resets the target org config value to the parent policy, and server-created overrides make broad discovery noisy and potentially ephemeral. |
 | `datadog_webhook_custom_variable` | Provider import seeds only `id`, but provider read looks up the variable by `name`; Terraformer cannot safely refresh the required name/value state from a broad ID import. |
 | `datadog_integration_aws_external_id` | Creates a short-lived external ID operation; provider read is a no-op and delete only removes Terraform state. |
 | `datadog_action_connection` | Deferred until a dedicated importer handles AWS versus HTTP credential-backed variants and the HTTP token-auth read path that omits sensitive token values. |
+| `datadog_datastore_item` | Datastore items are high-cardinality datastore row data; broad import would turn arbitrary data-plane records into Terraform-owned configuration. |
 | `datadog_child_organization` | The provider read path is a no-op after create, delete is not supported, and create returns sensitive generated API/application key material that cannot be reconstructed by broad import. |
 | `datadog_cloud_workload_security_agent_rule` | Deprecated in favor of the already registered `datadog_csm_threats_agent_rule`, so broad import would risk duplicate ownership of the same agent rules. |
 | `datadog_compliance_custom_framework` | Deferred because the API supports get/update/delete by `handle/version` but exposes no broad list endpoint to discover custom framework handles and versions. |

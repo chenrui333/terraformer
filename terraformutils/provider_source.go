@@ -24,6 +24,7 @@ var providerSources = map[string]string{
 	"honeycombio":   "honeycombio/honeycombio",
 	"ibm":           "IBM-Cloud/ibm",
 	"ionoscloud":    "ionos-cloud/ionoscloud",
+	"kafka":         "Mongey/kafka",
 	"keycloak":      "keycloak/keycloak",
 	"launchdarkly":  "launchdarkly/launchdarkly",
 	"linode":        "linode/linode",
