@@ -100,6 +100,13 @@ func (g *TopicGenerator) listTopics(admin adminClient, config Config) ([]Topic, 
 		if isInternalTopic(name) && !explicitTopics[name] {
 			continue
 		}
+		if topicMetadata.Err != sarama.ErrNoError {
+			if isSkippableTopicMetadataError(topicMetadata.Err) {
+				log.Printf("kafka: skipping topic metadata for %q: %v", name, topicMetadata.Err)
+				continue
+			}
+			return nil, fmt.Errorf("kafka topic %q: describe metadata: %w", name, topicMetadata.Err)
+		}
 		topic, err := g.topicFromMetadata(admin, topicMetadata, config)
 		if err != nil {
 			return nil, err
@@ -295,6 +302,15 @@ func isSkippableTopicConfigError(err error) bool {
 	return strings.Contains(lower, "authorization failed") ||
 		strings.Contains(lower, "not authorized") ||
 		strings.Contains(lower, "unsupported version")
+}
+
+func isSkippableTopicMetadataError(err error) bool {
+	if errors.Is(err, sarama.ErrTopicAuthorizationFailed) {
+		return true
+	}
+	lower := strings.ToLower(err.Error())
+	return strings.Contains(lower, "topic authorization failed") ||
+		strings.Contains(lower, "not authorized")
 }
 
 func topicConfig(admin adminClient, name string, providerConfig Config) (map[string]string, error) {
