@@ -1,0 +1,68 @@
+providers/datadog/service_account_application_key_test.go
+  s_0fb33ec13dc59f::t_8c2784244a7623 1-190
+providers/datadog/logs_restriction_query.go
+  s_0fb33ec13dc59f::t_f2956ddf8957c1 1-38,40-55,58-59,86-87,89-94
+  s_0fb33ec13dc59f::t_3add15dceee972 39
+  s_0fb33ec13dc59f::t_2277a19cb3d118 60,62-85,88
+  s_0fb33ec13dc59f::t_4e05c326b95c66 61
+  s_0fb33ec13dc59f::t_4c49d470b21a5a 56-57
+providers/datadog/service_account.go
+  s_0fb33ec13dc59f::t_5c04b481ed34c5 1-41,46-117
+  s_0fb33ec13dc59f::t_43f1205272f1c9 42-45
+providers/datadog/unsupported_resources.json
+  s_0fb33ec13dc59f::t_4cf174b00233e4 80-90
+providers/datadog/api_key_test.go
+  s_0fb33ec13dc59f::t_38090b62d9a20c 1-130
+providers/datadog/application_key.go
+  s_0fb33ec13dc59f::t_0395e7edd533f4 1-38,40-87,90-94,96-98,100-107,112-119
+  s_0fb33ec13dc59f::t_3b9cf2e45348e7 88-89,108-111
+  s_0fb33ec13dc59f::t_4f29165f8129f3 95,99
+  s_0fb33ec13dc59f::t_91c61cdec911a8 39
+providers/datadog/authn_mapping.go
+  s_0fb33ec13dc59f::t_4b4d6dafa6c5e8 1-122
+providers/datadog/logs_restriction_query_test.go
+  s_0fb33ec13dc59f::t_83ceaad94de0c5 1-79,81-101
+  s_0fb33ec13dc59f::t_f17fba455068ca 80
+providers/datadog/application_key_test.go
+  s_0fb33ec13dc59f::t_ab8a140dab7c2e 1-127
+providers/datadog/authn_mapping_test.go
+  s_0fb33ec13dc59f::t_9e37253fd30f6f 1-130
+providers/datadog/api_key.go
+  s_0fb33ec13dc59f::t_abe967d5365517 88-89,108-111
+  s_0fb33ec13dc59f::t_daf26a668c43bf 1-38,40-87,90-107,112-119
+  s_0fb33ec13dc59f::t_210122077f0b76 39
+providers/datadog/datadog_provider.go
+  s_0fb33ec13dc59f::t_37ad977683d3b9 171-172,177
+  s_0fb33ec13dc59f::t_b9ca29fa1670e9 232-233
+  s_0fb33ec13dc59f::t_f840e80215203c 198
+docs/datadog.md
+  s_0fb33ec13dc59f::t_278273fa3e1295 106-107
+  s_0fb33ec13dc59f::t_ca45f14bf95663 93-96
+  s_0fb33ec13dc59f::t_d9ba1cdac75e63 245-249
+  s_0fb33ec13dc59f::t_aed454d43bd0de 181-182
+providers/datadog/service_account_test.go
+  s_0fb33ec13dc59f::t_7306e44a9aa3a9 124
+  s_0fb33ec13dc59f::t_3f959989ebab5b 71
+  s_0fb33ec13dc59f::t_18c8061ff6f0a9 1-70,72-123,125-127
+providers/datadog/service_account_application_key.go
+  s_0fb33ec13dc59f::t_b0b8323d015f62 36
+  s_0fb33ec13dc59f::t_6d334bb28b178a 82
+  s_0fb33ec13dc59f::t_9b0b1a1ab7d13c 1-35,37-81,83-133,138-152
+  s_0fb33ec13dc59f::t_0bb3ac7f124df4 134-137
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "56b21bfc9e3390466478ba91041ded95a5756d5c",
+  "prompts": {},
+  "sessions": {
+    "s_0fb33ec13dc59f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d1ea9520-81a1-4fe9-af43-b9ba16c9150f",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": null
+    }
+  }
+}
