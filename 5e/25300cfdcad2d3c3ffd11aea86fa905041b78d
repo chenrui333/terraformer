@@ -1,0 +1,24 @@
+providers/datadog/deployment_gate.go
+  s_a75fc68bdbca0a::t_f62b664d1a4fcc 7-8,31-193,196-219,227,245,266-270,294-306
+providers/datadog/product_platform_test.go
+  s_a75fc68bdbca0a::t_81a98b852bc294 804-827
+  s_a75fc68bdbca0a::t_d6bf42190dbbce 234,253-261,273-277,307-312
+  s_a75fc68bdbca0a::t_a40b61d56b1559 37,70,86-112
+  s_a75fc68bdbca0a::t_121b1a031ecc2e 519,521-533,562-564,568-569
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "5e25300cfdcad2d3c3ffd11aea86fa905041b78d",
+  "prompts": {},
+  "sessions": {
+    "s_a75fc68bdbca0a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35d4-4978-78a1-8707-4482f4e1fd38",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
