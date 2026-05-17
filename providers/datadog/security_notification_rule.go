@@ -118,6 +118,12 @@ func getSecurityNotificationRule(auth context.Context, api *datadogV2.SecurityMo
 	}
 	notificationRule := response.GetData()
 	if notificationRule.GetId() == "" {
+		if response.UnparsedObject != nil {
+			if rawData, ok := response.UnparsedObject["data"]; ok {
+				return securityNotificationRuleFromRawData(rawData)
+			}
+			return datadogV2.NotificationRule{}, fmt.Errorf("security notification rule raw response missing data")
+		}
 		return datadogV2.NotificationRule{}, fmt.Errorf("security notification rule %q not found", notificationRuleID)
 	}
 
@@ -132,54 +138,62 @@ func listSecurityNotificationRules(auth context.Context, api *datadogV2.Security
 	if err != nil {
 		return nil, err
 	}
-	notificationRules = append(notificationRules, securityNotificationRulesFromRawData(signalRules)...)
+	rules, err := securityNotificationRulesFromRawData(signalRules)
+	if err != nil {
+		return nil, err
+	}
+	notificationRules = append(notificationRules, rules...)
 
 	vulnerabilityRules, httpResponse, err := api.GetVulnerabilityNotificationRules(auth)
 	closeDatadogResponseBody(httpResponse)
 	if err != nil {
 		return nil, err
 	}
-	notificationRules = append(notificationRules, securityNotificationRulesFromRawData(vulnerabilityRules)...)
+	rules, err = securityNotificationRulesFromRawData(vulnerabilityRules)
+	if err != nil {
+		return nil, err
+	}
+	notificationRules = append(notificationRules, rules...)
 
 	return notificationRules, nil
 }
 
-func securityNotificationRulesFromRawData(rawData interface{}) []datadogV2.NotificationRule {
+func securityNotificationRulesFromRawData(rawData interface{}) ([]datadogV2.NotificationRule, error) {
 	rawResponse, ok := rawData.(map[string]interface{})
 	if !ok {
-		return nil
+		return nil, fmt.Errorf("security notification rules raw response is not an object")
 	}
 	rawRules, ok := rawResponse["data"].([]interface{})
 	if !ok {
-		return nil
+		return nil, fmt.Errorf("security notification rules raw response missing data list")
 	}
 
 	notificationRules := []datadogV2.NotificationRule{}
-	for _, rawRule := range rawRules {
-		notificationRule, ok := securityNotificationRuleFromRawData(rawRule)
-		if !ok {
-			continue
+	for index, rawRule := range rawRules {
+		notificationRule, err := securityNotificationRuleFromRawData(rawRule)
+		if err != nil {
+			return nil, fmt.Errorf("parse security notification rule raw data[%d]: %w", index, err)
 		}
 		notificationRules = append(notificationRules, notificationRule)
 	}
-	return notificationRules
+	return notificationRules, nil
 }
 
-func securityNotificationRuleFromRawData(rawData interface{}) (datadogV2.NotificationRule, bool) {
+func securityNotificationRuleFromRawData(rawData interface{}) (datadogV2.NotificationRule, error) {
 	rawRule, ok := rawData.(map[string]interface{})
 	if !ok {
-		return datadogV2.NotificationRule{}, false
+		return datadogV2.NotificationRule{}, fmt.Errorf("raw notification rule is not an object")
 	}
 	if rawType, ok := rawRule["type"].(string); ok && rawType != string(datadogV2.NOTIFICATIONRULESTYPE_NOTIFICATION_RULES) {
-		return datadogV2.NotificationRule{}, false
+		return datadogV2.NotificationRule{}, fmt.Errorf("unexpected notification rule type %q", rawType)
 	}
 	rawID, ok := rawRule["id"].(string)
 	if !ok || rawID == "" {
-		return datadogV2.NotificationRule{}, false
+		return datadogV2.NotificationRule{}, fmt.Errorf("raw notification rule missing id")
 	}
 
 	notificationRule := datadogV2.NewNotificationRuleWithDefaults()
 	notificationRule.SetId(rawID)
 	notificationRule.SetType(datadogV2.NOTIFICATIONRULESTYPE_NOTIFICATION_RULES)
-	return *notificationRule, true
+	return *notificationRule, nil
 }

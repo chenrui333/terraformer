@@ -138,7 +138,7 @@ func TestSecurityMonitoringCriticalAssetAllowEmptyValuesPreservesQueries(t *test
 }
 
 func TestSecurityMonitoringCriticalAssetsFromRawData(t *testing.T) {
-	criticalAssets := securityMonitoringCriticalAssetsFromRawData([]interface{}{
+	criticalAssets, err := securityMonitoringCriticalAssetsFromRawData([]interface{}{
 		map[string]interface{}{
 			"id":   "critical-asset-1",
 			"type": "critical_assets",
@@ -147,14 +147,10 @@ func TestSecurityMonitoringCriticalAssetsFromRawData(t *testing.T) {
 			"id":   "critical-asset-2",
 			"type": "critical_assets",
 		},
-		map[string]interface{}{
-			"id":   "ignored",
-			"type": "other_type",
-		},
-		map[string]interface{}{
-			"type": "critical_assets",
-		},
 	})
+	if err != nil {
+		t.Fatalf("securityMonitoringCriticalAssetsFromRawData returned error: %v", err)
+	}
 
 	if len(criticalAssets) != 2 {
 		t.Fatalf("critical asset count = %d, want %d", len(criticalAssets), 2)
@@ -164,6 +160,18 @@ func TestSecurityMonitoringCriticalAssetsFromRawData(t *testing.T) {
 	}
 	if criticalAssets[1].GetId() != "critical-asset-2" {
 		t.Fatalf("second critical asset ID = %q, want %q", criticalAssets[1].GetId(), "critical-asset-2")
+	}
+}
+
+func TestSecurityMonitoringCriticalAssetsFromRawDataMalformedEntry(t *testing.T) {
+	_, err := securityMonitoringCriticalAssetsFromRawData([]interface{}{
+		map[string]interface{}{
+			"id":   "ignored",
+			"type": "other_type",
+		},
+	})
+	if err == nil {
+		t.Fatal("securityMonitoringCriticalAssetsFromRawData returned nil error, want malformed entry error")
 	}
 }
 
@@ -197,7 +205,7 @@ func TestSecurityNotificationRuleCreateResourceMissingID(t *testing.T) {
 }
 
 func TestSecurityNotificationRulesFromRawData(t *testing.T) {
-	notificationRules := securityNotificationRulesFromRawData(map[string]interface{}{
+	notificationRules, err := securityNotificationRulesFromRawData(map[string]interface{}{
 		"data": []interface{}{
 			map[string]interface{}{
 				"id":   "signal-rule",
@@ -207,15 +215,11 @@ func TestSecurityNotificationRulesFromRawData(t *testing.T) {
 				"id":   "vulnerability-rule",
 				"type": "notification_rules",
 			},
-			map[string]interface{}{
-				"id":   "ignored",
-				"type": "other_type",
-			},
-			map[string]interface{}{
-				"type": "notification_rules",
-			},
 		},
 	})
+	if err != nil {
+		t.Fatalf("securityNotificationRulesFromRawData returned error: %v", err)
+	}
 
 	if len(notificationRules) != 2 {
 		t.Fatalf("notification rule count = %d, want %d", len(notificationRules), 2)
@@ -228,6 +232,41 @@ func TestSecurityNotificationRulesFromRawData(t *testing.T) {
 	}
 }
 
+func TestSecurityNotificationRulesFromRawDataMalformedEntry(t *testing.T) {
+	_, err := securityNotificationRulesFromRawData(map[string]interface{}{
+		"data": []interface{}{
+			map[string]interface{}{
+				"id":   "ignored",
+				"type": "other_type",
+			},
+		},
+	})
+	if err == nil {
+		t.Fatal("securityNotificationRulesFromRawData returned nil error, want malformed entry error")
+	}
+}
+
+func TestGetSecurityNotificationRuleFallsBackToRawData(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path != "/api/v2/security/signals/notification_rules/raw-rule" {
+			http.Error(w, fmt.Sprintf("unexpected request path %s", r.URL.Path), http.StatusNotFound)
+			return
+		}
+		fmt.Fprint(w, "{\"data\":{\"id\":\"raw-rule\",\"type\":\"notification_rules\"}}")
+	}))
+	defer server.Close()
+
+	api := datadogV2.NewSecurityMonitoringApi(newTeamRelationshipTestClient(server))
+	notificationRule, err := getSecurityNotificationRule(context.Background(), api, "raw-rule")
+	if err != nil {
+		t.Fatalf("getSecurityNotificationRule returned error: %v", err)
+	}
+	if notificationRule.GetId() != "raw-rule" {
+		t.Fatalf("notification rule ID = %q, want %q", notificationRule.GetId(), "raw-rule")
+	}
+}
+
 func TestSecurityNotificationRuleInitResourcesListsSignalAndVulnerabilityRules(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -237,7 +276,8 @@ func TestSecurityNotificationRuleInitResourcesListsSignalAndVulnerabilityRules(t
 		case "/api/v2/security/vulnerabilities/notification_rules":
 			fmt.Fprint(w, securityNotificationRuleListResponseJSON("vulnerability-rule"))
 		default:
-			t.Fatalf("unexpected request path %s", r.URL.Path)
+			t.Errorf("unexpected request path %s", r.URL.Path)
+			http.Error(w, "unexpected request path", http.StatusNotFound)
 		}
 	}))
 	defer server.Close()

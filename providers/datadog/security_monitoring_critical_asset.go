@@ -115,8 +115,15 @@ func getSecurityMonitoringCriticalAsset(auth context.Context, api *datadogV2.Sec
 	if criticalAsset, ok := response.GetDataOk(); ok {
 		return *criticalAsset, nil
 	}
-	if criticalAsset, ok := securityMonitoringCriticalAssetFromRawData(response.UnparsedObject["data"]); ok {
-		return criticalAsset, nil
+	if response.UnparsedObject != nil {
+		if rawData, ok := response.UnparsedObject["data"]; ok {
+			criticalAsset, err := securityMonitoringCriticalAssetFromRawData(rawData)
+			if err != nil {
+				return datadogV2.SecurityMonitoringCriticalAsset{}, err
+			}
+			return criticalAsset, nil
+		}
+		return datadogV2.SecurityMonitoringCriticalAsset{}, fmt.Errorf("security monitoring critical asset raw response missing data")
 	}
 
 	return datadogV2.SecurityMonitoringCriticalAsset{}, fmt.Errorf("security monitoring critical asset %q not found", criticalAssetID)
@@ -130,43 +137,49 @@ func listSecurityMonitoringCriticalAssets(auth context.Context, api *datadogV2.S
 	}
 
 	criticalAssets := response.GetData()
-	if len(criticalAssets) == 0 {
-		criticalAssets = securityMonitoringCriticalAssetsFromRawData(response.UnparsedObject["data"])
+	if len(criticalAssets) > 0 {
+		return criticalAssets, nil
+	}
+	if response.UnparsedObject != nil {
+		if rawData, ok := response.UnparsedObject["data"]; ok {
+			return securityMonitoringCriticalAssetsFromRawData(rawData)
+		}
+		return nil, fmt.Errorf("security monitoring critical assets raw response missing data")
 	}
 	return criticalAssets, nil
 }
 
-func securityMonitoringCriticalAssetsFromRawData(rawData interface{}) []datadogV2.SecurityMonitoringCriticalAsset {
+func securityMonitoringCriticalAssetsFromRawData(rawData interface{}) ([]datadogV2.SecurityMonitoringCriticalAsset, error) {
 	rawCriticalAssets, ok := rawData.([]interface{})
 	if !ok {
-		return nil
+		return nil, fmt.Errorf("security monitoring critical assets raw data is not a list")
 	}
 
 	criticalAssets := []datadogV2.SecurityMonitoringCriticalAsset{}
-	for _, rawCriticalAsset := range rawCriticalAssets {
-		criticalAsset, ok := securityMonitoringCriticalAssetFromRawData(rawCriticalAsset)
-		if !ok {
-			continue
+	for index, rawCriticalAsset := range rawCriticalAssets {
+		criticalAsset, err := securityMonitoringCriticalAssetFromRawData(rawCriticalAsset)
+		if err != nil {
+			return nil, fmt.Errorf("parse security monitoring critical asset raw data[%d]: %w", index, err)
 		}
 		criticalAssets = append(criticalAssets, criticalAsset)
 	}
-	return criticalAssets
+	return criticalAssets, nil
 }
 
-func securityMonitoringCriticalAssetFromRawData(rawData interface{}) (datadogV2.SecurityMonitoringCriticalAsset, bool) {
+func securityMonitoringCriticalAssetFromRawData(rawData interface{}) (datadogV2.SecurityMonitoringCriticalAsset, error) {
 	rawCriticalAsset, ok := rawData.(map[string]interface{})
 	if !ok {
-		return datadogV2.SecurityMonitoringCriticalAsset{}, false
+		return datadogV2.SecurityMonitoringCriticalAsset{}, fmt.Errorf("raw critical asset is not an object")
 	}
 	if rawType, ok := rawCriticalAsset["type"].(string); ok && rawType != string(datadogV2.SECURITYMONITORINGCRITICALASSETTYPE_CRITICAL_ASSETS) {
-		return datadogV2.SecurityMonitoringCriticalAsset{}, false
+		return datadogV2.SecurityMonitoringCriticalAsset{}, fmt.Errorf("unexpected critical asset type %q", rawType)
 	}
 	rawID, ok := rawCriticalAsset["id"].(string)
 	if !ok || rawID == "" {
-		return datadogV2.SecurityMonitoringCriticalAsset{}, false
+		return datadogV2.SecurityMonitoringCriticalAsset{}, fmt.Errorf("raw critical asset missing id")
 	}
 
 	criticalAsset := datadogV2.NewSecurityMonitoringCriticalAssetWithDefaults()
 	criticalAsset.SetId(rawID)
-	return *criticalAsset, true
+	return *criticalAsset, nil
 }
