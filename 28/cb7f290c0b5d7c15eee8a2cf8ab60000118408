@@ -1,0 +1,46 @@
+providers/datadog/gcp_uc_config.go
+  s_ad2cde2451f5fe::t_43c87c350859d2 1-55
+providers/datadog/custom_allocation_rule.go
+  s_ad2cde2451f5fe::t_cd5241a8fbce4e 1-25,28-59
+  s_ad2cde2451f5fe::t_79dda3f67af439 26-27
+docs/datadog.md
+  s_ad2cde2451f5fe::t_834ee150cde6c3 91-96
+  s_ad2cde2451f5fe::t_249feff21c9322 113-115
+  s_ad2cde2451f5fe::t_508977677795e6 107-110
+  s_ad2cde2451f5fe::t_ec1ff2102b5120 224-225
+providers/datadog/cloud_cost_test.go
+  s_ad2cde2451f5fe::t_7c042b7c0d18c0 1-40,42,48-65,67-83,85-109,111,113-238
+  s_ad2cde2451f5fe::t_4ff30389b8bb0c 110,112
+  s_ad2cde2451f5fe::t_89e2352e4b6bb3 41,43-47,66,84
+providers/datadog/cost_budget.go
+  s_ad2cde2451f5fe::t_f40d006c53c055 26-27
+  s_ad2cde2451f5fe::t_85fa47db86c6f7 1-25,28-59
+providers/datadog/tag_pipeline_ruleset.go
+  s_ad2cde2451f5fe::t_f7ab11bd280e5f 1-25,28-59
+  s_ad2cde2451f5fe::t_de7084e329e918 26-27
+providers/datadog/aws_cur_config.go
+  s_ad2cde2451f5fe::t_c322b44892b6a3 26-27
+  s_ad2cde2451f5fe::t_4025e874c3f122 1-25,28-59
+providers/datadog/azure_uc_config.go
+  s_ad2cde2451f5fe::t_fc0955081da30a 1-55
+providers/datadog/datadog_provider.go
+  s_ad2cde2451f5fe::t_129bf340d19090 179
+  s_ad2cde2451f5fe::t_1f06ff1f6db524 170-171,173-174
+  s_ad2cde2451f5fe::t_af7f0c8589bca8 224
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "28cb7f290c0b5d7c15eee8a2cf8ab60000118408",
+  "prompts": {},
+  "sessions": {
+    "s_ad2cde2451f5fe": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e5e5a739-89aa-4196-9223-c274cd1e20ca",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
