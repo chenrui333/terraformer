@@ -71,9 +71,12 @@ func (g *ReferenceTableGenerator) filteredResources(auth context.Context, api *d
 		}
 		hasIDFilter = true
 		for _, value := range filter.AcceptableValues {
-			tableID, err := g.getReferenceTableID(auth, api, value)
+			tableID, importable, err := g.getReferenceTableID(auth, api, value)
 			if err != nil {
 				return nil, true, err
+			}
+			if !importable {
+				continue
 			}
 			resource, err := g.createResource(tableID)
 			if err != nil {
@@ -85,18 +88,21 @@ func (g *ReferenceTableGenerator) filteredResources(auth context.Context, api *d
 	return resources, hasIDFilter, nil
 }
 
-func (g *ReferenceTableGenerator) getReferenceTableID(auth context.Context, api *datadogV2.ReferenceTablesApi, tableID string) (string, error) {
+func (g *ReferenceTableGenerator) getReferenceTableID(auth context.Context, api *datadogV2.ReferenceTablesApi, tableID string) (string, bool, error) {
 	resp, httpResp, err := api.GetTable(auth, tableID)
 	closeDatadogResponseBody(httpResp)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 	data := resp.GetData()
+	if !referenceTableSourceIsImportable(data) {
+		return "", false, nil
+	}
 	responseID := data.GetId()
 	if responseID == "" {
-		return tableID, nil
+		return tableID, true, nil
 	}
-	return responseID, nil
+	return responseID, true, nil
 }
 
 func (g *ReferenceTableGenerator) listReferenceTableIDs(auth context.Context, api *datadogV2.ReferenceTablesApi) ([]string, error) {
@@ -116,6 +122,9 @@ func (g *ReferenceTableGenerator) listReferenceTableIDs(auth context.Context, ap
 
 		tables := resp.GetData()
 		for _, table := range tables {
+			if !referenceTableSourceIsImportable(table) {
+				continue
+			}
 			tableID := table.GetId()
 			if tableID == "" {
 				continue
@@ -130,4 +139,21 @@ func (g *ReferenceTableGenerator) listReferenceTableIDs(auth context.Context, ap
 	}
 
 	return ids, nil
+}
+
+func referenceTableSourceIsImportable(table datadogV2.TableResultV2Data) bool {
+	attributes := table.GetAttributes()
+	source, ok := attributes.GetSourceOk()
+	if !ok || source == nil {
+		return false
+	}
+
+	switch *source {
+	case datadogV2.REFERENCETABLESOURCETYPE_S3,
+		datadogV2.REFERENCETABLESOURCETYPE_GCS,
+		datadogV2.REFERENCETABLESOURCETYPE_AZURE:
+		return true
+	default:
+		return false
+	}
 }

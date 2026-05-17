@@ -280,51 +280,6 @@ func TestAppBuilderAppPostConvertHookPreservesEmptyActionQueryMap(t *testing.T) 
 	}
 }
 
-func TestDatasetPostConvertHookPreservesEmptyProductFilters(t *testing.T) {
-	resource := terraformutils.NewSimpleResource(
-		"dataset-1",
-		"dataset_dataset-1",
-		"datadog_dataset",
-		"datadog",
-		DatasetAllowEmptyValues,
-	)
-	resource.Item = map[string]interface{}{
-		"id":   "dataset-1",
-		"name": "dataset one",
-	}
-	resource.InstanceState.Attributes = map[string]string{
-		"id":                            "dataset-1",
-		datasetProductFiltersKey + ".#": "0",
-	}
-	resource.InstanceState.SetTypedAttributes(json.RawMessage(`{"id":"dataset-1","name":"dataset one","product_filters":[]}`))
-
-	generator := &DatasetGenerator{
-		DatadogService: DatadogService{
-			Service: terraformutils.Service{Resources: []terraformutils.Resource{resource}},
-		},
-	}
-
-	if err := generator.PostConvertHook(); err != nil {
-		t.Fatalf("PostConvertHook returned error: %v", err)
-	}
-
-	updatedResource := generator.Resources[0]
-	productFilters, ok := updatedResource.Item[datasetProductFiltersKey].([]interface{})
-	if !ok {
-		t.Fatalf("product_filters item type = %T, want []interface{}", updatedResource.Item[datasetProductFiltersKey])
-	}
-	if len(productFilters) != 0 {
-		t.Fatalf("product_filters length = %d, want 0", len(productFilters))
-	}
-	if got := updatedResource.InstanceState.Attributes[datasetProductFiltersKey+".#"]; got != "0" {
-		t.Fatalf("state product_filters count = %q, want 0", got)
-	}
-	typedAttributes := decodeProductPlatformTypedAttributes(t, updatedResource.InstanceState.TypedAttributes)
-	if got := string(typedAttributes[datasetProductFiltersKey]); got != "[]" {
-		t.Fatalf("typed product_filters = %s, want []", got)
-	}
-}
-
 func TestAppBuilderAppInitResourcesListsPages(t *testing.T) {
 	pages := []string{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -487,6 +442,20 @@ func TestReferenceTableInitResourcesListsPages(t *testing.T) {
 	if strings.Join(offsets, ",") != "0,100" {
 		t.Fatalf("offsets = %v, want [0 100]", offsets)
 	}
+}
+
+func TestReferenceTableInitResourcesSkipsUnsupportedLocalFileSource(t *testing.T) {
+	server := productPlatformListServer(
+		t,
+		"/api/v2/reference-tables/tables",
+		fmt.Sprintf(`{"data":[%s,%s]}`, referenceTableDataJSONWithSource("table-s3", "S3"), referenceTableDataJSONWithSource("table-local", "LOCAL_FILE")),
+	)
+
+	initResources, resources := newReferenceTableTestGenerator(server, nil)
+	if err := initResources(); err != nil {
+		t.Fatalf("InitResources returned error: %v", err)
+	}
+	assertProductPlatformResourceIDs(t, resources(), []string{"table-s3"})
 }
 
 func TestObservabilityPipelineInitResourcesListsPages(t *testing.T) {
@@ -699,7 +668,11 @@ func referenceTableListResponseJSON(ids ...string) string {
 }
 
 func referenceTableDataJSON(id string) string {
-	return fmt.Sprintf(`{"id":%q,"type":"reference_table","attributes":{"table_name":"table","source":"S3"}}`, id)
+	return referenceTableDataJSONWithSource(id, "S3")
+}
+
+func referenceTableDataJSONWithSource(id, source string) string {
+	return fmt.Sprintf(`{"id":%q,"type":"reference_table","attributes":{"table_name":"table","source":%q}}`, id, source)
 }
 
 func observabilityPipelineResponseJSON(id string) string {

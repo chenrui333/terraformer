@@ -278,6 +278,7 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_reference_table`
         * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
         * **_NOTE:_** Imports reference table configuration. Reference table row data is not part of this Terraform resource.
+        * **_NOTE:_** Local file reference tables are skipped because the DataDog/datadog provider validates `source` as `S3`, `GCS`, or `AZURE`.
 *   `rum_application`
     * `datadog_rum_application`
 *   `rum_metric`
