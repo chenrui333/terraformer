@@ -318,6 +318,13 @@ func newCloudflareAIGatewayResource(accountID string, gateway cloudflareMediaPla
 	if !ok {
 		return resource, false
 	}
+	resource.AllowEmptyValues = append(resource.AllowEmptyValues,
+		"cache_invalidate_on_update",
+		"cache_ttl",
+		"collect_logs",
+		"rate_limiting_interval",
+		"rate_limiting_limit",
+	)
 	resource.AdditionalFields["id"] = id
 	resource.AdditionalFields["cache_ttl"] = cloudflareMediaPlatformIntAdditionalField(gateway, "cache_ttl")
 	resource.AdditionalFields["rate_limiting_interval"] = cloudflareMediaPlatformIntAdditionalField(gateway, "rate_limiting_interval")

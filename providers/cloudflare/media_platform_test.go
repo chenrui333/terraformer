@@ -62,6 +62,15 @@ func TestNewCloudflareAIGatewayResource(t *testing.T) {
 			t.Fatalf("attribute %s = %q, want %q", key, got, want)
 		}
 	}
+	for _, key := range []string{
+		"cache_invalidate_on_update",
+		"cache_ttl",
+		"collect_logs",
+		"rate_limiting_interval",
+		"rate_limiting_limit",
+	} {
+		assertCloudflareMediaPlatformAllowEmptyValue(t, resource, key)
+	}
 }
 
 func TestNewCloudflareAIGatewayResourcePreservesNullableRequiredFields(t *testing.T) {
@@ -91,6 +100,49 @@ func TestNewCloudflareAIGatewayResourcePreservesNullableRequiredFields(t *testin
 		if got := resource.InstanceState.Attributes[key]; got != want {
 			t.Fatalf("attribute %s = %q, want %q", key, got, want)
 		}
+	}
+}
+
+func TestCloudflareMediaPlatformOptionalErrorMessageDoesNotHideGenericNotFound(t *testing.T) {
+	if cloudflareMediaPlatformOptionalErrorMessage("not found", nil) {
+		t.Fatal("generic not found should not be treated as optional")
+	}
+	if !cloudflareMediaPlatformOptionalErrorMessage("", []string{"feature is not available on this plan"}) {
+		t.Fatal("feature-gated errors should be treated as optional")
+	}
+	if !cloudflareMediaPlatformOptionalErrorMessage("", []string{"Unauthorized to access requested resource"}) {
+		t.Fatal("unauthorized permission errors should be treated as optional")
+	}
+}
+
+func TestCloudflareMediaPlatformOptionalDiscoveryErrorHandlesAuthErrors(t *testing.T) {
+	authenticationErr := cf.NewAuthenticationError(&cf.Error{ErrorMessages: []string{"not authorized"}})
+	if !cloudflareMediaPlatformOptionalDiscoveryError(&authenticationErr) {
+		t.Fatal("authentication errors should be treated as optional when they match optional markers")
+	}
+
+	authenticationErrWithoutMarker := cf.NewAuthenticationError(&cf.Error{ErrorMessages: []string{"invalid token"}})
+	if cloudflareMediaPlatformOptionalDiscoveryError(&authenticationErrWithoutMarker) {
+		t.Fatal("authentication errors without optional markers should propagate")
+	}
+
+	authorizationErr := cf.NewAuthorizationError(&cf.Error{ErrorMessages: []string{"missing permission"}})
+	if !cloudflareMediaPlatformOptionalDiscoveryError(&authorizationErr) {
+		t.Fatal("authorization errors should be treated as optional when they match optional markers")
+	}
+
+	authorizationErrWithoutMarker := cf.NewAuthorizationError(&cf.Error{ErrorMessages: []string{"policy rejected request"}})
+	if cloudflareMediaPlatformOptionalDiscoveryError(&authorizationErrWithoutMarker) {
+		t.Fatal("authorization errors without optional markers should propagate")
+	}
+}
+
+func TestCloudflareMediaPlatformOptionalDiscoveryErrorDoesNotHideGenericNotFound(t *testing.T) {
+	if cloudflareMediaPlatformOptionalDiscoveryError(testCloudflareNotFoundError("not found")) {
+		t.Fatal("generic not found should not be treated as optional")
+	}
+	if !cloudflareMediaPlatformOptionalDiscoveryError(testCloudflareNotFoundError("feature is not available for this account")) {
+		t.Fatal("feature-gated not found errors should be treated as optional")
 	}
 }
 
@@ -445,6 +497,17 @@ func TestMediaPlatformUnsupportedResourcesMetadata(t *testing.T) {
 			t.Fatalf("unsupported metadata is missing %s", resource)
 		}
 	}
+}
+
+func assertCloudflareMediaPlatformAllowEmptyValue(t *testing.T, resource terraformutils.Resource, key string) {
+	t.Helper()
+
+	for _, value := range resource.AllowEmptyValues {
+		if value == key {
+			return
+		}
+	}
+	t.Fatalf("AllowEmptyValues = %#v, want %q", resource.AllowEmptyValues, key)
 }
 
 func newCloudflareMediaPlatformTestAPI(t *testing.T, handler http.Handler) *cf.API {
