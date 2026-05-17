@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
@@ -76,7 +75,7 @@ func zeroTrustGatewaySingletonResource(accountID, resourceName, resourceType str
 func zeroTrustGatewayOptionalUnavailableError(err error) bool {
 	var notFoundErr *cf.NotFoundError
 	if errors.As(err, &notFoundErr) {
-		return true
+		return zeroTrustGatewayUnavailableMessage(notFoundErr.Error(), notFoundErr.ErrorMessages())
 	}
 
 	var requestErr *cf.RequestError
@@ -87,15 +86,16 @@ func zeroTrustGatewayOptionalUnavailableError(err error) bool {
 	return false
 }
 
-func runZeroTrustGatewayDiscoveries(discoveries []zeroTrustGatewayDiscovery) {
+func runZeroTrustGatewayDiscoveries(discoveries []zeroTrustGatewayDiscovery) error {
 	for _, discovery := range discoveries {
 		if discovery.discover == nil {
 			continue
 		}
 		if err := discovery.discover(); err != nil {
-			log.Printf("Skipping Cloudflare Zero Trust Gateway %s discovery for %s: %v", discovery.name, discovery.account, err)
+			return fmt.Errorf("discover Cloudflare Zero Trust Gateway %s for %s: %w", discovery.name, discovery.account, err)
 		}
 	}
+	return nil
 }
 
 func zeroTrustGatewayUnavailableMessage(message string, errorMessages []string) bool {
@@ -371,7 +371,7 @@ func (g *ZeroTrustGatewayGenerator) InitResources() error {
 	if err != nil {
 		return err
 	}
-	runZeroTrustGatewayDiscoveries([]zeroTrustGatewayDiscovery{
+	return runZeroTrustGatewayDiscoveries([]zeroTrustGatewayDiscovery{
 		{
 			name:    "DNS locations",
 			account: account.Identifier,
@@ -436,5 +436,4 @@ func (g *ZeroTrustGatewayGenerator) InitResources() error {
 			},
 		},
 	})
-	return nil
 }

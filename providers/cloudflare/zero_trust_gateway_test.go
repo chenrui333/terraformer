@@ -3,6 +3,8 @@
 package cloudflare
 
 import (
+	"errors"
+	"strings"
 	"testing"
 
 	cf "github.com/cloudflare/cloudflare-go"
@@ -90,14 +92,14 @@ func TestZeroTrustGatewayOptionalUnavailableError(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "generic not found is optional",
+			name: "generic not found propagates",
 			err:  testCloudflareNotFoundError("not found"),
-			want: true,
+			want: false,
 		},
 		{
-			name: "missing endpoint is optional",
+			name: "missing endpoint propagates",
 			err:  testCloudflareNotFoundError("The requested endpoint was not found"),
-			want: true,
+			want: false,
 		},
 		{
 			name: "zero trust account not configured is optional",
@@ -122,6 +124,49 @@ func TestZeroTrustGatewayOptionalUnavailableError(t *testing.T) {
 				t.Fatalf("zeroTrustGatewayOptionalUnavailableError() = %t, want %t", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestRunZeroTrustGatewayDiscoveriesPropagatesErrors(t *testing.T) {
+	expectedErr := errors.New("permission denied")
+	err := runZeroTrustGatewayDiscoveries([]zeroTrustGatewayDiscovery{
+		{
+			name:    "Gateway policies",
+			account: "account-123",
+			discover: func() error {
+				return expectedErr
+			},
+		},
+	})
+
+	if !errors.Is(err, expectedErr) {
+		t.Fatalf("runZeroTrustGatewayDiscoveries() error = %v, want wrapped %v", err, expectedErr)
+	}
+	for _, expected := range []string{"Gateway policies", "account-123"} {
+		if !strings.Contains(err.Error(), expected) {
+			t.Fatalf("runZeroTrustGatewayDiscoveries() error = %q, want to contain %q", err, expected)
+		}
+	}
+}
+
+func TestRunZeroTrustGatewayDiscoveriesSkipsNilDiscoveries(t *testing.T) {
+	called := false
+	err := runZeroTrustGatewayDiscoveries([]zeroTrustGatewayDiscovery{
+		{name: "empty discovery"},
+		{
+			name: "DNS locations",
+			discover: func() error {
+				called = true
+				return nil
+			},
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("runZeroTrustGatewayDiscoveries() error = %v, want nil", err)
+	}
+	if !called {
+		t.Fatal("runZeroTrustGatewayDiscoveries() did not run non-nil discovery")
 	}
 }
 
