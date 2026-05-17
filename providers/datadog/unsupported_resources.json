@@ -88,6 +88,17 @@
         "https://github.com/chenrui333/terraformer/issues/336",
         "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/app_key_registration"
       ]
+    },
+    {
+      "resource": "datadog_org_group_policy_override",
+      "service_family": "org_group",
+      "reason": "Destructive delete semantics and auto-created noise make broad discovery unsafe.",
+      "evidence": "Deleting an override resets the target org's config value to match the parent policy — a destructive side effect. Overrides are also auto-created by the server when org config differs from policy value (on membership change or policy create/update), making broad discovery noisy and potentially importing ephemeral auto-created state that should not be in Terraform.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/336",
+        "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/org_group_policy_override"
+      ]
     }
   ]
 }
