@@ -14,9 +14,9 @@ import (
 
 var (
 	// PowerpackAllowEmptyValues ...
-	PowerpackAllowEmptyValues = []string{"tags."}
+	PowerpackAllowEmptyValues = []string{"tags.", "manage_status_definition.*.query"}
 	// PowerpackV2AllowEmptyValues ...
-	PowerpackV2AllowEmptyValues = []string{"tags."}
+	PowerpackV2AllowEmptyValues = []string{"tags.", "manage_status_definition.*.query"}
 )
 
 // PowerpackGenerator ...

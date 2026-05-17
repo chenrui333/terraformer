@@ -95,6 +95,34 @@ func TestPowerpackCreateResource(t *testing.T) {
 	}
 }
 
+func TestPowerpackAllowEmptyValuesPreservesManageStatusQuery(t *testing.T) {
+	tests := []struct {
+		name  string
+		allow []string
+	}{
+		{
+			name:  "powerpack",
+			allow: PowerpackAllowEmptyValues,
+		},
+		{
+			name:  "powerpack_v2",
+			allow: PowerpackV2AllowEmptyValues,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for _, pattern := range tt.allow {
+				if pattern == "manage_status_definition.*.query" {
+					return
+				}
+			}
+
+			t.Fatal("allow empty values must preserve manage_status_definition.*.query")
+		})
+	}
+}
+
 func TestPowerpackCreateResourceMissingID(t *testing.T) {
 	if _, err := (&PowerpackGenerator{}).createResource(datadogV2.PowerpackData{}); err == nil {
 		t.Fatal("createResource returned nil error, want missing id error")
