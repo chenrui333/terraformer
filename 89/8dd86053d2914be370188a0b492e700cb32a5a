@@ -1,0 +1,37 @@
+README.md
+  s_b9bf3d25503db4::t_0bb5122a9307f4 34,276
+cmd/provider_cmd_helm_test.go
+  s_b9bf3d25503db4::t_0bb5122a9307f4 1-36
+providers/helm/helm_provider_test.go
+  s_b9bf3d25503db4::t_0bb5122a9307f4 1-56
+docs/helm.md
+  s_b9bf3d25503db4::t_0bb5122a9307f4 1-16
+cmd/provider_cmd_helm.go
+  s_b9bf3d25503db4::t_0bb5122a9307f4 1-33
+cmd/root.go
+  s_b9bf3d25503db4::t_0bb5122a9307f4 48,108
+providers/helm/release.go
+  s_b9bf3d25503db4::t_0bb5122a9307f4 1-13
+providers/helm/release_test.go
+  s_b9bf3d25503db4::t_0bb5122a9307f4 1-15
+terraformutils/provider_source_test.go
+  s_b9bf3d25503db4::t_0bb5122a9307f4 31
+providers/helm/helm_provider.go
+  s_b9bf3d25503db4::t_0bb5122a9307f4 1-66
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "898dd86053d2914be370188a0b492e700cb32a5a",
+  "prompts": {},
+  "sessions": {
+    "s_b9bf3d25503db4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3856-e0ec-7620-9ecb-09a4bc82926d",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
