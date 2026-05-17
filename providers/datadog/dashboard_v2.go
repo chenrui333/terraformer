@@ -72,13 +72,26 @@ func (g *DashboardV2Generator) InitResources() error {
 		return nil
 	}
 
-	summary, httpResp, err := api.ListDashboards(auth)
-	if httpResp != nil && httpResp.Body != nil {
-		_ = httpResp.Body.Close()
-	}
+	dashboards, err := listDashboardV2Dashboards(auth, api)
 	if err != nil {
 		return err
 	}
-	g.Resources = g.createResources(summary.GetDashboards())
+	g.Resources = g.createResources(dashboards)
 	return nil
+}
+
+func listDashboardV2Dashboards(auth context.Context, api *datadogV1.DashboardsApi) ([]datadogV1.DashboardSummaryDefinition, error) {
+	pageSize := int64(100)
+	items, cancel := api.ListDashboardsWithPagination(auth, *datadogV1.NewListDashboardsOptionalParameters().WithCount(pageSize))
+	defer cancel()
+
+	dashboards := []datadogV1.DashboardSummaryDefinition{}
+	for item := range items {
+		if item.Error != nil {
+			return nil, item.Error
+		}
+		dashboards = append(dashboards, item.Item)
+	}
+
+	return dashboards, nil
 }

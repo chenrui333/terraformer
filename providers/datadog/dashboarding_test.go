@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
@@ -30,13 +31,28 @@ func TestDashboardV2CreateResource(t *testing.T) {
 }
 
 func TestDashboardV2InitResourcesListsDashboards(t *testing.T) {
+	requestStarts := []string{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if r.URL.Path != "/api/v1/dashboard" {
 			http.NotFound(w, r)
 			return
 		}
-		_, _ = fmt.Fprint(w, "{\"dashboards\":[{\"id\":\"dashboard-1\"},{\"id\":\"dashboard-2\"}]}")
+		if got := r.URL.Query().Get("count"); got != "100" {
+			http.Error(w, fmt.Sprintf("count = %q, want 100", got), http.StatusBadRequest)
+			return
+		}
+
+		start := r.URL.Query().Get("start")
+		requestStarts = append(requestStarts, start)
+		switch start {
+		case "":
+			_, _ = fmt.Fprint(w, dashboardSummaryResponseJSON(dashboardSummaryIDs("dashboard", 0, 100)...))
+		case "100":
+			_, _ = fmt.Fprint(w, dashboardSummaryResponseJSON("dashboard-100"))
+		default:
+			http.Error(w, fmt.Sprintf("start = %q, want empty or 100", start), http.StatusBadRequest)
+		}
 	}))
 	defer server.Close()
 
@@ -44,11 +60,14 @@ func TestDashboardV2InitResourcesListsDashboards(t *testing.T) {
 	if err := generator.InitResources(); err != nil {
 		t.Fatalf("InitResources returned error: %v", err)
 	}
-	if len(generator.Resources) != 2 {
-		t.Fatalf("expected 2 resources, got %d", len(generator.Resources))
+	if len(generator.Resources) != 101 {
+		t.Fatalf("expected 101 resources, got %d", len(generator.Resources))
 	}
-	if generator.Resources[0].InstanceState.ID != "dashboard-1" || generator.Resources[1].InstanceState.ID != "dashboard-2" {
-		t.Fatalf("unexpected resource IDs: %s, %s", generator.Resources[0].InstanceState.ID, generator.Resources[1].InstanceState.ID)
+	if got := strings.Join(requestStarts, ","); got != ",100" {
+		t.Fatalf("request starts = %q, want ,100", got)
+	}
+	if generator.Resources[0].InstanceState.ID != "dashboard-0" || generator.Resources[100].InstanceState.ID != "dashboard-100" {
+		t.Fatalf("unexpected resource IDs: %s, %s", generator.Resources[0].InstanceState.ID, generator.Resources[100].InstanceState.ID)
 	}
 }
 
@@ -222,4 +241,20 @@ func newDashboardingTestService(server *httptest.Server, filter []terraformutils
 			Filter: filter,
 		},
 	}
+}
+
+func dashboardSummaryIDs(prefix string, start, count int) []string {
+	ids := make([]string, 0, count)
+	for i := start; i < start+count; i++ {
+		ids = append(ids, fmt.Sprintf("%s-%d", prefix, i))
+	}
+	return ids
+}
+
+func dashboardSummaryResponseJSON(ids ...string) string {
+	dashboards := make([]string, 0, len(ids))
+	for _, id := range ids {
+		dashboards = append(dashboards, fmt.Sprintf("{\"id\":%q}", id))
+	}
+	return fmt.Sprintf("{\"dashboards\":[%s]}", strings.Join(dashboards, ","))
 }
