@@ -5,6 +5,8 @@ package cloudflare
 import (
 	"testing"
 
+	"github.com/chenrui333/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 	cf "github.com/cloudflare/cloudflare-go"
 )
 
@@ -24,6 +26,7 @@ func TestNewCloudflareQueueConsumerResource(t *testing.T) {
 	if resource.InstanceInfo.Type != "cloudflare_queue_consumer" {
 		t.Fatalf("resource type = %q, want cloudflare_queue_consumer", resource.InstanceInfo.Type)
 	}
+	assertCloudflarePreservesID(t, resource)
 	attributes := resource.InstanceState.Attributes
 	for key, want := range map[string]string{
 		"account_id":        "account-id",
@@ -56,6 +59,14 @@ func TestNewCloudflareQueueConsumerResourceSkipsMalformedConsumers(t *testing.T)
 	}
 }
 
+func TestNewCloudflareR2BucketConfigResourcePreservesID(t *testing.T) {
+	resource := newCloudflareR2BucketConfigResource("account-id", "bucket-name", "eu", "cloudflare_r2_bucket_cors")
+	if resource.InstanceInfo.Type != "cloudflare_r2_bucket_cors" {
+		t.Fatalf("resource type = %q, want cloudflare_r2_bucket_cors", resource.InstanceInfo.Type)
+	}
+	assertCloudflarePreservesID(t, resource)
+}
+
 func TestNewCloudflareR2BucketEventNotificationResource(t *testing.T) {
 	resource, ok := newCloudflareR2BucketEventNotificationResource(
 		"account-id",
@@ -78,6 +89,7 @@ func TestNewCloudflareR2BucketEventNotificationResource(t *testing.T) {
 	if !ok {
 		t.Fatal("expected event notification resource")
 	}
+	assertCloudflarePreservesID(t, resource)
 	attributes := resource.InstanceState.Attributes
 	for key, want := range map[string]string{
 		"account_id":          "account-id",
@@ -129,6 +141,7 @@ func TestNewCloudflareR2CustomDomainResource(t *testing.T) {
 	if !ok {
 		t.Fatal("expected custom domain resource")
 	}
+	assertCloudflarePreservesID(t, resource)
 	attributes := resource.InstanceState.Attributes
 	for key, want := range map[string]string{
 		"account_id":   "account-id",
@@ -177,5 +190,14 @@ func TestNewCloudflareR2DataCatalogResource(t *testing.T) {
 func TestNewCloudflareR2DataCatalogResourceSkipsInactiveCatalog(t *testing.T) {
 	if _, ok := newCloudflareR2DataCatalogResource("account-id", "bucket-name", cloudflareR2DataCatalog{Status: "inactive"}); ok {
 		t.Fatal("expected inactive data catalog to be skipped")
+	}
+}
+
+func assertCloudflarePreservesID(t *testing.T, resource terraformutils.Resource) {
+	t.Helper()
+
+	preserveID, ok := resource.InstanceState.Meta[tfcompat.MetaKeyPreserveIDAfterRefresh].(bool)
+	if !ok || !preserveID {
+		t.Fatalf("preserve ID metadata = %#v, want true", resource.InstanceState.Meta[tfcompat.MetaKeyPreserveIDAfterRefresh])
 	}
 }

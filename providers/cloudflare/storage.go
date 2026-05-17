@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 	cf "github.com/cloudflare/cloudflare-go"
 )
 
@@ -181,6 +182,16 @@ func addCloudflareStringListAttributes(attributes map[string]string, name string
 	}
 }
 
+func setCloudflarePreserveIDAfterRefresh(resource *terraformutils.Resource) {
+	if resource == nil || resource.InstanceState == nil {
+		return
+	}
+	if resource.InstanceState.Meta == nil {
+		resource.InstanceState.Meta = map[string]interface{}{}
+	}
+	resource.InstanceState.Meta[tfcompat.MetaKeyPreserveIDAfterRefresh] = true
+}
+
 func newCloudflareQueueConsumerResource(
 	accountID string,
 	queue cf.Queue,
@@ -201,7 +212,7 @@ func newCloudflareQueueConsumerResource(
 	if consumer.ScriptName != "" {
 		attributes["script_name"] = consumer.ScriptName
 	}
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		cloudflareResourceName(accountID, queue.ID, consumer.ConsumerID),
 		cloudflareResourceName(accountID, queue.Name, queue.ID, consumer.ConsumerID),
 		"cloudflare_queue_consumer",
@@ -209,7 +220,9 @@ func newCloudflareQueueConsumerResource(
 		attributes,
 		[]string{},
 		map[string]interface{}{},
-	), true
+	)
+	setCloudflarePreserveIDAfterRefresh(&resource)
+	return resource, true
 }
 
 func newCloudflareR2BucketConfigResource(
@@ -219,7 +232,7 @@ func newCloudflareR2BucketConfigResource(
 	resourceType string,
 ) terraformutils.Resource {
 	resourceName := strings.TrimPrefix(resourceType, "cloudflare_")
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		cloudflareResourceName(accountID, bucketName, jurisdiction, resourceName),
 		cloudflareResourceName(accountID, jurisdiction, bucketName, resourceName),
 		resourceType,
@@ -232,6 +245,8 @@ func newCloudflareR2BucketConfigResource(
 		[]string{},
 		map[string]interface{}{},
 	)
+	setCloudflarePreserveIDAfterRefresh(&resource)
+	return resource
 }
 
 func newCloudflareR2BucketEventNotificationResource(
@@ -274,7 +289,7 @@ func newCloudflareR2BucketEventNotificationResource(
 		return terraformutils.Resource{}, false
 	}
 	attributes["rules.#"] = strconv.Itoa(validRules)
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		cloudflareResourceName(accountID, bucketName, jurisdiction, queue.QueueID),
 		cloudflareResourceName(accountID, jurisdiction, bucketName, queue.QueueName, queue.QueueID),
 		"cloudflare_r2_bucket_event_notification",
@@ -282,7 +297,9 @@ func newCloudflareR2BucketEventNotificationResource(
 		attributes,
 		[]string{},
 		map[string]interface{}{},
-	), true
+	)
+	setCloudflarePreserveIDAfterRefresh(&resource)
+	return resource, true
 }
 
 func newCloudflareR2CustomDomainResource(
@@ -311,7 +328,7 @@ func newCloudflareR2CustomDomainResource(
 	if domain.ZoneName != "" {
 		attributes["zone_name"] = domain.ZoneName
 	}
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		cloudflareResourceName(accountID, bucketName, jurisdiction, domain.Domain),
 		cloudflareResourceName(accountID, jurisdiction, bucketName, domain.Domain),
 		"cloudflare_r2_custom_domain",
@@ -319,7 +336,9 @@ func newCloudflareR2CustomDomainResource(
 		attributes,
 		[]string{},
 		map[string]interface{}{},
-	), true
+	)
+	setCloudflarePreserveIDAfterRefresh(&resource)
+	return resource, true
 }
 
 func newCloudflareR2DataCatalogResource(
