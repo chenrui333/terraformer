@@ -33,8 +33,11 @@ Common environment variables:
 * AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE
 * AWS_CONTAINER_CREDENTIALS_FULL_URI
 * AWS_SHARED_CONFIG_FILES
+* KAFKA_SASL_TOKEN_URL
 * KAFKA_SASL_OAUTH_TOKEN
 * KAFKA_SASL_OAUTH_SCOPES
+
+OAuthBearer imports can use KAFKA_SASL_TOKEN_URL with KAFKA_SASL_USERNAME, KAFKA_SASL_PASSWORD, and optional KAFKA_SASL_OAUTH_SCOPES; pre-minted bearer tokens can be supplied through KAFKA_SASL_OAUTH_TOKEN when needed.
 
 Terraformer intentionally does not write generated HCL containing SASL passwords, TLS private keys, AWS access keys, AWS secret keys, AWS session tokens, OAuth tokens, or SCRAM passwords.
 

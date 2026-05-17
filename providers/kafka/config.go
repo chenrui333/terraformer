@@ -10,6 +10,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -20,6 +21,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/credentials/endpointcreds"
 	"github.com/xdg-go/scram"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/clientcredentials"
 )
 
 const (
@@ -238,15 +241,41 @@ func (c Config) configureSASL(config *sarama.Config) error {
 		config.Net.SASL.Mechanism = sarama.SASLTypeOAuth
 		config.Net.SASL.TokenProvider = awsIAMTokenProvider{config: c}
 	case "oauthbearer":
-		if c.SASLOAuthBearerToken == "" {
-			return errors.New("kafka: KAFKA_SASL_OAUTH_TOKEN is required for oauthbearer authentication")
+		tokenProvider, err := c.oauthBearerTokenProvider()
+		if err != nil {
+			return err
 		}
 		config.Net.SASL.Mechanism = sarama.SASLTypeOAuth
-		config.Net.SASL.TokenProvider = oauthBearerTokenProvider{token: c.SASLOAuthBearerToken}
+		config.Net.SASL.TokenProvider = tokenProvider
 	default:
 		return fmt.Errorf("kafka: unsupported sasl mechanism %q", mechanism)
 	}
 	return nil
+}
+
+func (c Config) oauthBearerTokenProvider() (sarama.AccessTokenProvider, error) {
+	if c.SASLOAuthBearerToken != "" {
+		return oauthBearerTokenProvider{token: c.SASLOAuthBearerToken}, nil
+	}
+	if c.SASLTokenURL == "" {
+		return nil, errors.New("kafka: KAFKA_SASL_OAUTH_TOKEN or KAFKA_SASL_TOKEN_URL is required for oauthbearer authentication")
+	}
+	if c.SASLUsername == "" {
+		return nil, errors.New("kafka: sasl username is required for oauthbearer token URL authentication")
+	}
+	if c.SASLPassword == "" {
+		return nil, errors.New("kafka: KAFKA_SASL_PASSWORD is required for oauthbearer token URL authentication")
+	}
+
+	client := &http.Client{Timeout: time.Duration(c.Timeout) * time.Second}
+	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, client)
+	source := (&clientcredentials.Config{
+		ClientID:     c.SASLUsername,
+		ClientSecret: c.SASLPassword,
+		TokenURL:     c.SASLTokenURL,
+		Scopes:       c.SASLOAuthScopes,
+	}).TokenSource(ctx)
+	return oauthBearerTokenProvider{tokenSource: source}, nil
 }
 
 type xdgSCRAMClient struct {
@@ -316,11 +345,25 @@ func (p awsIAMTokenProvider) Token() (*sarama.AccessToken, error) {
 }
 
 type oauthBearerTokenProvider struct {
-	token string
+	token       string
+	tokenSource oauth2.TokenSource
 }
 
 func (p oauthBearerTokenProvider) Token() (*sarama.AccessToken, error) {
-	return &sarama.AccessToken{Token: p.token}, nil
+	if p.token != "" {
+		return &sarama.AccessToken{Token: p.token}, nil
+	}
+	if p.tokenSource == nil {
+		return nil, errors.New("kafka: oauthbearer token provider is not configured")
+	}
+	token, err := p.tokenSource.Token()
+	if err != nil {
+		return nil, fmt.Errorf("kafka: fetch oauthbearer token: %w", err)
+	}
+	if token.AccessToken == "" {
+		return nil, errors.New("kafka: oauthbearer token response did not include access_token")
+	}
+	return &sarama.AccessToken{Token: token.AccessToken}, nil
 }
 
 func newTLSConfig(clientCert, clientKey, caCert, clientKeyPassphrase string) (*tls.Config, error) {

@@ -41,7 +41,7 @@ func (g *TopicGenerator) InitResources() error {
 		}
 	}()
 
-	topics, err := g.listTopics(admin)
+	topics, err := g.listTopics(admin, config)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (g *TopicGenerator) ParseFilters(rawFilters []string) {
 	}
 }
 
-func (g *TopicGenerator) listTopics(admin adminClient) ([]Topic, error) {
+func (g *TopicGenerator) listTopics(admin adminClient, config Config) ([]Topic, error) {
 	details, err := admin.ListTopics()
 	if err != nil {
 		return nil, err
@@ -83,7 +83,7 @@ func (g *TopicGenerator) listTopics(admin adminClient) ([]Topic, error) {
 
 	topics := make([]Topic, 0, len(names))
 	for _, name := range names {
-		topic, err := g.topicFromDetail(admin, name, details[name])
+		topic, err := g.topicFromDetail(admin, name, details[name], config)
 		if err != nil {
 			return nil, err
 		}
@@ -92,7 +92,7 @@ func (g *TopicGenerator) listTopics(admin adminClient) ([]Topic, error) {
 	return topics, nil
 }
 
-func (g *TopicGenerator) topicFromDetail(admin adminClient, name string, detail sarama.TopicDetail) (Topic, error) {
+func (g *TopicGenerator) topicFromDetail(admin adminClient, name string, detail sarama.TopicDetail, providerConfig Config) (Topic, error) {
 	partitions, replicationFactor, err := topicShapeFromDetail(detail)
 	if err != nil {
 		return Topic{}, fmt.Errorf("kafka topic %q: %w", name, err)
@@ -107,7 +107,7 @@ func (g *TopicGenerator) topicFromDetail(admin adminClient, name string, detail 
 			return Topic{}, err
 		}
 	}
-	config, err := topicConfig(admin, name)
+	config, err := topicConfig(admin, name, providerConfig)
 	if err != nil {
 		log.Printf("kafka: skipping topic config for %q: %v", name, err)
 		config = map[string]string{}
@@ -176,7 +176,7 @@ func topicShapeFromMetadata(name string, topics []*sarama.TopicMetadata) (int32,
 	return 0, 0, fmt.Errorf("kafka topic %q: metadata not found", name)
 }
 
-func topicConfig(admin adminClient, name string) (map[string]string, error) {
+func topicConfig(admin adminClient, name string, providerConfig Config) (map[string]string, error) {
 	entries, err := admin.DescribeConfig(sarama.ConfigResource{
 		Type: sarama.TopicResource,
 		Name: name,
@@ -186,7 +186,7 @@ func topicConfig(admin adminClient, name string) (map[string]string, error) {
 	}
 	config := map[string]string{}
 	for _, entry := range entries {
-		if entry.Sensitive || isDefaultConfig(entry) || isForbiddenConfigName(entry.Name) {
+		if entry.Sensitive || isDefaultConfig(entry) || isForbiddenConfigName(entry.Name) || isUnsupportedTopicConfigName(entry.Name, providerConfig) {
 			continue
 		}
 		config[entry.Name] = entry.Value
@@ -213,6 +213,19 @@ func isForbiddenConfigName(name string) bool {
 		"scram.password",
 	} {
 		if strings.Contains(lower, needle) {
+			return true
+		}
+	}
+	return false
+}
+
+func isUnsupportedTopicConfigName(name string, providerConfig Config) bool {
+	return strings.EqualFold(name, "segment.bytes") && isMSKServerless(providerConfig.BootstrapServers)
+}
+
+func isMSKServerless(bootstrapServers []string) bool {
+	for _, server := range bootstrapServers {
+		if strings.Contains(strings.ToLower(server), "kafka-serverless") {
 			return true
 		}
 	}

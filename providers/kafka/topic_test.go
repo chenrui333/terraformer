@@ -140,7 +140,9 @@ func TestTopicFallsBackToMetadataShape(t *testing.T) {
 		configs: map[string][]sarama.ConfigEntry{"orders": nil},
 	}
 	generator := &TopicGenerator{}
-	topic, err := generator.topicFromDetail(admin, "orders", admin.topics["orders"])
+	topic, err := generator.topicFromDetail(admin, "orders", admin.topics["orders"], Config{
+		BootstrapServers: []string{"broker1.example.com:9092"},
+	})
 	if err != nil {
 		t.Fatalf("topicFromDetail() error = %v", err)
 	}
@@ -192,5 +194,47 @@ func TestKafkaTopicResourceNameIsStableForPunctuation(t *testing.T) {
 		if strings.Contains(first, disallowed) {
 			t.Fatalf("resource name = %q contains %q", first, disallowed)
 		}
+	}
+}
+
+func TestTopicConfigSkipsMSKServerlessSegmentBytes(t *testing.T) {
+	admin := &mockAdmin{
+		configs: map[string][]sarama.ConfigEntry{
+			"orders": {
+				{Name: "segment.bytes", Value: "104857600", Source: sarama.SourceTopic},
+				{Name: "retention.ms", Value: "604800000", Source: sarama.SourceTopic},
+			},
+		},
+	}
+	config, err := topicConfig(admin, "orders", Config{
+		BootstrapServers: []string{"boot-abcd.c1.kafka-serverless.us-east-1.amazonaws.com:9098"},
+	})
+	if err != nil {
+		t.Fatalf("topicConfig() error = %v", err)
+	}
+	if _, ok := config["segment.bytes"]; ok {
+		t.Fatal("MSK Serverless segment.bytes config was exported")
+	}
+	if got := config["retention.ms"]; got != "604800000" {
+		t.Fatalf("retention.ms = %q, want 604800000", got)
+	}
+}
+
+func TestTopicConfigKeepsSegmentBytesOutsideMSKServerless(t *testing.T) {
+	admin := &mockAdmin{
+		configs: map[string][]sarama.ConfigEntry{
+			"orders": {
+				{Name: "segment.bytes", Value: "104857600", Source: sarama.SourceTopic},
+			},
+		},
+	}
+	config, err := topicConfig(admin, "orders", Config{
+		BootstrapServers: []string{"broker1.example.com:9092"},
+	})
+	if err != nil {
+		t.Fatalf("topicConfig() error = %v", err)
+	}
+	if got := config["segment.bytes"]; got != "104857600" {
+		t.Fatalf("segment.bytes = %q, want 104857600", got)
 	}
 }
