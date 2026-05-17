@@ -1,0 +1,21 @@
+CLAUDE.md
+  s_ad2cde2451f5fe::t_a878b04bb9aeb3 363
+  s_ad2cde2451f5fe::t_b5c473eea1fb9e 366-376
+  s_ad2cde2451f5fe::t_681a69b58e87ba 426
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "1ad17d8bf71acd798d17c5dfb1ab0da5c79fb591",
+  "prompts": {},
+  "sessions": {
+    "s_ad2cde2451f5fe": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e5e5a739-89aa-4196-9223-c274cd1e20ca",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
