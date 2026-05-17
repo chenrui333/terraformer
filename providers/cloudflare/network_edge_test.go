@@ -53,6 +53,12 @@ func TestCloudflareRegionalHostnameResourcePreservesID(t *testing.T) {
 	if resource.InstanceInfo.Type != "cloudflare_regional_hostname" {
 		t.Fatalf("resource type = %q, want cloudflare_regional_hostname", resource.InstanceInfo.Type)
 	}
+	if got := resource.InstanceState.Attributes["zone_id"]; got != "zone-123" {
+		t.Fatalf("zone_id = %q, want zone-123", got)
+	}
+	if got := resource.InstanceState.Attributes["hostname"]; got != "eu.example.com" {
+		t.Fatalf("hostname = %q, want eu.example.com", got)
+	}
 	if got := resource.InstanceState.Meta["import_id"]; got != "zone-123/eu.example.com" {
 		t.Fatalf("import_id = %q, want zone-123/eu.example.com", got)
 	}

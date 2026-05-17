@@ -179,7 +179,10 @@ func cloudflareRegionalHostnameResource(zone cf.Zone, hostname string) (terrafor
 		cloudflareResourceName(zone.Name, "regional_hostname", hostname),
 		"cloudflare_regional_hostname",
 		"cloudflare",
-		map[string]string{"zone_id": zone.ID},
+		map[string]string{
+			"hostname": hostname,
+			"zone_id":  zone.ID,
+		},
 		[]string{},
 		map[string]interface{}{},
 	)
