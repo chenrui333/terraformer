@@ -93,21 +93,21 @@ var cloudflareZoneDNSSECComputedKeys = []string{
 	"^public_key$",
 }
 
-var cloudflareZoneSettingDefaultValues = map[string]string{
-	"always_online":       "on",
-	"always_use_https":    "off",
-	"brotli":              "off",
-	"browser_check":       "on",
-	"cache_level":         "aggressive",
-	"email_obfuscation":   "on",
-	"hotlink_protection":  "off",
-	"ip_geolocation":      "on",
-	"min_tls_version":     "1.0",
-	"rocket_loader":       "off",
-	"security_level":      "medium",
-	"server_side_exclude": "on",
-	"tls_1_3":             "off",
-	"websockets":          "off",
+var cloudflareZoneSettingImportAllowlist = map[string]struct{}{
+	"always_online":       {},
+	"always_use_https":    {},
+	"brotli":              {},
+	"browser_check":       {},
+	"cache_level":         {},
+	"email_obfuscation":   {},
+	"hotlink_protection":  {},
+	"ip_geolocation":      {},
+	"min_tls_version":     {},
+	"rocket_loader":       {},
+	"security_level":      {},
+	"server_side_exclude": {},
+	"tls_1_3":             {},
+	"websockets":          {},
 }
 
 var cloudflareZoneSettingIgnoredKeys = []string{
@@ -854,15 +854,17 @@ func cloudflareZoneDNSSECDesiredStatus(status string) string {
 }
 
 func cloudflareZoneSettingShouldImport(setting cloudflareZoneSetting) bool {
-	defaultValue, ok := cloudflareZoneSettingDefaultValues[setting.ID]
-	if !ok {
+	if _, ok := cloudflareZoneSettingImportAllowlist[setting.ID]; !ok {
 		return false
 	}
 	if !setting.Editable {
 		return false
 	}
-	value, ok := cloudflareZoneSettingStringValue(setting)
-	return ok && !strings.EqualFold(value, defaultValue)
+	if setting.ModifiedOn == "" {
+		return false
+	}
+	_, ok := cloudflareZoneSettingStringValue(setting)
+	return ok
 }
 
 func cloudflareZoneSettingStringValue(setting cloudflareZoneSetting) (string, bool) {

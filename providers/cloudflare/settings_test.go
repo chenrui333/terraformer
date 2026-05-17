@@ -404,14 +404,14 @@ func TestCloudflareZoneSettingShouldImport(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "supported but default effective state",
+			name: "supported modified default value",
 			setting: cloudflareZoneSetting{
 				ID:         "always_use_https",
 				Editable:   true,
 				ModifiedOn: "2026-05-17T12:00:00Z",
 				Value:      json.RawMessage(`"off"`),
 			},
-			want: false,
+			want: true,
 		},
 		{
 			name: "supported non default without modified timestamp",
@@ -420,7 +420,7 @@ func TestCloudflareZoneSettingShouldImport(t *testing.T) {
 				Editable: true,
 				Value:    json.RawMessage(`"on"`),
 			},
-			want: true,
+			want: false,
 		},
 		{
 			name: "supported but not editable",
@@ -444,7 +444,7 @@ func TestCloudflareZoneSettingShouldImport(t *testing.T) {
 		{
 			name: "non string value",
 			setting: cloudflareZoneSetting{
-				ID:         "browser_cache_ttl",
+				ID:         "always_use_https",
 				Editable:   true,
 				ModifiedOn: "2026-05-17T12:00:00Z",
 				Value:      json.RawMessage(`14400`),
@@ -460,36 +460,63 @@ func TestCloudflareZoneSettingShouldImport(t *testing.T) {
 	}
 }
 
-func TestCloudflareZoneSettingDocumentedDefaults(t *testing.T) {
+func TestCloudflareZoneSettingSkipsUnmodifiedDefaultResponses(t *testing.T) {
 	for _, tt := range []struct {
-		settingID       string
-		defaultValue    string
-		nonDefaultValue string
+		settingID    string
+		defaultValue string
 	}{
-		{settingID: "always_online", defaultValue: "on", nonDefaultValue: "off"},
-		{settingID: "brotli", defaultValue: "off", nonDefaultValue: "on"},
-		{settingID: "tls_1_3", defaultValue: "off", nonDefaultValue: "on"},
-		{settingID: "websockets", defaultValue: "off", nonDefaultValue: "on"},
+		{settingID: "always_online", defaultValue: "off"},
+		{settingID: "brotli", defaultValue: "off"},
+		{settingID: "tls_1_3", defaultValue: "on"},
+		{settingID: "websockets", defaultValue: "on"},
 	} {
 		t.Run(tt.settingID, func(t *testing.T) {
-			defaultSetting := cloudflareZoneSetting{
+			setting := cloudflareZoneSetting{
 				ID:       tt.settingID,
 				Editable: true,
 				Value:    cloudflareZoneSettingTestStringValue(tt.defaultValue),
 			}
-			if cloudflareZoneSettingShouldImport(defaultSetting) {
-				t.Fatalf("%s default value %q should not import", tt.settingID, tt.defaultValue)
-			}
-
-			nonDefaultSetting := cloudflareZoneSetting{
-				ID:       tt.settingID,
-				Editable: true,
-				Value:    cloudflareZoneSettingTestStringValue(tt.nonDefaultValue),
-			}
-			if !cloudflareZoneSettingShouldImport(nonDefaultSetting) {
-				t.Fatalf("%s non-default value %q should import", tt.settingID, tt.nonDefaultValue)
+			if cloudflareZoneSettingShouldImport(setting) {
+				t.Fatalf("%s unmodified default value %q should not import", tt.settingID, tt.defaultValue)
 			}
 		})
+	}
+}
+
+func TestCloudflareZoneSettingImportsModifiedAllowlistedValues(t *testing.T) {
+	for _, tt := range []struct {
+		settingID string
+		value     string
+	}{
+		{settingID: "always_online", value: "on"},
+		{settingID: "brotli", value: "on"},
+		{settingID: "tls_1_3", value: "off"},
+		{settingID: "websockets", value: "off"},
+	} {
+		t.Run(tt.settingID, func(t *testing.T) {
+			setting := cloudflareZoneSetting{
+				ID:         tt.settingID,
+				Editable:   true,
+				ModifiedOn: "2026-05-17T12:00:00Z",
+				Value:      cloudflareZoneSettingTestStringValue(tt.value),
+			}
+			if !cloudflareZoneSettingShouldImport(setting) {
+				t.Fatalf("%s modified value %q should import", tt.settingID, tt.value)
+			}
+		})
+	}
+}
+
+func TestCloudflareZoneSettingRawNullModifiedOnSkipsDefaultResponses(t *testing.T) {
+	response := []byte("[{\"id\":\"always_online\",\"editable\":true,\"modified_on\":null,\"value\":\"off\"},{\"id\":\"tls_1_3\",\"editable\":true,\"modified_on\":null,\"value\":\"on\"},{\"id\":\"websockets\",\"editable\":true,\"modified_on\":null,\"value\":\"on\"}]")
+	var settings []cloudflareZoneSetting
+	if err := json.Unmarshal(response, &settings); err != nil {
+		t.Fatalf("unmarshal zone settings response = %v", err)
+	}
+	for _, setting := range settings {
+		if cloudflareZoneSettingShouldImport(setting) {
+			t.Fatalf("%s with null modified_on should not import", setting.ID)
+		}
 	}
 }
 
@@ -554,7 +581,7 @@ func TestCloudflareZoneSettingResource(t *testing.T) {
 }
 
 func TestCloudflareZoneSettingRawResponseIgnoresBooleanTimeRemaining(t *testing.T) {
-	response := []byte("[{\"id\":\"development_mode\",\"editable\":true,\"modified_on\":\"2026-05-17T12:00:00Z\",\"value\":\"off\",\"time_remaining\":false},{\"id\":\"always_use_https\",\"editable\":true,\"value\":\"on\",\"time_remaining\":0}]")
+	response := []byte("[{\"id\":\"development_mode\",\"editable\":true,\"modified_on\":\"2026-05-17T12:00:00Z\",\"value\":\"off\",\"time_remaining\":false},{\"id\":\"always_use_https\",\"editable\":true,\"modified_on\":\"2026-05-17T12:00:00Z\",\"value\":\"on\",\"time_remaining\":0}]")
 	var settings []cloudflareZoneSetting
 	if err := json.Unmarshal(response, &settings); err != nil {
 		t.Fatalf("unmarshal zone settings response = %v", err)
