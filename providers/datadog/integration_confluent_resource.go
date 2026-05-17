@@ -24,12 +24,17 @@ func (g *IntegrationConfluentResourceGenerator) createResource(accountID, resour
 	importID := fmt.Sprintf("%s:%s", accountID, resourceID)
 	resourceName := fmt.Sprintf("integration_confluent_resource_%s_%s", accountID, resourceID)
 
-	return terraformutils.NewSimpleResource(
+	return terraformutils.NewResource(
 		importID,
 		resourceName,
 		"datadog_integration_confluent_resource",
 		"datadog",
+		map[string]string{
+			"account_id":  accountID,
+			"resource_id": resourceID,
+		},
 		IntegrationConfluentResourceAllowEmptyValues,
+		map[string]interface{}{},
 	)
 }
 

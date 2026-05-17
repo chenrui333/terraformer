@@ -20,13 +20,19 @@ type IntegrationAWSEventBridgeGenerator struct {
 	DatadogService
 }
 
-func (g *IntegrationAWSEventBridgeGenerator) createResource(sourceName string) terraformutils.Resource {
-	return terraformutils.NewSimpleResource(
+func (g *IntegrationAWSEventBridgeGenerator) createResource(sourceName, accountID, region string) terraformutils.Resource {
+	return terraformutils.NewResource(
 		sourceName,
 		fmt.Sprintf("integration_aws_event_bridge_%s", sourceName),
 		"datadog_integration_aws_event_bridge",
 		"datadog",
+		map[string]string{
+			"account_id":           accountID,
+			"region":               region,
+			"event_generator_name": sourceName,
+		},
 		IntegrationAWSEventBridgeAllowEmptyValues,
+		map[string]interface{}{},
 	)
 }
 
@@ -47,12 +53,14 @@ func (g *IntegrationAWSEventBridgeGenerator) InitResources() error {
 	data := resp.GetData()
 	attrs := data.GetAttributes()
 	for _, account := range attrs.GetAccounts() {
+		accountID := account.GetAccountId()
 		for _, source := range account.GetEventHubs() {
 			name := source.GetName()
 			if name == "" {
 				continue
 			}
-			resources = append(resources, g.createResource(name))
+			region := source.GetRegion()
+			resources = append(resources, g.createResource(name, accountID, region))
 		}
 	}
 	g.Resources = resources

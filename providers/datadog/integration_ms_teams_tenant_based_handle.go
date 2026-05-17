@@ -25,7 +25,7 @@ func (g *IntegrationMSTeamsTenantBasedHandleGenerator) createResource(handle dat
 	resourceName := fmt.Sprintf("integration_ms_teams_tenant_based_handle_%s", id)
 	attrs := handle.GetAttributes()
 	if name := (&attrs).GetName(); name != "" {
-		resourceName = fmt.Sprintf("integration_ms_teams_tenant_based_handle_%s", name)
+		resourceName = fmt.Sprintf("integration_ms_teams_tenant_based_handle_%s_%s", name, id)
 	}
 
 	return terraformutils.NewSimpleResource(

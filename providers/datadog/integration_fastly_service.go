@@ -24,12 +24,17 @@ func (g *IntegrationFastlyServiceGenerator) createResource(accountID, serviceID 
 	importID := fmt.Sprintf("%s:%s", accountID, serviceID)
 	resourceName := fmt.Sprintf("integration_fastly_service_%s_%s", accountID, serviceID)
 
-	return terraformutils.NewSimpleResource(
+	return terraformutils.NewResource(
 		importID,
 		resourceName,
 		"datadog_integration_fastly_service",
 		"datadog",
+		map[string]string{
+			"account_id": accountID,
+			"service_id": serviceID,
+		},
 		IntegrationFastlyServiceAllowEmptyValues,
+		map[string]interface{}{},
 	)
 }
 
