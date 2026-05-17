@@ -1,0 +1,9 @@
+docs/datadog.md
+  ai_agent 91-95,106-108,110,113-115,232-234
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "8d253244354055b24cae3d9dda6f565bd0919a94",
+  "prompts": {}
+}
