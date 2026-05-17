@@ -99,6 +99,18 @@
         "https://github.com/chenrui333/terraformer/issues/336",
         "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/org_group_policy_override"
       ]
+    },
+    {
+      "resource": "datadog_secure_embed_dashboard",
+      "service_family": "dashboard",
+      "reason": "Secure embeds require dashboard_id and token discovery, but Datadog exposes no list endpoint for tokens.",
+      "evidence": "Provider v4.9.0 imports secure embeds as dashboard_id:token and the read path calls GET /api/v2/dashboard/{dashboard_id}/shared/secure-embed/{token}. The Datadog API client exposes create, get, update, and delete methods for a known dashboard_id and token, but no list method to discover existing secure embed tokens. The credential is also only returned on creation and then preserved from state.",
+      "status": "deferred",
+      "references": [
+        "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/secure_embed_dashboard",
+        "https://github.com/DataDog/terraform-provider-datadog/blob/v4.9.0/datadog/fwprovider/resource_datadog_secure_embed_dashboard.go",
+        "https://github.com/DataDog/datadog-api-client-go/blob/v2.59.0/api/datadogV2/api_dashboard_secure_embed.go"
+      ]
     }
   ]
 }
