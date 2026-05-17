@@ -208,6 +208,36 @@ func TestACLInitResourcesAppliesIDFilter(t *testing.T) {
 	}
 }
 
+func TestACLIDFilterSyntaxKeepsPrincipalColon(t *testing.T) {
+	generator := &ACLGenerator{}
+	generator.ParseFilters([]string{"Type=acl;Name=id;Value=User:producer|*|Write|Allow|Topic|orders|Literal"})
+	if len(generator.Filter) != 1 {
+		t.Fatalf("filter len = %d, want 1", len(generator.Filter))
+	}
+	filter := generator.Filter[0]
+	if filter.ServiceName != "acl" {
+		t.Fatalf("filter service = %q, want acl", filter.ServiceName)
+	}
+	if filter.FieldPath != "id" {
+		t.Fatalf("filter field = %q, want id", filter.FieldPath)
+	}
+	want := []string{"User:producer|*|Write|Allow|Topic|orders|Literal"}
+	if !reflect.DeepEqual(filter.AcceptableValues, want) {
+		t.Fatalf("filter values = %#v, want %#v", filter.AcceptableValues, want)
+	}
+
+	acls, err := generator.explicitlyRequestedACLs()
+	if err != nil {
+		t.Fatalf("explicitlyRequestedACLs() error = %v", err)
+	}
+	if len(acls) != 1 {
+		t.Fatalf("explicit ACLs len = %d, want 1", len(acls))
+	}
+	if acls[0].Principal != "User:producer" {
+		t.Fatalf("principal = %q, want User:producer", acls[0].Principal)
+	}
+}
+
 func TestACLPreservesRequiredFieldsAfterImportFallback(t *testing.T) {
 	acl := ACL{
 		Principal:                 "User:ANONYMOUS",

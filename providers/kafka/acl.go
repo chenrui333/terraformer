@@ -54,12 +54,11 @@ func (g *ACLGenerator) InitResources() error {
 func (g *ACLGenerator) ParseFilter(rawFilter string) []terraformutils.ResourceFilter {
 	for _, prefix := range []string{"kafka_acl=", "acls=", "acl="} {
 		if strings.HasPrefix(rawFilter, prefix) {
-			return []terraformutils.ResourceFilter{{
-				ServiceName:      "acl",
-				FieldPath:        "id",
-				AcceptableValues: []string{strings.TrimPrefix(rawFilter, prefix)},
-			}}
+			return []terraformutils.ResourceFilter{aclIDFilter(strings.TrimPrefix(rawFilter, prefix))}
 		}
+	}
+	if filter, ok := parseACLIDFilter(rawFilter); ok {
+		return []terraformutils.ResourceFilter{filter}
 	}
 	return g.Service.ParseFilter(rawFilter)
 }
@@ -68,6 +67,23 @@ func (g *ACLGenerator) ParseFilters(rawFilters []string) {
 	g.Filter = []terraformutils.ResourceFilter{}
 	for _, rawFilter := range rawFilters {
 		g.Filter = append(g.Filter, g.ParseFilter(rawFilter)...)
+	}
+}
+
+func parseACLIDFilter(rawFilter string) (terraformutils.ResourceFilter, bool) {
+	for _, prefix := range []string{"Type=acl;Name=id;Value=", "Name=id;Value="} {
+		if strings.HasPrefix(rawFilter, prefix) {
+			return aclIDFilter(strings.TrimPrefix(rawFilter, prefix)), true
+		}
+	}
+	return terraformutils.ResourceFilter{}, false
+}
+
+func aclIDFilter(id string) terraformutils.ResourceFilter {
+	return terraformutils.ResourceFilter{
+		ServiceName:      "acl",
+		FieldPath:        "id",
+		AcceptableValues: []string{id},
 	}
 }
 
