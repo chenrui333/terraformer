@@ -3,12 +3,14 @@
 package cloudflare
 
 import (
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 	cf "github.com/cloudflare/cloudflare-go"
+	"github.com/zclconf/go-cty/cty"
 )
 
 func TestCloudflareProviderSupportsSettingsService(t *testing.T) {
@@ -142,6 +144,83 @@ func TestCloudflareManagedTransformsAttributes(t *testing.T) {
 	}
 	if _, ok := attributes["managed_request_headers.1.id"]; ok {
 		t.Fatal("disabled or invalid request transform should not be seeded")
+	}
+}
+
+func TestCloudflareManagedTransformsStatePreservesEmptyRequiredSets(t *testing.T) {
+	zone := cf.Zone{ID: "zone-123", Name: "example.com"}
+	headerType := cty.Object(map[string]cty.Type{
+		"enabled": cty.String,
+		"id":      cty.String,
+	})
+	impliedType := cty.Object(map[string]cty.Type{
+		"managed_request_headers":  cty.Set(headerType),
+		"managed_response_headers": cty.Set(headerType),
+		"zone_id":                  cty.String,
+	})
+
+	for _, tt := range []struct {
+		name       string
+		setting    cloudflareManagedTransformsSetting
+		emptyKey   string
+		presentKey string
+	}{
+		{
+			name: "request only",
+			setting: cloudflareManagedTransformsSetting{
+				ManagedRequestHeaders: []cloudflareManagedTransformHeader{{ID: "add_true_client_ip_headers", Enabled: true}},
+			},
+			emptyKey:   "managed_response_headers",
+			presentKey: "managed_request_headers",
+		},
+		{
+			name: "response only",
+			setting: cloudflareManagedTransformsSetting{
+				ManagedResponseHeaders: []cloudflareManagedTransformHeader{{ID: "add_security_headers", Enabled: true}},
+			},
+			emptyKey:   "managed_request_headers",
+			presentKey: "managed_response_headers",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			attributes, additionalFields := cloudflareManagedTransformsState(tt.setting)
+			resource := cloudflareZoneSingletonSettingResourceWithAttributesAndAdditionalFields(
+				zone,
+				"cloudflare_managed_transforms",
+				"managed_transforms",
+				attributes,
+				additionalFields,
+			)
+
+			if got := resource.InstanceState.Attributes[tt.emptyKey+".#"]; got != "0" {
+				t.Fatalf("%s.# = %q, want 0", tt.emptyKey, got)
+			}
+			additionalValue, ok := resource.AdditionalFields[tt.emptyKey].([]interface{})
+			if !ok || len(additionalValue) != 0 {
+				t.Fatalf("AdditionalFields[%s] = %#v, want empty list", tt.emptyKey, resource.AdditionalFields[tt.emptyKey])
+			}
+
+			parser := terraformutils.NewFlatmapParser(resource.InstanceState.Attributes, nil, nil)
+			if err := resource.ParseTFstate(parser, impliedType); err != nil {
+				t.Fatalf("ParseTFstate() error = %v", err)
+			}
+			emptyValue, ok := resource.Item[tt.emptyKey].([]interface{})
+			if !ok || len(emptyValue) != 0 {
+				t.Fatalf("Item[%s] = %#v, want empty list", tt.emptyKey, resource.Item[tt.emptyKey])
+			}
+			presentValue, ok := resource.Item[tt.presentKey].([]interface{})
+			if !ok || len(presentValue) != 1 {
+				t.Fatalf("Item[%s] = %#v, want one transform", tt.presentKey, resource.Item[tt.presentKey])
+			}
+
+			hcl, err := terraformutils.HclPrintResource([]terraformutils.Resource{resource}, map[string]interface{}{}, "hcl", true)
+			if err != nil {
+				t.Fatalf("HclPrintResource() error = %v", err)
+			}
+			if want := tt.emptyKey + " = []"; !strings.Contains(string(hcl), want) {
+				t.Fatalf("generated HCL does not contain %q:\n%s", want, string(hcl))
+			}
+		})
 	}
 }
 

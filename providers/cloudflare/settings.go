@@ -354,11 +354,13 @@ func (g *SettingsGenerator) appendManagedTransformsResource(ctx context.Context,
 	if !cloudflareManagedTransformsConfigured(setting) {
 		return nil
 	}
-	g.appendZoneSingletonSettingResourceWithAttributes(
+	attributes, additionalFields := cloudflareManagedTransformsState(setting)
+	g.appendZoneSingletonSettingResourceWithAttributesAndAdditionalFields(
 		zone,
 		"cloudflare_managed_transforms",
 		"managed_transforms",
-		cloudflareManagedTransformsAttributes(setting),
+		attributes,
+		additionalFields,
 	)
 	return nil
 }
@@ -538,13 +540,37 @@ func (g *SettingsGenerator) appendZoneSingletonSettingResource(zone cf.Zone, res
 }
 
 func (g *SettingsGenerator) appendZoneSingletonSettingResourceWithAttributes(zone cf.Zone, resourceType, resourceNameSuffix string, attributes map[string]string) {
-	resource := cloudflareZoneSingletonSettingResourceWithAttributes(zone, resourceType, resourceNameSuffix, attributes)
+	resource := cloudflareZoneSingletonSettingResourceWithAttributesAndAdditionalFields(zone, resourceType, resourceNameSuffix, attributes, map[string]interface{}{})
+	g.Resources = append(g.Resources, resource)
+}
+
+func (g *SettingsGenerator) appendZoneSingletonSettingResourceWithAttributesAndAdditionalFields(
+	zone cf.Zone,
+	resourceType string,
+	resourceNameSuffix string,
+	attributes map[string]string,
+	additionalFields map[string]interface{},
+) {
+	resource := cloudflareZoneSingletonSettingResourceWithAttributesAndAdditionalFields(zone, resourceType, resourceNameSuffix, attributes, additionalFields)
 	g.Resources = append(g.Resources, resource)
 }
 
 func cloudflareZoneSingletonSettingResourceWithAttributes(zone cf.Zone, resourceType, resourceNameSuffix string, attributes map[string]string) terraformutils.Resource {
+	return cloudflareZoneSingletonSettingResourceWithAttributesAndAdditionalFields(zone, resourceType, resourceNameSuffix, attributes, map[string]interface{}{})
+}
+
+func cloudflareZoneSingletonSettingResourceWithAttributesAndAdditionalFields(
+	zone cf.Zone,
+	resourceType string,
+	resourceNameSuffix string,
+	attributes map[string]string,
+	additionalFields map[string]interface{},
+) terraformutils.Resource {
 	if attributes == nil {
 		attributes = map[string]string{}
+	}
+	if additionalFields == nil {
+		additionalFields = map[string]interface{}{}
 	}
 	attributes["zone_id"] = zone.ID
 
@@ -555,7 +581,7 @@ func cloudflareZoneSingletonSettingResourceWithAttributes(zone cf.Zone, resource
 		"cloudflare",
 		attributes,
 		[]string{},
-		map[string]interface{}{},
+		additionalFields,
 	)
 	setCloudflareImportID(&resource, zone.ID)
 	return resource
@@ -618,13 +644,23 @@ func cloudflareManagedTransformsConfigured(setting cloudflareManagedTransformsSe
 }
 
 func cloudflareManagedTransformsAttributes(setting cloudflareManagedTransformsSetting) map[string]string {
-	attributes := map[string]string{}
-	cloudflareAddEnabledManagedTransformAttributes(attributes, "managed_request_headers", setting.ManagedRequestHeaders)
-	cloudflareAddEnabledManagedTransformAttributes(attributes, "managed_response_headers", setting.ManagedResponseHeaders)
+	attributes, _ := cloudflareManagedTransformsState(setting)
 	return attributes
 }
 
-func cloudflareAddEnabledManagedTransformAttributes(attributes map[string]string, prefix string, headers []cloudflareManagedTransformHeader) {
+func cloudflareManagedTransformsState(setting cloudflareManagedTransformsSetting) (map[string]string, map[string]interface{}) {
+	attributes := map[string]string{}
+	additionalFields := map[string]interface{}{}
+	if cloudflareAddEnabledManagedTransformAttributes(attributes, "managed_request_headers", setting.ManagedRequestHeaders) == 0 {
+		additionalFields["managed_request_headers"] = []interface{}{}
+	}
+	if cloudflareAddEnabledManagedTransformAttributes(attributes, "managed_response_headers", setting.ManagedResponseHeaders) == 0 {
+		additionalFields["managed_response_headers"] = []interface{}{}
+	}
+	return attributes, additionalFields
+}
+
+func cloudflareAddEnabledManagedTransformAttributes(attributes map[string]string, prefix string, headers []cloudflareManagedTransformHeader) int {
 	index := 0
 	for _, header := range headers {
 		if !header.Enabled || header.ID == "" {
@@ -636,6 +672,7 @@ func cloudflareAddEnabledManagedTransformAttributes(attributes map[string]string
 		index++
 	}
 	attributes[prefix+".#"] = strconv.Itoa(index)
+	return index
 }
 
 func cloudflareUniversalSSLSettingShouldImport(setting cf.UniversalSSLSetting) bool {
