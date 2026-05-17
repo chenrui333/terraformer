@@ -102,6 +102,7 @@ List of supported Cloudflare services:
   * `cloudflare_waiting_room_settings`
   * `cloudflare_zone_cache_reserve`
   * `cloudflare_zone_cache_variants`
+  * `cloudflare_zone_dnssec`
   * `cloudflare_zone_hold`
 
   Account-scoped settings and DNS transfer resources require `CLOUDFLARE_ACCOUNT_ID`.

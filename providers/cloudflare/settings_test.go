@@ -49,6 +49,8 @@ func TestAppendZoneSingletonSettingResource(t *testing.T) {
 }
 
 func TestCloudflareSettingsDefaultImportPolicy(t *testing.T) {
+	trueValue := true
+
 	if !cloudflareSettingIsOn("on") {
 		t.Fatal("cloudflareSettingIsOn(on) = false, want true")
 	}
@@ -91,6 +93,18 @@ func TestCloudflareSettingsDefaultImportPolicy(t *testing.T) {
 	}
 	if cloudflareZoneCacheVariantsConfigured(cf.ZoneCacheVariantsValues{}) {
 		t.Fatal("empty cache variants should be skipped")
+	}
+	if !cloudflareZoneDNSSECShouldImport(cloudflareZoneDNSSECSetting{Status: "active"}) {
+		t.Fatal("active DNSSEC should be imported")
+	}
+	if cloudflareZoneDNSSECShouldImport(cloudflareZoneDNSSECSetting{Status: "disabled"}) {
+		t.Fatal("disabled DNSSEC without explicit options should be skipped")
+	}
+	if cloudflareZoneDNSSECShouldImport(cloudflareZoneDNSSECSetting{Status: "pending"}) {
+		t.Fatal("unsupported DNSSEC status should be skipped")
+	}
+	if !cloudflareZoneDNSSECShouldImport(cloudflareZoneDNSSECSetting{Status: "disabled", DNSSECMultiSigner: &trueValue}) {
+		t.Fatal("explicit DNSSEC options should be imported")
 	}
 }
 
@@ -282,6 +296,51 @@ func TestCloudflareZoneHoldConfigured(t *testing.T) {
 				t.Fatalf("cloudflareZoneHoldConfigured() = %t, want %t", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestCloudflareZoneDNSSECResource(t *testing.T) {
+	trueValue := true
+	falseValue := false
+	zone := cf.Zone{ID: "zone-123", Name: "example.com"}
+	resource := cloudflareZoneDNSSECResource(zone, cloudflareZoneDNSSECSetting{
+		Status:            "ACTIVE",
+		DNSSECMultiSigner: &trueValue,
+		DNSSECPresigned:   &falseValue,
+	})
+
+	if resource.InstanceInfo.Type != "cloudflare_zone_dnssec" {
+		t.Fatalf("resource type = %q, want cloudflare_zone_dnssec", resource.InstanceInfo.Type)
+	}
+	if got, want := resource.ResourceName, terraformutils.TfSanitize(cloudflareResourceName("example.com", "zone_dnssec")); got != want {
+		t.Fatalf("resource name = %q, want %s", got, want)
+	}
+	if got := resource.InstanceState.Attributes["zone_id"]; got != "zone-123" {
+		t.Fatalf("zone_id = %q, want zone-123", got)
+	}
+	if got := resource.InstanceState.Attributes["status"]; got != "active" {
+		t.Fatalf("status = %q, want active", got)
+	}
+	if got := resource.InstanceState.Attributes["dnssec_multi_signer"]; got != "true" {
+		t.Fatalf("dnssec_multi_signer = %q, want true", got)
+	}
+	if got := resource.InstanceState.Attributes["dnssec_presigned"]; got != "false" {
+		t.Fatalf("dnssec_presigned = %q, want false", got)
+	}
+	if _, ok := resource.InstanceState.Attributes["dnssec_use_nsec3"]; ok {
+		t.Fatal("nil dnssec_use_nsec3 should not be seeded")
+	}
+	for _, key := range cloudflareZoneDNSSECComputedKeys {
+		found := false
+		for _, ignoreKey := range resource.IgnoreKeys {
+			if ignoreKey == key {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("DNSSEC resource should ignore computed key %q", key)
+		}
 	}
 }
 
