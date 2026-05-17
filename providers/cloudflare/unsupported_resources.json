@@ -35,6 +35,53 @@
       ]
     },
     {
+      "resource": "cloudflare_api_shield_discovery_operation",
+      "service_family": "api_shield",
+      "reason": "API Shield discovery operation resources are review workflow state and the Terraform provider does not support import.",
+      "evidence": "Terraform provider v5.19.1 documents cloudflare_api_shield_discovery_operation as not supporting terraform import. The resource marks discovered operations as review or ignored rather than owning durable endpoint configuration.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/api_shield_discovery_operation"
+      ]
+    },
+    {
+      "resource": "cloudflare_api_shield_operation_schema_validation_settings",
+      "service_family": "api_shield",
+      "reason": "Deprecated API Shield operation schema-validation settings should not be added as new Terraformer coverage ahead of the replacement resource's import contract.",
+      "evidence": "Terraform provider v5.19.1 marks cloudflare_api_shield_operation_schema_validation_settings as deprecated and directs users to cloudflare_schema_validation_operation_settings, whose provider docs state that terraform import is not currently supported.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/api_shield_operation_schema_validation_settings",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/schema_validation_operation_settings"
+      ]
+    },
+    {
+      "resource": "cloudflare_api_shield_schema",
+      "service_family": "api_shield",
+      "reason": "Deprecated API Shield schemas require uploaded schema source and the Terraform provider does not expose a current import contract for this legacy resource.",
+      "evidence": "Terraform provider v5.19.1 marks cloudflare_api_shield_schema as deprecated in favor of cloudflare_schema_validation_schemas and does not implement ResourceWithImportState for the legacy resource. Terraformer imports the replacement schema_validation_schemas resource instead.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/api_shield_schema",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/schema_validation_schemas"
+      ]
+    },
+    {
+      "resource": "cloudflare_api_shield_schema_validation_settings",
+      "service_family": "api_shield",
+      "reason": "Deprecated API Shield schema-validation settings should not be added as new Terraformer coverage ahead of the replacement resource's import contract.",
+      "evidence": "Terraform provider v5.19.1 marks cloudflare_api_shield_schema_validation_settings as deprecated and directs users to cloudflare_schema_validation_settings, whose provider docs state that terraform import is not currently supported.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/api_shield_schema_validation_settings",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/schema_validation_settings"
+      ]
+    },
+    {
       "resource": "cloudflare_authenticated_origin_pulls_certificate",
       "service_family": "certificates",
       "reason": "Authenticated Origin Pull certificates require private key material that Cloudflare APIs cannot safely return.",
@@ -43,6 +90,17 @@
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/authenticated_origin_pulls_certificate"
+      ]
+    },
+    {
+      "resource": "cloudflare_bot_management",
+      "service_family": "bot_management",
+      "reason": "Bot Management is a plan-gated zone singleton with many optional/default fields that need a dedicated explicit-ownership design.",
+      "evidence": "Terraform provider v5.19.1 supports zone_id import, but the resource owns Bot Fight Mode, Super Bot Fight Mode, AI bot, content bot, robots.txt, and model-update settings whose availability and API response shape vary by zone plan. The provider preserves existing state for fields missing from API responses, so broad import can confuse defaults, stale zone configuration, and explicit user intent.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/bot_management"
       ]
     },
     {
@@ -65,6 +123,28 @@
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/cloudforce_one_request_message"
+      ]
+    },
+    {
+      "resource": "cloudflare_content_scanning",
+      "service_family": "content_scanning",
+      "reason": "Content Scanning status is a zone singleton setting whose Terraform provider resource does not support import.",
+      "evidence": "Terraform provider v5.19.1 documents cloudflare_content_scanning as not supporting terraform import. The resource has a no-op delete path and toggles zone-level status, so broad import needs an explicit settings/default ownership design before Terraformer emits it.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/content_scanning"
+      ]
+    },
+    {
+      "resource": "cloudflare_content_scanning_expression",
+      "service_family": "content_scanning",
+      "reason": "Content Scanning expression resources do not expose a provider import/read path.",
+      "evidence": "Terraform provider v5.19.1 documents cloudflare_content_scanning_expression as not supporting terraform import, and the generated resource has an empty Read method while owning payload expressions through a create/delete API.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/content_scanning_expression"
       ]
     },
     {
@@ -131,6 +211,28 @@
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/r2_managed_domain"
+      ]
+    },
+    {
+      "resource": "cloudflare_schema_validation_operation_settings",
+      "service_family": "schema_validation",
+      "reason": "Schema validation operation settings do not currently have a Terraform provider import contract.",
+      "evidence": "Terraform provider v5.19.1 documents cloudflare_schema_validation_operation_settings as not supporting terraform import. Although the API lists per-operation mitigation settings, Terraformer cannot seed this resource through provider import until the provider exposes ResourceWithImportState.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/schema_validation_operation_settings"
+      ]
+    },
+    {
+      "resource": "cloudflare_schema_validation_settings",
+      "service_family": "schema_validation",
+      "reason": "Schema validation zone settings do not currently have a Terraform provider import contract.",
+      "evidence": "Terraform provider v5.19.1 documents cloudflare_schema_validation_settings as not supporting terraform import. The resource owns zone-level mitigation defaults and overrides, so Terraformer should not emit it until provider import support and default-handling are explicit.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/schema_validation_settings"
       ]
     },
     {
