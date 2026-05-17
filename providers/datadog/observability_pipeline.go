@@ -136,7 +136,8 @@ func preserveObservabilityPipelineEmptyVariantBlocks(resource *terraformutils.Re
 		if !ok {
 			continue
 		}
-		if _, ok := observabilityPipelineEmptyVariantBlockPaths[observabilityPipelineNormalizeFlatmapPath(flatmapPath)]; !ok {
+		normalizedPath := observabilityPipelineNormalizeFlatmapPath(flatmapPath)
+		if !observabilityPipelineIsEmptyVariantBlockPath(normalizedPath) {
 			continue
 		}
 		count, err := strconv.Atoi(countValue)
@@ -145,6 +146,22 @@ func preserveObservabilityPipelineEmptyVariantBlocks(resource *terraformutils.Re
 		}
 		observabilityPipelineEnsureEmptyBlockList(resource.Item, flatmapPath, count)
 	}
+}
+
+func observabilityPipelineIsEmptyVariantBlockPath(path string) bool {
+	if _, ok := observabilityPipelineEmptyVariantBlockPaths[path]; ok {
+		return true
+	}
+	return observabilityPipelineIsEmptySensitiveDataScannerActionBlockPath(path)
+}
+
+func observabilityPipelineIsEmptySensitiveDataScannerActionBlockPath(path string) bool {
+	const prefix = "config.processor_group.processor.sensitive_data_scanner.rule.on_match."
+	action, ok := strings.CutPrefix(path, prefix)
+	if !ok {
+		return false
+	}
+	return action == "partial_redact" || action == "redact"
 }
 
 func observabilityPipelineNormalizeFlatmapPath(path string) string {

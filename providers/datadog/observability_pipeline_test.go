@@ -87,11 +87,13 @@ func TestObservabilityPipelinePostConvertHookPreservesEmptyVariantBlocks(t *test
 		},
 	})
 	resource.InstanceState.Attributes = map[string]string{
-		"config.0.destination.0.datadog_logs.#":                                                    "1",
-		"config.0.destination.1.datadog_metrics.#":                                                 "1",
-		"config.0.processor_group.0.processor.0.filter.#":                                          "1",
-		"config.0.processor_group.0.processor.1.add_hostname.#":                                    "1",
-		"config.0.processor_group.0.processor.2.sensitive_data_scanner.0.rule.0.on_match.0.hash.#": "1",
+		"config.0.destination.0.datadog_logs.#":                                                              "1",
+		"config.0.destination.1.datadog_metrics.#":                                                           "1",
+		"config.0.processor_group.0.processor.0.filter.#":                                                    "1",
+		"config.0.processor_group.0.processor.1.add_hostname.#":                                              "1",
+		"config.0.processor_group.0.processor.2.sensitive_data_scanner.0.rule.0.on_match.0.hash.#":           "1",
+		"config.0.processor_group.0.processor.2.sensitive_data_scanner.0.rule.0.on_match.0.partial_redact.#": "1",
+		"config.0.processor_group.0.processor.2.sensitive_data_scanner.0.rule.0.on_match.0.redact.#":         "1",
 	}
 	generator := &ObservabilityPipelineGenerator{}
 	generator.Resources = []terraformutils.Resource{resource}
@@ -113,6 +115,8 @@ func TestObservabilityPipelinePostConvertHookPreservesEmptyVariantBlocks(t *test
 	rule := requireMapInList(t, scanner, "rule", 0)
 	onMatch := requireMapInList(t, rule, "on_match", 0)
 	requireEmptyBlockList(t, onMatch, "hash")
+	requireEmptyBlockList(t, onMatch, "partial_redact")
+	requireEmptyBlockList(t, onMatch, "redact")
 }
 
 func TestObservabilityPipelinePostConvertHookDoesNotInventMissingVariantBlocks(t *testing.T) {
