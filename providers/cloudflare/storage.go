@@ -84,9 +84,10 @@ type cloudflareStorageChildDiscovery struct {
 }
 
 type cloudflareStorageFamilyDiscovery struct {
-	name     string
-	account  string
-	discover func() error
+	name      string
+	account   string
+	resources *[]terraformutils.Resource
+	discover  func() error
 }
 
 func runCloudflareStorageChildDiscoveries(discoveries []cloudflareStorageChildDiscovery) {
@@ -107,7 +108,14 @@ func runCloudflareStorageFamilyDiscoveries(discoveries []cloudflareStorageFamily
 		if discovery.discover == nil {
 			continue
 		}
+		resourceCount := 0
+		if discovery.resources != nil {
+			resourceCount = len(*discovery.resources)
+		}
 		if err := discovery.discover(); err != nil {
+			if discovery.resources != nil && resourceCount <= len(*discovery.resources) {
+				*discovery.resources = (*discovery.resources)[:resourceCount]
+			}
 			if firstErr == nil {
 				firstErr = err
 			}
@@ -759,29 +767,33 @@ func (g *StorageGenerator) InitResources() error {
 	}
 	return runCloudflareStorageFamilyDiscoveries([]cloudflareStorageFamilyDiscovery{
 		{
-			name:    "Workers KV namespaces",
-			account: account.Identifier,
+			name:      "Workers KV namespaces",
+			account:   account.Identifier,
+			resources: &g.Resources,
 			discover: func() error {
 				return g.appendWorkersKVNamespaceResources(ctx, api, account.Identifier)
 			},
 		},
 		{
-			name:    "queues",
-			account: account.Identifier,
+			name:      "queues",
+			account:   account.Identifier,
+			resources: &g.Resources,
 			discover: func() error {
 				return g.appendQueueResources(ctx, api, account.Identifier)
 			},
 		},
 		{
-			name:    "R2 buckets",
-			account: account.Identifier,
+			name:      "R2 buckets",
+			account:   account.Identifier,
+			resources: &g.Resources,
 			discover: func() error {
 				return g.appendR2BucketResources(ctx, api, account.Identifier)
 			},
 		},
 		{
-			name:    "D1 databases",
-			account: account.Identifier,
+			name:      "D1 databases",
+			account:   account.Identifier,
+			resources: &g.Resources,
 			discover: func() error {
 				return g.appendD1DatabaseResources(ctx, api, account.Identifier)
 			},
