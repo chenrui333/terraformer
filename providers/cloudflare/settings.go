@@ -73,6 +73,13 @@ type cloudflareZoneDNSSECSetting struct {
 	DNSSECUseNsec3    *bool  `json:"dnssec_use_nsec3"`
 }
 
+type cloudflareZoneSetting struct {
+	ID         string          `json:"id"`
+	Editable   bool            `json:"editable"`
+	ModifiedOn string          `json:"modified_on"`
+	Value      json.RawMessage `json:"value"`
+}
+
 var cloudflareZoneDNSSECComputedKeys = []string{
 	"^algorithm$",
 	"^digest$",
@@ -84,6 +91,32 @@ var cloudflareZoneDNSSECComputedKeys = []string{
 	"^key_type$",
 	"^modified_on$",
 	"^public_key$",
+}
+
+var cloudflareZoneSettingImportAllowlist = map[string]struct{}{
+	"always_online":       {},
+	"always_use_https":    {},
+	"brotli":              {},
+	"browser_check":       {},
+	"cache_level":         {},
+	"email_obfuscation":   {},
+	"hotlink_protection":  {},
+	"ip_geolocation":      {},
+	"min_tls_version":     {},
+	"rocket_loader":       {},
+	"security_level":      {},
+	"server_side_exclude": {},
+	"tls_1_3":             {},
+	"websockets":          {},
+}
+
+var cloudflareZoneSettingIgnoredKeys = []string{
+	"^id$",
+	"^editable$",
+	"^enabled$",
+	"^modified_on$",
+	"^time_remaining$",
+	"^value$",
 }
 
 func (g *SettingsGenerator) InitResources() error {
@@ -145,6 +178,7 @@ func (g *SettingsGenerator) appendZoneSettingsResources(ctx context.Context, api
 		g.appendZoneCacheReserveResource,
 		g.appendZoneCacheVariantsResource,
 		g.appendZoneDNSSECResource,
+		g.appendZoneSettingResources,
 		g.appendZoneHoldResource,
 		g.appendDNSZoneTransfersIncomingResource,
 		g.appendDNSZoneTransfersOutgoingResource,
@@ -523,6 +557,23 @@ func (g *SettingsGenerator) appendZoneDNSSECResource(ctx context.Context, api *c
 	return nil
 }
 
+func (g *SettingsGenerator) appendZoneSettingResources(ctx context.Context, api *cf.API, zone cf.Zone) error {
+	settings := []cloudflareZoneSetting{}
+	if err := cloudflareReadRawSetting(ctx, api, fmt.Sprintf("/zones/%s/settings", zone.ID), &settings); err != nil {
+		if cloudflareOptionalSettingsMissing(err) {
+			return nil
+		}
+		return fmt.Errorf("list zone settings for zone %q: %w", zone.ID, err)
+	}
+	for _, setting := range settings {
+		if !cloudflareZoneSettingShouldImport(setting) {
+			continue
+		}
+		g.Resources = append(g.Resources, cloudflareZoneSettingResource(zone, setting))
+	}
+	return nil
+}
+
 func (g *SettingsGenerator) appendZoneHoldResource(ctx context.Context, api *cf.API, zone cf.Zone) error {
 	setting, err := api.GetZoneHold(ctx, cf.ZoneIdentifier(zone.ID), cf.GetZoneHoldParams{})
 	if err != nil {
@@ -800,6 +851,51 @@ func cloudflareZoneDNSSECDesiredStatus(status string) string {
 	default:
 		return ""
 	}
+}
+
+func cloudflareZoneSettingShouldImport(setting cloudflareZoneSetting) bool {
+	if _, ok := cloudflareZoneSettingImportAllowlist[setting.ID]; !ok {
+		return false
+	}
+	if !setting.Editable {
+		return false
+	}
+	if setting.ModifiedOn == "" {
+		return false
+	}
+	_, ok := cloudflareZoneSettingStringValue(setting)
+	return ok
+}
+
+func cloudflareZoneSettingStringValue(setting cloudflareZoneSetting) (string, bool) {
+	if len(setting.Value) == 0 || string(setting.Value) == "null" {
+		return "", false
+	}
+	var value string
+	if err := json.Unmarshal(setting.Value, &value); err != nil {
+		return "", false
+	}
+	return value, true
+}
+
+func cloudflareZoneSettingResource(zone cf.Zone, setting cloudflareZoneSetting) terraformutils.Resource {
+	value, _ := cloudflareZoneSettingStringValue(setting)
+	resource := terraformutils.NewResource(
+		setting.ID,
+		cloudflareResourceName(zone.Name, zone.ID, "zone_setting", setting.ID),
+		"cloudflare_zone_setting",
+		"cloudflare",
+		map[string]string{
+			"setting_id": setting.ID,
+			"value":      value,
+			"zone_id":    zone.ID,
+		},
+		[]string{},
+		map[string]interface{}{"value": value},
+	)
+	setCloudflareImportID(&resource, zone.ID+"/"+setting.ID)
+	resource.IgnoreKeys = append(resource.IgnoreKeys, cloudflareZoneSettingIgnoredKeys...)
+	return resource
 }
 
 func cloudflareSetBoolPointerAttribute(attributes map[string]string, key string, value *bool) {

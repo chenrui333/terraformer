@@ -15,8 +15,8 @@
     {
       "resource": "cloudflare_account_dns_settings",
       "service_family": "dns",
-      "reason": "Account DNS defaults are singleton settings that need scoped follow-up before broad import.",
-      "evidence": "Issue #335 tracks account and zone DNS settings as a dedicated PR bucket. Terraformer currently imports Cloudflare DNS records and zones, while this resource owns account-level DNS defaults whose API state can include inherited defaults versus explicit account configuration.",
+      "reason": "Account DNS defaults remain deferred because the provider has no import path and API reads return effective defaults without explicit ownership markers.",
+      "evidence": "Cloudflare provider v5.19.1 documents that cloudflare_account_dns_settings does not support terraform import. Its read path returns the full account DNS defaults object, including zone_defaults, but the response does not distinguish inherited/default values from settings explicitly owned by the account.",
       "status": "deferred",
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
@@ -678,23 +678,12 @@
     {
       "resource": "cloudflare_zone_dns_settings",
       "service_family": "dns",
-      "reason": "Zone DNS settings are zone-scoped singleton settings that need explicit ownership and default-handling review.",
-      "evidence": "Issue #335 tracks DNS settings as follow-up work. This resource owns a full zone DNS settings object, including nameserver, SOA, multi-provider, secondary DNS, and internal DNS options that may reflect API defaults rather than explicit Terraform intent.",
+      "reason": "Zone DNS settings remain deferred because the provider has no import path and API reads return effective zone settings without explicit ownership markers.",
+      "evidence": "Cloudflare provider v5.19.1 documents that cloudflare_zone_dns_settings does not support terraform import. Its read path returns the full zone DNS settings object, including nameserver, SOA, multi-provider, secondary DNS, and internal DNS options, but does not distinguish inherited/default values from zone-authored configuration.",
       "status": "deferred",
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zone_dns_settings"
-      ]
-    },
-    {
-      "resource": "cloudflare_zone_setting",
-      "service_family": "zone_settings",
-      "reason": "Generic zone setting imports need per-setting review for plan availability, value shape, and default-versus-explicit ownership.",
-      "evidence": "The Terraform provider exposes many setting_id values with different value types and plan-level availability. Issue #335 lists zone settings as a dedicated follow-up bucket rather than a safe broad parity import.",
-      "status": "deferred",
-      "references": [
-        "https://github.com/chenrui333/terraformer/issues/335",
-        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zone_setting"
       ]
     },
     {
