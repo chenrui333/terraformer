@@ -1,0 +1,27 @@
+providers/datadog/org_group_membership.go
+  s_ad2cde2451f5fe::t_47a8085b46a4dc 45,51,57-98,103,106-110,112,114
+providers/datadog/org_connection.go
+  s_ad2cde2451f5fe::t_87a6b6ee32844d 8,29,31-32,39-49,67-88,90-94,96
+providers/datadog/org_group_policy.go
+  s_ad2cde2451f5fe::t_f702d65b22e8f2 49,55,61-101,106,109-113,115,117
+providers/datadog/domain_allowlist.go
+  s_ad2cde2451f5fe::t_ccaa63ed8e35a8 16
+providers/datadog/org_group.go
+  s_ad2cde2451f5fe::t_9fa59abc891adb 11,49-59,61-73,75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "3b140592f5f639bd9518afdec5fcdc62cdc5d3f9",
+  "prompts": {},
+  "sessions": {
+    "s_ad2cde2451f5fe": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e5e5a739-89aa-4196-9223-c274cd1e20ca",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
