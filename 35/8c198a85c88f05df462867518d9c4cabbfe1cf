@@ -1,0 +1,25 @@
+.github/pull_request_template.md
+  s_a56ecfbf36e9e3::t_77589edb9d3479 10
+  s_a56ecfbf36e9e3::t_f072b6cfe55ef9 1-9
+providers/unsupported_resources_test.go
+  s_a56ecfbf36e9e3::t_f275055277c6c6 1-160
+docs/unsupported-resources.md
+  s_a56ecfbf36e9e3::t_f072b6cfe55ef9 83-84
+  s_a56ecfbf36e9e3::t_f275055277c6c6 1-82,85-134
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "358c198a85c88f05df462867518d9c4cabbfe1cf",
+  "prompts": {},
+  "sessions": {
+    "s_a56ecfbf36e9e3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3426-d0e0-7cc2-a544-48f707cf5f2b",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
