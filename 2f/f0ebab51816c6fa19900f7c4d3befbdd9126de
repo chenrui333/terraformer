@@ -1,0 +1,21 @@
+providers/cloudflare/settings_test.go
+  s_f31c92060751c4::t_078353b43d7bcc 463-495,573-574
+providers/cloudflare/settings.go
+  s_f31c92060751c4::t_e0b66da51b5f5d 97,99,109-110
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "2ff0ebab51816c6fa19900f7c4d3befbdd9126de",
+  "prompts": {},
+  "sessions": {
+    "s_f31c92060751c4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35d5-3c2f-7021-bcbf-b8734abac0db",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
