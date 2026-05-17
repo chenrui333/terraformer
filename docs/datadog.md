@@ -102,6 +102,12 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_downtime`
 *   `integration_aws`
     * `datadog_integration_aws`
+*   `integration_aws_account`
+    * `datadog_integration_aws_account`
+        * **_NOTE:_** This is the modern replacement for `datadog_integration_aws`. Accounts using key-based auth will have `secret_access_key` omitted (write-only field).
+*   `integration_aws_event_bridge`
+    * `datadog_integration_aws_event_bridge`
+        * **_NOTE:_** Import ID is the event source name (e.g. `datadog-alerts-us-east-1-abc123`)
 *   `integration_aws_lambda_arn`
     * `datadog_integration_aws_lambda_arn`
 *   `integration_aws_log_collection`
@@ -109,9 +115,17 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `integration_azure`
     * `datadog_integration_azure`
         * **_NOTE:_** Sensitive field `client_secret` is not generated and needs to be manually set
+*   `integration_confluent_resource`
+    * `datadog_integration_confluent_resource`
+        * **_NOTE:_** Import ID is composite `account_id:resource_id`. Discovery lists resources across all Confluent accounts.
+*   `integration_fastly_service`
+    * `datadog_integration_fastly_service`
+        * **_NOTE:_** Import ID is composite `account_id:service_id`. Discovery lists services across all Fastly accounts.
 *   `integration_gcp`
     * `datadog_integration_gcp`
         * **_NOTE:_** Sensitive fields `private_key, private_key_id, client_id` is not generated and needs to be manually set
+*   `integration_ms_teams_tenant_based_handle`
+    * `datadog_integration_ms_teams_tenant_based_handle`
 *   `integration_pagerduty`
     * `datadog_integration_pagerduty`
 *   `integration_pagerduty_service_object`
