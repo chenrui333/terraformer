@@ -100,14 +100,12 @@ func (g *ObservabilityPipelineGenerator) InitResources() error {
 
 func (g *ObservabilityPipelineGenerator) filteredResources(auth context.Context, api *datadogV2.ObservabilityPipelinesApi) ([]terraformutils.Resource, bool, error) {
 	resources := []terraformutils.Resource{}
-	seenIDFilter := false
 	matchedIDFilter := false
 
 	for _, filter := range g.Filter {
 		if filter.FieldPath != "id" {
 			continue
 		}
-		seenIDFilter = true
 		if !filter.IsApplicable("observability_pipeline") {
 			continue
 		}
@@ -126,7 +124,7 @@ func (g *ObservabilityPipelineGenerator) filteredResources(auth context.Context,
 		}
 	}
 
-	return resources, matchedIDFilter || seenIDFilter, nil
+	return resources, matchedIDFilter, nil
 }
 
 func listObservabilityPipelines(auth context.Context, api *datadogV2.ObservabilityPipelinesApi) ([]datadogV2.ObservabilityPipelineData, error) {

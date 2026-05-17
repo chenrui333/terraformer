@@ -148,11 +148,14 @@ func TestObservabilityPipelineInitResourcesFiltersByID(t *testing.T) {
 	assertResourceIDs(t, generator.Resources, []string{"pipeline-123"})
 }
 
-func TestObservabilityPipelineInitResourcesSuppressesBroadDiscoveryForUnrelatedIDFilter(t *testing.T) {
-	requests := 0
+func TestObservabilityPipelineInitResourcesListsWithUnrelatedIDFilter(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requests++
-		http.NotFound(w, r)
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path != "/api/v2/obs-pipelines/pipelines" {
+			http.NotFound(w, r)
+			return
+		}
+		_, _ = fmt.Fprint(w, observabilityPipelineListResponseJSON(1, "pipeline-123"))
 	}))
 	defer server.Close()
 
@@ -164,12 +167,7 @@ func TestObservabilityPipelineInitResourcesSuppressesBroadDiscoveryForUnrelatedI
 	if err := generator.InitResources(); err != nil {
 		t.Fatalf("InitResources returned error: %v", err)
 	}
-	if requests != 0 {
-		t.Fatalf("requests = %d, want 0", requests)
-	}
-	if len(generator.Resources) != 0 {
-		t.Fatalf("resources length = %d, want 0", len(generator.Resources))
-	}
+	assertResourceIDs(t, generator.Resources, []string{"pipeline-123"})
 }
 
 func newObservabilityPipelineTestGenerator(server *httptest.Server, filter []terraformutils.ResourceFilter) *ObservabilityPipelineGenerator {
