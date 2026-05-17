@@ -3,6 +3,7 @@
 package cloudflare
 
 import (
+	"encoding/json"
 	"errors"
 	"regexp"
 	"strings"
@@ -388,65 +389,65 @@ func TestCloudflareZoneDNSSECResource(t *testing.T) {
 func TestCloudflareZoneSettingShouldImport(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
-		setting cf.ZoneSetting
+		setting cloudflareZoneSetting
 		want    bool
 	}{
-		{name: "empty", setting: cf.ZoneSetting{}, want: false},
+		{name: "empty", setting: cloudflareZoneSetting{}, want: false},
 		{
 			name: "supported modified editable string",
-			setting: cf.ZoneSetting{
+			setting: cloudflareZoneSetting{
 				ID:         "always_use_https",
 				Editable:   true,
 				ModifiedOn: "2026-05-17T12:00:00Z",
-				Value:      "on",
+				Value:      json.RawMessage(`"on"`),
 			},
 			want: true,
 		},
 		{
 			name: "supported but default effective state",
-			setting: cf.ZoneSetting{
+			setting: cloudflareZoneSetting{
 				ID:         "always_use_https",
 				Editable:   true,
 				ModifiedOn: "2026-05-17T12:00:00Z",
-				Value:      "off",
+				Value:      json.RawMessage(`"off"`),
 			},
 			want: false,
 		},
 		{
 			name: "supported non default without modified timestamp",
-			setting: cf.ZoneSetting{
+			setting: cloudflareZoneSetting{
 				ID:       "always_use_https",
 				Editable: true,
-				Value:    "on",
+				Value:    json.RawMessage(`"on"`),
 			},
 			want: true,
 		},
 		{
 			name: "supported but not editable",
-			setting: cf.ZoneSetting{
+			setting: cloudflareZoneSetting{
 				ID:         "always_use_https",
 				ModifiedOn: "2026-05-17T12:00:00Z",
-				Value:      "on",
+				Value:      json.RawMessage(`"on"`),
 			},
 			want: false,
 		},
 		{
 			name: "unsupported setting",
-			setting: cf.ZoneSetting{
+			setting: cloudflareZoneSetting{
 				ID:         "development_mode",
 				Editable:   true,
 				ModifiedOn: "2026-05-17T12:00:00Z",
-				Value:      "on",
+				Value:      json.RawMessage(`"on"`),
 			},
 			want: false,
 		},
 		{
 			name: "non string value",
-			setting: cf.ZoneSetting{
+			setting: cloudflareZoneSetting{
 				ID:         "browser_cache_ttl",
 				Editable:   true,
 				ModifiedOn: "2026-05-17T12:00:00Z",
-				Value:      14400,
+				Value:      json.RawMessage(`14400`),
 			},
 			want: false,
 		},
@@ -461,11 +462,11 @@ func TestCloudflareZoneSettingShouldImport(t *testing.T) {
 
 func TestCloudflareZoneSettingResource(t *testing.T) {
 	zone := cf.Zone{ID: "zone-123", Name: "example.com"}
-	resource := cloudflareZoneSettingResource(zone, cf.ZoneSetting{
+	resource := cloudflareZoneSettingResource(zone, cloudflareZoneSetting{
 		ID:         "always_use_https",
 		Editable:   true,
 		ModifiedOn: "2026-05-17T12:00:00Z",
-		Value:      "on",
+		Value:      json.RawMessage(`"on"`),
 	})
 
 	if resource.InstanceInfo.Type != "cloudflare_zone_setting" {
@@ -516,6 +517,23 @@ func TestCloudflareZoneSettingResource(t *testing.T) {
 	}
 	if _, ok := resource.Item["editable"]; ok {
 		t.Fatal("computed editable field should be ignored")
+	}
+}
+
+func TestCloudflareZoneSettingRawResponseIgnoresBooleanTimeRemaining(t *testing.T) {
+	response := []byte("[{\"id\":\"development_mode\",\"editable\":true,\"modified_on\":\"2026-05-17T12:00:00Z\",\"value\":\"off\",\"time_remaining\":false},{\"id\":\"always_use_https\",\"editable\":true,\"value\":\"on\",\"time_remaining\":0}]")
+	var settings []cloudflareZoneSetting
+	if err := json.Unmarshal(response, &settings); err != nil {
+		t.Fatalf("unmarshal zone settings response = %v", err)
+	}
+	if len(settings) != 2 {
+		t.Fatalf("settings length = %d, want 2", len(settings))
+	}
+	if cloudflareZoneSettingShouldImport(settings[0]) {
+		t.Fatal("development_mode should remain outside the zone setting allowlist")
+	}
+	if !cloudflareZoneSettingShouldImport(settings[1]) {
+		t.Fatal("always_use_https non-default value should import")
 	}
 }
 

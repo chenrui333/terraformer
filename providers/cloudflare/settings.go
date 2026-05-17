@@ -73,6 +73,13 @@ type cloudflareZoneDNSSECSetting struct {
 	DNSSECUseNsec3    *bool  `json:"dnssec_use_nsec3"`
 }
 
+type cloudflareZoneSetting struct {
+	ID         string          `json:"id"`
+	Editable   bool            `json:"editable"`
+	ModifiedOn string          `json:"modified_on"`
+	Value      json.RawMessage `json:"value"`
+}
+
 var cloudflareZoneDNSSECComputedKeys = []string{
 	"^algorithm$",
 	"^digest$",
@@ -551,17 +558,14 @@ func (g *SettingsGenerator) appendZoneDNSSECResource(ctx context.Context, api *c
 }
 
 func (g *SettingsGenerator) appendZoneSettingResources(ctx context.Context, api *cf.API, zone cf.Zone) error {
-	response, err := api.ZoneSettings(ctx, zone.ID)
-	if err != nil {
+	settings := []cloudflareZoneSetting{}
+	if err := cloudflareReadRawSetting(ctx, api, fmt.Sprintf("/zones/%s/settings", zone.ID), &settings); err != nil {
 		if cloudflareOptionalSettingsMissing(err) {
 			return nil
 		}
 		return fmt.Errorf("list zone settings for zone %q: %w", zone.ID, err)
 	}
-	if response == nil {
-		return nil
-	}
-	for _, setting := range response.Result {
+	for _, setting := range settings {
 		if !cloudflareZoneSettingShouldImport(setting) {
 			continue
 		}
@@ -849,7 +853,7 @@ func cloudflareZoneDNSSECDesiredStatus(status string) string {
 	}
 }
 
-func cloudflareZoneSettingShouldImport(setting cf.ZoneSetting) bool {
+func cloudflareZoneSettingShouldImport(setting cloudflareZoneSetting) bool {
 	defaultValue, ok := cloudflareZoneSettingDefaultValues[setting.ID]
 	if !ok {
 		return false
@@ -857,12 +861,23 @@ func cloudflareZoneSettingShouldImport(setting cf.ZoneSetting) bool {
 	if !setting.Editable {
 		return false
 	}
-	value, ok := setting.Value.(string)
+	value, ok := cloudflareZoneSettingStringValue(setting)
 	return ok && !strings.EqualFold(value, defaultValue)
 }
 
-func cloudflareZoneSettingResource(zone cf.Zone, setting cf.ZoneSetting) terraformutils.Resource {
-	value, _ := setting.Value.(string)
+func cloudflareZoneSettingStringValue(setting cloudflareZoneSetting) (string, bool) {
+	if len(setting.Value) == 0 || string(setting.Value) == "null" {
+		return "", false
+	}
+	var value string
+	if err := json.Unmarshal(setting.Value, &value); err != nil {
+		return "", false
+	}
+	return value, true
+}
+
+func cloudflareZoneSettingResource(zone cf.Zone, setting cloudflareZoneSetting) terraformutils.Resource {
+	value, _ := cloudflareZoneSettingStringValue(setting)
 	resource := terraformutils.NewResource(
 		setting.ID,
 		cloudflareResourceName(zone.Name, zone.ID, "zone_setting", setting.ID),
