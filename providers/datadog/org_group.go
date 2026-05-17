@@ -40,6 +40,8 @@ func (g *OrgGroupGenerator) createResource(group datadogV2.OrgGroupData) terrafo
 func (g *OrgGroupGenerator) InitResources() error {
 	datadogClient := g.Args["datadogClient"].(*datadog.APIClient)
 	auth := g.Args["auth"].(context.Context)
+
+	datadogClient.GetConfig().SetUnstableOperationEnabled("v2.ListOrgGroups", true)
 	api := datadogV2.NewOrgGroupsApi(datadogClient)
 
 	resp, httpResp, err := api.ListOrgGroups(auth)

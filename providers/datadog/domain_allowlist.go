@@ -4,6 +4,7 @@ package datadog
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
@@ -38,13 +39,29 @@ func (g *DomainAllowlistGenerator) InitResources() error {
 		return nil
 	}
 
+	attrs := map[string]string{
+		"enabled":   "false",
+		"domains.#": "0",
+	}
+	dataAttrs := data.GetAttributes()
+	if (&dataAttrs).GetEnabled() {
+		attrs["enabled"] = "true"
+	}
+	domains := (&dataAttrs).GetDomains()
+	attrs["domains.#"] = fmt.Sprintf("%d", len(domains))
+	for i, d := range domains {
+		attrs[fmt.Sprintf("domains.%d", i)] = d
+	}
+
 	g.Resources = []terraformutils.Resource{
-		terraformutils.NewSimpleResource(
+		terraformutils.NewResource(
 			id,
 			"domain_allowlist",
 			"datadog_domain_allowlist",
 			"datadog",
+			attrs,
 			DomainAllowlistAllowEmptyValues,
+			map[string]interface{}{},
 		),
 	}
 	return nil

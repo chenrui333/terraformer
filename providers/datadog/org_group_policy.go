@@ -41,6 +41,9 @@ func (g *OrgGroupPolicyGenerator) createResource(policy datadogV2.OrgGroupPolicy
 func (g *OrgGroupPolicyGenerator) InitResources() error {
 	datadogClient := g.Args["datadogClient"].(*datadog.APIClient)
 	auth := g.Args["auth"].(context.Context)
+
+	datadogClient.GetConfig().SetUnstableOperationEnabled("v2.ListOrgGroups", true)
+	datadogClient.GetConfig().SetUnstableOperationEnabled("v2.ListOrgGroupPolicies", true)
 	api := datadogV2.NewOrgGroupsApi(datadogClient)
 
 	groupsResp, httpResp, err := api.ListOrgGroups(auth)

@@ -24,12 +24,23 @@ func (g *OrgConnectionGenerator) createResource(conn datadogV2.OrgConnection) te
 	id := conn.GetId().String()
 	resourceName := fmt.Sprintf("org_connection_%s", id)
 
-	return terraformutils.NewSimpleResource(
+	attrs := map[string]string{}
+	rels := conn.GetRelationships()
+	if sinkOrg := rels.GetSinkOrg(); sinkOrg.Data != nil {
+		sinkData := sinkOrg.GetData()
+		if sinkID := (&sinkData).GetId(); sinkID != "" {
+			attrs["sink_org_id"] = sinkID
+		}
+	}
+
+	return terraformutils.NewResource(
 		id,
 		resourceName,
 		"datadog_org_connection",
 		"datadog",
+		attrs,
 		OrgConnectionAllowEmptyValues,
+		map[string]interface{}{},
 	)
 }
 

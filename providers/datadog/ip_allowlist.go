@@ -38,13 +38,24 @@ func (g *IPAllowlistGenerator) InitResources() error {
 		return nil
 	}
 
+	attrs := map[string]string{
+		"enabled": "false",
+		"entry.#": "0",
+	}
+	dataAttrs := data.GetAttributes()
+	if (&dataAttrs).GetEnabled() {
+		attrs["enabled"] = "true"
+	}
+
 	g.Resources = []terraformutils.Resource{
-		terraformutils.NewSimpleResource(
+		terraformutils.NewResource(
 			id,
 			"ip_allowlist",
 			"datadog_ip_allowlist",
 			"datadog",
+			attrs,
 			IPAllowlistAllowEmptyValues,
+			map[string]interface{}{},
 		),
 	}
 	return nil
