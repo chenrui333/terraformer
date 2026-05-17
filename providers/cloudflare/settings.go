@@ -94,9 +94,9 @@ var cloudflareZoneDNSSECComputedKeys = []string{
 }
 
 var cloudflareZoneSettingDefaultValues = map[string]string{
-	"always_online":       "off",
+	"always_online":       "on",
 	"always_use_https":    "off",
-	"brotli":              "on",
+	"brotli":              "off",
 	"browser_check":       "on",
 	"cache_level":         "aggressive",
 	"email_obfuscation":   "on",
@@ -106,8 +106,8 @@ var cloudflareZoneSettingDefaultValues = map[string]string{
 	"rocket_loader":       "off",
 	"security_level":      "medium",
 	"server_side_exclude": "on",
-	"tls_1_3":             "on",
-	"websockets":          "on",
+	"tls_1_3":             "off",
+	"websockets":          "off",
 }
 
 var cloudflareZoneSettingIgnoredKeys = []string{

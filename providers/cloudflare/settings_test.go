@@ -460,6 +460,39 @@ func TestCloudflareZoneSettingShouldImport(t *testing.T) {
 	}
 }
 
+func TestCloudflareZoneSettingDocumentedDefaults(t *testing.T) {
+	for _, tt := range []struct {
+		settingID       string
+		defaultValue    string
+		nonDefaultValue string
+	}{
+		{settingID: "always_online", defaultValue: "on", nonDefaultValue: "off"},
+		{settingID: "brotli", defaultValue: "off", nonDefaultValue: "on"},
+		{settingID: "tls_1_3", defaultValue: "off", nonDefaultValue: "on"},
+		{settingID: "websockets", defaultValue: "off", nonDefaultValue: "on"},
+	} {
+		t.Run(tt.settingID, func(t *testing.T) {
+			defaultSetting := cloudflareZoneSetting{
+				ID:       tt.settingID,
+				Editable: true,
+				Value:    cloudflareZoneSettingTestStringValue(tt.defaultValue),
+			}
+			if cloudflareZoneSettingShouldImport(defaultSetting) {
+				t.Fatalf("%s default value %q should not import", tt.settingID, tt.defaultValue)
+			}
+
+			nonDefaultSetting := cloudflareZoneSetting{
+				ID:       tt.settingID,
+				Editable: true,
+				Value:    cloudflareZoneSettingTestStringValue(tt.nonDefaultValue),
+			}
+			if !cloudflareZoneSettingShouldImport(nonDefaultSetting) {
+				t.Fatalf("%s non-default value %q should import", tt.settingID, tt.nonDefaultValue)
+			}
+		})
+	}
+}
+
 func TestCloudflareZoneSettingResource(t *testing.T) {
 	zone := cf.Zone{ID: "zone-123", Name: "example.com"}
 	resource := cloudflareZoneSettingResource(zone, cloudflareZoneSetting{
@@ -535,6 +568,10 @@ func TestCloudflareZoneSettingRawResponseIgnoresBooleanTimeRemaining(t *testing.
 	if !cloudflareZoneSettingShouldImport(settings[1]) {
 		t.Fatal("always_use_https non-default value should import")
 	}
+}
+
+func cloudflareZoneSettingTestStringValue(value string) json.RawMessage {
+	return json.RawMessage(`"` + value + `"`)
 }
 
 func cloudflareResourceIgnoresKey(resource terraformutils.Resource, key string) bool {
