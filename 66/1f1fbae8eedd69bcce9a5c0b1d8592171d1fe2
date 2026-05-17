@@ -1,0 +1,19 @@
+providers/launchdarkly/unsupported_resources.json
+  s_e7a7bf6674bbfc::t_894759eb2d4ece 40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "661f1fbae8eedd69bcce9a5c0b1d8592171d1fe2",
+  "prompts": {},
+  "sessions": {
+    "s_e7a7bf6674bbfc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e340b-c36b-7933-966a-9d52f7d258ba",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
