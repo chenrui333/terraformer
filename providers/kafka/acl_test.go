@@ -277,3 +277,61 @@ func TestACLSkipsPipeDelimitedUnencodableFields(t *testing.T) {
 		t.Fatalf("resources len = %d, want 0", len(generator.Resources))
 	}
 }
+
+func TestACLDescribeResponseErrorsFailImport(t *testing.T) {
+	message := "ACL authorization failed"
+	_, err := resourceACLsFromDescribeResponse(&sarama.DescribeAclsResponse{
+		Err:    sarama.ErrClusterAuthorizationFailed,
+		ErrMsg: &message,
+	})
+	if err == nil {
+		t.Fatal("expected describe ACLs error")
+	}
+	if !strings.Contains(err.Error(), "not authorized") {
+		t.Fatalf("error = %q, want authorization context", err)
+	}
+	if !strings.Contains(err.Error(), message) {
+		t.Fatalf("error = %q, want broker message %q", err, message)
+	}
+
+	_, err = resourceACLsFromDescribeResponse(&sarama.DescribeAclsResponse{
+		Err: sarama.ErrSecurityDisabled,
+	})
+	if err == nil {
+		t.Fatal("expected security-disabled describe ACLs error")
+	}
+	if !strings.Contains(err.Error(), "Security features are disabled") {
+		t.Fatalf("error = %q, want security-disabled context", err)
+	}
+}
+
+func TestACLDescribeResponseResources(t *testing.T) {
+	resources, err := resourceACLsFromDescribeResponse(&sarama.DescribeAclsResponse{
+		Err: sarama.ErrNoError,
+		ResourceAcls: []*sarama.ResourceAcls{
+			nil,
+			{
+				Resource: sarama.Resource{
+					ResourceType:        sarama.AclResourceTopic,
+					ResourceName:        "orders",
+					ResourcePatternType: sarama.AclPatternLiteral,
+				},
+				Acls: []*sarama.Acl{{
+					Principal:      "User:producer",
+					Host:           "*",
+					Operation:      sarama.AclOperationWrite,
+					PermissionType: sarama.AclPermissionAllow,
+				}},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("resourceACLsFromDescribeResponse() error = %v", err)
+	}
+	if len(resources) != 1 {
+		t.Fatalf("resources len = %d, want 1", len(resources))
+	}
+	if resources[0].ResourceName != "orders" {
+		t.Fatalf("resource name = %q, want orders", resources[0].ResourceName)
+	}
+}
