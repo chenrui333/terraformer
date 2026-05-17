@@ -68,7 +68,8 @@ List of supported Cloudflare services:
   * `cloudflare_pipeline`
   * `cloudflare_pipeline_stream`
 
-  `media_platform` requires `CLOUDFLARE_ACCOUNT_ID`.
+  `media_platform` requires `CLOUDFLARE_ACCOUNT_ID`. Pipeline streams with schema
+  field types outside the Terraform provider's scalar/json validator are skipped.
 * `network_edge`
   * `cloudflare_address_map`
   * `cloudflare_magic_network_monitoring_rule`

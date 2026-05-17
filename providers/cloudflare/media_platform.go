@@ -30,6 +30,18 @@ type cloudflareMediaPlatformDiscovery struct {
 	discover  func() error
 }
 
+var cloudflarePipelineStreamSupportedSchemaFieldTypes = map[string]struct{}{
+	"binary":    {},
+	"bool":      {},
+	"float32":   {},
+	"float64":   {},
+	"int32":     {},
+	"int64":     {},
+	"json":      {},
+	"string":    {},
+	"timestamp": {},
+}
+
 func cloudflareMediaPlatformString(resource cloudflareMediaPlatformRawResource, keys ...string) string {
 	for _, key := range keys {
 		value, ok := resource[key].(string)
@@ -250,6 +262,55 @@ func cloudflareMediaPlatformObject(resource cloudflareMediaPlatformRawResource, 
 	return cloudflareMediaPlatformRawResource(object), true
 }
 
+func cloudflarePipelineStreamSchemaImportable(stream cloudflareMediaPlatformRawResource) bool {
+	schema, ok := cloudflareMediaPlatformObject(stream, "schema")
+	if !ok {
+		return true
+	}
+	fields, ok := schema["fields"]
+	if !ok || fields == nil {
+		return true
+	}
+	return cloudflarePipelineStreamSchemaFieldsImportable(fields)
+}
+
+func cloudflarePipelineStreamSchemaFieldsImportable(fields interface{}) bool {
+	switch fields := fields.(type) {
+	case []interface{}:
+		for _, field := range fields {
+			if !cloudflarePipelineStreamSchemaFieldImportable(field) {
+				return false
+			}
+		}
+		return true
+	case []map[string]interface{}:
+		for _, field := range fields {
+			if !cloudflarePipelineStreamSchemaFieldMapImportable(field) {
+				return false
+			}
+		}
+		return true
+	}
+	return false
+}
+
+func cloudflarePipelineStreamSchemaFieldImportable(field interface{}) bool {
+	fieldMap, ok := field.(map[string]interface{})
+	if !ok {
+		return false
+	}
+	return cloudflarePipelineStreamSchemaFieldMapImportable(fieldMap)
+}
+
+func cloudflarePipelineStreamSchemaFieldMapImportable(field map[string]interface{}) bool {
+	fieldType := strings.ToLower(cloudflareMediaPlatformString(field, "type"))
+	if fieldType == "" {
+		return false
+	}
+	_, ok := cloudflarePipelineStreamSupportedSchemaFieldTypes[fieldType]
+	return ok
+}
+
 func newCloudflareImageVariantResource(accountID string, variant cloudflareMediaPlatformRawResource) (terraformutils.Resource, bool) {
 	id := cloudflareMediaPlatformString(variant, "id")
 	options, ok := cloudflareMediaPlatformObject(variant, "options")
@@ -302,7 +363,7 @@ func newCloudflarePipelineResource(accountID string, pipeline cloudflareMediaPla
 func newCloudflarePipelineStreamResource(accountID string, stream cloudflareMediaPlatformRawResource) (terraformutils.Resource, bool) {
 	id := cloudflareMediaPlatformString(stream, "id")
 	name := cloudflareMediaPlatformString(stream, "name")
-	if id == "" || name == "" {
+	if id == "" || name == "" || !cloudflarePipelineStreamSchemaImportable(stream) {
 		return terraformutils.Resource{}, false
 	}
 	attributes := map[string]string{"name": name}

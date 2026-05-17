@@ -130,6 +130,12 @@ func TestNewCloudflarePipelineStreamResource(t *testing.T) {
 	resource, ok := newCloudflarePipelineStreamResource("account-123", cloudflareMediaPlatformRawResource{
 		"id":   "stream-123",
 		"name": "events",
+		"schema": map[string]interface{}{
+			"fields": []interface{}{
+				map[string]interface{}{"name": "payload", "type": "json"},
+				map[string]interface{}{"name": "count", "type": "int64"},
+			},
+		},
 	})
 	if !ok {
 		t.Fatal("expected pipeline stream resource")
@@ -142,6 +148,24 @@ func TestNewCloudflarePipelineStreamResource(t *testing.T) {
 	}
 	if got := resource.InstanceState.Attributes["name"]; got != "events" {
 		t.Fatalf("name = %q, want events", got)
+	}
+}
+
+func TestNewCloudflarePipelineStreamResourceSkipsUnsupportedSchemaFields(t *testing.T) {
+	for _, fieldType := range []string{"struct", "list", "unknown", ""} {
+		t.Run(fieldType, func(t *testing.T) {
+			if _, ok := newCloudflarePipelineStreamResource("account-123", cloudflareMediaPlatformRawResource{
+				"id":   "stream-123",
+				"name": "events",
+				"schema": map[string]interface{}{
+					"fields": []interface{}{
+						map[string]interface{}{"name": "payload", "type": fieldType},
+					},
+				},
+			}); ok {
+				t.Fatalf("expected pipeline stream with schema field type %q to be skipped", fieldType)
+			}
+		})
 	}
 }
 
