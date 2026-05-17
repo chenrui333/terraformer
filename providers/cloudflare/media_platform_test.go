@@ -264,7 +264,7 @@ func TestListCloudflareMediaPlatformResourcesPaginates(t *testing.T) {
 }
 
 func TestListCloudflareMediaPlatformResourcesHandlesEmptyResult(t *testing.T) {
-	api := newCloudflareMediaPlatformTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	api := newCloudflareMediaPlatformTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		writeCloudflareMediaPlatformTestResponse(t, w, nil, nil)
 	}))
 
