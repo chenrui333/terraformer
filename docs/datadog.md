@@ -83,11 +83,22 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 
 ## Supported Datadog resources
 
+*   `agentless_scanning_aws_scan_options`
+    * `datadog_agentless_scanning_aws_scan_options`
+*   `agentless_scanning_azure_scan_options`
+    * `datadog_agentless_scanning_azure_scan_options`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
+*   `agentless_scanning_gcp_scan_options`
+    * `datadog_agentless_scanning_gcp_scan_options`
 *   `apm_retention_filter`
     * `datadog_apm_retention_filter`
 *   `apm_retention_filter_order`
     * `datadog_apm_retention_filter_order`
         * **_NOTE:_** Importing a single retention filter order by ID accepts any value because the Datadog provider stores it as `filtersOrderID`, for example `--filter=apm_retention_filter_order=any-value`
+*   `appsec_waf_custom_rule`
+    * `datadog_appsec_waf_custom_rule`
+*   `appsec_waf_exclusion_filter`
+    * `datadog_appsec_waf_exclusion_filter`
 *   `aws_cur_config`
     * `datadog_aws_cur_config`
         * **_NOTE:_** Requires DataDog/datadog provider 3.39.0 or newer.
@@ -107,6 +118,11 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `cost_budget`
     * `datadog_cost_budget`
         * **_NOTE:_** Requires DataDog/datadog provider 3.39.0 or newer.
+*   `csm_threats_agent_rule`
+    * `datadog_csm_threats_agent_rule`
+        * **_NOTE:_** For policy-scoped rules, filter IDs use `policy_id:rule_id` format, for example `--filter="csm_threats_agent_rule='policy-abc:rule-123'"`; unscoped rules accept bare rule IDs
+*   `csm_threats_policy`
+    * `datadog_csm_threats_policy`
 *   `custom_allocation_rule`
     * `datadog_custom_allocation_rule`
         * **_NOTE:_** Requires DataDog/datadog provider 3.39.0 or newer.
