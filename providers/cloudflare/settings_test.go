@@ -57,10 +57,13 @@ func TestCloudflareSettingsDefaultImportPolicy(t *testing.T) {
 	if cloudflareUniversalSSLSettingShouldImport(cf.UniversalSSLSetting{Enabled: true}) {
 		t.Fatal("enabled Universal SSL should be skipped as the normal default")
 	}
-	if cloudflareURLNormalizationSettingsShouldImport(cf.URLNormalizationSettings{Scope: "incoming", Type: "cloudflare"}) {
+	if cloudflareURLNormalizationSettingsShouldImport(cf.URLNormalizationSettings{Scope: "incoming", Type: "rfc3986"}) {
 		t.Fatal("default URL normalization should be skipped")
 	}
-	if !cloudflareURLNormalizationSettingsShouldImport(cf.URLNormalizationSettings{Scope: "both", Type: "cloudflare"}) {
+	if !cloudflareURLNormalizationSettingsShouldImport(cf.URLNormalizationSettings{Scope: "incoming", Type: "cloudflare"}) {
+		t.Fatal("non-default URL normalization type should be imported")
+	}
+	if !cloudflareURLNormalizationSettingsShouldImport(cf.URLNormalizationSettings{Scope: "both", Type: "rfc3986"}) {
 		t.Fatal("non-default URL normalization should be imported")
 	}
 	if !cloudflareManagedTransformsConfigured(cloudflareManagedTransformsSetting{

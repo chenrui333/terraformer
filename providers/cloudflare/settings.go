@@ -588,7 +588,7 @@ func cloudflareURLNormalizationSettingsShouldImport(setting cf.URLNormalizationS
 	if setting.Scope == "" && setting.Type == "" {
 		return false
 	}
-	return setting.Scope != "incoming" || setting.Type != "cloudflare"
+	return setting.Scope != "incoming" || setting.Type != "rfc3986"
 }
 
 func cloudflareZoneCacheVariantsConfigured(value cf.ZoneCacheVariantsValues) bool {
