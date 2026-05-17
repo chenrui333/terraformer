@@ -4,6 +4,7 @@ package datadog
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -64,6 +65,116 @@ func TestDowntimeScheduleCreateResources(t *testing.T) {
 	}
 }
 
+func TestDowntimeSchedulePostConvertHookRemovesEmptyRecurringScheduleState(t *testing.T) {
+	resource := terraformutils.NewSimpleResource(
+		"downtime-1",
+		"downtime_schedule_downtime-1",
+		"datadog_downtime_schedule",
+		"datadog",
+		DowntimeScheduleAllowEmptyValues,
+	)
+	resource.Item = map[string]interface{}{
+		"id": "downtime-1",
+		downtimeScheduleOneTimeKey: map[string]interface{}{
+			"start": "2026-05-17T14:00:00Z",
+		},
+		downtimeScheduleRecurringKey: map[string]interface{}{},
+	}
+	resource.InstanceState.Attributes = map[string]string{
+		"id":                               "downtime-1",
+		"one_time_schedule.start":          "2026-05-17T14:00:00Z",
+		"recurring_schedule.recurrences.#": "0",
+		"recurring_schedule.timezone":      "",
+	}
+	resource.InstanceState.SetTypedAttributes(json.RawMessage("{\"display_timezone\":\"UTC\",\"id\":\"downtime-1\",\"one_time_schedule\":{\"end\":null,\"start\":\"2026-05-17T14:00:00Z\"},\"recurring_schedule\":{\"recurrences\":null,\"timezone\":null}}"))
+
+	generator := &DowntimeScheduleGenerator{
+		DatadogService: DatadogService{
+			Service: terraformutils.Service{
+				Resources: []terraformutils.Resource{resource},
+			},
+		},
+	}
+
+	if err := generator.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook returned error: %v", err)
+	}
+
+	updatedResource := generator.Resources[0]
+	if _, ok := updatedResource.Item[downtimeScheduleRecurringKey]; ok {
+		t.Fatal("PostConvertHook left empty recurring_schedule in generated item")
+	}
+	if _, ok := updatedResource.InstanceState.Attributes["recurring_schedule.recurrences.#"]; ok {
+		t.Fatal("PostConvertHook left recurring_schedule flatmap state")
+	}
+	typedAttributes := decodeDowntimeScheduleTypedAttributes(t, updatedResource.InstanceState.TypedAttributes)
+	if _, ok := typedAttributes[downtimeScheduleRecurringKey]; ok {
+		t.Fatal("PostConvertHook left empty recurring_schedule in typed state")
+	}
+	if _, ok := typedAttributes[downtimeScheduleOneTimeKey]; !ok {
+		t.Fatal("PostConvertHook removed active one_time_schedule typed state")
+	}
+}
+
+func TestDowntimeSchedulePostConvertHookRemovesEmptyOneTimeScheduleState(t *testing.T) {
+	resource := terraformutils.NewSimpleResource(
+		"downtime-2",
+		"downtime_schedule_downtime-2",
+		"datadog_downtime_schedule",
+		"datadog",
+		DowntimeScheduleAllowEmptyValues,
+	)
+	resource.Item = map[string]interface{}{
+		"id":                       "downtime-2",
+		downtimeScheduleOneTimeKey: map[string]interface{}{},
+		downtimeScheduleRecurringKey: map[string]interface{}{
+			"recurrences": []interface{}{
+				map[string]interface{}{
+					"duration": "1h",
+					"rrule":    "FREQ=DAILY",
+					"start":    "2026-05-17T14:00:00Z",
+				},
+			},
+			"timezone": "UTC",
+		},
+	}
+	resource.InstanceState.Attributes = map[string]string{
+		"id":                                     "downtime-2",
+		"one_time_schedule.start":                "",
+		"recurring_schedule.recurrences.#":       "1",
+		"recurring_schedule.recurrences.0.start": "2026-05-17T14:00:00Z",
+		"recurring_schedule.timezone":            "UTC",
+	}
+	resource.InstanceState.SetTypedAttributes(json.RawMessage("{\"display_timezone\":\"UTC\",\"id\":\"downtime-2\",\"one_time_schedule\":{\"end\":null,\"start\":null},\"recurring_schedule\":{\"recurrences\":[{\"duration\":\"1h\",\"rrule\":\"FREQ=DAILY\",\"start\":\"2026-05-17T14:00:00Z\"}],\"timezone\":\"UTC\"}}"))
+
+	generator := &DowntimeScheduleGenerator{
+		DatadogService: DatadogService{
+			Service: terraformutils.Service{
+				Resources: []terraformutils.Resource{resource},
+			},
+		},
+	}
+
+	if err := generator.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook returned error: %v", err)
+	}
+
+	updatedResource := generator.Resources[0]
+	if _, ok := updatedResource.Item[downtimeScheduleOneTimeKey]; ok {
+		t.Fatal("PostConvertHook left empty one_time_schedule in generated item")
+	}
+	if _, ok := updatedResource.InstanceState.Attributes["one_time_schedule.start"]; ok {
+		t.Fatal("PostConvertHook left one_time_schedule flatmap state")
+	}
+	typedAttributes := decodeDowntimeScheduleTypedAttributes(t, updatedResource.InstanceState.TypedAttributes)
+	if _, ok := typedAttributes[downtimeScheduleOneTimeKey]; ok {
+		t.Fatal("PostConvertHook left empty one_time_schedule in typed state")
+	}
+	if _, ok := typedAttributes[downtimeScheduleRecurringKey]; !ok {
+		t.Fatal("PostConvertHook removed active recurring_schedule typed state")
+	}
+}
+
 func TestDowntimeScheduleInitResourcesList(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v2/downtime" {
@@ -106,4 +217,14 @@ func TestDowntimeScheduleInitResourcesList(t *testing.T) {
 	if generator.Resources[0].InstanceState.ID != "downtime-1" {
 		t.Fatalf("resource ID = %q, want %q", generator.Resources[0].InstanceState.ID, "downtime-1")
 	}
+}
+
+func decodeDowntimeScheduleTypedAttributes(t *testing.T, rawAttributes json.RawMessage) map[string]json.RawMessage {
+	t.Helper()
+
+	attributes := map[string]json.RawMessage{}
+	if err := json.Unmarshal(rawAttributes, &attributes); err != nil {
+		t.Fatalf("typed attributes unmarshal error: %v", err)
+	}
+	return attributes
 }

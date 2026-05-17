@@ -3,8 +3,11 @@
 package datadog
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
@@ -13,6 +16,11 @@ import (
 )
 
 const datadogDowntimeSchedulePageLimit = int64(100)
+
+const (
+	downtimeScheduleOneTimeKey   = "one_time_schedule"
+	downtimeScheduleRecurringKey = "recurring_schedule"
+)
 
 var (
 	// DowntimeScheduleAllowEmptyValues ...
@@ -37,6 +45,130 @@ func (g *DowntimeScheduleGenerator) createResource(downtime datadogV2.DowntimeRe
 		"datadog",
 		DowntimeScheduleAllowEmptyValues,
 	), nil
+}
+
+func (g *DowntimeScheduleGenerator) PostConvertHook() error {
+	for i := range g.Resources {
+		resource := &g.Resources[i]
+		removeDowntimeScheduleEmptyAlternateItem(resource)
+		if err := removeDowntimeScheduleEmptyAlternateState(resource); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func removeDowntimeScheduleEmptyAlternateItem(resource *terraformutils.Resource) {
+	if resource == nil || resource.Item == nil {
+		return
+	}
+
+	oneTimeSchedule, hasOneTimeSchedule := resource.Item[downtimeScheduleOneTimeKey]
+	recurringSchedule, hasRecurringSchedule := resource.Item[downtimeScheduleRecurringKey]
+	oneTimeScheduleHasValue := downtimeScheduleValueHasValue(oneTimeSchedule)
+	recurringScheduleHasValue := downtimeScheduleValueHasValue(recurringSchedule)
+
+	if oneTimeScheduleHasValue && hasRecurringSchedule && !recurringScheduleHasValue {
+		delete(resource.Item, downtimeScheduleRecurringKey)
+	}
+	if recurringScheduleHasValue && hasOneTimeSchedule && !oneTimeScheduleHasValue {
+		delete(resource.Item, downtimeScheduleOneTimeKey)
+	}
+}
+
+func removeDowntimeScheduleEmptyAlternateState(resource *terraformutils.Resource) error {
+	if resource == nil || resource.InstanceState == nil || len(resource.InstanceState.TypedAttributes) == 0 {
+		return nil
+	}
+
+	attributes := map[string]json.RawMessage{}
+	if err := json.Unmarshal(resource.InstanceState.TypedAttributes, &attributes); err != nil {
+		return fmt.Errorf("decode downtime schedule typed attributes: %w", err)
+	}
+
+	oneTimeSchedule, hasOneTimeSchedule := attributes[downtimeScheduleOneTimeKey]
+	recurringSchedule, hasRecurringSchedule := attributes[downtimeScheduleRecurringKey]
+
+	oneTimeScheduleHasValue, err := downtimeScheduleRawMessageHasValue(oneTimeSchedule)
+	if err != nil {
+		return fmt.Errorf("decode downtime schedule one_time_schedule state: %w", err)
+	}
+	recurringScheduleHasValue, err := downtimeScheduleRawMessageHasValue(recurringSchedule)
+	if err != nil {
+		return fmt.Errorf("decode downtime schedule recurring_schedule state: %w", err)
+	}
+
+	changed := false
+	if oneTimeScheduleHasValue && hasRecurringSchedule && !recurringScheduleHasValue {
+		delete(attributes, downtimeScheduleRecurringKey)
+		removeDowntimeScheduleStateAttributes(resource, downtimeScheduleRecurringKey)
+		changed = true
+	}
+	if recurringScheduleHasValue && hasOneTimeSchedule && !oneTimeScheduleHasValue {
+		delete(attributes, downtimeScheduleOneTimeKey)
+		removeDowntimeScheduleStateAttributes(resource, downtimeScheduleOneTimeKey)
+		changed = true
+	}
+	if !changed {
+		return nil
+	}
+
+	rawAttributes, err := json.Marshal(attributes)
+	if err != nil {
+		return fmt.Errorf("encode downtime schedule typed attributes: %w", err)
+	}
+	resource.InstanceState.SetTypedAttributes(rawAttributes)
+	return nil
+}
+
+func removeDowntimeScheduleStateAttributes(resource *terraformutils.Resource, blockName string) {
+	if resource == nil || resource.InstanceState == nil || resource.InstanceState.Attributes == nil {
+		return
+	}
+	for key := range resource.InstanceState.Attributes {
+		if key == blockName || strings.HasPrefix(key, blockName+".") {
+			delete(resource.InstanceState.Attributes, key)
+		}
+	}
+}
+
+func downtimeScheduleRawMessageHasValue(rawValue json.RawMessage) (bool, error) {
+	if len(bytes.TrimSpace(rawValue)) == 0 {
+		return false, nil
+	}
+
+	var value interface{}
+	decoder := json.NewDecoder(bytes.NewReader(rawValue))
+	decoder.UseNumber()
+	if err := decoder.Decode(&value); err != nil {
+		return false, err
+	}
+	return downtimeScheduleValueHasValue(value), nil
+}
+
+func downtimeScheduleValueHasValue(value interface{}) bool {
+	switch value := value.(type) {
+	case nil:
+		return false
+	case string:
+		return value != ""
+	case []interface{}:
+		for _, item := range value {
+			if downtimeScheduleValueHasValue(item) {
+				return true
+			}
+		}
+		return false
+	case map[string]interface{}:
+		for _, item := range value {
+			if downtimeScheduleValueHasValue(item) {
+				return true
+			}
+		}
+		return false
+	default:
+		return true
+	}
 }
 
 func (g *DowntimeScheduleGenerator) createResources(downtimes []datadogV2.DowntimeResponseData) ([]terraformutils.Resource, error) {
