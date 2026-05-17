@@ -1,0 +1,47 @@
+cmd/provider_cmd_kafka.go
+  s_18ec7284ef804a::t_77eb710675f88d 1-53
+terraformutils/provider_source.go
+  s_18ec7284ef804a::t_41d5f46cfc05de 27
+README.md
+  s_18ec7284ef804a::t_572ce3b88c7685 34,275
+providers/kafka/kafka_service.go
+  s_18ec7284ef804a::t_c3fc30802e1947 1-37
+providers/kafka/topic_test.go
+  s_18ec7284ef804a::t_d84a39a8ca8dd6 7,192
+  s_18ec7284ef804a::t_019287eb1b6afc 1-6,8-191,193-196
+cmd/root.go
+  s_18ec7284ef804a::t_41d5f46cfc05de 48,107
+terraformutils/provider_source_test.go
+  s_18ec7284ef804a::t_41d5f46cfc05de 34
+providers/kafka/topic.go
+  s_18ec7284ef804a::t_c3fc30802e1947 1-62,70-275
+  s_18ec7284ef804a::t_2852c1dcce4e24 63-69
+providers/kafka/kafka_provider_test.go
+  s_18ec7284ef804a::t_c81b4ea8e68206 1-5,7-39,41-49,52-74,83-84
+  s_18ec7284ef804a::t_f3ea5334fdefa6 6,40,50-51,75-82
+providers/kafka/kafka_provider.go
+  s_18ec7284ef804a::t_c3fc30802e1947 1-186
+providers/kafka/config.go
+  s_18ec7284ef804a::t_77eb710675f88d 1-95,119-438
+  s_18ec7284ef804a::t_d614d8bec84ac8 96-118
+docs/kafka.md
+  s_18ec7284ef804a::t_1a69396616f45e 1-44
+cmd/provider_cmd_kafka_test.go
+  s_18ec7284ef804a::t_b144a02837c8d6 1-36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "b5e0abbcf20719e09f20032d31d4e43236e4c480",
+  "prompts": {},
+  "sessions": {
+    "s_18ec7284ef804a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3602-0e28-7841-87b1-545a6cd73d26",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
