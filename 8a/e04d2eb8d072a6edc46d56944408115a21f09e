@@ -1,0 +1,42 @@
+providers/datadog/agentless_scanning_azure_scan_options.go
+  s_0fb33ec13dc59f::t_0da052be03d2dd 1-25,27-93
+providers/datadog/appsec_waf_exclusion_filter.go
+  s_0fb33ec13dc59f::t_0da052be03d2dd 1-89
+providers/datadog/appsec_waf_custom_rule.go
+  s_0fb33ec13dc59f::t_0da052be03d2dd 1-89
+providers/datadog/datadog_provider.go
+  s_0fb33ec13dc59f::t_71c3861921bdba 168-170,173-174,179-180
+docs/datadog.md
+  s_0fb33ec13dc59f::t_409486da951554 86-92,98-101
+  s_0fb33ec13dc59f::t_737bba392076ec 121-125
+providers/datadog/agentless_scanning_test.go
+  s_0fb33ec13dc59f::t_0da052be03d2dd 1-124
+providers/datadog/agentless_scanning_gcp_scan_options.go
+  s_0fb33ec13dc59f::t_0da052be03d2dd 1-25,27-93
+providers/datadog/agentless_scanning_aws_scan_options.go
+  s_0fb33ec13dc59f::t_0da052be03d2dd 1-25,27-93
+providers/datadog/csm_threats_policy.go
+  s_0fb33ec13dc59f::t_0da052be03d2dd 1-89
+providers/datadog/csm_threats_test.go
+  s_0fb33ec13dc59f::t_0da052be03d2dd 1-10,12,14-17,20-23,26-28,30,32,34,41-43,45,61,68-111
+providers/datadog/appsec_waf_test.go
+  s_0fb33ec13dc59f::t_0da052be03d2dd 1-104
+providers/datadog/csm_threats_agent_rule.go
+  s_0fb33ec13dc59f::t_0da052be03d2dd 1-20,23-25,36-49,51-54,57-68,71-77,87-89,94-136
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "8ae04d2eb8d072a6edc46d56944408115a21f09e",
+  "prompts": {},
+  "sessions": {
+    "s_0fb33ec13dc59f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d1ea9520-81a1-4fe9-af43-b9ba16c9150f",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
