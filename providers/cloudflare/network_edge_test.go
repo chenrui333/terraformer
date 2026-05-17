@@ -214,7 +214,7 @@ func TestAppendNetworkEdgeResourcesContinuesToAccountResourcesAfterOptionalZoneL
 		}
 	}))
 	g := &NetworkEdgeGenerator{}
-	zoneErr := cf.NewAuthorizationError(&cf.Error{ErrorMessages: []string{"missing permission"}})
+	zoneErr := cf.NewAuthorizationError(&cf.Error{ErrorMessages: []string{"Unauthorized to access requested resource"}})
 
 	err := g.appendNetworkEdgeResources(context.Background(), api, nil, &zoneErr, "account-123")
 	if err != nil {
@@ -255,6 +255,9 @@ func TestCloudflareNetworkEdgeOptionalErrorMessageDoesNotHideGenericNotFound(t *
 	}
 	if !cloudflareNetworkEdgeOptionalErrorMessage("", []string{"feature is not available on this plan"}) {
 		t.Fatal("feature-gated errors should be treated as optional")
+	}
+	if !cloudflareNetworkEdgeOptionalErrorMessage("", []string{"Unauthorized to access requested resource"}) {
+		t.Fatal("unauthorized permission errors should be treated as optional")
 	}
 }
 

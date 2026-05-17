@@ -76,6 +76,7 @@ func cloudflareNetworkEdgeOptionalErrorMessage(message string, errorMessages []s
 			"not entitled",
 			"permission denied",
 			"requires a paid plan",
+			"unauthorized",
 			"upgrade your plan",
 		} {
 			if strings.Contains(normalized, marker) {
