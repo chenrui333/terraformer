@@ -304,10 +304,17 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `service_account_application_key`
     * `datadog_service_account_application_key`
         * **_NOTE:_** Importing requires `service_account_id` filter or composite `service_account_id:key_id` ID filter, for example `--filter="Type=service_account_application_key;Name=service_account_id;Value=sa-id"` or `--filter="service_account_application_key='sa-id:key-id'"`
+*   `service_definition_yaml`
+    * `datadog_service_definition_yaml`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
 *   `service_level_objective`
     * `datadog_service_level_objective`
 *   `slo_correction`
     * `datadog_slo_correction`
+*   `software_catalog`
+    * `datadog_software_catalog`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
+        * **_NOTE:_** Broad discovery excludes discovered/snapshot entities and imports only catalog entities that expose raw schema, because the Datadog provider read path requires raw schema to reconstruct the required `entity` body. ID filters use the catalog entity reference, for example `--filter="software_catalog='service:default/checkout'"`
 *   `spans_metric`
     * `datadog_spans_metric`
 *   `synthetics_concurrency_cap`
