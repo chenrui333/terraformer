@@ -165,12 +165,19 @@ func (p *DatadogProvider) InitService(serviceName string, verbose bool) error {
 // GetSupportedService return map of support service for Datadog
 func (p *DatadogProvider) GetSupportedService() map[string]terraformutils.ServiceGenerator {
 	return map[string]terraformutils.ServiceGenerator{
+		"agentless_scanning_aws_scan_options":      &AgentlessScanningAwsScanOptionsGenerator{},
+		"agentless_scanning_azure_scan_options":    &AgentlessScanningAzureScanOptionsGenerator{},
+		"agentless_scanning_gcp_scan_options":      &AgentlessScanningGcpScanOptionsGenerator{},
 		"apm_retention_filter":                     &APMRetentionFilterGenerator{},
 		"apm_retention_filter_order":               &APMRetentionFilterOrderGenerator{},
+		"appsec_waf_custom_rule":                   &AppSecWafCustomRuleGenerator{},
+		"appsec_waf_exclusion_filter":              &AppSecWafExclusionFilterGenerator{},
 		"aws_cur_config":                           &AwsCURConfigGenerator{},
 		"azure_uc_config":                          &AzureUCConfigGenerator{},
 		"cloud_inventory_sync_config":              &CloudInventorySyncConfigGenerator{},
 		"cost_budget":                              &CostBudgetGenerator{},
+		"csm_threats_agent_rule":                   &CSMThreatsAgentRuleGenerator{},
+		"csm_threats_policy":                       &CSMThreatsPolicyGenerator{},
 		"custom_allocation_rule":                   &CustomAllocationRuleGenerator{},
 		"dashboard_list":                           &DashboardListGenerator{},
 		"dashboard":                                &DashboardGenerator{},
