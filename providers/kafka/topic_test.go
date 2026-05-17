@@ -5,6 +5,7 @@ package kafka
 import (
 	"errors"
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 
@@ -16,22 +17,83 @@ type mockAdmin struct {
 	metadata        map[string]*sarama.TopicMetadata
 	configs         map[string][]sarama.ConfigEntry
 	configErrors    map[string]error
+	describeTopics  [][]string
 	describeConfigs []sarama.ConfigResource
 	closed          bool
 }
 
-func (m *mockAdmin) ListTopics() (map[string]sarama.TopicDetail, error) {
-	return m.topics, nil
-}
-
 func (m *mockAdmin) DescribeTopics(names []string) ([]*sarama.TopicMetadata, error) {
+	m.describeTopics = append(m.describeTopics, append([]string(nil), names...))
+	if len(names) == 0 {
+		names = m.topicNames()
+	}
 	metadata := make([]*sarama.TopicMetadata, 0, len(names))
 	for _, name := range names {
 		if topicMetadata := m.metadata[name]; topicMetadata != nil {
 			metadata = append(metadata, topicMetadata)
+			continue
+		}
+		if detail, ok := m.topics[name]; ok {
+			topicMetadata, err := topicMetadataFromDetail(name, detail)
+			if err != nil {
+				return nil, err
+			}
+			metadata = append(metadata, topicMetadata)
 		}
 	}
 	return metadata, nil
+}
+
+func (m *mockAdmin) topicNames() []string {
+	seen := map[string]struct{}{}
+	names := make([]string, 0, len(m.topics)+len(m.metadata))
+	for name := range m.topics {
+		seen[name] = struct{}{}
+		names = append(names, name)
+	}
+	for name := range m.metadata {
+		if _, ok := seen[name]; ok {
+			continue
+		}
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
+}
+
+func topicMetadataFromDetail(name string, detail sarama.TopicDetail) (*sarama.TopicMetadata, error) {
+	partitions, replicationFactor, err := topicShapeFromDetail(detail)
+	if err != nil {
+		return nil, err
+	}
+	partitionMetadata := []*sarama.PartitionMetadata{}
+	if len(detail.ReplicaAssignment) > 0 {
+		partitionIDs := make([]int32, 0, len(detail.ReplicaAssignment))
+		for partitionID := range detail.ReplicaAssignment {
+			partitionIDs = append(partitionIDs, partitionID)
+		}
+		sort.Slice(partitionIDs, func(i, j int) bool {
+			return partitionIDs[i] < partitionIDs[j]
+		})
+		for _, partitionID := range partitionIDs {
+			partitionMetadata = append(partitionMetadata, &sarama.PartitionMetadata{
+				ID:       partitionID,
+				Replicas: detail.ReplicaAssignment[partitionID],
+			})
+		}
+		return &sarama.TopicMetadata{Name: name, Partitions: partitionMetadata}, nil
+	}
+	for partitionID := int32(0); partitionID < partitions; partitionID++ {
+		replicas := []int32{}
+		for replicaID := int16(0); replicaID < replicationFactor; replicaID++ {
+			replicas = append(replicas, int32(replicaID)+1)
+		}
+		partitionMetadata = append(partitionMetadata, &sarama.PartitionMetadata{
+			ID:       partitionID,
+			Replicas: replicas,
+		})
+	}
+	return &sarama.TopicMetadata{Name: name, Partitions: partitionMetadata}, nil
 }
 
 func (m *mockAdmin) DescribeConfig(resource sarama.ConfigResource) ([]sarama.ConfigEntry, error) {
@@ -125,6 +187,49 @@ func TestTopicInitResourcesEmptyList(t *testing.T) {
 	}
 }
 
+func TestTopicInitResourcesDoesNotRequireConfigsForMetadataListing(t *testing.T) {
+	admin := &mockAdmin{
+		metadata: map[string]*sarama.TopicMetadata{
+			"orders": {
+				Name: "orders",
+				Partitions: []*sarama.PartitionMetadata{
+					{ID: 0, Replicas: []int32{1, 2}},
+					{ID: 1, Replicas: []int32{1, 2}},
+				},
+			},
+		},
+		configErrors: map[string]error{"orders": sarama.ErrTopicAuthorizationFailed},
+	}
+	generator := &TopicGenerator{}
+	generator.SetArgs(map[string]interface{}{
+		"config": Config{BootstrapServers: []string{"broker1.example.com:9092"}},
+	})
+	generator.newAdmin = func(Config) (adminClient, error) { return admin, nil }
+
+	if err := generator.InitResources(); err != nil {
+		t.Fatalf("InitResources() error = %v", err)
+	}
+	if len(admin.describeTopics) != 1 || admin.describeTopics[0] != nil {
+		t.Fatalf("DescribeTopics calls = %#v, want one all-topic metadata call", admin.describeTopics)
+	}
+	if len(generator.Resources) != 1 {
+		t.Fatalf("resources len = %d, want 1", len(generator.Resources))
+	}
+	resource := generator.Resources[0]
+	if resource.InstanceState.ID != "orders" {
+		t.Fatalf("resource ID = %q, want orders", resource.InstanceState.ID)
+	}
+	if got := resource.InstanceState.Attributes["partitions"]; got != "2" {
+		t.Fatalf("partitions = %q, want 2", got)
+	}
+	if got := resource.InstanceState.Attributes["replication_factor"]; got != "2" {
+		t.Fatalf("replication_factor = %q, want 2", got)
+	}
+	if _, ok := resource.InstanceState.Attributes["config.%"]; ok {
+		t.Fatal("topic config was exported after authorization failure")
+	}
+}
+
 func TestTopicInitResourcesSkipsInternalTopicsByDefault(t *testing.T) {
 	admin := &mockAdmin{
 		topics: map[string]sarama.TopicDetail{
@@ -140,6 +245,7 @@ func TestTopicInitResourcesSkipsInternalTopicsByDefault(t *testing.T) {
 		configs: map[string][]sarama.ConfigEntry{
 			"orders": nil,
 		},
+		configErrors: map[string]error{"__consumer_offsets": errors.New("internal topic config should not be described")},
 	}
 	generator := &TopicGenerator{}
 	generator.SetArgs(map[string]interface{}{
@@ -194,6 +300,42 @@ func TestTopicInitResourcesIncludesExplicitInternalTopicFilter(t *testing.T) {
 	}
 	if generator.Resources[0].InstanceState.ID != "__consumer_offsets" {
 		t.Fatalf("resource ID = %q, want __consumer_offsets", generator.Resources[0].InstanceState.ID)
+	}
+}
+
+func TestTopicInitResourcesAppliesIDFilterBeforeConfigDescribe(t *testing.T) {
+	admin := &mockAdmin{
+		topics: map[string]sarama.TopicDetail{
+			"orders": {
+				NumPartitions:     3,
+				ReplicationFactor: 2,
+			},
+			"payments": {
+				NumPartitions:     6,
+				ReplicationFactor: 3,
+			},
+		},
+		configs:      map[string][]sarama.ConfigEntry{"orders": nil},
+		configErrors: map[string]error{"payments": errors.New("unfiltered topic config should not be described")},
+	}
+	generator := &TopicGenerator{}
+	generator.SetArgs(map[string]interface{}{
+		"config": Config{BootstrapServers: []string{"broker1.example.com:9092"}},
+	})
+	generator.ParseFilters([]string{"topics=orders"})
+	generator.newAdmin = func(Config) (adminClient, error) { return admin, nil }
+
+	if err := generator.InitResources(); err != nil {
+		t.Fatalf("InitResources() error = %v", err)
+	}
+	if len(generator.Resources) != 1 {
+		t.Fatalf("resources len = %d, want 1", len(generator.Resources))
+	}
+	if generator.Resources[0].InstanceState.ID != "orders" {
+		t.Fatalf("resource ID = %q, want orders", generator.Resources[0].InstanceState.ID)
+	}
+	if len(admin.describeConfigs) != 1 || admin.describeConfigs[0].Name != "orders" {
+		t.Fatalf("DescribeConfig calls = %#v, want only orders", admin.describeConfigs)
 	}
 }
 

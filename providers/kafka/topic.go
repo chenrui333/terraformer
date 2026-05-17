@@ -69,25 +69,37 @@ func (g *TopicGenerator) ParseFilters(rawFilters []string) {
 }
 
 func (g *TopicGenerator) listTopics(admin adminClient, config Config) ([]Topic, error) {
-	details, err := admin.ListTopics()
+	metadata, err := admin.DescribeTopics(nil)
 	if err != nil {
 		return nil, err
 	}
-	if len(details) == 0 {
+	if len(metadata) == 0 {
 		return nil, nil
 	}
-	names := make([]string, 0, len(details))
-	for name := range details {
-		names = append(names, name)
-	}
-	sort.Strings(names)
+	sort.Slice(metadata, func(i, j int) bool {
+		if metadata[i] == nil {
+			return false
+		}
+		if metadata[j] == nil {
+			return true
+		}
+		return metadata[i].Name < metadata[j].Name
+	})
 
-	topics := make([]Topic, 0, len(names))
-	for _, name := range names {
-		if isInternalTopic(name) && !g.isExplicitlyRequestedTopic(name) {
+	explicitTopics := g.explicitlyRequestedTopics()
+	topics := make([]Topic, 0, len(metadata))
+	for _, topicMetadata := range metadata {
+		if topicMetadata == nil {
 			continue
 		}
-		topic, err := g.topicFromDetail(admin, name, details[name], config)
+		name := topicMetadata.Name
+		if len(explicitTopics) > 0 && !explicitTopics[name] {
+			continue
+		}
+		if isInternalTopic(name) && !explicitTopics[name] {
+			continue
+		}
+		topic, err := g.topicFromMetadata(admin, topicMetadata, config)
 		if err != nil {
 			return nil, err
 		}
@@ -100,18 +112,42 @@ func isInternalTopic(name string) bool {
 	return strings.HasPrefix(name, "__")
 }
 
-func (g *TopicGenerator) isExplicitlyRequestedTopic(name string) bool {
+func (g *TopicGenerator) explicitlyRequestedTopics() map[string]bool {
+	explicitTopics := map[string]bool{}
 	for _, filter := range g.Filter {
 		if filter.FieldPath != "id" || !filter.IsApplicable("topic") {
 			continue
 		}
 		for _, value := range filter.AcceptableValues {
-			if value == name {
-				return true
-			}
+			explicitTopics[value] = true
 		}
 	}
-	return false
+	return explicitTopics
+}
+
+func (g *TopicGenerator) topicFromMetadata(admin adminClient, metadata *sarama.TopicMetadata, providerConfig Config) (Topic, error) {
+	name := metadata.Name
+	if metadata.Err != sarama.ErrNoError {
+		return Topic{}, fmt.Errorf("kafka topic %q: describe metadata: %w", name, metadata.Err)
+	}
+	partitions, replicationFactor, err := topicShapeFromMetadata(name, []*sarama.TopicMetadata{metadata})
+	if err != nil {
+		return Topic{}, err
+	}
+	config, err := topicConfig(admin, name, providerConfig)
+	if err != nil {
+		if !isSkippableTopicConfigError(err) {
+			return Topic{}, fmt.Errorf("kafka topic %q: describe config: %w", name, err)
+		}
+		log.Printf("kafka: skipping topic config for %q: %v", name, err)
+		config = map[string]string{}
+	}
+	return Topic{
+		Name:              name,
+		Partitions:        partitions,
+		ReplicationFactor: replicationFactor,
+		Config:            config,
+	}, nil
 }
 
 func (g *TopicGenerator) topicFromDetail(admin adminClient, name string, detail sarama.TopicDetail, providerConfig Config) (Topic, error) {

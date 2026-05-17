@@ -8,7 +8,6 @@ import (
 )
 
 type adminClient interface {
-	ListTopics() (map[string]sarama.TopicDetail, error)
 	DescribeTopics(topics []string) ([]*sarama.TopicMetadata, error)
 	DescribeConfig(resource sarama.ConfigResource) ([]sarama.ConfigEntry, error)
 	Close() error
