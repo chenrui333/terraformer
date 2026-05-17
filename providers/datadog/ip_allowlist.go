@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	IPAllowlistAllowEmptyValues = []string{"entry."}
+	IPAllowlistAllowEmptyValues = []string{"entry.", "enabled"}
 )
 
 type IPAllowlistGenerator struct {
