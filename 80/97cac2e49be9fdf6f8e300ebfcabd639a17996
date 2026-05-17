@@ -1,0 +1,32 @@
+providers/datadog/incident.go
+  s_147381facf0cb2::t_cb28dead08c15f 1-375
+providers/datadog/workflow_automation.go
+  s_147381facf0cb2::t_cb28dead08c15f 1-25,50-107
+  s_147381facf0cb2::t_d7e404068efe50 26-49
+providers/datadog/datadog_provider.go
+  s_147381facf0cb2::t_667b8a0c546f08 193-195,266-267
+providers/datadog/webhook.go
+  s_147381facf0cb2::t_cb28dead08c15f 1-83
+docs/datadog.md
+  s_147381facf0cb2::t_2cf248e5e04004 153-161,349-356
+providers/datadog/incident_workflow_test.go
+  s_147381facf0cb2::t_838bac52ac34a7 375-398
+  s_147381facf0cb2::t_d833d91655d5c7 1-21,23-33,38-42,47-51,56-374,399-497
+  s_147381facf0cb2::t_11529ac28166b6 22,34-37,43-46,52-55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "8097cac2e49be9fdf6f8e300ebfcabd639a17996",
+  "prompts": {},
+  "sessions": {
+    "s_147381facf0cb2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35d4-5c2a-7410-97bd-53923272d33e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
