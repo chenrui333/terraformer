@@ -1,0 +1,35 @@
+providers/datadog/custom_allocation_rule.go
+  s_0fb33ec13dc59f::t_2ec28ce4e02ff3 1-62
+providers/datadog/gcp_uc_config.go
+  s_0fb33ec13dc59f::t_2ec28ce4e02ff3 1-58
+providers/datadog/cost_budget.go
+  s_0fb33ec13dc59f::t_2ec28ce4e02ff3 1-62
+providers/datadog/cloud_cost_test.go
+  s_0fb33ec13dc59f::t_2ec28ce4e02ff3 1-238
+providers/datadog/azure_uc_config.go
+  s_0fb33ec13dc59f::t_2ec28ce4e02ff3 1-58
+providers/datadog/aws_cur_config.go
+  s_0fb33ec13dc59f::t_2ec28ce4e02ff3 1-62
+docs/datadog.md
+  ai_agent 101-106,117-119,124-126,129-131,240-242
+providers/datadog/datadog_provider.go
+  ai_agent 175-176,178,181,186,231
+providers/datadog/tag_pipeline_ruleset.go
+  s_0fb33ec13dc59f::t_2ec28ce4e02ff3 1-62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "316365d67dbd1d4ad2c4bdb83f19feffa38aa598",
+  "prompts": {},
+  "sessions": {
+    "s_0fb33ec13dc59f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d1ea9520-81a1-4fe9-af43-b9ba16c9150f",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
