@@ -126,7 +126,9 @@ var (
 	}
 
 	observabilityPipelineEmptyListPaths = map[string]struct{}{
-		"config.processor_group.processor.reduce.group_by": {},
+		"config.processor_group.processor.quota.partition_fields":           {},
+		"config.processor_group.processor.reduce.group_by":                  {},
+		"config.processor_group.processor.sensitive_data_scanner.rule.tags": {},
 	}
 )
 

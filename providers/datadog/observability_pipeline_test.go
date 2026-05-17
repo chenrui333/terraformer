@@ -255,6 +255,12 @@ func TestObservabilityPipelinePostConvertHookPreservesEmptyListsAndScopeVariants
 					map[string]interface{}{
 						"processor": []interface{}{
 							map[string]interface{}{
+								"id": "quota",
+								"quota": []interface{}{
+									map[string]interface{}{},
+								},
+							},
+							map[string]interface{}{
 								"id": "reduce",
 								"reduce": []interface{}{
 									map[string]interface{}{},
@@ -286,12 +292,16 @@ func TestObservabilityPipelinePostConvertHookPreservesEmptyListsAndScopeVariants
 		},
 	})
 	resource.InstanceState.Attributes = map[string]string{
-		"config.0.processor_group.0.processor.0.reduce.#":                                                   "1",
-		"config.0.processor_group.0.processor.0.reduce.0.group_by.#":                                        "0",
-		"config.0.processor_group.0.processor.1.sensitive_data_scanner.0.rule.0.scope.0.include.#":          "1",
-		"config.0.processor_group.0.processor.1.sensitive_data_scanner.0.rule.0.scope.0.include.0.fields.#": "0",
-		"config.0.processor_group.0.processor.1.sensitive_data_scanner.0.rule.1.scope.0.exclude.#":          "1",
-		"config.0.processor_group.0.processor.1.sensitive_data_scanner.0.rule.1.scope.0.exclude.0.fields.#": "0",
+		"config.0.processor_group.0.processor.0.quota.#":                                                    "1",
+		"config.0.processor_group.0.processor.0.quota.0.partition_fields.#":                                 "0",
+		"config.0.processor_group.0.processor.1.reduce.#":                                                   "1",
+		"config.0.processor_group.0.processor.1.reduce.0.group_by.#":                                        "0",
+		"config.0.processor_group.0.processor.2.sensitive_data_scanner.0.rule.0.scope.0.include.#":          "1",
+		"config.0.processor_group.0.processor.2.sensitive_data_scanner.0.rule.0.scope.0.include.0.fields.#": "0",
+		"config.0.processor_group.0.processor.2.sensitive_data_scanner.0.rule.0.tags.#":                     "0",
+		"config.0.processor_group.0.processor.2.sensitive_data_scanner.0.rule.1.scope.0.exclude.#":          "1",
+		"config.0.processor_group.0.processor.2.sensitive_data_scanner.0.rule.1.scope.0.exclude.0.fields.#": "0",
+		"config.0.processor_group.0.processor.2.sensitive_data_scanner.0.rule.1.tags.#":                     "0",
 	}
 	generator := &ObservabilityPipelineGenerator{}
 	generator.Resources = []terraformutils.Resource{resource}
@@ -302,18 +312,24 @@ func TestObservabilityPipelinePostConvertHookPreservesEmptyListsAndScopeVariants
 
 	config := requireObservabilityPipelineMapInList(t, generator.Resources[0].Item, "config", 0)
 	processorGroup := requireObservabilityPipelineMapInList(t, config, "processor_group", 0)
-	reduceProcessor := requireObservabilityPipelineMapInList(t, processorGroup, "processor", 0)
+	quotaProcessor := requireObservabilityPipelineMapInList(t, processorGroup, "processor", 0)
+	quota := requireObservabilityPipelineMapInList(t, quotaProcessor, "quota", 0)
+	requireObservabilityPipelineEmptyList(t, quota, "partition_fields")
+
+	reduceProcessor := requireObservabilityPipelineMapInList(t, processorGroup, "processor", 1)
 	reduce := requireObservabilityPipelineMapInList(t, reduceProcessor, "reduce", 0)
 	requireObservabilityPipelineEmptyList(t, reduce, "group_by")
 
-	scannerProcessor := requireObservabilityPipelineMapInList(t, processorGroup, "processor", 1)
+	scannerProcessor := requireObservabilityPipelineMapInList(t, processorGroup, "processor", 2)
 	scanner := requireObservabilityPipelineMapInList(t, scannerProcessor, "sensitive_data_scanner", 0)
 	includeRule := requireObservabilityPipelineMapInList(t, scanner, "rule", 0)
 	includeScope := requireObservabilityPipelineMapInList(t, includeRule, "scope", 0)
 	requireObservabilityPipelineEmptyBlockList(t, includeScope, "include")
+	requireObservabilityPipelineEmptyList(t, includeRule, "tags")
 	excludeRule := requireObservabilityPipelineMapInList(t, scanner, "rule", 1)
 	excludeScope := requireObservabilityPipelineMapInList(t, excludeRule, "scope", 0)
 	requireObservabilityPipelineEmptyBlockList(t, excludeScope, "exclude")
+	requireObservabilityPipelineEmptyList(t, excludeRule, "tags")
 }
 
 func TestObservabilityPipelinePostConvertHookDoesNotInventMissingVariantBlocks(t *testing.T) {
