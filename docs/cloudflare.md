@@ -111,7 +111,6 @@ List of supported Cloudflare services:
   * `cloudflare_zero_trust_gateway_settings`
   * `cloudflare_zero_trust_list`
   * `cloudflare_zero_trust_network_hostname_route`
-  * `cloudflare_zero_trust_organization`
 
 Unsupported and deferred Cloudflare import decisions are tracked in
 [unsupported_resources.json](../providers/cloudflare/unsupported_resources.json).

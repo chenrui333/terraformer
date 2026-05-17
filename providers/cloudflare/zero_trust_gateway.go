@@ -130,31 +130,6 @@ func listZeroTrustGatewayResources(ctx context.Context, api *cf.API, path string
 	return resources, nil
 }
 
-func getZeroTrustOrganization(ctx context.Context, api *cf.API, accountID string) (zeroTrustGatewayRawResource, error) {
-	response, err := api.Raw(
-		ctx,
-		http.MethodGet,
-		fmt.Sprintf("/accounts/%s/access/organizations", accountID),
-		nil,
-		nil,
-	)
-	if err != nil {
-		if zeroTrustGatewayOptionalUnavailableError(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	var organization zeroTrustGatewayRawResource
-	if err := json.Unmarshal(response.Result, &organization); err != nil {
-		return nil, err
-	}
-	if zeroTrustGatewayString(organization, "name") == "" && zeroTrustGatewayString(organization, "auth_domain") == "" {
-		return nil, nil
-	}
-	return organization, nil
-}
-
 func zeroTrustGatewaySingletonExists(ctx context.Context, api *cf.API, path string) (bool, error) {
 	_, err := api.Raw(ctx, http.MethodGet, path, nil, nil)
 	if err != nil {
@@ -370,27 +345,6 @@ func (g *ZeroTrustGatewayGenerator) appendNetworkHostnameRouteResources(ctx cont
 	return nil
 }
 
-func (g *ZeroTrustGatewayGenerator) appendZeroTrustOrganizationResource(ctx context.Context, api *cf.API, accountID string) error {
-	organization, err := getZeroTrustOrganization(ctx, api, accountID)
-	if err != nil {
-		return err
-	}
-	if organization == nil {
-		return nil
-	}
-	g.Resources = append(g.Resources, zeroTrustGatewaySingletonResource(
-		accountID,
-		cloudflareResourceName(
-			accountID,
-			"zero_trust_organization",
-			zeroTrustGatewayString(organization, "name"),
-			zeroTrustGatewayString(organization, "auth_domain"),
-		),
-		"cloudflare_zero_trust_organization",
-	))
-	return nil
-}
-
 func (g *ZeroTrustGatewayGenerator) InitResources() error {
 	ctx := context.Background()
 	api, err := g.initializeAPI()
@@ -411,7 +365,6 @@ func (g *ZeroTrustGatewayGenerator) InitResources() error {
 		g.appendGatewaySettingsResource,
 		g.appendZeroTrustListResources,
 		g.appendNetworkHostnameRouteResources,
-		g.appendZeroTrustOrganizationResource,
 	} {
 		if err := f(ctx, api, account.Identifier); err != nil {
 			return err

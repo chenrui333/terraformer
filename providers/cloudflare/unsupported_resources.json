@@ -354,6 +354,17 @@
       ]
     },
     {
+      "resource": "cloudflare_zero_trust_organization",
+      "service_family": "zero_trust_access",
+      "reason": "Cloudflare provider v5.19.1 does not support terraform import for Zero Trust organization settings.",
+      "evidence": "The Cloudflare provider v5.19.1 resource documentation states that cloudflare_zero_trust_organization does not currently support terraform import. Terraformer must not emit this resource because the generated import target would fail even when the account has a readable Zero Trust organization.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/5.19.1/docs/resources/zero_trust_organization"
+      ]
+    },
+    {
       "resource": "cloudflare_zero_trust_risk_scoring_integration",
       "service_family": "zero_trust_risk",
       "reason": "Risk scoring integrations are third-party tenant integrations with lifecycle state that should not be inferred from broad discovery.",
