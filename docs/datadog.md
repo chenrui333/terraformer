@@ -124,9 +124,17 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `integration_azure`
     * `datadog_integration_azure`
         * **_NOTE:_** Sensitive field `client_secret` is not generated and needs to be manually set
+*   `integration_confluent_resource`
+    * `datadog_integration_confluent_resource`
+        * **_NOTE:_** Import ID is composite `account_id:resource_id`. Discovery lists resources across all Confluent accounts.
+*   `integration_fastly_service`
+    * `datadog_integration_fastly_service`
+        * **_NOTE:_** Import ID is composite `account_id:service_id`. Discovery lists services across all Fastly accounts.
 *   `integration_gcp`
     * `datadog_integration_gcp`
         * **_NOTE:_** Sensitive fields `private_key, private_key_id, client_id` is not generated and needs to be manually set
+*   `integration_ms_teams_tenant_based_handle`
+    * `datadog_integration_ms_teams_tenant_based_handle`
 *   `integration_pagerduty`
     * `datadog_integration_pagerduty`
 *   `integration_pagerduty_service_object`
@@ -255,5 +263,19 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
         * **_NOTE:_** The Datadog provider currently supports the GitHub team sync source
 *   `user`
     * `datadog_user`
+
+## Unsupported / Deferred Resources
+
+The following Terraform provider resources have been evaluated and cannot be safely imported by Terraformer:
+
+| Resource | Reason |
+|----------|--------|
+| `datadog_integration_aws_account` | Wildcard `--resources=*` conflicts with legacy `integration_aws` generator; required empty blocks (`lambda_forwarder`, `namespace_filters`, `xray_services`) are dropped by Terraformer's flatmap parser before `AllowEmptyValues` is consulted. Revisit after legacy generator is removed. |
+| `datadog_integration_aws_event_bridge` | List API returns full event source names (with assigned suffix); provider's required `event_generator_name` is the user-supplied prefix only, and there is no safe way to derive it. |
+| `datadog_integration_cloudflare_account` | `api_key` is required and sensitive; read API does not return it. |
+| `datadog_integration_confluent_account` | `api_secret` is required and sensitive; read API does not return it. |
+| `datadog_integration_fastly_account` | `api_key` is required and sensitive; read API does not return it. |
+| `datadog_integration_ms_teams_workflows_webhook_handle` | `url` is required and sensitive; read API does not return it. |
+| `datadog_integration_opsgenie_service_object` | `opsgenie_api_key` is required and sensitive; Datadog API explicitly never returns it. |
 
 [1]: https://github.com/chenrui333/terraformer/blob/main/README.md#filtering
