@@ -1,0 +1,31 @@
+providers/datadog/integration_fastly_service.go
+  s_ad2cde2451f5fe::t_f05674148c2efe 27,32-35,37
+providers/datadog/integration_aws_event_bridge.go
+  s_ad2cde2451f5fe::t_23ed855932c304 23-24,29-33,35
+  s_ad2cde2451f5fe::t_49d00cfbf8223d 56,62-63
+providers/datadog/integration_modern_test.go
+  s_ad2cde2451f5fe::t_2ef860f1ffcc0f 100-105
+  s_ad2cde2451f5fe::t_c7d46de37a6a2b 137,140
+  s_ad2cde2451f5fe::t_644c70dc0ff92c 66,76-83
+  s_ad2cde2451f5fe::t_3279e6e01211d2 121-126
+providers/datadog/integration_ms_teams_tenant_based_handle.go
+  s_ad2cde2451f5fe::t_12a8b924cce21f 28
+providers/datadog/integration_confluent_resource.go
+  s_ad2cde2451f5fe::t_341f176d9c2795 27,32-35,37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "fc25890d1a126357c05b94146a1c4782d5bf6521",
+  "prompts": {},
+  "sessions": {
+    "s_ad2cde2451f5fe": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e5e5a739-89aa-4196-9223-c274cd1e20ca",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
