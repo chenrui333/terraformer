@@ -70,6 +70,17 @@ Mark a resource unsupported when:
 
 Before claiming a provider gap issue is complete, compare all four sources of truth: Terraformer provider registration, provider docs, provider-local unsupported metadata, and the issue's resource buckets. Also check whether open or stale PR branches were superseded by later merged lanes before continuing work.
 
+Close-out audits are different from feature lanes. They should make the remaining work explicit, not restart parity chasing.
+
+Rules:
+
+- Report lane closure separately from tracking-issue closure. A lane can be complete while the broader issue remains open.
+- For large provider schemas, practical close-out means every reviewed candidate is supported, evidence-backed deferred/unsupported, or assigned to a named focused follow-up lane.
+- Do not treat literal Terraform provider parity as the goal when resources are request-style, runtime/media output, high-cardinality content, provider-managed, source/body-heavy, or secret-required.
+- For settings and singleton resources, distinguish durable user-owned configuration from effective API values and platform defaults before moving a resource from deferred metadata to supported import.
+- Use close-out audits to reduce repeated search work: update unsupported metadata when evidence is clear, and group remaining importable resources into focused next lanes.
+- If the audit finds no durable metadata or guidance changes, report that directly instead of creating a docs-only PR.
+
 When evaluating product, platform, dataset, table, pipeline, API-definition, or deployment-style resources:
 
 - preserve empty-but-meaningful strings, lists, maps, nested blocks, and variant markers when provider refresh needs them for stable HCL;
