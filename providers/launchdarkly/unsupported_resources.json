@@ -37,7 +37,7 @@
       "service_family": "views",
       "reason": "Filter-based view links capture apply-time actions rather than discoverable stable link configuration.",
       "evidence": "Terraform provider docs state view_filter_links resolves filters at apply time, is point-in-time by default, and has no drift detection for resolved keys. The provider read path intentionally does not read resolved keys back, while Terraformer already supports explicit view ownership through launchdarkly_view_links and view_keys on feature flags and segments. Terraformer cannot reconstruct the original filter expressions from LaunchDarkly linked-resource APIs.",
-      "status": "action-style",
+      "status": "unsupported",
       "references": [
         "https://registry.terraform.io/providers/launchdarkly/launchdarkly/latest/docs/resources/view_filter_links",
         "https://registry.terraform.io/providers/launchdarkly/launchdarkly/latest/docs/resources/view_links"
