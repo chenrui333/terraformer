@@ -1,0 +1,20 @@
+providers/datadog/incident_workflow_test.go
+  s_147381facf0cb2::t_fc5619ae054b6b 306
+  s_147381facf0cb2::t_fd9337c2d08b54 382
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "acbd6e9970e8fc5761f370237e5149c75f223531",
+  "prompts": {},
+  "sessions": {
+    "s_147381facf0cb2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35d4-5c2a-7410-97bd-53923272d33e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
