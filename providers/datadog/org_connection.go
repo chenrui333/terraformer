@@ -5,7 +5,6 @@ package datadog
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
@@ -74,7 +73,7 @@ func (g *OrgConnectionGenerator) InitResources() error {
 			_ = httpResp.Body.Close()
 		}
 		if err != nil {
-			if strings.Contains(err.Error(), "403") || strings.Contains(err.Error(), "404") {
+			if httpResp != nil && (httpResp.StatusCode == 403 || httpResp.StatusCode == 404) {
 				break
 			}
 			return err
