@@ -1,0 +1,19 @@
+providers/cloudflare/unsupported_resources.json
+  s_778489c4593c2c::t_931a1ae46ec015 319
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "24df3f679ecdfcd72b044d92e40663813cf6f45f",
+  "prompts": {},
+  "sessions": {
+    "s_778489c4593c2c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35dd-f828-7a23-81dc-00d6511bb01a",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
