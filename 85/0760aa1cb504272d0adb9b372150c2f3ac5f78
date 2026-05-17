@@ -1,0 +1,19 @@
+.github/workflows/test.yml
+  s_a56ecfbf36e9e3::t_46790093472435 37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "850760aa1cb504272d0adb9b372150c2f3ac5f78",
+  "prompts": {},
+  "sessions": {
+    "s_a56ecfbf36e9e3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3426-d0e0-7cc2-a544-48f707cf5f2b",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
