@@ -97,6 +97,9 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_api_key`
 *   `application_key`
     * `datadog_application_key`
+*   `app_builder_app`
+    * `datadog_app_builder_app`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
 *   `apm_retention_filter`
     * `datadog_apm_retention_filter`
 *   `apm_retention_filter_order`
@@ -142,9 +145,19 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `custom_allocation_rule`
     * `datadog_custom_allocation_rule`
         * **_NOTE:_** Requires DataDog/datadog provider 3.39.0 or newer.
+*   `dataset`
+    * `datadog_dataset`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
+*   `datastore`
+    * `datadog_datastore`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
+        * **_NOTE:_** Imports datastore configuration metadata. Datastore items are not part of this Terraform resource.
 *   `domain_allowlist`
     * `datadog_domain_allowlist`
         * **_NOTE:_** Singleton resource. Only one domain allowlist per org.
+*   `deployment_gate`
+    * `datadog_deployment_gate`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
 *   `downtime`
     * `datadog_downtime`
 *   `downtime_schedule`
@@ -215,6 +228,9 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `monitor_notification_rule`
     * `datadog_monitor_notification_rule`
         * **_NOTE:_** Requires DataDog/datadog provider 3.83.0 or newer.
+*   `observability_pipeline`
+    * `datadog_observability_pipeline`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
 *   `on_call_escalation_policy`
     * `datadog_on_call_escalation_policy`
         * **_NOTE:_** The Datadog API does not expose a list endpoint for On-Call escalation policies; pass IDs explicitly, for example `--filter=on_call_escalation_policy=policy-id`
@@ -233,6 +249,10 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_on_call_user_notification_rule`
         * **_NOTE:_** Importing a single On-Call user notification rule by ID requires quoting the `user_id:rule_id` filter value, for example `--filter="on_call_user_notification_rule='user-id:rule-id'"`
         * **_NOTE:_** To import notification rules for one user, filter by `user_id`, for example `--filter="Type=on_call_user_notification_rule;Name=user_id;Value=user-id"`
+*   `openapi_api`
+    * `datadog_openapi_api`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
+        * **_NOTE:_** The DataDog/datadog provider marks this resource as deprecated.
 *   `org_connection`
     * `datadog_org_connection`
 *   `org_group`
@@ -254,6 +274,10 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_powerpack_v2`
         * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
         * **_NOTE:_** Discovers the same powerpack IDs as `powerpack`; select one powerpack resource representation for each imported powerpack to avoid duplicate Terraform ownership.
+*   `reference_table`
+    * `datadog_reference_table`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
+        * **_NOTE:_** Imports reference table configuration. Reference table row data is not part of this Terraform resource.
 *   `rum_application`
     * `datadog_rum_application`
 *   `rum_metric`
