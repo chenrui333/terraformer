@@ -390,6 +390,28 @@
       ]
     },
     {
+      "resource": "cloudflare_snippet_rules",
+      "service_family": "snippets",
+      "reason": "Snippet rules are zone-level rule-list ownership without a Terraform provider import path.",
+      "evidence": "Terraform provider v5.19.1 documents cloudflare_snippet_rules as not supporting terraform import, and the generated resource has an empty Read method with no ResourceWithImportState implementation. Broad import cannot safely seed the authoritative rules list.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/snippet_rules"
+      ]
+    },
+    {
+      "resource": "cloudflare_snippets",
+      "service_family": "snippets",
+      "reason": "Deprecated snippets resources are non-functional in the Terraform provider.",
+      "evidence": "Terraform provider v5.19.1 marks cloudflare_snippets as deprecated in favor of cloudflare_snippet, documents no terraform import support, and the generated resource returns a non-functional resource error for create, read, update, and delete.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/snippets"
+      ]
+    },
+    {
       "resource": "cloudflare_sso_connector",
       "service_family": "identity",
       "reason": "SSO connector resources include identity-provider verification workflow state that broad settings import should not claim.",
@@ -492,7 +514,7 @@
       "resource": "cloudflare_worker_version",
       "service_family": "workers",
       "reason": "Worker version resources couple runtime version state to code modules, assets, and bindings that broad discovery cannot safely reconstruct.",
-      "evidence": "The Terraform provider resource includes modules, main_module, assets, bindings, migrations, and sensitive asset or binding values. Terraformer currently imports Workers routes, custom domains, cron triggers, and dispatch namespaces, but not script body or version ownership.",
+      "evidence": "The Terraform provider resource includes modules, main_module, assets, bindings, migrations, and sensitive asset or binding values. Terraformer imports Worker metadata, routes, custom domains, cron triggers, and dispatch namespaces, but not script body or version ownership.",
       "status": "deferred",
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
@@ -525,11 +547,23 @@
       "resource": "cloudflare_workers_script",
       "service_family": "workers",
       "reason": "Worker scripts can include source code, assets, modules, and sensitive binding material that should not be reconstructed blindly.",
-      "evidence": "The Terraform provider resource accepts content/content_file, assets, bindings, migrations, and sensitive asset or binding fields. Terraformer currently imports Workers routes, custom domains, cron triggers, and dispatch namespaces, but not script body ownership.",
+      "evidence": "The Terraform provider resource accepts content/content_file, assets, bindings, migrations, and sensitive asset or binding fields. Terraformer imports Worker metadata, routes, custom domains, cron triggers, and dispatch namespaces, but not script body ownership.",
       "status": "deferred",
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/workers_script"
+      ]
+    },
+    {
+      "resource": "cloudflare_workers_script_subdomain",
+      "service_family": "workers",
+      "reason": "Workers script subdomain ownership is redundant with cloudflare_worker subdomain settings.",
+      "evidence": "Terraform provider v5.19.1 documents cloudflare_workers_script_subdomain as redundant with cloudflare_worker and says it should not be used together with the worker resource. Terraformer imports cloudflare_worker for durable Worker metadata, so also importing script subdomain resources would create duplicate ownership.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/workers_script_subdomain",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/worker"
       ]
     },
     {
