@@ -5,6 +5,7 @@ package datadog
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -16,15 +17,15 @@ import (
 
 var (
 	// ObservabilityPipelineAllowEmptyValues ...
-	ObservabilityPipelineAllowEmptyValues = []string{
+	ObservabilityPipelineAllowEmptyValues = observabilityPipelineIndexedFlatmapPaths(
 		"config.destination.elasticsearch.data_stream.auto_routing",
 		"config.destination.elasticsearch.data_stream.sync_fields",
 		"config.destination.elasticsearch.request_retry_partial",
 		"config.destination.splunk_hec.auto_extract_timestamp",
-		"config\\..*\\.destination\\..*\\.datadog_logs\\..*\\.routes\\..*\\.include",
-		"config\\..*\\.processor_group\\..*\\.include",
-		"config\\..*\\.processor_group\\..*\\.processor\\..*\\.include",
+		"config.destination.datadog_logs.routes.include",
+		"config.processor_group.include",
 		"config.processor_group.enabled",
+		"config.processor_group.processor.include",
 		"config.processor_group.processor.custom_processor.remap.drop_on_error",
 		"config.processor_group.processor.custom_processor.remap.enabled",
 		"config.processor_group.processor.enabled",
@@ -43,7 +44,7 @@ var (
 		"config.processor_group.processor.sensitive_data_scanner.rule.scope.all",
 		"config.source.splunk_hec.store_hec_token",
 		"config.use_legacy_search_syntax",
-	}
+	)
 
 	observabilityPipelineEmptyVariantBlockPaths = map[string]struct{}{
 		"config.destination.amazon_opensearch":                                       {},
@@ -113,6 +114,29 @@ var (
 		"config.source.syslog_ng":                                                    {},
 	}
 )
+
+func observabilityPipelineIndexedFlatmapPaths(paths ...string) []string {
+	patterns := make([]string, 0, len(paths))
+	for _, path := range paths {
+		patterns = append(patterns, observabilityPipelineIndexedFlatmapPath(path))
+	}
+	return patterns
+}
+
+func observabilityPipelineIndexedFlatmapPath(path string) string {
+	parts := strings.Split(path, ".")
+	pattern := strings.Builder{}
+	for i, part := range parts {
+		if i > 0 {
+			pattern.WriteString("\\.")
+		}
+		pattern.WriteString(regexp.QuoteMeta(part))
+		if i < len(parts)-1 {
+			pattern.WriteString("(\\.[0-9]+)?")
+		}
+	}
+	return pattern.String()
+}
 
 // ObservabilityPipelineGenerator ...
 type ObservabilityPipelineGenerator struct {

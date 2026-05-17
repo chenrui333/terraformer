@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"slices"
 	"strings"
 	"testing"
 
@@ -39,17 +38,46 @@ func TestObservabilityPipelineCreateResourceMissingID(t *testing.T) {
 	}
 }
 
-func TestObservabilityPipelineAllowEmptyValuesPreservesFalseBooleans(t *testing.T) {
+func TestObservabilityPipelineAllowEmptyValuesMatchesIndexedFlatmapPaths(t *testing.T) {
+	allowEmptyValues := allowEmptyValueRegexps(ObservabilityPipelineAllowEmptyValues)
 	requiredPaths := []string{
-		"config.processor_group.enabled",
-		"config.processor_group.processor.enabled",
-		"config.processor_group.processor.custom_processor.remap.drop_on_error",
-		"config.processor_group.processor.custom_processor.remap.enabled",
-		"config.processor_group.processor.rename_fields.field.preserve_source",
+		"config.0.destination.0.elasticsearch.0.data_stream.0.auto_routing",
+		"config.0.destination.0.elasticsearch.0.data_stream.0.sync_fields",
+		"config.0.destination.0.elasticsearch.0.request_retry_partial",
+		"config.0.destination.0.splunk_hec.0.auto_extract_timestamp",
+		"config.0.destination.0.datadog_logs.0.routes.0.include",
+		"config.0.processor_group.0.include",
+		"config.0.processor_group.0.enabled",
+		"config.0.processor_group.0.processor.0.include",
+		"config.0.processor_group.0.processor.0.custom_processor.0.remap.0.drop_on_error",
+		"config.0.processor_group.0.processor.0.custom_processor.0.remap.0.enabled",
+		"config.0.processor_group.0.processor.0.enabled",
+		"config.0.processor_group.0.processor.0.enrichment_table.0.file.0.encoding.0.includes_headers",
+		"config.0.processor_group.0.processor.0.ocsf_mapper.0.keep_unmatched",
+		"config.0.processor_group.0.processor.0.parse_grok.0.disable_library_rules",
+		"config.0.processor_group.0.processor.0.parse_xml.0.always_use_text_key",
+		"config.0.processor_group.0.processor.0.parse_xml.0.include_attr",
+		"config.0.processor_group.0.processor.0.parse_xml.0.parse_bool",
+		"config.0.processor_group.0.processor.0.parse_xml.0.parse_null",
+		"config.0.processor_group.0.processor.0.parse_xml.0.parse_number",
+		"config.0.processor_group.0.processor.0.quota.0.drop_events",
+		"config.0.processor_group.0.processor.0.quota.0.ignore_when_missing_partitions",
+		"config.0.processor_group.0.processor.0.rename_fields.0.field.0.preserve_source",
+		"config.0.processor_group.0.processor.0.sensitive_data_scanner.0.rule.0.pattern.0.library.0.use_recommended_keywords",
+		"config.0.processor_group.0.processor.0.sensitive_data_scanner.0.rule.0.scope.0.all",
+		"config.0.source.0.splunk_hec.0.store_hec_token",
+		"config.0.use_legacy_search_syntax",
 	}
 	for _, path := range requiredPaths {
-		if !slices.Contains(ObservabilityPipelineAllowEmptyValues, path) {
-			t.Fatalf("ObservabilityPipelineAllowEmptyValues must include %q", path)
+		matched := false
+		for _, pattern := range allowEmptyValues {
+			if pattern.MatchString(path) {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			t.Fatalf("ObservabilityPipelineAllowEmptyValues must match indexed path %q", path)
 		}
 	}
 }
