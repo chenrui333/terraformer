@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 	cf "github.com/cloudflare/cloudflare-go"
 )
 
@@ -312,8 +313,19 @@ func (g *SettingsGenerator) appendLeakedCredentialCheckResource(ctx context.Cont
 	if !setting.Enabled {
 		return nil
 	}
-	g.appendZoneSingletonSettingResource(zone, "cloudflare_leaked_credential_check", "leaked_credential_check")
+	g.appendLeakedCredentialCheckZoneResource(zone)
 	return nil
+}
+
+func (g *SettingsGenerator) appendLeakedCredentialCheckZoneResource(zone cf.Zone) {
+	resource := cloudflareZoneSingletonSettingResourceWithAttributes(
+		zone,
+		"cloudflare_leaked_credential_check",
+		"leaked_credential_check",
+		map[string]string{"enabled": "true"},
+	)
+	resource.InstanceState.Meta[tfcompat.MetaKeyPreserveIDAfterRefresh] = true
+	g.Resources = append(g.Resources, resource)
 }
 
 func (g *SettingsGenerator) appendLogpullRetentionResource(ctx context.Context, api *cf.API, zone cf.Zone) error {
@@ -526,6 +538,11 @@ func (g *SettingsGenerator) appendZoneSingletonSettingResource(zone cf.Zone, res
 }
 
 func (g *SettingsGenerator) appendZoneSingletonSettingResourceWithAttributes(zone cf.Zone, resourceType, resourceNameSuffix string, attributes map[string]string) {
+	resource := cloudflareZoneSingletonSettingResourceWithAttributes(zone, resourceType, resourceNameSuffix, attributes)
+	g.Resources = append(g.Resources, resource)
+}
+
+func cloudflareZoneSingletonSettingResourceWithAttributes(zone cf.Zone, resourceType, resourceNameSuffix string, attributes map[string]string) terraformutils.Resource {
 	if attributes == nil {
 		attributes = map[string]string{}
 	}
@@ -541,7 +558,7 @@ func (g *SettingsGenerator) appendZoneSingletonSettingResourceWithAttributes(zon
 		map[string]interface{}{},
 	)
 	setCloudflareImportID(&resource, zone.ID)
-	g.Resources = append(g.Resources, resource)
+	return resource
 }
 
 func cloudflareListPaginated[T any](ctx context.Context, api *cf.API, endpoint string) ([]T, error) {

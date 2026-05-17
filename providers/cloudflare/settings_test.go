@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/chenrui333/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 	cf "github.com/cloudflare/cloudflare-go"
 )
 
@@ -87,6 +88,30 @@ func TestCloudflareSettingsDefaultImportPolicy(t *testing.T) {
 	}
 	if cloudflareZoneCacheVariantsConfigured(cf.ZoneCacheVariantsValues{}) {
 		t.Fatal("empty cache variants should be skipped")
+	}
+}
+
+func TestAppendLeakedCredentialCheckZoneResourcePreservesID(t *testing.T) {
+	generator := &SettingsGenerator{}
+	zone := cf.Zone{ID: "zone-123", Name: "example.com"}
+
+	generator.appendLeakedCredentialCheckZoneResource(zone)
+
+	if len(generator.Resources) != 1 {
+		t.Fatalf("resources length = %d, want 1", len(generator.Resources))
+	}
+	resource := generator.Resources[0]
+	if resource.InstanceInfo.Type != "cloudflare_leaked_credential_check" {
+		t.Fatalf("resource type = %q, want cloudflare_leaked_credential_check", resource.InstanceInfo.Type)
+	}
+	if resource.InstanceState.ID != "zone-123" {
+		t.Fatalf("resource ID = %q, want zone-123", resource.InstanceState.ID)
+	}
+	if resource.InstanceState.Attributes["enabled"] != "true" {
+		t.Fatalf("enabled attribute = %q, want true", resource.InstanceState.Attributes["enabled"])
+	}
+	if got := resource.InstanceState.Meta[tfcompat.MetaKeyPreserveIDAfterRefresh]; got != true {
+		t.Fatalf("preserve ID metadata = %#v, want true", got)
 	}
 }
 
