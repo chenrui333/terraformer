@@ -1,0 +1,36 @@
+providers/datadog/security_notification_rule.go
+  s_147381facf0cb2::t_fcd2f93ea4b7e4 1-25,27-38,40-108,110-116,118,122-123,125-126,129-146,148-156,158-167,169-170,172-173,175-177,179-180,185
+  s_147381facf0cb2::t_d668bb1f2ab637 26,39,109,117,119-121,124,127-128,147,157,168,171,174,178,181-184
+providers/datadog/security_monitoring_rule.go
+  s_147381facf0cb2::t_fcd2f93ea4b7e4 36,68-70
+providers/datadog/security_monitoring_rule_helper.go
+  s_147381facf0cb2::t_fcd2f93ea4b7e4 1-46
+providers/datadog/datadog_provider.go
+  s_147381facf0cb2::t_484da1ccb9ffe5 180,237,241
+providers/datadog/security_monitoring_critical_asset.go
+  s_147381facf0cb2::t_fcd2f93ea4b7e4 1-172
+providers/datadog/security_platform_test.go
+  s_147381facf0cb2::t_b6d6a40d5d4c9b 1-310
+providers/datadog/cloud_configuration_rule.go
+  s_147381facf0cb2::t_fcd2f93ea4b7e4 1-68
+docs/datadog.md
+  s_147381facf0cb2::t_875ca8eb70536e 117-119,268-270,278-280,360,362-366
+providers/datadog/unsupported_resources.json
+  s_147381facf0cb2::t_db41ab3c622ab9 149-182,193-228
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "047559faddf0f45b7109b66255f09869bd3c3d67",
+  "prompts": {},
+  "sessions": {
+    "s_147381facf0cb2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35d4-5c2a-7410-97bd-53923272d33e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
