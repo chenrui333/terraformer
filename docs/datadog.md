@@ -16,7 +16,7 @@ terraform {
   required_providers {
     datadog = {
       source  = "DataDog/datadog"
-      version = ">= 3.86.0"
+      version = ">= 4.9.0"
     }
   }
 }
@@ -75,6 +75,9 @@ Filtering based on resource ID:
 # Import dashboard based on the dashboard ID
 ./terraformer import datadog --resources=dashboard --filter=dashboard=some-id
 
+# Import dashboard_v2 based on the dashboard ID
+./terraformer import datadog --resources=dashboard_v2 --filter=dashboard_v2=some-id
+
 # Import based on multiple resource IDs
  ./terraformer import datadog --resources=monitor --filter=monitor=id1:id2:id4
 ```
@@ -117,6 +120,10 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_dashboard_json`
 *   `dashboard_list`
     * `datadog_dashboard_list`
+*   `dashboard_v2`
+    * `datadog_dashboard_v2`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
+        * **_NOTE:_** Discovers the same dashboard IDs as `dashboard` and `dashboard_json`; select one dashboard resource representation for each imported dashboard to avoid duplicate Terraform ownership.
 *   `cloud_inventory_sync_config`
     * `datadog_cloud_inventory_sync_config`
         * **_NOTE:_** Requires DataDog/datadog provider 3.86.0 or newer.
@@ -234,6 +241,13 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `organization_settings`
     * `datadog_organization_settings`
         * **_NOTE:_** Singleton-like. Lists org(s) via V1 API and imports each by public ID.
+*   `powerpack`
+    * `datadog_powerpack`
+        * **_NOTE:_** Discovers the same powerpack IDs as `powerpack_v2`; select one powerpack resource representation for each imported powerpack to avoid duplicate Terraform ownership.
+*   `powerpack_v2`
+    * `datadog_powerpack_v2`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
+        * **_NOTE:_** Discovers the same powerpack IDs as `powerpack`; select one powerpack resource representation for each imported powerpack to avoid duplicate Terraform ownership.
 *   `rum_application`
     * `datadog_rum_application`
 *   `rum_metric`
@@ -328,6 +342,7 @@ The following Terraform provider resources have been evaluated and cannot be saf
 | `datadog_integration_fastly_account` | `api_key` is required and sensitive; read API does not return it. |
 | `datadog_integration_ms_teams_workflows_webhook_handle` | `url` is required and sensitive; read API does not return it. |
 | `datadog_integration_opsgenie_service_object` | `opsgenie_api_key` is required and sensitive; Datadog API explicitly never returns it. |
+| `datadog_secure_embed_dashboard` | Deferred because Datadog exposes secure embeds by `dashboard_id:token` only; the API and provider import path require the token and do not provide a list/token discovery endpoint. |
 | `datadog_app_key_registration` | Required `id` configuration attribute is stripped during Terraformer HCL conversion, producing an empty resource block that fails validation. |
 | `datadog_org_group_policy_override` | Delete resets the target org config value to the parent policy, and server-created overrides make broad discovery noisy and potentially ephemeral. |
 | `datadog_webhook_custom_variable` | Provider import seeds only `id`, but provider read looks up the variable by `name`; Terraformer cannot safely refresh the required name/value state from a broad ID import. |
