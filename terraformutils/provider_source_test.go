@@ -31,6 +31,7 @@ func TestProviderSource(t *testing.T) {
 		"honeycombio":                 "honeycombio/honeycombio",
 		"ibm":                         "IBM-Cloud/ibm",
 		"ionoscloud":                  "ionos-cloud/ionoscloud",
+		"kafka":                       "Mongey/kafka",
 		"keycloak":                    "keycloak/keycloak",
 		"kubernetes":                  "hashicorp/kubernetes",
 		"launchdarkly":                "launchdarkly/launchdarkly",
