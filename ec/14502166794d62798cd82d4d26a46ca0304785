@@ -1,0 +1,23 @@
+providers/cloudflare/zero_trust_gateway.go
+  s_778489c4593c2c::t_b5deed35a7c3db 10,24-29,79,90-100,374-438
+providers/cloudflare/unsupported_resources.json
+  s_778489c4593c2c::t_07deea1c302ed0 359-360
+providers/cloudflare/zero_trust_gateway_test.go
+  s_778489c4593c2c::t_a1aa01e8b063f8 93,95,98,100
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "ec14502166794d62798cd82d4d26a46ca0304785",
+  "prompts": {},
+  "sessions": {
+    "s_778489c4593c2c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35dd-f828-7a23-81dc-00d6511bb01a",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
