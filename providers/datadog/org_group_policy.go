@@ -93,7 +93,7 @@ func (g *OrgGroupPolicyGenerator) InitResources() error {
 
 func (g *OrgGroupPolicyGenerator) listAllOrgGroups(ctx context.Context, api *datadogV2.OrgGroupsApi) ([]datadogV2.OrgGroupData, error) {
 	var all []datadogV2.OrgGroupData
-	var pageNumber int64 = 1
+	var pageNumber int64
 	const pageSize int64 = 100
 
 	for {

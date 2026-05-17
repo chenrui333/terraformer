@@ -46,7 +46,7 @@ func (g *OrgGroupGenerator) InitResources() error {
 	api := datadogV2.NewOrgGroupsApi(datadogClient)
 
 	resources := []terraformutils.Resource{}
-	var pageNumber int64 = 1
+	var pageNumber int64
 	const pageSize int64 = 100
 
 	for {

@@ -100,7 +100,7 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
         * **_NOTE:_** Importing resource requires resource ID's to be passed via [Filter][1] option
 *   `domain_allowlist`
     * `datadog_domain_allowlist`
-        * **_NOTE:_** Singleton resource. Any filter value is accepted since there is only one domain allowlist per org.
+        * **_NOTE:_** Singleton resource. Only one domain allowlist per org.
 *   `downtime`
     * `datadog_downtime`
 *   `integration_aws`
@@ -124,7 +124,7 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
         * **_NOTE:_** Importing resource requires resource ID or `account_name` to be passed via [Filter][1] option
 *   `ip_allowlist`
     * `datadog_ip_allowlist`
-        * **_NOTE:_** Singleton resource. Any filter value is accepted since there is only one IP allowlist per org.
+        * **_NOTE:_** Singleton resource. Only one IP allowlist per org.
 *   `logs_archive`
     * `datadog_logs_archive`
 *   `logs_archive_order`
@@ -175,11 +175,13 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_org_connection`
 *   `org_group`
     * `datadog_org_group`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.8.0 or newer.
 *   `org_group_membership`
     * `datadog_org_group_membership`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.8.0 or newer.
 *   `org_group_policy`
     * `datadog_org_group_policy`
-        * **_NOTE:_** Policies are discovered per org group. Import ID is the policy UUID.
+        * **_NOTE:_** Requires DataDog/datadog provider 4.8.0 or newer. Policies are discovered per org group.
 *   `organization_settings`
     * `datadog_organization_settings`
         * **_NOTE:_** Singleton-like. Lists org(s) via V1 API and imports each by public ID.

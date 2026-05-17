@@ -35,7 +35,7 @@ func (g *IPAllowlistGenerator) InitResources() error {
 	data := resp.GetData()
 	id := data.GetId()
 	if id == "" {
-		return nil
+		id = "ip-allowlist"
 	}
 
 	attrs := map[string]string{

@@ -36,7 +36,7 @@ func (g *DomainAllowlistGenerator) InitResources() error {
 	data := resp.GetData()
 	id := data.GetId()
 	if id == "" {
-		return nil
+		id = "domain-allowlist"
 	}
 
 	attrs := map[string]string{
