@@ -1,0 +1,19 @@
+.github/labeler.yml
+  s_be04aa41d1cb7c::t_fa3f2ebac79952 187-193
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "9a1aa2e0e051f134cf788f56729556f8ef09de15",
+  "prompts": {},
+  "sessions": {
+    "s_be04aa41d1cb7c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3845-eb8b-7021-8efc-4ab438cd80b8",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
