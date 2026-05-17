@@ -1,0 +1,30 @@
+providers/cloudflare/settings.go
+  s_f31c92060751c4::t_690ab5bf906b4f 104-106,112,877,880
+  s_f31c92060751c4::t_2f9b0cd7950641 107-111,113-114,174,553-572,852,855-856,858,862-876,878-879,881
+  s_f31c92060751c4::t_1312cfa9c440fe 89-103,853-854,857,860-861
+docs/cloudflare.md
+  s_f31c92060751c4::t_c980f314cd723b 107,112
+  s_f31c92060751c4::t_3a2a272976e17e 113
+providers/cloudflare/unsupported_resources.json
+  s_f31c92060751c4::t_2791e59073bc58 18-19,648-649
+providers/cloudflare/settings_test.go
+  s_f31c92060751c4::t_d9f86cbd5be081 7,492-495,497,499-512,514-519,531-536
+  s_f31c92060751c4::t_4c51564564d5ed 408-417,420,422
+  s_f31c92060751c4::t_c70218d199eb85 388-407,418-419,421,423-491,496,498,513,520-521
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "10edba6f8b429ce4cb7df8ae330d1425a0e41655",
+  "prompts": {},
+  "sessions": {
+    "s_f31c92060751c4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35d5-3c2f-7021-bcbf-b8734abac0db",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
