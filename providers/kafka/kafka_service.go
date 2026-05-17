@@ -10,6 +10,7 @@ import (
 type adminClient interface {
 	DescribeTopics(topics []string) ([]*sarama.TopicMetadata, error)
 	DescribeConfig(resource sarama.ConfigResource) ([]sarama.ConfigEntry, error)
+	ListAcls(filter sarama.AclFilter) ([]sarama.ResourceAcls, error)
 	Close() error
 }
 

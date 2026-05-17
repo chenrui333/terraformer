@@ -20,8 +20,10 @@ type mockAdmin struct {
 	metadata        map[string]*sarama.TopicMetadata
 	configs         map[string][]sarama.ConfigEntry
 	configErrors    map[string]error
+	acls            []sarama.ResourceAcls
 	describeTopics  [][]string
 	describeConfigs []sarama.ConfigResource
+	listACLFilters  []sarama.AclFilter
 	closed          bool
 }
 
@@ -105,6 +107,86 @@ func (m *mockAdmin) DescribeConfig(resource sarama.ConfigResource) ([]sarama.Con
 		return nil, err
 	}
 	return m.configs[resource.Name], nil
+}
+
+func (m *mockAdmin) ListAcls(filter sarama.AclFilter) ([]sarama.ResourceAcls, error) {
+	m.listACLFilters = append(m.listACLFilters, cloneACLFilter(filter))
+	resources := []sarama.ResourceAcls{}
+	for _, resourceACLs := range m.acls {
+		if !aclResourceMatchesFilter(resourceACLs, filter) {
+			continue
+		}
+		matched := sarama.ResourceAcls{
+			Resource: resourceACLs.Resource,
+			Acls:     []*sarama.Acl{},
+		}
+		for _, acl := range resourceACLs.Acls {
+			if aclMatchesFilter(acl, filter) {
+				matched.Acls = append(matched.Acls, acl)
+			}
+		}
+		if len(matched.Acls) > 0 {
+			resources = append(resources, matched)
+		}
+	}
+	return resources, nil
+}
+
+func cloneACLFilter(filter sarama.AclFilter) sarama.AclFilter {
+	cloned := filter
+	if filter.ResourceName != nil {
+		resourceName := *filter.ResourceName
+		cloned.ResourceName = &resourceName
+	}
+	if filter.Principal != nil {
+		principal := *filter.Principal
+		cloned.Principal = &principal
+	}
+	if filter.Host != nil {
+		host := *filter.Host
+		cloned.Host = &host
+	}
+	return cloned
+}
+
+func aclResourceMatchesFilter(resourceACLs sarama.ResourceAcls, filter sarama.AclFilter) bool {
+	if filter.ResourceType != sarama.AclResourceUnknown &&
+		filter.ResourceType != sarama.AclResourceAny &&
+		filter.ResourceType != resourceACLs.ResourceType {
+		return false
+	}
+	if filter.ResourceName != nil && *filter.ResourceName != resourceACLs.ResourceName {
+		return false
+	}
+	if filter.ResourcePatternTypeFilter != sarama.AclPatternUnknown &&
+		filter.ResourcePatternTypeFilter != sarama.AclPatternAny &&
+		filter.ResourcePatternTypeFilter != resourceACLs.ResourcePatternType {
+		return false
+	}
+	return true
+}
+
+func aclMatchesFilter(acl *sarama.Acl, filter sarama.AclFilter) bool {
+	if acl == nil {
+		return false
+	}
+	if filter.Principal != nil && *filter.Principal != acl.Principal {
+		return false
+	}
+	if filter.Host != nil && *filter.Host != acl.Host {
+		return false
+	}
+	if filter.Operation != sarama.AclOperationUnknown &&
+		filter.Operation != sarama.AclOperationAny &&
+		filter.Operation != acl.Operation {
+		return false
+	}
+	if filter.PermissionType != sarama.AclPermissionUnknown &&
+		filter.PermissionType != sarama.AclPermissionAny &&
+		filter.PermissionType != acl.PermissionType {
+		return false
+	}
+	return true
 }
 
 func (m *mockAdmin) Close() error {

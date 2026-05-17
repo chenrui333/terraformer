@@ -59,6 +59,7 @@ func (p *Provider) InitService(serviceName string, verbose bool) error {
 
 func (p *Provider) GetSupportedService() map[string]terraformutils.ServiceGenerator {
 	return map[string]terraformutils.ServiceGenerator{
+		"acls":   &ACLGenerator{},
 		"topics": &TopicGenerator{},
 	}
 }

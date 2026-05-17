@@ -12,6 +12,9 @@ func TestKafkaProviderCommandRegistration(t *testing.T) {
 	if _, ok := provider.GetSupportedService()["topics"]; !ok {
 		t.Fatal("kafka topics service is not registered")
 	}
+	if _, ok := provider.GetSupportedService()["acls"]; !ok {
+		t.Fatal("kafka ACL service is not registered")
+	}
 
 	importers := providerImporterSubcommands()
 	foundImporter := false

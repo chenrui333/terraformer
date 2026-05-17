@@ -7,6 +7,8 @@ Example:
 
     terraformer import kafka --resources=topics
     terraformer import kafka --resources=topics --filter=topic=orders:payments.events
+    terraformer import kafka --resources=acls
+    terraformer import kafka --resources=acls --filter='acls=User:producer|*|Write|Allow|Topic|orders|Literal'
 
 The Kafka provider also accepts bootstrap servers through the CLI:
 
@@ -47,7 +49,11 @@ OAuthBearer imports use KAFKA_SASL_TOKEN_URL with KAFKA_SASL_USERNAME, KAFKA_SAS
 
 Terraformer intentionally does not write generated HCL containing SASL passwords, TLS private keys, AWS access keys, AWS secret keys, AWS session tokens, OAuth tokens, or SCRAM passwords.
 
+Kafka ACL import IDs are pipe-delimited to match the upstream Mongey/kafka provider. ACL tuple fields containing literal `|` characters are skipped because the upstream importer does not provide an escaping mechanism for those values.
+
 List of supported Kafka services:
 
+* acls
+    * kafka_acl
 * topics
     * kafka_topic
