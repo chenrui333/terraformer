@@ -102,9 +102,6 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_downtime`
 *   `integration_aws`
     * `datadog_integration_aws`
-*   `integration_aws_account`
-    * `datadog_integration_aws_account`
-        * **_NOTE:_** This is the modern replacement for `datadog_integration_aws`. Accounts using key-based auth will have `secret_access_key` omitted (write-only field).
 *   `integration_aws_lambda_arn`
     * `datadog_integration_aws_lambda_arn`
 *   `integration_aws_log_collection`

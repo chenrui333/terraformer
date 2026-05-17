@@ -8,58 +8,6 @@ import (
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 )
 
-func TestIntegrationAWSAccountCreateResource(t *testing.T) {
-	tests := []struct {
-		name      string
-		id        string
-		awsAcctID string
-		wantID    string
-		wantName  string
-		wantType  string
-	}{
-		{
-			name:      "uses AWS account ID in name",
-			id:        "cfg-abc123",
-			awsAcctID: "123456789012",
-			wantID:    "cfg-abc123",
-			wantName:  "tfer--integration_aws_account_123456789012",
-			wantType:  "datadog_integration_aws_account",
-		},
-		{
-			name:      "falls back to config ID",
-			id:        "cfg-abc123",
-			awsAcctID: "",
-			wantID:    "cfg-abc123",
-			wantName:  "tfer--integration_aws_account_cfg-abc123",
-			wantType:  "datadog_integration_aws_account",
-		},
-	}
-
-	generator := IntegrationAWSAccountGenerator{}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			account := datadogV2.NewAWSAccountResponseDataWithDefaults()
-			account.SetId(tt.id)
-			if tt.awsAcctID != "" {
-				attrs := datadogV2.NewAWSAccountResponseAttributesWithDefaults()
-				attrs.SetAwsAccountId(tt.awsAcctID)
-				account.SetAttributes(*attrs)
-			}
-
-			resource := generator.createResource(*account)
-			if resource.InstanceState.ID != tt.wantID {
-				t.Fatalf("resource ID = %q, want %q", resource.InstanceState.ID, tt.wantID)
-			}
-			if resource.ResourceName != tt.wantName {
-				t.Fatalf("resource name = %q, want %q", resource.ResourceName, tt.wantName)
-			}
-			if resource.InstanceInfo.Type != tt.wantType {
-				t.Fatalf("resource type = %q, want %q", resource.InstanceInfo.Type, tt.wantType)
-			}
-		})
-	}
-}
-
 func TestIntegrationConfluentResourceCreateResource(t *testing.T) {
 	generator := IntegrationConfluentResourceGenerator{}
 
