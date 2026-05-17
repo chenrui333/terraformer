@@ -40,8 +40,15 @@ func TestNewCloudflareAIGatewayResource(t *testing.T) {
 	if got := resource.InstanceState.Meta["import_id"]; got != "account-123/gateway-123" {
 		t.Fatalf("import_id = %q, want account-123/gateway-123", got)
 	}
-	if got := resource.AdditionalFields["id"]; got != "gateway-123" {
-		t.Fatalf("AdditionalFields[id] = %q, want gateway-123", got)
+	for key, want := range map[string]interface{}{
+		"id":                     "gateway-123",
+		"cache_ttl":              600,
+		"rate_limiting_interval": 60,
+		"rate_limiting_limit":    1000,
+	} {
+		if got := resource.AdditionalFields[key]; got != want {
+			t.Fatalf("AdditionalFields[%s] = %#v, want %#v", key, got, want)
+		}
 	}
 	for key, want := range map[string]string{
 		"account_id":                 "account-123",
@@ -50,6 +57,36 @@ func TestNewCloudflareAIGatewayResource(t *testing.T) {
 		"collect_logs":               "true",
 		"rate_limiting_interval":     "60",
 		"rate_limiting_limit":        "1000",
+	} {
+		if got := resource.InstanceState.Attributes[key]; got != want {
+			t.Fatalf("attribute %s = %q, want %q", key, got, want)
+		}
+	}
+}
+
+func TestNewCloudflareAIGatewayResourcePreservesNullableRequiredFields(t *testing.T) {
+	resource, ok := newCloudflareAIGatewayResource("account-123", cloudflareMediaPlatformRawResource{
+		"id":                     "gateway-null",
+		"cache_ttl":              nil,
+		"rate_limiting_interval": nil,
+		"rate_limiting_limit":    nil,
+	})
+	if !ok {
+		t.Fatal("expected AI Gateway resource")
+	}
+	for key, want := range map[string]interface{}{
+		"cache_ttl":              0,
+		"rate_limiting_interval": 0,
+		"rate_limiting_limit":    0,
+	} {
+		if got := resource.AdditionalFields[key]; got != want {
+			t.Fatalf("AdditionalFields[%s] = %#v, want %#v", key, got, want)
+		}
+	}
+	for key, want := range map[string]string{
+		"cache_ttl":              "0",
+		"rate_limiting_interval": "0",
+		"rate_limiting_limit":    "0",
 	} {
 		if got := resource.InstanceState.Attributes[key]; got != want {
 			t.Fatalf("attribute %s = %q, want %q", key, got, want)

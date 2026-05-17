@@ -236,6 +236,30 @@ func cloudflareMediaPlatformIntAttribute(resource cloudflareMediaPlatformRawReso
 	return "0"
 }
 
+func cloudflareMediaPlatformIntAdditionalField(resource cloudflareMediaPlatformRawResource, key string) int {
+	switch value := resource[key].(type) {
+	case int:
+		return value
+	case int64:
+		return int(value)
+	case float64:
+		return int(value)
+	case json.Number:
+		parsed, err := strconv.ParseFloat(value.String(), 64)
+		if err == nil {
+			return int(parsed)
+		}
+	case string:
+		if value != "" {
+			parsed, err := strconv.ParseFloat(value, 64)
+			if err == nil {
+				return int(parsed)
+			}
+		}
+	}
+	return 0
+}
+
 func cloudflareMediaPlatformFloatAttribute(resource cloudflareMediaPlatformRawResource, key string) (string, bool) {
 	switch value := resource[key].(type) {
 	case int:
@@ -295,6 +319,9 @@ func newCloudflareAIGatewayResource(accountID string, gateway cloudflareMediaPla
 		return resource, false
 	}
 	resource.AdditionalFields["id"] = id
+	resource.AdditionalFields["cache_ttl"] = cloudflareMediaPlatformIntAdditionalField(gateway, "cache_ttl")
+	resource.AdditionalFields["rate_limiting_interval"] = cloudflareMediaPlatformIntAdditionalField(gateway, "rate_limiting_interval")
+	resource.AdditionalFields["rate_limiting_limit"] = cloudflareMediaPlatformIntAdditionalField(gateway, "rate_limiting_limit")
 	return resource, true
 }
 
