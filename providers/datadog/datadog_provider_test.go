@@ -210,9 +210,43 @@ func TestDatadogProviderMonitorJSONConnections(t *testing.T) {
 	assertDatadogConnection(
 		t,
 		connections,
+		"downtime_schedule",
+		"monitor_json",
+		"monitor_identifier.monitor_id",
+		"id",
+	)
+	assertDatadogConnection(
+		t,
+		connections,
 		"service_level_objective",
 		"monitor_json",
 		"monitor_ids",
+		"id",
+	)
+}
+
+func TestDatadogProviderDowntimeScheduleConnections(t *testing.T) {
+	connections := DatadogProvider{}.GetResourceConnections()
+
+	assertDatadogConnection(
+		t,
+		connections,
+		"downtime_schedule",
+		"monitor",
+		"monitor_identifier.monitor_id",
+		"id",
+	)
+}
+
+func TestDatadogProviderSyntheticsSuiteConnections(t *testing.T) {
+	connections := DatadogProvider{}.GetResourceConnections()
+
+	assertDatadogConnection(
+		t,
+		connections,
+		"synthetics_suite",
+		"synthetics_test",
+		"tests.public_id",
 		"id",
 	)
 }
