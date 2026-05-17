@@ -18,6 +18,7 @@ import (
 const datadogDowntimeSchedulePageLimit = int64(100)
 
 const (
+	downtimeScheduleMessageKey         = "message"
 	downtimeScheduleNotifyEndStatesKey = "notify_end_states"
 	downtimeScheduleNotifyEndTypesKey  = "notify_end_types"
 	downtimeScheduleOneTimeKey         = "one_time_schedule"
@@ -26,7 +27,7 @@ const (
 
 var (
 	// DowntimeScheduleAllowEmptyValues ...
-	DowntimeScheduleAllowEmptyValues = []string{}
+	DowntimeScheduleAllowEmptyValues = []string{downtimeScheduleMessageKey}
 )
 
 // DowntimeScheduleGenerator ...

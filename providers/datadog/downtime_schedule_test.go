@@ -8,13 +8,41 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"testing"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"github.com/zclconf/go-cty/cty"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 )
+
+func TestDowntimeScheduleAllowEmptyValuesPreservesMessage(t *testing.T) {
+	allowEmptyValues := []*regexp.Regexp{}
+	for _, pattern := range DowntimeScheduleAllowEmptyValues {
+		allowEmptyValues = append(allowEmptyValues, regexp.MustCompile(pattern))
+	}
+
+	parser := terraformutils.NewFlatmapParser(map[string]string{
+		downtimeScheduleMessageKey: "",
+	}, nil, allowEmptyValues)
+	downtimeScheduleType := cty.Object(map[string]cty.Type{
+		downtimeScheduleMessageKey: cty.String,
+	})
+
+	result, err := parser.Parse(downtimeScheduleType)
+	if err != nil {
+		t.Fatalf("Parse returned error: %v", err)
+	}
+	message, ok := result[downtimeScheduleMessageKey].(string)
+	if !ok {
+		t.Fatalf("message = %T, want string", result[downtimeScheduleMessageKey])
+	}
+	if message != "" {
+		t.Fatalf("message = %q, want empty string", message)
+	}
+}
 
 func TestDowntimeScheduleCreateResource(t *testing.T) {
 	downtime := datadogV2.NewDowntimeResponseDataWithDefaults()
