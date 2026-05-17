@@ -13,7 +13,10 @@ import (
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
-const syntheticsConcurrencyCapID = "synthetics-concurrency-cap"
+const (
+	syntheticsConcurrencyCapID          = "synthetics-concurrency-cap"
+	syntheticsConcurrencyCapServiceName = "synthetics_concurrency_cap"
+)
 
 var (
 	// SyntheticsConcurrencyCapAllowEmptyValues ...
@@ -57,7 +60,7 @@ func (g *SyntheticsConcurrencyCapGenerator) createResource(resp datadogV2.OnDema
 // ignores the import ID and stores synthetics-concurrency-cap.
 func (g *SyntheticsConcurrencyCapGenerator) InitResources() error {
 	for i, filter := range g.Filter {
-		if filter.FieldPath == "id" && filter.IsApplicable("synthetics_concurrency_cap") {
+		if filter.FieldPath == "id" && filter.ServiceName == syntheticsConcurrencyCapServiceName {
 			g.Filter[i].AcceptableValues = []string{syntheticsConcurrencyCapID}
 		}
 	}
