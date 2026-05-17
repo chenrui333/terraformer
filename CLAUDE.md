@@ -363,16 +363,17 @@ Rules:
 - When the API omits an ID for a singleton resource, use a stable synthetic ID (e.g. `"ip-allowlist"`) only when the provider read path does not require a real ID.
 - Add tests for default-vs-non-default behavior.
 
-## Empty/Disabled State Preservation
+## Empty State Preservation
 
-When a resource has required fields that can be empty or false, Terraformer's flatmap conversion may strip them.
+When a resource has required fields that can be empty strings or zero-count lists, Terraformer's flatmap conversion may strip them.
 
 Rules:
 
-- Add field paths to `AllowEmptyValues` to preserve zero-valued booleans (e.g. `enabled=false`) and empty lists/blocks.
-- For required empty lists that `AllowEmptyValues` cannot preserve (zero-count lists are dropped before the allow check), use `PostConvertHook` to set the field to an empty slice.
+- Add field paths to `AllowEmptyValues` to preserve empty-string attributes that would otherwise be stripped. Note: boolean `"false"` is a non-empty string in flatmap and is NOT dropped — AllowEmptyValues is unnecessary for booleans.
+- For required empty lists that `AllowEmptyValues` cannot preserve (zero-count lists are dropped before the allow check), use `PostConvertHook` to set the field to an empty slice (see `IntegrationAWSLogCollectionGenerator` pattern).
 - Seed required attributes via `NewResource` when provider refresh depends on context not derivable from the import ID alone (e.g. `org_group_id`, `sink_org_id`, `connection_types`).
-- Test that disabled/empty configurations produce valid HCL, not omitted blocks.
+- For resources where the only required configuration field is `id`, verify whether `AdditionalFields` or `PostConvertHook` can inject it before marking the resource unsupported.
+- Test that empty configurations produce valid HCL, not omitted blocks.
 
 ## Mutually Exclusive Nested Blocks
 
