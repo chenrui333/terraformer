@@ -1,0 +1,31 @@
+providers/datadog/dashboard_helper.go
+  s_147381facf0cb2::t_5a08293457a017 1-68
+providers/datadog/powerpack.go
+  s_147381facf0cb2::t_48561fd1df004c 126-127,129,132-136,151-153
+providers/datadog/dashboard_v2.go
+  s_147381facf0cb2::t_a3ad5445c3b26a 47
+providers/datadog/dashboarding_test.go
+  s_147381facf0cb2::t_70ac8af20d6774 42-43,50-51,58-59
+  s_147381facf0cb2::t_b65d5de31b72d4 256-318
+  s_147381facf0cb2::t_ca8b14c7199ba2 33-41,44-49,52-57,60-62,64-76,78-104
+providers/datadog/dashboard.go
+  s_147381facf0cb2::t_d11655183efaca 47
+providers/datadog/dashboard_json.go
+  s_147381facf0cb2::t_4b251192790ce1 47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "f7d1b1a6891102ead0797b54d09a086c5f08dec2",
+  "prompts": {},
+  "sessions": {
+    "s_147381facf0cb2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35d4-5c2a-7410-97bd-53923272d33e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
