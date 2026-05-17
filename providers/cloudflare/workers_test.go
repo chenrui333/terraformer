@@ -68,12 +68,16 @@ func TestCloudflareWorkerResourceSkipsMalformedWorkers(t *testing.T) {
 func TestListWorkersPaginates(t *testing.T) {
 	api := newCloudflareWorkersTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/accounts/account-123/workers/workers" {
-			t.Fatalf("path = %q, want /accounts/account-123/workers/workers", r.URL.Path)
+			t.Errorf("path = %q, want /accounts/account-123/workers/workers", r.URL.Path)
+			http.Error(w, "unexpected path", http.StatusInternalServerError)
+			return
 		}
 		switch r.URL.Query().Get("cursor") {
 		case "":
 			if got := r.URL.Query().Get("page"); got != "1" {
-				t.Fatalf("page query = %q, want 1", got)
+				t.Errorf("page query = %q, want 1", got)
+				http.Error(w, "unexpected page", http.StatusInternalServerError)
+				return
 			}
 			writeCloudflareWorkersTestResponse(t, w, []cloudflareWorker{{ID: "worker-1", Name: "api"}}, map[string]interface{}{
 				"cursors": map[string]string{"after": "cursor-2"},
@@ -83,7 +87,9 @@ func TestListWorkersPaginates(t *testing.T) {
 				"cursors": map[string]string{},
 			})
 		default:
-			t.Fatalf("cursor query = %q, want empty or cursor-2", r.URL.Query().Get("cursor"))
+			t.Errorf("cursor query = %q, want empty or cursor-2", r.URL.Query().Get("cursor"))
+			http.Error(w, "unexpected cursor", http.StatusInternalServerError)
+			return
 		}
 	}))
 
@@ -102,10 +108,14 @@ func TestListWorkersPaginates(t *testing.T) {
 func TestListWorkersPaginatesPageOnlyResultInfo(t *testing.T) {
 	api := newCloudflareWorkersTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/accounts/account-123/workers/workers" {
-			t.Fatalf("path = %q, want /accounts/account-123/workers/workers", r.URL.Path)
+			t.Errorf("path = %q, want /accounts/account-123/workers/workers", r.URL.Path)
+			http.Error(w, "unexpected path", http.StatusInternalServerError)
+			return
 		}
 		if got := r.URL.Query().Get("cursor"); got != "" {
-			t.Fatalf("cursor query = %q, want empty", got)
+			t.Errorf("cursor query = %q, want empty", got)
+			http.Error(w, "unexpected cursor", http.StatusInternalServerError)
+			return
 		}
 		switch r.URL.Query().Get("page") {
 		case "1":
@@ -119,7 +129,9 @@ func TestListWorkersPaginatesPageOnlyResultInfo(t *testing.T) {
 				"per_page": cloudflarePageSize,
 			})
 		default:
-			t.Fatalf("page query = %q, want 1 or 2", r.URL.Query().Get("page"))
+			t.Errorf("page query = %q, want 1 or 2", r.URL.Query().Get("page"))
+			http.Error(w, "unexpected page", http.StatusInternalServerError)
+			return
 		}
 	}))
 
@@ -243,7 +255,7 @@ func writeCloudflareWorkersTestResponse(t *testing.T, w http.ResponseWriter, res
 		payload["result_info"] = resultInfo
 	}
 	if err := json.NewEncoder(w).Encode(payload); err != nil {
-		t.Fatalf("encode test response: %v", err)
+		t.Errorf("encode test response: %v", err)
 	}
 }
 
