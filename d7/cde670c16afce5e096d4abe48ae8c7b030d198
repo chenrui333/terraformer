@@ -1,0 +1,25 @@
+providers/datadog/org_group_helpers.go
+  s_ad2cde2451f5fe::t_4a9d96170609b2 1-35
+providers/datadog/org_connection.go
+  s_ad2cde2451f5fe::t_81539fca41d6be 76
+providers/datadog/org_group_policy.go
+  s_ad2cde2451f5fe::t_0e312f82f1b010 49
+providers/datadog/org_group_membership.go
+  s_ad2cde2451f5fe::t_766a42c860d60a 45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "d7cde670c16afce5e096d4abe48ae8c7b030d198",
+  "prompts": {},
+  "sessions": {
+    "s_ad2cde2451f5fe": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e5e5a739-89aa-4196-9223-c274cd1e20ca",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
