@@ -1,0 +1,22 @@
+providers/datadog/downtime_schedule_test.go
+  s_a75fc68bdbca0a::t_ca38df10ad66b8 7,68-76,78-127,129-177,221-229
+  s_a75fc68bdbca0a::t_bbaa2e03e9d754 77,128
+providers/datadog/downtime_schedule.go
+  s_a75fc68bdbca0a::t_b5b6239c81cf4c 6,8,10,20-24,50-171
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "6515ab64e1f73bc48bfe45f5840fa61bbe260638",
+  "prompts": {},
+  "sessions": {
+    "s_a75fc68bdbca0a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35d4-4978-78a1-8707-4482f4e1fd38",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
