@@ -360,7 +360,20 @@ Rules:
 - Emit singletons only when explicitly configured or when provider semantics require owning the default state.
 - Skip default service-managed settings unless the provider represents them as intentional configuration.
 - Use preserve-ID metadata when provider read paths normalize singleton IDs differently from Terraformer seed IDs.
+- When the API omits an ID for a singleton resource, use a stable synthetic ID (e.g. `"ip-allowlist"`) only when the provider read path does not require a real ID.
 - Add tests for default-vs-non-default behavior.
+
+## Empty State Preservation
+
+When a resource has required fields that can be empty strings or zero-count lists, Terraformer's flatmap conversion may strip them.
+
+Rules:
+
+- Add field paths to `AllowEmptyValues` to preserve empty-string attributes that would otherwise be stripped. Note: boolean `"false"` is a non-empty string in flatmap and is NOT dropped — AllowEmptyValues is unnecessary for booleans.
+- For required empty lists that `AllowEmptyValues` cannot preserve (zero-count lists are dropped before the allow check), use `PostConvertHook` to set the field to an empty slice (see `IntegrationAWSLogCollectionGenerator` pattern).
+- Seed required attributes via `NewResource` when provider refresh depends on context not derivable from the import ID alone (e.g. `org_group_id`, `sink_org_id`, `connection_types`).
+- For resources where the only required configuration field is `id`, verify whether `AdditionalFields` or `PostConvertHook` can inject it before marking the resource unsupported.
+- Test that empty configurations produce valid HCL, not omitted blocks.
 
 ## Mutually Exclusive Nested Blocks
 
@@ -411,6 +424,7 @@ Every list/describe API used for broad discovery must be checked for pagination.
 Rules:
 
 - Use paginators where available.
+- Verify the pagination base per API; do not assume page 1 — some APIs use zero-based page numbers.
 - Add pagination tests for child-resource discovery when a previous implementation used a single page.
 - Do not assume child-resource lists fit in one response.
 - When an API has nested pagination under each parent, test parent and child pagination together.
@@ -749,3 +763,27 @@ go build -v
 - When review comments arrive, reproduce or inspect the exact code path before patching.
 - Add follow-up commits on squash-merge PR branches unless a force-push is explicitly needed.
 - After merge, refresh `main` before starting the next provider gap.
+
+## Terraformer Framework Gotchas
+
+Durable lessons from provider-gap implementation that prevent repeated review cycles.
+
+### AllowEmptyValues for Required Booleans
+
+Terraformer's flatmap parser drops zero-value attributes unless they appear in `AllowEmptyValues`. When a Terraform resource has required boolean fields that can legitimately be `false`, list them in `AllowEmptyValues` or the generated HCL omits required arguments and `terraform plan` fails.
+
+### AcceptableValues Rewrite for Composite ID Filters
+
+Terraformer's `InitialCleanup` compares `filter.AcceptableValues` against `resource.InstanceState.ID`. When a filter uses a composite format (e.g., `parent_id:child_id`) but the resource state ID is only the child part, rewrite `g.Filter[filterIndex].AcceptableValues` to bare IDs after parsing. See `rum_retention_filter.go` for the canonical pattern.
+
+### Terraformer Strips the id Attribute During HCL Conversion
+
+Terraformer unconditionally ignores `InstanceState.Attributes["id"]` when generating HCL. If a Terraform resource's only Required configuration argument is literally `id`, it cannot produce valid HCL through Terraformer. Mark such resources as unsupported with evidence.
+
+### Metadata-Only Key Imports
+
+API key, application key, and similar secret-bearing resources are importable when the Terraform provider marks the secret field as `Computed+Sensitive` (not `Required`). The provider refresh works without the original secret value; generated HCL contains only metadata (name, dates). Document this behavior in `docs/<provider>.md`. Never export actual key/secret values.
+
+### Unstable API Operations
+
+Some SDK endpoints are gated behind `configuration.SetUnstableOperationEnabled`. When a list/get API requires this, call it on the client configuration before creating the API instance. Document the unstable status in a code comment and test helper.

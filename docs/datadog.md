@@ -90,6 +90,10 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
         * **_NOTE:_** Requires DataDog/datadog provider 4.9.0 or newer.
 *   `agentless_scanning_gcp_scan_options`
     * `datadog_agentless_scanning_gcp_scan_options`
+*   `api_key`
+    * `datadog_api_key`
+*   `application_key`
+    * `datadog_application_key`
 *   `apm_retention_filter`
     * `datadog_apm_retention_filter`
 *   `apm_retention_filter_order`
@@ -99,6 +103,8 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_appsec_waf_custom_rule`
 *   `appsec_waf_exclusion_filter`
     * `datadog_appsec_waf_exclusion_filter`
+*   `authn_mapping`
+    * `datadog_authn_mapping`
 *   `aws_cur_config`
     * `datadog_aws_cur_config`
         * **_NOTE:_** Requires DataDog/datadog provider 3.39.0 or newer.
@@ -126,6 +132,9 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `custom_allocation_rule`
     * `datadog_custom_allocation_rule`
         * **_NOTE:_** Requires DataDog/datadog provider 3.39.0 or newer.
+*   `domain_allowlist`
+    * `datadog_domain_allowlist`
+        * **_NOTE:_** Singleton resource. Only one domain allowlist per org.
 *   `downtime`
     * `datadog_downtime`
 *   `gcp_uc_config`
@@ -158,6 +167,9 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `integration_slack_channel`
     * `datadog_integration_slack_channel`
         * **_NOTE:_** Importing resource requires resource ID or `account_name` to be passed via [Filter][1] option
+*   `ip_allowlist`
+    * `datadog_ip_allowlist`
+        * **_NOTE:_** Singleton resource. Only one IP allowlist per org.
 *   `logs_archive`
     * `datadog_logs_archive`
 *   `logs_archive_order`
@@ -172,6 +184,8 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_logs_integration_pipeline`
 *   `logs_pipeline_order`
     * `datadog_logs_pipeline_order`
+*   `logs_restriction_query`
+    * `datadog_logs_restriction_query`
 *   `metric_metadata`
     * `datadog_metric_metadata`
         * **_NOTE:_** Importing resource requires resource ID's to be passed via [Filter][1] option
@@ -204,6 +218,20 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
     * `datadog_on_call_user_notification_rule`
         * **_NOTE:_** Importing a single On-Call user notification rule by ID requires quoting the `user_id:rule_id` filter value, for example `--filter="on_call_user_notification_rule='user-id:rule-id'"`
         * **_NOTE:_** To import notification rules for one user, filter by `user_id`, for example `--filter="Type=on_call_user_notification_rule;Name=user_id;Value=user-id"`
+*   `org_connection`
+    * `datadog_org_connection`
+*   `org_group`
+    * `datadog_org_group`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.8.0 or newer.
+*   `org_group_membership`
+    * `datadog_org_group_membership`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.8.0 or newer.
+*   `org_group_policy`
+    * `datadog_org_group_policy`
+        * **_NOTE:_** Requires DataDog/datadog provider 4.8.0 or newer. Policies are discovered per org group.
+*   `organization_settings`
+    * `datadog_organization_settings`
+        * **_NOTE:_** Singleton-like. Lists org(s) via V1 API and imports each by public ID.
 *   `rum_application`
     * `datadog_rum_application`
 *   `rum_metric`
@@ -234,6 +262,11 @@ Tag filters are order specific. For example, if your monitor has tags (in the or
 *   `sensitive_data_scanner_rule`
     * `datadog_sensitive_data_scanner_rule`
         * **_NOTE:_** Requires DataDog/datadog provider 3.90.0 or newer.
+*   `service_account`
+    * `datadog_service_account`
+*   `service_account_application_key`
+    * `datadog_service_account_application_key`
+        * **_NOTE:_** Importing requires `service_account_id` filter or composite `service_account_id:key_id` ID filter, for example `--filter="Type=service_account_application_key;Name=service_account_id;Value=sa-id"` or `--filter="service_account_application_key='sa-id:key-id'"`
 *   `service_level_objective`
     * `datadog_service_level_objective`
 *   `slo_correction`
