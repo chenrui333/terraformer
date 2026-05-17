@@ -1,0 +1,25 @@
+providers/datadog/incident_workflow_test.go
+  s_147381facf0cb2::t_7860fa81f80c3d 247,249-254,259,261,266,286-301,303-318,362-377,379-394
+providers/datadog/webhook.go
+  s_147381facf0cb2::t_19a574fd6cfb2e 74
+providers/datadog/workflow_automation.go
+  s_147381facf0cb2::t_19a574fd6cfb2e 98
+providers/datadog/incident.go
+  s_147381facf0cb2::t_19a574fd6cfb2e 99,108,123,203,212,227,312,321,336
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "689969ea9fb6f35d52f771a53d19a0d608e8cb78",
+  "prompts": {},
+  "sessions": {
+    "s_147381facf0cb2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35d4-5c2a-7410-97bd-53923272d33e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
