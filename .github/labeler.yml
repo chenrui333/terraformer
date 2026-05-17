@@ -212,6 +212,13 @@ provider/keycloak:
           - "docs/keycloak.md"
           - "cmd/provider_cmd_keycloak.go"
 
+provider/kafka:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/kafka/**"
+          - "docs/kafka.md"
+          - "cmd/provider_cmd_kafka.go"
+
 provider/kubernetes:
   - changed-files:
       - any-glob-to-any-file:
