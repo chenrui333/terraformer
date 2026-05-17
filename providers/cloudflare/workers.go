@@ -5,6 +5,7 @@ package cloudflare
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -15,6 +16,20 @@ import (
 
 type WorkersGenerator struct {
 	CloudflareService
+}
+
+type cloudflareWorker struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+var cloudflareWorkerComputedKeys = []string{
+	"^created_on$",
+	"^deployed_on$",
+	"^id$",
+	"^references$",
+	"^references\\..*$",
+	"^updated_on$",
 }
 
 func (g *WorkersGenerator) InitResources() error {
@@ -49,6 +64,9 @@ func (g *WorkersGenerator) InitResources() error {
 		return nil
 	}
 	account := cf.AccountIdentifier(accountID)
+	if err := g.appendWorkerResources(ctx, api, accountID); err != nil {
+		return err
+	}
 	if err := g.appendWorkerCustomDomainResources(ctx, api, accountID); err != nil {
 		return err
 	}
@@ -85,6 +103,50 @@ func listWorkerRoutes(ctx context.Context, api *cf.API, zoneID string) ([]cf.Wor
 		}
 	}
 	return routes, nil
+}
+
+func listWorkers(ctx context.Context, api *cf.API, accountID string) ([]cloudflareWorker, error) {
+	var workers []cloudflareWorker
+	page, cursor := 1, ""
+	for {
+		response, err := api.Raw(
+			ctx,
+			http.MethodGet,
+			fmt.Sprintf("/accounts/%s/workers/workers?%s", accountID, cloudflarePaginationQuery(page, cursor)),
+			nil,
+			nil,
+		)
+		if err != nil {
+			return nil, err
+		}
+		var pageWorkers []cloudflareWorker
+		if err := json.Unmarshal(response.Result, &pageWorkers); err != nil {
+			return nil, err
+		}
+		workers = append(workers, pageWorkers...)
+		if !cloudflareAdvanceWorkersPagination(response.ResultInfo, &page, &cursor, len(pageWorkers)) {
+			break
+		}
+	}
+	return workers, nil
+}
+
+func cloudflareAdvanceWorkersPagination(info *cf.ResultInfo, page *int, cursor *string, itemCount int) bool {
+	if cloudflareAdvancePagination(info, page, cursor) {
+		return true
+	}
+	if *cursor != "" {
+		return false
+	}
+	pageSize := cloudflarePageSize
+	if info != nil && info.PerPage > 0 {
+		pageSize = info.PerPage
+	}
+	if itemCount < pageSize {
+		return false
+	}
+	*page++
+	return true
 }
 
 func listWorkerCustomDomains(ctx context.Context, api *cf.API, accountID string) ([]cf.WorkersDomain, error) {
@@ -201,6 +263,53 @@ func workerCronTriggerAttributes(
 		attributes[fmt.Sprintf("schedules.%d.cron", index)] = schedule.Cron
 	}
 	return attributes
+}
+
+func cloudflareWorkersOptionalDiscoveryError(err error) bool {
+	if cloudflareNotFoundError(err) || cloudflareForbiddenError(err) {
+		return true
+	}
+	var authorizationErr *cf.AuthorizationError
+	return errors.As(err, &authorizationErr)
+}
+
+func cloudflareWorkerResource(accountID string, worker cloudflareWorker) (terraformutils.Resource, bool) {
+	if accountID == "" || worker.ID == "" || worker.Name == "" {
+		return terraformutils.Resource{}, false
+	}
+	resource := terraformutils.NewResource(
+		worker.ID,
+		cloudflareResourceName(accountID, worker.Name, worker.ID),
+		"cloudflare_worker",
+		"cloudflare",
+		map[string]string{
+			"account_id": accountID,
+			"name":       worker.Name,
+		},
+		[]string{},
+		map[string]interface{}{},
+	)
+	setCloudflareImportID(&resource, accountID+"/"+worker.ID)
+	resource.IgnoreKeys = append(resource.IgnoreKeys, cloudflareWorkerComputedKeys...)
+	return resource, true
+}
+
+func (g *WorkersGenerator) appendWorkerResources(ctx context.Context, api *cf.API, accountID string) error {
+	workers, err := listWorkers(ctx, api, accountID)
+	if err != nil {
+		if cloudflareWorkersOptionalDiscoveryError(err) {
+			return nil
+		}
+		return fmt.Errorf("list Workers for account %q: %w", accountID, err)
+	}
+	for _, worker := range workers {
+		resource, ok := cloudflareWorkerResource(accountID, worker)
+		if !ok {
+			continue
+		}
+		g.Resources = append(g.Resources, resource)
+	}
+	return nil
 }
 
 func (g *WorkersGenerator) appendWorkerCustomDomainResources(ctx context.Context, api *cf.API, accountID string) error {

@@ -82,7 +82,7 @@
       "resource": "datadog_logs_custom_destination",
       "service_family": "logs",
       "reason": "Credential-backed destination variants cannot be reconstructed from import/read state.",
-      "evidence": "Provider v4.9.0 imports by destination ID and Read calls GetLogsCustomDestination. The provider read mapping explicitly preserves existing state for HTTP basic auth, HTTP custom header values, Elasticsearch basic auth, and Splunk access tokens because those values are not returned by the API. The resource config validators require exactly one destination/auth variant, so broad import would generate invalid HCL for credential-backed destinations. Microsoft Sentinel destinations may be reconstructible but need a variant-aware importer to avoid silently skipping credential-backed destinations.",
+      "evidence": "Provider v4.9.0 imports by destination ID and Read calls GetLogsCustomDestination. The provider read mapping preserves existing state for HTTP basic auth, HTTP custom header values, Elasticsearch basic auth, and Splunk access tokens because those values are not returned by the API. The resource config validators require exactly one destination/auth variant, so broad import would generate invalid HCL for credential-backed destinations. Microsoft Sentinel destinations may be reconstructible but need a variant-aware importer to avoid silently skipping credential-backed destinations.",
       "status": "deferred",
       "references": [
         "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/logs_custom_destination",
@@ -155,6 +155,18 @@
       "references": [
         "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/action_connection",
         "https://github.com/DataDog/terraform-provider-datadog/blob/master/datadog/fwprovider/resource_datadog_action_connection.go"
+      ]
+    },
+    {
+      "resource": "datadog_datastore_item",
+      "service_family": "datastore",
+      "reason": "Datastore items are high-cardinality row data rather than provider configuration metadata.",
+      "evidence": "Provider v4.9.0 models datadog_datastore_item as per-row data with required datastore_id, item_key, and value map fields, imported as datastore-id:item-key. Broad discovery would enumerate application data records through ListDatastoreItems and turn arbitrary datastore row contents into Terraform-owned configuration. Terraformer already imports datadog_datastore metadata separately, while datastore item contents are data-plane records.",
+      "status": "runtime-data",
+      "references": [
+        "https://registry.terraform.io/providers/DataDog/datadog/latest/docs/resources/datastore_item",
+        "https://github.com/DataDog/terraform-provider-datadog/blob/v4.9.0/datadog/fwprovider/resource_datadog_datastore_item.go",
+        "https://github.com/chenrui333/terraformer/issues/336"
       ]
     },
     {

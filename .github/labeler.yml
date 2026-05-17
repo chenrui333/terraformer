@@ -184,6 +184,13 @@ provider/heroku:
           - "docs/heroku.md"
           - "cmd/provider_cmd_heroku.go"
 
+provider/helm:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/helm/**"
+          - "docs/helm.md"
+          - "cmd/provider_cmd_helm.go"
+
 provider/honeycombio:
   - changed-files:
       - any-glob-to-any-file:
@@ -211,6 +218,13 @@ provider/keycloak:
           - "providers/keycloak/**"
           - "docs/keycloak.md"
           - "cmd/provider_cmd_keycloak.go"
+
+provider/kafka:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "providers/kafka/**"
+          - "docs/kafka.md"
+          - "cmd/provider_cmd_kafka.go"
 
 provider/kubernetes:
   - changed-files:

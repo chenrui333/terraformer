@@ -15,8 +15,8 @@
     {
       "resource": "cloudflare_account_dns_settings",
       "service_family": "dns",
-      "reason": "Account DNS defaults are singleton settings that need scoped follow-up before broad import.",
-      "evidence": "Issue #335 tracks account and zone DNS settings as a dedicated PR bucket. Terraformer currently imports Cloudflare DNS records and zones, while this resource owns account-level DNS defaults whose API state can include inherited defaults versus explicit account configuration.",
+      "reason": "Account DNS defaults remain deferred because the provider has no import path and API reads return effective defaults without explicit ownership markers.",
+      "evidence": "Cloudflare provider v5.19.1 documents that cloudflare_account_dns_settings does not support terraform import. Its read path returns the full account DNS defaults object, including zone_defaults, but the response does not distinguish inherited/default values from settings explicitly owned by the account.",
       "status": "deferred",
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
@@ -43,6 +43,17 @@
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/account_token"
+      ]
+    },
+    {
+      "resource": "cloudflare_ai_search_instance",
+      "service_family": "ai",
+      "reason": "AI Search instances are not importable through the Terraform provider.",
+      "evidence": "Terraform provider v5.19.1 documents cloudflare_ai_search_instance as not currently supporting terraform import. The resource also owns AI Search source, indexing, retrieval, public endpoint, and token attachment configuration that needs a dedicated reconstruction design before broad import.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/ai_search_instance"
       ]
     },
     {
@@ -159,6 +170,39 @@
       ]
     },
     {
+      "resource": "cloudflare_byo_ip_prefix",
+      "service_family": "network_edge",
+      "reason": "BYOIP prefixes are onboarding and validation lifecycle resources rather than safe broad-import inventory.",
+      "evidence": "Terraform provider v5.19.1 requires ASN and CIDR and optionally an LOA document or delegated LOA creation, while read state exposes approval, ownership, IRR, RPKI validation states, and an ownership validation token. Broad import would turn prefix onboarding and validation workflow state into Terraform-owned configuration.",
+      "status": "request-style",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/byo_ip_prefix"
+      ]
+    },
+    {
+      "resource": "cloudflare_calls_sfu_app",
+      "service_family": "calls",
+      "reason": "Calls SFU apps are not importable through the Terraform provider.",
+      "evidence": "Terraform provider v5.19.1 documents cloudflare_calls_sfu_app as not currently supporting terraform import and exposes the generated app secret as a Sensitive read-only value.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/calls_sfu_app"
+      ]
+    },
+    {
+      "resource": "cloudflare_calls_turn_app",
+      "service_family": "calls",
+      "reason": "Calls TURN apps are not importable through the Terraform provider.",
+      "evidence": "Terraform provider v5.19.1 documents cloudflare_calls_turn_app as not currently supporting terraform import and exposes the generated TURN key as a Sensitive read-only value.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/calls_turn_app"
+      ]
+    },
+    {
       "resource": "cloudflare_cloudforce_one_request",
       "service_family": "cloudforce_one",
       "reason": "Cloudforce One requests represent submitted analysis work rather than stable infrastructure inventory.",
@@ -170,6 +214,17 @@
       ]
     },
     {
+      "resource": "cloudflare_cloudforce_one_request_asset",
+      "service_family": "cloudforce_one",
+      "reason": "Cloudforce One request assets are child records of submitted analysis work rather than stable infrastructure inventory.",
+      "evidence": "Terraform provider v5.19.1 imports cloudflare_cloudforce_one_request_asset by account_id/request_id/asset_id and ties the resource to a Cloudforce One request. Broad import would reproduce request attachments and analysis workflow history instead of durable configuration.",
+      "status": "request-style",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/cloudforce_one_request_asset"
+      ]
+    },
+    {
       "resource": "cloudflare_cloudforce_one_request_message",
       "service_family": "cloudforce_one",
       "reason": "Request messages are action-style updates to an existing Cloudforce One request.",
@@ -178,6 +233,17 @@
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/cloudforce_one_request_message"
+      ]
+    },
+    {
+      "resource": "cloudflare_cloudforce_one_request_priority",
+      "service_family": "cloudforce_one",
+      "reason": "Cloudforce One request priorities are request workflow records rather than stable infrastructure inventory.",
+      "evidence": "Terraform provider v5.19.1 models cloudflare_cloudforce_one_request_priority with priority, TLP, labels, content, request status, token counts, and requested information. Broad import would claim Cloudforce One request triage state as Terraform-owned configuration.",
+      "status": "request-style",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/cloudforce_one_request_priority"
       ]
     },
     {
@@ -255,6 +321,28 @@
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/logpush_ownership_challenge"
+      ]
+    },
+    {
+      "resource": "cloudflare_magic_network_monitoring_configuration",
+      "service_family": "network_edge",
+      "reason": "Magic Network Monitoring account configuration does not expose a provider import contract.",
+      "evidence": "Terraform provider v5.19.1 implements read/create/update/delete for cloudflare_magic_network_monitoring_configuration but does not implement ResourceWithImportState or document terraform import. The resource owns account-level router and WARP-device monitoring configuration, so Terraformer cannot safely seed it through provider import.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/magic_network_monitoring_configuration"
+      ]
+    },
+    {
+      "resource": "cloudflare_magic_transit_connector",
+      "service_family": "network_edge",
+      "reason": "Magic Transit connectors can require generated or write-only license material that broad import cannot reconstruct.",
+      "evidence": "Terraform provider v5.19.1 marks license_key as Sensitive and documents it is only returned on creation, while device.provision_license is a write-only creation field. Provider import verification ignores these fields, so Terraformer cannot emit a complete connector resource from discovery alone.",
+      "status": "secret-required",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/magic_transit_connector"
       ]
     },
     {
@@ -357,6 +445,28 @@
       ]
     },
     {
+      "resource": "cloudflare_snippet_rules",
+      "service_family": "snippets",
+      "reason": "Snippet rules are zone-level rule-list ownership without a Terraform provider import path.",
+      "evidence": "Terraform provider v5.19.1 documents cloudflare_snippet_rules as not supporting terraform import, and the generated resource has an empty Read method with no ResourceWithImportState implementation. Broad import cannot safely seed the authoritative rules list.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/snippet_rules"
+      ]
+    },
+    {
+      "resource": "cloudflare_snippets",
+      "service_family": "snippets",
+      "reason": "Deprecated snippets resources are non-functional in the Terraform provider.",
+      "evidence": "Terraform provider v5.19.1 marks cloudflare_snippets as deprecated in favor of cloudflare_snippet, documents no terraform import support, and the generated resource returns a non-functional resource error for create, read, update, and delete.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/snippets"
+      ]
+    },
+    {
       "resource": "cloudflare_sso_connector",
       "service_family": "identity",
       "reason": "SSO connector resources include identity-provider verification workflow state that broad settings import should not claim.",
@@ -365,6 +475,39 @@
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/sso_connector"
+      ]
+    },
+    {
+      "resource": "cloudflare_stream",
+      "service_family": "stream",
+      "reason": "Stream videos are media content/runtime encoding records and are not importable through the Terraform provider.",
+      "evidence": "Terraform provider v5.19.1 documents cloudflare_stream as not currently supporting terraform import. The resource exposes media upload, encoding, playback, thumbnail, and processing status fields rather than stable provider-level infrastructure configuration.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/stream"
+      ]
+    },
+    {
+      "resource": "cloudflare_stream_audio_track",
+      "service_family": "stream",
+      "reason": "Stream audio tracks are media content attachments and are not importable through the Terraform provider.",
+      "evidence": "Terraform provider v5.19.1 documents cloudflare_stream_audio_track as not currently supporting terraform import. The resource attaches or selects audio tracks on a media item and reads generated processing status.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/stream_audio_track"
+      ]
+    },
+    {
+      "resource": "cloudflare_stream_caption_language",
+      "service_family": "stream",
+      "reason": "Stream caption language resources require media caption file ownership and are not importable through the Terraform provider.",
+      "evidence": "Terraform provider v5.19.1 documents cloudflare_stream_caption_language as not currently supporting terraform import. The resource can own a WebVTT caption file while reads expose generated caption status, so broad import cannot reconstruct caption source safely.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/stream_caption_language"
       ]
     },
     {
@@ -398,6 +541,17 @@
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/stream_live_input"
+      ]
+    },
+    {
+      "resource": "cloudflare_stream_watermark",
+      "service_family": "stream",
+      "reason": "Stream watermark resources are media asset records and are not importable through the Terraform provider.",
+      "evidence": "Terraform provider v5.19.1 documents cloudflare_stream_watermark as not currently supporting terraform import. The resource owns a copied watermark image URL and reads generated media dimensions and asset metadata.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/stream_watermark"
       ]
     },
     {
@@ -456,10 +610,21 @@
       ]
     },
     {
+      "resource": "cloudflare_web_analytics_rule",
+      "service_family": "web_analytics",
+      "reason": "Web Analytics rules are not importable through the Terraform provider.",
+      "evidence": "Terraform provider v5.19.1 documents cloudflare_web_analytics_rule as not currently supporting terraform import. Terraformer imports cloudflare_web_analytics_site, but individual rules need provider import support before broad discovery can seed them reliably.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/web_analytics_rule"
+      ]
+    },
+    {
       "resource": "cloudflare_worker_version",
       "service_family": "workers",
       "reason": "Worker version resources couple runtime version state to code modules, assets, and bindings that broad discovery cannot safely reconstruct.",
-      "evidence": "The Terraform provider resource includes modules, main_module, assets, bindings, migrations, and sensitive asset or binding values. Terraformer currently imports Workers routes, custom domains, cron triggers, and dispatch namespaces, but not script body or version ownership.",
+      "evidence": "The Terraform provider resource includes modules, main_module, assets, bindings, migrations, and sensitive asset or binding values. Terraformer imports Worker metadata, routes, custom domains, cron triggers, and dispatch namespaces, but not script body or version ownership.",
       "status": "deferred",
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
@@ -492,11 +657,23 @@
       "resource": "cloudflare_workers_script",
       "service_family": "workers",
       "reason": "Worker scripts can include source code, assets, modules, and sensitive binding material that should not be reconstructed blindly.",
-      "evidence": "The Terraform provider resource accepts content/content_file, assets, bindings, migrations, and sensitive asset or binding fields. Terraformer currently imports Workers routes, custom domains, cron triggers, and dispatch namespaces, but not script body ownership.",
+      "evidence": "The Terraform provider resource accepts content/content_file, assets, bindings, migrations, and sensitive asset or binding fields. Terraformer imports Worker metadata, routes, custom domains, cron triggers, and dispatch namespaces, but not script body ownership.",
       "status": "deferred",
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/workers_script"
+      ]
+    },
+    {
+      "resource": "cloudflare_workers_script_subdomain",
+      "service_family": "workers",
+      "reason": "Workers script subdomain ownership is redundant with cloudflare_worker subdomain settings.",
+      "evidence": "Terraform provider v5.19.1 documents cloudflare_workers_script_subdomain as redundant with cloudflare_worker and says it should not be used together with the worker resource. Terraformer imports cloudflare_worker for durable Worker metadata, so also importing script subdomain resources would create duplicate ownership.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/workers_script_subdomain",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/worker"
       ]
     },
     {
@@ -522,6 +699,28 @@
       ]
     },
     {
+      "resource": "cloudflare_zero_trust_access_mtls_hostname_settings",
+      "service_family": "zero_trust_access",
+      "reason": "Access mTLS hostname settings are not importable through the Terraform provider.",
+      "evidence": "Terraform provider v5.19.1 documents cloudflare_zero_trust_access_mtls_hostname_settings as not currently supporting terraform import. The resource owns an account or zone hostname settings list, so broad import cannot safely seed it without provider import support.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zero_trust_access_mtls_hostname_settings"
+      ]
+    },
+    {
+      "resource": "cloudflare_zero_trust_device_default_profile_certificates",
+      "service_family": "zero_trust_device",
+      "reason": "Zero Trust device default profile certificate settings are not importable through the Terraform provider.",
+      "evidence": "Terraform provider v5.19.1 documents cloudflare_zero_trust_device_default_profile_certificates as not currently supporting terraform import. Broad import should not synthesize this WARP client certificate provisioning toggle without provider import support.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zero_trust_device_default_profile_certificates"
+      ]
+    },
+    {
       "resource": "cloudflare_zero_trust_device_posture_integration",
       "service_family": "zero_trust_device_posture",
       "reason": "Device posture integrations require provider-specific credential/configuration material that needs a dedicated reconstruction design.",
@@ -530,6 +729,17 @@
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zero_trust_device_posture_integration"
+      ]
+    },
+    {
+      "resource": "cloudflare_zero_trust_device_settings",
+      "service_family": "zero_trust_device",
+      "reason": "Zero Trust device settings are not importable through the Terraform provider.",
+      "evidence": "Terraform provider v5.19.1 documents cloudflare_zero_trust_device_settings as not currently supporting terraform import. The account singleton owns WARP device defaults and emergency disconnect settings that need provider import support before Terraformer can seed them safely.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zero_trust_device_settings"
       ]
     },
     {
@@ -621,6 +831,17 @@
       ]
     },
     {
+      "resource": "cloudflare_zero_trust_risk_behavior",
+      "service_family": "zero_trust_risk",
+      "reason": "Zero Trust risk behavior settings are not importable through the Terraform provider.",
+      "evidence": "Terraform provider v5.19.1 documents cloudflare_zero_trust_risk_behavior as not currently supporting terraform import. The account-level behavior map should not be synthesized by broad import until the provider exposes an import contract.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zero_trust_risk_behavior"
+      ]
+    },
+    {
       "resource": "cloudflare_zero_trust_risk_scoring_integration",
       "service_family": "zero_trust_risk",
       "reason": "Risk scoring integrations are third-party tenant integrations with lifecycle state that should not be inferred from broad discovery.",
@@ -645,34 +866,12 @@
     {
       "resource": "cloudflare_zone_dns_settings",
       "service_family": "dns",
-      "reason": "Zone DNS settings are zone-scoped singleton settings that need explicit ownership and default-handling review.",
-      "evidence": "Issue #335 tracks DNS settings as follow-up work. This resource owns a full zone DNS settings object, including nameserver, SOA, multi-provider, secondary DNS, and internal DNS options that may reflect API defaults rather than explicit Terraform intent.",
+      "reason": "Zone DNS settings remain deferred because the provider has no import path and API reads return effective zone settings without explicit ownership markers.",
+      "evidence": "Cloudflare provider v5.19.1 documents that cloudflare_zone_dns_settings does not support terraform import. Its read path returns the full zone DNS settings object, including nameserver, SOA, multi-provider, secondary DNS, and internal DNS options, but does not distinguish inherited/default values from zone-authored configuration.",
       "status": "deferred",
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zone_dns_settings"
-      ]
-    },
-    {
-      "resource": "cloudflare_zone_dnssec",
-      "service_family": "dns",
-      "reason": "Zone DNSSEC is a zone singleton with desired settings mixed with Cloudflare-generated DNSSEC metadata.",
-      "evidence": "The Terraform provider resource requires zone_id and optional desired DNSSEC settings, while read state includes generated DS/public-key fields, digest values, key tags, and modified timestamps. Import needs scoped handling to avoid treating Cloudflare-generated key material as user-authored configuration.",
-      "status": "deferred",
-      "references": [
-        "https://github.com/chenrui333/terraformer/issues/335",
-        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zone_dnssec"
-      ]
-    },
-    {
-      "resource": "cloudflare_zone_setting",
-      "service_family": "zone_settings",
-      "reason": "Generic zone setting imports need per-setting review for plan availability, value shape, and default-versus-explicit ownership.",
-      "evidence": "The Terraform provider exposes many setting_id values with different value types and plan-level availability. Issue #335 lists zone settings as a dedicated follow-up bucket rather than a safe broad parity import.",
-      "status": "deferred",
-      "references": [
-        "https://github.com/chenrui333/terraformer/issues/335",
-        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zone_setting"
       ]
     },
     {

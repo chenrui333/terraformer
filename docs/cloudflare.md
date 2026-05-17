@@ -63,6 +63,16 @@ List of supported Cloudflare services:
   * `cloudflare_magic_wan_gre_tunnel`
   * `cloudflare_magic_wan_ipsec_tunnel`
   * `cloudflare_magic_wan_static_route`
+* `network_edge`
+  * `cloudflare_address_map`
+  * `cloudflare_magic_network_monitoring_rule`
+  * `cloudflare_magic_transit_site`
+  * `cloudflare_magic_transit_site_acl`
+  * `cloudflare_magic_transit_site_lan`
+  * `cloudflare_magic_transit_site_wan`
+  * `cloudflare_regional_hostname`
+  * `cloudflare_spectrum_application`
+  * `cloudflare_web3_hostname`
 * `notifications`
   * `cloudflare_notification_policy`
   * `cloudflare_notification_policy_webhooks`
@@ -102,12 +112,15 @@ List of supported Cloudflare services:
   * `cloudflare_waiting_room_settings`
   * `cloudflare_zone_cache_reserve`
   * `cloudflare_zone_cache_variants`
+  * `cloudflare_zone_dnssec`
   * `cloudflare_zone_hold`
+  * `cloudflare_zone_setting`
 
   Account-scoped settings and DNS transfer resources require `CLOUDFLARE_ACCOUNT_ID`.
-  Zone singleton settings are imported only when Terraformer can see durable, non-default
+  Zone singleton settings are imported only when Terraformer can see durable, explicit
   user-owned configuration. Cloudflare defaults are skipped so generated Terraform does not
-  claim ownership of unset account or zone settings.
+  claim ownership of unset account or zone settings. Generic zone settings use a conservative
+  allowlist and require Cloudflare modification metadata before import.
 * `storage`
   * `cloudflare_d1_database`
   * `cloudflare_queue`
@@ -132,6 +145,7 @@ List of supported Cloudflare services:
 * `web_analytics`
   * `cloudflare_web_analytics_site`
 * `workers`
+  * `cloudflare_worker`
   * `cloudflare_workers_cron_trigger`
   * `cloudflare_workers_custom_domain`
   * `cloudflare_workers_for_platforms_dispatch_namespace`

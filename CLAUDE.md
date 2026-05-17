@@ -2,6 +2,9 @@
 
 Use this skill for provider-focused work in `chenrui333/terraformer`: feature gap audits, new resource importers, provider-specific bug fixes, docs updates, review iteration, and scoped cleanup.
 
+For repo-level provider architecture and lifecycle guidance, see
+[docs/provider-architecture.md](docs/provider-architecture.md).
+
 ## Default Operating Mode
 
 1. Confirm repo scope, branch, remotes, and dirty state before editing.
@@ -36,6 +39,19 @@ Use this skill for provider-focused work in `chenrui333/terraformer`: feature ga
    - Generated Terraform addresses remain unique when display names, joined name segments, or child names collide.
 5. Prefer high-confidence additions. If a resource cannot be reconstructed accurately, document the gap or skip it rather than emitting misleading config. Docs-only corrections are valid when docs drift from already-supported behavior.
 
+## New External Provider Skeletons
+
+When adding a new non-HashiCorp or external provider, land the whole Terraformer surface together:
+
+- CLI command wiring, provider registration, service registration, provider-source mapping, docs, README/provider list when applicable, and tests for command/service/source wiring.
+- Use service or provider API clients for discovery, then seed provider-compatible state for Terraform provider refresh. Do not rely on Terraform provider refresh/import as the inventory discovery mechanism.
+- Keep generated provider HCL secret-free. Separate refresh-time provider config from generated provider data: `GetConfig` may need auth fields that the provider requires to refresh, but `GetProviderData` must omit passwords, private keys, access keys, session tokens, OAuth tokens, and similar secret material.
+- Prefer environment variables, profiles, or existing provider config paths for authentication instead of synthesizing credentials into generated configuration.
+- Apply typed ID filters before broad, expensive, or permission-sensitive list/describe calls when the upstream API supports scoped reads.
+- Skip system, internal, default, or provider-managed resources by default unless they are explicitly filtered and provider read confirms they are safely user-owned.
+- Partial import is acceptable only when required identity and shape fields are still preserved through refresh/import fallback and the unread fields are optional. If provider refresh cannot recover required fields, defer or mark the resource unsupported.
+- Treat cloud-managed variants and provider quirks as evidence-backed filters with tests; skip read-only or unsupported config entries that the Terraform provider intentionally cannot manage.
+
 ## Provider Read/Reconstruction Safety
 
 A Terraformer resource is safe to add only when both conditions are true:
@@ -52,6 +68,29 @@ Mark a resource unsupported when:
 - the resource requires credentials, private keys, tokens, passwords, webhook secrets, OIDC secrets, or other write-only values;
 - the resource represents an operation rather than stable inventory;
 - the resource represents an acceptance or handshake lifecycle that cannot be inferred safely from discovery.
+
+## Provider Gap Close-Out And Data Shape Checks
+
+Before claiming a provider gap issue is complete, compare all four sources of truth: Terraformer provider registration, provider docs, provider-local unsupported metadata, and the issue's resource buckets. Also check whether open or stale PR branches were superseded by later merged lanes before continuing work.
+
+Close-out audits are different from feature lanes. They should make the remaining work explicit, not restart parity chasing.
+
+Rules:
+
+- Report lane closure separately from tracking-issue closure. A lane can be complete while the broader issue remains open.
+- For large provider schemas, practical close-out means every reviewed candidate is supported, evidence-backed deferred/unsupported, or assigned to a named focused follow-up lane.
+- Do not treat literal Terraform provider parity as the goal when resources are request-style, runtime/media output, high-cardinality content, provider-managed, source/body-heavy, or secret-required.
+- For settings and singleton resources, distinguish durable user-owned configuration from effective API values and platform defaults before moving a resource from deferred metadata to supported import.
+- Use close-out audits to reduce repeated search work: update unsupported metadata when evidence is clear, and group remaining importable resources into focused next lanes.
+- If the audit finds no durable metadata or guidance changes, report that directly instead of creating a docs-only PR.
+
+When evaluating product, platform, dataset, table, pipeline, API-definition, or deployment-style resources:
+
+- preserve empty-but-meaningful strings, lists, maps, nested blocks, and variant markers when provider refresh needs them for stable HCL;
+- seed nested state that provider read only reconciles when it is already present, such as rule or schedule blocks;
+- validate source-shape restrictions before appending discovered IDs, and skip or document source variants the Terraform provider cannot validate or refresh;
+- import durable configuration metadata, not high-cardinality rows, items, events, or runtime observations;
+- prefer unsupported or deferred metadata over exposing a resource that produces invalid, lossy, or destructive follow-up plans.
 
 ## Duplicate Ownership Across Related Resources
 
@@ -478,6 +517,8 @@ Rules:
 - Add explicit helper functions for import ID construction.
 - Add tests for every composite import ID shape.
 - Use stable resource names that include enough parent/child context to avoid sanitized name collisions.
+- Treat composite and tuple ID filters as literal import identities; do not pass them through generic parsers that split on delimiters which may also appear inside tuple fields unless the provider format guarantees escaping.
+- If a discovered identity contains a delimiter that the upstream importer cannot escape or represent, skip or defer it with evidence instead of emitting a broken import ID.
 - If provider refresh normalizes or drops an import ID, use the project's ID preservation metadata only after verifying the behavior.
 
 ## Parent/Child Dependency References

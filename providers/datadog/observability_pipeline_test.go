@@ -3,40 +3,12 @@
 package datadog
 
 import (
-	"context"
-	"fmt"
-	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
 
-	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/zclconf/go-cty/cty"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 )
-
-func TestObservabilityPipelineCreateResource(t *testing.T) {
-	resource, err := (&ObservabilityPipelineGenerator{}).createResource(observabilityPipelineData("pipeline-123"))
-	if err != nil {
-		t.Fatalf("createResource returned error: %v", err)
-	}
-	if resource.InstanceState.ID != "pipeline-123" {
-		t.Fatalf("resource ID = %q, want pipeline-123", resource.InstanceState.ID)
-	}
-	if resource.ResourceName != "tfer--observability_pipeline_pipeline-123" {
-		t.Fatalf("resource name = %q, want tfer--observability_pipeline_pipeline-123", resource.ResourceName)
-	}
-	if resource.InstanceInfo.Type != "datadog_observability_pipeline" {
-		t.Fatalf("resource type = %q, want datadog_observability_pipeline", resource.InstanceInfo.Type)
-	}
-}
-
-func TestObservabilityPipelineCreateResourceMissingID(t *testing.T) {
-	if _, err := (&ObservabilityPipelineGenerator{}).createResource(observabilityPipelineData("")); err == nil {
-		t.Fatal("createResource returned nil error, want missing id error")
-	}
-}
 
 func TestObservabilityPipelineAllowEmptyValuesMatchesIndexedFlatmapPaths(t *testing.T) {
 	allowEmptyValues := allowEmptyValueRegexps(ObservabilityPipelineAllowEmptyValues)
@@ -167,50 +139,50 @@ func TestObservabilityPipelineAllowEmptyValuesPreservesRequiredIncludeQueries(t 
 	if err != nil {
 		t.Fatalf("Parse returned error: %v", err)
 	}
-	config := requireMapInList(t, result, "config", 0)
-	destination := requireMapInList(t, config, "destination", 0)
-	datadogLogs := requireMapInList(t, destination, "datadog_logs", 0)
-	route := requireMapInList(t, datadogLogs, "routes", 0)
+	config := requireObservabilityPipelineMapInList(t, result, "config", 0)
+	destination := requireObservabilityPipelineMapInList(t, config, "destination", 0)
+	datadogLogs := requireObservabilityPipelineMapInList(t, destination, "datadog_logs", 0)
+	route := requireObservabilityPipelineMapInList(t, datadogLogs, "routes", 0)
 	if route["include"] != "" {
 		t.Fatalf("destination route include = %v, want empty string", route["include"])
 	}
-	processorGroup := requireMapInList(t, config, "processor_group", 0)
+	processorGroup := requireObservabilityPipelineMapInList(t, config, "processor_group", 0)
 	if processorGroup["include"] != "" {
 		t.Fatalf("processor_group include = %v, want empty string", processorGroup["include"])
 	}
-	processor := requireMapInList(t, processorGroup, "processor", 0)
+	processor := requireObservabilityPipelineMapInList(t, processorGroup, "processor", 0)
 	if processor["include"] != "" {
 		t.Fatalf("processor include = %v, want empty string", processor["include"])
 	}
-	customProcessor := requireMapInList(t, processor, "custom_processor", 0)
-	remap := requireMapInList(t, customProcessor, "remap", 0)
+	customProcessor := requireObservabilityPipelineMapInList(t, processor, "custom_processor", 0)
+	remap := requireObservabilityPipelineMapInList(t, customProcessor, "remap", 0)
 	if remap["include"] != "" {
 		t.Fatalf("custom processor remap include = %v, want empty string", remap["include"])
 	}
-	generatedMetrics := requireMapInList(t, processor, "generate_datadog_metrics", 0)
-	metric := requireMapInList(t, generatedMetrics, "metric", 0)
+	generatedMetrics := requireObservabilityPipelineMapInList(t, processor, "generate_datadog_metrics", 0)
+	metric := requireObservabilityPipelineMapInList(t, generatedMetrics, "metric", 0)
 	if metric["include"] != "" {
 		t.Fatalf("generated metric include = %v, want empty string", metric["include"])
 	}
-	metricTags := requireMapInList(t, processor, "metric_tags", 0)
-	rule := requireMapInList(t, metricTags, "rule", 0)
+	metricTags := requireObservabilityPipelineMapInList(t, processor, "metric_tags", 0)
+	rule := requireObservabilityPipelineMapInList(t, metricTags, "rule", 0)
 	if rule["include"] != "" {
 		t.Fatalf("metric tags rule include = %v, want empty string", rule["include"])
 	}
-	ocsfMapper := requireMapInList(t, processor, "ocsf_mapper", 0)
-	mapping := requireMapInList(t, ocsfMapper, "mapping", 0)
+	ocsfMapper := requireObservabilityPipelineMapInList(t, processor, "ocsf_mapper", 0)
+	mapping := requireObservabilityPipelineMapInList(t, ocsfMapper, "mapping", 0)
 	if mapping["include"] != "" {
 		t.Fatalf("ocsf mapping include = %v, want empty string", mapping["include"])
 	}
-	splitArray := requireMapInList(t, processor, "split_array", 0)
-	array := requireMapInList(t, splitArray, "array", 0)
+	splitArray := requireObservabilityPipelineMapInList(t, processor, "split_array", 0)
+	array := requireObservabilityPipelineMapInList(t, splitArray, "array", 0)
 	if array["include"] != "" {
 		t.Fatalf("split array include = %v, want empty string", array["include"])
 	}
 }
 
-func TestObservabilityPipelinePostConvertHookPreservesEmptyVariantBlocks(t *testing.T) {
-	resource := observabilityPipelineResourceWithItem(map[string]interface{}{
+func TestObservabilityPipelinePostConvertHookPreservesNestedEmptyVariantBlocks(t *testing.T) {
+	resource := observabilityPipelineResourceWithItemForTest(map[string]interface{}{
 		"config": []interface{}{
 			map[string]interface{}{
 				"destination": []interface{}{
@@ -258,25 +230,25 @@ func TestObservabilityPipelinePostConvertHookPreservesEmptyVariantBlocks(t *test
 		t.Fatalf("PostConvertHook returned error: %v", err)
 	}
 
-	config := requireMapInList(t, generator.Resources[0].Item, "config", 0)
-	requireEmptyBlockList(t, requireMapInList(t, config, "destination", 0), "datadog_logs")
-	requireEmptyBlockList(t, requireMapInList(t, config, "destination", 1), "datadog_metrics")
+	config := requireObservabilityPipelineMapInList(t, generator.Resources[0].Item, "config", 0)
+	requireObservabilityPipelineEmptyBlockList(t, requireObservabilityPipelineMapInList(t, config, "destination", 0), "datadog_logs")
+	requireObservabilityPipelineEmptyBlockList(t, requireObservabilityPipelineMapInList(t, config, "destination", 1), "datadog_metrics")
 
-	processorGroup := requireMapInList(t, config, "processor_group", 0)
-	requireEmptyBlockList(t, requireMapInList(t, processorGroup, "processor", 0), "filter")
-	requireEmptyBlockList(t, requireMapInList(t, processorGroup, "processor", 1), "add_hostname")
+	processorGroup := requireObservabilityPipelineMapInList(t, config, "processor_group", 0)
+	requireObservabilityPipelineEmptyBlockList(t, requireObservabilityPipelineMapInList(t, processorGroup, "processor", 0), "filter")
+	requireObservabilityPipelineEmptyBlockList(t, requireObservabilityPipelineMapInList(t, processorGroup, "processor", 1), "add_hostname")
 
-	scannerProcessor := requireMapInList(t, processorGroup, "processor", 2)
-	scanner := requireMapInList(t, scannerProcessor, "sensitive_data_scanner", 0)
-	rule := requireMapInList(t, scanner, "rule", 0)
-	onMatch := requireMapInList(t, rule, "on_match", 0)
-	requireEmptyBlockList(t, onMatch, "hash")
-	requireEmptyBlockList(t, onMatch, "partial_redact")
-	requireEmptyBlockList(t, onMatch, "redact")
+	scannerProcessor := requireObservabilityPipelineMapInList(t, processorGroup, "processor", 2)
+	scanner := requireObservabilityPipelineMapInList(t, scannerProcessor, "sensitive_data_scanner", 0)
+	rule := requireObservabilityPipelineMapInList(t, scanner, "rule", 0)
+	onMatch := requireObservabilityPipelineMapInList(t, rule, "on_match", 0)
+	requireObservabilityPipelineEmptyBlockList(t, onMatch, "hash")
+	requireObservabilityPipelineEmptyBlockList(t, onMatch, "partial_redact")
+	requireObservabilityPipelineEmptyBlockList(t, onMatch, "redact")
 }
 
 func TestObservabilityPipelinePostConvertHookPreservesEmptyListsAndScopeVariants(t *testing.T) {
-	resource := observabilityPipelineResourceWithItem(map[string]interface{}{
+	resource := observabilityPipelineResourceWithItemForTest(map[string]interface{}{
 		"config": []interface{}{
 			map[string]interface{}{
 				"processor_group": []interface{}{
@@ -328,24 +300,24 @@ func TestObservabilityPipelinePostConvertHookPreservesEmptyListsAndScopeVariants
 		t.Fatalf("PostConvertHook returned error: %v", err)
 	}
 
-	config := requireMapInList(t, generator.Resources[0].Item, "config", 0)
-	processorGroup := requireMapInList(t, config, "processor_group", 0)
-	reduceProcessor := requireMapInList(t, processorGroup, "processor", 0)
-	reduce := requireMapInList(t, reduceProcessor, "reduce", 0)
-	requireEmptyList(t, reduce, "group_by")
+	config := requireObservabilityPipelineMapInList(t, generator.Resources[0].Item, "config", 0)
+	processorGroup := requireObservabilityPipelineMapInList(t, config, "processor_group", 0)
+	reduceProcessor := requireObservabilityPipelineMapInList(t, processorGroup, "processor", 0)
+	reduce := requireObservabilityPipelineMapInList(t, reduceProcessor, "reduce", 0)
+	requireObservabilityPipelineEmptyList(t, reduce, "group_by")
 
-	scannerProcessor := requireMapInList(t, processorGroup, "processor", 1)
-	scanner := requireMapInList(t, scannerProcessor, "sensitive_data_scanner", 0)
-	includeRule := requireMapInList(t, scanner, "rule", 0)
-	includeScope := requireMapInList(t, includeRule, "scope", 0)
-	requireEmptyBlockList(t, includeScope, "include")
-	excludeRule := requireMapInList(t, scanner, "rule", 1)
-	excludeScope := requireMapInList(t, excludeRule, "scope", 0)
-	requireEmptyBlockList(t, excludeScope, "exclude")
+	scannerProcessor := requireObservabilityPipelineMapInList(t, processorGroup, "processor", 1)
+	scanner := requireObservabilityPipelineMapInList(t, scannerProcessor, "sensitive_data_scanner", 0)
+	includeRule := requireObservabilityPipelineMapInList(t, scanner, "rule", 0)
+	includeScope := requireObservabilityPipelineMapInList(t, includeRule, "scope", 0)
+	requireObservabilityPipelineEmptyBlockList(t, includeScope, "include")
+	excludeRule := requireObservabilityPipelineMapInList(t, scanner, "rule", 1)
+	excludeScope := requireObservabilityPipelineMapInList(t, excludeRule, "scope", 0)
+	requireObservabilityPipelineEmptyBlockList(t, excludeScope, "exclude")
 }
 
 func TestObservabilityPipelinePostConvertHookDoesNotInventMissingVariantBlocks(t *testing.T) {
-	resource := observabilityPipelineResourceWithItem(map[string]interface{}{
+	resource := observabilityPipelineResourceWithItemForTest(map[string]interface{}{
 		"config": []interface{}{
 			map[string]interface{}{
 				"destination": []interface{}{
@@ -362,8 +334,8 @@ func TestObservabilityPipelinePostConvertHookDoesNotInventMissingVariantBlocks(t
 		t.Fatalf("PostConvertHook returned error: %v", err)
 	}
 
-	config := requireMapInList(t, generator.Resources[0].Item, "config", 0)
-	destination := requireMapInList(t, config, "destination", 0)
+	config := requireObservabilityPipelineMapInList(t, generator.Resources[0].Item, "config", 0)
+	destination := requireObservabilityPipelineMapInList(t, config, "destination", 0)
 	if _, ok := destination["datadog_logs"]; ok {
 		t.Fatal("PostConvertHook added datadog_logs without a matching state count marker")
 	}
@@ -373,7 +345,7 @@ func TestObservabilityPipelinePostConvertHookDoesNotOverwriteExistingVariantBloc
 	existing := []interface{}{
 		map[string]interface{}{"routes": []interface{}{"route-a"}},
 	}
-	resource := observabilityPipelineResourceWithItem(map[string]interface{}{
+	resource := observabilityPipelineResourceWithItemForTest(map[string]interface{}{
 		"config": []interface{}{
 			map[string]interface{}{
 				"destination": []interface{}{
@@ -396,9 +368,9 @@ func TestObservabilityPipelinePostConvertHookDoesNotOverwriteExistingVariantBloc
 		t.Fatalf("PostConvertHook returned error: %v", err)
 	}
 
-	config := requireMapInList(t, generator.Resources[0].Item, "config", 0)
-	destination := requireMapInList(t, config, "destination", 0)
-	got := requireList(t, destination, "datadog_logs")
+	config := requireObservabilityPipelineMapInList(t, generator.Resources[0].Item, "config", 0)
+	destination := requireObservabilityPipelineMapInList(t, config, "destination", 0)
+	got := requireObservabilityPipelineList(t, destination, "datadog_logs")
 	if len(got) != 1 {
 		t.Fatalf("datadog_logs length = %d, want 1", len(got))
 	}
@@ -411,177 +383,7 @@ func TestObservabilityPipelinePostConvertHookDoesNotOverwriteExistingVariantBloc
 	}
 }
 
-func TestObservabilityPipelineInitResourcesListsPipelinesWithPagination(t *testing.T) {
-	requestPages := []string{}
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if r.URL.Path != "/api/v2/obs-pipelines/pipelines" {
-			http.NotFound(w, r)
-			return
-		}
-		if got := r.URL.Query().Get("page[size]"); got != "100" {
-			http.Error(w, fmt.Sprintf("page[size] = %q, want 100", got), http.StatusBadRequest)
-			return
-		}
-
-		pageNumber := r.URL.Query().Get("page[number]")
-		requestPages = append(requestPages, pageNumber)
-		switch pageNumber {
-		case "0":
-			_, _ = fmt.Fprint(w, observabilityPipelineListResponseJSON(101, observabilityPipelineIDs("pipeline", 0, 100)...))
-		case "1":
-			_, _ = fmt.Fprint(w, observabilityPipelineListResponseJSON(101, "pipeline-100"))
-		default:
-			http.Error(w, fmt.Sprintf("page[number] = %q, want 0 or 1", pageNumber), http.StatusBadRequest)
-		}
-	}))
-	defer server.Close()
-
-	generator := newObservabilityPipelineTestGenerator(server, nil)
-	if err := generator.InitResources(); err != nil {
-		t.Fatalf("InitResources returned error: %v", err)
-	}
-	if strings.Join(requestPages, ",") != "0,1" {
-		t.Fatalf("request pages = %v, want [0 1]", requestPages)
-	}
-	assertResourceIDs(t, generator.Resources, observabilityPipelineIDs("pipeline", 0, 101))
-}
-
-func TestObservabilityPipelineInitResourcesHandlesEmptyResponse(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if r.URL.Path != "/api/v2/obs-pipelines/pipelines" {
-			http.NotFound(w, r)
-			return
-		}
-		_, _ = fmt.Fprint(w, observabilityPipelineListResponseJSON(0))
-	}))
-	defer server.Close()
-
-	generator := newObservabilityPipelineTestGenerator(server, nil)
-	if err := generator.InitResources(); err != nil {
-		t.Fatalf("InitResources returned error: %v", err)
-	}
-	if len(generator.Resources) != 0 {
-		t.Fatalf("resources length = %d, want 0", len(generator.Resources))
-	}
-}
-
-func TestObservabilityPipelineInitResourcesReturnsForbiddenListError(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if r.URL.Path != "/api/v2/obs-pipelines/pipelines" {
-			http.NotFound(w, r)
-			return
-		}
-		http.Error(w, "forbidden", http.StatusForbidden)
-	}))
-	defer server.Close()
-
-	generator := newObservabilityPipelineTestGenerator(server, nil)
-	if err := generator.InitResources(); err == nil {
-		t.Fatal("InitResources returned nil error, want forbidden error")
-	}
-}
-
-func TestObservabilityPipelineInitResourcesFiltersByID(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if r.URL.Path != "/api/v2/obs-pipelines/pipelines/pipeline-123" {
-			http.NotFound(w, r)
-			return
-		}
-		_, _ = fmt.Fprint(w, observabilityPipelineGetResponseJSON("pipeline-123"))
-	}))
-	defer server.Close()
-
-	generator := newObservabilityPipelineTestGenerator(server, []terraformutils.ResourceFilter{{
-		ServiceName:      "observability_pipeline",
-		FieldPath:        "id",
-		AcceptableValues: []string{"pipeline-123"},
-	}})
-	if err := generator.InitResources(); err != nil {
-		t.Fatalf("InitResources returned error: %v", err)
-	}
-	assertResourceIDs(t, generator.Resources, []string{"pipeline-123"})
-}
-
-func TestObservabilityPipelineInitResourcesListsWithUnrelatedIDFilter(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if r.URL.Path != "/api/v2/obs-pipelines/pipelines" {
-			http.NotFound(w, r)
-			return
-		}
-		_, _ = fmt.Fprint(w, observabilityPipelineListResponseJSON(1, "pipeline-123"))
-	}))
-	defer server.Close()
-
-	generator := newObservabilityPipelineTestGenerator(server, []terraformutils.ResourceFilter{{
-		ServiceName:      "logs_custom_destination",
-		FieldPath:        "id",
-		AcceptableValues: []string{"destination-id"},
-	}})
-	if err := generator.InitResources(); err != nil {
-		t.Fatalf("InitResources returned error: %v", err)
-	}
-	assertResourceIDs(t, generator.Resources, []string{"pipeline-123"})
-}
-
-func newObservabilityPipelineTestGenerator(server *httptest.Server, filter []terraformutils.ResourceFilter) *ObservabilityPipelineGenerator {
-	return &ObservabilityPipelineGenerator{
-		DatadogService: DatadogService{
-			Service: terraformutils.Service{
-				Args: map[string]interface{}{
-					"auth":          context.Background(),
-					"datadogClient": newTeamRelationshipTestClient(server),
-				},
-				Filter: filter,
-			},
-		},
-	}
-}
-
-func observabilityPipelineIDs(prefix string, start, count int) []string {
-	ids := make([]string, 0, count)
-	for i := start; i < start+count; i++ {
-		ids = append(ids, fmt.Sprintf("%s-%d", prefix, i))
-	}
-	return ids
-}
-
-func observabilityPipelineGetResponseJSON(id string) string {
-	return fmt.Sprintf("{\"data\":%s}", observabilityPipelineJSON(id))
-}
-
-func observabilityPipelineListResponseJSON(totalCount int, ids ...string) string {
-	items := make([]string, 0, len(ids))
-	for _, id := range ids {
-		items = append(items, observabilityPipelineJSON(id))
-	}
-	return fmt.Sprintf("{\"data\":[%s],\"meta\":{\"totalCount\":%d}}", strings.Join(items, ","), totalCount)
-}
-
-func observabilityPipelineJSON(id string) string {
-	return fmt.Sprintf(
-		"{\"id\":%q,\"type\":\"pipelines\",\"attributes\":{\"name\":%q,\"config\":{\"sources\":[],\"destinations\":[]}}}",
-		id,
-		fmt.Sprintf("pipeline %s", id),
-	)
-}
-
-func observabilityPipelineData(id string) datadogV2.ObservabilityPipelineData {
-	return *datadogV2.NewObservabilityPipelineData(
-		*datadogV2.NewObservabilityPipelineDataAttributes(
-			*datadogV2.NewObservabilityPipelineConfig([]datadogV2.ObservabilityPipelineConfigDestinationItem{}, []datadogV2.ObservabilityPipelineConfigSourceItem{}),
-			fmt.Sprintf("pipeline %s", id),
-		),
-		id,
-		"pipelines",
-	)
-}
-
-func observabilityPipelineResourceWithItem(item map[string]interface{}) terraformutils.Resource {
+func observabilityPipelineResourceWithItemForTest(item map[string]interface{}) terraformutils.Resource {
 	resource := terraformutils.NewSimpleResource(
 		"pipeline-123",
 		"observability_pipeline_pipeline-123",
@@ -593,7 +395,7 @@ func observabilityPipelineResourceWithItem(item map[string]interface{}) terrafor
 	return resource
 }
 
-func requireList(t *testing.T, parent map[string]interface{}, key string) []interface{} {
+func requireObservabilityPipelineList(t *testing.T, parent map[string]interface{}, key string) []interface{} {
 	t.Helper()
 	list, ok := parent[key].([]interface{})
 	if !ok {
@@ -602,9 +404,9 @@ func requireList(t *testing.T, parent map[string]interface{}, key string) []inte
 	return list
 }
 
-func requireMapInList(t *testing.T, parent map[string]interface{}, key string, index int) map[string]interface{} {
+func requireObservabilityPipelineMapInList(t *testing.T, parent map[string]interface{}, key string, index int) map[string]interface{} {
 	t.Helper()
-	list := requireList(t, parent, key)
+	list := requireObservabilityPipelineList(t, parent, key)
 	if len(list) <= index {
 		t.Fatalf("%s length = %d, want index %d", key, len(list), index)
 	}
@@ -615,17 +417,17 @@ func requireMapInList(t *testing.T, parent map[string]interface{}, key string, i
 	return item
 }
 
-func requireEmptyList(t *testing.T, parent map[string]interface{}, key string) {
+func requireObservabilityPipelineEmptyList(t *testing.T, parent map[string]interface{}, key string) {
 	t.Helper()
-	list := requireList(t, parent, key)
+	list := requireObservabilityPipelineList(t, parent, key)
 	if len(list) != 0 {
 		t.Fatalf("%s length = %d, want 0", key, len(list))
 	}
 }
 
-func requireEmptyBlockList(t *testing.T, parent map[string]interface{}, key string) {
+func requireObservabilityPipelineEmptyBlockList(t *testing.T, parent map[string]interface{}, key string) {
 	t.Helper()
-	list := requireList(t, parent, key)
+	list := requireObservabilityPipelineList(t, parent, key)
 	if len(list) != 1 {
 		t.Fatalf("%s length = %d, want 1", key, len(list))
 	}

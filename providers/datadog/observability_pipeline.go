@@ -4,7 +4,6 @@ package datadog
 
 import (
 	"context"
-	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -13,6 +12,11 @@ import (
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 
 	"github.com/chenrui333/terraformer/terraformutils"
+)
+
+const (
+	datadogObservabilityPipelineServiceName = "observability_pipeline"
+	datadogObservabilityPipelinePageSize    = int64(100)
 )
 
 var (
@@ -154,14 +158,22 @@ type ObservabilityPipelineGenerator struct {
 	DatadogService
 }
 
+func (g *ObservabilityPipelineGenerator) createResource(pipelineID string) (terraformutils.Resource, error) {
+	return newDatadogIDResource(datadogObservabilityPipelineServiceName, pipelineID, ObservabilityPipelineAllowEmptyValues)
+}
+
+func (g *ObservabilityPipelineGenerator) createResources(pipelineIDs []string) ([]terraformutils.Resource, error) {
+	return datadogIDResources(datadogObservabilityPipelineServiceName, pipelineIDs, ObservabilityPipelineAllowEmptyValues)
+}
+
 func (g *ObservabilityPipelineGenerator) PostConvertHook() error {
 	for i := range g.Resources {
-		preserveObservabilityPipelineEmptyVariantBlocks(&g.Resources[i])
+		preserveObservabilityPipelineVariantBlocks(&g.Resources[i])
 	}
 	return nil
 }
 
-func preserveObservabilityPipelineEmptyVariantBlocks(resource *terraformutils.Resource) {
+func preserveObservabilityPipelineVariantBlocks(resource *terraformutils.Resource) {
 	if resource == nil || resource.InstanceState == nil || resource.InstanceState.Attributes == nil {
 		return
 	}
@@ -218,6 +230,7 @@ func observabilityPipelineNormalizeFlatmapPath(path string) string {
 		if _, err := strconv.Atoi(part); err == nil {
 			continue
 		}
+
 		normalized = append(normalized, part)
 	}
 	return strings.Join(normalized, ".")
@@ -326,114 +339,110 @@ func observabilityPipelineEmptyBlocks(count int) []interface{} {
 	return blocks
 }
 
-func (g *ObservabilityPipelineGenerator) createResource(pipeline datadogV2.ObservabilityPipelineData) (terraformutils.Resource, error) {
-	pipelineID := pipeline.GetId()
-	if pipelineID == "" {
-		return terraformutils.Resource{}, fmt.Errorf("observability pipeline missing id")
-	}
-
-	return terraformutils.NewSimpleResource(
-		pipelineID,
-		fmt.Sprintf("observability_pipeline_%s", pipelineID),
-		"datadog_observability_pipeline",
-		"datadog",
-		ObservabilityPipelineAllowEmptyValues,
-	), nil
-}
-
-func (g *ObservabilityPipelineGenerator) createResources(pipelines []datadogV2.ObservabilityPipelineData) ([]terraformutils.Resource, error) {
-	resources := []terraformutils.Resource{}
-	for _, pipeline := range pipelines {
-		resource, err := g.createResource(pipeline)
-		if err != nil {
-			return nil, err
-		}
-		resources = append(resources, resource)
-	}
-	return resources, nil
-}
-
 // InitResources Generate TerraformResources from Datadog API,
 // from each observability_pipeline create 1 TerraformResource.
-// Need Observability Pipeline ID as ID for terraform resource.
 func (g *ObservabilityPipelineGenerator) InitResources() error {
 	datadogClient := g.Args["datadogClient"].(*datadog.APIClient)
 	auth := g.Args["auth"].(context.Context)
 	api := datadogV2.NewObservabilityPipelinesApi(datadogClient)
 
-	resources, filtered, err := g.filteredResources(auth, api)
+	resources, hasIDFilter, err := g.filteredResources(auth, api)
 	if err != nil {
 		return err
 	}
-	if filtered {
+	if hasIDFilter {
 		g.Resources = resources
 		return nil
 	}
 
-	pipelines, err := listObservabilityPipelines(auth, api)
+	pipelineIDs, err := g.listObservabilityPipelineIDs(auth, api)
 	if err != nil {
 		return err
 	}
-	g.Resources, err = g.createResources(pipelines)
-	return err
+	resources, err = g.createResources(pipelineIDs)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
+	return nil
 }
 
 func (g *ObservabilityPipelineGenerator) filteredResources(auth context.Context, api *datadogV2.ObservabilityPipelinesApi) ([]terraformutils.Resource, bool, error) {
 	resources := []terraformutils.Resource{}
-	matchedIDFilter := false
-
+	hasIDFilter := false
 	for _, filter := range g.Filter {
-		if filter.FieldPath != "id" {
+		if filter.FieldPath != "id" || filter.ServiceName != datadogObservabilityPipelineServiceName {
 			continue
 		}
-		if !filter.IsApplicable("observability_pipeline") {
-			continue
-		}
-		matchedIDFilter = true
+		hasIDFilter = true
 		for _, value := range filter.AcceptableValues {
-			pipeline, httpResp, err := api.GetPipeline(auth, value)
-			closeDatadogResponseBody(httpResp)
+			pipelineID, err := g.getObservabilityPipelineID(auth, api, value)
 			if err != nil {
-				return nil, false, err
+				return nil, true, err
 			}
-			resource, err := g.createResource(pipeline.GetData())
+			resource, err := g.createResource(pipelineID)
 			if err != nil {
-				return nil, false, err
+				return nil, true, err
 			}
 			resources = append(resources, resource)
 		}
 	}
-
-	return resources, matchedIDFilter, nil
+	return resources, hasIDFilter, nil
 }
 
-func listObservabilityPipelines(auth context.Context, api *datadogV2.ObservabilityPipelinesApi) ([]datadogV2.ObservabilityPipelineData, error) {
-	pageSize := int64(100)
+func (g *ObservabilityPipelineGenerator) getObservabilityPipelineID(auth context.Context, api *datadogV2.ObservabilityPipelinesApi, pipelineID string) (string, error) {
+	resp, httpResp, err := api.GetPipeline(auth, pipelineID)
+	closeDatadogResponseBody(httpResp)
+	if err != nil {
+		return "", err
+	}
+	data := resp.GetData()
+	responseID := data.GetId()
+	if responseID == "" {
+		return pipelineID, nil
+	}
+	return responseID, nil
+}
+
+func (g *ObservabilityPipelineGenerator) listObservabilityPipelineIDs(auth context.Context, api *datadogV2.ObservabilityPipelinesApi) ([]string, error) {
+	ids := []string{}
 	pageNumber := int64(0)
-	pipelines := []datadogV2.ObservabilityPipelineData{}
+	pipelinesSeen := int64(0)
 
 	for {
-		optionalParams := datadogV2.NewListPipelinesOptionalParameters().
-			WithPageSize(pageSize).
+		opts := datadogV2.NewListPipelinesOptionalParameters().
+			WithPageSize(datadogObservabilityPipelinePageSize).
 			WithPageNumber(pageNumber)
-		response, httpResp, err := api.ListPipelines(auth, *optionalParams)
+
+		resp, httpResp, err := api.ListPipelines(auth, *opts)
 		closeDatadogResponseBody(httpResp)
 		if err != nil {
 			return nil, err
 		}
 
-		data := response.GetData()
-		pipelines = append(pipelines, data...)
+		pipelines := resp.GetData()
+		for _, pipeline := range pipelines {
+			pipelineID := pipeline.GetId()
+			if pipelineID == "" {
+				continue
+			}
+			ids = append(ids, pipelineID)
+		}
+		if len(pipelines) == 0 {
+			break
+		}
+		pipelinesSeen += int64(len(pipelines))
 
-		if meta, ok := response.GetMetaOk(); ok {
-			if totalCount, ok := meta.GetTotalCountOk(); ok && int64(len(pipelines)) >= *totalCount {
+		meta := resp.GetMeta()
+		if totalCount, ok := meta.GetTotalCountOk(); ok {
+			if pipelinesSeen >= *totalCount {
 				break
 			}
-		}
-		if int64(len(data)) < pageSize {
+		} else if int64(len(pipelines)) < datadogObservabilityPipelinePageSize {
 			break
 		}
 		pageNumber++
 	}
-	return pipelines, nil
+
+	return ids, nil
 }
