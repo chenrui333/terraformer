@@ -587,6 +587,19 @@ For large lane PRs that span several related services:
 - add strong helper tests because service-specific behavior is less likely to be covered by existing patterns;
 - defer schema-heavy service families that need focused handling instead of forcing fragile support into a broad sweep.
 
+## Provider Gap Close-Out Audits
+
+Close-out audits are different from feature lanes. They should make the remaining work explicit, not restart parity chasing.
+
+Rules:
+
+- Report lane closure separately from tracking-issue closure. A lane can be complete while the broader issue remains open.
+- For large provider schemas, practical close-out means every reviewed candidate is supported, evidence-backed deferred/unsupported, or assigned to a named focused follow-up lane.
+- Do not treat literal Terraform provider parity as the goal when resources are request-style, runtime/media output, high-cardinality content, provider-managed, source/body-heavy, or secret-required.
+- For settings and singleton resources, distinguish durable user-owned configuration from effective API values and platform defaults before moving a resource from deferred metadata to supported import.
+- Use close-out audits to reduce repeated search work: update unsupported metadata when evidence is clear, and group remaining importable resources into focused next lanes.
+- If the audit finds no durable metadata or guidance changes, report that directly instead of creating a docs-only PR.
+
 ## Implementation Rules
 
 - Seed state with the ID shape expected by the Terraform provider read path, not necessarily the human import ID.
