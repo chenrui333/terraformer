@@ -18,7 +18,7 @@ const (
 
 var (
 	// ReferenceTableAllowEmptyValues ...
-	ReferenceTableAllowEmptyValues = []string{}
+	ReferenceTableAllowEmptyValues = []string{"file_metadata\\.sync_enabled"}
 )
 
 // ReferenceTableGenerator ...

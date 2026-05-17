@@ -4,6 +4,8 @@ package datadog
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
@@ -21,6 +23,12 @@ var (
 	ObservabilityPipelineAllowEmptyValues = []string{}
 )
 
+var (
+	observabilityPipelineDestinationSkippedVariantKeys = map[string]struct{}{
+		"inputs": {},
+	}
+)
+
 // ObservabilityPipelineGenerator ...
 type ObservabilityPipelineGenerator struct {
 	DatadogService
@@ -32,6 +40,105 @@ func (g *ObservabilityPipelineGenerator) createResource(pipelineID string) (terr
 
 func (g *ObservabilityPipelineGenerator) createResources(pipelineIDs []string) ([]terraformutils.Resource, error) {
 	return datadogIDResources(datadogObservabilityPipelineServiceName, pipelineIDs, ObservabilityPipelineAllowEmptyValues)
+}
+
+func (g *ObservabilityPipelineGenerator) PostConvertHook() error {
+	for i := range g.Resources {
+		preserveObservabilityPipelineVariantBlocks(&g.Resources[i])
+	}
+	return nil
+}
+
+func preserveObservabilityPipelineVariantBlocks(resource *terraformutils.Resource) {
+	if resource == nil || resource.Item == nil || resource.InstanceState == nil || resource.InstanceState.Attributes == nil {
+		return
+	}
+	configs, ok := resource.Item["config"].([]interface{})
+	if !ok {
+		return
+	}
+
+	for configIndex, config := range configs {
+		configBlock, ok := config.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		configPrefix := fmt.Sprintf("config.%d", configIndex)
+		preserveObservabilityPipelineVariantList(resource.InstanceState.Attributes, configBlock, configPrefix+".source", "source", nil)
+		preserveObservabilityPipelineVariantList(resource.InstanceState.Attributes, configBlock, configPrefix+".destination", "destination", observabilityPipelineDestinationSkippedVariantKeys)
+		preserveObservabilityPipelineProcessorVariants(resource.InstanceState.Attributes, configBlock, configPrefix)
+	}
+}
+
+func preserveObservabilityPipelineProcessorVariants(attributes map[string]string, configBlock map[string]interface{}, configPrefix string) {
+	processorGroups, ok := configBlock["processor_group"].([]interface{})
+	if !ok {
+		return
+	}
+
+	for groupIndex, processorGroup := range processorGroups {
+		groupBlock, ok := processorGroup.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		processorPrefix := fmt.Sprintf("%s.processor_group.%d.processor", configPrefix, groupIndex)
+		preserveObservabilityPipelineVariantList(attributes, groupBlock, processorPrefix, "processor", nil)
+	}
+}
+
+func preserveObservabilityPipelineVariantList(attributes map[string]string, parentBlock map[string]interface{}, statePrefix, itemKey string, skippedVariantKeys map[string]struct{}) {
+	items, ok := parentBlock[itemKey].([]interface{})
+	if !ok {
+		return
+	}
+
+	for itemIndex, item := range items {
+		itemBlock, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		variantCounts := observabilityPipelineVariantCounts(attributes, fmt.Sprintf("%s.%d.", statePrefix, itemIndex), skippedVariantKeys)
+		for variantKey, count := range variantCounts {
+			if count == "0" {
+				continue
+			}
+			if value, ok := itemBlock[variantKey]; ok && observabilityPipelineValueHasValue(value) {
+				continue
+			}
+			itemBlock[variantKey] = []interface{}{map[string]interface{}{}}
+		}
+	}
+}
+
+func observabilityPipelineVariantCounts(attributes map[string]string, prefix string, skippedVariantKeys map[string]struct{}) map[string]string {
+	counts := map[string]string{}
+	for key, count := range attributes {
+		if !strings.HasPrefix(key, prefix) || !strings.HasSuffix(key, ".#") {
+			continue
+		}
+		variantKey := strings.TrimSuffix(strings.TrimPrefix(key, prefix), ".#")
+		if strings.Contains(variantKey, ".") {
+			continue
+		}
+		if _, skipped := skippedVariantKeys[variantKey]; skipped {
+			continue
+		}
+		counts[variantKey] = count
+	}
+	return counts
+}
+
+func observabilityPipelineValueHasValue(value interface{}) bool {
+	switch typedValue := value.(type) {
+	case nil:
+		return false
+	case []interface{}:
+		return len(typedValue) > 0
+	case map[string]interface{}:
+		return len(typedValue) > 0
+	default:
+		return true
+	}
 }
 
 // InitResources Generate TerraformResources from Datadog API,

@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -222,6 +223,90 @@ func TestDatasetPostConvertHookPreservesEmptyRequiredSets(t *testing.T) {
 	if len(filters) != 0 {
 		t.Fatalf("filters length = %d, want 0", len(filters))
 	}
+}
+
+func TestReferenceTableAllowEmptyValuesPreservesDisabledSync(t *testing.T) {
+	resource, err := (&ReferenceTableGenerator{}).createResource("table-1")
+	if err != nil {
+		t.Fatalf("createResource returned error: %v", err)
+	}
+	if len(resource.AllowEmptyValues) != 1 {
+		t.Fatalf("AllowEmptyValues = %#v, want one entry", resource.AllowEmptyValues)
+	}
+	if !regexp.MustCompile(resource.AllowEmptyValues[0]).MatchString("file_metadata.sync_enabled") {
+		t.Fatalf("AllowEmptyValues = %#v, want file_metadata.sync_enabled to be preserved", resource.AllowEmptyValues)
+	}
+}
+
+func TestObservabilityPipelinePostConvertHookPreservesEmptyVariantBlocks(t *testing.T) {
+	resource := terraformutils.NewResource(
+		"pipeline-1",
+		"observability_pipeline_pipeline-1",
+		"datadog_observability_pipeline",
+		"datadog",
+		map[string]string{
+			"id":                                                    "pipeline-1",
+			"config.#":                                              "1",
+			"config.0.source.#":                                     "1",
+			"config.0.source.0.id":                                  "source-1",
+			"config.0.source.0.datadog_agent.#":                     "1",
+			"config.0.destination.#":                                "1",
+			"config.0.destination.0.id":                             "destination-1",
+			"config.0.destination.0.inputs.#":                       "1",
+			"config.0.destination.0.inputs.0":                       "source-1",
+			"config.0.destination.0.datadog_logs.#":                 "1",
+			"config.0.processor_group.#":                            "1",
+			"config.0.processor_group.0.id":                         "processor-group-1",
+			"config.0.processor_group.0.processor.#":                "1",
+			"config.0.processor_group.0.processor.0.id":             "processor-1",
+			"config.0.processor_group.0.processor.0.add_hostname.#": "1",
+		},
+		ObservabilityPipelineAllowEmptyValues,
+		map[string]interface{}{},
+	)
+	resource.Item = map[string]interface{}{
+		"id": "pipeline-1",
+		"config": []interface{}{
+			map[string]interface{}{
+				"source": []interface{}{
+					map[string]interface{}{"id": "source-1"},
+				},
+				"destination": []interface{}{
+					map[string]interface{}{
+						"id":     "destination-1",
+						"inputs": []interface{}{"source-1"},
+					},
+				},
+				"processor_group": []interface{}{
+					map[string]interface{}{
+						"id": "processor-group-1",
+						"processor": []interface{}{
+							map[string]interface{}{"id": "processor-1"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	generator := &ObservabilityPipelineGenerator{
+		DatadogService: DatadogService{
+			Service: terraformutils.Service{Resources: []terraformutils.Resource{resource}},
+		},
+	}
+	if err := generator.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook returned error: %v", err)
+	}
+
+	configBlock := generator.Resources[0].Item["config"].([]interface{})[0].(map[string]interface{})
+	sourceBlock := configBlock["source"].([]interface{})[0].(map[string]interface{})
+	destinationBlock := configBlock["destination"].([]interface{})[0].(map[string]interface{})
+	processorGroupBlock := configBlock["processor_group"].([]interface{})[0].(map[string]interface{})
+	processorBlock := processorGroupBlock["processor"].([]interface{})[0].(map[string]interface{})
+
+	assertObservabilityPipelineEmptyVariantBlock(t, sourceBlock, "datadog_agent")
+	assertObservabilityPipelineEmptyVariantBlock(t, destinationBlock, "datadog_logs")
+	assertObservabilityPipelineEmptyVariantBlock(t, processorBlock, "add_hostname")
 }
 
 func TestProductPlatformInitResourcesIDFilters(t *testing.T) {
@@ -839,6 +924,25 @@ func decodeProductPlatformTypedAttributes(t *testing.T, rawAttributes json.RawMe
 		t.Fatalf("typed attributes unmarshal error: %v", err)
 	}
 	return attributes
+}
+
+func assertObservabilityPipelineEmptyVariantBlock(t *testing.T, block map[string]interface{}, key string) {
+	t.Helper()
+
+	variants, ok := block[key].([]interface{})
+	if !ok {
+		t.Fatalf("%s item type = %T, want []interface{}", key, block[key])
+	}
+	if len(variants) != 1 {
+		t.Fatalf("%s length = %d, want 1", key, len(variants))
+	}
+	variantBlock, ok := variants[0].(map[string]interface{})
+	if !ok {
+		t.Fatalf("%s[0] type = %T, want map[string]interface{}", key, variants[0])
+	}
+	if len(variantBlock) != 0 {
+		t.Fatalf("%s[0] = %#v, want empty block", key, variantBlock)
+	}
 }
 
 func appBuilderAppResponseJSON(id string) string {
