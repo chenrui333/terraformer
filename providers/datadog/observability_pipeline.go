@@ -21,6 +21,8 @@ var (
 		"config.destination.elasticsearch.data_stream.sync_fields",
 		"config.destination.elasticsearch.request_retry_partial",
 		"config.destination.splunk_hec.auto_extract_timestamp",
+		"config\\..*\\.processor_group\\..*\\.include",
+		"config\\..*\\.processor_group\\..*\\.processor\\..*\\.include",
 		"config.processor_group.enabled",
 		"config.processor_group.processor.custom_processor.remap.drop_on_error",
 		"config.processor_group.processor.custom_processor.remap.enabled",

@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"github.com/zclconf/go-cty/cty"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 )
@@ -50,6 +51,44 @@ func TestObservabilityPipelineAllowEmptyValuesPreservesFalseBooleans(t *testing.
 		if !slices.Contains(ObservabilityPipelineAllowEmptyValues, path) {
 			t.Fatalf("ObservabilityPipelineAllowEmptyValues must include %q", path)
 		}
+	}
+}
+
+func TestObservabilityPipelineAllowEmptyValuesPreservesRequiredIncludeQueries(t *testing.T) {
+	parser := terraformutils.NewFlatmapParser(map[string]string{
+		"config.#":                                       "1",
+		"config.0.processor_group.#":                     "1",
+		"config.0.processor_group.0.id":                  "processor-group",
+		"config.0.processor_group.0.include":             "",
+		"config.0.processor_group.0.processor.#":         "1",
+		"config.0.processor_group.0.processor.0.id":      "processor",
+		"config.0.processor_group.0.processor.0.include": "",
+	}, nil, allowEmptyValueRegexps(ObservabilityPipelineAllowEmptyValues))
+	pipelineType := cty.Object(map[string]cty.Type{
+		"config": cty.List(cty.Object(map[string]cty.Type{
+			"processor_group": cty.List(cty.Object(map[string]cty.Type{
+				"id":      cty.String,
+				"include": cty.String,
+				"processor": cty.List(cty.Object(map[string]cty.Type{
+					"id":      cty.String,
+					"include": cty.String,
+				})),
+			})),
+		})),
+	})
+
+	result, err := parser.Parse(pipelineType)
+	if err != nil {
+		t.Fatalf("Parse returned error: %v", err)
+	}
+	config := requireMapInList(t, result, "config", 0)
+	processorGroup := requireMapInList(t, config, "processor_group", 0)
+	if processorGroup["include"] != "" {
+		t.Fatalf("processor_group include = %v, want empty string", processorGroup["include"])
+	}
+	processor := requireMapInList(t, processorGroup, "processor", 0)
+	if processor["include"] != "" {
+		t.Fatalf("processor include = %v, want empty string", processor["include"])
 	}
 }
 
