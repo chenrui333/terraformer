@@ -194,7 +194,7 @@ func TestRunCloudflareNetworkEdgeDiscoveriesContinuesAfterOptionalError(t *testi
 	}
 }
 
-func TestAppendNetworkEdgeResourcesContinuesToAccountResourcesAfterZoneListingError(t *testing.T) {
+func TestAppendNetworkEdgeResourcesContinuesToAccountResourcesAfterOptionalZoneListingError(t *testing.T) {
 	api := newCloudflareNetworkEdgeTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/accounts/account-123/addressing/address_maps":
@@ -208,8 +208,9 @@ func TestAppendNetworkEdgeResourcesContinuesToAccountResourcesAfterZoneListingEr
 		}
 	}))
 	g := &NetworkEdgeGenerator{}
+	zoneErr := cf.NewAuthorizationError(&cf.Error{ErrorMessages: []string{"missing permission"}})
 
-	err := g.appendNetworkEdgeResources(context.Background(), api, nil, errors.New("zone read denied"), "account-123")
+	err := g.appendNetworkEdgeResources(context.Background(), api, nil, &zoneErr, "account-123")
 	if err != nil {
 		t.Fatalf("appendNetworkEdgeResources() error = %v, want nil", err)
 	}
@@ -224,10 +225,20 @@ func TestAppendNetworkEdgeResourcesContinuesToAccountResourcesAfterZoneListingEr
 	}
 }
 
+func TestAppendNetworkEdgeResourcesReturnsNonOptionalZoneListingErrorWithAccountID(t *testing.T) {
+	g := &NetworkEdgeGenerator{}
+	zoneErr := errors.New("temporary Cloudflare failure")
+	err := g.appendNetworkEdgeResources(context.Background(), nil, nil, zoneErr, "account-123")
+	if !errors.Is(err, zoneErr) {
+		t.Fatalf("appendNetworkEdgeResources() error = %v, want wrapped zone error", err)
+	}
+}
+
 func TestAppendNetworkEdgeResourcesReturnsZoneListingErrorWithoutAccountID(t *testing.T) {
 	g := &NetworkEdgeGenerator{}
-	err := g.appendNetworkEdgeResources(context.Background(), nil, nil, errors.New("zone read denied"), "")
-	if err == nil {
+	zoneErr := errors.New("zone read denied")
+	err := g.appendNetworkEdgeResources(context.Background(), nil, nil, zoneErr, "")
+	if !errors.Is(err, zoneErr) {
 		t.Fatal("expected zone listing error without account ID")
 	}
 }

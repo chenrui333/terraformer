@@ -551,8 +551,8 @@ func (g *NetworkEdgeGenerator) appendNetworkEdgeResources(
 	accountID string,
 ) error {
 	if zonesErr != nil {
-		if accountID == "" {
-			return zonesErr
+		if accountID == "" || !cloudflareNetworkEdgeOptionalDiscoveryError(zonesErr) {
+			return fmt.Errorf("discover Cloudflare network edge zones: %w", zonesErr)
 		}
 		log.Printf("Skipping Cloudflare network edge zone discovery: %v", zonesErr)
 	} else {
