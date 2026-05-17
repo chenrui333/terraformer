@@ -194,6 +194,15 @@ func TestRunCloudflareNetworkEdgeDiscoveriesContinuesAfterOptionalError(t *testi
 	}
 }
 
+func TestCloudflareNetworkEdgeOptionalErrorMessageDoesNotHideGenericNotFound(t *testing.T) {
+	if cloudflareNetworkEdgeOptionalErrorMessage("not found", nil) {
+		t.Fatal("generic not found should not be treated as optional")
+	}
+	if !cloudflareNetworkEdgeOptionalErrorMessage("", []string{"feature is not available on this plan"}) {
+		t.Fatal("feature-gated errors should be treated as optional")
+	}
+}
+
 func TestListCloudflareNetworkEdgeResourcesPaginates(t *testing.T) {
 	api := newCloudflareNetworkEdgeTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/accounts/account-123/addressing/address_maps" {

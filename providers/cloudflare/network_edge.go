@@ -64,7 +64,6 @@ func cloudflareNetworkEdgeOptionalErrorMessage(message string, errorMessages []s
 			"not configured",
 			"not enabled",
 			"not entitled",
-			"not found",
 			"permission denied",
 			"requires a paid plan",
 			"upgrade your plan",

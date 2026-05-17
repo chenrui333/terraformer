@@ -46,6 +46,7 @@ func (p *CloudflareProvider) GetSupportedService() map[string]terraformutils.Ser
 		"pages":              &PagesGenerator{},
 		"ruleset":            &RulesetGenerator{},
 		"security":           &SecurityGenerator{},
+		"settings":           &SettingsGenerator{},
 		"storage":            &StorageGenerator{},
 		"turnstile":          &TurnstileGenerator{},
 		"tunnel":             &TunnelGenerator{},

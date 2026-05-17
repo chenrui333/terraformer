@@ -2,6 +2,17 @@
   "version": 1,
   "resources": [
     {
+      "resource": "cloudflare_account",
+      "service_family": "account",
+      "reason": "Account resources model Cloudflare account container lifecycle rather than a zone or account setting.",
+      "evidence": "The Terraform provider can import an account by account_id, but the resource owns account identity fields such as name, type, unit, and settings. Broad import would make Terraformer claim the account container itself instead of the settings lane tracked in issue #335.",
+      "status": "cloudflare-managed",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/account"
+      ]
+    },
+    {
       "resource": "cloudflare_account_dns_settings",
       "service_family": "dns",
       "reason": "Account DNS defaults are singleton settings that need scoped follow-up before broad import.",
@@ -21,6 +32,17 @@
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/account_subscription"
+      ]
+    },
+    {
+      "resource": "cloudflare_account_token",
+      "service_family": "tokens",
+      "reason": "Account-scoped API tokens expose a sensitive token value that is only available when the token is created.",
+      "evidence": "The Terraform provider supports import by account_id/token_id, but the schema includes value as a Sensitive token string plus mutable issued/last-used status fields. Terraformer cannot recover the token value needed to reconstruct user-authored token configuration safely.",
+      "status": "secret-required",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/account_token"
       ]
     },
     {
@@ -82,6 +104,28 @@
       ]
     },
     {
+      "resource": "cloudflare_api_token",
+      "service_family": "tokens",
+      "reason": "API token resources require token secret material that broad import cannot reconstruct.",
+      "evidence": "The Terraform provider can import by token_id, but the resource exposes value as Sensitive token material and reads issued, modified, last-used, and status fields. Importing discovered tokens would emit incomplete credential lifecycle configuration.",
+      "status": "secret-required",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/api_token"
+      ]
+    },
+    {
+      "resource": "cloudflare_authenticated_origin_pulls",
+      "service_family": "certificates",
+      "reason": "Hostname-level Authenticated Origin Pull associations mix durable enablement with certificate lifecycle and private-key ownership.",
+      "evidence": "The Terraform provider imports by zone_id/hostname and its nested certificate object includes private_key as Sensitive material. Terraformer now imports the zone-wide settings singleton only when enabled, while hostname certificate and association ownership needs a separate certificate-safe design.",
+      "status": "secret-required",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/authenticated_origin_pulls"
+      ]
+    },
+    {
       "resource": "cloudflare_authenticated_origin_pulls_certificate",
       "service_family": "certificates",
       "reason": "Authenticated Origin Pull certificates require private key material that Cloudflare APIs cannot safely return.",
@@ -90,6 +134,17 @@
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/authenticated_origin_pulls_certificate"
+      ]
+    },
+    {
+      "resource": "cloudflare_authenticated_origin_pulls_hostname_certificate",
+      "service_family": "certificates",
+      "reason": "Hostname Authenticated Origin Pull certificates require private key material that Cloudflare APIs cannot safely return.",
+      "evidence": "The Terraform provider imports by zone_id/certificate_id, but the resource schema requires certificate and private_key, with private_key marked Sensitive. Terraformer cannot reconstruct valid HCL from a discovered hostname certificate ID alone.",
+      "status": "secret-required",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/authenticated_origin_pulls_hostname_certificate"
       ]
     },
     {
@@ -159,6 +214,28 @@
       ]
     },
     {
+      "resource": "cloudflare_custom_ssl",
+      "service_family": "certificates",
+      "reason": "Custom SSL certificate resources require private key material that Cloudflare APIs cannot safely return.",
+      "evidence": "The Terraform provider imports by zone_id/custom_certificate_id, but creation requires certificate and private_key material. Terraformer cannot reconstruct the required private key for generated configuration.",
+      "status": "secret-required",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/custom_ssl"
+      ]
+    },
+    {
+      "resource": "cloudflare_dns_zone_transfers_tsig",
+      "service_family": "dns",
+      "reason": "Secondary DNS TSIG resources require a sensitive shared secret that Cloudflare APIs cannot safely return.",
+      "evidence": "The Terraform provider imports by account_id/tsig_id, but the resource schema requires secret as a Sensitive field. Terraformer imports ACLs, peers, and incoming/outgoing transfer settings in this lane while leaving TSIG secret ownership out of broad discovery.",
+      "status": "secret-required",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/dns_zone_transfers_tsig"
+      ]
+    },
+    {
       "resource": "cloudflare_hyperdrive_config",
       "service_family": "storage",
       "reason": "Hyperdrive configs require write-only origin credential material.",
@@ -214,6 +291,28 @@
       ]
     },
     {
+      "resource": "cloudflare_organization",
+      "service_family": "account",
+      "reason": "Organization resources model Cloudflare organization identity lifecycle rather than zone or account settings inventory.",
+      "evidence": "The Terraform provider can import by organization_id and owns organization identity/profile fields. Broad import in the settings lane would claim Cloudflare account hierarchy state that should remain explicitly user-authored.",
+      "status": "cloudflare-managed",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/organization"
+      ]
+    },
+    {
+      "resource": "cloudflare_organization_profile",
+      "service_family": "account",
+      "reason": "Organization profile resources do not expose a Terraform provider import path.",
+      "evidence": "Cloudflare provider v5.19.1 documents that cloudflare_organization_profile does not currently support terraform import. Terraformer cannot reliably discover and refresh this profile as generated Terraform configuration.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/organization_profile"
+      ]
+    },
+    {
       "resource": "cloudflare_pipeline_sink",
       "service_family": "platform",
       "reason": "Pipeline sink config can contain write-only authentication material that broad import cannot reconstruct.",
@@ -247,6 +346,17 @@
       ]
     },
     {
+      "resource": "cloudflare_registrar_domain",
+      "service_family": "registrar",
+      "reason": "Registrar domain resources do not expose a Terraform provider import path and are tied to registrar/billing lifecycle.",
+      "evidence": "Cloudflare provider v5.19.1 documents that cloudflare_registrar_domain does not currently support terraform import. Domain registration state is not a zone/account settings singleton and should not be synthesized by broad settings discovery.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/registrar_domain"
+      ]
+    },
+    {
       "resource": "cloudflare_schema_validation_operation_settings",
       "service_family": "schema_validation",
       "reason": "Schema validation operation settings do not currently have a Terraform provider import contract.",
@@ -277,6 +387,17 @@
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/snippet"
+      ]
+    },
+    {
+      "resource": "cloudflare_sso_connector",
+      "service_family": "identity",
+      "reason": "SSO connector resources include identity-provider verification workflow state that broad settings import should not claim.",
+      "evidence": "The Terraform provider imports by account_id/sso_connector_id and exposes begin_verification plus DNS verification code/status. Importing discovered connectors would mix durable SSO configuration with Cloudflare-generated verification lifecycle state outside this settings lane.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/sso_connector"
       ]
     },
     {
@@ -321,6 +442,39 @@
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/stream_webhook"
+      ]
+    },
+    {
+      "resource": "cloudflare_user",
+      "service_family": "identity",
+      "reason": "User resources do not expose a Terraform provider import path and represent identity/account membership state.",
+      "evidence": "Cloudflare provider v5.19.1 documents that cloudflare_user does not currently support terraform import. The resource reads user identity, organizations, roles, and two-factor status, which are not durable zone/account settings for broad import.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/user"
+      ]
+    },
+    {
+      "resource": "cloudflare_user_group",
+      "service_family": "identity",
+      "reason": "User groups are account access-management objects, not zone/account settings, and include policy ownership that needs explicit user intent.",
+      "evidence": "The Terraform provider imports by account_id/user_group_id and owns group policies with permission and resource groups. Broad settings import would claim IAM policy configuration that should remain in a dedicated access-management lane.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/user_group"
+      ]
+    },
+    {
+      "resource": "cloudflare_user_group_members",
+      "service_family": "identity",
+      "reason": "User group membership manages account identity relationships rather than durable zone/account settings.",
+      "evidence": "The Terraform provider imports by account_id/user_group_id and owns the members list for existing account members. Broad import could unexpectedly make Terraformer authoritative for user membership lifecycle.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/user_group_members"
       ]
     },
     {
