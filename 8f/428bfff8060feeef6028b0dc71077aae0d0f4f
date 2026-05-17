@@ -1,0 +1,25 @@
+providers/datadog/synthetics_suite_test.go
+  s_a75fc68bdbca0a::t_f1e5889874ec8d 7,65-112,156-164
+providers/datadog/downtime_schedule.go
+  s_a75fc68bdbca0a::t_1caafd766fcded 21-24,56-59,85-148,205-220
+providers/datadog/downtime_schedule_test.go
+  s_a75fc68bdbca0a::t_c7c99b888f6f98 178-230,284-294
+providers/datadog/synthetics_suite.go
+  s_a75fc68bdbca0a::t_588f38ab7115fc 6,8,19-20,45-172
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "8f428bfff8060feeef6028b0dc71077aae0d0f4f",
+  "prompts": {},
+  "sessions": {
+    "s_a75fc68bdbca0a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35d4-4978-78a1-8707-4482f4e1fd38",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
