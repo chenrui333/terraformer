@@ -50,14 +50,13 @@ type Config struct {
 	ClientCert                             string
 	Timeout                                int
 
-	ClientKey            string
-	ClientKeyPassphrase  string
-	SASLPassword         string
-	SASLAWSAccessKey     string
-	SASLAWSSecretKey     string
-	SASLAWSSessionToken  string
-	SASLAWSCredsDebug    bool
-	SASLOAuthBearerToken string
+	ClientKey           string
+	ClientKeyPassphrase string
+	SASLPassword        string
+	SASLAWSAccessKey    string
+	SASLAWSSecretKey    string
+	SASLAWSSessionToken string
+	SASLAWSCredsDebug   bool
 }
 
 func ConfigFromEnv() Config {
@@ -87,7 +86,6 @@ func ConfigFromEnv() Config {
 		SASLAWSSecretKey:                       os.Getenv("AWS_SECRET_ACCESS_KEY"),
 		SASLAWSSessionToken:                    os.Getenv("AWS_SESSION_TOKEN"),
 		SASLAWSCredsDebug:                      envBool("AWS_CREDS_DEBUG", false),
-		SASLOAuthBearerToken:                   os.Getenv("KAFKA_SASL_OAUTH_TOKEN"),
 	}
 }
 
@@ -153,9 +151,6 @@ func (c *Config) applyEnvSecrets() {
 	}
 	if !c.SASLAWSCredsDebug {
 		c.SASLAWSCredsDebug = envConfig.SASLAWSCredsDebug
-	}
-	if c.SASLOAuthBearerToken == "" {
-		c.SASLOAuthBearerToken = envConfig.SASLOAuthBearerToken
 	}
 }
 
@@ -254,11 +249,8 @@ func (c Config) configureSASL(config *sarama.Config) error {
 }
 
 func (c Config) oauthBearerTokenProvider() (sarama.AccessTokenProvider, error) {
-	if c.SASLOAuthBearerToken != "" {
-		return oauthBearerTokenProvider{token: c.SASLOAuthBearerToken}, nil
-	}
 	if c.SASLTokenURL == "" {
-		return nil, errors.New("kafka: KAFKA_SASL_OAUTH_TOKEN or KAFKA_SASL_TOKEN_URL is required for oauthbearer authentication")
+		return nil, errors.New("kafka: KAFKA_SASL_TOKEN_URL is required for oauthbearer authentication")
 	}
 	if c.SASLUsername == "" {
 		return nil, errors.New("kafka: sasl username is required for oauthbearer token URL authentication")
@@ -345,14 +337,10 @@ func (p awsIAMTokenProvider) Token() (*sarama.AccessToken, error) {
 }
 
 type oauthBearerTokenProvider struct {
-	token       string
 	tokenSource oauth2.TokenSource
 }
 
 func (p oauthBearerTokenProvider) Token() (*sarama.AccessToken, error) {
-	if p.token != "" {
-		return &sarama.AccessToken{Token: p.token}, nil
-	}
 	if p.tokenSource == nil {
 		return nil, errors.New("kafka: oauthbearer token provider is not configured")
 	}

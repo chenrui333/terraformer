@@ -69,39 +69,16 @@ func TestOAuthBearerUsesTokenURLProvider(t *testing.T) {
 	}
 }
 
-func TestOAuthBearerStillAcceptsPremintedToken(t *testing.T) {
-	config := Config{
-		KafkaVersion:         defaultKafkaVersion,
-		Timeout:              defaultKafkaTimeout,
-		SASLMechanism:        "oauthbearer",
-		SASLOAuthBearerToken: "preminted-token",
-		BootstrapServers:     []string{"broker1.example.com:9092"},
-	}
-	saramaConfig, err := config.newSaramaConfig()
-	if err != nil {
-		t.Fatalf("newSaramaConfig() error = %v", err)
-	}
-	token, err := saramaConfig.Net.SASL.TokenProvider.Token()
-	if err != nil {
-		t.Fatalf("Token() error = %v", err)
-	}
-	if token.Token != "preminted-token" {
-		t.Fatalf("token = %q, want preminted-token", token.Token)
-	}
-}
+func TestOAuthBearerRejectsPremintedTokenOnly(t *testing.T) {
+	t.Setenv("KAFKA_SASL_MECHANISM", "oauthbearer")
+	t.Setenv("KAFKA_SASL_OAUTH_TOKEN", "preminted-token")
 
-func TestOAuthBearerRequiresTokenURLOrPremintedToken(t *testing.T) {
-	config := Config{
-		KafkaVersion:     defaultKafkaVersion,
-		Timeout:          defaultKafkaTimeout,
-		SASLMechanism:    "oauthbearer",
-		BootstrapServers: []string{"broker1.example.com:9092"},
-	}
+	config := ConfigFromEnv()
 	_, err := config.newSaramaConfig()
 	if err == nil {
 		t.Fatal("expected missing oauthbearer token configuration error")
 	}
-	if !strings.Contains(err.Error(), "KAFKA_SASL_OAUTH_TOKEN or KAFKA_SASL_TOKEN_URL") {
-		t.Fatalf("error = %q, want token URL or preminted token requirement", err)
+	if !strings.Contains(err.Error(), "KAFKA_SASL_TOKEN_URL") {
+		t.Fatalf("error = %q, want token URL requirement", err)
 	}
 }

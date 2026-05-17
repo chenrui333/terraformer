@@ -21,19 +21,20 @@ func TestProviderInitRequiresBootstrapServers(t *testing.T) {
 }
 
 func TestProviderSafeConfigHandling(t *testing.T) {
+	t.Setenv("KAFKA_SASL_OAUTH_TOKEN", "oauth-token")
+
 	config := Config{
-		BootstrapServers:     []string{"broker1.example.com:9092"},
-		KafkaVersion:         defaultKafkaVersion,
-		TLSEnabled:           true,
-		SASLMechanism:        "plain",
-		SASLUsername:         "terraformer",
-		SASLPassword:         "sasl-password",
-		ClientKey:            "tls-private-key",
-		SASLAWSAccessKey:     "aws-access-key",
-		SASLAWSSecretKey:     "aws-secret-key",
-		SASLAWSSessionToken:  "aws-session-token",
-		SASLOAuthBearerToken: "oauth-token",
-		Timeout:              defaultKafkaTimeout,
+		BootstrapServers:    []string{"broker1.example.com:9092"},
+		KafkaVersion:        defaultKafkaVersion,
+		TLSEnabled:          true,
+		SASLMechanism:       "plain",
+		SASLUsername:        "terraformer",
+		SASLPassword:        "sasl-password",
+		ClientKey:           "tls-private-key",
+		SASLAWSAccessKey:    "aws-access-key",
+		SASLAWSSecretKey:    "aws-secret-key",
+		SASLAWSSessionToken: "aws-session-token",
+		Timeout:             defaultKafkaTimeout,
 	}
 
 	encoded := EncodeConfig(config)
