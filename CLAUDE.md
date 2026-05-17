@@ -66,6 +66,29 @@ Mark a resource unsupported when:
 - the resource represents an operation rather than stable inventory;
 - the resource represents an acceptance or handshake lifecycle that cannot be inferred safely from discovery.
 
+## Provider Gap Close-Out And Data Shape Checks
+
+Before claiming a provider gap issue is complete, compare all four sources of truth: Terraformer provider registration, provider docs, provider-local unsupported metadata, and the issue's resource buckets. Also check whether open or stale PR branches were superseded by later merged lanes before continuing work.
+
+Close-out audits are different from feature lanes. They should make the remaining work explicit, not restart parity chasing.
+
+Rules:
+
+- Report lane closure separately from tracking-issue closure. A lane can be complete while the broader issue remains open.
+- For large provider schemas, practical close-out means every reviewed candidate is supported, evidence-backed deferred/unsupported, or assigned to a named focused follow-up lane.
+- Do not treat literal Terraform provider parity as the goal when resources are request-style, runtime/media output, high-cardinality content, provider-managed, source/body-heavy, or secret-required.
+- For settings and singleton resources, distinguish durable user-owned configuration from effective API values and platform defaults before moving a resource from deferred metadata to supported import.
+- Use close-out audits to reduce repeated search work: update unsupported metadata when evidence is clear, and group remaining importable resources into focused next lanes.
+- If the audit finds no durable metadata or guidance changes, report that directly instead of creating a docs-only PR.
+
+When evaluating product, platform, dataset, table, pipeline, API-definition, or deployment-style resources:
+
+- preserve empty-but-meaningful strings, lists, maps, nested blocks, and variant markers when provider refresh needs them for stable HCL;
+- seed nested state that provider read only reconciles when it is already present, such as rule or schedule blocks;
+- validate source-shape restrictions before appending discovered IDs, and skip or document source variants the Terraform provider cannot validate or refresh;
+- import durable configuration metadata, not high-cardinality rows, items, events, or runtime observations;
+- prefer unsupported or deferred metadata over exposing a resource that produces invalid, lossy, or destructive follow-up plans.
+
 ## Duplicate Ownership Across Related Resources
 
 Before adding a resource, check whether another Terraformer-supported resource already owns the same upstream object or configuration.
@@ -586,19 +609,6 @@ For large lane PRs that span several related services:
 - add unsupported entries for no-importer and unsafe resources;
 - add strong helper tests because service-specific behavior is less likely to be covered by existing patterns;
 - defer schema-heavy service families that need focused handling instead of forcing fragile support into a broad sweep.
-
-## Provider Gap Close-Out Audits
-
-Close-out audits are different from feature lanes. They should make the remaining work explicit, not restart parity chasing.
-
-Rules:
-
-- Report lane closure separately from tracking-issue closure. A lane can be complete while the broader issue remains open.
-- For large provider schemas, practical close-out means every reviewed candidate is supported, evidence-backed deferred/unsupported, or assigned to a named focused follow-up lane.
-- Do not treat literal Terraform provider parity as the goal when resources are request-style, runtime/media output, high-cardinality content, provider-managed, source/body-heavy, or secret-required.
-- For settings and singleton resources, distinguish durable user-owned configuration from effective API values and platform defaults before moving a resource from deferred metadata to supported import.
-- Use close-out audits to reduce repeated search work: update unsupported metadata when evidence is clear, and group remaining importable resources into focused next lanes.
-- If the audit finds no durable metadata or guidance changes, report that directly instead of creating a docs-only PR.
 
 ## Implementation Rules
 
