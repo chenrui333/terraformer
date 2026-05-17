@@ -56,16 +56,29 @@ func TestObservabilityPipelineAllowEmptyValuesPreservesFalseBooleans(t *testing.
 
 func TestObservabilityPipelineAllowEmptyValuesPreservesRequiredIncludeQueries(t *testing.T) {
 	parser := terraformutils.NewFlatmapParser(map[string]string{
-		"config.#":                                       "1",
-		"config.0.processor_group.#":                     "1",
-		"config.0.processor_group.0.id":                  "processor-group",
-		"config.0.processor_group.0.include":             "",
-		"config.0.processor_group.0.processor.#":         "1",
-		"config.0.processor_group.0.processor.0.id":      "processor",
-		"config.0.processor_group.0.processor.0.include": "",
+		"config.#":                                               "1",
+		"config.0.destination.#":                                 "1",
+		"config.0.destination.0.id":                              "datadog-logs",
+		"config.0.destination.0.datadog_logs.#":                  "1",
+		"config.0.destination.0.datadog_logs.0.routes.#":         "1",
+		"config.0.destination.0.datadog_logs.0.routes.0.include": "",
+		"config.0.processor_group.#":                             "1",
+		"config.0.processor_group.0.id":                          "processor-group",
+		"config.0.processor_group.0.include":                     "",
+		"config.0.processor_group.0.processor.#":                 "1",
+		"config.0.processor_group.0.processor.0.id":              "processor",
+		"config.0.processor_group.0.processor.0.include":         "",
 	}, nil, allowEmptyValueRegexps(ObservabilityPipelineAllowEmptyValues))
 	pipelineType := cty.Object(map[string]cty.Type{
 		"config": cty.List(cty.Object(map[string]cty.Type{
+			"destination": cty.List(cty.Object(map[string]cty.Type{
+				"id": cty.String,
+				"datadog_logs": cty.List(cty.Object(map[string]cty.Type{
+					"routes": cty.List(cty.Object(map[string]cty.Type{
+						"include": cty.String,
+					})),
+				})),
+			})),
 			"processor_group": cty.List(cty.Object(map[string]cty.Type{
 				"id":      cty.String,
 				"include": cty.String,
@@ -82,6 +95,12 @@ func TestObservabilityPipelineAllowEmptyValuesPreservesRequiredIncludeQueries(t 
 		t.Fatalf("Parse returned error: %v", err)
 	}
 	config := requireMapInList(t, result, "config", 0)
+	destination := requireMapInList(t, config, "destination", 0)
+	datadogLogs := requireMapInList(t, destination, "datadog_logs", 0)
+	route := requireMapInList(t, datadogLogs, "routes", 0)
+	if route["include"] != "" {
+		t.Fatalf("destination route include = %v, want empty string", route["include"])
+	}
 	processorGroup := requireMapInList(t, config, "processor_group", 0)
 	if processorGroup["include"] != "" {
 		t.Fatalf("processor_group include = %v, want empty string", processorGroup["include"])
