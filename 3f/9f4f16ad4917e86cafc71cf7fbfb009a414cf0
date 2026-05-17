@@ -1,0 +1,26 @@
+providers/kafka/unsupported_resources.json
+  s_90691adb9f127a::t_29ad56ac96ed06 1-32
+docs/kafka.md
+  s_90691adb9f127a::t_c9e564eb1f235a 55
+  s_90691adb9f127a::t_29ad56ac96ed06 54
+docs/unsupported-resources.md
+  s_90691adb9f127a::t_29ad56ac96ed06 113
+providers/kafka/unsupported_resources_test.go
+  s_90691adb9f127a::t_29ad56ac96ed06 1-84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "3f9f4f16ad4917e86cafc71cf7fbfb009a414cf0",
+  "prompts": {},
+  "sessions": {
+    "s_90691adb9f127a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e37e9-a34d-7281-a52c-2a89a474acd7",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
