@@ -148,7 +148,7 @@ func TestListWorkersPaginatesPageOnlyResultInfo(t *testing.T) {
 }
 
 func TestAppendWorkerResourcesHandlesEmptyAndMalformedResponses(t *testing.T) {
-	api := newCloudflareWorkersTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	api := newCloudflareWorkersTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		writeCloudflareWorkersTestResponse(t, w, []cloudflareWorker{
 			{ID: "worker-1", Name: "api"},
 			{ID: "worker-2"},
@@ -166,7 +166,7 @@ func TestAppendWorkerResourcesHandlesEmptyAndMalformedResponses(t *testing.T) {
 		t.Fatalf("resource type = %q, want cloudflare_worker", got)
 	}
 
-	emptyAPI := newCloudflareWorkersTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	emptyAPI := newCloudflareWorkersTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		writeCloudflareWorkersTestResponse(t, w, []cloudflareWorker{}, nil)
 	}))
 	generator = &WorkersGenerator{}
