@@ -1,0 +1,22 @@
+providers/datadog/dashboard_v2.go
+  s_147381facf0cb2::t_7cb17662286d79 75,79,82-96
+providers/datadog/dashboarding_test.go
+  s_147381facf0cb2::t_e50d20af61eca8 10,34,41-55,63-64,66-70
+  s_147381facf0cb2::t_774b70d7244159 245-260
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "79d451df1494d784255bd820a234f89126757c24",
+  "prompts": {},
+  "sessions": {
+    "s_147381facf0cb2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35d4-5c2a-7410-97bd-53923272d33e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
