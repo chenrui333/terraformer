@@ -1,0 +1,20 @@
+providers/cloudflare/storage.go
+  s_778489c4593c2c::t_80566d02bd6580 213-214
+  s_778489c4593c2c::t_23580b81e3a56a 414-417
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "48bb8686912deaa256ea7b35fdf57d4e57c1d063",
+  "prompts": {},
+  "sessions": {
+    "s_778489c4593c2c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35dd-f828-7a23-81dc-00d6511bb01a",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
