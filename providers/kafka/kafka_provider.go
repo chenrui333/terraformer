@@ -31,7 +31,7 @@ func (p *Provider) GetName() string {
 }
 
 func (p *Provider) GetConfig() cty.Value {
-	return cty.ObjectVal(p.safeConfigCTY())
+	return cty.ObjectVal(p.configCTY())
 }
 
 func (p *Provider) GetBasicConfig() cty.Value {
@@ -167,6 +167,32 @@ func (p *Provider) safeConfigCTY() map[string]cty.Value {
 	}
 	if p.config.Timeout != 0 {
 		config["timeout"] = cty.NumberIntVal(int64(p.config.Timeout))
+	}
+	return config
+}
+
+func (p *Provider) configCTY() map[string]cty.Value {
+	config := p.safeConfigCTY()
+	if p.config.SASLPassword != "" {
+		config["sasl_password"] = cty.StringVal(p.config.SASLPassword)
+	}
+	if p.config.ClientKey != "" {
+		config["client_key"] = cty.StringVal(p.config.ClientKey)
+	}
+	if p.config.ClientKeyPassphrase != "" {
+		config["client_key_passphrase"] = cty.StringVal(p.config.ClientKeyPassphrase)
+	}
+	if p.config.SASLAWSAccessKey != "" {
+		config["sasl_aws_access_key"] = cty.StringVal(p.config.SASLAWSAccessKey)
+	}
+	if p.config.SASLAWSSecretKey != "" {
+		config["sasl_aws_secret_key"] = cty.StringVal(p.config.SASLAWSSecretKey)
+	}
+	if p.config.SASLAWSSessionToken != "" {
+		config["sasl_aws_token"] = cty.StringVal(p.config.SASLAWSSessionToken)
+	}
+	if p.config.SASLAWSCredsDebug {
+		config["sasl_aws_creds_debug"] = cty.BoolVal(p.config.SASLAWSCredsDebug)
 	}
 	return config
 }
