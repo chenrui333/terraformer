@@ -13,7 +13,14 @@ import (
 )
 
 var (
-	IntegrationAWSAccountAllowEmptyValues = []string{}
+	IntegrationAWSAccountAllowEmptyValues = []string{
+		"logs_config.",
+		"metrics_config.",
+		"resources_config.",
+		"traces_config.",
+		"auth_config.",
+		"aws_regions.",
+	}
 )
 
 type IntegrationAWSAccountGenerator struct {
