@@ -1,0 +1,27 @@
+providers/datadog/agentless_scanning_aws_scan_options.go
+  s_0fb33ec13dc59f::t_ecec6725cf8854 26,31-33,35
+providers/datadog/agentless_scanning_azure_scan_options.go
+  s_0fb33ec13dc59f::t_00cd7074db353c 26,31-33,35
+providers/datadog/agentless_scanning_test.go
+  s_0fb33ec13dc59f::t_b2f55bed56c876 113-115
+  s_0fb33ec13dc59f::t_977fa6f8e037dc 85-87
+  s_0fb33ec13dc59f::t_66ab036fb09aa4 27-29
+providers/datadog/agentless_scanning_gcp_scan_options.go
+  s_0fb33ec13dc59f::t_cbb0c356f2c06d 26,31-33,35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "a4df4e688be90da2c1823757e0f5c4b2e2e73b46",
+  "prompts": {},
+  "sessions": {
+    "s_0fb33ec13dc59f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d1ea9520-81a1-4fe9-af43-b9ba16c9150f",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
