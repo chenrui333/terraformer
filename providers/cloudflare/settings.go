@@ -745,18 +745,24 @@ func cloudflareZoneCacheVariantsConfigured(value cf.ZoneCacheVariantsValues) boo
 }
 
 func cloudflareZoneDNSSECShouldImport(setting cloudflareZoneDNSSECSetting) bool {
+	desiredStatus := cloudflareZoneDNSSECDesiredStatus(setting.Status)
+	if desiredStatus == "active" || strings.EqualFold(setting.Status, "pending-disabled") {
+		return true
+	}
+	if setting.Status != "" && desiredStatus == "" {
+		return false
+	}
 	if cloudflareBoolPointerValue(setting.DNSSECMultiSigner) ||
 		cloudflareBoolPointerValue(setting.DNSSECPresigned) ||
 		cloudflareBoolPointerValue(setting.DNSSECUseNsec3) {
 		return true
 	}
-	return strings.ToLower(setting.Status) == "active"
+	return false
 }
 
 func cloudflareZoneDNSSECAttributes(setting cloudflareZoneDNSSECSetting) map[string]string {
 	attributes := map[string]string{}
-	status := strings.ToLower(setting.Status)
-	if cloudflareZoneDNSSECStatusConfigurable(status) {
+	if status := cloudflareZoneDNSSECDesiredStatus(setting.Status); status != "" {
 		attributes["status"] = status
 	}
 	cloudflareSetBoolPointerAttribute(attributes, "dnssec_multi_signer", setting.DNSSECMultiSigner)
@@ -772,21 +778,19 @@ func cloudflareZoneDNSSECResource(zone cf.Zone, setting cloudflareZoneDNSSECSett
 		"zone_dnssec",
 		cloudflareZoneDNSSECAttributes(setting),
 	)
-	resource.IgnoreKeys = append(resource.IgnoreKeys, cloudflareZoneDNSSECIgnoreKeys(setting)...)
+	resource.IgnoreKeys = append(resource.IgnoreKeys, cloudflareZoneDNSSECComputedKeys...)
 	return resource
 }
 
-func cloudflareZoneDNSSECIgnoreKeys(setting cloudflareZoneDNSSECSetting) []string {
-	ignoreKeys := append([]string{}, cloudflareZoneDNSSECComputedKeys...)
-	if !cloudflareZoneDNSSECStatusConfigurable(setting.Status) {
-		ignoreKeys = append(ignoreKeys, "^status$")
+func cloudflareZoneDNSSECDesiredStatus(status string) string {
+	switch strings.ToLower(status) {
+	case "active", "pending":
+		return "active"
+	case "disabled", "pending-disabled":
+		return "disabled"
+	default:
+		return ""
 	}
-	return ignoreKeys
-}
-
-func cloudflareZoneDNSSECStatusConfigurable(status string) bool {
-	status = strings.ToLower(status)
-	return status == "active" || status == "disabled"
 }
 
 func cloudflareSetBoolPointerAttribute(attributes map[string]string, key string, value *bool) {

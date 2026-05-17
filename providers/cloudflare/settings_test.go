@@ -100,11 +100,17 @@ func TestCloudflareSettingsDefaultImportPolicy(t *testing.T) {
 	if cloudflareZoneDNSSECShouldImport(cloudflareZoneDNSSECSetting{Status: "disabled"}) {
 		t.Fatal("disabled DNSSEC without explicit options should be skipped")
 	}
-	if cloudflareZoneDNSSECShouldImport(cloudflareZoneDNSSECSetting{Status: "pending"}) {
-		t.Fatal("unsupported DNSSEC status should be skipped")
+	if !cloudflareZoneDNSSECShouldImport(cloudflareZoneDNSSECSetting{Status: "pending"}) {
+		t.Fatal("pending DNSSEC should be imported")
 	}
 	if !cloudflareZoneDNSSECShouldImport(cloudflareZoneDNSSECSetting{Status: "pending", DNSSECMultiSigner: &trueValue}) {
 		t.Fatal("explicit DNSSEC options should be imported for transitional statuses")
+	}
+	if !cloudflareZoneDNSSECShouldImport(cloudflareZoneDNSSECSetting{Status: "pending-disabled"}) {
+		t.Fatal("pending-disabled DNSSEC should be imported")
+	}
+	if cloudflareZoneDNSSECShouldImport(cloudflareZoneDNSSECSetting{Status: "unknown", DNSSECMultiSigner: &trueValue}) {
+		t.Fatal("unknown DNSSEC status should be skipped")
 	}
 	if !cloudflareZoneDNSSECShouldImport(cloudflareZoneDNSSECSetting{Status: "disabled", DNSSECMultiSigner: &trueValue}) {
 		t.Fatal("explicit DNSSEC options should be imported")
@@ -346,14 +352,19 @@ func TestCloudflareZoneDNSSECResource(t *testing.T) {
 		Status:         "pending",
 		DNSSECUseNsec3: &trueValue,
 	})
-	if _, ok := transitionalResource.InstanceState.Attributes["status"]; ok {
-		t.Fatal("transitional DNSSEC status should not be seeded")
+	if got := transitionalResource.InstanceState.Attributes["status"]; got != "active" {
+		t.Fatalf("transitional DNSSEC status = %q, want active", got)
 	}
 	if got := transitionalResource.InstanceState.Attributes["dnssec_use_nsec3"]; got != "true" {
 		t.Fatalf("dnssec_use_nsec3 = %q, want true", got)
 	}
-	if !cloudflareResourceIgnoresKey(transitionalResource, "^status$") {
-		t.Fatal("transitional DNSSEC status should be ignored after provider refresh")
+	if cloudflareResourceIgnoresKey(transitionalResource, "^status$") {
+		t.Fatal("transitional DNSSEC desired status should not be ignored")
+	}
+
+	disablingResource := cloudflareZoneDNSSECResource(zone, cloudflareZoneDNSSECSetting{Status: "pending-disabled"})
+	if got := disablingResource.InstanceState.Attributes["status"]; got != "disabled" {
+		t.Fatalf("pending-disabled DNSSEC status = %q, want disabled", got)
 	}
 }
 
