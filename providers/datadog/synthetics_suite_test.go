@@ -110,6 +110,54 @@ func TestSyntheticsSuitePostConvertHookPreservesEmptyTags(t *testing.T) {
 	}
 }
 
+func TestSyntheticsSuitePostConvertHookPreservesEmptyMessage(t *testing.T) {
+	resource := terraformutils.NewSimpleResource(
+		"suite-2",
+		"synthetics_suite_suite-2",
+		"datadog_synthetics_suite",
+		"datadog",
+		SyntheticsSuiteAllowEmptyValues,
+	)
+	resource.Item = map[string]interface{}{
+		"id":   "suite-2",
+		"name": "suite two",
+	}
+	resource.InstanceState.Attributes = map[string]string{
+		"id":      "suite-2",
+		"message": "",
+		"name":    "suite two",
+	}
+	resource.InstanceState.SetTypedAttributes(json.RawMessage("{\"id\":\"suite-2\",\"message\":\"\",\"name\":\"suite two\"}"))
+
+	generator := &SyntheticsSuiteGenerator{
+		DatadogService: DatadogService{
+			Service: terraformutils.Service{
+				Resources: []terraformutils.Resource{resource},
+			},
+		},
+	}
+
+	if err := generator.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook returned error: %v", err)
+	}
+
+	updatedResource := generator.Resources[0]
+	message, ok := updatedResource.Item[syntheticsSuiteMessageKey].(string)
+	if !ok {
+		t.Fatalf("message item type = %T, want string", updatedResource.Item[syntheticsSuiteMessageKey])
+	}
+	if message != "" {
+		t.Fatalf("message = %q, want empty string", message)
+	}
+	if got := updatedResource.InstanceState.Attributes[syntheticsSuiteMessageKey]; got != "" {
+		t.Fatalf("state message = %q, want empty string", got)
+	}
+	typedAttributes := decodeSyntheticsSuiteTypedAttributes(t, updatedResource.InstanceState.TypedAttributes)
+	if got := string(typedAttributes[syntheticsSuiteMessageKey]); got != "\"\"" {
+		t.Fatalf("typed message = %s, want empty string", got)
+	}
+}
+
 func TestSyntheticsSuiteInitResourcesList(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v2/synthetics/suites/search" {

@@ -16,11 +16,14 @@ import (
 
 const datadogSyntheticsSuitePageSize = int64(100)
 
-const syntheticsSuiteTagsKey = "tags"
+const (
+	syntheticsSuiteMessageKey = "message"
+	syntheticsSuiteTagsKey    = "tags"
+)
 
 var (
 	// SyntheticsSuiteAllowEmptyValues ...
-	SyntheticsSuiteAllowEmptyValues = []string{"tags."}
+	SyntheticsSuiteAllowEmptyValues = []string{"message", "tags."}
 )
 
 // SyntheticsSuiteGenerator ...
@@ -48,7 +51,92 @@ func (g *SyntheticsSuiteGenerator) PostConvertHook() error {
 		if err := preserveSyntheticsSuiteEmptyTags(resource); err != nil {
 			return err
 		}
+		if err := preserveSyntheticsSuiteEmptyMessage(resource); err != nil {
+			return err
+		}
 	}
+	return nil
+}
+
+func preserveSyntheticsSuiteEmptyMessage(resource *terraformutils.Resource) error {
+	hasEmptyMessage, err := syntheticsSuiteStateHasEmptyMessage(resource)
+	if err != nil {
+		return err
+	}
+	if !hasEmptyMessage {
+		return nil
+	}
+	if resource.Item == nil {
+		resource.Item = map[string]interface{}{}
+	}
+	if value, ok := resource.Item[syntheticsSuiteMessageKey]; !ok || !syntheticsSuiteValueHasValue(value) {
+		resource.Item[syntheticsSuiteMessageKey] = ""
+	}
+	return preserveSyntheticsSuiteEmptyMessageState(resource)
+}
+
+func syntheticsSuiteStateHasEmptyMessage(resource *terraformutils.Resource) (bool, error) {
+	if resource == nil || resource.InstanceState == nil {
+		return false, nil
+	}
+	if resource.InstanceState.Attributes != nil {
+		if message, ok := resource.InstanceState.Attributes[syntheticsSuiteMessageKey]; ok && message == "" {
+			return true, nil
+		}
+	}
+	if len(resource.InstanceState.TypedAttributes) == 0 {
+		return false, nil
+	}
+
+	typedAttributes := map[string]json.RawMessage{}
+	if err := json.Unmarshal(resource.InstanceState.TypedAttributes, &typedAttributes); err != nil {
+		return false, fmt.Errorf("decode synthetics suite typed attributes: %w", err)
+	}
+	rawMessage, ok := typedAttributes[syntheticsSuiteMessageKey]
+	if !ok {
+		return false, nil
+	}
+	messageIsEmpty, err := syntheticsSuiteRawMessageIsEmptyString(rawMessage)
+	if err != nil {
+		return false, fmt.Errorf("decode synthetics suite message state: %w", err)
+	}
+	return messageIsEmpty, nil
+}
+
+func preserveSyntheticsSuiteEmptyMessageState(resource *terraformutils.Resource) error {
+	if resource == nil || resource.InstanceState == nil {
+		return nil
+	}
+	if resource.InstanceState.Attributes == nil {
+		resource.InstanceState.Attributes = map[string]string{}
+	}
+	resource.InstanceState.Attributes[syntheticsSuiteMessageKey] = ""
+	if len(resource.InstanceState.TypedAttributes) == 0 {
+		return nil
+	}
+
+	typedAttributes := map[string]json.RawMessage{}
+	if err := json.Unmarshal(resource.InstanceState.TypedAttributes, &typedAttributes); err != nil {
+		return fmt.Errorf("decode synthetics suite typed attributes: %w", err)
+	}
+	rawMessage, ok := typedAttributes[syntheticsSuiteMessageKey]
+	messageHasValue := false
+	if ok {
+		var err error
+		messageHasValue, err = syntheticsSuiteRawMessageHasValue(rawMessage)
+		if err != nil {
+			return fmt.Errorf("decode synthetics suite message state: %w", err)
+		}
+	}
+	if messageHasValue {
+		return nil
+	}
+	typedAttributes[syntheticsSuiteMessageKey] = json.RawMessage("\"\"")
+	rawAttributes, err := json.Marshal(typedAttributes)
+	if err != nil {
+		return fmt.Errorf("encode synthetics suite typed attributes: %w", err)
+	}
+	resource.InstanceState.SetTypedAttributes(rawAttributes)
 	return nil
 }
 
@@ -145,6 +233,18 @@ func syntheticsSuiteRawMessageHasValue(rawValue json.RawMessage) (bool, error) {
 		return false, err
 	}
 	return syntheticsSuiteValueHasValue(value), nil
+}
+
+func syntheticsSuiteRawMessageIsEmptyString(rawValue json.RawMessage) (bool, error) {
+	if len(bytes.TrimSpace(rawValue)) == 0 {
+		return false, nil
+	}
+
+	var value *string
+	if err := json.Unmarshal(rawValue, &value); err != nil {
+		return false, err
+	}
+	return value != nil && *value == "", nil
 }
 
 func syntheticsSuiteValueHasValue(value interface{}) bool {
