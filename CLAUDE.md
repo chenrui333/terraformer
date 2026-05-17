@@ -360,7 +360,19 @@ Rules:
 - Emit singletons only when explicitly configured or when provider semantics require owning the default state.
 - Skip default service-managed settings unless the provider represents them as intentional configuration.
 - Use preserve-ID metadata when provider read paths normalize singleton IDs differently from Terraformer seed IDs.
+- When the API omits an ID for a singleton resource, use a stable synthetic ID (e.g. `"ip-allowlist"`) only when the provider read path does not require a real ID.
 - Add tests for default-vs-non-default behavior.
+
+## Empty/Disabled State Preservation
+
+When a resource has required fields that can be empty or false, Terraformer's flatmap conversion may strip them.
+
+Rules:
+
+- Add field paths to `AllowEmptyValues` to preserve zero-valued booleans (e.g. `enabled=false`) and empty lists/blocks.
+- For required empty lists that `AllowEmptyValues` cannot preserve (zero-count lists are dropped before the allow check), use `PostConvertHook` to set the field to an empty slice.
+- Seed required attributes via `NewResource` when provider refresh depends on context not derivable from the import ID alone (e.g. `org_group_id`, `sink_org_id`, `connection_types`).
+- Test that disabled/empty configurations produce valid HCL, not omitted blocks.
 
 ## Mutually Exclusive Nested Blocks
 
@@ -411,6 +423,7 @@ Every list/describe API used for broad discovery must be checked for pagination.
 Rules:
 
 - Use paginators where available.
+- Verify the pagination base per API; do not assume page 1 — some APIs use zero-based page numbers.
 - Add pagination tests for child-resource discovery when a previous implementation used a single page.
 - Do not assume child-resource lists fit in one response.
 - When an API has nested pagination under each parent, test parent and child pagination together.
