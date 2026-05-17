@@ -83,6 +83,9 @@ func (g *TopicGenerator) listTopics(admin adminClient, config Config) ([]Topic, 
 
 	topics := make([]Topic, 0, len(names))
 	for _, name := range names {
+		if isInternalTopic(name) && !g.isExplicitlyRequestedTopic(name) {
+			continue
+		}
 		topic, err := g.topicFromDetail(admin, name, details[name], config)
 		if err != nil {
 			return nil, err
@@ -90,6 +93,24 @@ func (g *TopicGenerator) listTopics(admin adminClient, config Config) ([]Topic, 
 		topics = append(topics, topic)
 	}
 	return topics, nil
+}
+
+func isInternalTopic(name string) bool {
+	return strings.HasPrefix(name, "__")
+}
+
+func (g *TopicGenerator) isExplicitlyRequestedTopic(name string) bool {
+	for _, filter := range g.Filter {
+		if filter.FieldPath != "id" || !filter.IsApplicable("topic") {
+			continue
+		}
+		for _, value := range filter.AcceptableValues {
+			if value == name {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (g *TopicGenerator) topicFromDetail(admin adminClient, name string, detail sarama.TopicDetail, providerConfig Config) (Topic, error) {

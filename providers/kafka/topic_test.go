@@ -120,6 +120,78 @@ func TestTopicInitResourcesEmptyList(t *testing.T) {
 	}
 }
 
+func TestTopicInitResourcesSkipsInternalTopicsByDefault(t *testing.T) {
+	admin := &mockAdmin{
+		topics: map[string]sarama.TopicDetail{
+			"orders": {
+				NumPartitions:     3,
+				ReplicationFactor: 2,
+			},
+			"__consumer_offsets": {
+				NumPartitions:     50,
+				ReplicationFactor: 3,
+			},
+		},
+		configs: map[string][]sarama.ConfigEntry{
+			"orders": nil,
+		},
+	}
+	generator := &TopicGenerator{}
+	generator.SetArgs(map[string]interface{}{
+		"config": Config{BootstrapServers: []string{"broker1.example.com:9092"}},
+	})
+	generator.newAdmin = func(Config) (adminClient, error) { return admin, nil }
+
+	if err := generator.InitResources(); err != nil {
+		t.Fatalf("InitResources() error = %v", err)
+	}
+	if len(generator.Resources) != 1 {
+		t.Fatalf("resources len = %d, want 1", len(generator.Resources))
+	}
+	if generator.Resources[0].InstanceState.ID != "orders" {
+		t.Fatalf("resource ID = %q, want orders", generator.Resources[0].InstanceState.ID)
+	}
+	if len(admin.describeConfigs) != 1 || admin.describeConfigs[0].Name != "orders" {
+		t.Fatalf("DescribeConfig calls = %#v, want only orders", admin.describeConfigs)
+	}
+}
+
+func TestTopicInitResourcesIncludesExplicitInternalTopicFilter(t *testing.T) {
+	admin := &mockAdmin{
+		topics: map[string]sarama.TopicDetail{
+			"orders": {
+				NumPartitions:     3,
+				ReplicationFactor: 2,
+			},
+			"__consumer_offsets": {
+				NumPartitions:     50,
+				ReplicationFactor: 3,
+			},
+		},
+		configs: map[string][]sarama.ConfigEntry{
+			"orders":             nil,
+			"__consumer_offsets": nil,
+		},
+	}
+	generator := &TopicGenerator{}
+	generator.SetArgs(map[string]interface{}{
+		"config": Config{BootstrapServers: []string{"broker1.example.com:9092"}},
+	})
+	generator.ParseFilters([]string{"topics=__consumer_offsets"})
+	generator.newAdmin = func(Config) (adminClient, error) { return admin, nil }
+
+	if err := generator.InitResources(); err != nil {
+		t.Fatalf("InitResources() error = %v", err)
+	}
+	generator.InitialCleanup()
+	if len(generator.Resources) != 1 {
+		t.Fatalf("resources len = %d, want 1", len(generator.Resources))
+	}
+	if generator.Resources[0].InstanceState.ID != "__consumer_offsets" {
+		t.Fatalf("resource ID = %q, want __consumer_offsets", generator.Resources[0].InstanceState.ID)
+	}
+}
+
 func TestTopicFallsBackToMetadataShape(t *testing.T) {
 	admin := &mockAdmin{
 		topics: map[string]sarama.TopicDetail{

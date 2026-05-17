@@ -16,6 +16,7 @@ func TestOAuthBearerUsesTokenURLProvider(t *testing.T) {
 	var tokenRequests int
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tokenRequests++
+		r.Body = http.MaxBytesReader(w, r.Body, 4096)
 		if r.Method != http.MethodPost {
 			t.Fatalf("method = %s, want POST", r.Method)
 		}
