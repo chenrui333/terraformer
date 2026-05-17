@@ -1,0 +1,47 @@
+providers/datadog/deployment_gate.go
+  s_a75fc68bdbca0a::t_54fa9d62b0d427 71
+  s_a75fc68bdbca0a::t_8fc473778f238d 1-70,72-139
+providers/datadog/observability_pipeline.go
+  s_a75fc68bdbca0a::t_8fc473778f238d 1-68,70-126,132-138
+  s_a75fc68bdbca0a::t_6c2ca37e844170 127-131
+  s_a75fc68bdbca0a::t_d4d8ef6093b00d 69
+providers/datadog/openapi_api.go
+  s_a75fc68bdbca0a::t_6c2ca37e844170 130-134
+  s_a75fc68bdbca0a::t_8fc473778f238d 1-71,73-129,135-141
+  s_a75fc68bdbca0a::t_ac71dab196181c 72
+providers/datadog/dataset.go
+  s_a75fc68bdbca0a::t_20128262aca209 180
+  s_a75fc68bdbca0a::t_8fc473778f238d 1-5,7,9-15,18,22-23,25-37,144-179,181-229
+  s_a75fc68bdbca0a::t_bdd129f410b79f 6,8,16-17,19-21,24,38-143
+providers/datadog/reference_table.go
+  s_a75fc68bdbca0a::t_8fc473778f238d 1-68,70-133
+  s_a75fc68bdbca0a::t_0fcf337ae5a5f8 69
+providers/datadog/product_platform_test.go
+  s_a75fc68bdbca0a::t_8e2b3437e02ccd 1-156,187-295,297-727
+  s_a75fc68bdbca0a::t_d935fc9dd6f449 157-186,296
+providers/datadog/app_builder_app.go
+  s_a75fc68bdbca0a::t_ef40c2e22d494b 1-5,7,9-19,22-25,27-39,148-181,183-244,250-256
+  s_a75fc68bdbca0a::t_15b82a03a59ed2 6,8,20-21,26,40-147
+  s_a75fc68bdbca0a::t_6c2ca37e844170 245-249
+  s_a75fc68bdbca0a::t_632eafae6b55ad 182
+providers/datadog/datastore.go
+  s_a75fc68bdbca0a::t_5ad49f27525ef0 18
+  s_a75fc68bdbca0a::t_29ee5e5506485a 66
+  s_a75fc68bdbca0a::t_8fc473778f238d 1-17,19-65,67-115
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "dd568c4fc7a85a906e5c831fd48d77c4ecae9492",
+  "prompts": {},
+  "sessions": {
+    "s_a75fc68bdbca0a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e35d4-4978-78a1-8707-4482f4e1fd38",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
