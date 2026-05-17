@@ -1,0 +1,19 @@
+docs/unsupported-resources.md
+  s_a56ecfbf36e9e3::t_0fe11ea39c7188 15,81,99
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "8ebd282e86c804b112a92abee1bfd7f1ebce4833",
+  "prompts": {},
+  "sessions": {
+    "s_a56ecfbf36e9e3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3426-d0e0-7cc2-a544-48f707cf5f2b",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
