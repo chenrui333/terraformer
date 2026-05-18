@@ -571,7 +571,7 @@ func (g *CertificatesGenerator) appendCertificateAuthorityHostnameAssociationsRe
 	}
 
 	for _, certificate := range mtlsCertificates {
-		if certificate.ID == "" {
+		if certificate.ID == "" || !certificate.CA {
 			continue
 		}
 		hostnames, err := api.ListCertificateAuthoritiesHostnameAssociations(

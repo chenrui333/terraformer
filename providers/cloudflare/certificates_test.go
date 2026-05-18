@@ -8,6 +8,7 @@ import (
 	"errors"
 	"net/http"
 	"os"
+	"reflect"
 	"testing"
 
 	cf "github.com/cloudflare/cloudflare-go"
@@ -123,6 +124,46 @@ func TestCloudflareCertificateAuthorityHostnameAssociationsResource(t *testing.T
 		nil,
 	); ok {
 		t.Fatal("expected empty hostname associations to be skipped")
+	}
+}
+
+func TestAppendCertificateAuthorityHostnameAssociationsResourcesSkipsNonCAMTLSCertificates(t *testing.T) {
+	var requestedMTLSIDs []string
+	api := newCloudflareNetworkEdgeTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/zones/zone-123/certificate_authorities/hostname_associations" {
+			t.Fatalf("path = %q, want /zones/zone-123/certificate_authorities/hostname_associations", r.URL.Path)
+		}
+		mtlsCertificateID := r.URL.Query().Get("mtls_certificate_id")
+		requestedMTLSIDs = append(requestedMTLSIDs, mtlsCertificateID)
+		switch mtlsCertificateID {
+		case "":
+			writeCloudflareNetworkEdgeTestResponse(t, w, map[string][]string{"hostnames": {"managed.example.com"}}, nil)
+		case "ca-cert":
+			writeCloudflareNetworkEdgeTestResponse(t, w, map[string][]string{"hostnames": {"ca.example.com"}}, nil)
+		default:
+			t.Fatalf("unexpected mtls_certificate_id query = %q", mtlsCertificateID)
+		}
+	}))
+
+	var generator CertificatesGenerator
+	err := generator.appendCertificateAuthorityHostnameAssociationsResources(
+		context.Background(),
+		api,
+		cf.Zone{ID: "zone-123", Name: "example.com"},
+		[]cf.MTLSCertificate{
+			{ID: "leaf-cert", CA: false},
+			{ID: "ca-cert", CA: true},
+		},
+	)
+	if err != nil {
+		t.Fatalf("appendCertificateAuthorityHostnameAssociationsResources() error = %v", err)
+	}
+	wantMTLSIDs := []string{"", "ca-cert"}
+	if !reflect.DeepEqual(requestedMTLSIDs, wantMTLSIDs) {
+		t.Fatalf("requested mtls_certificate_id values = %#v, want %#v", requestedMTLSIDs, wantMTLSIDs)
+	}
+	if len(generator.Resources) != 2 {
+		t.Fatalf("resource count = %d, want 2", len(generator.Resources))
 	}
 }
 
