@@ -28,6 +28,7 @@ var (
 		"deferred":         true,
 		"needs-research":   true,
 		"not-importable":   true,
+		"runtime-data":     true,
 		"unsupported":      true,
 		"unsafe-discovery": true,
 	}

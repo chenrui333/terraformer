@@ -180,10 +180,10 @@ func (g *LexGenerator) loadBots(bots []lexmodelstypes.BotMetadata) {
 	}
 }
 
-func (g *LexGenerator) loadBotAliases(svc *lexmodelbuildingservice.Client, bots []lexmodelstypes.BotMetadata) error {
+func (g *LexGenerator) loadBotAliases(svc lexmodelbuildingservice.GetBotAliasesAPIClient, bots []lexmodelstypes.BotMetadata) error {
 	for _, bot := range bots {
 		botName := StringValue(bot.Name)
-		if botName == "" || !lexBotImportable(bot.Status) {
+		if botName == "" {
 			continue
 		}
 		aliases, err := listLexBotAliases(svc, botName)

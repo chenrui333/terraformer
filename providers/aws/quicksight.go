@@ -96,16 +96,17 @@ func (g *QuickSightGenerator) InitResources() error {
 		if err != nil {
 			if quickSightServiceUnavailable(err) {
 				log.Printf("[WARN] skipping QuickSight discovery: %s", err)
-				return nil
-			}
-			return err
-		}
-		if loadNamespaces {
-			g.loadNamespaces(StringValue(accountID), namespaces)
-		}
-		if loadGroups || loadGroupMemberships {
-			if err := g.loadGroupsAndMemberships(svc, StringValue(accountID), namespaces, loadGroups, loadGroupMemberships); err != nil {
+			} else {
 				return err
+			}
+		} else {
+			if loadNamespaces {
+				g.loadNamespaces(StringValue(accountID), namespaces)
+			}
+			if loadGroups || loadGroupMemberships {
+				if err := g.loadGroupsAndMemberships(svc, StringValue(accountID), namespaces, loadGroups, loadGroupMemberships); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -115,16 +116,17 @@ func (g *QuickSightGenerator) InitResources() error {
 		if err != nil {
 			if quickSightServiceUnavailable(err) {
 				log.Printf("[WARN] skipping QuickSight folders: %s", err)
-				return nil
-			}
-			return err
-		}
-		if loadFolders {
-			g.loadFolders(StringValue(accountID), folders)
-		}
-		if loadFolderMemberships {
-			if err := g.loadFolderMemberships(svc, StringValue(accountID), folders); err != nil {
+			} else {
 				return err
+			}
+		} else {
+			if loadFolders {
+				g.loadFolders(StringValue(accountID), folders)
+			}
+			if loadFolderMemberships {
+				if err := g.loadFolderMemberships(svc, StringValue(accountID), folders); err != nil {
+					return err
+				}
 			}
 		}
 	}

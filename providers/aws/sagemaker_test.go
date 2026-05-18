@@ -894,10 +894,10 @@ type fakeSageMakerListAlgorithmsClient struct {
 }
 
 func (f *fakeSageMakerListAlgorithmsClient) ListAlgorithms(context.Context, *sagemaker.ListAlgorithmsInput, ...func(*sagemaker.Options)) (*sagemaker.ListAlgorithmsOutput, error) {
-	if f.calls >= len(f.pages) {
+	f.calls++
+	if f.calls > len(f.pages) {
 		return &sagemaker.ListAlgorithmsOutput{}, nil
 	}
-	page := f.pages[f.calls]
-	f.calls++
+	page := f.pages[f.calls-1]
 	return page, nil
 }

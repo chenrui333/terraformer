@@ -223,6 +223,30 @@ func TestLexInitialCleanupHonorsTypedFilters(t *testing.T) {
 	}
 }
 
+func TestLexLoadBotAliasesDoesNotGateOnBotStatus(t *testing.T) {
+	g := LexGenerator{}
+	client := &fakeLexGetBotAliasesClient{
+		pagesByBotName: map[string][]*lexmodelbuildingservice.GetBotAliasesOutput{
+			"support": {
+				{
+					BotAliases: []lexmodelstypes.BotAliasMetadata{{Name: aws.String("prod")}},
+				},
+			},
+		},
+	}
+	err := g.loadBotAliases(client, []lexmodelstypes.BotMetadata{{
+		Name:   aws.String("support"),
+		Status: lexmodelstypes.StatusBuilding,
+	}})
+	if err != nil {
+		t.Fatalf("loadBotAliases() error = %v", err)
+	}
+	if len(g.Resources) != 1 {
+		t.Fatalf("loadBotAliases() resources len = %d, want 1", len(g.Resources))
+	}
+	assertLexResource(t, g.Resources[0], true, "support:prod", lexBotAliasResourceType)
+}
+
 func TestLexResourceNameUniqueness(t *testing.T) {
 	first := terraformutils.TfSanitize(lexResourceName("ab", "c"))
 	second := terraformutils.TfSanitize(lexResourceName("a", "bc"))
@@ -248,6 +272,20 @@ func (f *fakeLexGetBotsClient) GetBots(context.Context, *lexmodelbuildingservice
 	page := f.pages[f.calls]
 	f.calls++
 	return page, nil
+}
+
+type fakeLexGetBotAliasesClient struct {
+	pagesByBotName map[string][]*lexmodelbuildingservice.GetBotAliasesOutput
+	calls          int
+}
+
+func (f *fakeLexGetBotAliasesClient) GetBotAliases(_ context.Context, input *lexmodelbuildingservice.GetBotAliasesInput, _ ...func(*lexmodelbuildingservice.Options)) (*lexmodelbuildingservice.GetBotAliasesOutput, error) {
+	f.calls++
+	pages := f.pagesByBotName[StringValue(input.BotName)]
+	if f.calls > len(pages) {
+		return &lexmodelbuildingservice.GetBotAliasesOutput{}, nil
+	}
+	return pages[f.calls-1], nil
 }
 
 type fakeLexV2ListBotsClient struct {

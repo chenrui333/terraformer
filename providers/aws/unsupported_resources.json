@@ -713,7 +713,7 @@
       "service_family": "quicksight",
       "reason": "QuickSight ingestions are runtime execution artifacts, not durable infrastructure inventory.",
       "evidence": "Terraform AWS provider models ingestion execution IDs for a dataset. QuickSight ListIngestions returns job history/results, and importing every ingestion would turn high-cardinality runtime events into Terraform resources.",
-      "status": "unsafe-discovery",
+      "status": "runtime-data",
       "references": [
         "https://github.com/chenrui333/terraformer/issues/338",
         "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/quicksight_ingestion"
@@ -904,7 +904,7 @@
       "service_family": "sagemaker",
       "reason": "SageMaker hyperparameter tuning jobs are runtime/job execution artifacts rather than durable inventory.",
       "evidence": "Terraform AWS provider models tuning job execution configuration and DescribeHyperParameterTuningJob returns completed job state/history. Broad discovery would turn job runs into Terraform-managed resources.",
-      "status": "unsafe-discovery",
+      "status": "runtime-data",
       "references": [
         "https://github.com/chenrui333/terraformer/issues/338",
         "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sagemaker_hyper_parameter_tuning_job"
@@ -915,7 +915,7 @@
       "service_family": "sagemaker",
       "reason": "SageMaker labeling jobs are runtime execution jobs with source/output data semantics, not durable infrastructure inventory.",
       "evidence": "Terraform AWS provider models labeling job request configuration and DescribeLabelingJob returns job execution state. Broad discovery cannot safely treat historical labeling jobs as ongoing Terraform-owned infrastructure.",
-      "status": "unsafe-discovery",
+      "status": "runtime-data",
       "references": [
         "https://github.com/chenrui333/terraformer/issues/338",
         "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sagemaker_labeling_job"
@@ -926,7 +926,7 @@
       "service_family": "sagemaker",
       "reason": "SageMaker model card export jobs are action-style runtime jobs, not durable inventory.",
       "evidence": "Terraform AWS provider models export job request/output configuration. SageMaker list/describe APIs expose job execution metadata, but broad discovery should not import one-off export runs as managed Terraform resources.",
-      "status": "unsafe-discovery",
+      "status": "runtime-data",
       "references": [
         "https://github.com/chenrui333/terraformer/issues/338",
         "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sagemaker_model_card_export_job"
@@ -937,7 +937,7 @@
       "service_family": "sagemaker",
       "reason": "SageMaker training jobs are runtime execution artifacts, not stable infrastructure inventory.",
       "evidence": "Terraform AWS provider models a training job request and DescribeTrainingJob returns job execution state after the run. Broad discovery would import historical/completed training jobs rather than durable control-plane configuration.",
-      "status": "unsafe-discovery",
+      "status": "runtime-data",
       "references": [
         "https://github.com/chenrui333/terraformer/issues/338",
         "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sagemaker_training_job"

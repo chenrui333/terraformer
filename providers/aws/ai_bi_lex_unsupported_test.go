@@ -72,7 +72,7 @@ func TestAIBiLexUnsupportedResourceEntries(t *testing.T) {
 		"aws_quicksight_data_set":                          {"quicksight", "deferred"},
 		"aws_quicksight_data_source":                       {"quicksight", "unsupported"},
 		"aws_quicksight_iam_policy_assignment":             {"quicksight", "deferred"},
-		"aws_quicksight_ingestion":                         {"quicksight", "unsafe-discovery"},
+		"aws_quicksight_ingestion":                         {"quicksight", "runtime-data"},
 		"aws_quicksight_ip_restriction":                    {"quicksight", "deferred"},
 		"aws_quicksight_key_registration":                  {"quicksight", "deferred"},
 		"aws_quicksight_refresh_schedule":                  {"quicksight", "deferred"},
@@ -85,10 +85,10 @@ func TestAIBiLexUnsupportedResourceEntries(t *testing.T) {
 		"aws_quicksight_user_custom_permission":            {"quicksight", "deferred"},
 		"aws_sagemaker_device":                             {"sagemaker", "deferred"},
 		"aws_sagemaker_hub":                                {"sagemaker", "deferred"},
-		"aws_sagemaker_hyper_parameter_tuning_job":         {"sagemaker", "unsafe-discovery"},
-		"aws_sagemaker_labeling_job":                       {"sagemaker", "unsafe-discovery"},
-		"aws_sagemaker_model_card_export_job":              {"sagemaker", "unsafe-discovery"},
-		"aws_sagemaker_training_job":                       {"sagemaker", "unsafe-discovery"},
+		"aws_sagemaker_hyper_parameter_tuning_job":         {"sagemaker", "runtime-data"},
+		"aws_sagemaker_labeling_job":                       {"sagemaker", "runtime-data"},
+		"aws_sagemaker_model_card_export_job":              {"sagemaker", "runtime-data"},
+		"aws_sagemaker_training_job":                       {"sagemaker", "runtime-data"},
 	}
 
 	for resource, want := range expected {
