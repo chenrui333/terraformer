@@ -169,6 +169,10 @@ List of supported Cloudflare services:
   * `cloudflare_zero_trust_dlp_custom_entry`
   * `cloudflare_zero_trust_dlp_custom_profile`
   * `cloudflare_zero_trust_dlp_settings`
+
+  DLP custom profiles with profile-owned `entries`, `shared_entries`, or active
+  `context_awareness` are skipped because the Cloudflare provider marks those
+  fields as no-refresh state.
 * `zero_trust_gateway`
   * `cloudflare_zero_trust_dns_location`
   * `cloudflare_zero_trust_gateway_certificate`

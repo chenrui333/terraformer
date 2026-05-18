@@ -122,6 +122,102 @@ func TestListZeroTrustDeviceDLPResourcesHandlesObjectWrappedDEXTests(t *testing.
 	}
 }
 
+func TestZeroTrustDLPCustomProfileImportable(t *testing.T) {
+	tests := []struct {
+		name    string
+		profile zeroTrustDeviceDLPRawResource
+		want    bool
+	}{
+		{
+			name: "plain custom profile",
+			profile: zeroTrustDeviceDLPRawResource{
+				"id":   "profile-123",
+				"type": "custom",
+			},
+			want: true,
+		},
+		{
+			name: "missing id",
+			profile: zeroTrustDeviceDLPRawResource{
+				"type": "custom",
+			},
+			want: false,
+		},
+		{
+			name: "predefined profile",
+			profile: zeroTrustDeviceDLPRawResource{
+				"id":   "profile-123",
+				"type": "predefined",
+			},
+			want: false,
+		},
+		{
+			name: "inline entries",
+			profile: zeroTrustDeviceDLPRawResource{
+				"id":      "profile-123",
+				"type":    "custom",
+				"entries": []interface{}{map[string]interface{}{"entry_id": "entry-123"}},
+			},
+			want: false,
+		},
+		{
+			name: "shared entries",
+			profile: zeroTrustDeviceDLPRawResource{
+				"id":             "profile-123",
+				"type":           "custom",
+				"shared_entries": []interface{}{map[string]interface{}{"entry_id": "entry-123"}},
+			},
+			want: false,
+		},
+		{
+			name: "enabled context awareness",
+			profile: zeroTrustDeviceDLPRawResource{
+				"id":   "profile-123",
+				"type": "custom",
+				"context_awareness": map[string]interface{}{
+					"enabled": true,
+				},
+			},
+			want: false,
+		},
+		{
+			name: "inactive context awareness",
+			profile: zeroTrustDeviceDLPRawResource{
+				"id":   "profile-123",
+				"type": "custom",
+				"context_awareness": map[string]interface{}{
+					"enabled": false,
+					"skip": map[string]interface{}{
+						"files": false,
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "context awareness skip settings",
+			profile: zeroTrustDeviceDLPRawResource{
+				"id":   "profile-123",
+				"type": "custom",
+				"context_awareness": map[string]interface{}{
+					"enabled": false,
+					"skip": map[string]interface{}{
+						"files": true,
+					},
+				},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := zeroTrustDLPCustomProfileImportable(tt.profile); got != tt.want {
+				t.Fatalf("zeroTrustDLPCustomProfileImportable() = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestAppendZeroTrustDeviceDLPResourcesDiscoversSupportedResources(t *testing.T) {
 	api := newZeroTrustDeviceDLPTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -165,8 +261,22 @@ func TestAppendZeroTrustDeviceDLPResourcesDiscoversSupportedResources(t *testing
 				"name":    "Homepage",
 			}}, nil)
 		case "/accounts/account-123/dlp/profiles":
-			writeZeroTrustDeviceDLPTestResponse(t, w, []map[string]string{
+			writeZeroTrustDeviceDLPTestResponse(t, w, []map[string]interface{}{
 				{"id": "dlp-profile-123", "name": "Secrets", "type": "custom"},
+				{
+					"id":      "dlp-profile-with-entries",
+					"name":    "Secrets with entries",
+					"type":    "custom",
+					"entries": []map[string]string{{"entry_id": "dlp-entry-123"}},
+				},
+				{
+					"id":   "dlp-profile-with-context",
+					"name": "Secrets with context",
+					"type": "custom",
+					"context_awareness": map[string]bool{
+						"enabled": true,
+					},
+				},
 				{"id": "predefined-profile", "name": "Credentials", "type": "predefined"},
 			}, nil)
 		case "/accounts/account-123/dlp/entries":

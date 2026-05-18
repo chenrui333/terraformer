@@ -48,6 +48,26 @@ func zeroTrustDeviceDLPHasListEntries(resource zeroTrustDeviceDLPRawResource, ke
 	return ok && len(entries) > 0
 }
 
+func zeroTrustDeviceDLPObject(resource zeroTrustDeviceDLPRawResource, key string) (map[string]interface{}, bool) {
+	object, ok := resource[key].(map[string]interface{})
+	return object, ok && len(object) > 0
+}
+
+func zeroTrustDeviceDLPTruthy(value interface{}) bool {
+	switch typed := value.(type) {
+	case bool:
+		return typed
+	case string:
+		normalized := strings.TrimSpace(strings.ToLower(typed))
+		return normalized != "" && normalized != "false"
+	case []interface{}:
+		return len(typed) > 0
+	case map[string]interface{}:
+		return len(typed) > 0
+	}
+	return value != nil
+}
+
 func zeroTrustDeviceDLPResourceType(resource zeroTrustDeviceDLPRawResource) string {
 	return strings.ToLower(zeroTrustDeviceDLPString(resource, "type"))
 }
@@ -369,7 +389,7 @@ func (g *ZeroTrustDeviceDLPGenerator) appendDLPCustomProfileResources(ctx contex
 		return err
 	}
 	for _, profile := range profiles {
-		if zeroTrustDeviceDLPResourceType(profile) != "custom" {
+		if !zeroTrustDLPCustomProfileImportable(profile) {
 			continue
 		}
 		zeroTrustDeviceDLPAppendAccountResource(
@@ -382,6 +402,48 @@ func (g *ZeroTrustDeviceDLPGenerator) appendDLPCustomProfileResources(ctx contex
 		)
 	}
 	return nil
+}
+
+func zeroTrustDLPCustomProfileImportable(profile zeroTrustDeviceDLPRawResource) bool {
+	if zeroTrustDeviceDLPResourceType(profile) != "custom" {
+		return false
+	}
+	if zeroTrustDeviceDLPString(profile, "id") == "" {
+		return false
+	}
+	if zeroTrustDeviceDLPHasListEntries(profile, "entries") {
+		return false
+	}
+	if zeroTrustDeviceDLPHasListEntries(profile, "shared_entries") {
+		return false
+	}
+	return !zeroTrustDLPContextAwarenessConfigured(profile)
+}
+
+func zeroTrustDLPContextAwarenessConfigured(profile zeroTrustDeviceDLPRawResource) bool {
+	contextAwareness, ok := zeroTrustDeviceDLPObject(profile, "context_awareness")
+	if !ok {
+		return false
+	}
+	if zeroTrustDeviceDLPTruthy(contextAwareness["enabled"]) {
+		return true
+	}
+	if skip, ok := contextAwareness["skip"].(map[string]interface{}); ok {
+		for _, value := range skip {
+			if zeroTrustDeviceDLPTruthy(value) {
+				return true
+			}
+		}
+	}
+	for key, value := range contextAwareness {
+		if key == "enabled" || key == "skip" {
+			continue
+		}
+		if zeroTrustDeviceDLPTruthy(value) {
+			return true
+		}
+	}
+	return false
 }
 
 func (g *ZeroTrustDeviceDLPGenerator) appendDLPCustomEntryResources(ctx context.Context, api *cf.API, accountID string) error {
