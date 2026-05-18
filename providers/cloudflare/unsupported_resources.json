@@ -302,6 +302,17 @@
       ]
     },
     {
+      "resource": "cloudflare_hostname_tls_setting",
+      "service_family": "certificates",
+      "reason": "Per-hostname TLS settings need a provider import shape that uniquely identifies the hostname.",
+      "evidence": "Terraform provider v5.19.1 imports cloudflare_hostname_tls_setting by zone_id/setting_id even though the schema requires hostname and the Cloudflare list API returns one record per hostname and setting. Broad import would create colliding zone_id/setting_id import IDs for multiple hostnames.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/hostname_tls_setting"
+      ]
+    },
+    {
       "resource": "cloudflare_hyperdrive_config",
       "service_family": "storage",
       "reason": "Hyperdrive configs require write-only origin credential material.",
@@ -321,6 +332,17 @@
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/image"
+      ]
+    },
+    {
+      "resource": "cloudflare_keyless_certificate",
+      "service_family": "certificates",
+      "reason": "Keyless certificate resources require certificate body configuration that Cloudflare APIs do not return on list/read.",
+      "evidence": "Terraform provider v5.19.1 requires certificate and host for cloudflare_keyless_certificate, but the provider API list/read models return durable metadata such as id, host, port, status, tunnel, and permissions while omitting certificate. Terraformer cannot reconstruct valid HCL from the discovered keyless certificate ID alone.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/keyless_certificate"
       ]
     },
     {
