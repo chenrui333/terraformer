@@ -110,7 +110,7 @@ require (
 	github.com/digitalocean/godo v1.189.0
 	github.com/fastly/go-fastly/v7 v7.5.5
 	github.com/google/go-github/v35 v35.3.0
-	github.com/gophercloud/gophercloud v1.14.1
+	github.com/gophercloud/gophercloud/v2 v2.12.0
 	github.com/grafana/grafana-api-golang-client v0.27.0
 	github.com/hashicorp/go-azure-helpers v0.79.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2
@@ -508,6 +508,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/vpclattice v1.21.0
 	github.com/gofrs/uuid/v3 v3.1.2
 	github.com/golang-jwt/jwt/v4 v4.5.2
+	github.com/gophercloud/gophercloud v1.14.1
 	github.com/hashicorp/go-azure-sdk/sdk v0.20260507.1215246
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/ionos-cloud/sdk-go-cert-manager v1.3.0
