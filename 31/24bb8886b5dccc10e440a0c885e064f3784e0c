@@ -1,0 +1,21 @@
+providers/cloudflare/security_test.go
+  s_3c0e840be2df55::t_129f3d54868836 535,601
+providers/cloudflare/unsupported_resources.json
+  s_3c0e840be2df55::t_806602a2baa078 305-312
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "3124bb8886b5dccc10e440a0c885e064f3784e0c",
+  "prompts": {},
+  "sessions": {
+    "s_3c0e840be2df55": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3870-0b78-7b43-86ec-2341ec197524",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
