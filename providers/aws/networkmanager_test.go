@@ -27,45 +27,56 @@ func TestNetworkManagerGlobalNetworkResource(t *testing.T) {
 }
 
 func TestNetworkManagerSiteDeviceLinkConnectionResources(t *testing.T) {
+	const (
+		siteARN       = "arn:aws:networkmanager::123456789012:site/global-network-123/site-123"
+		deviceARN     = "arn:aws:networkmanager::123456789012:device/global-network-123/device-123"
+		linkARN       = "arn:aws:networkmanager::123456789012:link/global-network-123/link-123"
+		connectionARN = "arn:aws:networkmanager::123456789012:connection/global-network-123/connection-123"
+	)
+
 	site, ok := newNetworkManagerSiteResource(networkmanagertypes.Site{
 		GlobalNetworkId: aws.String("global-network-123"),
+		SiteArn:         aws.String(siteARN),
 		SiteId:          aws.String("site-123"),
 		State:           networkmanagertypes.SiteStateAvailable,
 	})
-	assertNetworkManagerResource(t, site, ok, networkManagerSiteResourceType, "site-123", map[string]string{
+	assertNetworkManagerResource(t, site, ok, networkManagerSiteResourceType, siteARN, map[string]string{
 		"global_network_id": "global-network-123",
 	})
 
 	device, ok := newNetworkManagerDeviceResource(networkmanagertypes.Device{
+		DeviceArn:       aws.String(deviceARN),
 		DeviceId:        aws.String("device-123"),
 		GlobalNetworkId: aws.String("global-network-123"),
 		SiteId:          aws.String("site-123"),
 		State:           networkmanagertypes.DeviceStateAvailable,
 	})
-	assertNetworkManagerResource(t, device, ok, networkManagerDeviceResourceType, "device-123", map[string]string{
+	assertNetworkManagerResource(t, device, ok, networkManagerDeviceResourceType, deviceARN, map[string]string{
 		"global_network_id": "global-network-123",
 		"site_id":           "site-123",
 	})
 
 	link, ok := newNetworkManagerLinkResource(networkmanagertypes.Link{
 		GlobalNetworkId: aws.String("global-network-123"),
+		LinkArn:         aws.String(linkARN),
 		LinkId:          aws.String("link-123"),
 		SiteId:          aws.String("site-123"),
 		State:           networkmanagertypes.LinkStateAvailable,
 	})
-	assertNetworkManagerResource(t, link, ok, networkManagerLinkResourceType, "link-123", map[string]string{
+	assertNetworkManagerResource(t, link, ok, networkManagerLinkResourceType, linkARN, map[string]string{
 		"global_network_id": "global-network-123",
 		"site_id":           "site-123",
 	})
 
 	connection, ok := newNetworkManagerConnectionResource(networkmanagertypes.Connection{
 		ConnectedDeviceId: aws.String("device-456"),
+		ConnectionArn:     aws.String(connectionARN),
 		ConnectionId:      aws.String("connection-123"),
 		DeviceId:          aws.String("device-123"),
 		GlobalNetworkId:   aws.String("global-network-123"),
 		State:             networkmanagertypes.ConnectionStateAvailable,
 	})
-	assertNetworkManagerResource(t, connection, ok, networkManagerConnectionResourceType, "connection-123", map[string]string{
+	assertNetworkManagerResource(t, connection, ok, networkManagerConnectionResourceType, connectionARN, map[string]string{
 		"connected_device_id": "device-456",
 		"device_id":           "device-123",
 		"global_network_id":   "global-network-123",
@@ -83,10 +94,19 @@ func TestNetworkManagerStatePredicates(t *testing.T) {
 
 	if _, ok := newNetworkManagerLinkResource(networkmanagertypes.Link{
 		GlobalNetworkId: aws.String("global-network-123"),
+		LinkArn:         aws.String("arn:aws:networkmanager::123456789012:link/global-network-123/link-missing-site"),
 		LinkId:          aws.String("link-missing-site"),
 		State:           networkmanagertypes.LinkStateAvailable,
 	}); ok {
 		t.Fatal("link without required site ID should be skipped")
+	}
+
+	if _, ok := newNetworkManagerSiteResource(networkmanagertypes.Site{
+		GlobalNetworkId: aws.String("global-network-123"),
+		SiteId:          aws.String("site-missing-arn"),
+		State:           networkmanagertypes.SiteStateAvailable,
+	}); ok {
+		t.Fatal("site without import ARN should be skipped")
 	}
 }
 
