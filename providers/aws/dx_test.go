@@ -59,6 +59,22 @@ func TestDirectConnectVirtualInterfaceResources(t *testing.T) {
 	}, directConnectTransitVirtualInterfaceResourceType, currentAccountID); ok {
 		t.Fatal("accepted hosted transit virtual interface should be skipped")
 	}
+	if _, ok := newDirectConnectVirtualInterfaceResource(directconnecttypes.VirtualInterface{
+		VirtualInterfaceId:    aws.String("dxvif-hosted-private"),
+		OwnerAccount:          aws.String("210987654321"),
+		VirtualInterfaceState: directconnecttypes.VirtualInterfaceStateAvailable,
+		VirtualInterfaceType:  aws.String("private"),
+	}, directConnectPrivateVirtualInterfaceResourceType, currentAccountID); ok {
+		t.Fatal("hosted private virtual interface should be skipped")
+	}
+	if _, ok := newDirectConnectVirtualInterfaceResource(directconnecttypes.VirtualInterface{
+		VirtualInterfaceId:    aws.String("dxvif-hosted-public"),
+		OwnerAccount:          aws.String("210987654321"),
+		VirtualInterfaceState: directconnecttypes.VirtualInterfaceStateAvailable,
+		VirtualInterfaceType:  aws.String("public"),
+	}, directConnectPublicVirtualInterfaceResourceType, currentAccountID); ok {
+		t.Fatal("hosted public virtual interface should be skipped")
+	}
 	if _, ok := directConnectVirtualInterfaceResourceType(directconnecttypes.VirtualInterface{}); ok {
 		t.Fatal("virtual interface without type should be skipped")
 	}

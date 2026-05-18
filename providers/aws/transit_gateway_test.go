@@ -91,6 +91,57 @@ func TestTransitGatewayAddOnResourceIDs(t *testing.T) {
 	}
 }
 
+func TestTransitGatewayShouldLoadResourceForTypedFilters(t *testing.T) {
+	g := TransitGatewayGenerator{}
+	if !g.shouldLoadTransitGatewayResource(transitGatewayConnectResourceType) {
+		t.Fatal("without typed filters, connect resources should load")
+	}
+
+	g.Filter = []terraformutils.ResourceFilter{{
+		ServiceName:      transitGatewayResourceType,
+		FieldPath:        "id",
+		AcceptableValues: []string{"tgw-123"},
+	}}
+	if !g.shouldLoadTransitGatewayResource(transitGatewayResourceType) {
+		t.Fatal("typed transit gateway filter should load transit gateways")
+	}
+	if g.shouldLoadTransitGatewayResource(transitGatewayConnectResourceType) {
+		t.Fatal("typed transit gateway filter should skip connect discovery")
+	}
+	if g.shouldLoadTransitGatewayResource(transitGatewayMeteringPolicyResourceType, transitGatewayMeteringPolicyEntryResourceType) {
+		t.Fatal("typed transit gateway filter should skip metering discovery")
+	}
+
+	g.Filter = []terraformutils.ResourceFilter{{
+		ServiceName:      "ec2_transit_gateway_connect",
+		FieldPath:        "id",
+		AcceptableValues: []string{"tgw-attach-connect"},
+	}}
+	if !g.shouldLoadTransitGatewayResource(transitGatewayConnectResourceType) {
+		t.Fatal("typed connect filter should load connect discovery")
+	}
+	if g.shouldLoadTransitGatewayResource(transitGatewayMulticastDomainResourceType) {
+		t.Fatal("typed connect filter should skip multicast discovery")
+	}
+
+	g.Filter = []terraformutils.ResourceFilter{{
+		ServiceName:      transitGatewayPeeringAttachmentResourceType,
+		FieldPath:        "id",
+		AcceptableValues: []string{"tgw-attach-peer"},
+	}}
+	if !g.shouldLoadTransitGatewayResource(transitGatewayResourceType, transitGatewayPeeringAttachmentResourceType, transitGatewayPeeringAttachmentAccepterType) {
+		t.Fatal("typed peering filter should keep transit gateway discovery for local side detection")
+	}
+
+	g.Filter = []terraformutils.ResourceFilter{{
+		FieldPath:        "id",
+		AcceptableValues: []string{"tgw-123"},
+	}}
+	if !g.shouldLoadTransitGatewayResource(transitGatewayConnectResourceType) {
+		t.Fatal("untyped ID filters should preserve broad discovery")
+	}
+}
+
 func TestNewTransitGatewayConnectResource(t *testing.T) {
 	resource, ok := newTransitGatewayConnectResource(types.TransitGatewayConnect{
 		State:                               types.TransitGatewayAttachmentStateAvailable,
@@ -349,7 +400,7 @@ func TestTransitGatewayMeteringPolicyPagination(t *testing.T) {
 		},
 	}
 	g := TransitGatewayGenerator{}
-	if err := g.getTransitGatewayMeteringPolicies(client); err != nil {
+	if err := g.getTransitGatewayMeteringPolicies(client, true, true); err != nil {
 		t.Fatalf("getTransitGatewayMeteringPolicies() error = %v", err)
 	}
 	if client.policyCalls != 2 {
@@ -366,6 +417,32 @@ func TestTransitGatewayMeteringPolicyPagination(t *testing.T) {
 	}
 	if len(g.Resources) != 2 {
 		t.Fatalf("resources = %d, want 2", len(g.Resources))
+	}
+}
+
+func TestTransitGatewayMeteringPolicySkipsEntriesWhenFilteredOut(t *testing.T) {
+	client := &fakeTransitGatewayMeteringPolicyClient{
+		policyPages: []*ec2.DescribeTransitGatewayMeteringPoliciesOutput{
+			{
+				TransitGatewayMeteringPolicies: []types.TransitGatewayMeteringPolicy{
+					{
+						State:                          types.TransitGatewayMeteringPolicyStateAvailable,
+						TransitGatewayId:               aws.String("tgw-123"),
+						TransitGatewayMeteringPolicyId: aws.String("tgw-mp-1"),
+					},
+				},
+			},
+		},
+	}
+	g := TransitGatewayGenerator{}
+	if err := g.getTransitGatewayMeteringPolicies(client, true, false); err != nil {
+		t.Fatalf("getTransitGatewayMeteringPolicies() error = %v", err)
+	}
+	if client.entryCalls != 0 {
+		t.Fatalf("GetTransitGatewayMeteringPolicyEntries calls = %d, want 0", client.entryCalls)
+	}
+	if len(g.Resources) != 1 {
+		t.Fatalf("resources = %d, want 1", len(g.Resources))
 	}
 }
 
@@ -399,7 +476,7 @@ func TestTransitGatewayMeteringPaginationStopsOnEmptyTokens(t *testing.T) {
 		},
 	}
 	g := TransitGatewayGenerator{}
-	if err := g.getTransitGatewayMeteringPolicies(client); err != nil {
+	if err := g.getTransitGatewayMeteringPolicies(client, true, true); err != nil {
 		t.Fatalf("getTransitGatewayMeteringPolicies() error = %v", err)
 	}
 	if client.policyCalls != 1 {

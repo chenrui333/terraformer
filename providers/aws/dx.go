@@ -309,15 +309,14 @@ func directConnectVirtualInterfaceImportable(vif directconnecttypes.VirtualInter
 		directconnecttypes.VirtualInterfaceStateRejected:
 		return false
 	}
-	return !directConnectHostedTransitVirtualInterface(vif, currentAccountID)
+	return !directConnectHostedVirtualInterface(vif, currentAccountID)
 }
 
-func directConnectHostedTransitVirtualInterface(vif directconnecttypes.VirtualInterface, currentAccountID string) bool {
+func directConnectHostedVirtualInterface(vif directconnecttypes.VirtualInterface, currentAccountID string) bool {
 	ownerAccountID := StringValue(vif.OwnerAccount)
 	return currentAccountID != "" &&
 		ownerAccountID != "" &&
-		ownerAccountID != currentAccountID &&
-		StringValue(vif.VirtualInterfaceType) == "transit"
+		ownerAccountID != currentAccountID
 }
 
 func directConnectLagImportable(lag directconnecttypes.Lag) bool {

@@ -168,7 +168,10 @@ func (g *TransitGatewayGenerator) getTransitGatewayPeeringAttachments(svc *ec2.C
 	return nil
 }
 
-func (g *TransitGatewayGenerator) getTransitGatewayRouteTableAssociations(svc *ec2.Client) error {
+func (g *TransitGatewayGenerator) getTransitGatewayRouteTableAssociations(svc *ec2.Client, loadAssociations, loadPropagations bool) error {
+	if !loadAssociations && !loadPropagations {
+		return nil
+	}
 	rtPages := ec2.NewDescribeTransitGatewayRouteTablesPaginator(svc, &ec2.DescribeTransitGatewayRouteTablesInput{})
 	for rtPages.HasMorePages() {
 		rtPage, err := rtPages.NextPage(context.TODO())
@@ -182,7 +185,7 @@ func (g *TransitGatewayGenerator) getTransitGatewayRouteTableAssociations(svc *e
 			isDefaultAssociation := rt.DefaultAssociationRouteTable != nil && *rt.DefaultAssociationRouteTable
 			isDefaultPropagation := rt.DefaultPropagationRouteTable != nil && *rt.DefaultPropagationRouteTable
 
-			if !isDefaultAssociation {
+			if loadAssociations && !isDefaultAssociation {
 				assocPages := ec2.NewGetTransitGatewayRouteTableAssociationsPaginator(svc, &ec2.GetTransitGatewayRouteTableAssociationsInput{
 					TransitGatewayRouteTableId: rt.TransitGatewayRouteTableId,
 				})
@@ -212,7 +215,7 @@ func (g *TransitGatewayGenerator) getTransitGatewayRouteTableAssociations(svc *e
 				}
 			}
 
-			if !isDefaultPropagation {
+			if loadPropagations && !isDefaultPropagation {
 				propPages := ec2.NewGetTransitGatewayRouteTablePropagationsPaginator(svc, &ec2.GetTransitGatewayRouteTablePropagationsInput{
 					TransitGatewayRouteTableId: rt.TransitGatewayRouteTableId,
 				})
@@ -294,21 +297,28 @@ func (g *TransitGatewayGenerator) getTransitGatewayMulticastDomains(svc ec2.Desc
 	return nil
 }
 
-func (g *TransitGatewayGenerator) getTransitGatewayMeteringPolicies(svc transitGatewayMeteringPolicyAPIClient) error {
+func (g *TransitGatewayGenerator) getTransitGatewayMeteringPolicies(svc transitGatewayMeteringPolicyAPIClient, loadPolicies, loadEntries bool) error {
+	if !loadPolicies && !loadEntries {
+		return nil
+	}
 	policies, err := listTransitGatewayMeteringPolicies(svc)
 	if err != nil {
 		return err
 	}
 	for _, policy := range policies {
 		if resource, ok := newTransitGatewayMeteringPolicyResource(policy); ok {
-			g.Resources = append(g.Resources, resource)
-			entries, err := listTransitGatewayMeteringPolicyEntries(svc, StringValue(policy.TransitGatewayMeteringPolicyId))
-			if err != nil {
-				return err
+			if loadPolicies {
+				g.Resources = append(g.Resources, resource)
 			}
-			for _, entry := range entries {
-				if resource, ok := newTransitGatewayMeteringPolicyEntryResource(StringValue(policy.TransitGatewayMeteringPolicyId), entry); ok {
-					g.Resources = append(g.Resources, resource)
+			if loadEntries {
+				entries, err := listTransitGatewayMeteringPolicyEntries(svc, StringValue(policy.TransitGatewayMeteringPolicyId))
+				if err != nil {
+					return err
+				}
+				for _, entry := range entries {
+					if resource, ok := newTransitGatewayMeteringPolicyEntryResource(StringValue(policy.TransitGatewayMeteringPolicyId), entry); ok {
+						g.Resources = append(g.Resources, resource)
+					}
 				}
 			}
 		}
@@ -316,7 +326,10 @@ func (g *TransitGatewayGenerator) getTransitGatewayMeteringPolicies(svc transitG
 	return nil
 }
 
-func (g *TransitGatewayGenerator) getTransitGatewayPolicyTables(svc *ec2.Client) error {
+func (g *TransitGatewayGenerator) getTransitGatewayPolicyTables(svc *ec2.Client, loadTables, loadAssociations bool) error {
+	if !loadTables && !loadAssociations {
+		return nil
+	}
 	p := ec2.NewDescribeTransitGatewayPolicyTablesPaginator(svc, &ec2.DescribeTransitGatewayPolicyTablesInput{})
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
@@ -325,9 +338,13 @@ func (g *TransitGatewayGenerator) getTransitGatewayPolicyTables(svc *ec2.Client)
 		}
 		for _, table := range page.TransitGatewayPolicyTables {
 			if resource, ok := newTransitGatewayPolicyTableResource(table); ok {
-				g.Resources = append(g.Resources, resource)
-				if err := g.getTransitGatewayPolicyTableAssociations(svc, StringValue(table.TransitGatewayPolicyTableId)); err != nil {
-					return err
+				if loadTables {
+					g.Resources = append(g.Resources, resource)
+				}
+				if loadAssociations {
+					if err := g.getTransitGatewayPolicyTableAssociations(svc, StringValue(table.TransitGatewayPolicyTableId)); err != nil {
+						return err
+					}
 				}
 			}
 		}
@@ -356,7 +373,10 @@ func (g *TransitGatewayGenerator) getTransitGatewayPolicyTableAssociations(svc *
 	return nil
 }
 
-func (g *TransitGatewayGenerator) getTransitGatewayRouteTableAddOns(svc *ec2.Client) error {
+func (g *TransitGatewayGenerator) getTransitGatewayRouteTableAddOns(svc *ec2.Client, loadPrefixListReferences, loadRoutes bool) error {
+	if !loadPrefixListReferences && !loadRoutes {
+		return nil
+	}
 	rtPages := ec2.NewDescribeTransitGatewayRouteTablesPaginator(svc, &ec2.DescribeTransitGatewayRouteTablesInput{})
 	for rtPages.HasMorePages() {
 		rtPage, err := rtPages.NextPage(context.TODO())
@@ -368,11 +388,15 @@ func (g *TransitGatewayGenerator) getTransitGatewayRouteTableAddOns(svc *ec2.Cli
 				continue
 			}
 			routeTableID := StringValue(rt.TransitGatewayRouteTableId)
-			if err := g.getTransitGatewayPrefixListReferences(svc, routeTableID); err != nil {
-				return err
+			if loadPrefixListReferences {
+				if err := g.getTransitGatewayPrefixListReferences(svc, routeTableID); err != nil {
+					return err
+				}
 			}
-			if err := g.getTransitGatewayStaticRoutes(svc, routeTableID); err != nil {
-				return err
+			if loadRoutes {
+				if err := g.getTransitGatewayStaticRoutes(svc, routeTableID); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -769,6 +793,10 @@ func listTransitGatewayMeteringPolicyEntries(svc transitGatewayMeteringPolicyAPI
 	}
 }
 
+func (g *TransitGatewayGenerator) shouldLoadTransitGatewayResource(serviceNames ...string) bool {
+	return shouldLoadAWSResourceForTypedFilters(g.Filter, serviceNames...)
+}
+
 // Generate TerraformResources from AWS API
 func (g *TransitGatewayGenerator) InitResources() error {
 	config, e := g.generateConfig()
@@ -778,38 +806,73 @@ func (g *TransitGatewayGenerator) InitResources() error {
 	svc := ec2.NewFromConfig(config)
 	g.Resources = []terraformutils.Resource{}
 
-	if err := g.getTransitGateways(svc); err != nil {
-		return err
+	loadTransitGateways := g.shouldLoadTransitGatewayResource(
+		transitGatewayResourceType,
+		transitGatewayPeeringAttachmentResourceType,
+		transitGatewayPeeringAttachmentAccepterType,
+	)
+	if loadTransitGateways {
+		if err := g.getTransitGateways(svc); err != nil {
+			return err
+		}
 	}
-	if err := g.getTransitGatewayRouteTables(svc); err != nil {
-		return err
+	if g.shouldLoadTransitGatewayResource(transitGatewayRouteTableResourceType) {
+		if err := g.getTransitGatewayRouteTables(svc); err != nil {
+			return err
+		}
 	}
-	if err := g.getTransitGatewayVpcAttachments(svc); err != nil {
-		return err
+	if g.shouldLoadTransitGatewayResource(transitGatewayVpcAttachmentResourceType) {
+		if err := g.getTransitGatewayVpcAttachments(svc); err != nil {
+			return err
+		}
 	}
-	if err := g.getTransitGatewayConnects(svc); err != nil {
-		return err
+	if g.shouldLoadTransitGatewayResource(transitGatewayConnectResourceType) {
+		if err := g.getTransitGatewayConnects(svc); err != nil {
+			return err
+		}
 	}
-	if err := g.getTransitGatewayConnectPeers(svc); err != nil {
-		return err
+	if g.shouldLoadTransitGatewayResource(transitGatewayConnectPeerResourceType) {
+		if err := g.getTransitGatewayConnectPeers(svc); err != nil {
+			return err
+		}
 	}
-	if err := g.getTransitGatewayMulticastDomains(svc); err != nil {
-		return err
+	if g.shouldLoadTransitGatewayResource(transitGatewayMulticastDomainResourceType) {
+		if err := g.getTransitGatewayMulticastDomains(svc); err != nil {
+			return err
+		}
 	}
-	if err := g.getTransitGatewayMeteringPolicies(svc); err != nil {
-		return err
+	loadMeteringPolicies := g.shouldLoadTransitGatewayResource(transitGatewayMeteringPolicyResourceType)
+	loadMeteringPolicyEntries := g.shouldLoadTransitGatewayResource(transitGatewayMeteringPolicyEntryResourceType)
+	if loadMeteringPolicies || loadMeteringPolicyEntries {
+		if err := g.getTransitGatewayMeteringPolicies(svc, loadMeteringPolicies, loadMeteringPolicyEntries); err != nil {
+			return err
+		}
 	}
-	if err := g.getTransitGatewayPeeringAttachments(svc); err != nil {
-		return err
+	if g.shouldLoadTransitGatewayResource(transitGatewayPeeringAttachmentResourceType, transitGatewayPeeringAttachmentAccepterType) {
+		if err := g.getTransitGatewayPeeringAttachments(svc); err != nil {
+			return err
+		}
 	}
-	if err := g.getTransitGatewayRouteTableAssociations(svc); err != nil {
-		return err
+	loadRouteTableAssociations := g.shouldLoadTransitGatewayResource(transitGatewayRouteTableAssociationResourceType)
+	loadRouteTablePropagations := g.shouldLoadTransitGatewayResource(transitGatewayRouteTablePropagationResourceType)
+	if loadRouteTableAssociations || loadRouteTablePropagations {
+		if err := g.getTransitGatewayRouteTableAssociations(svc, loadRouteTableAssociations, loadRouteTablePropagations); err != nil {
+			return err
+		}
 	}
-	if err := g.getTransitGatewayPolicyTables(svc); err != nil {
-		return err
+	loadPolicyTables := g.shouldLoadTransitGatewayResource(transitGatewayPolicyTableResourceType)
+	loadPolicyTableAssociations := g.shouldLoadTransitGatewayResource(transitGatewayPolicyTableAssociationType)
+	if loadPolicyTables || loadPolicyTableAssociations {
+		if err := g.getTransitGatewayPolicyTables(svc, loadPolicyTables, loadPolicyTableAssociations); err != nil {
+			return err
+		}
 	}
-	if err := g.getTransitGatewayRouteTableAddOns(svc); err != nil {
-		return err
+	loadPrefixListReferences := g.shouldLoadTransitGatewayResource(transitGatewayPrefixListReferenceResourceType)
+	loadRoutes := g.shouldLoadTransitGatewayResource(transitGatewayRouteResourceType)
+	if loadPrefixListReferences || loadRoutes {
+		if err := g.getTransitGatewayRouteTableAddOns(svc, loadPrefixListReferences, loadRoutes); err != nil {
+			return err
+		}
 	}
 	return nil
 }
