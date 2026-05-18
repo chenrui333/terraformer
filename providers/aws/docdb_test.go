@@ -4,6 +4,7 @@ package aws
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -48,6 +49,24 @@ func TestDocDBStatusPredicates(t *testing.T) {
 	}
 	if docDBEventSubscriptionStatusImportable("modifying") {
 		t.Fatal("modifying event subscription should be skipped")
+	}
+}
+
+func TestDocDBLoadOptionalResourcesContinuesAfterError(t *testing.T) {
+	boom := errors.New("boom")
+	g := &DocDBGenerator{}
+	called := false
+
+	g.loadOptionalResources([]docDBOptionalResourceLoader{
+		{name: "denied", load: func() error { return boom }},
+		{name: "next", load: func() error {
+			called = true
+			return nil
+		}},
+	})
+
+	if !called {
+		t.Fatal("loadOptionalResources() should continue after optional loader error")
 	}
 }
 
