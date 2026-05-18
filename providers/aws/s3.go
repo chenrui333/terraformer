@@ -27,6 +27,8 @@ const (
 	s3BucketIntelligentTieringConfigurationResourceType = "aws_s3_bucket_intelligent_tiering_configuration"
 	s3BucketInventoryResourceType                       = "aws_s3_bucket_inventory"
 	s3BucketMetricResourceType                          = "aws_s3_bucket_metric"
+	s3BucketACLIDSeparator                              = ","
+	s3BucketCannedACLLogDeliveryWrite                   = "log-delivery-write"
 	s3BucketNamedConfigurationIDSeparator               = ":"
 )
 
@@ -209,7 +211,7 @@ func (g *S3Generator) addBucketACLResource(svc *s3.Client, resources *[]terrafor
 		return
 	}
 	if s3BucketACLImportable(output) {
-		addS3BucketConfigurationResource(resources, bucketName, s3BucketACLResourceType)
+		addS3BucketACLResource(resources, bucketName, s3BucketCannedACL(output))
 	}
 }
 
@@ -311,6 +313,29 @@ func addS3BucketConfigurationResource(resources *[]terraformutils.Resource, buck
 	))
 }
 
+func addS3BucketACLResource(resources *[]terraformutils.Resource, bucketName, acl string) {
+	if bucketName == "" {
+		return
+	}
+	importID := bucketName
+	attributes := map[string]string{
+		"bucket": bucketName,
+	}
+	if acl != "" {
+		importID = strings.Join([]string{bucketName, acl}, s3BucketACLIDSeparator)
+		attributes["acl"] = acl
+	}
+	*resources = append(*resources, terraformutils.NewResource(
+		importID,
+		bucketName,
+		s3BucketACLResourceType,
+		"aws",
+		attributes,
+		S3AllowEmptyValues,
+		S3AdditionalFields,
+	))
+}
+
 func addS3BucketNamedConfigurationResource(resources *[]terraformutils.Resource, bucketName, configurationName, resourceType string) {
 	if bucketName == "" || configurationName == "" {
 		return
@@ -345,8 +370,105 @@ func s3BucketACLImportable(output *s3.GetBucketAclOutput) bool {
 	return output != nil && !s3BucketACLIsDefaultPrivate(output)
 }
 
+func s3BucketCannedACL(output *s3.GetBucketAclOutput) string {
+	if output == nil || output.Owner == nil {
+		return ""
+	}
+	ownerID := StringValue(output.Owner.ID)
+	if ownerID == "" {
+		return ""
+	}
+	ownerFullControl := s3BucketACLGrantMatcher{
+		granteeType: types.TypeCanonicalUser,
+		id:          ownerID,
+		permission:  types.PermissionFullControl,
+	}
+	allUsersRead := s3BucketACLGrantMatcher{
+		granteeType: types.TypeGroup,
+		uriSuffix:   "/groups/global/AllUsers",
+		permission:  types.PermissionRead,
+	}
+	allUsersWrite := s3BucketACLGrantMatcher{
+		granteeType: types.TypeGroup,
+		uriSuffix:   "/groups/global/AllUsers",
+		permission:  types.PermissionWrite,
+	}
+	authenticatedUsersRead := s3BucketACLGrantMatcher{
+		granteeType: types.TypeGroup,
+		uriSuffix:   "/groups/global/AuthenticatedUsers",
+		permission:  types.PermissionRead,
+	}
+	logDeliveryWrite := s3BucketACLGrantMatcher{
+		granteeType: types.TypeGroup,
+		uriSuffix:   "/groups/s3/LogDelivery",
+		permission:  types.PermissionWrite,
+	}
+	logDeliveryReadACP := s3BucketACLGrantMatcher{
+		granteeType: types.TypeGroup,
+		uriSuffix:   "/groups/s3/LogDelivery",
+		permission:  types.PermissionReadAcp,
+	}
+	switch {
+	case s3BucketACLHasOnlyGrants(output, ownerFullControl, allUsersRead):
+		return string(types.BucketCannedACLPublicRead)
+	case s3BucketACLHasOnlyGrants(output, ownerFullControl, allUsersRead, allUsersWrite):
+		return string(types.BucketCannedACLPublicReadWrite)
+	case s3BucketACLHasOnlyGrants(output, ownerFullControl, authenticatedUsersRead):
+		return string(types.BucketCannedACLAuthenticatedRead)
+	case s3BucketACLHasOnlyGrants(output, ownerFullControl, logDeliveryWrite, logDeliveryReadACP):
+		return s3BucketCannedACLLogDeliveryWrite
+	default:
+		return ""
+	}
+}
+
+type s3BucketACLGrantMatcher struct {
+	granteeType types.Type
+	id          string
+	uriSuffix   string
+	permission  types.Permission
+}
+
+func s3BucketACLHasOnlyGrants(output *s3.GetBucketAclOutput, matchers ...s3BucketACLGrantMatcher) bool {
+	if output == nil || len(output.Grants) != len(matchers) {
+		return false
+	}
+	matched := make([]bool, len(output.Grants))
+	for _, matcher := range matchers {
+		matcherFound := false
+		for i, grant := range output.Grants {
+			if matched[i] || !matcher.matches(grant) {
+				continue
+			}
+			matched[i] = true
+			matcherFound = true
+			break
+		}
+		if !matcherFound {
+			return false
+		}
+	}
+	return true
+}
+
+func (m s3BucketACLGrantMatcher) matches(grant types.Grant) bool {
+	if grant.Grantee == nil || grant.Permission != m.permission || grant.Grantee.Type != m.granteeType {
+		return false
+	}
+	if m.id != "" && StringValue(grant.Grantee.ID) != m.id {
+		return false
+	}
+	if m.uriSuffix != "" && !strings.HasSuffix(StringValue(grant.Grantee.URI), m.uriSuffix) {
+		return false
+	}
+	return true
+}
+
 func s3BucketACLIsDefaultPrivate(output *s3.GetBucketAclOutput) bool {
 	if output == nil || len(output.Grants) != 1 {
+		return false
+	}
+	if output.Owner == nil {
 		return false
 	}
 	ownerID := StringValue(output.Owner.ID)

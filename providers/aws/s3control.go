@@ -57,13 +57,13 @@ func (g *S3ControlGenerator) InitResources() error {
 	svc := s3control.NewFromConfig(config)
 	g.addAccountPublicAccessBlock(svc, *accountID)
 	if err := g.loadAccessGrants(svc, *accountID); err != nil {
-		return err
+		log.Printf("skipping S3 Control Access Grants discovery for %s: %v", *accountID, err)
 	}
 	if err := g.loadMultiRegionAccessPoints(svc, *accountID); err != nil {
-		return err
+		log.Printf("skipping S3 Control Multi-Region Access Point discovery for %s: %v", *accountID, err)
 	}
 	if err := g.loadStorageLensConfigurations(svc, *accountID); err != nil {
-		return err
+		log.Printf("skipping S3 Control Storage Lens discovery for %s: %v", *accountID, err)
 	}
 	if err := g.loadAccessPoints(svc, *accountID); err != nil {
 		return err

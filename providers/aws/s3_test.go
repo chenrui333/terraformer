@@ -60,6 +60,38 @@ func TestAddS3BucketNamedConfigurationResource(t *testing.T) {
 	}
 }
 
+func TestAddS3BucketACLResource(t *testing.T) {
+	var resources []terraformutils.Resource
+	addS3BucketACLResource(&resources, "example-bucket", string(types.BucketCannedACLPublicRead))
+	addS3BucketACLResource(&resources, "custom-bucket", "")
+	addS3BucketACLResource(&resources, "", string(types.BucketCannedACLPublicRead))
+
+	if len(resources) != 2 {
+		t.Fatalf("len(resources) = %d, want 2", len(resources))
+	}
+	cannedACL := resources[0]
+	if cannedACL.InstanceState.ID != "example-bucket,public-read" {
+		t.Fatalf("canned ACL InstanceState.ID = %q, want %q", cannedACL.InstanceState.ID, "example-bucket,public-read")
+	}
+	if cannedACL.InstanceInfo.Type != s3BucketACLResourceType {
+		t.Fatalf("canned ACL InstanceInfo.Type = %q, want %q", cannedACL.InstanceInfo.Type, s3BucketACLResourceType)
+	}
+	if cannedACL.InstanceState.Attributes["bucket"] != "example-bucket" {
+		t.Fatalf("bucket attribute = %q, want example-bucket", cannedACL.InstanceState.Attributes["bucket"])
+	}
+	if cannedACL.InstanceState.Attributes["acl"] != "public-read" {
+		t.Fatalf("acl attribute = %q, want public-read", cannedACL.InstanceState.Attributes["acl"])
+	}
+
+	customACL := resources[1]
+	if customACL.InstanceState.ID != "custom-bucket" {
+		t.Fatalf("custom ACL InstanceState.ID = %q, want custom-bucket", customACL.InstanceState.ID)
+	}
+	if _, ok := customACL.InstanceState.Attributes["acl"]; ok {
+		t.Fatalf("custom ACL resource unexpectedly set canned acl attribute: %#v", customACL.InstanceState.Attributes)
+	}
+}
+
 func TestS3BucketMetricConfigurationsPaginate(t *testing.T) {
 	requests := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -142,6 +174,73 @@ func TestS3BucketACLImportable(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := s3BucketACLImportable(tt.output); got != tt.want {
 				t.Fatalf("s3BucketACLImportable() = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestS3BucketCannedACL(t *testing.T) {
+	ownerID := "owner-canonical-id"
+	tests := []struct {
+		name   string
+		grants []types.Grant
+		want   string
+	}{
+		{
+			name: "public read",
+			grants: []types.Grant{
+				s3OwnerGrant(ownerID),
+				s3GroupGrant("/groups/global/AllUsers", types.PermissionRead),
+			},
+			want: string(types.BucketCannedACLPublicRead),
+		},
+		{
+			name: "public read write",
+			grants: []types.Grant{
+				s3GroupGrant("/groups/global/AllUsers", types.PermissionWrite),
+				s3OwnerGrant(ownerID),
+				s3GroupGrant("/groups/global/AllUsers", types.PermissionRead),
+			},
+			want: string(types.BucketCannedACLPublicReadWrite),
+		},
+		{
+			name: "authenticated read",
+			grants: []types.Grant{
+				s3OwnerGrant(ownerID),
+				s3GroupGrant("/groups/global/AuthenticatedUsers", types.PermissionRead),
+			},
+			want: string(types.BucketCannedACLAuthenticatedRead),
+		},
+		{
+			name: "log delivery write",
+			grants: []types.Grant{
+				s3OwnerGrant(ownerID),
+				s3GroupGrant("/groups/s3/LogDelivery", types.PermissionWrite),
+				s3GroupGrant("/groups/s3/LogDelivery", types.PermissionReadAcp),
+			},
+			want: s3BucketCannedACLLogDeliveryWrite,
+		},
+		{
+			name: "custom grant",
+			grants: []types.Grant{
+				s3OwnerGrant(ownerID),
+				{
+					Grantee:    &types.Grantee{ID: aws.String("other-canonical-id"), Type: types.TypeCanonicalUser},
+					Permission: types.PermissionRead,
+				},
+			},
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			output := &s3.GetBucketAclOutput{
+				Owner:  &types.Owner{ID: aws.String(ownerID)},
+				Grants: tt.grants,
+			}
+			if got := s3BucketCannedACL(output); got != tt.want {
+				t.Fatalf("s3BucketCannedACL() = %q, want %q", got, tt.want)
 			}
 		})
 	}
@@ -410,4 +509,18 @@ func writeS3XML(w http.ResponseWriter, status int, body string) {
 	w.Header().Set("Content-Type", "application/xml")
 	w.WriteHeader(status)
 	_, _ = w.Write([]byte(body))
+}
+
+func s3OwnerGrant(ownerID string) types.Grant {
+	return types.Grant{
+		Grantee:    &types.Grantee{ID: aws.String(ownerID), Type: types.TypeCanonicalUser},
+		Permission: types.PermissionFullControl,
+	}
+}
+
+func s3GroupGrant(uriSuffix string, permission types.Permission) types.Grant {
+	return types.Grant{
+		Grantee:    &types.Grantee{Type: types.TypeGroup, URI: aws.String("http://acs.amazonaws.com" + uriSuffix)},
+		Permission: permission,
+	}
 }
