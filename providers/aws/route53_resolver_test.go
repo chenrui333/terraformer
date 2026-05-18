@@ -391,21 +391,21 @@ type fakeRoute53ResolverConfigListClient struct {
 	firewallConfigInputs []*route53resolver.ListFirewallConfigsInput
 }
 
-func (c *fakeRoute53ResolverConfigListClient) ListResolverConfigs(_ context.Context, input *route53resolver.ListResolverConfigsInput, optFns ...func(*route53resolver.Options)) (*route53resolver.ListResolverConfigsOutput, error) {
+func (c *fakeRoute53ResolverConfigListClient) ListResolverConfigs(_ context.Context, input *route53resolver.ListResolverConfigsInput, _ ...func(*route53resolver.Options)) (*route53resolver.ListResolverConfigsOutput, error) {
 	c.resolverConfigInputs = append(c.resolverConfigInputs, input)
 	page := c.resolverConfigPages[0]
 	c.resolverConfigPages = c.resolverConfigPages[1:]
 	return page, nil
 }
 
-func (c *fakeRoute53ResolverConfigListClient) ListResolverDnssecConfigs(_ context.Context, input *route53resolver.ListResolverDnssecConfigsInput, optFns ...func(*route53resolver.Options)) (*route53resolver.ListResolverDnssecConfigsOutput, error) {
+func (c *fakeRoute53ResolverConfigListClient) ListResolverDnssecConfigs(_ context.Context, input *route53resolver.ListResolverDnssecConfigsInput, _ ...func(*route53resolver.Options)) (*route53resolver.ListResolverDnssecConfigsOutput, error) {
 	c.dnssecConfigInputs = append(c.dnssecConfigInputs, input)
 	page := c.dnssecConfigPages[0]
 	c.dnssecConfigPages = c.dnssecConfigPages[1:]
 	return page, nil
 }
 
-func (c *fakeRoute53ResolverConfigListClient) ListFirewallConfigs(_ context.Context, input *route53resolver.ListFirewallConfigsInput, optFns ...func(*route53resolver.Options)) (*route53resolver.ListFirewallConfigsOutput, error) {
+func (c *fakeRoute53ResolverConfigListClient) ListFirewallConfigs(_ context.Context, input *route53resolver.ListFirewallConfigsInput, _ ...func(*route53resolver.Options)) (*route53resolver.ListFirewallConfigsOutput, error) {
 	c.firewallConfigInputs = append(c.firewallConfigInputs, input)
 	page := c.firewallConfigPages[0]
 	c.firewallConfigPages = c.firewallConfigPages[1:]

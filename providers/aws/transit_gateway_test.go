@@ -410,14 +410,14 @@ type fakeTransitGatewayMeteringPolicyClient struct {
 	entryCalls         int
 }
 
-func (c *fakeTransitGatewayMeteringPolicyClient) DescribeTransitGatewayMeteringPolicies(_ context.Context, input *ec2.DescribeTransitGatewayMeteringPoliciesInput, optFns ...func(*ec2.Options)) (*ec2.DescribeTransitGatewayMeteringPoliciesOutput, error) {
+func (c *fakeTransitGatewayMeteringPolicyClient) DescribeTransitGatewayMeteringPolicies(_ context.Context, input *ec2.DescribeTransitGatewayMeteringPoliciesInput, _ ...func(*ec2.Options)) (*ec2.DescribeTransitGatewayMeteringPoliciesOutput, error) {
 	c.policyInputs = append(c.policyInputs, input)
 	page := c.policyPages[c.policyCalls]
 	c.policyCalls++
 	return page, nil
 }
 
-func (c *fakeTransitGatewayMeteringPolicyClient) GetTransitGatewayMeteringPolicyEntries(_ context.Context, input *ec2.GetTransitGatewayMeteringPolicyEntriesInput, optFns ...func(*ec2.Options)) (*ec2.GetTransitGatewayMeteringPolicyEntriesOutput, error) {
+func (c *fakeTransitGatewayMeteringPolicyClient) GetTransitGatewayMeteringPolicyEntries(_ context.Context, input *ec2.GetTransitGatewayMeteringPolicyEntriesInput, _ ...func(*ec2.Options)) (*ec2.GetTransitGatewayMeteringPolicyEntriesOutput, error) {
 	c.entryInputs = append(c.entryInputs, input)
 	policyID := StringValue(input.TransitGatewayMeteringPolicyId)
 	pages := c.entryPagesByPolicy[policyID]
