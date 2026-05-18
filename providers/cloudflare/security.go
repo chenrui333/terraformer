@@ -602,27 +602,6 @@ func (g *SecurityGenerator) appendEmailSecurityImpersonationRegistryResources(ct
 	return nil
 }
 
-func (g *SecurityGenerator) appendEmailSecurityTrustedDomainResources(ctx context.Context, api *cf.API, accountID string) error {
-	domains, err := listCloudflareSecurityResources(ctx, api, fmt.Sprintf("/accounts/%s/email-security/settings/trusted_domains", accountID))
-	if err != nil {
-		return err
-	}
-	for _, domain := range domains {
-		id := cloudflareSecurityIDString(domain, "id")
-		resource, ok := cloudflareAccountSecurityResource(
-			accountID,
-			id,
-			"cloudflare_email_security_trusted_domains",
-			"email_security_trusted_domain",
-			cloudflareSecurityString(domain, "pattern"),
-		)
-		if ok {
-			g.Resources = append(g.Resources, resource)
-		}
-	}
-	return nil
-}
-
 func (g *SecurityGenerator) appendZoneSecurityResources(ctx context.Context, api *cf.API, zone cf.Zone) error {
 	return runCloudflareSecurityDiscoveries([]cloudflareSecurityDiscovery{
 		{
@@ -747,13 +726,6 @@ func (g *SecurityGenerator) appendAccountSecurityResources(ctx context.Context, 
 			scope: accountID,
 			discover: func() error {
 				return g.appendEmailSecurityImpersonationRegistryResources(ctx, api, accountID)
-			},
-		},
-		{
-			name:  "Email Security trusted domains",
-			scope: accountID,
-			discover: func() error {
-				return g.appendEmailSecurityTrustedDomainResources(ctx, api, accountID)
 			},
 		},
 	})

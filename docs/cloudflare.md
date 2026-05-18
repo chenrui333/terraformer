@@ -99,7 +99,6 @@ List of supported Cloudflare services:
   * `cloudflare_custom_pages`
   * `cloudflare_email_security_block_sender`
   * `cloudflare_email_security_impersonation_registry`
-  * `cloudflare_email_security_trusted_domains`
   * `cloudflare_leaked_credential_check_rule`
   * `cloudflare_page_shield_policy`
   * `cloudflare_schema_validation_schemas`

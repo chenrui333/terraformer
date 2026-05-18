@@ -399,9 +399,6 @@ func TestAppendSecurityEmailResources(t *testing.T) {
 		"/accounts/account-123/email-security/settings/impersonation_registry": []map[string]interface{}{
 			{"id": 202.0, "name": "Finance", "email": "finance@example.com"},
 		},
-		"/accounts/account-123/email-security/settings/trusted_domains": []map[string]interface{}{
-			{"id": 303.0, "pattern": "partner.example.com"},
-		},
 	}
 	api := newCloudflareSecurityTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		result, ok := responses[r.URL.Path]
@@ -415,7 +412,6 @@ func TestAppendSecurityEmailResources(t *testing.T) {
 	for _, appendResources := range []func(context.Context, *cf.API, string) error{
 		g.appendEmailSecurityBlockSenderResources,
 		g.appendEmailSecurityImpersonationRegistryResources,
-		g.appendEmailSecurityTrustedDomainResources,
 	} {
 		if err := appendResources(context.Background(), api, "account-123"); err != nil {
 			t.Fatalf("appendResources() error = %v", err)
@@ -429,7 +425,6 @@ func TestAppendSecurityEmailResources(t *testing.T) {
 	want := map[string]string{
 		"cloudflare_email_security_block_sender":           "account-123/101",
 		"cloudflare_email_security_impersonation_registry": "account-123/202",
-		"cloudflare_email_security_trusted_domains":        "account-123/303",
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("resources = %#v, want %#v", got, want)
@@ -537,6 +532,7 @@ func TestCloudflareSecurityUnsupportedMetadataCoversDeferredResources(t *testing
 		"cloudflare_bot_management",
 		"cloudflare_content_scanning",
 		"cloudflare_content_scanning_expression",
+		"cloudflare_email_security_trusted_domains",
 		"cloudflare_observatory_scheduled_test",
 		"cloudflare_schema_validation_operation_settings",
 		"cloudflare_schema_validation_settings",
@@ -592,7 +588,6 @@ func ExampleSecurityGenerator_resources() {
 		"cloudflare_custom_pages",
 		"cloudflare_email_security_block_sender",
 		"cloudflare_email_security_impersonation_registry",
-		"cloudflare_email_security_trusted_domains",
 		"cloudflare_leaked_credential_check_rule",
 		"cloudflare_page_shield_policy",
 		"cloudflare_schema_validation_schemas",
@@ -603,5 +598,5 @@ func ExampleSecurityGenerator_resources() {
 		"cloudflare_vulnerability_scanner_target_environment",
 	}
 	fmt.Println(strings.Join(resources, ", "))
-	// Output: cloudflare_api_shield, cloudflare_api_shield_operation, cloudflare_cloud_connector_rules, cloudflare_custom_page_asset, cloudflare_custom_pages, cloudflare_email_security_block_sender, cloudflare_email_security_impersonation_registry, cloudflare_email_security_trusted_domains, cloudflare_leaked_credential_check_rule, cloudflare_page_shield_policy, cloudflare_schema_validation_schemas, cloudflare_token_validation_config, cloudflare_token_validation_rules, cloudflare_user_agent_blocking_rule, cloudflare_vulnerability_scanner_credential_set, cloudflare_vulnerability_scanner_target_environment
+	// Output: cloudflare_api_shield, cloudflare_api_shield_operation, cloudflare_cloud_connector_rules, cloudflare_custom_page_asset, cloudflare_custom_pages, cloudflare_email_security_block_sender, cloudflare_email_security_impersonation_registry, cloudflare_leaked_credential_check_rule, cloudflare_page_shield_policy, cloudflare_schema_validation_schemas, cloudflare_token_validation_config, cloudflare_token_validation_rules, cloudflare_user_agent_blocking_rule, cloudflare_vulnerability_scanner_credential_set, cloudflare_vulnerability_scanner_target_environment
 }

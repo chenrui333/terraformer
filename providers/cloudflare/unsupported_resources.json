@@ -302,6 +302,17 @@
       ]
     },
     {
+      "resource": "cloudflare_email_security_trusted_domains",
+      "service_family": "email_security",
+      "reason": "Email Security trusted domains are deferred until provider import/read preserves the trusted-domain configuration fields.",
+      "evidence": "Terraform provider v5.19.1 imports cloudflare_email_security_trusted_domains by account_id/trusted_domain_id, but the generated model stores the domain definition under a body field marked no_refresh while pattern, is_recent, is_regex, and is_similarity are not repopulated by the importer/read path. Terraformer cannot safely emit recreateable HCL for discovered trusted domains until provider refresh preserves those fields.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/email_security_trusted_domains"
+      ]
+    },
+    {
       "resource": "cloudflare_hyperdrive_config",
       "service_family": "storage",
       "reason": "Hyperdrive configs require write-only origin credential material.",
