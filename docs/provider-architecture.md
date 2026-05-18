@@ -63,6 +63,40 @@ permission-sensitive reads when the API supports scoped reads. Filters should
 select or narrow the discovered resources; they should not rewrite global IDs or
 normalize provider-facing import IDs destructively.
 
+When a service key covers multiple Terraform resource types, keep discovery and
+filter decisions aligned with both naming layers:
+
+- Normalize typed filters between Terraformer service keys and Terraform
+  resource names before deciding which loaders to run.
+- Treat typed filters for other service families as unrelated to the current
+  service; they should not disable this service's normal discovery path after
+  service-local filter cleanup.
+- Gate child, add-on, and association discovery behind matching parent or
+  resource filters and known parent scope so filtered imports do not call
+  unrelated APIs or emit helper resources.
+- Route global, account-scoped, and effectively regional-once resources through
+  one control-plane scope and de-duplicate output across requested regions.
+- Keep gap inventory tooling aligned with service aliases or override mappings
+  when new service families group resources under non-obvious names.
+- Provider docs for multi-resource service-family generators should list the
+  emitted Terraform resource types, grouped discovery buckets, and any aliases
+  or override mappings used to connect service keys to those groups.
+
+For resources that cross accounts, regions, or ownership roles, model ownership
+separately from visibility:
+
+- Do not infer accepter, handshake, proposal, or action-resource ownership from
+  discovered accepted relationships.
+- Distinguish owner-side and accepter-side resources, and skip or defer cases
+  where proposal IDs, acceptance context, or owner identity cannot be
+  reconstructed.
+- Preserve ARNs, canonical state IDs, or other globally unique identities when
+  the Terraform provider importer or read path requires them.
+- When a supported import intentionally omits authored fields that the provider
+  importer or read path cannot recover, document the omitted fields and the
+  operator follow-up needed to restore them. Skip or defer the resource when
+  those values are required for refreshable, valid HCL.
+
 ## Importability decision model
 
 - Full-list import: use when safe list and read APIs exist and Terraformer can
