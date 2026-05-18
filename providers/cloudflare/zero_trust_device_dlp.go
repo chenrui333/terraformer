@@ -153,7 +153,7 @@ func zeroTrustDeviceDLPPagedResources(result json.RawMessage) ([]zeroTrustDevice
 		for _, item := range items {
 			itemResources, ok := zeroTrustDeviceDLPResourcesFromObject(item, "rules", "dex_tests", "tests")
 			if !ok {
-				continue
+				return nil, fmt.Errorf("unsupported Zero Trust device/DLP list response shape")
 			}
 			resources = append(resources, itemResources...)
 		}

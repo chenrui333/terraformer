@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	cf "github.com/cloudflare/cloudflare-go"
@@ -185,6 +186,16 @@ func TestListZeroTrustDeviceDLPResourcesHandlesV4DEXRulePages(t *testing.T) {
 	}
 	if got := zeroTrustDeviceDLPString(resources[1], "id"); got != "dex-rule-2" {
 		t.Fatalf("second id = %q, want dex-rule-2", got)
+	}
+}
+
+func TestZeroTrustDeviceDLPPagedResourcesRejectsUnknownV4Items(t *testing.T) {
+	_, err := zeroTrustDeviceDLPPagedResources(json.RawMessage(`{"items":[{"unexpected":[]}]}`))
+	if err == nil {
+		t.Fatal("zeroTrustDeviceDLPPagedResources() error = nil, want unsupported shape error")
+	}
+	if !strings.Contains(err.Error(), "unsupported Zero Trust device/DLP list response shape") {
+		t.Fatalf("error = %q, want unsupported shape", err)
 	}
 }
 
