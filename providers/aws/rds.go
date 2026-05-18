@@ -356,7 +356,7 @@ func (g *RDSGenerator) addDBInstanceRoleAssociations(instanceID string, roles []
 }
 
 func newRDSClusterInstanceResource(instanceID, clusterID string) terraformutils.Resource {
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		instanceID,
 		rdsCompositeResourceName(clusterID, instanceID),
 		"aws_rds_cluster_instance",
@@ -368,6 +368,8 @@ func newRDSClusterInstanceResource(instanceID, clusterID string) terraformutils.
 		RDSAllowEmptyValues,
 		map[string]interface{}{},
 	)
+	resource.IgnoreKeys = append(resource.IgnoreKeys, "^identifier_prefix$")
+	return resource
 }
 
 func (g *RDSGenerator) addRDSClusterRoleAssociations(clusterID string, roles []rdstypes.DBClusterRole) {

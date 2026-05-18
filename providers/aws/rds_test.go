@@ -77,6 +77,9 @@ func TestRDSClusterInstanceResource(t *testing.T) {
 	if got, want := resource.InstanceState.Attributes["identifier"], "db-1"; got != want {
 		t.Fatalf("identifier = %q, want %q", got, want)
 	}
+	if !computeDBTestStringSliceContains(resource.IgnoreKeys, "^identifier_prefix$") {
+		t.Fatalf("cluster instance IgnoreKeys = %v, want ^identifier_prefix$", resource.IgnoreKeys)
+	}
 }
 
 func TestRDSAddClusterRoleAssociations(t *testing.T) {

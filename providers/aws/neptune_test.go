@@ -29,6 +29,9 @@ func TestNewNeptuneClusterResource(t *testing.T) {
 	if got, want := resource.InstanceState.Attributes["cluster_identifier"], "graph-prod"; got != want {
 		t.Fatalf("cluster_identifier = %q, want %q", got, want)
 	}
+	if !computeDBTestStringSliceContains(resource.IgnoreKeys, "^cluster_identifier_prefix$") {
+		t.Fatalf("cluster IgnoreKeys = %v, want ^cluster_identifier_prefix$", resource.IgnoreKeys)
+	}
 
 	if _, ok := newNeptuneClusterResource(neptunetypes.DBCluster{
 		DBClusterIdentifier: aws.String("graph-prod"),
@@ -55,6 +58,9 @@ func TestNewNeptuneClusterInstanceResource(t *testing.T) {
 	}
 	if got, want := resource.InstanceState.Attributes["cluster_identifier"], "graph-prod"; got != want {
 		t.Fatalf("cluster_identifier = %q, want %q", got, want)
+	}
+	if !computeDBTestStringSliceContains(resource.IgnoreKeys, "^identifier_prefix$") {
+		t.Fatalf("cluster instance IgnoreKeys = %v, want ^identifier_prefix$", resource.IgnoreKeys)
 	}
 
 	if _, ok := newNeptuneClusterInstanceResource(neptunetypes.DBInstance{
@@ -117,6 +123,9 @@ func TestNewNeptuneParameterGroupResources(t *testing.T) {
 	if got, want := clusterGroup.InstanceState.Attributes["family"], "neptune1.3"; got != want {
 		t.Fatalf("cluster parameter group family = %q, want %q", got, want)
 	}
+	if !computeDBTestStringSliceContains(clusterGroup.IgnoreKeys, "^name_prefix$") {
+		t.Fatalf("cluster parameter group IgnoreKeys = %v, want ^name_prefix$", clusterGroup.IgnoreKeys)
+	}
 
 	parameterGroup, ok := newNeptuneParameterGroupResource(neptunetypes.DBParameterGroup{
 		DBParameterGroupFamily: aws.String("neptune1.3"),
@@ -127,6 +136,9 @@ func TestNewNeptuneParameterGroupResources(t *testing.T) {
 	}
 	if got, want := parameterGroup.InstanceInfo.Type, neptuneParameterGroupResourceType; got != want {
 		t.Fatalf("parameter group resource type = %q, want %q", got, want)
+	}
+	if !computeDBTestStringSliceContains(parameterGroup.IgnoreKeys, "^name_prefix$") {
+		t.Fatalf("parameter group IgnoreKeys = %v, want ^name_prefix$", parameterGroup.IgnoreKeys)
 	}
 
 	if _, ok := newNeptuneClusterParameterGroupResource(neptunetypes.DBClusterParameterGroup{
@@ -152,6 +164,9 @@ func TestNewNeptuneSubnetAndEventResources(t *testing.T) {
 	if got, want := subnetGroup.InstanceInfo.Type, neptuneSubnetGroupResourceType; got != want {
 		t.Fatalf("subnet group resource type = %q, want %q", got, want)
 	}
+	if !computeDBTestStringSliceContains(subnetGroup.IgnoreKeys, "^name_prefix$") {
+		t.Fatalf("subnet group IgnoreKeys = %v, want ^name_prefix$", subnetGroup.IgnoreKeys)
+	}
 	if _, ok := newNeptuneSubnetGroupResource(neptunetypes.DBSubnetGroup{DBSubnetGroupName: aws.String("default")}); ok {
 		t.Fatal("default subnet group should be skipped")
 	}
@@ -165,6 +180,9 @@ func TestNewNeptuneSubnetAndEventResources(t *testing.T) {
 	}
 	if got, want := events.InstanceInfo.Type, neptuneEventSubscriptionResourceType; got != want {
 		t.Fatalf("event subscription resource type = %q, want %q", got, want)
+	}
+	if !computeDBTestStringSliceContains(events.IgnoreKeys, "^name_prefix$") {
+		t.Fatalf("event subscription IgnoreKeys = %v, want ^name_prefix$", events.IgnoreKeys)
 	}
 	if _, ok := newNeptuneEventSubscriptionResource(neptunetypes.EventSubscription{
 		CustSubscriptionId: aws.String("graph-events"),

@@ -159,13 +159,15 @@ func newDocDBEventSubscriptionResource(subscription docdbtypes.EventSubscription
 	if name == "" || !docDBEventSubscriptionStatusImportable(StringValue(subscription.Status)) {
 		return terraformutils.Resource{}, false
 	}
-	return terraformutils.NewSimpleResource(
+	resource := terraformutils.NewSimpleResource(
 		name,
 		docDBResourceName("event_subscription", name),
 		"aws_docdb_event_subscription",
 		"aws",
 		docDBAllowEmptyValues,
-	), true
+	)
+	resource.IgnoreKeys = append(resource.IgnoreKeys, "^name_prefix$")
+	return resource, true
 }
 
 func docDBEventSubscriptionStatusImportable(status string) bool {

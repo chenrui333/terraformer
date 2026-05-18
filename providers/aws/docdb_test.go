@@ -29,6 +29,9 @@ func TestNewDocDBEventSubscriptionResource(t *testing.T) {
 	if got, want := resource.ResourceName, "tfer--event_subscription_events-prod"; got != want {
 		t.Fatalf("resource name = %q, want %q", got, want)
 	}
+	if !computeDBTestStringSliceContains(resource.IgnoreKeys, "^name_prefix$") {
+		t.Fatalf("event subscription IgnoreKeys = %v, want ^name_prefix$", resource.IgnoreKeys)
+	}
 
 	if _, ok := newDocDBEventSubscriptionResource(docdbtypes.EventSubscription{
 		CustSubscriptionId: aws.String("events-prod"),

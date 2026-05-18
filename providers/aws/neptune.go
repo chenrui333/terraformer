@@ -178,7 +178,7 @@ func newNeptuneClusterResource(cluster neptunetypes.DBCluster) (terraformutils.R
 	if clusterID == "" || !neptuneRuntimeStatusImportable(StringValue(cluster.Status)) {
 		return terraformutils.Resource{}, false
 	}
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		clusterID,
 		neptuneResourceName("cluster", clusterID),
 		neptuneClusterResourceType,
@@ -186,7 +186,9 @@ func newNeptuneClusterResource(cluster neptunetypes.DBCluster) (terraformutils.R
 		map[string]string{"cluster_identifier": clusterID},
 		neptuneAllowEmptyValues,
 		map[string]interface{}{},
-	), true
+	)
+	resource.IgnoreKeys = append(resource.IgnoreKeys, "^cluster_identifier_prefix$")
+	return resource, true
 }
 
 func newNeptuneClusterInstanceResource(instance neptunetypes.DBInstance) (terraformutils.Resource, bool) {
@@ -195,7 +197,7 @@ func newNeptuneClusterInstanceResource(instance neptunetypes.DBInstance) (terraf
 	if instanceID == "" || clusterID == "" || !neptuneRuntimeStatusImportable(StringValue(instance.DBInstanceStatus)) {
 		return terraformutils.Resource{}, false
 	}
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		instanceID,
 		neptuneResourceName("cluster_instance", clusterID, instanceID),
 		neptuneClusterInstanceResourceType,
@@ -206,7 +208,9 @@ func newNeptuneClusterInstanceResource(instance neptunetypes.DBInstance) (terraf
 		},
 		neptuneAllowEmptyValues,
 		map[string]interface{}{},
-	), true
+	)
+	resource.IgnoreKeys = append(resource.IgnoreKeys, "^identifier_prefix$")
+	return resource, true
 }
 
 func newNeptuneClusterEndpointResource(endpoint neptunetypes.DBClusterEndpoint) (terraformutils.Resource, bool) {
@@ -215,7 +219,7 @@ func newNeptuneClusterEndpointResource(endpoint neptunetypes.DBClusterEndpoint) 
 	if clusterID == "" || endpointID == "" || !neptuneCustomClusterEndpoint(endpoint) || !neptuneEndpointStatusImportable(StringValue(endpoint.Status)) {
 		return terraformutils.Resource{}, false
 	}
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		neptuneClusterEndpointImportID(clusterID, endpointID),
 		neptuneResourceName("cluster_endpoint", clusterID, endpointID),
 		neptuneClusterEndpointResourceType,
@@ -226,7 +230,8 @@ func newNeptuneClusterEndpointResource(endpoint neptunetypes.DBClusterEndpoint) 
 		},
 		neptuneAllowEmptyValues,
 		map[string]interface{}{},
-	), true
+	)
+	return resource, true
 }
 
 func newNeptuneClusterParameterGroupResource(parameterGroup neptunetypes.DBClusterParameterGroup) (terraformutils.Resource, bool) {
@@ -235,7 +240,7 @@ func newNeptuneClusterParameterGroupResource(parameterGroup neptunetypes.DBClust
 	if name == "" || family == "" || neptuneDefaultParameterGroup(name) {
 		return terraformutils.Resource{}, false
 	}
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		name,
 		neptuneResourceName("cluster_parameter_group", name),
 		neptuneClusterParameterGroupResourceType,
@@ -246,7 +251,9 @@ func newNeptuneClusterParameterGroupResource(parameterGroup neptunetypes.DBClust
 		},
 		neptuneAllowEmptyValues,
 		map[string]interface{}{},
-	), true
+	)
+	resource.IgnoreKeys = append(resource.IgnoreKeys, "^name_prefix$")
+	return resource, true
 }
 
 func newNeptuneParameterGroupResource(parameterGroup neptunetypes.DBParameterGroup) (terraformutils.Resource, bool) {
@@ -255,7 +262,7 @@ func newNeptuneParameterGroupResource(parameterGroup neptunetypes.DBParameterGro
 	if name == "" || family == "" || neptuneDefaultParameterGroup(name) {
 		return terraformutils.Resource{}, false
 	}
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		name,
 		neptuneResourceName("parameter_group", name),
 		neptuneParameterGroupResourceType,
@@ -266,7 +273,9 @@ func newNeptuneParameterGroupResource(parameterGroup neptunetypes.DBParameterGro
 		},
 		neptuneAllowEmptyValues,
 		map[string]interface{}{},
-	), true
+	)
+	resource.IgnoreKeys = append(resource.IgnoreKeys, "^name_prefix$")
+	return resource, true
 }
 
 func newNeptuneSubnetGroupResource(subnetGroup neptunetypes.DBSubnetGroup) (terraformutils.Resource, bool) {
@@ -274,7 +283,7 @@ func newNeptuneSubnetGroupResource(subnetGroup neptunetypes.DBSubnetGroup) (terr
 	if name == "" || neptuneDefaultSubnetGroup(name) {
 		return terraformutils.Resource{}, false
 	}
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		name,
 		neptuneResourceName("subnet_group", name),
 		neptuneSubnetGroupResourceType,
@@ -282,7 +291,9 @@ func newNeptuneSubnetGroupResource(subnetGroup neptunetypes.DBSubnetGroup) (terr
 		map[string]string{"name": name},
 		neptuneAllowEmptyValues,
 		map[string]interface{}{},
-	), true
+	)
+	resource.IgnoreKeys = append(resource.IgnoreKeys, "^name_prefix$")
+	return resource, true
 }
 
 func newNeptuneEventSubscriptionResource(subscription neptunetypes.EventSubscription) (terraformutils.Resource, bool) {
@@ -290,13 +301,15 @@ func newNeptuneEventSubscriptionResource(subscription neptunetypes.EventSubscrip
 	if name == "" || !neptuneEventSubscriptionStatusImportable(StringValue(subscription.Status)) {
 		return terraformutils.Resource{}, false
 	}
-	return terraformutils.NewSimpleResource(
+	resource := terraformutils.NewSimpleResource(
 		name,
 		neptuneResourceName("event_subscription", name),
 		neptuneEventSubscriptionResourceType,
 		"aws",
 		neptuneAllowEmptyValues,
-	), true
+	)
+	resource.IgnoreKeys = append(resource.IgnoreKeys, "^name_prefix$")
+	return resource, true
 }
 
 func (g *NeptuneGenerator) shouldLoadNeptuneResource(serviceNames ...string) bool {

@@ -129,7 +129,7 @@ func newMemoryDBClusterResource(cluster memorydbtypes.Cluster) (terraformutils.R
 	if nodeType := StringValue(cluster.NodeType); nodeType != "" {
 		attributes["node_type"] = nodeType
 	}
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		name,
 		memoryDBResourceName("cluster", name),
 		memoryDBClusterResourceType,
@@ -137,7 +137,9 @@ func newMemoryDBClusterResource(cluster memorydbtypes.Cluster) (terraformutils.R
 		attributes,
 		memoryDBAllowEmptyValues,
 		map[string]interface{}{},
-	), true
+	)
+	resource.IgnoreKeys = append(resource.IgnoreKeys, "^name_prefix$")
+	return resource, true
 }
 
 func newMemoryDBACLResource(acl memorydbtypes.ACL) (terraformutils.Resource, bool) {
@@ -145,7 +147,7 @@ func newMemoryDBACLResource(acl memorydbtypes.ACL) (terraformutils.Resource, boo
 	if name == "" || memoryDBDefaultACL(name) || !memoryDBACLStatusImportable(StringValue(acl.Status)) {
 		return terraformutils.Resource{}, false
 	}
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		name,
 		memoryDBResourceName("acl", name),
 		memoryDBACLResourceType,
@@ -153,7 +155,9 @@ func newMemoryDBACLResource(acl memorydbtypes.ACL) (terraformutils.Resource, boo
 		map[string]string{"name": name},
 		memoryDBAllowEmptyValues,
 		map[string]interface{}{},
-	), true
+	)
+	resource.IgnoreKeys = append(resource.IgnoreKeys, "^name_prefix$")
+	return resource, true
 }
 
 func newMemoryDBParameterGroupResource(parameterGroup memorydbtypes.ParameterGroup) (terraformutils.Resource, bool) {
@@ -162,7 +166,7 @@ func newMemoryDBParameterGroupResource(parameterGroup memorydbtypes.ParameterGro
 	if name == "" || family == "" || memoryDBDefaultParameterGroup(name) {
 		return terraformutils.Resource{}, false
 	}
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		name,
 		memoryDBResourceName("parameter_group", name),
 		memoryDBParameterGroupResourceType,
@@ -173,7 +177,9 @@ func newMemoryDBParameterGroupResource(parameterGroup memorydbtypes.ParameterGro
 		},
 		memoryDBAllowEmptyValues,
 		map[string]interface{}{},
-	), true
+	)
+	resource.IgnoreKeys = append(resource.IgnoreKeys, "^name_prefix$")
+	return resource, true
 }
 
 func newMemoryDBSubnetGroupResource(subnetGroup memorydbtypes.SubnetGroup) (terraformutils.Resource, bool) {
@@ -181,7 +187,7 @@ func newMemoryDBSubnetGroupResource(subnetGroup memorydbtypes.SubnetGroup) (terr
 	if name == "" || memoryDBDefaultSubnetGroup(name) {
 		return terraformutils.Resource{}, false
 	}
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		name,
 		memoryDBResourceName("subnet_group", name),
 		memoryDBSubnetGroupResourceType,
@@ -189,7 +195,9 @@ func newMemoryDBSubnetGroupResource(subnetGroup memorydbtypes.SubnetGroup) (terr
 		map[string]string{"name": name},
 		memoryDBAllowEmptyValues,
 		map[string]interface{}{},
-	), true
+	)
+	resource.IgnoreKeys = append(resource.IgnoreKeys, "^name_prefix$")
+	return resource, true
 }
 
 func (g *MemoryDBGenerator) shouldLoadMemoryDBResource(serviceNames ...string) bool {

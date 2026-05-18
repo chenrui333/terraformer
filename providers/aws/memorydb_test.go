@@ -34,6 +34,9 @@ func TestNewMemoryDBClusterResource(t *testing.T) {
 	if got, want := resource.InstanceState.Attributes["node_type"], "db.r7g.large"; got != want {
 		t.Fatalf("node_type = %q, want %q", got, want)
 	}
+	if !computeDBTestStringSliceContains(resource.IgnoreKeys, "^name_prefix$") {
+		t.Fatalf("cluster IgnoreKeys = %v, want ^name_prefix$", resource.IgnoreKeys)
+	}
 
 	if _, ok := newMemoryDBClusterResource(memorydbtypes.Cluster{
 		Name:   aws.String("cache-prod"),
@@ -61,6 +64,9 @@ func TestNewMemoryDBACLResource(t *testing.T) {
 	}
 	if got, want := resource.ResourceName, "tfer--acl_app-acl"; got != want {
 		t.Fatalf("resource name = %q, want %q", got, want)
+	}
+	if !computeDBTestStringSliceContains(resource.IgnoreKeys, "^name_prefix$") {
+		t.Fatalf("ACL IgnoreKeys = %v, want ^name_prefix$", resource.IgnoreKeys)
 	}
 
 	if _, ok := newMemoryDBACLResource(memorydbtypes.ACL{
@@ -91,6 +97,9 @@ func TestNewMemoryDBParameterGroupResource(t *testing.T) {
 	if got, want := resource.InstanceState.Attributes["family"], "memorydb_redis7"; got != want {
 		t.Fatalf("family = %q, want %q", got, want)
 	}
+	if !computeDBTestStringSliceContains(resource.IgnoreKeys, "^name_prefix$") {
+		t.Fatalf("parameter group IgnoreKeys = %v, want ^name_prefix$", resource.IgnoreKeys)
+	}
 
 	if _, ok := newMemoryDBParameterGroupResource(memorydbtypes.ParameterGroup{
 		Family: aws.String("memorydb_redis7"),
@@ -117,6 +126,9 @@ func TestNewMemoryDBSubnetGroupResource(t *testing.T) {
 	}
 	if got, want := resource.ResourceName, "tfer--subnet_group_app-subnets"; got != want {
 		t.Fatalf("resource name = %q, want %q", got, want)
+	}
+	if !computeDBTestStringSliceContains(resource.IgnoreKeys, "^name_prefix$") {
+		t.Fatalf("subnet group IgnoreKeys = %v, want ^name_prefix$", resource.IgnoreKeys)
 	}
 
 	if _, ok := newMemoryDBSubnetGroupResource(memorydbtypes.SubnetGroup{
