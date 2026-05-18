@@ -1,0 +1,31 @@
+providers/aws/neptune_test.go
+  s_c86082602448d5::t_01421a990a0c05 26,145,267-277
+providers/aws/rds.go
+  s_c86082602448d5::t_3e32a00adec158 362,390,416,608-622
+providers/aws/unsupported_resources.json
+  s_c86082602448d5::t_cccca727915ced 158-168,464-473
+providers/aws/compute_db_runtime_test.go
+  s_c86082602448d5::t_011b9be43435f7 37,42
+providers/aws/docdb.go
+  s_c86082602448d5::t_728ab714ebec60 39-41
+providers/aws/neptune.go
+  s_c86082602448d5::t_18fcaa60af82ac 7,344-348
+providers/aws/rds_test.go
+  s_c86082602448d5::t_bac58298256729 69,159-169
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "c86bb2e53b8734c11b4815fa8305c788ca23ba43",
+  "prompts": {},
+  "sessions": {
+    "s_c86082602448d5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3920-cd80-7613-a2a4-18b532d6e9d7",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
