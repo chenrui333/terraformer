@@ -13,10 +13,13 @@ terraformer import helm --resources=release
 ```
 
 Helm provider authentication follows the standard Helm and Kubernetes client
-configuration. Terraformer does not write kubeconfig contents or Kubernetes
-credentials into generated configuration; use the current kubeconfig context,
-`HELM_*` environment variables, or provider configuration supported by the
-HashiCorp `helm` provider.
+configuration. Terraformer uses the same current kubeconfig path or `KUBECONFIG`
+setting for discovery and provider refresh, bridging it to the `KUBE_CONFIG_PATH`
+or `KUBE_CONFIG_PATHS` variables consumed by the HashiCorp `helm` provider when
+needed. Terraformer does not write kubeconfig contents or Kubernetes credentials
+into generated configuration; use the current kubeconfig context, `HELM_*`
+environment variables, or provider configuration supported by the HashiCorp
+`helm` provider.
 
 Release discovery uses Helm SDK action APIs and broad imports search all
 namespaces that the current Kubernetes credentials can list. To import a
@@ -55,5 +58,7 @@ not reliably preserve the authored repository URL or OCI source. Terraformer
 also does not export authored `values`, `set`, `set_list`, `set_sensitive`, or
 `set_wo` blocks, rendered manifests, Kubernetes Secret data, Helm repository
 credentials, OCI credentials, kubeconfig contents, or Kubernetes credentials.
+Provider refresh may recover Helm metadata from the live release; Terraformer
+strips value-bearing release metadata before writing generated state.
 If a release requires these values for future applies, add them manually after
 reviewing the original chart and deployment inputs.

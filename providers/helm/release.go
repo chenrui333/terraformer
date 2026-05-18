@@ -5,6 +5,7 @@ package helm
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -21,6 +22,24 @@ const (
 	helmReleaseResourceType = "helm_release"
 	helmProviderName        = "helm"
 )
+
+var helmReleaseUnsafeStateFields = map[string]struct{}{
+	"manifest":            {},
+	"resources":           {},
+	"set":                 {},
+	"set_list":            {},
+	"set_sensitive":       {},
+	"set_wo":              {},
+	"set_wo_revision":     {},
+	"values":              {},
+	"repository_password": {},
+	"repository_username": {},
+}
+
+var helmReleaseUnsafeMetadataFields = map[string]struct{}{
+	"notes":  {},
+	"values": {},
+}
 
 type ReleaseGenerator struct {
 	terraformutils.Service
@@ -154,6 +173,13 @@ func (g *ReleaseGenerator) InitResources() error {
 	return nil
 }
 
+func (g *ReleaseGenerator) PostConvertHook() error {
+	for i := range g.Resources {
+		scrubHelmReleaseUnsafeState(&g.Resources[i])
+	}
+	return nil
+}
+
 func createReleaseResources(releases []*helmrelease.Release) []terraformutils.Resource {
 	resources := make([]terraformutils.Resource, 0, len(releases))
 	for _, release := range releases {
@@ -277,4 +303,108 @@ func isSafeReleaseDescription(description string) bool {
 		}
 	}
 	return true
+}
+
+func scrubHelmReleaseUnsafeState(resource *terraformutils.Resource) {
+	if resource == nil || resource.InstanceInfo == nil || resource.InstanceInfo.Type != helmReleaseResourceType {
+		return
+	}
+	if resource.InstanceState != nil {
+		scrubHelmReleaseUnsafeFlatAttributes(resource.InstanceState.Attributes)
+		scrubHelmReleaseUnsafeTypedAttributes(resource)
+	}
+	scrubHelmReleaseUnsafeItem(resource.Item)
+}
+
+func scrubHelmReleaseUnsafeFlatAttributes(attributes map[string]string) {
+	for key := range attributes {
+		if isHelmReleaseUnsafeFlatAttribute(key) {
+			delete(attributes, key)
+		}
+	}
+}
+
+func scrubHelmReleaseUnsafeTypedAttributes(resource *terraformutils.Resource) {
+	if resource.InstanceState == nil || len(resource.InstanceState.TypedAttributes) == 0 {
+		return
+	}
+
+	var attributes map[string]interface{}
+	if err := json.Unmarshal(resource.InstanceState.TypedAttributes, &attributes); err != nil {
+		resource.InstanceState.TypedAttributes = nil
+		return
+	}
+	if attributes == nil {
+		resource.InstanceState.TypedAttributes = nil
+		return
+	}
+	scrubHelmReleaseUnsafeItem(attributes)
+	rawAttributes, err := json.Marshal(attributes)
+	if err != nil {
+		resource.InstanceState.TypedAttributes = nil
+		return
+	}
+	resource.InstanceState.SetTypedAttributes(rawAttributes)
+}
+
+func scrubHelmReleaseUnsafeItem(item map[string]interface{}) {
+	for key, value := range item {
+		if isHelmReleaseUnsafeStateField(key) {
+			delete(item, key)
+			continue
+		}
+		if key == "metadata" {
+			scrubHelmReleaseUnsafeMetadata(value)
+		}
+	}
+}
+
+func scrubHelmReleaseUnsafeMetadata(value interface{}) {
+	switch value := value.(type) {
+	case []interface{}:
+		for _, element := range value {
+			scrubHelmReleaseUnsafeMetadata(element)
+		}
+	case map[string]interface{}:
+		for key, nestedValue := range value {
+			if isHelmReleaseUnsafeMetadataField(key) {
+				delete(value, key)
+				continue
+			}
+			scrubHelmReleaseUnsafeMetadata(nestedValue)
+		}
+	}
+}
+
+func isHelmReleaseUnsafeFlatAttribute(key string) bool {
+	if isHelmReleaseUnsafeStateFieldPath(key) {
+		return true
+	}
+	parts := strings.Split(key, ".")
+	if len(parts) < 2 || parts[0] != "metadata" {
+		return false
+	}
+	if isHelmReleaseUnsafeMetadataField(parts[1]) {
+		return true
+	}
+	return len(parts) > 2 && isHelmReleaseUnsafeMetadataField(parts[2])
+}
+
+func isHelmReleaseUnsafeStateFieldPath(key string) bool {
+	for field := range helmReleaseUnsafeStateFields {
+		if key == field || strings.HasPrefix(key, field+".") {
+			return true
+		}
+	}
+	return false
+}
+
+func isHelmReleaseUnsafeStateField(key string) bool {
+	_, ok := helmReleaseUnsafeStateFields[key]
+	return ok
+}
+
+func isHelmReleaseUnsafeMetadataField(key string) bool {
+	_, ok := helmReleaseUnsafeMetadataFields[key]
+	return ok
 }

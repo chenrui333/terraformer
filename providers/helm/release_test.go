@@ -3,6 +3,7 @@
 package helm
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"testing"
@@ -259,6 +260,91 @@ func TestReleaseResourceDoesNotExportValuesSecretsOrManifests(t *testing.T) {
 	}
 }
 
+func TestReleasePostConvertHookStripsRefreshedValues(t *testing.T) {
+	resource := terraformutils.NewResource(
+		"apps/payments",
+		"release_apps_payments",
+		helmReleaseResourceType,
+		helmProviderName,
+		map[string]string{
+			"name":                           "payments",
+			"namespace":                      "apps",
+			"metadata.chart":                 "payments-chart",
+			"metadata.values":                "{\"adminPassword\":\"should-not-export\"}",
+			"metadata.notes":                 "token: should-not-export",
+			"metadata.0.values":              "{\"token\":\"should-not-export\"}",
+			"metadata.0.notes":               "password: should-not-export",
+			"values.#":                       "1",
+			"values.0":                       "adminPassword: should-not-export",
+			"set.0.name":                     "adminPassword",
+			"set.0.value":                    "should-not-export",
+			"set_sensitive.0.name":           "token",
+			"set_sensitive.0.value":          "should-not-export",
+			"manifest":                       "{\"kind\":\"Secret\",\"data\":{\"password\":\"should-not-export\"}}",
+			"resources.Secret.apps.payments": "{\"data\":{\"password\":\"should-not-export\"}}",
+		},
+		nil,
+		nil,
+	)
+	resource.Item = map[string]interface{}{
+		"name":      "payments",
+		"namespace": "apps",
+		"metadata": []interface{}{
+			map[string]interface{}{
+				"chart":  "payments-chart",
+				"values": "{\"adminPassword\":\"should-not-export\"}",
+				"notes":  "token: should-not-export",
+			},
+		},
+		"values":   []interface{}{"adminPassword: should-not-export"},
+		"manifest": "secret manifest should-not-export",
+		"resources": map[string]interface{}{
+			"Secret/apps/payments": "should-not-export",
+		},
+	}
+	resource.InstanceState.SetTypedAttributes(json.RawMessage("{\"name\":\"payments\",\"namespace\":\"apps\",\"metadata\":{\"chart\":\"payments-chart\",\"values\":\"{\\\"adminPassword\\\":\\\"should-not-export\\\"}\",\"notes\":\"token: should-not-export\"},\"values\":[\"adminPassword: should-not-export\"],\"set\":[{\"name\":\"adminPassword\",\"value\":\"should-not-export\"}],\"set_sensitive\":[{\"name\":\"token\",\"value\":\"should-not-export\"}],\"manifest\":\"secret manifest should-not-export\",\"resources\":{\"Secret/apps/payments\":\"should-not-export\"}}"))
+	generator := &ReleaseGenerator{
+		Service: terraformutils.Service{
+			Resources: []terraformutils.Resource{resource},
+		},
+	}
+
+	if err := generator.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook() error = %v", err)
+	}
+	updated := generator.Resources[0]
+	for key, value := range updated.InstanceState.Attributes {
+		if isHelmReleaseUnsafeFlatAttribute(key) {
+			t.Fatalf("unsafe flat attribute %q was not removed: %#v", key, updated.InstanceState.Attributes)
+		}
+		if value == "should-not-export" {
+			t.Fatalf("flat attribute %q retained sensitive value", key)
+		}
+	}
+	if updated.InstanceState.Attributes["metadata.chart"] != "payments-chart" {
+		t.Fatalf("metadata.chart = %q, want payments-chart", updated.InstanceState.Attributes["metadata.chart"])
+	}
+
+	assertNoHelmReleaseUnsafeItemFields(t, updated.Item)
+	metadata := updated.Item["metadata"].([]interface{})[0].(map[string]interface{})
+	if metadata["chart"] != "payments-chart" {
+		t.Fatalf("item metadata chart = %v, want payments-chart", metadata["chart"])
+	}
+
+	var typedAttributes map[string]interface{}
+	if err := json.Unmarshal(updated.InstanceState.TypedAttributes, &typedAttributes); err != nil {
+		t.Fatalf("TypedAttributes unmarshal error = %v", err)
+	}
+	assertNoHelmReleaseUnsafeItemFields(t, typedAttributes)
+	typedMetadata := typedAttributes["metadata"].(map[string]interface{})
+	if typedMetadata["chart"] != "payments-chart" {
+		t.Fatalf("typed metadata chart = %v, want payments-chart", typedMetadata["chart"])
+	}
+	if !updated.InstanceState.HasCurrentTypedAttributes() {
+		t.Fatal("PostConvertHook left typed attributes out of sync with flat state")
+	}
+}
+
 func TestReleaseResourceOmitsMissingChartAndRepository(t *testing.T) {
 	release := testRelease("local", "default", 1, helmrelease.StatusDeployed)
 	release.Chart = nil
@@ -341,5 +427,37 @@ func testRelease(name, namespace string, version int, status helmrelease.Status)
 			},
 			Values: map[string]interface{}{},
 		},
+	}
+}
+
+func assertNoHelmReleaseUnsafeItemFields(t *testing.T, item map[string]interface{}) {
+	t.Helper()
+	for key := range helmReleaseUnsafeStateFields {
+		if _, ok := item[key]; ok {
+			t.Fatalf("unsafe item field %q was not removed: %#v", key, item)
+		}
+	}
+	metadataValue, ok := item["metadata"]
+	if !ok {
+		return
+	}
+	metadataItems := []map[string]interface{}{}
+	switch metadata := metadataValue.(type) {
+	case map[string]interface{}:
+		metadataItems = append(metadataItems, metadata)
+	case []interface{}:
+		for _, element := range metadata {
+			metadataItem, ok := element.(map[string]interface{})
+			if ok {
+				metadataItems = append(metadataItems, metadataItem)
+			}
+		}
+	}
+	for _, metadata := range metadataItems {
+		for key := range helmReleaseUnsafeMetadataFields {
+			if _, ok := metadata[key]; ok {
+				t.Fatalf("unsafe metadata field %q was not removed: %#v", key, metadata)
+			}
+		}
 	}
 }
