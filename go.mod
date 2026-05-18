@@ -547,6 +547,7 @@ require (
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tcaplusdb v1.3.17
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc v1.3.83
 	gitlab.com/gitlab-org/api/client-go v1.46.0
+	gitlab.com/gitlab-org/api/client-go/v2 v2.25.0
 	helm.sh/helm/v3 v3.21.0
 	k8s.io/cli-runtime v0.36.0
 	software.sslmate.com/src/go-pkcs12 v0.7.1
