@@ -88,6 +88,25 @@ func cloudflareCertificateNumberString(resource cloudflareCertificateRawResource
 	}
 }
 
+func cloudflareCertificateBool(resource cloudflareCertificateRawResource, key string) (bool, bool) {
+	value, ok := resource[key]
+	if !ok {
+		return false, false
+	}
+	switch v := value.(type) {
+	case bool:
+		return v, true
+	case string:
+		parsed, err := strconv.ParseBool(v)
+		if err != nil {
+			return false, false
+		}
+		return parsed, true
+	default:
+		return false, false
+	}
+}
+
 func cloudflareCertificateDeletedStatus(status string) bool {
 	switch strings.ToLower(status) {
 	case "deleted", "pending_deletion", "deletion_timed_out":
@@ -338,13 +357,18 @@ func cloudflareCertificatePackResource(zone cf.Zone, certificatePack cloudflareC
 		"validation_method":     cloudflareCertificateString(certificatePack, "validation_method"),
 		"validity_days":         validityDays,
 	}
+	additionalFields := map[string]interface{}{}
+	if cloudflareBranding, ok := cloudflareCertificateBool(certificatePack, "cloudflare_branding"); ok && cloudflareBranding {
+		attributes["cloudflare_branding"] = strconv.FormatBool(cloudflareBranding)
+		additionalFields["cloudflare_branding"] = cloudflareBranding
+	}
 	return cloudflareZoneCertificateResource(
 		zone,
 		id,
 		"cloudflare_certificate_pack",
 		"certificate_pack",
 		attributes,
-		map[string]interface{}{},
+		additionalFields,
 		cloudflareCertificateString(certificatePack, "status"),
 	)
 }

@@ -43,6 +43,28 @@ func TestCloudflareZoneCertificateResourceUsesCompositeImportID(t *testing.T) {
 	}
 }
 
+func TestCloudflareCertificatePackResourcePreservesBranding(t *testing.T) {
+	zone := cf.Zone{ID: "zone-123", Name: "example.com"}
+	resource, ok := cloudflareCertificatePackResource(zone, cloudflareCertificateRawResource{
+		"id":                    "pack-456",
+		"certificate_authority": "lets_encrypt",
+		"type":                  "advanced",
+		"validation_method":     "txt",
+		"validity_days":         float64(90),
+		"cloudflare_branding":   true,
+		"status":                "active",
+	})
+	if !ok {
+		t.Fatal("expected certificate pack resource")
+	}
+	if got := resource.InstanceState.Attributes["cloudflare_branding"]; got != "true" {
+		t.Fatalf("cloudflare_branding attribute = %q, want true", got)
+	}
+	if got := resource.AdditionalFields["cloudflare_branding"]; got != true {
+		t.Fatalf("cloudflare_branding AdditionalFields = %#v, want true", got)
+	}
+}
+
 func TestCloudflareCertificateAuthorityHostnameAssociationsResource(t *testing.T) {
 	resource, ok := cloudflareCertificateAuthorityHostnameAssociationsResource(
 		cf.Zone{ID: "zone-123", Name: "example.com"},
