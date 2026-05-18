@@ -106,6 +106,30 @@
       ]
     },
     {
+      "resource": "aws_db_instance_automated_backups_replication",
+      "service_family": "db",
+      "reason": "RDS automated backup replication is a replication lifecycle control resource rather than durable database runtime inventory.",
+      "evidence": "Terraform AWS provider models aws_db_instance_automated_backups_replication around starting and stopping cross-region automated backup replication. RDS describe APIs can show replicated backups after the operation, but broad discovery cannot safely infer Terraform ownership of the replication lifecycle.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/db_instance_automated_backups_replication",
+        "https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_StartDBInstanceAutomatedBackupsReplication.html"
+      ]
+    },
+    {
+      "resource": "aws_db_snapshot_copy",
+      "service_family": "db",
+      "reason": "RDS DB snapshot copies are action-style resources; broad discovery can see the copied snapshot but not reconstruct the original copy request as stable infrastructure ownership.",
+      "evidence": "Terraform AWS provider models aws_db_snapshot_copy with source snapshot and copy-time options. DescribeDBSnapshots returns the resulting snapshot metadata, not the original CopyDBSnapshot request lifecycle.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/db_snapshot_copy",
+        "https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_CopyDBSnapshot.html"
+      ]
+    },
+    {
       "resource": "aws_detective_invitation_accepter",
       "service_family": "detective",
       "reason": "The resource represents accepting a Detective invitation in a member account; discovery can see invitations or membership, but cannot safely infer Terraform ownership of the acceptance/disassociation lifecycle.",
@@ -116,6 +140,18 @@
         "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/detective_invitation_accepter",
         "https://docs.aws.amazon.com/detective/latest/APIReference/API_AcceptInvitation.html",
         "https://docs.aws.amazon.com/detective/latest/APIReference/API_ListInvitations.html"
+      ]
+    },
+    {
+      "resource": "aws_docdb_cluster_snapshot",
+      "service_family": "docdb",
+      "reason": "DocumentDB cluster snapshots are point-in-time captured database data and are not safe broad runtime inventory for this lane.",
+      "evidence": "Terraform AWS provider creates aws_docdb_cluster_snapshot by taking a snapshot of a source cluster. DescribeDBClusterSnapshots can list resulting snapshots, but it does not distinguish Terraform-owned snapshot lifecycle from backup/runtime artifacts.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/docdb_cluster_snapshot",
+        "https://docs.aws.amazon.com/documentdb/latest/developerguide/API_CreateDBClusterSnapshot.html"
       ]
     },
     {
@@ -353,6 +389,42 @@
       ]
     },
     {
+      "resource": "aws_memorydb_multi_region_cluster",
+      "service_family": "memorydb",
+      "reason": "MemoryDB multi-region clusters need cross-region ownership and de-duplication handling before broad regional imports can manage them safely.",
+      "evidence": "Terraform AWS provider imports aws_memorydb_multi_region_cluster by multi-region cluster name. MemoryDB DescribeMultiRegionClusters can expose the same logical cluster through regional import fanout, so Terraformer needs a dedicated cross-region grouping rule before emitting it.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/memorydb_multi_region_cluster",
+        "https://docs.aws.amazon.com/memorydb/latest/APIReference/API_DescribeMultiRegionClusters.html"
+      ]
+    },
+    {
+      "resource": "aws_memorydb_snapshot",
+      "service_family": "memorydb",
+      "reason": "MemoryDB snapshots are point-in-time captured database data and are not safe broad runtime inventory for this lane.",
+      "evidence": "Terraform AWS provider creates aws_memorydb_snapshot from a source cluster. DescribeSnapshots can list resulting snapshots, but broad discovery cannot safely infer ownership of snapshot lifecycle or distinguish manual backup artifacts from Terraform-managed configuration.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/memorydb_snapshot",
+        "https://docs.aws.amazon.com/memorydb/latest/APIReference/API_CreateSnapshot.html"
+      ]
+    },
+    {
+      "resource": "aws_memorydb_user",
+      "service_family": "memorydb",
+      "reason": "MemoryDB users can require password authentication material that MemoryDB describe APIs do not return.",
+      "evidence": "Terraform AWS provider models authentication_mode.passwords as sensitive input and preserves password values from prior state. MemoryDB DescribeUsers returns user metadata and access strings, but not existing password values needed for valid password-backed user configuration.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/memorydb_user",
+        "https://docs.aws.amazon.com/memorydb/latest/APIReference/API_DescribeUsers.html"
+      ]
+    },
+    {
       "resource": "aws_mq_broker",
       "service_family": "mq",
       "reason": "MQ brokers require sensitive user.password values, and LDAP brokers can require service_account_password; Amazon MQ APIs do not return those passwords for imported brokers.",
@@ -363,6 +435,18 @@
         "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/mq_broker",
         "https://docs.aws.amazon.com/amazon-mq/latest/api-reference/brokers-broker-id.html",
         "https://docs.aws.amazon.com/amazon-mq/latest/api-reference/brokers-broker-id-users-username.html"
+      ]
+    },
+    {
+      "resource": "aws_neptune_cluster_snapshot",
+      "service_family": "neptune",
+      "reason": "Neptune cluster snapshots are point-in-time captured database data and are not safe broad runtime inventory for this lane.",
+      "evidence": "Terraform AWS provider creates aws_neptune_cluster_snapshot by taking a snapshot of a source cluster. DescribeDBClusterSnapshots can list resulting snapshots, but it does not distinguish Terraform-owned snapshot lifecycle from backup/runtime artifacts.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/neptune_cluster_snapshot",
+        "https://docs.aws.amazon.com/neptune/latest/userguide/api-clustersnapshots.html"
       ]
     },
     {
@@ -464,6 +548,54 @@
         "https://github.com/chenrui333/terraformer/issues/338",
         "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/qldb_stream",
         "https://docs.aws.amazon.com/qldb/latest/developerguide/streams.html"
+      ]
+    },
+    {
+      "resource": "aws_rds_cluster_snapshot_copy",
+      "service_family": "rds",
+      "reason": "RDS cluster snapshot copies are action-style resources; broad discovery can see the copied snapshot but not reconstruct the original copy request as stable infrastructure ownership.",
+      "evidence": "Terraform AWS provider models aws_rds_cluster_snapshot_copy with source cluster snapshot and copy-time options. DescribeDBClusterSnapshots returns the destination snapshot metadata, not the original CopyDBClusterSnapshot request lifecycle.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/rds_cluster_snapshot_copy",
+        "https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_CopyDBClusterSnapshot.html"
+      ]
+    },
+    {
+      "resource": "aws_rds_export_task",
+      "service_family": "rds",
+      "reason": "RDS export tasks are export job records rather than durable database runtime configuration.",
+      "evidence": "Terraform AWS provider starts an export task from a snapshot or cluster to S3. DescribeExportTasks returns job status and output metadata after the operation, not a stable infrastructure object that should be rediscovered across accounts.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/rds_export_task",
+        "https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_StartExportTask.html"
+      ]
+    },
+    {
+      "resource": "aws_rds_instance_state",
+      "service_family": "rds",
+      "reason": "RDS instance state is a mutating control resource for start/stop behavior rather than durable database runtime inventory.",
+      "evidence": "Terraform AWS provider documents aws_rds_instance_state as managing the DB instance power state. RDS DescribeDBInstances can discover current status, but importing it would cause Terraform to enforce runtime state changes.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/rds_instance_state",
+        "https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DescribeDBInstances.html"
+      ]
+    },
+    {
+      "resource": "aws_rds_reserved_instance",
+      "service_family": "rds",
+      "reason": "RDS reserved instances are billing purchase commitments rather than rediscoverable runtime infrastructure configuration.",
+      "evidence": "Terraform AWS provider models aws_rds_reserved_instance around purchasing a reserved DB instance offering. DescribeReservedDBInstances can list purchased commitments, but broad discovery cannot safely infer that Terraform should own the purchase lifecycle.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/rds_reserved_instance",
+        "https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_PurchaseReservedDBInstancesOffering.html"
       ]
     },
     {

@@ -306,6 +306,8 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_docdb_cluster`
     * `aws_docdb_cluster_instance`
     * `aws_docdb_cluster_parameter_group`
+    * `aws_docdb_event_subscription`
+    * `aws_docdb_global_cluster`
     * `aws_docdb_subnet_group`
 *   `dx`
     * `aws_dx_connection`
@@ -538,6 +540,11 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
 *   `media_store`
     * `aws_media_store_container`
     * `aws_media_store_container_policy`
+*   `memorydb`
+    * `aws_memorydb_acl`
+    * `aws_memorydb_cluster`
+    * `aws_memorydb_parameter_group`
+    * `aws_memorydb_subnet_group`
 *   `medialive`
     * `aws_medialive_channel`
     * `aws_medialive_input`
@@ -562,6 +569,15 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_network_acl`
 *   `nat`
     * `aws_nat_gateway`
+*   `neptune`
+    * `aws_neptune_cluster`
+    * `aws_neptune_cluster_endpoint`
+    * `aws_neptune_cluster_instance`
+    * `aws_neptune_cluster_parameter_group`
+    * `aws_neptune_event_subscription`
+    * `aws_neptune_global_cluster`
+    * `aws_neptune_parameter_group`
+    * `aws_neptune_subnet_group`
 *   `notifications`
     * `aws_notifications_channel_association`
     * `aws_notifications_event_rule`
@@ -626,8 +642,11 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_db_option_group`
     * `aws_db_event_subscription`
     * `aws_rds_cluster`
+    * `aws_rds_cluster_activity_stream`
     * `aws_rds_cluster_endpoint`
+    * `aws_rds_cluster_instance`
     * `aws_rds_cluster_parameter_group`
+    * `aws_rds_cluster_role_association`
     * `aws_rds_global_cluster`
 *   `redshift`
     * `aws_redshift_cluster`

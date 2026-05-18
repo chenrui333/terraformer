@@ -60,6 +60,8 @@ func (g *RDSGenerator) loadDBClusters(svc *rds.Client) error {
 				"aws",
 				RDSAllowEmptyValues,
 			))
+			g.addRDSClusterRoleAssociations(resourceName, cluster.AssociatedRoles)
+			g.addRDSClusterActivityStream(cluster)
 		}
 	}
 	return nil
@@ -291,6 +293,10 @@ func (g *RDSGenerator) loadDBInstances(svc *rds.Client) error {
 			if resourceName == "" || !rdsStatusImportable(StringValue(db.DBInstanceStatus)) {
 				continue
 			}
+			if clusterID := StringValue(db.DBClusterIdentifier); clusterID != "" {
+				g.Resources = append(g.Resources, newRDSClusterInstanceResource(resourceName, clusterID))
+				continue
+			}
 			r := terraformutils.NewSimpleResource(
 				resourceName,
 				resourceName,
@@ -331,7 +337,7 @@ func (g *RDSGenerator) addDBInstanceRoleAssociations(instanceID string, roles []
 	for _, role := range roles {
 		roleARN := StringValue(role.RoleArn)
 		featureName := StringValue(role.FeatureName)
-		if roleARN == "" || featureName == "" {
+		if roleARN == "" || featureName == "" || !rdsRoleAssociationStatusImportable(StringValue(role.Status)) {
 			continue
 		}
 		g.Resources = append(g.Resources, terraformutils.NewResource(
@@ -348,6 +354,72 @@ func (g *RDSGenerator) addDBInstanceRoleAssociations(instanceID string, roles []
 			map[string]interface{}{},
 		))
 	}
+}
+
+func newRDSClusterInstanceResource(instanceID, clusterID string) terraformutils.Resource {
+	return terraformutils.NewResource(
+		instanceID,
+		rdsResourceName(clusterID, instanceID),
+		"aws_rds_cluster_instance",
+		"aws",
+		map[string]string{
+			"cluster_identifier": clusterID,
+			"identifier":         instanceID,
+		},
+		RDSAllowEmptyValues,
+		map[string]interface{}{},
+	)
+}
+
+func (g *RDSGenerator) addRDSClusterRoleAssociations(clusterID string, roles []rdstypes.DBClusterRole) {
+	for _, role := range roles {
+		roleARN := StringValue(role.RoleArn)
+		featureName := StringValue(role.FeatureName)
+		if clusterID == "" || roleARN == "" || !rdsRoleAssociationStatusImportable(StringValue(role.Status)) {
+			continue
+		}
+		attributes := map[string]string{
+			"db_cluster_identifier": clusterID,
+			"role_arn":              roleARN,
+		}
+		if featureName != "" {
+			attributes["feature_name"] = featureName
+		}
+		g.Resources = append(g.Resources, terraformutils.NewResource(
+			rdsRoleAssociationImportID(clusterID, roleARN),
+			rdsResourceName(clusterID, rdsIAMRoleResourceName(roleARN)),
+			"aws_rds_cluster_role_association",
+			"aws",
+			attributes,
+			RDSAllowEmptyValues,
+			map[string]interface{}{},
+		))
+	}
+}
+
+func (g *RDSGenerator) addRDSClusterActivityStream(cluster rdstypes.DBCluster) {
+	clusterARN := StringValue(cluster.DBClusterArn)
+	clusterID := StringValue(cluster.DBClusterIdentifier)
+	mode := string(cluster.ActivityStreamMode)
+	if clusterARN == "" || mode == "" || !rdsActivityStreamStatusImportable(cluster.ActivityStreamStatus) {
+		return
+	}
+	attributes := map[string]string{
+		"mode":         mode,
+		"resource_arn": clusterARN,
+	}
+	if kmsKeyID := StringValue(cluster.ActivityStreamKmsKeyId); kmsKeyID != "" {
+		attributes["kms_key_id"] = kmsKeyID
+	}
+	g.Resources = append(g.Resources, terraformutils.NewResource(
+		clusterARN,
+		rdsResourceName(clusterID, "activity_stream"),
+		"aws_rds_cluster_activity_stream",
+		"aws",
+		attributes,
+		RDSAllowEmptyValues,
+		map[string]interface{}{},
+	))
 }
 
 func (g *RDSGenerator) loadDBParameterGroups(svc *rds.Client) error {
@@ -523,6 +595,14 @@ func rdsDBProxyTargetImportID(proxyName, targetGroupName, targetType, resourceID
 
 func rdsRoleAssociationImportID(resourceID, roleARN string) string {
 	return fmt.Sprintf("%s,%s", resourceID, roleARN)
+}
+
+func rdsRoleAssociationStatusImportable(status string) bool {
+	return strings.EqualFold(status, "active")
+}
+
+func rdsActivityStreamStatusImportable(status rdstypes.ActivityStreamStatus) bool {
+	return strings.EqualFold(string(status), "started")
 }
 
 func rdsResourceName(parts ...string) string {
