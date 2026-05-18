@@ -288,10 +288,7 @@ func directConnectVirtualInterfaceImportable(vif directconnecttypes.VirtualInter
 		directconnecttypes.VirtualInterfaceStateRejected:
 		return false
 	}
-	if directConnectHostedTransitVirtualInterface(vif, currentAccountID) {
-		return false
-	}
-	return true
+	return !directConnectHostedTransitVirtualInterface(vif, currentAccountID)
 }
 
 func directConnectHostedTransitVirtualInterface(vif directconnecttypes.VirtualInterface, currentAccountID string) bool {
