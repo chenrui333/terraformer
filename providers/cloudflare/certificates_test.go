@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"strconv"
 	"testing"
 
 	cf "github.com/cloudflare/cloudflare-go"
@@ -45,24 +46,26 @@ func TestCloudflareZoneCertificateResourceUsesCompositeImportID(t *testing.T) {
 }
 
 func TestCloudflareCertificatePackResourcePreservesBranding(t *testing.T) {
-	zone := cf.Zone{ID: "zone-123", Name: "example.com"}
-	resource, ok := cloudflareCertificatePackResource(zone, cloudflareCertificateRawResource{
-		"id":                    "pack-456",
-		"certificate_authority": "lets_encrypt",
-		"type":                  "advanced",
-		"validation_method":     "txt",
-		"validity_days":         float64(90),
-		"cloudflare_branding":   true,
-		"status":                "active",
-	})
-	if !ok {
-		t.Fatal("expected certificate pack resource")
-	}
-	if got := resource.InstanceState.Attributes["cloudflare_branding"]; got != "true" {
-		t.Fatalf("cloudflare_branding attribute = %q, want true", got)
-	}
-	if got := resource.AdditionalFields["cloudflare_branding"]; got != true {
-		t.Fatalf("cloudflare_branding AdditionalFields = %#v, want true", got)
+	for _, cloudflareBranding := range []bool{true, false} {
+		resource, ok := cloudflareCertificatePackResource(cf.Zone{ID: "zone-123", Name: "example.com"}, cloudflareCertificateRawResource{
+			"id":                    "pack-456",
+			"certificate_authority": "lets_encrypt",
+			"type":                  "advanced",
+			"validation_method":     "txt",
+			"validity_days":         float64(90),
+			"cloudflare_branding":   cloudflareBranding,
+			"status":                "active",
+		})
+		if !ok {
+			t.Fatal("expected certificate pack resource")
+		}
+		want := strconv.FormatBool(cloudflareBranding)
+		if got := resource.InstanceState.Attributes["cloudflare_branding"]; got != want {
+			t.Fatalf("cloudflare_branding attribute = %q, want %s", got, want)
+		}
+		if got := resource.AdditionalFields["cloudflare_branding"]; got != cloudflareBranding {
+			t.Fatalf("cloudflare_branding AdditionalFields = %#v, want %t", got, cloudflareBranding)
+		}
 	}
 }
 

@@ -356,7 +356,7 @@ func cloudflareCertificatePackResource(zone cf.Zone, certificatePack cloudflareC
 		"validity_days":         validityDays,
 	}
 	additionalFields := map[string]interface{}{}
-	if cloudflareBranding, ok := cloudflareCertificateBool(certificatePack, "cloudflare_branding"); ok && cloudflareBranding {
+	if cloudflareBranding, ok := cloudflareCertificateBool(certificatePack, "cloudflare_branding"); ok {
 		attributes["cloudflare_branding"] = strconv.FormatBool(cloudflareBranding)
 		additionalFields["cloudflare_branding"] = cloudflareBranding
 	}
