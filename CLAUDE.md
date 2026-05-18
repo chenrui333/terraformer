@@ -397,6 +397,44 @@ Rules:
 - Add table-driven tests for allowed and skipped states.
 - Treat transient states as deferred, not unsupported, unless provider import is fundamentally impossible.
 
+## Release, Version, and History Resources
+
+Resources that expose releases, revisions, snapshots, rollouts, or history need
+extra boundaries before broad import.
+
+Rules:
+
+- Import only the latest durable managed revision by default. Skip historical,
+  superseded, deleted, pending, failed, or rollback states unless provider
+  refresh and follow-up plan behavior are verified safe.
+- Use exact ID filters for resource families where broad discovery is
+  permission-sensitive, noisy, or only partially safe. Keep filter IDs in the
+  upstream provider-compatible shape, and preserve exact-filter matches through
+  post-refresh cleanup if provider read normalizes state IDs.
+- When skipped variants are lifecycle states of an otherwise supported
+  Terraform resource, document and test the skip predicates in provider docs and
+  tests instead of adding unsupported-resource metadata for each state.
+
+## Discovery Auth and Refresh-State Hygiene
+
+Discovery clients and Terraform provider refresh must target the same account,
+cluster, project, namespace, or region context.
+
+Rules:
+
+- Bridge provider-supported auth and context settings into provider or domain
+  SDK discovery clients when Terraformer discovers with one client and refreshes
+  with the Terraform provider. Keep credentials in environment variables,
+  profiles, kubeconfig files, or provider config; do not write them into
+  generated HCL.
+- Partial imports of safe metadata are acceptable when the provider can refresh
+  the resource and unrecoverable authored fields are optional or intentionally
+  omitted. Document the omitted fields and any manual follow-up in
+  `docs/<provider>.md`.
+- If provider refresh exposes runtime, source, rendered, or sensitive fields
+  that Terraformer should not own or export, scrub them from flat state, typed
+  state, and generated item data before writing output.
+
 ## Singleton and Default Settings
 
 Account, project, workspace, catalog, dataset, and region singleton settings should be imported carefully.
