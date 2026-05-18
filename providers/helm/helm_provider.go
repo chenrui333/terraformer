@@ -89,9 +89,7 @@ func configureHelmProviderKubeEnv() {
 func configureHelmProviderKubeConfigPathEnv() {
 	providerPaths := helmProviderKubeConfigPaths()
 	if len(providerPaths) > 0 {
-		if os.Getenv("KUBECONFIG") == "" {
-			_ = os.Setenv("KUBECONFIG", strings.Join(providerPaths, string(os.PathListSeparator)))
-		}
+		_ = os.Setenv("KUBECONFIG", strings.Join(providerPaths, string(os.PathListSeparator)))
 		return
 	}
 
@@ -134,7 +132,7 @@ func mirrorHelmKubeEnvPair(providerEnv, discoveryEnv string) {
 	providerValue := os.Getenv(providerEnv)
 	discoveryValue := os.Getenv(discoveryEnv)
 	switch {
-	case providerValue != "" && discoveryValue == "":
+	case providerValue != "":
 		_ = os.Setenv(discoveryEnv, providerValue)
 	case providerValue == "" && discoveryValue != "":
 		_ = os.Setenv(providerEnv, discoveryValue)

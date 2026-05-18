@@ -174,6 +174,77 @@ func (g *ReleaseGenerator) InitResources() error {
 	return nil
 }
 
+func (g *ReleaseGenerator) PostRefreshCleanup() {
+	if len(g.Filter) == 0 {
+		return
+	}
+
+	var resources []terraformutils.Resource
+	for _, resource := range g.Resources {
+		if !g.resourceMatchesPostRefreshFilters(resource) {
+			continue
+		}
+		if !terraformutils.ContainsResource(resources, resource) {
+			resources = append(resources, resource)
+		}
+	}
+	g.Resources = resources
+}
+
+func (g *ReleaseGenerator) resourceMatchesPostRefreshFilters(resource terraformutils.Resource) bool {
+	for _, filter := range g.Filter {
+		if filter.FieldPath == "id" && filter.IsApplicable("release") && len(filter.AcceptableValues) > 0 {
+			if !releaseResourceMatchesIDFilter(resource, filter.AcceptableValues) {
+				return false
+			}
+			continue
+		}
+		if !filter.Filter(resource) {
+			return false
+		}
+	}
+	return true
+}
+
+func releaseResourceMatchesIDFilter(resource terraformutils.Resource, acceptableValues []string) bool {
+	ids := []string{}
+	if resource.InstanceState != nil && resource.InstanceState.ID != "" {
+		ids = append(ids, resource.InstanceState.ID)
+	}
+	if importID := releaseResourceImportID(resource); importID != "" {
+		ids = append(ids, importID)
+	}
+	for _, id := range ids {
+		for _, acceptableValue := range acceptableValues {
+			if id == acceptableValue {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func releaseResourceImportID(resource terraformutils.Resource) string {
+	name := releaseResourceStringAttribute(resource, "name")
+	namespace := releaseResourceStringAttribute(resource, "namespace")
+	if name == "" || namespace == "" {
+		return ""
+	}
+	return releaseImportID{Namespace: namespace, Name: name}.String()
+}
+
+func releaseResourceStringAttribute(resource terraformutils.Resource, key string) string {
+	if resource.InstanceState != nil {
+		if value := resource.InstanceState.Attributes[key]; value != "" {
+			return value
+		}
+	}
+	if value, ok := resource.Item[key].(string); ok {
+		return value
+	}
+	return ""
+}
+
 func (g *ReleaseGenerator) PostConvertHook() error {
 	for i := range g.Resources {
 		scrubHelmReleaseUnsafeState(&g.Resources[i])

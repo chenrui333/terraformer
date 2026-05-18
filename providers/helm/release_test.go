@@ -432,6 +432,65 @@ func TestReleaseGeneratorExactFiltersUseNamespaceNameGets(t *testing.T) {
 	}
 }
 
+func TestReleasePostRefreshCleanupKeepsExactFilterAfterProviderIDNormalization(t *testing.T) {
+	resource := terraformutils.NewResource(
+		"default/nginx",
+		"release_default_nginx",
+		helmReleaseResourceType,
+		helmProviderName,
+		map[string]string{
+			"name":      "nginx",
+			"namespace": "default",
+		},
+		nil,
+		nil,
+	)
+	resource.InstanceState.ID = "nginx"
+	generator := &ReleaseGenerator{
+		Service: terraformutils.Service{
+			Resources: []terraformutils.Resource{resource},
+		},
+	}
+	generator.ParseFilters([]string{"release=default/nginx"})
+
+	generator.PostRefreshCleanup()
+
+	if len(generator.Resources) != 1 {
+		t.Fatalf("resources = %d, want 1", len(generator.Resources))
+	}
+	if got := generator.Resources[0].InstanceState.ID; got != "nginx" {
+		t.Fatalf("resource state ID = %q, want provider-normalized ID preserved", got)
+	}
+}
+
+func TestReleasePostRefreshCleanupDropsExactFilterMismatchAfterProviderIDNormalization(t *testing.T) {
+	resource := terraformutils.NewResource(
+		"default/nginx",
+		"release_default_nginx",
+		helmReleaseResourceType,
+		helmProviderName,
+		map[string]string{
+			"name":      "nginx",
+			"namespace": "default",
+		},
+		nil,
+		nil,
+	)
+	resource.InstanceState.ID = "nginx"
+	generator := &ReleaseGenerator{
+		Service: terraformutils.Service{
+			Resources: []terraformutils.Resource{resource},
+		},
+	}
+	generator.ParseFilters([]string{"release=kube-system/nginx"})
+
+	generator.PostRefreshCleanup()
+
+	if len(generator.Resources) != 0 {
+		t.Fatalf("resources = %d, want 0", len(generator.Resources))
+	}
+}
+
 func testRelease(name, namespace string, version int, status helmrelease.Status) *helmrelease.Release {
 	return &helmrelease.Release{
 		Name:      name,

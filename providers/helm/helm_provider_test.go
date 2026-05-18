@@ -135,6 +135,24 @@ func TestProviderGetConfigBridgesMultipleKubeconfigPaths(t *testing.T) {
 	}
 }
 
+func TestProviderGetConfigProviderKubeConfigPathsOverrideKubeconfig(t *testing.T) {
+	first := filepath.Join(t.TempDir(), "first")
+	second := filepath.Join(t.TempDir(), "second")
+	providerKubeconfig := strings.Join([]string{first, second}, string(os.PathListSeparator))
+	t.Setenv("KUBE_CONFIG_PATH", "")
+	t.Setenv("KUBE_CONFIG_PATHS", providerKubeconfig)
+	t.Setenv("KUBECONFIG", "/tmp/client-go-kubeconfig")
+	t.Setenv("KUBE_CTX", "")
+	t.Setenv("HELM_KUBECONTEXT", "")
+
+	provider := &Provider{}
+	provider.GetConfig()
+
+	if got := os.Getenv("KUBECONFIG"); got != providerKubeconfig {
+		t.Fatalf("KUBECONFIG = %q, want provider config paths %q", got, providerKubeconfig)
+	}
+}
+
 func TestProviderGetConfigUsesDefaultKubeconfigForRefresh(t *testing.T) {
 	defaultKubeconfig := filepath.Join(t.TempDir(), ".kube", "config")
 	if err := os.MkdirAll(filepath.Dir(defaultKubeconfig), 0o755); err != nil {
@@ -180,7 +198,13 @@ func TestProviderGetConfigPreservesProviderKubeconfigEnv(t *testing.T) {
 	if got := os.Getenv("KUBE_CONFIG_PATH"); got != "/tmp/provider-kubeconfig" {
 		t.Fatalf("KUBE_CONFIG_PATH = %q, want existing provider env", got)
 	}
+	if got := os.Getenv("KUBECONFIG"); got != "/tmp/provider-kubeconfig" {
+		t.Fatalf("KUBECONFIG = %q, want provider kubeconfig env to take discovery precedence", got)
+	}
 	if got := os.Getenv("KUBE_CTX"); got != "provider-context" {
 		t.Fatalf("KUBE_CTX = %q, want existing provider context", got)
+	}
+	if got := os.Getenv("HELM_KUBECONTEXT"); got != "provider-context" {
+		t.Fatalf("HELM_KUBECONTEXT = %q, want provider context to take discovery precedence", got)
 	}
 }
