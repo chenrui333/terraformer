@@ -738,7 +738,8 @@ func transitGatewayRouteImportable(route types.TransitGatewayRoute) bool {
 func transitGatewayMeteringPolicyEntryPayerImportable(payer types.TransitGatewayMeteringPayerType) bool {
 	switch payer {
 	case types.TransitGatewayMeteringPayerTypeSourceAttachmentOwner,
-		types.TransitGatewayMeteringPayerTypeDestinationAttachmentOwner:
+		types.TransitGatewayMeteringPayerTypeDestinationAttachmentOwner,
+		types.TransitGatewayMeteringPayerTypeTransitGatewayOwner:
 		return true
 	default:
 		return false

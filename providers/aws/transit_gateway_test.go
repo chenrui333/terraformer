@@ -383,13 +383,25 @@ func TestNewTransitGatewayMeteringResources(t *testing.T) {
 	})
 	assertAwsFrameworkResourcePreserveIDAfterRefresh(t, entry)
 
+	ownerEntry, ok := newTransitGatewayMeteringPolicyEntryResource("tgw-mp-123", types.TransitGatewayMeteringPolicyEntry{
+		MeteredAccount:   types.TransitGatewayMeteringPayerTypeTransitGatewayOwner,
+		PolicyRuleNumber: aws.String("200"),
+		State:            types.TransitGatewayMeteringPolicyEntryStateAvailable,
+	})
+	assertTransitGatewayResource(t, ownerEntry, ok, transitGatewayMeteringPolicyEntryResourceType, "tgw-mp-123,200", map[string]string{
+		"metered_account":                    "transit-gateway-owner",
+		"policy_rule_number":                 "200",
+		"transit_gateway_metering_policy_id": "tgw-mp-123",
+	})
+	assertAwsFrameworkResourcePreserveIDAfterRefresh(t, ownerEntry)
+
 	if _, ok := newTransitGatewayMeteringPolicyResource(types.TransitGatewayMeteringPolicy{State: types.TransitGatewayMeteringPolicyStateDeleted, TransitGatewayId: aws.String("tgw-123"), TransitGatewayMeteringPolicyId: aws.String("tgw-mp-deleted")}); ok {
 		t.Fatal("deleted metering policy should be skipped")
 	}
 	if _, ok := newTransitGatewayMeteringPolicyEntryResource("tgw-mp-123", types.TransitGatewayMeteringPolicyEntry{MeteredAccount: types.TransitGatewayMeteringPayerTypeTransitGatewayOwner, PolicyRuleNumber: aws.String("bad"), State: types.TransitGatewayMeteringPolicyEntryStateAvailable}); ok {
 		t.Fatal("metering policy entry with nonnumeric rule number should be skipped")
 	}
-	if _, ok := newTransitGatewayMeteringPolicyEntryResource("tgw-mp-123", types.TransitGatewayMeteringPolicyEntry{MeteredAccount: types.TransitGatewayMeteringPayerTypeTransitGatewayOwner, PolicyRuleNumber: aws.String("200"), State: types.TransitGatewayMeteringPolicyEntryStateAvailable}); ok {
+	if _, ok := newTransitGatewayMeteringPolicyEntryResource("tgw-mp-123", types.TransitGatewayMeteringPolicyEntry{MeteredAccount: types.TransitGatewayMeteringPayerType("unsupported-payer"), PolicyRuleNumber: aws.String("200"), State: types.TransitGatewayMeteringPolicyEntryStateAvailable}); ok {
 		t.Fatal("metering policy entry with unsupported payer type should be skipped")
 	}
 	if _, ok := newTransitGatewayMeteringPolicyEntryResource("tgw-mp-123", types.TransitGatewayMeteringPolicyEntry{MeteredAccount: types.TransitGatewayMeteringPayerTypeTransitGatewayOwner, PolicyRuleNumber: aws.String("200"), State: types.TransitGatewayMeteringPolicyEntryStateDeleted}); ok {
@@ -473,7 +485,7 @@ func TestTransitGatewayMeteringPolicyPagination(t *testing.T) {
 						{
 							MeteredAccount:   types.TransitGatewayMeteringPayerTypeTransitGatewayOwner,
 							PolicyRuleNumber: aws.String("200"),
-							State:            types.TransitGatewayMeteringPolicyEntryStateDeleted,
+							State:            types.TransitGatewayMeteringPolicyEntryStateAvailable,
 						},
 					},
 				},
@@ -496,8 +508,8 @@ func TestTransitGatewayMeteringPolicyPagination(t *testing.T) {
 	if got, want := StringValue(client.entryInputs[1].NextToken), "next-entry"; got != want {
 		t.Fatalf("entry next token = %q, want %q", got, want)
 	}
-	if len(g.Resources) != 2 {
-		t.Fatalf("resources = %d, want 2", len(g.Resources))
+	if len(g.Resources) != 3 {
+		t.Fatalf("resources = %d, want 3", len(g.Resources))
 	}
 }
 
