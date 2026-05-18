@@ -731,7 +731,7 @@ func listTransitGatewayMeteringPolicies(svc transitGatewayMeteringPolicyAPIClien
 			return nil, err
 		}
 		policies = append(policies, page.TransitGatewayMeteringPolicies...)
-		if page.NextToken == nil {
+		if !awsHasMorePages(page.NextToken) {
 			return policies, nil
 		}
 		input.NextToken = page.NextToken
@@ -752,7 +752,7 @@ func listTransitGatewayMeteringPolicyEntries(svc transitGatewayMeteringPolicyAPI
 			return nil, err
 		}
 		entries = append(entries, page.TransitGatewayMeteringPolicyEntries...)
-		if page.NextToken == nil {
+		if !awsHasMorePages(page.NextToken) {
 			return entries, nil
 		}
 		input.NextToken = page.NextToken

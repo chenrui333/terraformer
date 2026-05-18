@@ -310,6 +310,7 @@ func TestTransitGatewayMeteringPolicyPagination(t *testing.T) {
 				},
 			},
 			{
+				NextToken: aws.String(""),
 				TransitGatewayMeteringPolicies: []types.TransitGatewayMeteringPolicy{
 					{
 						State:                          types.TransitGatewayMeteringPolicyStateDeleted,
@@ -332,6 +333,7 @@ func TestTransitGatewayMeteringPolicyPagination(t *testing.T) {
 					},
 				},
 				{
+					NextToken: aws.String(""),
 					TransitGatewayMeteringPolicyEntries: []types.TransitGatewayMeteringPolicyEntry{
 						{
 							MeteredAccount:   types.TransitGatewayMeteringPayerTypeTransitGatewayOwner,
@@ -358,6 +360,50 @@ func TestTransitGatewayMeteringPolicyPagination(t *testing.T) {
 	}
 	if got, want := StringValue(client.entryInputs[1].NextToken), "next-entry"; got != want {
 		t.Fatalf("entry next token = %q, want %q", got, want)
+	}
+	if len(g.Resources) != 2 {
+		t.Fatalf("resources = %d, want 2", len(g.Resources))
+	}
+}
+
+func TestTransitGatewayMeteringPaginationStopsOnEmptyTokens(t *testing.T) {
+	client := &fakeTransitGatewayMeteringPolicyClient{
+		policyPages: []*ec2.DescribeTransitGatewayMeteringPoliciesOutput{
+			{
+				NextToken: aws.String(""),
+				TransitGatewayMeteringPolicies: []types.TransitGatewayMeteringPolicy{
+					{
+						State:                          types.TransitGatewayMeteringPolicyStateAvailable,
+						TransitGatewayId:               aws.String("tgw-123"),
+						TransitGatewayMeteringPolicyId: aws.String("tgw-mp-empty-token"),
+					},
+				},
+			},
+		},
+		entryPagesByPolicy: map[string][]*ec2.GetTransitGatewayMeteringPolicyEntriesOutput{
+			"tgw-mp-empty-token": {
+				{
+					NextToken: aws.String(""),
+					TransitGatewayMeteringPolicyEntries: []types.TransitGatewayMeteringPolicyEntry{
+						{
+							MeteredAccount:   types.TransitGatewayMeteringPayerTypeSourceAttachmentOwner,
+							PolicyRuleNumber: aws.String("100"),
+							State:            types.TransitGatewayMeteringPolicyEntryStateAvailable,
+						},
+					},
+				},
+			},
+		},
+	}
+	g := TransitGatewayGenerator{}
+	if err := g.getTransitGatewayMeteringPolicies(client); err != nil {
+		t.Fatalf("getTransitGatewayMeteringPolicies() error = %v", err)
+	}
+	if client.policyCalls != 1 {
+		t.Fatalf("DescribeTransitGatewayMeteringPolicies calls = %d, want 1", client.policyCalls)
+	}
+	if client.entryCalls != 1 {
+		t.Fatalf("GetTransitGatewayMeteringPolicyEntries calls = %d, want 1", client.entryCalls)
 	}
 	if len(g.Resources) != 2 {
 		t.Fatalf("resources = %d, want 2", len(g.Resources))
