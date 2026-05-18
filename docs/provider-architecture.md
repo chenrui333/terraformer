@@ -78,6 +78,9 @@ filter decisions aligned with both naming layers:
   one control-plane scope and de-duplicate output across requested regions.
 - Keep gap inventory tooling aligned with service aliases or override mappings
   when new service families group resources under non-obvious names.
+- Provider docs for service-family generators must list the emitted Terraform
+  resource types, grouped discovery buckets, and any aliases or override
+  mappings used to connect service keys to those groups.
 
 For resources that cross accounts, regions, or ownership roles, model ownership
 separately from visibility:
@@ -89,6 +92,10 @@ separately from visibility:
   reconstructed.
 - Preserve ARNs, canonical state IDs, or other globally unique identities when
   the Terraform provider importer or read path requires them.
+- When a supported import intentionally omits authored fields that the provider
+  importer or read path cannot recover, document the omitted fields and the
+  operator follow-up needed to restore them. Skip or defer the resource when
+  those values are required for refreshable, valid HCL.
 
 ## Importability decision model
 
