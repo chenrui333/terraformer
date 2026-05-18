@@ -35,25 +35,197 @@ func TestRDSRoleAssociationImportID(t *testing.T) {
 
 func TestRDSAddDBInstanceRoleAssociations(t *testing.T) {
 	roleARN := "arn:aws:iam::123456789012:role/service-role/rds-monitoring-role"
+	commaRoleARN := "arn:aws:iam::123456789012:role/service-role/rds,monitoring-role"
 	g := &RDSGenerator{}
 	g.addDBInstanceRoleAssociations("db-1", []rdstypes.DBInstanceRole{
 		{FeatureName: aws.String("s3Import")},
 		{RoleArn: aws.String(roleARN)},
-		{FeatureName: aws.String("s3Import"), RoleArn: aws.String(roleARN)},
+		{FeatureName: aws.String("s3Import"), RoleArn: aws.String(roleARN), Status: aws.String("PENDING")},
+		{FeatureName: aws.String("s3Import"), RoleArn: aws.String(commaRoleARN), Status: aws.String("ACTIVE")},
+		{FeatureName: aws.String("s3Import"), RoleArn: aws.String(roleARN), Status: aws.String("ACTIVE")},
+	})
+
+	if len(g.Resources) != 2 {
+		t.Fatalf("len(Resources) = %d, want 2", len(g.Resources))
+	}
+	wantIDs := map[string]bool{
+		"db-1," + commaRoleARN: false,
+		"db-1," + roleARN:      false,
+	}
+	for _, resource := range g.Resources {
+		if got, want := resource.InstanceInfo.Type, "aws_db_instance_role_association"; got != want {
+			t.Fatalf("resource type = %q, want %q", got, want)
+		}
+		if _, ok := wantIDs[resource.InstanceState.ID]; !ok {
+			t.Fatalf("resource ID = %q, want one of %v", resource.InstanceState.ID, wantIDs)
+		}
+		wantIDs[resource.InstanceState.ID] = true
+		if got, want := resource.InstanceState.Attributes["feature_name"], "s3Import"; got != want {
+			t.Fatalf("feature_name = %q, want %q", got, want)
+		}
+	}
+	for id, seen := range wantIDs {
+		if !seen {
+			t.Fatalf("missing resource ID %q", id)
+		}
+	}
+}
+
+func TestRDSClusterInstanceResource(t *testing.T) {
+	resource := newRDSClusterInstanceResource("db-1", "cluster-1")
+	if got, want := resource.InstanceInfo.Type, "aws_rds_cluster_instance"; got != want {
+		t.Fatalf("resource type = %q, want %q", got, want)
+	}
+	if got, want := resource.InstanceState.ID, "db-1"; got != want {
+		t.Fatalf("resource ID = %q, want %q", got, want)
+	}
+	if got, want := resource.ResourceName, "tfer--9_cluster-1__4_db-1"; got != want {
+		t.Fatalf("resource name = %q, want %q", got, want)
+	}
+	if got, want := resource.InstanceState.Attributes["cluster_identifier"], "cluster-1"; got != want {
+		t.Fatalf("cluster_identifier = %q, want %q", got, want)
+	}
+	if got, want := resource.InstanceState.Attributes["identifier"], "db-1"; got != want {
+		t.Fatalf("identifier = %q, want %q", got, want)
+	}
+	if !computeDBTestStringSliceContains(resource.IgnoreKeys, "^identifier_prefix$") {
+		t.Fatalf("cluster instance IgnoreKeys = %v, want ^identifier_prefix$", resource.IgnoreKeys)
+	}
+}
+
+func TestRDSClusterResourceKeepsIAMRolesByDefault(t *testing.T) {
+	resource := newRDSClusterResource("cluster-1")
+	if got, want := resource.InstanceInfo.Type, "aws_rds_cluster"; got != want {
+		t.Fatalf("resource type = %q, want %q", got, want)
+	}
+	if computeDBTestStringSliceContains(resource.IgnoreKeys, "^iam_roles$") {
+		t.Fatalf("cluster IgnoreKeys = %v, should not strip iam_roles by default", resource.IgnoreKeys)
+	}
+}
+
+func TestRDSAddClusterStripsIAMRolesWhenAssociationsOwnRoles(t *testing.T) {
+	roleARN := "arn:aws:iam::123456789012:role/service-role/rds-cluster-role"
+	g := &RDSGenerator{}
+	g.addRDSCluster("cluster-1", []rdstypes.DBClusterRole{
+		{FeatureName: aws.String("s3Import"), RoleArn: aws.String(roleARN), Status: aws.String("ACTIVE")},
+	})
+
+	if len(g.Resources) != 2 {
+		t.Fatalf("len(Resources) = %d, want 2", len(g.Resources))
+	}
+	cluster := g.Resources[0]
+	if got, want := cluster.InstanceInfo.Type, "aws_rds_cluster"; got != want {
+		t.Fatalf("cluster resource type = %q, want %q", got, want)
+	}
+	if !computeDBTestStringSliceContains(cluster.IgnoreKeys, "^iam_roles$") {
+		t.Fatalf("cluster IgnoreKeys = %v, want ^iam_roles$", cluster.IgnoreKeys)
+	}
+	if got, want := g.Resources[1].InstanceInfo.Type, "aws_rds_cluster_role_association"; got != want {
+		t.Fatalf("association resource type = %q, want %q", got, want)
+	}
+}
+
+func TestRDSAddClusterKeepsIAMRolesWhenAssociationsCannotOwnAllRoles(t *testing.T) {
+	commaRoleARN := "arn:aws:iam::123456789012:role/service-role/rds,cluster-role"
+	g := &RDSGenerator{}
+	g.addRDSCluster("cluster-1", []rdstypes.DBClusterRole{
+		{FeatureName: aws.String("s3Import"), RoleArn: aws.String(commaRoleARN), Status: aws.String("ACTIVE")},
 	})
 
 	if len(g.Resources) != 1 {
 		t.Fatalf("len(Resources) = %d, want 1", len(g.Resources))
 	}
+	cluster := g.Resources[0]
+	if got, want := cluster.InstanceInfo.Type, "aws_rds_cluster"; got != want {
+		t.Fatalf("cluster resource type = %q, want %q", got, want)
+	}
+	if computeDBTestStringSliceContains(cluster.IgnoreKeys, "^iam_roles$") {
+		t.Fatalf("cluster IgnoreKeys = %v, should keep iam_roles", cluster.IgnoreKeys)
+	}
+}
+
+func TestRDSAddClusterRoleAssociations(t *testing.T) {
+	roleARN := "arn:aws:iam::123456789012:role/service-role/rds-cluster-role"
+	commaRoleARN := "arn:aws:iam::123456789012:role/service-role/rds,cluster-role"
+	g := &RDSGenerator{}
+	added := g.addRDSClusterRoleAssociations("cluster-1", []rdstypes.DBClusterRole{
+		{FeatureName: aws.String("s3Import"), RoleArn: aws.String(roleARN), Status: aws.String("PENDING")},
+		{FeatureName: aws.String("s3Import"), RoleArn: aws.String(commaRoleARN), Status: aws.String("ACTIVE")},
+		{FeatureName: aws.String("s3Import"), RoleArn: aws.String(roleARN), Status: aws.String("ACTIVE")},
+	})
+	if !added {
+		t.Fatal("addRDSClusterRoleAssociations() = false, want true")
+	}
+
+	if len(g.Resources) != 1 {
+		t.Fatalf("len(Resources) = %d, want 1", len(g.Resources))
+	}
 	resource := g.Resources[0]
-	if got, want := resource.InstanceInfo.Type, "aws_db_instance_role_association"; got != want {
+	if got, want := resource.InstanceInfo.Type, "aws_rds_cluster_role_association"; got != want {
 		t.Fatalf("resource type = %q, want %q", got, want)
 	}
-	if got, want := resource.InstanceState.ID, "db-1,"+roleARN; got != want {
+	if got, want := resource.InstanceState.ID, "cluster-1,"+roleARN; got != want {
 		t.Fatalf("resource ID = %q, want %q", got, want)
+	}
+	if got, want := resource.InstanceState.Attributes["db_cluster_identifier"], "cluster-1"; got != want {
+		t.Fatalf("db_cluster_identifier = %q, want %q", got, want)
 	}
 	if got, want := resource.InstanceState.Attributes["feature_name"], "s3Import"; got != want {
 		t.Fatalf("feature_name = %q, want %q", got, want)
+	}
+}
+
+func TestRDSAddClusterRoleAssociationsReturnsFalseWhenNoneAdded(t *testing.T) {
+	g := &RDSGenerator{}
+	added := g.addRDSClusterRoleAssociations("cluster-1", []rdstypes.DBClusterRole{
+		{RoleArn: aws.String("arn:aws:iam::123456789012:role/service-role/rds-cluster-role"), Status: aws.String("PENDING")},
+	})
+	if added {
+		t.Fatal("addRDSClusterRoleAssociations() = true, want false")
+	}
+	if len(g.Resources) != 0 {
+		t.Fatalf("len(Resources) = %d, want 0", len(g.Resources))
+	}
+}
+
+func TestRDSClusterRoleAssociationsSplitSafe(t *testing.T) {
+	roleARN := "arn:aws:iam::123456789012:role/service-role/rds-cluster-role"
+	commaRoleARN := "arn:aws:iam::123456789012:role/service-role/rds,cluster-role"
+	tests := []struct {
+		name  string
+		roles []rdstypes.DBClusterRole
+		want  bool
+	}{
+		{name: "empty", want: true},
+		{
+			name: "active supported role",
+			roles: []rdstypes.DBClusterRole{
+				{RoleArn: aws.String(roleARN), Status: aws.String("ACTIVE")},
+			},
+			want: true,
+		},
+		{
+			name: "pending role keeps inline ownership",
+			roles: []rdstypes.DBClusterRole{
+				{RoleArn: aws.String(commaRoleARN), Status: aws.String("PENDING")},
+			},
+			want: false,
+		},
+		{
+			name: "active unsupported role keeps inline ownership",
+			roles: []rdstypes.DBClusterRole{
+				{RoleArn: aws.String(commaRoleARN), Status: aws.String("ACTIVE")},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := rdsClusterRoleAssociationsSplitSafe(tt.roles)
+			if got != tt.want {
+				t.Fatalf("rdsClusterRoleAssociationsSplitSafe() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 
@@ -73,6 +245,20 @@ func TestRDSResourceName(t *testing.T) {
 				t.Fatalf("rdsResourceName() = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestRDSCompositeResourceName(t *testing.T) {
+	if got, want := rdsCompositeResourceName(), "rds_resource"; got != want {
+		t.Fatalf("rdsCompositeResourceName() = %q, want %q", got, want)
+	}
+	if got, want := rdsCompositeResourceName("cluster-1", "db-1"), "9_cluster-1__4_db-1"; got != want {
+		t.Fatalf("rdsCompositeResourceName() = %q, want %q", got, want)
+	}
+	first := rdsCompositeResourceName("ab", "c")
+	second := rdsCompositeResourceName("a", "bc")
+	if first == second {
+		t.Fatalf("rdsCompositeResourceName collision: %q == %q", first, second)
 	}
 }
 
@@ -167,5 +353,26 @@ func TestRDSStatusImportable(t *testing.T) {
 				t.Fatalf("rdsStatusImportable(%q) = %v, want %v", tt.status, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestRDSRoleAssociationStatusImportable(t *testing.T) {
+	if !rdsRoleAssociationStatusImportable("ACTIVE") {
+		t.Fatal("ACTIVE role association should be importable")
+	}
+	if rdsRoleAssociationStatusImportable("PENDING") {
+		t.Fatal("PENDING role association should be skipped")
+	}
+	if rdsRoleAssociationStatusImportable("") {
+		t.Fatal("empty role association status should be skipped")
+	}
+}
+
+func TestRDSClusterRoleAssociationImportIDSupported(t *testing.T) {
+	if !rdsClusterRoleAssociationImportIDSupported("arn:aws:iam::123456789012:role/service-role/rds-role") {
+		t.Fatal("role ARN without comma should be supported")
+	}
+	if rdsClusterRoleAssociationImportIDSupported("arn:aws:iam::123456789012:role/service-role/rds,role") {
+		t.Fatal("cluster role ARN with comma should be skipped")
 	}
 }

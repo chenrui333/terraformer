@@ -4,15 +4,66 @@ package aws
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"log"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/docdb"
+	docdbtypes "github.com/aws/aws-sdk-go-v2/service/docdb/types"
+	"github.com/aws/smithy-go"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 var docDBAllowEmptyValues = []string{"tags."}
 
+var errDocDBOptionalResourceUnavailable = errors.New("docdb optional resource unavailable")
+
 type DocDBGenerator struct {
 	AWSService
+}
+
+type docDBOptionalResourceLoader struct {
+	name string
+	load func() error
+}
+
+func (g *DocDBGenerator) loadOptionalResources(loaders []docDBOptionalResourceLoader) error {
+	for _, loader := range loaders {
+		if err := loader.load(); err != nil {
+			if docDBOptionalResourceUnavailable(err) {
+				log.Printf("Skipping DocDB %s: %v", loader.name, err)
+				continue
+			}
+			return fmt.Errorf("load docdb %s: %w", loader.name, err)
+		}
+	}
+	return nil
+}
+
+func docDBOptionalResourceUnavailable(err error) bool {
+	if errors.Is(err, errDocDBOptionalResourceUnavailable) {
+		return true
+	}
+	var subscriptionNotFound *docdbtypes.SubscriptionNotFoundFault
+	if errors.As(err, &subscriptionNotFound) {
+		return true
+	}
+	var apiErr smithy.APIError
+	if !errors.As(err, &apiErr) {
+		return false
+	}
+	switch strings.ToLower(apiErr.ErrorCode()) {
+	case "accessdenied", "accessdeniedexception",
+		"authorizationerror", "authorizationerrorexception",
+		"invalidaction",
+		"subscriptionnotfound",
+		"unauthorizedoperation", "unauthorizedexception",
+		"unknownoperationexception",
+		"unsupportedoperation", "unsupportedoperationexception":
+		return true
+	}
+	return false
 }
 
 func (g *DocDBGenerator) InitResources() error {
@@ -31,6 +82,12 @@ func (g *DocDBGenerator) InitResources() error {
 	}
 
 	if err := g.getParameterGroups(svc); err != nil {
+		return err
+	}
+
+	if err := g.loadOptionalResources([]docDBOptionalResourceLoader{
+		{name: "event subscriptions", load: func() error { return g.getEventSubscriptions(svc) }},
+	}); err != nil {
 		return err
 	}
 
@@ -116,6 +173,55 @@ func (g *DocDBGenerator) getParameterGroups(svc *docdb.Client) error {
 	}
 
 	return nil
+}
+
+func (g *DocDBGenerator) getEventSubscriptions(svc docdb.DescribeEventSubscriptionsAPIClient) error {
+	p := docdb.NewDescribeEventSubscriptionsPaginator(svc, &docdb.DescribeEventSubscriptionsInput{})
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return err
+		}
+		for _, subscription := range page.EventSubscriptionsList {
+			if resource, ok := newDocDBEventSubscriptionResource(subscription); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+	}
+	return nil
+}
+
+func newDocDBEventSubscriptionResource(subscription docdbtypes.EventSubscription) (terraformutils.Resource, bool) {
+	name := StringValue(subscription.CustSubscriptionId)
+	if name == "" || !docDBEventSubscriptionStatusImportable(StringValue(subscription.Status)) {
+		return terraformutils.Resource{}, false
+	}
+	resource := terraformutils.NewSimpleResource(
+		name,
+		docDBResourceName("event_subscription", name),
+		"aws_docdb_event_subscription",
+		"aws",
+		docDBAllowEmptyValues,
+	)
+	resource.IgnoreKeys = append(resource.IgnoreKeys, "^name_prefix$")
+	return resource, true
+}
+
+func docDBEventSubscriptionStatusImportable(status string) bool {
+	return strings.EqualFold(status, "active")
+}
+
+func docDBResourceName(parts ...string) string {
+	var cleanParts []string
+	for _, part := range parts {
+		if part != "" {
+			cleanParts = append(cleanParts, part)
+		}
+	}
+	if len(cleanParts) == 0 {
+		return "docdb_resource"
+	}
+	return strings.Join(cleanParts, "_")
 }
 
 // PostConvertHook for add policy json as heredoc
