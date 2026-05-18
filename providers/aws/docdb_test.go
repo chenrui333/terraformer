@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/docdb"
 	docdbtypes "github.com/aws/aws-sdk-go-v2/service/docdb/types"
+	"github.com/aws/smithy-go"
 )
 
 func TestNewDocDBEventSubscriptionResource(t *testing.T) {
@@ -57,10 +58,14 @@ func TestDocDBStatusPredicates(t *testing.T) {
 
 func TestDocDBLoadOptionalResourcesContinuesAfterError(t *testing.T) {
 	g := &DocDBGenerator{}
+	client := &fakeDocDBDescribeEventSubscriptionsClient{
+		t:   t,
+		err: &smithy.GenericAPIError{Code: "AccessDeniedException"},
+	}
 	called := false
 
 	err := g.loadOptionalResources([]docDBOptionalResourceLoader{
-		{name: "unavailable", load: func() error { return errDocDBOptionalResourceUnavailable }},
+		{name: "event subscriptions", load: func() error { return g.getEventSubscriptions(client) }},
 		{name: "next", load: func() error {
 			called = true
 			return nil
@@ -143,6 +148,28 @@ func TestDocDBLoadEventSubscriptionsPropagatesError(t *testing.T) {
 	}
 	if len(g.Resources) != 0 {
 		t.Fatalf("len(Resources) = %d, want 0", len(g.Resources))
+	}
+}
+
+func TestDocDBOptionalResourceUnavailable(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "sentinel", err: errDocDBOptionalResourceUnavailable, want: true},
+		{name: "typed subscription not found", err: &docdbtypes.SubscriptionNotFoundFault{}, want: true},
+		{name: "generic access denied", err: &smithy.GenericAPIError{Code: "AccessDeniedException"}, want: true},
+		{name: "generic unsupported", err: &smithy.GenericAPIError{Code: "UnsupportedOperationException"}, want: true},
+		{name: "generic unexpected", err: &smithy.GenericAPIError{Code: "InternalFailure"}, want: false},
+		{name: "plain unexpected", err: errors.New("boom"), want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := docDBOptionalResourceUnavailable(tt.err); got != tt.want {
+				t.Fatalf("docDBOptionalResourceUnavailable() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 

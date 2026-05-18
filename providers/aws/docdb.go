@@ -11,6 +11,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/docdb"
 	docdbtypes "github.com/aws/aws-sdk-go-v2/service/docdb/types"
+	"github.com/aws/smithy-go"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -30,7 +31,7 @@ type docDBOptionalResourceLoader struct {
 func (g *DocDBGenerator) loadOptionalResources(loaders []docDBOptionalResourceLoader) error {
 	for _, loader := range loaders {
 		if err := loader.load(); err != nil {
-			if errors.Is(err, errDocDBOptionalResourceUnavailable) {
+			if docDBOptionalResourceUnavailable(err) {
 				log.Printf("Skipping DocDB %s: %v", loader.name, err)
 				continue
 			}
@@ -38,6 +39,31 @@ func (g *DocDBGenerator) loadOptionalResources(loaders []docDBOptionalResourceLo
 		}
 	}
 	return nil
+}
+
+func docDBOptionalResourceUnavailable(err error) bool {
+	if errors.Is(err, errDocDBOptionalResourceUnavailable) {
+		return true
+	}
+	var subscriptionNotFound *docdbtypes.SubscriptionNotFoundFault
+	if errors.As(err, &subscriptionNotFound) {
+		return true
+	}
+	var apiErr smithy.APIError
+	if !errors.As(err, &apiErr) {
+		return false
+	}
+	switch strings.ToLower(apiErr.ErrorCode()) {
+	case "accessdenied", "accessdeniedexception",
+		"authorizationerror", "authorizationerrorexception",
+		"invalidaction",
+		"subscriptionnotfound",
+		"unauthorizedoperation", "unauthorizedexception",
+		"unknownoperationexception",
+		"unsupportedoperation", "unsupportedoperationexception":
+		return true
+	}
+	return false
 }
 
 func (g *DocDBGenerator) InitResources() error {
