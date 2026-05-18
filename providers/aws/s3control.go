@@ -32,6 +32,7 @@ const (
 	s3ControlStorageLensConfigurationResourceType      = "aws_s3control_storage_lens_configuration"
 	s3ControlAccessPointIDSeparator                    = ":"
 	s3ControlCommaIDSeparator                          = ","
+	s3ControlMultiRegionAccessPointRegion              = "us-west-2"
 )
 
 var s3ControlAllowEmptyValues = []string{"tags."}
@@ -210,7 +211,7 @@ func (g *S3ControlGenerator) loadMultiRegionAccessPoints(svc *s3control.Client, 
 		AccountId: aws.String(accountID),
 	})
 	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(context.TODO())
+		page, err := paginator.NextPage(context.TODO(), s3ControlMultiRegionAccessPointOperationOption)
 		if s3ControlResourceNotFound(err) {
 			return nil
 		}
@@ -780,6 +781,10 @@ func s3ControlMultiRegionAccessPointImportable(accessPoint s3controltypes.MultiR
 	default:
 		return false
 	}
+}
+
+func s3ControlMultiRegionAccessPointOperationOption(options *s3control.Options) {
+	options.Region = s3ControlMultiRegionAccessPointRegion
 }
 
 func s3ControlResourceName(parts ...string) string {

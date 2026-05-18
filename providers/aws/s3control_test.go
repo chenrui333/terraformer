@@ -357,6 +357,14 @@ func TestS3ControlMultiRegionAccessPointImportable(t *testing.T) {
 	}
 }
 
+func TestS3ControlMultiRegionAccessPointOperationOption(t *testing.T) {
+	options := &s3control.Options{Region: "eu-central-1"}
+	s3ControlMultiRegionAccessPointOperationOption(options)
+	if options.Region != s3ControlMultiRegionAccessPointRegion {
+		t.Fatalf("Region = %q, want %q", options.Region, s3ControlMultiRegionAccessPointRegion)
+	}
+}
+
 func TestS3ControlResourceNameAvoidsSanitizedCollisions(t *testing.T) {
 	left := terraformutils.TfSanitize(s3ControlResourceName("access_point", testS3ControlAccountID, "a_b", "c"))
 	right := terraformutils.TfSanitize(s3ControlResourceName("access_point", testS3ControlAccountID, "a", "b_c"))
