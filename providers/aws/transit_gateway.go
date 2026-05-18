@@ -506,7 +506,7 @@ func newTransitGatewayMeteringPolicyResource(policy types.TransitGatewayMetering
 
 func newTransitGatewayMeteringPolicyEntryResource(policyID string, entry types.TransitGatewayMeteringPolicyEntry) (terraformutils.Resource, bool) {
 	ruleNumber := StringValue(entry.PolicyRuleNumber)
-	if policyID == "" || ruleNumber == "" || entry.MeteredAccount == "" || entry.State != types.TransitGatewayMeteringPolicyEntryStateAvailable {
+	if policyID == "" || ruleNumber == "" || !transitGatewayMeteringPolicyEntryPayerImportable(entry.MeteredAccount) || entry.State != types.TransitGatewayMeteringPolicyEntryStateAvailable {
 		return terraformutils.Resource{}, false
 	}
 	if _, err := strconv.ParseInt(ruleNumber, 10, 64); err != nil {
@@ -691,6 +691,16 @@ func transitGatewayRouteImportable(route types.TransitGatewayRoute) bool {
 	}
 	switch route.State {
 	case types.TransitGatewayRouteStateActive, types.TransitGatewayRouteStateBlackhole:
+		return true
+	default:
+		return false
+	}
+}
+
+func transitGatewayMeteringPolicyEntryPayerImportable(payer types.TransitGatewayMeteringPayerType) bool {
+	switch payer {
+	case types.TransitGatewayMeteringPayerTypeSourceAttachmentOwner,
+		types.TransitGatewayMeteringPayerTypeDestinationAttachmentOwner:
 		return true
 	default:
 		return false

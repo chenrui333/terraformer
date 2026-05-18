@@ -257,6 +257,9 @@ func TestNewTransitGatewayMeteringResources(t *testing.T) {
 	if _, ok := newTransitGatewayMeteringPolicyEntryResource("tgw-mp-123", types.TransitGatewayMeteringPolicyEntry{MeteredAccount: types.TransitGatewayMeteringPayerTypeTransitGatewayOwner, PolicyRuleNumber: aws.String("bad"), State: types.TransitGatewayMeteringPolicyEntryStateAvailable}); ok {
 		t.Fatal("metering policy entry with nonnumeric rule number should be skipped")
 	}
+	if _, ok := newTransitGatewayMeteringPolicyEntryResource("tgw-mp-123", types.TransitGatewayMeteringPolicyEntry{MeteredAccount: types.TransitGatewayMeteringPayerTypeTransitGatewayOwner, PolicyRuleNumber: aws.String("200"), State: types.TransitGatewayMeteringPolicyEntryStateAvailable}); ok {
+		t.Fatal("metering policy entry with unsupported payer type should be skipped")
+	}
 	if _, ok := newTransitGatewayMeteringPolicyEntryResource("tgw-mp-123", types.TransitGatewayMeteringPolicyEntry{MeteredAccount: types.TransitGatewayMeteringPayerTypeTransitGatewayOwner, PolicyRuleNumber: aws.String("200"), State: types.TransitGatewayMeteringPolicyEntryStateDeleted}); ok {
 		t.Fatal("deleted metering policy entry should be skipped")
 	}
