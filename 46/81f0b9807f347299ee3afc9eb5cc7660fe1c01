@@ -1,0 +1,19 @@
+providers/cloudflare/access_test.go
+  s_8116db84abb0ec::t_e53c646ba11a54 64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "4681f0b9807f347299ee3afc9eb5cc7660fe1c01",
+  "prompts": {},
+  "sessions": {
+    "s_8116db84abb0ec": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e386f-b7c9-7150-b21e-94b38441ebd7",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
