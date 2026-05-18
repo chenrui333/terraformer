@@ -302,6 +302,17 @@
       ]
     },
     {
+      "resource": "cloudflare_email_security_trusted_domains",
+      "service_family": "email_security",
+      "reason": "Email Security trusted domains are deferred until provider import/read preserves the trusted-domain configuration fields.",
+      "evidence": "Terraform provider v5.19.1 imports cloudflare_email_security_trusted_domains by account_id/trusted_domain_id, but the generated model stores the domain definition under a body field marked no_refresh while pattern, is_recent, is_regex, and is_similarity are not repopulated by the importer/read path. Terraformer cannot safely emit recreateable HCL for discovered trusted domains until provider refresh preserves those fields.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/email_security_trusted_domains"
+      ]
+    },
+    {
       "resource": "cloudflare_hostname_tls_setting",
       "service_family": "certificates",
       "reason": "Per-hostname TLS settings need a provider import shape that uniquely identifies the hostname.",
@@ -387,6 +398,17 @@
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/magic_transit_connector"
+      ]
+    },
+    {
+      "resource": "cloudflare_observatory_scheduled_test",
+      "service_family": "observatory",
+      "reason": "Observatory scheduled tests are keyed by URL but do not expose broad list discovery for Terraformer.",
+      "evidence": "Terraform provider v5.19.1 imports cloudflare_observatory_scheduled_test by zone_id/url and reads through the Speed Schedule Get API, but the provider does not expose a list data source or list path for scheduled test URLs. Without user-supplied URLs, Terraformer cannot exhaustively discover durable schedules, and Lighthouse report fields are runtime results rather than desired configuration.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/observatory_scheduled_test"
       ]
     },
     {
@@ -732,6 +754,17 @@
       ]
     },
     {
+      "resource": "cloudflare_zero_trust_access_ai_controls_mcp_portal",
+      "service_family": "zero_trust_access",
+      "reason": "AI Controls MCP portals mix durable portal settings with runtime server sync state that needs a dedicated reconstruction pass.",
+      "evidence": "Terraform provider v5.19.1 can import cloudflare_zero_trust_access_ai_controls_mcp_portal by account_id/id and exposes list/read APIs, but nested server fields include no_refresh aliases while the provider reads prompt, tool, sync status, error, and last-synced runtime data. Broad import should not infer server prompt/tool override intent from runtime sync output.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zero_trust_access_ai_controls_mcp_portal"
+      ]
+    },
+    {
       "resource": "cloudflare_zero_trust_access_ai_controls_mcp_server",
       "service_family": "zero_trust_access",
       "reason": "MCP server resources can require write-only authentication credentials and expose sync/runtime state.",
@@ -740,6 +773,17 @@
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zero_trust_access_ai_controls_mcp_server"
+      ]
+    },
+    {
+      "resource": "cloudflare_zero_trust_access_key_configuration",
+      "service_family": "zero_trust_access",
+      "reason": "Access key configuration is an account singleton whose API value can represent an effective default rather than explicit Terraform-owned configuration.",
+      "evidence": "Terraform provider v5.19.1 imports cloudflare_zero_trust_access_key_configuration by account_id and requires key_rotation_interval_days while reading days_until_next_rotation and last_key_rotation_at as computed rotation state. Terraformer cannot currently distinguish explicit user-owned rotation policy from inherited account defaults, so broad import could claim platform-managed Access key settings.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zero_trust_access_key_configuration"
       ]
     },
     {
