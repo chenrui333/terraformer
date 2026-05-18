@@ -1,0 +1,23 @@
+docs/cloudflare.md
+  s_abfbf998705050::t_dc35b73b565aad 172-175
+providers/cloudflare/zero_trust_device_dlp.go
+  s_abfbf998705050::t_dc35b73b565aad 51-70,392,407-446
+providers/cloudflare/zero_trust_device_dlp_test.go
+  s_abfbf998705050::t_dc35b73b565aad 125-220,264,266-279
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "b9769062e3bb033a1a61638903ef248c22075f09",
+  "prompts": {},
+  "sessions": {
+    "s_abfbf998705050": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3870-47ba-7731-ba8f-81339dc3d3f0",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
