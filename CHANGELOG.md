@@ -1,5 +1,136 @@
 # Changelog
 
+## 0.13.0
+
+`0.13.0` is a major provider-coverage release. It adds Kafka and Helm
+provider support, closes the Cloudflare and Datadog provider gap trackers, and
+delivers a large AWS inventory expansion across networking, storage, AI/BI,
+compute, and database service families. It also adds provider lifecycle docs and
+unsupported-resource metadata workflows that keep broad imports bounded to
+refreshable, user-owned configuration.
+
+### Highlights
+
+* Add Kafka provider support.
+* Add Helm provider support.
+* Complete the Cloudflare and Datadog provider gap close-out waves.
+* Expand AWS provider inventory coverage across networking, storage, AI/BI,
+  compute, database, security, governance, and long-tail service families.
+* Close out Kubernetes provider coverage policy work for the Kubernetes 1.33
+  through 1.35 support window.
+* Add provider architecture, unsupported-resource metadata, labeler, and gap
+  inventory practices for safer future provider expansion.
+
+### New Providers
+
+#### Kafka
+
+* Add the `kafka` provider with `kafka_topic` and `kafka_acl` imports.
+* Support broker configuration through CLI flags and environment variables,
+  including TLS, SASL, OAuthBearer, and AWS IAM authentication paths.
+* Keep generated configuration secret-free by relying on environment variables
+  for passwords, private keys, access keys, session tokens, and OAuth material.
+* Document quota and SCRAM credential limitations in unsupported metadata where
+  the upstream provider import/read path cannot produce safe HCL.
+
+#### Helm
+
+* Add the `helm` provider and `helm_release` imports.
+* Support broad latest-deployed release discovery across namespaces and exact
+  filtered imports by provider-compatible `namespace/name` IDs.
+* Reuse Helm and Kubernetes client configuration consistently between discovery
+  and provider refresh.
+* Avoid exporting authored values, rendered manifests, repository credentials,
+  kubeconfig contents, Kubernetes credentials, and value-bearing release state.
+
+### AWS Provider
+
+This release delivers a major AWS inventory coverage wave while keeping the
+broader AWS tracker open for future focused lanes.
+
+* Expand networking coverage across Transit Gateway add-ons, Direct Connect,
+  Network Manager, Route 53 Resolver, Global Accelerator, VPC IPAM, Verified
+  Access, VPC Lattice, and related VPC adjunct resources.
+* Expand S3 and S3Control storage coverage across bucket configuration, account
+  public access blocks, access points, Access Grants, Multi-Region Access
+  Points, Object Lambda access points, Storage Lens, and S3 Tables resources.
+* Expand AI, BI, and customer engagement coverage across Bedrock, Bedrock Agent,
+  Lex, Lex V2, QuickSight, SageMaker, Comprehend, Connect, Rekognition, and
+  Transcribe resource families.
+* Expand compute and database runtime coverage across EC2 capacity and traffic
+  mirror resources, DocumentDB, DynamoDB exports and policy adjuncts,
+  ElastiCache, MemoryDB, Neptune, RDS, Redshift, and Redshift Serverless.
+* Continue post-`0.12.0` AWS correctness work for networking foundation
+  resources, security/governance imports, conformance packs, composite alarms,
+  event data stores, service-linked roles, server certificates, and KMS key
+  policy imports.
+* Harden AWS import safety with state/status filtering, regional-once and
+  global discovery routing, duplicate ownership checks, provider refresh ID
+  preservation, and evidence-backed unsupported metadata for resources that
+  require secrets, acceptance workflows, unrecoverable authored fields, or
+  action/runtime ownership.
+
+### Cloudflare Provider
+
+* Close the Cloudflare provider gap tracker (#335) with supported/deferred
+  accounting across code, docs, and unsupported metadata.
+* Expand imports across settings, storage children, R2/queues/Hyperdrive, Zero
+  Trust Gateway, Zero Trust device/posture/DEX/DLP, security and API Shield,
+  Email Security adjuncts, DNS and zone settings, network edge, media/platform,
+  Workers, cert/TLS, connectivity directory services, and tunnel routes.
+* Document Cloudflare-managed, request-style, runtime, secret-backed, and
+  source-heavy resources as unsupported or deferred instead of emitting partial
+  generated configuration.
+
+### Datadog Provider
+
+* Close the Datadog provider gap tracker (#336) with supported/deferred
+  accounting across code, docs, and unsupported metadata.
+* Expand imports across cloud cost and usage configuration, agentless scanning,
+  CSM threats, AppSec WAF, modern integrations, org controls, IAM/access/key
+  management, synthetics and downtime, dashboarding, incidents/workflows,
+  webhooks, service catalog, product platform, observability pipelines, and logs
+  destinations.
+* Document unsafe secret-backed, runtime, or provider-limited resources in
+  unsupported metadata so Datadog imports stay refreshable and reviewable.
+
+### Kubernetes Provider
+
+* Close the Kubernetes provider feature support tracker (#337).
+* Add Kubernetes 1.33 through 1.35 API discovery matrix tests and docs.
+* Clarify native API import policy, manifest-backed fallback behavior, and CRD
+  handling for resources without first-class Terraform Kubernetes provider
+  types.
+* Document runtime, controller-generated, policy-skipped, and non-importable API
+  resources in unsupported metadata.
+
+### Provider Lifecycle And Maintainer Workflow
+
+* Add a repo-level provider architecture guide covering provider lifecycle,
+  service grouping, importability decisions, refresh-stable state, and
+  close-out audits.
+* Standardize provider-local `unsupported_resources.json` metadata and
+  validation so unsafe resources are documented with concrete evidence.
+* Add or refresh provider labeler rules for new providers and provider-family
+  PRs.
+* Improve close-out and gap inventory guidance so broad provider work reports
+  supported, deferred, unsupported, and still-unclassified resources explicitly.
+
+### Validation And Compatibility Notes
+
+* Broad provider parity remains intentionally bounded by importability and
+  safety. Terraformer still skips or defers resources whose provider read path,
+  service API, or ownership model cannot reconstruct valid, refreshable HCL.
+* Generated HCL avoids write-only credentials, private keys, tokens, rendered
+  secret data, and other unrecoverable secret material.
+* Importers increasingly filter transient, deleted, failed, provider-managed,
+  runtime-generated, acceptance/handshake, and action-style resources before
+  emitting Terraform state.
+* Continue AWS provider gap work in #338. This release is a major AWS coverage
+  wave, not a full upstream Terraform AWS provider parity claim.
+
+**Full Changelog**: <https://github.com/chenrui333/terraformer/compare/v0.12.0...v0.13.0>
+
 ## 0.12.0
 
 `0.12.0` is a broad AWS provider import-coverage release. It closes a large
