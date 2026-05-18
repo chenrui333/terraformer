@@ -29,6 +29,10 @@ type DirectConnectGenerator struct {
 	AWSService
 }
 
+type directConnectVirtualInterfacesAPIClient interface {
+	DescribeVirtualInterfaces(context.Context, *directconnect.DescribeVirtualInterfacesInput, ...func(*directconnect.Options)) (*directconnect.DescribeVirtualInterfacesOutput, error)
+}
+
 type directConnectGatewayAssociationsAPIClient interface {
 	DescribeDirectConnectGatewayAssociations(context.Context, *directconnect.DescribeDirectConnectGatewayAssociationsInput, ...func(*directconnect.Options)) (*directconnect.DescribeDirectConnectGatewayAssociationsOutput, error)
 }
@@ -71,25 +75,31 @@ func (g *DirectConnectGenerator) getDirectConnectConnections(svc *directconnect.
 	return nil
 }
 
-func (g *DirectConnectGenerator) getDirectConnectVirtualInterfaces(svc *directconnect.Client, currentAccountID string) error {
+func (g *DirectConnectGenerator) getDirectConnectVirtualInterfaces(svc directConnectVirtualInterfacesAPIClient, currentAccountID string) error {
 	input := &directconnect.DescribeVirtualInterfacesInput{}
-	output, err := svc.DescribeVirtualInterfaces(context.TODO(), input)
-	if err != nil {
-		return err
-	}
-
-	for _, vif := range output.VirtualInterfaces {
-		resourceType, ok := directConnectVirtualInterfaceResourceType(vif)
-		if !ok {
-			log.Printf("Unknown Virtual Interface Type: %s for ID: %s", StringValue(vif.VirtualInterfaceType), StringValue(vif.VirtualInterfaceId))
-			continue
+	for {
+		output, err := svc.DescribeVirtualInterfaces(context.TODO(), input)
+		if err != nil {
+			return err
 		}
 
-		if resource, ok := newDirectConnectVirtualInterfaceResource(vif, resourceType, currentAccountID); ok {
-			g.Resources = append(g.Resources, resource)
-		}
-	}
+		for _, vif := range output.VirtualInterfaces {
+			resourceType, ok := directConnectVirtualInterfaceResourceType(vif)
+			if !ok {
+				log.Printf("Unknown Virtual Interface Type: %s for ID: %s", StringValue(vif.VirtualInterfaceType), StringValue(vif.VirtualInterfaceId))
+				continue
+			}
 
+			if resource, ok := newDirectConnectVirtualInterfaceResource(vif, resourceType, currentAccountID); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+
+		if !awsHasMorePages(output.NextToken) {
+			break
+		}
+		input.NextToken = output.NextToken
+	}
 	return nil
 }
 

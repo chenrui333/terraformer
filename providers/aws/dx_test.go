@@ -114,6 +114,55 @@ func TestDirectConnectGatewayResourceFiltersTerminalStates(t *testing.T) {
 	}
 }
 
+func TestDirectConnectVirtualInterfacePagination(t *testing.T) {
+	client := &stubDirectConnectVirtualInterfacesClient{
+		outputs: []*directconnect.DescribeVirtualInterfacesOutput{
+			{
+				NextToken: aws.String("next"),
+				VirtualInterfaces: []directconnecttypes.VirtualInterface{
+					{
+						VirtualInterfaceId:    aws.String("dxvif-private"),
+						VirtualInterfaceState: directconnecttypes.VirtualInterfaceStateAvailable,
+						VirtualInterfaceType:  aws.String("private"),
+					},
+				},
+			},
+			{
+				NextToken: aws.String(""),
+				VirtualInterfaces: []directconnecttypes.VirtualInterface{
+					{
+						VirtualInterfaceId:    aws.String("dxvif-transit"),
+						VirtualInterfaceState: directconnecttypes.VirtualInterfaceStateAvailable,
+						VirtualInterfaceType:  aws.String("transit"),
+					},
+				},
+			},
+		},
+	}
+	g := DirectConnectGenerator{}
+	if err := g.getDirectConnectVirtualInterfaces(client, "123456789012"); err != nil {
+		t.Fatalf("getDirectConnectVirtualInterfaces() error = %v", err)
+	}
+	if len(client.requests) != 2 {
+		t.Fatalf("DescribeVirtualInterfaces calls = %d, want 2", len(client.requests))
+	}
+	if client.requests[0].NextToken != nil {
+		t.Fatalf("first NextToken = %q, want nil", aws.ToString(client.requests[0].NextToken))
+	}
+	if got := aws.ToString(client.requests[1].NextToken); got != "next" {
+		t.Fatalf("second NextToken = %q, want next", got)
+	}
+	if len(g.Resources) != 2 {
+		t.Fatalf("resources = %d, want 2", len(g.Resources))
+	}
+	if got := g.Resources[0].InstanceState.ID; got != "dxvif-private" {
+		t.Fatalf("first resource ID = %q, want dxvif-private", got)
+	}
+	if got := g.Resources[1].InstanceInfo.Type; got != directConnectTransitVirtualInterfaceResourceType {
+		t.Fatalf("second resource type = %q, want %s", got, directConnectTransitVirtualInterfaceResourceType)
+	}
+}
+
 func TestDirectConnectLagResourceFiltersTerminalStates(t *testing.T) {
 	resource, ok := newDirectConnectLagResource(directconnecttypes.Lag{
 		LagId:    aws.String("dxlag-123"),
@@ -366,6 +415,20 @@ func TestDirectConnectGatewayAssociationsSkippedWithoutGateways(t *testing.T) {
 type stubDirectConnectGatewayAssociationsClient struct {
 	requests []*directconnect.DescribeDirectConnectGatewayAssociationsInput
 	outputs  []*directconnect.DescribeDirectConnectGatewayAssociationsOutput
+}
+
+type stubDirectConnectVirtualInterfacesClient struct {
+	requests []*directconnect.DescribeVirtualInterfacesInput
+	outputs  []*directconnect.DescribeVirtualInterfacesOutput
+}
+
+func (c *stubDirectConnectVirtualInterfacesClient) DescribeVirtualInterfaces(_ context.Context, input *directconnect.DescribeVirtualInterfacesInput, _ ...func(*directconnect.Options)) (*directconnect.DescribeVirtualInterfacesOutput, error) {
+	inputCopy := *input
+	c.requests = append(c.requests, &inputCopy)
+	if len(c.requests) > len(c.outputs) {
+		return &directconnect.DescribeVirtualInterfacesOutput{}, nil
+	}
+	return c.outputs[len(c.requests)-1], nil
 }
 
 func (c *stubDirectConnectGatewayAssociationsClient) DescribeDirectConnectGatewayAssociations(_ context.Context, input *directconnect.DescribeDirectConnectGatewayAssociationsInput, _ ...func(*directconnect.Options)) (*directconnect.DescribeDirectConnectGatewayAssociationsOutput, error) {
