@@ -486,6 +486,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ivschat v1.21.22
 	github.com/aws/aws-sdk-go-v2/service/kendra v1.60.23
 	github.com/aws/aws-sdk-go-v2/service/lakeformation v1.47.8
+	github.com/aws/aws-sdk-go-v2/service/lexmodelbuildingservice v1.35.0
+	github.com/aws/aws-sdk-go-v2/service/lexmodelsv2 v1.61.0
 	github.com/aws/aws-sdk-go-v2/service/mediaconvert v1.91.2
 	github.com/aws/aws-sdk-go-v2/service/mediapackagev2 v1.37.0
 	github.com/aws/aws-sdk-go-v2/service/mwaa v1.40.0
@@ -496,6 +498,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/pinpoint v1.39.23
 	github.com/aws/aws-sdk-go-v2/service/pinpointsmsvoicev2 v1.28.2
 	github.com/aws/aws-sdk-go-v2/service/pipes v1.23.22
+	github.com/aws/aws-sdk-go-v2/service/quicksight v1.109.0
 	github.com/aws/aws-sdk-go-v2/service/redshiftserverless v1.34.6
 	github.com/aws/aws-sdk-go-v2/service/rekognition v1.51.23
 	github.com/aws/aws-sdk-go-v2/service/route53resolver v1.43.0

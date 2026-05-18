@@ -377,6 +377,10 @@ github.com/aws/aws-sdk-go-v2/service/lakeformation v1.47.8 h1:BtZujlNIGZJpz/6Zbh
 github.com/aws/aws-sdk-go-v2/service/lakeformation v1.47.8/go.mod h1:8ztA+uewolt+oJ2VEVUPIxhK5IW+4AVuDou6ju6wAAE=
 github.com/aws/aws-sdk-go-v2/service/lambda v1.90.1 h1:odCeJgHXfQoXEWQUIzPkKvsJTWcLMsaOWowNpovPFFw=
 github.com/aws/aws-sdk-go-v2/service/lambda v1.90.1/go.mod h1:NbtJVztitG7JkuoI4GSrDUlsB32zeXqKBvXj6bUxcMo=
+github.com/aws/aws-sdk-go-v2/service/lexmodelbuildingservice v1.35.0 h1:LJ+UCPYUUAPlKNBj/r+mNZA8msdgFFa4tQNr/fUE2bE=
+github.com/aws/aws-sdk-go-v2/service/lexmodelbuildingservice v1.35.0/go.mod h1:zlyhvqBbKJLCktons66dFSfNMKKZ7XRNk5kGqaQUccE=
+github.com/aws/aws-sdk-go-v2/service/lexmodelsv2 v1.61.0 h1:6rjKCcc8dGyhGzbgRe5M1Zfp73OubQe2x8AzF31UpLE=
+github.com/aws/aws-sdk-go-v2/service/lexmodelsv2 v1.61.0/go.mod h1:lTTUoKQCz5RgFIWMUcO/MaDuJG4MNxKRQSc2ZOaFz/c=
 github.com/aws/aws-sdk-go-v2/service/mediaconvert v1.91.2 h1:h466gQU4HNXHgTdz7a45mGudKsB+NeyPVYr6hf9F4gM=
 github.com/aws/aws-sdk-go-v2/service/mediaconvert v1.91.2/go.mod h1:r/qoOppQk/ZTUHNBdj9S8R8k0JCV2iApiKfyxDyU42s=
 github.com/aws/aws-sdk-go-v2/service/medialive v1.96.0 h1:2A2YYpr3IDLZ9y2WRg/oXSmlrmDQA+KNvgcFGOWr+PY=
@@ -411,6 +415,8 @@ github.com/aws/aws-sdk-go-v2/service/pipes v1.23.22 h1:hmfDlMVre8V5t46Y6qZpPGyzD
 github.com/aws/aws-sdk-go-v2/service/pipes v1.23.22/go.mod h1:zpfI78kzmseqeSDG1tA4++Y8TKMDDTBQcFiwNoPgjgU=
 github.com/aws/aws-sdk-go-v2/service/qldb v1.32.2 h1:tSctQisNHgXnDmyoOdLXkSQmHYo5yPQuvYK+4c4QiNI=
 github.com/aws/aws-sdk-go-v2/service/qldb v1.32.2/go.mod h1:m6bmXbLs5XiGnTLcgKn9eNk5+GCO5e/wHQsIuN7d1Tw=
+github.com/aws/aws-sdk-go-v2/service/quicksight v1.109.0 h1:qDc5XMM9Ds5tjLRP+r8+mecSHyCbwKLXY6OLORTmWsU=
+github.com/aws/aws-sdk-go-v2/service/quicksight v1.109.0/go.mod h1:wlXJJU4SX+4l8Mhu+t1+eOatdX+wT62wHbczlbdHwH8=
 github.com/aws/aws-sdk-go-v2/service/rds v1.118.2 h1:pkEeQneYFpTAnGhyqSbyp/DlCPPJTGt0GkWahlLYzMA=
 github.com/aws/aws-sdk-go-v2/service/rds v1.118.2/go.mod h1:7gS+cGrKF0mH253QHFlStmx79ws+DlNk+04ZRfmw3U0=
 github.com/aws/aws-sdk-go-v2/service/redshift v1.62.7 h1:6NCQBp9IIEs51YI9/jT5/ckSd6Ka9956gAGlw0a0yFI=
