@@ -42,6 +42,37 @@ func TestZeroTrustDeviceDLPAccountResourceUsesCompositeImportID(t *testing.T) {
 	}
 }
 
+func TestZeroTrustDeviceDLPAccountResourcePreservesDisabledResources(t *testing.T) {
+	for _, resourceType := range []string{
+		"cloudflare_zero_trust_dex_test",
+		"cloudflare_zero_trust_dlp_custom_entry",
+	} {
+		t.Run(resourceType, func(t *testing.T) {
+			resource, ok := zeroTrustDeviceDLPAccountResource(
+				"account-123",
+				"resource-456",
+				resourceType,
+				"zero_trust_device_dlp",
+			)
+			if !ok {
+				t.Fatal("expected account resource")
+			}
+			if !zeroTrustDeviceDLPHasAllowEmptyValue(resource.AllowEmptyValues, zeroTrustDeviceDLPEnabledAllowEmptyPattern) {
+				t.Fatalf("AllowEmptyValues = %#v, want %q", resource.AllowEmptyValues, zeroTrustDeviceDLPEnabledAllowEmptyPattern)
+			}
+		})
+	}
+}
+
+func zeroTrustDeviceDLPHasAllowEmptyValue(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
+}
+
 func TestZeroTrustDeviceDLPSingletonResourceUsesAccountImportID(t *testing.T) {
 	resource, ok := zeroTrustDeviceDLPSingletonResource(
 		"account-123",

@@ -28,6 +28,10 @@ type zeroTrustDeviceDLPDiscovery struct {
 	discover  func() error
 }
 
+const zeroTrustDeviceDLPEnabledAllowEmptyPattern = "^enabled$"
+
+var zeroTrustDeviceDLPAllowEmptyValues = []string{zeroTrustDeviceDLPEnabledAllowEmptyPattern}
+
 func zeroTrustDeviceDLPString(resource zeroTrustDeviceDLPRawResource, keys ...string) string {
 	for _, key := range keys {
 		value, ok := resource[key].(string)
@@ -222,7 +226,7 @@ func zeroTrustDeviceDLPAccountResource(
 		resourceType,
 		"cloudflare",
 		map[string]string{"account_id": accountID},
-		[]string{},
+		zeroTrustDeviceDLPAllowEmptyValues,
 		map[string]interface{}{},
 	)
 	setCloudflareImportID(&resource, accountID+"/"+id)
