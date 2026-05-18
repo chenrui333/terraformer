@@ -101,7 +101,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/workspaces v1.68.1
 	github.com/aws/aws-sdk-go-v2/service/xray v1.36.23
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
-	github.com/cloudflare/cloudflare-go v0.116.0
+	github.com/cloudflare/cloudflare-go/v6 v6.10.0
 	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 // indirect
 	github.com/ddelnano/terraform-provider-mikrotik/client v0.0.0-20250110092516-5bc3b68c6245
 	github.com/ddelnano/terraform-provider-xenorchestra/client v0.18.0-alpha1
@@ -506,6 +506,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sesv2 v1.60.4
 	github.com/aws/aws-sdk-go-v2/service/transcribe v1.54.6
 	github.com/aws/aws-sdk-go-v2/service/vpclattice v1.21.0
+	github.com/cloudflare/cloudflare-go v0.116.0
 	github.com/gofrs/uuid/v3 v3.1.2
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/hashicorp/go-azure-sdk/sdk v0.20260507.1215246
