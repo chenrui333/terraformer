@@ -57,6 +57,18 @@
       ]
     },
     {
+      "resource": "cloudflare_ai_gateway_dynamic_routing",
+      "service_family": "ai",
+      "reason": "AI Gateway dynamic routing needs a dedicated discovery design before broad import.",
+      "evidence": "Terraform provider v5.19.1 imports by account_id/gateway_id/id and reads an individual dynamic route, but the provider does not expose a list data source for dynamic routes. The resource also has required nested elements/outputs plus computed route and success fields, while the parent cloudflare_ai_gateway resource remains deferred for nullable nested-state drift and credential-bearing integrations.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/ai_gateway_dynamic_routing",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/ai_gateway"
+      ]
+    },
+    {
       "resource": "cloudflare_ai_search_instance",
       "service_family": "ai",
       "reason": "AI Search instances are not importable through the Terraform provider.",
@@ -938,6 +950,18 @@
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zero_trust_risk_scoring_integration"
+      ]
+    },
+    {
+      "resource": "cloudflare_zero_trust_tunnel_cloudflared_config",
+      "service_family": "zero_trust_tunnel",
+      "reason": "Cloudflared tunnel configuration is deferred to avoid broad duplicate ownership of tunnel config bodies.",
+      "evidence": "Terraform provider v5.19.1 imports by account_id/tunnel_id and reads the remote configuration body, but the resource owns the full cloudflared ingress/origin_request configuration while cloudflare_zero_trust_tunnel_cloudflared already owns the tunnel and config_src. The provider delete path is intentionally a no-op that only removes state, and local YAML-managed tunnel configs are not reconstructible from the remote configuration endpoint.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zero_trust_tunnel_cloudflared_config",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zero_trust_tunnel_cloudflared"
       ]
     },
     {

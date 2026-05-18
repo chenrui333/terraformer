@@ -105,6 +105,33 @@ func cloudflareAdvancePagination(info *cf.ResultInfo, page *int, cursor *string)
 	return false
 }
 
+func cloudflareAdvancePaginationWithItemCount(info *cf.ResultInfo, page *int, cursor *string, itemCount int) bool {
+	if cloudflareAdvancePagination(info, page, cursor) {
+		return true
+	}
+	if info == nil || *cursor != "" {
+		return false
+	}
+
+	pageSize := cloudflarePageSize
+	if info.PerPage > 0 {
+		pageSize = info.PerPage
+	}
+	if itemCount < pageSize {
+		return false
+	}
+	if info.Page > 0 {
+		nextPage := info.Page + 1
+		if nextPage <= *page {
+			return false
+		}
+		*page = nextPage
+		return true
+	}
+	*page++
+	return true
+}
+
 func cloudflareZones(ctx context.Context, api *cf.API) ([]cf.Zone, error) {
 	return api.ListZones(ctx)
 }
