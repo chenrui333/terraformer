@@ -14,12 +14,14 @@ import (
 )
 
 func TestDirectConnectVirtualInterfaceResources(t *testing.T) {
+	currentAccountID := "123456789012"
 	resource, ok := newDirectConnectVirtualInterfaceResource(directconnecttypes.VirtualInterface{
 		VirtualInterfaceId:    aws.String("dxvif-transit"),
 		VirtualInterfaceName:  aws.String("transit-core"),
+		OwnerAccount:          aws.String(currentAccountID),
 		VirtualInterfaceState: directconnecttypes.VirtualInterfaceStateAvailable,
 		VirtualInterfaceType:  aws.String("transit"),
-	}, directConnectTransitVirtualInterfaceResourceType)
+	}, directConnectTransitVirtualInterfaceResourceType, currentAccountID)
 	if !ok {
 		t.Fatal("expected transit virtual interface resource")
 	}
@@ -33,15 +35,23 @@ func TestDirectConnectVirtualInterfaceResources(t *testing.T) {
 	if _, ok := newDirectConnectVirtualInterfaceResource(directconnecttypes.VirtualInterface{
 		VirtualInterfaceId:    aws.String("dxvif-deleted"),
 		VirtualInterfaceState: directconnecttypes.VirtualInterfaceStateDeleted,
-	}, directConnectTransitVirtualInterfaceResourceType); ok {
+	}, directConnectTransitVirtualInterfaceResourceType, currentAccountID); ok {
 		t.Fatal("deleted virtual interface should be skipped")
 	}
 	if _, ok := newDirectConnectVirtualInterfaceResource(directconnecttypes.VirtualInterface{
 		VirtualInterfaceId:    aws.String("dxvif-confirming"),
 		VirtualInterfaceState: directconnecttypes.VirtualInterfaceStateConfirming,
 		VirtualInterfaceType:  aws.String("transit"),
-	}, directConnectTransitVirtualInterfaceResourceType); ok {
+	}, directConnectTransitVirtualInterfaceResourceType, currentAccountID); ok {
 		t.Fatal("confirming hosted transit virtual interface should be skipped")
+	}
+	if _, ok := newDirectConnectVirtualInterfaceResource(directconnecttypes.VirtualInterface{
+		VirtualInterfaceId:    aws.String("dxvif-hosted-transit"),
+		OwnerAccount:          aws.String("210987654321"),
+		VirtualInterfaceState: directconnecttypes.VirtualInterfaceStateAvailable,
+		VirtualInterfaceType:  aws.String("transit"),
+	}, directConnectTransitVirtualInterfaceResourceType, currentAccountID); ok {
+		t.Fatal("accepted hosted transit virtual interface should be skipped")
 	}
 }
 
@@ -187,7 +197,7 @@ func TestDirectConnectGatewayAssociationPaginationUsesGatewayFilter(t *testing.T
 		},
 	}
 
-	if err := g.getDirectConnectGatewayAssociations(client); err != nil {
+	if err := g.getDirectConnectGatewayAssociations(client, "us-east-1"); err != nil {
 		t.Fatalf("getDirectConnectGatewayAssociations() error = %v", err)
 	}
 	if len(client.requests) != 2 {
@@ -220,11 +230,60 @@ func TestDirectConnectGatewayAssociationPaginationUsesGatewayFilter(t *testing.T
 	}
 }
 
+func TestDirectConnectGatewayAssociationsSkipMismatchedRegion(t *testing.T) {
+	g := DirectConnectGenerator{}
+	g.Resources = []terraformutils.Resource{
+		terraformutils.NewSimpleResource("dxgw-123", "dxgw-123", directConnectGatewayResourceType, "aws", dxAllowEmptyValues),
+	}
+	client := &stubDirectConnectGatewayAssociationsClient{
+		outputs: []*directconnect.DescribeDirectConnectGatewayAssociationsOutput{
+			{
+				DirectConnectGatewayAssociations: []directconnecttypes.DirectConnectGatewayAssociation{
+					{
+						AssociatedGateway: &directconnecttypes.AssociatedGateway{
+							Id:     aws.String("tgw-west"),
+							Region: aws.String("us-west-2"),
+							Type:   directconnecttypes.GatewayTypeTransitGateway,
+						},
+						AssociationId:          aws.String("dxgwa-west"),
+						AssociationState:       directconnecttypes.DirectConnectGatewayAssociationStateAssociated,
+						DirectConnectGatewayId: aws.String("dxgw-123"),
+					},
+					{
+						AssociatedGateway: &directconnecttypes.AssociatedGateway{
+							Id:     aws.String("tgw-east"),
+							Region: aws.String("us-east-1"),
+							Type:   directconnecttypes.GatewayTypeTransitGateway,
+						},
+						AssociationId:          aws.String("dxgwa-east"),
+						AssociationState:       directconnecttypes.DirectConnectGatewayAssociationStateAssociated,
+						DirectConnectGatewayId: aws.String("dxgw-123"),
+					},
+				},
+			},
+		},
+	}
+
+	if err := g.getDirectConnectGatewayAssociations(client, "us-east-1"); err != nil {
+		t.Fatalf("getDirectConnectGatewayAssociations() error = %v", err)
+	}
+	if len(g.Resources) != 2 {
+		t.Fatalf("resource count = %d, want 2", len(g.Resources))
+	}
+	association := g.Resources[1]
+	if association.InstanceState.ID != "ga-dxgw-123tgw-east" {
+		t.Fatalf("association resource ID = %q, want ga-dxgw-123tgw-east", association.InstanceState.ID)
+	}
+	if got := association.InstanceState.Meta["import_id"]; got != "dxgw-123/tgw-east" {
+		t.Fatalf("association import_id = %#v, want dxgw-123/tgw-east", got)
+	}
+}
+
 func TestDirectConnectGatewayAssociationsSkippedWithoutGateways(t *testing.T) {
 	g := DirectConnectGenerator{}
 	client := &stubDirectConnectGatewayAssociationsClient{}
 
-	if err := g.getDirectConnectGatewayAssociations(client); err != nil {
+	if err := g.getDirectConnectGatewayAssociations(client, "us-east-1"); err != nil {
 		t.Fatalf("getDirectConnectGatewayAssociations() error = %v", err)
 	}
 	if len(client.requests) != 0 {

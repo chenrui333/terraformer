@@ -79,7 +79,7 @@ func (g *DirectConnectGenerator) getDirectConnectConnections(svc *directconnect.
 	return nil
 }
 
-func (g *DirectConnectGenerator) getDirectConnectVirtualInterfaces(svc *directconnect.Client) error {
+func (g *DirectConnectGenerator) getDirectConnectVirtualInterfaces(svc *directconnect.Client, currentAccountID string) error {
 	input := &directconnect.DescribeVirtualInterfacesInput{}
 	output, err := svc.DescribeVirtualInterfaces(context.TODO(), input)
 	if err != nil {
@@ -101,7 +101,7 @@ func (g *DirectConnectGenerator) getDirectConnectVirtualInterfaces(svc *directco
 			continue
 		}
 
-		if resource, ok := newDirectConnectVirtualInterfaceResource(vif, resourceType); ok {
+		if resource, ok := newDirectConnectVirtualInterfaceResource(vif, resourceType, currentAccountID); ok {
 			g.Resources = append(g.Resources, resource)
 		}
 	}
@@ -129,9 +129,9 @@ func (g *DirectConnectGenerator) getDirectConnectLags(svc *directconnect.Client)
 	return nil
 }
 
-func (g *DirectConnectGenerator) getDirectConnectGatewayAssociations(svc directConnectGatewayAssociationsAPIClient) error {
+func (g *DirectConnectGenerator) getDirectConnectGatewayAssociations(svc directConnectGatewayAssociationsAPIClient, region string) error {
 	for _, gatewayID := range g.directConnectGatewayIDs() {
-		if err := g.getDirectConnectGatewayAssociationsForGateway(svc, gatewayID); err != nil {
+		if err := g.getDirectConnectGatewayAssociationsForGateway(svc, gatewayID, region); err != nil {
 			return err
 		}
 	}
@@ -152,7 +152,7 @@ func (g *DirectConnectGenerator) directConnectGatewayIDs() []string {
 	return ids
 }
 
-func (g *DirectConnectGenerator) getDirectConnectGatewayAssociationsForGateway(svc directConnectGatewayAssociationsAPIClient, gatewayID string) error {
+func (g *DirectConnectGenerator) getDirectConnectGatewayAssociationsForGateway(svc directConnectGatewayAssociationsAPIClient, gatewayID, region string) error {
 	if gatewayID == "" {
 		return nil
 	}
@@ -165,6 +165,9 @@ func (g *DirectConnectGenerator) getDirectConnectGatewayAssociationsForGateway(s
 			return err
 		}
 		for _, association := range output.DirectConnectGatewayAssociations {
+			if !directConnectGatewayAssociationRegionMatches(association, region) {
+				continue
+			}
 			if resource, ok := newDirectConnectGatewayAssociationResource(association); ok {
 				g.Resources = append(g.Resources, resource)
 			}
@@ -194,8 +197,8 @@ func newDirectConnectConnectionResource(connection directconnecttypes.Connection
 	), true
 }
 
-func newDirectConnectVirtualInterfaceResource(vif directconnecttypes.VirtualInterface, resourceType string) (terraformutils.Resource, bool) {
-	if !directConnectVirtualInterfaceImportable(vif) || StringValue(vif.VirtualInterfaceId) == "" || resourceType == "" {
+func newDirectConnectVirtualInterfaceResource(vif directconnecttypes.VirtualInterface, resourceType, currentAccountID string) (terraformutils.Resource, bool) {
+	if !directConnectVirtualInterfaceImportable(vif, currentAccountID) || StringValue(vif.VirtualInterfaceId) == "" || resourceType == "" {
 		return terraformutils.Resource{}, false
 	}
 	resourceName := StringValue(vif.VirtualInterfaceName)
@@ -277,16 +280,26 @@ func directConnectConnectionImportable(connection directconnecttypes.Connection)
 	}
 }
 
-func directConnectVirtualInterfaceImportable(vif directconnecttypes.VirtualInterface) bool {
+func directConnectVirtualInterfaceImportable(vif directconnecttypes.VirtualInterface, currentAccountID string) bool {
 	switch vif.VirtualInterfaceState {
 	case directconnecttypes.VirtualInterfaceStateDeleting,
 		directconnecttypes.VirtualInterfaceStateDeleted,
 		directconnecttypes.VirtualInterfaceStateConfirming,
 		directconnecttypes.VirtualInterfaceStateRejected:
 		return false
-	default:
-		return true
 	}
+	if directConnectHostedTransitVirtualInterface(vif, currentAccountID) {
+		return false
+	}
+	return true
+}
+
+func directConnectHostedTransitVirtualInterface(vif directconnecttypes.VirtualInterface, currentAccountID string) bool {
+	ownerAccountID := StringValue(vif.OwnerAccount)
+	return currentAccountID != "" &&
+		ownerAccountID != "" &&
+		ownerAccountID != currentAccountID &&
+		StringValue(vif.VirtualInterfaceType) == "transit"
 }
 
 func directConnectLagImportable(lag directconnecttypes.Lag) bool {
@@ -307,6 +320,14 @@ func directConnectGatewayAssociationImportable(association directconnecttypes.Di
 	default:
 		return true
 	}
+}
+
+func directConnectGatewayAssociationRegionMatches(association directconnecttypes.DirectConnectGatewayAssociation, region string) bool {
+	if association.AssociatedGateway == nil || region == "" {
+		return true
+	}
+	associatedRegion := StringValue(association.AssociatedGateway.Region)
+	return associatedRegion == "" || associatedRegion == region
 }
 
 func directConnectGatewayAssociationImportID(dxGatewayID, associatedGatewayID string) string {
@@ -333,11 +354,17 @@ func (g *DirectConnectGenerator) InitResources() error {
 		return err
 	}
 	svc := directconnect.NewFromConfig(config)
+	currentAccountID := ""
+	if account, err := g.getAccountNumber(config); err != nil {
+		log.Printf("Skipping Direct Connect hosted transit VIF owner filtering: unable to get account ID: %v", err)
+	} else {
+		currentAccountID = StringValue(account)
+	}
 	if err := g.getDirectConnectGateways(svc); err != nil {
 		return err
 	}
 
-	err = g.getDirectConnectVirtualInterfaces(svc)
+	err = g.getDirectConnectVirtualInterfaces(svc, currentAccountID)
 	if err != nil {
 		return err
 	}
@@ -347,7 +374,7 @@ func (g *DirectConnectGenerator) InitResources() error {
 		return err
 	}
 
-	err = g.getDirectConnectGatewayAssociations(svc)
+	err = g.getDirectConnectGatewayAssociations(svc, config.Region)
 	if err != nil {
 		return err
 	}
