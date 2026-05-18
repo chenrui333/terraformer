@@ -29,7 +29,6 @@ var SupportedGlobalResources = []string{
 	"ecrpublic",
 	"globalaccelerator",
 	"iam",
-	"networkmanager",
 	"organization",
 	"route53",
 	"waf",
@@ -45,6 +44,12 @@ var SupportedEastOnlyResources = []string{
 // SupportedChatbotResources should be imported once per effective AWS Chatbot API region.
 var SupportedChatbotResources = []string{
 	"chatbot",
+}
+
+// SupportedRegionalOnceResources use regional endpoints but enumerate account-wide inventory, so importing them once
+// avoids duplicate output when multiple --regions are supplied.
+var SupportedRegionalOnceResources = []string{
+	"networkmanager",
 }
 
 func (p AWSProvider) GetResourceConnections() map[string]map[string][]string {

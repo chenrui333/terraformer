@@ -22,7 +22,7 @@ func newCmdAwsImporter(options ImportOptions) *cobra.Command {
 
 			if len(options.Regions) > 0 {
 				shouldSpecifyPathRegion := len(options.Regions) > 1
-				globalResources, eastOnlyResources, chatbotResources, regionalResources := parseAndGroupResources(originalResources)
+				globalResources, eastOnlyResources, chatbotResources, regionalOnceResources, regionalResources := parseAndGroupResources(originalResources)
 				options.Resources = globalResources
 				options.Regions = []string{awsterraformer.GlobalRegion}
 				e := importGlobalResources(options)
@@ -37,7 +37,7 @@ func newCmdAwsImporter(options ImportOptions) *cobra.Command {
 					return e
 				}
 
-				chatbotShouldSpecifyPathRegion := shouldSpecifyPathRegion || len(globalResources) > 0 || len(eastOnlyResources) > 0 || len(regionalResources) > 0
+				chatbotShouldSpecifyPathRegion := shouldSpecifyPathRegion || len(globalResources) > 0 || len(eastOnlyResources) > 0 || len(regionalOnceResources) > 0 || len(regionalResources) > 0
 				options.Resources = chatbotResources
 				options.Regions = chatbotImportRegions(originalRegions)
 				e = importChatbotResources(options, originalPathPattern, chatbotShouldSpecifyPathRegion)
@@ -45,10 +45,18 @@ func newCmdAwsImporter(options ImportOptions) *cobra.Command {
 					return e
 				}
 
+				regionalOnceShouldSpecifyPathRegion := shouldSpecifyPathRegion || len(globalResources) > 0 || len(eastOnlyResources) > 0 || len(chatbotResources) > 0 || len(regionalResources) > 0
+				options.Resources = regionalOnceResources
+				options.Regions = []string{originalRegions[0]}
+				e = importRegionalOnceResources(options, originalPathPattern, regionalOnceShouldSpecifyPathRegion)
+				if e != nil {
+					return e
+				}
+
 				options.Resources = regionalResources
 				options.Regions = originalRegions
 				if len(options.Resources) > 0 { // don't import anything and potentially override global resources
-					if len(globalResources) > 0 {
+					if len(globalResources) > 0 || len(regionalOnceResources) > 0 {
 						shouldSpecifyPathRegion = true // we should keep global resources away from regional
 					}
 					for _, region := range originalRegions {
@@ -75,9 +83,9 @@ func newCmdAwsImporter(options ImportOptions) *cobra.Command {
 	return cmd
 }
 
-// returns global, east-only, chatbot, regional resources
-func parseAndGroupResources(allResources []string) ([]string, []string, []string, []string) {
-	var globalResources, eastOnlyResources, chatbotResources, regionalResources []string
+// returns global, east-only, chatbot, regional-once, regional resources
+func parseAndGroupResources(allResources []string) ([]string, []string, []string, []string, []string) {
+	var globalResources, eastOnlyResources, chatbotResources, regionalOnceResources, regionalResources []string
 	for _, resourceName := range allResources {
 		switch {
 		case contains(awsterraformer.SupportedGlobalResources, resourceName):
@@ -86,11 +94,13 @@ func parseAndGroupResources(allResources []string) ([]string, []string, []string
 			eastOnlyResources = append(eastOnlyResources, resourceName)
 		case contains(awsterraformer.SupportedChatbotResources, resourceName):
 			chatbotResources = append(chatbotResources, resourceName)
+		case contains(awsterraformer.SupportedRegionalOnceResources, resourceName):
+			regionalOnceResources = append(regionalOnceResources, resourceName)
 		default:
 			regionalResources = append(regionalResources, resourceName)
 		}
 	}
-	return globalResources, eastOnlyResources, chatbotResources, regionalResources
+	return globalResources, eastOnlyResources, chatbotResources, regionalOnceResources, regionalResources
 }
 
 func importGlobalResources(options ImportOptions) error {
@@ -118,6 +128,13 @@ func importChatbotResources(options ImportOptions, originalPathPattern string, s
 		}
 	}
 	return nil
+}
+
+func importRegionalOnceResources(options ImportOptions, originalPathPattern string, shouldSpecifyPathRegion bool) error {
+	if len(options.Resources) == 0 || len(options.Regions) == 0 {
+		return nil
+	}
+	return importRegionResources(options, originalPathPattern, options.Regions[0], shouldSpecifyPathRegion)
 }
 
 func chatbotPathPattern(pathPattern string) string {

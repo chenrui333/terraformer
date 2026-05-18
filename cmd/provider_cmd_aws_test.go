@@ -8,18 +8,20 @@ import (
 )
 
 func TestParseAndGroupResourcesIncludesChatbot(t *testing.T) {
-	global, eastOnly, chatbot, regional := parseAndGroupResources([]string{"iam", "notifications", "chatbot", "sns"})
+	global, eastOnly, chatbot, regionalOnce, regional := parseAndGroupResources([]string{"iam", "notifications", "chatbot", "sns"})
 	assertStringSlice(t, global, []string{"iam"})
 	assertStringSlice(t, eastOnly, []string{"notifications"})
 	assertStringSlice(t, chatbot, []string{"chatbot"})
+	assertStringSlice(t, regionalOnce, nil)
 	assertStringSlice(t, regional, []string{"sns"})
 }
 
-func TestParseAndGroupResourcesTreatsNetworkManagerAsGlobal(t *testing.T) {
-	global, eastOnly, chatbot, regional := parseAndGroupResources([]string{"networkmanager", "sns"})
-	assertStringSlice(t, global, []string{"networkmanager"})
+func TestParseAndGroupResourcesTreatsNetworkManagerAsRegionalOnce(t *testing.T) {
+	global, eastOnly, chatbot, regionalOnce, regional := parseAndGroupResources([]string{"networkmanager", "sns"})
+	assertStringSlice(t, global, nil)
 	assertStringSlice(t, eastOnly, nil)
 	assertStringSlice(t, chatbot, nil)
+	assertStringSlice(t, regionalOnce, []string{"networkmanager"})
 	assertStringSlice(t, regional, []string{"sns"})
 }
 

@@ -236,31 +236,30 @@ func newDirectConnectGatewayAssociationResource(association directconnecttypes.D
 	associationID := StringValue(association.AssociationId)
 	associatedGatewayID := ""
 	associatedGatewayType := ""
-	associatedGatewayOwnerAccountID := ""
 	if association.AssociatedGateway != nil {
 		associatedGatewayID = StringValue(association.AssociatedGateway.Id)
 		associatedGatewayType = string(association.AssociatedGateway.Type)
-		associatedGatewayOwnerAccountID = StringValue(association.AssociatedGateway.OwnerAccount)
 	}
 	if dxGatewayID == "" || associationID == "" || associatedGatewayID == "" {
 		return terraformutils.Resource{}, false
 	}
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		directConnectGatewayAssociationImportID(dxGatewayID, associatedGatewayID),
 		awsResourceNameWithLengths("gateway_association", dxGatewayID, associatedGatewayID),
 		directConnectGatewayAssociationResourceType,
 		"aws",
 		map[string]string{
-			"associated_gateway_id":               associatedGatewayID,
-			"associated_gateway_owner_account_id": associatedGatewayOwnerAccountID,
-			"associated_gateway_type":             associatedGatewayType,
-			"dx_gateway_association_id":           associationID,
-			"dx_gateway_id":                       dxGatewayID,
-			"dx_gateway_owner_account_id":         StringValue(association.DirectConnectGatewayOwnerAccount),
+			"associated_gateway_id":       associatedGatewayID,
+			"associated_gateway_type":     associatedGatewayType,
+			"dx_gateway_association_id":   associationID,
+			"dx_gateway_id":               dxGatewayID,
+			"dx_gateway_owner_account_id": StringValue(association.DirectConnectGatewayOwnerAccount),
 		},
 		dxAllowEmptyValues,
 		map[string]interface{}{},
-	), true
+	)
+	resource.IgnoreKeys = append(resource.IgnoreKeys, "^associated_gateway_owner_account_id$")
+	return resource, true
 }
 
 func directConnectConnectionImportable(connection directconnecttypes.Connection) bool {

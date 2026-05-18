@@ -90,6 +90,12 @@ func TestDirectConnectGatewayAssociationResource(t *testing.T) {
 	if got := resource.InstanceState.Attributes["dx_gateway_association_id"]; got != "dxgwa-123" {
 		t.Fatalf("dx_gateway_association_id = %q, want dxgwa-123", got)
 	}
+	if _, ok := resource.InstanceState.Attributes["associated_gateway_owner_account_id"]; ok {
+		t.Fatal("associated_gateway_owner_account_id should not be seeded with associated_gateway_id")
+	}
+	if !directConnectTestStringSliceContains(resource.IgnoreKeys, "^associated_gateway_owner_account_id$") {
+		t.Fatalf("IgnoreKeys = %#v, want associated_gateway_owner_account_id ignored", resource.IgnoreKeys)
+	}
 
 	if _, ok := newDirectConnectGatewayAssociationResource(directconnecttypes.DirectConnectGatewayAssociation{
 		AssociationId:          aws.String("dxgwa-dead"),
@@ -215,4 +221,13 @@ func (c *stubDirectConnectGatewayAssociationsClient) DescribeDirectConnectGatewa
 		return &directconnect.DescribeDirectConnectGatewayAssociationsOutput{}, nil
 	}
 	return c.outputs[len(c.requests)-1], nil
+}
+
+func directConnectTestStringSliceContains(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
 }
