@@ -307,7 +307,6 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_docdb_cluster_instance`
     * `aws_docdb_cluster_parameter_group`
     * `aws_docdb_event_subscription`
-    * `aws_docdb_global_cluster`
     * `aws_docdb_subnet_group`
 *   `dx`
     * `aws_dx_connection`
@@ -575,7 +574,6 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_neptune_cluster_instance`
     * `aws_neptune_cluster_parameter_group`
     * `aws_neptune_event_subscription`
-    * `aws_neptune_global_cluster`
     * `aws_neptune_parameter_group`
     * `aws_neptune_subnet_group`
 *   `notifications`

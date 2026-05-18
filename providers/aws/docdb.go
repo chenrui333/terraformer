@@ -4,7 +4,6 @@ package aws
 
 import (
 	"context"
-	"log"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/docdb"
@@ -16,19 +15,6 @@ var docDBAllowEmptyValues = []string{"tags."}
 
 type DocDBGenerator struct {
 	AWSService
-}
-
-type docDBOptionalResourceLoader struct {
-	name string
-	load func() error
-}
-
-func (g *DocDBGenerator) loadOptionalResources(loaders []docDBOptionalResourceLoader) {
-	for _, loader := range loaders {
-		if err := loader.load(); err != nil {
-			log.Printf("Skipping DocDB %s: %v", loader.name, err)
-		}
-	}
 }
 
 func (g *DocDBGenerator) InitResources() error {
@@ -50,10 +36,9 @@ func (g *DocDBGenerator) InitResources() error {
 		return err
 	}
 
-	g.loadOptionalResources([]docDBOptionalResourceLoader{
-		{name: "event subscriptions", load: func() error { return g.getEventSubscriptions(svc) }},
-		{name: "global clusters", load: func() error { return g.getGlobalClusters(svc) }},
-	})
+	if err := g.getEventSubscriptions(svc); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -155,22 +140,6 @@ func (g *DocDBGenerator) getEventSubscriptions(svc docdb.DescribeEventSubscripti
 	return nil
 }
 
-func (g *DocDBGenerator) getGlobalClusters(svc docdb.DescribeGlobalClustersAPIClient) error {
-	p := docdb.NewDescribeGlobalClustersPaginator(svc, &docdb.DescribeGlobalClustersInput{})
-	for p.HasMorePages() {
-		page, err := p.NextPage(context.TODO())
-		if err != nil {
-			return err
-		}
-		for _, cluster := range page.GlobalClusters {
-			if resource, ok := newDocDBGlobalClusterResource(cluster); ok {
-				g.Resources = append(g.Resources, resource)
-			}
-		}
-	}
-	return nil
-}
-
 func newDocDBEventSubscriptionResource(subscription docdbtypes.EventSubscription) (terraformutils.Resource, bool) {
 	name := StringValue(subscription.CustSubscriptionId)
 	if name == "" || !docDBEventSubscriptionStatusImportable(StringValue(subscription.Status)) {
@@ -185,30 +154,8 @@ func newDocDBEventSubscriptionResource(subscription docdbtypes.EventSubscription
 	), true
 }
 
-func newDocDBGlobalClusterResource(cluster docdbtypes.GlobalCluster) (terraformutils.Resource, bool) {
-	name := StringValue(cluster.GlobalClusterIdentifier)
-	if name == "" || !docDBGlobalClusterStatusImportable(StringValue(cluster.Status)) {
-		return terraformutils.Resource{}, false
-	}
-	return terraformutils.NewResource(
-		name,
-		docDBResourceName("global_cluster", name),
-		"aws_docdb_global_cluster",
-		"aws",
-		map[string]string{
-			"global_cluster_identifier": name,
-		},
-		docDBAllowEmptyValues,
-		map[string]interface{}{},
-	), true
-}
-
 func docDBEventSubscriptionStatusImportable(status string) bool {
 	return strings.EqualFold(status, "active")
-}
-
-func docDBGlobalClusterStatusImportable(status string) bool {
-	return strings.EqualFold(status, "available")
 }
 
 func docDBResourceName(parts ...string) string {

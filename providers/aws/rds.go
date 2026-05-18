@@ -359,7 +359,7 @@ func (g *RDSGenerator) addDBInstanceRoleAssociations(instanceID string, roles []
 func newRDSClusterInstanceResource(instanceID, clusterID string) terraformutils.Resource {
 	return terraformutils.NewResource(
 		instanceID,
-		rdsResourceName(clusterID, instanceID),
+		rdsCompositeResourceName(clusterID, instanceID),
 		"aws_rds_cluster_instance",
 		"aws",
 		map[string]string{
@@ -387,7 +387,7 @@ func (g *RDSGenerator) addRDSClusterRoleAssociations(clusterID string, roles []r
 		}
 		g.Resources = append(g.Resources, terraformutils.NewResource(
 			rdsRoleAssociationImportID(clusterID, roleARN),
-			rdsResourceName(clusterID, rdsIAMRoleResourceName(roleARN)),
+			rdsCompositeResourceName(clusterID, rdsIAMRoleResourceName(roleARN)),
 			"aws_rds_cluster_role_association",
 			"aws",
 			attributes,
@@ -413,7 +413,7 @@ func (g *RDSGenerator) addRDSClusterActivityStream(cluster rdstypes.DBCluster) {
 	}
 	g.Resources = append(g.Resources, terraformutils.NewResource(
 		clusterARN,
-		rdsResourceName(clusterID, "activity_stream"),
+		rdsCompositeResourceName(clusterID, "activity_stream"),
 		"aws_rds_cluster_activity_stream",
 		"aws",
 		attributes,
@@ -603,6 +603,23 @@ func rdsRoleAssociationStatusImportable(status string) bool {
 
 func rdsActivityStreamStatusImportable(status rdstypes.ActivityStreamStatus) bool {
 	return strings.EqualFold(string(status), "started")
+}
+
+func rdsCompositeResourceName(parts ...string) string {
+	var cleanParts []string
+	for _, part := range parts {
+		if part != "" {
+			cleanParts = append(cleanParts, part)
+		}
+	}
+	if len(cleanParts) == 0 {
+		return "rds_resource"
+	}
+	encoded := make([]string, 0, len(cleanParts))
+	for _, part := range cleanParts {
+		encoded = append(encoded, fmt.Sprintf("%d_%s", len(part), part))
+	}
+	return strings.Join(encoded, "__")
 }
 
 func rdsResourceName(parts ...string) string {

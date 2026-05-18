@@ -23,7 +23,7 @@ func TestNewNeptuneClusterResource(t *testing.T) {
 	if got, want := resource.InstanceInfo.Type, neptuneClusterResourceType; got != want {
 		t.Fatalf("resource type = %q, want %q", got, want)
 	}
-	if got, want := resource.ResourceName, "tfer--cluster_graph-prod"; got != want {
+	if got, want := resource.ResourceName, "tfer--7_cluster__10_graph-prod"; got != want {
 		t.Fatalf("resource name = %q, want %q", got, want)
 	}
 	if got, want := resource.InstanceState.Attributes["cluster_identifier"], "graph-prod"; got != want {
@@ -142,7 +142,7 @@ func TestNewNeptuneParameterGroupResources(t *testing.T) {
 	}
 }
 
-func TestNewNeptuneSubnetEventAndGlobalResources(t *testing.T) {
+func TestNewNeptuneSubnetAndEventResources(t *testing.T) {
 	subnetGroup, ok := newNeptuneSubnetGroupResource(neptunetypes.DBSubnetGroup{
 		DBSubnetGroupName: aws.String("graph-subnets"),
 	})
@@ -173,22 +173,6 @@ func TestNewNeptuneSubnetEventAndGlobalResources(t *testing.T) {
 		t.Fatal("no-permission event subscription should be skipped")
 	}
 
-	global, ok := newNeptuneGlobalClusterResource(neptunetypes.GlobalCluster{
-		GlobalClusterIdentifier: aws.String("global-graph"),
-		Status:                  aws.String("available"),
-	})
-	if !ok {
-		t.Fatal("newNeptuneGlobalClusterResource() ok = false, want true")
-	}
-	if got, want := global.InstanceInfo.Type, neptuneGlobalClusterResourceType; got != want {
-		t.Fatalf("global cluster resource type = %q, want %q", got, want)
-	}
-	if _, ok := newNeptuneGlobalClusterResource(neptunetypes.GlobalCluster{
-		GlobalClusterIdentifier: aws.String("global-graph"),
-		Status:                  aws.String("failing-over"),
-	}); ok {
-		t.Fatal("failing-over global cluster should be skipped")
-	}
 }
 
 func TestNeptuneShouldLoadResource(t *testing.T) {
@@ -277,6 +261,20 @@ func TestNeptuneStatusPredicatesAndImportID(t *testing.T) {
 	}
 	if neptuneEndpointStatusImportable("modifying") {
 		t.Fatal("modifying endpoint should be skipped")
+	}
+}
+
+func TestNeptuneResourceNameIsCollisionResistant(t *testing.T) {
+	if got, want := neptuneResourceName(), "neptune_resource"; got != want {
+		t.Fatalf("neptuneResourceName() = %q, want %q", got, want)
+	}
+	if got, want := neptuneResourceName("cluster", "graph-prod"), "7_cluster__10_graph-prod"; got != want {
+		t.Fatalf("neptuneResourceName() = %q, want %q", got, want)
+	}
+	first := neptuneResourceName("ab", "c")
+	second := neptuneResourceName("a", "bc")
+	if first == second {
+		t.Fatalf("neptuneResourceName collision: %q == %q", first, second)
 	}
 }
 

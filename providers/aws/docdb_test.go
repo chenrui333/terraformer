@@ -42,44 +42,12 @@ func TestNewDocDBEventSubscriptionResource(t *testing.T) {
 	}
 }
 
-func TestNewDocDBGlobalClusterResource(t *testing.T) {
-	resource, ok := newDocDBGlobalClusterResource(docdbtypes.GlobalCluster{
-		GlobalClusterIdentifier: aws.String("global-docdb"),
-		Status:                  aws.String("available"),
-	})
-	if !ok {
-		t.Fatal("newDocDBGlobalClusterResource() ok = false, want true")
-	}
-	if got, want := resource.InstanceInfo.Type, "aws_docdb_global_cluster"; got != want {
-		t.Fatalf("resource type = %q, want %q", got, want)
-	}
-	if got, want := resource.InstanceState.ID, "global-docdb"; got != want {
-		t.Fatalf("resource ID = %q, want %q", got, want)
-	}
-	if got, want := resource.InstanceState.Attributes["global_cluster_identifier"], "global-docdb"; got != want {
-		t.Fatalf("global_cluster_identifier = %q, want %q", got, want)
-	}
-
-	if _, ok := newDocDBGlobalClusterResource(docdbtypes.GlobalCluster{
-		GlobalClusterIdentifier: aws.String("global-docdb"),
-		Status:                  aws.String("deleting"),
-	}); ok {
-		t.Fatal("deleting global cluster should be skipped")
-	}
-}
-
 func TestDocDBStatusPredicates(t *testing.T) {
 	if !docDBEventSubscriptionStatusImportable("ACTIVE") {
 		t.Fatal("ACTIVE event subscription should be importable")
 	}
 	if docDBEventSubscriptionStatusImportable("modifying") {
 		t.Fatal("modifying event subscription should be skipped")
-	}
-	if !docDBGlobalClusterStatusImportable("AVAILABLE") {
-		t.Fatal("AVAILABLE global cluster should be importable")
-	}
-	if docDBGlobalClusterStatusImportable("creating") {
-		t.Fatal("creating global cluster should be skipped")
 	}
 }
 

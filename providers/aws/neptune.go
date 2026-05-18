@@ -4,6 +4,7 @@ package aws
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/neptune"
@@ -17,7 +18,6 @@ const (
 	neptuneClusterInstanceResourceType       = "aws_neptune_cluster_instance"
 	neptuneClusterParameterGroupResourceType = "aws_neptune_cluster_parameter_group"
 	neptuneEventSubscriptionResourceType     = "aws_neptune_event_subscription"
-	neptuneGlobalClusterResourceType         = "aws_neptune_global_cluster"
 	neptuneParameterGroupResourceType        = "aws_neptune_parameter_group"
 	neptuneSubnetGroupResourceType           = "aws_neptune_subnet_group"
 	neptuneClusterEndpointIDSeparator        = ":"
@@ -49,7 +49,6 @@ func (g *NeptuneGenerator) InitResources() error {
 		{serviceName: "neptune_parameter_group", load: func() error { return g.loadParameterGroups(svc) }},
 		{serviceName: "neptune_subnet_group", load: func() error { return g.loadSubnetGroups(svc) }},
 		{serviceName: "neptune_event_subscription", load: func() error { return g.loadEventSubscriptions(svc) }},
-		{serviceName: "neptune_global_cluster", load: func() error { return g.loadGlobalClusters(svc) }},
 	}
 	for _, loader := range loaders {
 		if !g.shouldLoadNeptuneResource(loader.serviceName) {
@@ -167,22 +166,6 @@ func (g *NeptuneGenerator) loadEventSubscriptions(svc neptune.DescribeEventSubsc
 		}
 		for _, subscription := range page.EventSubscriptionsList {
 			if resource, ok := newNeptuneEventSubscriptionResource(subscription); ok {
-				g.Resources = append(g.Resources, resource)
-			}
-		}
-	}
-	return nil
-}
-
-func (g *NeptuneGenerator) loadGlobalClusters(svc neptune.DescribeGlobalClustersAPIClient) error {
-	p := neptune.NewDescribeGlobalClustersPaginator(svc, &neptune.DescribeGlobalClustersInput{})
-	for p.HasMorePages() {
-		page, err := p.NextPage(context.TODO())
-		if err != nil {
-			return err
-		}
-		for _, cluster := range page.GlobalClusters {
-			if resource, ok := newNeptuneGlobalClusterResource(cluster); ok {
 				g.Resources = append(g.Resources, resource)
 			}
 		}
@@ -316,22 +299,6 @@ func newNeptuneEventSubscriptionResource(subscription neptunetypes.EventSubscrip
 	), true
 }
 
-func newNeptuneGlobalClusterResource(cluster neptunetypes.GlobalCluster) (terraformutils.Resource, bool) {
-	name := StringValue(cluster.GlobalClusterIdentifier)
-	if name == "" || !neptuneGlobalClusterStatusImportable(StringValue(cluster.Status)) {
-		return terraformutils.Resource{}, false
-	}
-	return terraformutils.NewResource(
-		name,
-		neptuneResourceName("global_cluster", name),
-		neptuneGlobalClusterResourceType,
-		"aws",
-		map[string]string{"global_cluster_identifier": name},
-		neptuneAllowEmptyValues,
-		map[string]interface{}{},
-	), true
-}
-
 func (g *NeptuneGenerator) shouldLoadNeptuneResource(serviceNames ...string) bool {
 	return shouldLoadAWSResourceForTypedFilters(g.Filter, serviceNames...)
 }
@@ -350,10 +317,6 @@ func neptuneEndpointStatusImportable(status string) bool {
 
 func neptuneEventSubscriptionStatusImportable(status string) bool {
 	return strings.EqualFold(status, "active")
-}
-
-func neptuneGlobalClusterStatusImportable(status string) bool {
-	return strings.EqualFold(status, "available")
 }
 
 func neptuneCustomClusterEndpoint(endpoint neptunetypes.DBClusterEndpoint) bool {
@@ -378,7 +341,11 @@ func neptuneResourceName(parts ...string) string {
 	if len(cleanParts) == 0 {
 		return "neptune_resource"
 	}
-	return strings.Join(cleanParts, "_")
+	encoded := make([]string, 0, len(cleanParts))
+	for _, part := range cleanParts {
+		encoded = append(encoded, fmt.Sprintf("%d_%s", len(part), part))
+	}
+	return strings.Join(encoded, "__")
 }
 
 func (g *NeptuneGenerator) PostConvertHook() error {

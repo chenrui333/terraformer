@@ -66,7 +66,7 @@ func TestRDSClusterInstanceResource(t *testing.T) {
 	if got, want := resource.InstanceState.ID, "db-1"; got != want {
 		t.Fatalf("resource ID = %q, want %q", got, want)
 	}
-	if got, want := resource.ResourceName, "tfer--cluster-1_db-1"; got != want {
+	if got, want := resource.ResourceName, "tfer--9_cluster-1__4_db-1"; got != want {
 		t.Fatalf("resource name = %q, want %q", got, want)
 	}
 	if got, want := resource.InstanceState.Attributes["cluster_identifier"], "cluster-1"; got != want {
@@ -153,6 +153,20 @@ func TestRDSResourceName(t *testing.T) {
 				t.Fatalf("rdsResourceName() = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestRDSCompositeResourceName(t *testing.T) {
+	if got, want := rdsCompositeResourceName(), "rds_resource"; got != want {
+		t.Fatalf("rdsCompositeResourceName() = %q, want %q", got, want)
+	}
+	if got, want := rdsCompositeResourceName("cluster-1", "db-1"), "9_cluster-1__4_db-1"; got != want {
+		t.Fatalf("rdsCompositeResourceName() = %q, want %q", got, want)
+	}
+	first := rdsCompositeResourceName("ab", "c")
+	second := rdsCompositeResourceName("a", "bc")
+	if first == second {
+		t.Fatalf("rdsCompositeResourceName collision: %q == %q", first, second)
 	}
 }
 
