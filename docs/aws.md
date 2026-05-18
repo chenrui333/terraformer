@@ -582,21 +582,21 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_network_acl`
 *   `nat`
     * `aws_nat_gateway`
-	*   `neptune`
-	    * `aws_neptune_cluster`
-	    * `aws_neptune_cluster_endpoint`
-	    * `aws_neptune_cluster_instance`
-	    * `aws_neptune_cluster_parameter_group`
-	    * `aws_neptune_event_subscription`
-	    * `aws_neptune_parameter_group`
-	    * `aws_neptune_subnet_group`
-	*   `networkmanager`
-	    * `aws_networkmanager_connection`
-	    * `aws_networkmanager_device`
-	    * `aws_networkmanager_global_network`
-	    * `aws_networkmanager_link`
-	    * `aws_networkmanager_site`
-	*   `notifications`
+*   `neptune`
+    * `aws_neptune_cluster`
+    * `aws_neptune_cluster_endpoint`
+    * `aws_neptune_cluster_instance`
+    * `aws_neptune_cluster_parameter_group`
+    * `aws_neptune_event_subscription`
+    * `aws_neptune_parameter_group`
+    * `aws_neptune_subnet_group`
+*   `networkmanager`
+    * `aws_networkmanager_connection`
+    * `aws_networkmanager_device`
+    * `aws_networkmanager_global_network`
+    * `aws_networkmanager_link`
+    * `aws_networkmanager_site`
+*   `notifications`
     * `aws_notifications_channel_association`
     * `aws_notifications_event_rule`
     * `aws_notifications_notification_configuration`
