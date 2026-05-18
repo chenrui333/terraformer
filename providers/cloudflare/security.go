@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -32,6 +33,26 @@ func cloudflareSecurityString(resource cloudflareSecurityRawResource, keys ...st
 		value, ok := resource[key].(string)
 		if ok && value != "" {
 			return value
+		}
+	}
+	return ""
+}
+
+func cloudflareSecurityIDString(resource cloudflareSecurityRawResource, keys ...string) string {
+	for _, key := range keys {
+		value, ok := resource[key]
+		if !ok {
+			continue
+		}
+		switch id := value.(type) {
+		case string:
+			if id != "" {
+				return id
+			}
+		case float64:
+			if id == float64(int64(id)) {
+				return strconv.FormatInt(int64(id), 10)
+			}
 		}
 	}
 	return ""
@@ -215,6 +236,32 @@ func cloudflareAccountSecurityResource(
 	return resource, true
 }
 
+func cloudflareScopedSecurityResource(
+	scopeType string,
+	scopeID string,
+	id string,
+	resourceType string,
+	resourceNamePrefix string,
+	nameParts ...string,
+) (terraformutils.Resource, bool) {
+	if scopeID == "" || id == "" {
+		return terraformutils.Resource{}, false
+	}
+	parts := append([]string{scopeType, scopeID, resourceNamePrefix}, nameParts...)
+	parts = append(parts, id)
+	resource := terraformutils.NewResource(
+		id,
+		cloudflareResourceName(parts...),
+		resourceType,
+		"cloudflare",
+		accessScopeAttributes(scopeType, scopeID),
+		[]string{},
+		map[string]interface{}{},
+	)
+	setCloudflareImportID(&resource, fmt.Sprintf("%s/%s/%s", scopeType, scopeID, id))
+	return resource, true
+}
+
 func apiShieldConfigImportable(config cloudflareSecurityRawResource) bool {
 	characteristics, ok := config["auth_id_characteristics"].([]interface{})
 	return ok && len(characteristics) > 0
@@ -302,6 +349,167 @@ func (g *SecurityGenerator) appendPageShieldPolicyResources(ctx context.Context,
 	return nil
 }
 
+func (g *SecurityGenerator) appendCloudConnectorRulesResource(ctx context.Context, api *cf.API, zone cf.Zone) error {
+	rules, err := listCloudflareSecurityResources(ctx, api, fmt.Sprintf("/zones/%s/cloud_connector/rules", zone.ID))
+	if err != nil {
+		return err
+	}
+	if len(rules) == 0 {
+		return nil
+	}
+	resource, ok := cloudflareZoneSecuritySingletonResource(zone, "cloudflare_cloud_connector_rules", "cloud_connector_rules")
+	if ok {
+		g.Resources = append(g.Resources, resource)
+	}
+	return nil
+}
+
+func (g *SecurityGenerator) appendCustomPageResources(
+	ctx context.Context,
+	api *cf.API,
+	scopeType string,
+	scopeID string,
+	scopeName string,
+) error {
+	pages, err := listCloudflareSecurityResources(ctx, api, fmt.Sprintf("/%s/%s/custom_pages", scopeType, scopeID))
+	if err != nil {
+		return err
+	}
+	for _, page := range pages {
+		if cloudflareSecurityString(page, "state") != "customized" {
+			continue
+		}
+		id := cloudflareSecurityIDString(page, "identifier", "id")
+		resource, ok := cloudflareScopedSecurityResource(
+			scopeType,
+			scopeID,
+			id,
+			"cloudflare_custom_pages",
+			"custom_page",
+			scopeName,
+			cloudflareSecurityString(page, "description", "state"),
+		)
+		if ok {
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
+func (g *SecurityGenerator) appendCustomPageAssetResources(
+	ctx context.Context,
+	api *cf.API,
+	scopeType string,
+	scopeID string,
+	scopeName string,
+) error {
+	assets, err := listCloudflareSecurityResources(ctx, api, fmt.Sprintf("/%s/%s/custom_pages/assets", scopeType, scopeID))
+	if err != nil {
+		return err
+	}
+	for _, asset := range assets {
+		id := cloudflareSecurityIDString(asset, "name", "id")
+		resource, ok := cloudflareScopedSecurityResource(
+			scopeType,
+			scopeID,
+			id,
+			"cloudflare_custom_page_asset",
+			"custom_page_asset",
+			scopeName,
+			cloudflareSecurityString(asset, "description"),
+		)
+		if ok {
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
+func (g *SecurityGenerator) appendLeakedCredentialCheckRuleResources(ctx context.Context, api *cf.API, zone cf.Zone) error {
+	detections, err := listCloudflareSecurityResources(ctx, api, fmt.Sprintf("/zones/%s/leaked-credential-checks/detections", zone.ID))
+	if err != nil {
+		return err
+	}
+	for _, detection := range detections {
+		id := cloudflareSecurityIDString(detection, "id")
+		resource, ok := cloudflareZoneSecurityResource(
+			zone,
+			id,
+			"cloudflare_leaked_credential_check_rule",
+			"leaked_credential_check_rule",
+			cloudflareSecurityString(detection, "username"),
+			cloudflareSecurityString(detection, "password"),
+		)
+		if ok {
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
+func (g *SecurityGenerator) appendTokenValidationConfigResources(ctx context.Context, api *cf.API, zone cf.Zone) error {
+	configs, err := listCloudflareSecurityResources(ctx, api, fmt.Sprintf("/zones/%s/token_validation/config", zone.ID))
+	if err != nil {
+		return err
+	}
+	for _, config := range configs {
+		id := cloudflareSecurityIDString(config, "id")
+		resource, ok := cloudflareZoneSecurityResource(
+			zone,
+			id,
+			"cloudflare_token_validation_config",
+			"token_validation_config",
+			cloudflareSecurityString(config, "title"),
+		)
+		if ok {
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
+func (g *SecurityGenerator) appendTokenValidationRuleResources(ctx context.Context, api *cf.API, zone cf.Zone) error {
+	rules, err := listCloudflareSecurityResources(ctx, api, fmt.Sprintf("/zones/%s/token_validation/rules", zone.ID))
+	if err != nil {
+		return err
+	}
+	for _, rule := range rules {
+		id := cloudflareSecurityIDString(rule, "id")
+		resource, ok := cloudflareZoneSecurityResource(
+			zone,
+			id,
+			"cloudflare_token_validation_rules",
+			"token_validation_rule",
+			cloudflareSecurityString(rule, "title", "action"),
+		)
+		if ok {
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
+func (g *SecurityGenerator) appendUserAgentBlockingRuleResources(ctx context.Context, api *cf.API, zone cf.Zone) error {
+	rules, err := listCloudflareSecurityResources(ctx, api, fmt.Sprintf("/zones/%s/firewall/ua_rules", zone.ID))
+	if err != nil {
+		return err
+	}
+	for _, rule := range rules {
+		id := cloudflareSecurityIDString(rule, "id")
+		resource, ok := cloudflareZoneSecurityResource(
+			zone,
+			id,
+			"cloudflare_user_agent_blocking_rule",
+			"user_agent_blocking_rule",
+			cloudflareSecurityString(rule, "description", "mode"),
+		)
+		if ok {
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
 func (g *SecurityGenerator) appendVulnerabilityScannerCredentialSetResources(
 	ctx context.Context,
 	api *cf.API,
@@ -352,6 +560,69 @@ func (g *SecurityGenerator) appendVulnerabilityScannerTargetEnvironmentResources
 	return nil
 }
 
+func (g *SecurityGenerator) appendEmailSecurityBlockSenderResources(ctx context.Context, api *cf.API, accountID string) error {
+	senders, err := listCloudflareSecurityResources(ctx, api, fmt.Sprintf("/accounts/%s/email-security/settings/block_senders", accountID))
+	if err != nil {
+		return err
+	}
+	for _, sender := range senders {
+		id := cloudflareSecurityIDString(sender, "id")
+		resource, ok := cloudflareAccountSecurityResource(
+			accountID,
+			id,
+			"cloudflare_email_security_block_sender",
+			"email_security_block_sender",
+			cloudflareSecurityString(sender, "pattern", "pattern_type"),
+		)
+		if ok {
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
+func (g *SecurityGenerator) appendEmailSecurityImpersonationRegistryResources(ctx context.Context, api *cf.API, accountID string) error {
+	registries, err := listCloudflareSecurityResources(ctx, api, fmt.Sprintf("/accounts/%s/email-security/settings/impersonation_registry", accountID))
+	if err != nil {
+		return err
+	}
+	for _, registry := range registries {
+		id := cloudflareSecurityIDString(registry, "id")
+		resource, ok := cloudflareAccountSecurityResource(
+			accountID,
+			id,
+			"cloudflare_email_security_impersonation_registry",
+			"email_security_impersonation_registry",
+			cloudflareSecurityString(registry, "name", "email"),
+		)
+		if ok {
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
+func (g *SecurityGenerator) appendEmailSecurityTrustedDomainResources(ctx context.Context, api *cf.API, accountID string) error {
+	domains, err := listCloudflareSecurityResources(ctx, api, fmt.Sprintf("/accounts/%s/email-security/settings/trusted_domains", accountID))
+	if err != nil {
+		return err
+	}
+	for _, domain := range domains {
+		id := cloudflareSecurityIDString(domain, "id")
+		resource, ok := cloudflareAccountSecurityResource(
+			accountID,
+			id,
+			"cloudflare_email_security_trusted_domains",
+			"email_security_trusted_domain",
+			cloudflareSecurityString(domain, "pattern"),
+		)
+		if ok {
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
 func (g *SecurityGenerator) appendZoneSecurityResources(ctx context.Context, api *cf.API, zone cf.Zone) error {
 	return runCloudflareSecurityDiscoveries([]cloudflareSecurityDiscovery{
 		{
@@ -382,6 +653,55 @@ func (g *SecurityGenerator) appendZoneSecurityResources(ctx context.Context, api
 				return g.appendPageShieldPolicyResources(ctx, api, zone)
 			},
 		},
+		{
+			name:  "Cloud Connector rules",
+			scope: zone.ID,
+			discover: func() error {
+				return g.appendCloudConnectorRulesResource(ctx, api, zone)
+			},
+		},
+		{
+			name:  "zone custom pages",
+			scope: zone.ID,
+			discover: func() error {
+				return g.appendCustomPageResources(ctx, api, "zones", zone.ID, zone.Name)
+			},
+		},
+		{
+			name:  "zone custom page assets",
+			scope: zone.ID,
+			discover: func() error {
+				return g.appendCustomPageAssetResources(ctx, api, "zones", zone.ID, zone.Name)
+			},
+		},
+		{
+			name:  "leaked credential check rules",
+			scope: zone.ID,
+			discover: func() error {
+				return g.appendLeakedCredentialCheckRuleResources(ctx, api, zone)
+			},
+		},
+		{
+			name:  "token validation configs",
+			scope: zone.ID,
+			discover: func() error {
+				return g.appendTokenValidationConfigResources(ctx, api, zone)
+			},
+		},
+		{
+			name:  "token validation rules",
+			scope: zone.ID,
+			discover: func() error {
+				return g.appendTokenValidationRuleResources(ctx, api, zone)
+			},
+		},
+		{
+			name:  "user-agent blocking rules",
+			scope: zone.ID,
+			discover: func() error {
+				return g.appendUserAgentBlockingRuleResources(ctx, api, zone)
+			},
+		},
 	})
 }
 
@@ -399,6 +719,41 @@ func (g *SecurityGenerator) appendAccountSecurityResources(ctx context.Context, 
 			scope: accountID,
 			discover: func() error {
 				return g.appendVulnerabilityScannerTargetEnvironmentResources(ctx, api, accountID)
+			},
+		},
+		{
+			name:  "account custom pages",
+			scope: accountID,
+			discover: func() error {
+				return g.appendCustomPageResources(ctx, api, "accounts", accountID, accountID)
+			},
+		},
+		{
+			name:  "account custom page assets",
+			scope: accountID,
+			discover: func() error {
+				return g.appendCustomPageAssetResources(ctx, api, "accounts", accountID, accountID)
+			},
+		},
+		{
+			name:  "Email Security block senders",
+			scope: accountID,
+			discover: func() error {
+				return g.appendEmailSecurityBlockSenderResources(ctx, api, accountID)
+			},
+		},
+		{
+			name:  "Email Security impersonation registry",
+			scope: accountID,
+			discover: func() error {
+				return g.appendEmailSecurityImpersonationRegistryResources(ctx, api, accountID)
+			},
+		},
+		{
+			name:  "Email Security trusted domains",
+			scope: accountID,
+			discover: func() error {
+				return g.appendEmailSecurityTrustedDomainResources(ctx, api, accountID)
 			},
 		},
 	})

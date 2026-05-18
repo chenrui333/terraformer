@@ -82,6 +82,85 @@ func TestCloudflareAccountSecurityResourceUsesCompositeImportID(t *testing.T) {
 	}
 }
 
+func TestCloudflareSecurityIDStringHandlesStringAndNumericIDs(t *testing.T) {
+	tests := []struct {
+		name     string
+		resource cloudflareSecurityRawResource
+		keys     []string
+		want     string
+	}{
+		{
+			name:     "string ID",
+			resource: cloudflareSecurityRawResource{"id": "rule-123"},
+			keys:     []string{"id"},
+			want:     "rule-123",
+		},
+		{
+			name:     "numeric ID",
+			resource: cloudflareSecurityRawResource{"id": 12345.0},
+			keys:     []string{"id"},
+			want:     "12345",
+		},
+		{
+			name:     "fallback key",
+			resource: cloudflareSecurityRawResource{"name": "asset-123"},
+			keys:     []string{"id", "name"},
+			want:     "asset-123",
+		},
+		{
+			name:     "fractional numeric ID skipped",
+			resource: cloudflareSecurityRawResource{"id": 1.5},
+			keys:     []string{"id"},
+			want:     "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := cloudflareSecurityIDString(tt.resource, tt.keys...); got != tt.want {
+				t.Fatalf("cloudflareSecurityIDString() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCloudflareScopedSecurityResourceUsesScopedImportID(t *testing.T) {
+	resource, ok := cloudflareScopedSecurityResource(
+		"zones",
+		"zone-123",
+		"waf_block",
+		"cloudflare_custom_pages",
+		"custom_page",
+		"example.com",
+	)
+	if !ok {
+		t.Fatal("expected scoped security resource")
+	}
+	if got := resource.InstanceState.Attributes["zone_id"]; got != "zone-123" {
+		t.Fatalf("zone_id = %q, want zone-123", got)
+	}
+	if got := resource.InstanceState.Meta["import_id"]; got != "zones/zone-123/waf_block" {
+		t.Fatalf("import_id = %q, want zones/zone-123/waf_block", got)
+	}
+
+	accountResource, ok := cloudflareScopedSecurityResource(
+		"accounts",
+		"account-123",
+		"asset-123",
+		"cloudflare_custom_page_asset",
+		"custom_page_asset",
+	)
+	if !ok {
+		t.Fatal("expected account-scoped security resource")
+	}
+	if got := accountResource.InstanceState.Attributes["account_id"]; got != "account-123" {
+		t.Fatalf("account_id = %q, want account-123", got)
+	}
+	if got := accountResource.InstanceState.Meta["import_id"]; got != "accounts/account-123/asset-123" {
+		t.Fatalf("import_id = %q, want accounts/account-123/asset-123", got)
+	}
+}
+
 func TestCloudflareSecurityResourceConstructorsSkipMissingIDs(t *testing.T) {
 	if _, ok := cloudflareZoneSecurityResource(cf.Zone{ID: "zone-123"}, "", "cloudflare_api_shield_operation", "api_shield_operation"); ok {
 		t.Fatal("expected zone resource without resource ID to be skipped")
@@ -241,6 +320,122 @@ func TestAppendAPIShieldOperationResources(t *testing.T) {
 	}
 }
 
+func TestAppendSecurityZoneAdjunctResources(t *testing.T) {
+	responses := map[string]interface{}{
+		"/zones/zone-123/cloud_connector/rules": []map[string]string{
+			{"id": "connector-rule-123"},
+		},
+		"/zones/zone-123/custom_pages": []map[string]string{
+			{"identifier": "waf_block", "state": "customized", "description": "WAF block"},
+			{"identifier": "basic_challenge", "state": "default", "description": "Default challenge"},
+		},
+		"/zones/zone-123/custom_pages/assets": []map[string]string{
+			{"name": "error_asset", "description": "Error page"},
+		},
+		"/zones/zone-123/leaked-credential-checks/detections": []map[string]string{
+			{"id": "detection-123", "username": "lookup_json_string(http.request.body.raw, \"user\")", "password": "lookup_json_string(http.request.body.raw, \"password\")"},
+		},
+		"/zones/zone-123/token_validation/config": []map[string]string{
+			{"id": "config-123", "title": "JWT config"},
+		},
+		"/zones/zone-123/token_validation/rules": []map[string]string{
+			{"id": "rule-123", "title": "JWT rule"},
+		},
+		"/zones/zone-123/firewall/ua_rules": []map[string]string{
+			{"id": "ua-123", "description": "Legacy client"},
+		},
+	}
+	api := newCloudflareSecurityTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		result, ok := responses[r.URL.Path]
+		if !ok {
+			t.Fatalf("unexpected path %q", r.URL.Path)
+		}
+		writeCloudflareSecurityTestResponse(t, w, result, nil)
+	}))
+	g := &SecurityGenerator{}
+	zone := cf.Zone{ID: "zone-123", Name: "example.com"}
+
+	for _, appendResources := range []func(context.Context, *cf.API, cf.Zone) error{
+		g.appendCloudConnectorRulesResource,
+		func(ctx context.Context, api *cf.API, zone cf.Zone) error {
+			return g.appendCustomPageResources(ctx, api, "zones", zone.ID, zone.Name)
+		},
+		func(ctx context.Context, api *cf.API, zone cf.Zone) error {
+			return g.appendCustomPageAssetResources(ctx, api, "zones", zone.ID, zone.Name)
+		},
+		g.appendLeakedCredentialCheckRuleResources,
+		g.appendTokenValidationConfigResources,
+		g.appendTokenValidationRuleResources,
+		g.appendUserAgentBlockingRuleResources,
+	} {
+		if err := appendResources(context.Background(), api, zone); err != nil {
+			t.Fatalf("appendResources() error = %v", err)
+		}
+	}
+
+	got := map[string]string{}
+	for _, resource := range g.Resources {
+		got[resource.InstanceInfo.Type] = resource.InstanceState.Meta["import_id"].(string)
+	}
+	want := map[string]string{
+		"cloudflare_cloud_connector_rules":        "zone-123",
+		"cloudflare_custom_pages":                 "zones/zone-123/waf_block",
+		"cloudflare_custom_page_asset":            "zones/zone-123/error_asset",
+		"cloudflare_leaked_credential_check_rule": "zone-123/detection-123",
+		"cloudflare_token_validation_config":      "zone-123/config-123",
+		"cloudflare_token_validation_rules":       "zone-123/rule-123",
+		"cloudflare_user_agent_blocking_rule":     "zone-123/ua-123",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("resources = %#v, want %#v", got, want)
+	}
+}
+
+func TestAppendSecurityEmailResources(t *testing.T) {
+	responses := map[string]interface{}{
+		"/accounts/account-123/email-security/settings/block_senders": []map[string]interface{}{
+			{"id": 101.0, "pattern": "bad.example.com", "pattern_type": "domain"},
+		},
+		"/accounts/account-123/email-security/settings/impersonation_registry": []map[string]interface{}{
+			{"id": 202.0, "name": "Finance", "email": "finance@example.com"},
+		},
+		"/accounts/account-123/email-security/settings/trusted_domains": []map[string]interface{}{
+			{"id": 303.0, "pattern": "partner.example.com"},
+		},
+	}
+	api := newCloudflareSecurityTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		result, ok := responses[r.URL.Path]
+		if !ok {
+			t.Fatalf("unexpected path %q", r.URL.Path)
+		}
+		writeCloudflareSecurityTestResponse(t, w, result, nil)
+	}))
+	g := &SecurityGenerator{}
+
+	for _, appendResources := range []func(context.Context, *cf.API, string) error{
+		g.appendEmailSecurityBlockSenderResources,
+		g.appendEmailSecurityImpersonationRegistryResources,
+		g.appendEmailSecurityTrustedDomainResources,
+	} {
+		if err := appendResources(context.Background(), api, "account-123"); err != nil {
+			t.Fatalf("appendResources() error = %v", err)
+		}
+	}
+
+	got := map[string]string{}
+	for _, resource := range g.Resources {
+		got[resource.InstanceInfo.Type] = resource.InstanceState.Meta["import_id"].(string)
+	}
+	want := map[string]string{
+		"cloudflare_email_security_block_sender":           "account-123/101",
+		"cloudflare_email_security_impersonation_registry": "account-123/202",
+		"cloudflare_email_security_trusted_domains":        "account-123/303",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("resources = %#v, want %#v", got, want)
+	}
+}
+
 func TestRunCloudflareSecurityDiscoveriesSkipsOptionalErrors(t *testing.T) {
 	calls := []string{}
 	err := runCloudflareSecurityDiscoveries([]cloudflareSecurityDiscovery{
@@ -342,8 +537,11 @@ func TestCloudflareSecurityUnsupportedMetadataCoversDeferredResources(t *testing
 		"cloudflare_bot_management",
 		"cloudflare_content_scanning",
 		"cloudflare_content_scanning_expression",
+		"cloudflare_observatory_scheduled_test",
 		"cloudflare_schema_validation_operation_settings",
 		"cloudflare_schema_validation_settings",
+		"cloudflare_zero_trust_access_ai_controls_mcp_portal",
+		"cloudflare_zero_trust_access_key_configuration",
 	} {
 		if !seen[resource] {
 			t.Fatalf("unsupported metadata is missing %s", resource)
@@ -389,11 +587,21 @@ func ExampleSecurityGenerator_resources() {
 	resources := []string{
 		"cloudflare_api_shield",
 		"cloudflare_api_shield_operation",
+		"cloudflare_cloud_connector_rules",
+		"cloudflare_custom_page_asset",
+		"cloudflare_custom_pages",
+		"cloudflare_email_security_block_sender",
+		"cloudflare_email_security_impersonation_registry",
+		"cloudflare_email_security_trusted_domains",
+		"cloudflare_leaked_credential_check_rule",
 		"cloudflare_page_shield_policy",
 		"cloudflare_schema_validation_schemas",
+		"cloudflare_token_validation_config",
+		"cloudflare_token_validation_rules",
+		"cloudflare_user_agent_blocking_rule",
 		"cloudflare_vulnerability_scanner_credential_set",
 		"cloudflare_vulnerability_scanner_target_environment",
 	}
 	fmt.Println(strings.Join(resources, ", "))
-	// Output: cloudflare_api_shield, cloudflare_api_shield_operation, cloudflare_page_shield_policy, cloudflare_schema_validation_schemas, cloudflare_vulnerability_scanner_credential_set, cloudflare_vulnerability_scanner_target_environment
+	// Output: cloudflare_api_shield, cloudflare_api_shield_operation, cloudflare_cloud_connector_rules, cloudflare_custom_page_asset, cloudflare_custom_pages, cloudflare_email_security_block_sender, cloudflare_email_security_impersonation_registry, cloudflare_email_security_trusted_domains, cloudflare_leaked_credential_check_rule, cloudflare_page_shield_policy, cloudflare_schema_validation_schemas, cloudflare_token_validation_config, cloudflare_token_validation_rules, cloudflare_user_agent_blocking_rule, cloudflare_vulnerability_scanner_credential_set, cloudflare_vulnerability_scanner_target_environment
 }
