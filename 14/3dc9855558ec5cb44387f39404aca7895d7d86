@@ -1,0 +1,31 @@
+providers/aws/unsupported_resources.json
+  s_b7f71d4ea551ef::t_7ae37bc61642e9 716,871,882,893,904
+providers/aws/lex_test.go
+  s_b7f71d4ea551ef::t_8f10b255775323 226-249,277-288
+providers/aws/lex.go
+  s_b7f71d4ea551ef::t_8f10b255775323 183,186
+providers/aws/sagemaker_test.go
+  s_b7f71d4ea551ef::t_8f10b255775323 897-898,901
+tools/aws-gap-inventory/inventory.go
+  s_b7f71d4ea551ef::t_7ae37bc61642e9 31
+providers/aws/quicksight.go
+  s_b7f71d4ea551ef::t_8f10b255775323 99,102-110,119,122-129
+providers/aws/ai_bi_lex_unsupported_test.go
+  s_b7f71d4ea551ef::t_7ae37bc61642e9 75,88-91
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "143dc9855558ec5cb44387f39404aca7895d7d86",
+  "prompts": {},
+  "sessions": {
+    "s_b7f71d4ea551ef": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3920-a881-7301-87f7-2d86252a05ca",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
