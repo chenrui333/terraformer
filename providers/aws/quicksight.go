@@ -442,7 +442,7 @@ func newQuickSightVPCConnectionResource(accountID string, connection quicksightt
 	connectionID := StringValue(connection.VPCConnectionId)
 	name := StringValue(connection.Name)
 	roleARN := StringValue(connection.RoleArn)
-	if accountID == "" || connectionID == "" || name == "" || roleARN == "" || !quickSightVPCConnectionImportable(connection.Status, connection.AvailabilityStatus) {
+	if accountID == "" || connectionID == "" || name == "" || roleARN == "" || !quickSightVPCConnectionImportable(connection.Status) {
 		return terraformutils.Resource{}, false
 	}
 	return quickSightResource(quickSightVPCConnectionImportID(accountID, connectionID), quickSightResourceName("vpc-connection", connectionID), quickSightVPCConnectionResourceType, map[string]string{
@@ -527,13 +527,9 @@ func quickSightNamespaceImportable(status quicksighttypes.NamespaceStatus) bool 
 	return status == quicksighttypes.NamespaceStatusCreated
 }
 
-func quickSightVPCConnectionImportable(status quicksighttypes.VPCConnectionResourceStatus, availability quicksighttypes.VPCConnectionAvailabilityStatus) bool {
-	if status != quicksighttypes.VPCConnectionResourceStatusCreationSuccessful && status != quicksighttypes.VPCConnectionResourceStatusUpdateSuccessful {
-		return false
-	}
-	return availability == "" ||
-		availability == quicksighttypes.VPCConnectionAvailabilityStatusAvailable ||
-		availability == quicksighttypes.VPCConnectionAvailabilityStatusPartiallyAvailable
+func quickSightVPCConnectionImportable(status quicksighttypes.VPCConnectionResourceStatus) bool {
+	return status == quicksighttypes.VPCConnectionResourceStatusCreationSuccessful ||
+		status == quicksighttypes.VPCConnectionResourceStatusUpdateSuccessful
 }
 
 func quickSightResourceNotFound(err error) bool {

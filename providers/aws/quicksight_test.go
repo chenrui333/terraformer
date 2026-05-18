@@ -104,15 +104,14 @@ func TestNewQuickSightResources(t *testing.T) {
 	}); ok {
 		t.Fatal("creating namespace should be skipped")
 	}
-	if _, ok := newQuickSightVPCConnectionResource("123456789012", quicksighttypes.VPCConnectionSummary{
+	unavailableVPCConnection, ok := newQuickSightVPCConnectionResource("123456789012", quicksighttypes.VPCConnectionSummary{
 		AvailabilityStatus: quicksighttypes.VPCConnectionAvailabilityStatusUnavailable,
 		Name:               aws.String("analytics"),
 		RoleArn:            aws.String("arn:aws:iam::123456789012:role/quicksight-vpc"),
 		Status:             quicksighttypes.VPCConnectionResourceStatusCreationSuccessful,
 		VPCConnectionId:    aws.String("vpc-conn"),
-	}); ok {
-		t.Fatal("unavailable VPC connection should be skipped")
-	}
+	})
+	assertQuickSightResource(t, unavailableVPCConnection, ok, "123456789012,vpc-conn", quickSightVPCConnectionResourceType)
 	if _, ok := newQuickSightFolderMembershipResource("123456789012", "folder-1", quicksighttypes.MemberIdArnPair{
 		MemberArn: aws.String("arn:aws:quicksight:us-east-1:123456789012:user/default/alice"),
 		MemberId:  aws.String("alice"),
@@ -125,10 +124,13 @@ func TestQuickSightImportableStatuses(t *testing.T) {
 	if !quickSightNamespaceImportable(quicksighttypes.NamespaceStatusCreated) || quickSightNamespaceImportable(quicksighttypes.NamespaceStatusCreating) {
 		t.Fatal("namespace importability should allow Created only")
 	}
-	if !quickSightVPCConnectionImportable(quicksighttypes.VPCConnectionResourceStatusUpdateSuccessful, quicksighttypes.VPCConnectionAvailabilityStatusPartiallyAvailable) {
-		t.Fatal("VPC connection update success with partial availability should be importable")
+	if !quickSightVPCConnectionImportable(quicksighttypes.VPCConnectionResourceStatusUpdateSuccessful) {
+		t.Fatal("VPC connection update success should be importable regardless of availability")
 	}
-	if quickSightVPCConnectionImportable(quicksighttypes.VPCConnectionResourceStatusUpdateInProgress, quicksighttypes.VPCConnectionAvailabilityStatusAvailable) {
+	if !quickSightVPCConnectionImportable(quicksighttypes.VPCConnectionResourceStatusCreationSuccessful) {
+		t.Fatal("VPC connection creation success should be importable regardless of availability")
+	}
+	if quickSightVPCConnectionImportable(quicksighttypes.VPCConnectionResourceStatusUpdateInProgress) {
 		t.Fatal("updating VPC connection should be skipped")
 	}
 }
