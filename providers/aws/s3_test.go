@@ -430,6 +430,94 @@ func TestRemoveS3BucketInlineFields(t *testing.T) {
 	}
 }
 
+func TestS3PostConvertHookRemovesComputedACLPolicyForCannedACL(t *testing.T) {
+	cannedACL := terraformutils.NewResource(
+		"example-bucket,public-read",
+		"example-bucket",
+		s3BucketACLResourceType,
+		"aws",
+		map[string]string{
+			"bucket":                                     "example-bucket",
+			"acl":                                        "public-read",
+			"access_control_policy.#":                    "1",
+			"access_control_policy.0.grant.#":            "1",
+			"access_control_policy.0.grant.0.type":       "Group",
+			"access_control_policy.0.grant.0.uri":        "http://acs.amazonaws.com/groups/global/AllUsers",
+			"access_control_policy.0.grant.0.permission": "READ",
+		},
+		S3AllowEmptyValues,
+		S3AdditionalFields,
+	)
+	cannedACL.Item = map[string]interface{}{
+		"bucket": "example-bucket",
+		"acl":    "public-read",
+		"access_control_policy": []interface{}{
+			map[string]interface{}{
+				"grant": []interface{}{
+					map[string]interface{}{
+						"type":       "Group",
+						"uri":        "http://acs.amazonaws.com/groups/global/AllUsers",
+						"permission": "READ",
+					},
+				},
+			},
+		},
+	}
+	customACL := terraformutils.NewResource(
+		"custom-bucket",
+		"custom-bucket",
+		s3BucketACLResourceType,
+		"aws",
+		map[string]string{
+			"bucket":                                     "custom-bucket",
+			"access_control_policy.#":                    "1",
+			"access_control_policy.0.grant.#":            "1",
+			"access_control_policy.0.grant.0.id":         "canonical-user-id",
+			"access_control_policy.0.grant.0.permission": "READ",
+		},
+		S3AllowEmptyValues,
+		S3AdditionalFields,
+	)
+	customACL.Item = map[string]interface{}{
+		"bucket": "custom-bucket",
+		"access_control_policy": []interface{}{
+			map[string]interface{}{
+				"grant": []interface{}{
+					map[string]interface{}{
+						"id":         "canonical-user-id",
+						"permission": "READ",
+					},
+				},
+			},
+		},
+	}
+	generator := &S3Generator{}
+	generator.Resources = []terraformutils.Resource{cannedACL, customACL}
+
+	if err := generator.PostConvertHook(); err != nil {
+		t.Fatalf("PostConvertHook() error = %v", err)
+	}
+
+	if got := generator.Resources[0].Item["acl"]; got != "public-read" {
+		t.Fatalf("canned ACL acl = %v, want public-read", got)
+	}
+	if _, ok := generator.Resources[0].Item["access_control_policy"]; ok {
+		t.Fatal("canned ACL access_control_policy was not removed from rendered item")
+	}
+	if _, ok := generator.Resources[0].InstanceState.Attributes["access_control_policy.#"]; ok {
+		t.Fatal("canned ACL access_control_policy flatmap prefix was not removed")
+	}
+	if _, ok := generator.Resources[0].InstanceState.Attributes["access_control_policy.0.grant.0.uri"]; ok {
+		t.Fatal("canned ACL nested access_control_policy flatmap field was not removed")
+	}
+	if _, ok := generator.Resources[1].Item["access_control_policy"]; !ok {
+		t.Fatal("custom ACL access_control_policy was removed from rendered item")
+	}
+	if _, ok := generator.Resources[1].InstanceState.Attributes["access_control_policy.#"]; !ok {
+		t.Fatal("custom ACL access_control_policy flatmap prefix was removed")
+	}
+}
+
 func TestS3NamedConfigurationFilterBehavior(t *testing.T) {
 	var resources []terraformutils.Resource
 	addS3BucketNamedConfigurationResource(&resources, "example-bucket", "prod", s3BucketMetricResourceType)

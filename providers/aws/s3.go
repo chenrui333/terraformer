@@ -580,6 +580,8 @@ POLICY`, g.escapeAwsInterpolation(val.(string)))
 %s
 POLICY`, g.escapeAwsInterpolation(val.(string)))
 			}
+		case s3BucketACLResourceType:
+			removeS3BucketACLComputedPolicy(&g.Resources[i])
 		}
 	}
 	return nil
@@ -629,6 +631,30 @@ func removeS3BucketInlineFields(resource *terraformutils.Resource, fields map[st
 		if resource.InstanceState != nil {
 			deleteFlatmapAttribute(resource.InstanceState.Attributes, field)
 		}
+	}
+}
+
+func removeS3BucketACLComputedPolicy(resource *terraformutils.Resource) {
+	if resource == nil {
+		return
+	}
+	acl := ""
+	if resource.Item != nil {
+		if val, ok := resource.Item["acl"].(string); ok {
+			acl = val
+		}
+	}
+	if acl == "" && resource.InstanceState != nil && resource.InstanceState.Attributes != nil {
+		acl = resource.InstanceState.Attributes["acl"]
+	}
+	if acl == "" {
+		return
+	}
+	if resource.Item != nil {
+		delete(resource.Item, "access_control_policy")
+	}
+	if resource.InstanceState != nil {
+		deleteFlatmapAttribute(resource.InstanceState.Attributes, "access_control_policy")
 	}
 }
 
