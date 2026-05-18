@@ -96,7 +96,7 @@ func TestDirectConnectGatewayAssociationResource(t *testing.T) {
 		AssociationId:                    aws.String("dxgwa-123"),
 		AssociationState:                 directconnecttypes.DirectConnectGatewayAssociationStateAssociated,
 		DirectConnectGatewayId:           aws.String("dxgw-123"),
-		DirectConnectGatewayOwnerAccount: aws.String("210987654321"),
+		DirectConnectGatewayOwnerAccount: aws.String("123456789012"),
 	})
 	if !ok {
 		t.Fatal("expected gateway association resource")
@@ -126,6 +126,19 @@ func TestDirectConnectGatewayAssociationResource(t *testing.T) {
 		DirectConnectGatewayId: aws.String("dxgw-123"),
 	}); ok {
 		t.Fatal("disassociated gateway association should be skipped")
+	}
+	if _, ok := newDirectConnectGatewayAssociationResource(directconnecttypes.DirectConnectGatewayAssociation{
+		AssociatedGateway: &directconnecttypes.AssociatedGateway{
+			Id:           aws.String("tgw-cross-account"),
+			OwnerAccount: aws.String("123456789012"),
+			Type:         directconnecttypes.GatewayTypeTransitGateway,
+		},
+		AssociationId:                    aws.String("dxgwa-cross-account"),
+		AssociationState:                 directconnecttypes.DirectConnectGatewayAssociationStateAssociated,
+		DirectConnectGatewayId:           aws.String("dxgw-123"),
+		DirectConnectGatewayOwnerAccount: aws.String("210987654321"),
+	}); ok {
+		t.Fatal("cross-account gateway association should be skipped")
 	}
 }
 

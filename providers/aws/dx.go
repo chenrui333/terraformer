@@ -314,9 +314,19 @@ func directConnectGatewayAssociationImportable(association directconnecttypes.Di
 	case directconnecttypes.DirectConnectGatewayAssociationStateDisassociating,
 		directconnecttypes.DirectConnectGatewayAssociationStateDisassociated:
 		return false
-	default:
-		return true
 	}
+	return !directConnectGatewayAssociationRequiresProposal(association)
+}
+
+func directConnectGatewayAssociationRequiresProposal(association directconnecttypes.DirectConnectGatewayAssociation) bool {
+	if association.AssociatedGateway == nil {
+		return false
+	}
+	associatedGatewayOwnerAccountID := StringValue(association.AssociatedGateway.OwnerAccount)
+	dxGatewayOwnerAccountID := StringValue(association.DirectConnectGatewayOwnerAccount)
+	return associatedGatewayOwnerAccountID != "" &&
+		dxGatewayOwnerAccountID != "" &&
+		associatedGatewayOwnerAccountID != dxGatewayOwnerAccountID
 }
 
 func directConnectGatewayAssociationRegionMatches(association directconnecttypes.DirectConnectGatewayAssociation, region string) bool {
