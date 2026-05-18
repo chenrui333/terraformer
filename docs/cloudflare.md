@@ -157,6 +157,18 @@ List of supported Cloudflare services:
   * `cloudflare_workers_custom_domain`
   * `cloudflare_workers_for_platforms_dispatch_namespace`
   * `cloudflare_workers_route`
+* `zero_trust_device_dlp`
+  * `cloudflare_zero_trust_dex_rule`
+  * `cloudflare_zero_trust_dex_test`
+  * `cloudflare_zero_trust_device_custom_profile`
+  * `cloudflare_zero_trust_device_custom_profile_local_domain_fallback`
+  * `cloudflare_zero_trust_device_default_profile`
+  * `cloudflare_zero_trust_device_default_profile_local_domain_fallback`
+  * `cloudflare_zero_trust_device_ip_profile`
+  * `cloudflare_zero_trust_device_managed_networks`
+  * `cloudflare_zero_trust_dlp_custom_entry`
+  * `cloudflare_zero_trust_dlp_custom_profile`
+  * `cloudflare_zero_trust_dlp_settings`
 * `zero_trust_gateway`
   * `cloudflare_zero_trust_dns_location`
   * `cloudflare_zero_trust_gateway_certificate`

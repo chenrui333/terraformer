@@ -746,11 +746,22 @@
       "resource": "cloudflare_zero_trust_device_posture_integration",
       "service_family": "zero_trust_device_posture",
       "reason": "Device posture integrations require provider-specific credential/configuration material that needs a dedicated reconstruction design.",
-      "evidence": "Cloudflare provider v5.19.1 requires config, interval, name, and type. Integration config varies by third-party posture provider and can contain connector credentials or tenant-specific setup values that should not be inferred from broad account discovery.",
+      "evidence": "Cloudflare provider v5.19.1 requires config, interval, name, and type. Integration config includes no_refresh credential fields such as client_secret, client_key, customer_id, and access_client_secret, so Terraformer cannot reconstruct these integrations from account discovery.",
       "status": "secret-required",
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zero_trust_device_posture_integration"
+      ]
+    },
+    {
+      "resource": "cloudflare_zero_trust_device_posture_rule",
+      "service_family": "zero_trust_device_posture",
+      "reason": "Device posture rules remain deferred because some rule input fields are not consistently returned by the API after import.",
+      "evidence": "Terraform provider v5.19.1 supports import, but its read path preserves prior state for version, SentinelOne, path, sha256, and OS distribution fields when the API omits them. Broad import lacks that prior configuration and could emit incomplete posture rules for several rule types.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/335",
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zero_trust_device_posture_rule"
       ]
     },
     {
@@ -765,33 +776,22 @@
       ]
     },
     {
-      "resource": "cloudflare_zero_trust_dlp_custom_entry",
-      "service_family": "zero_trust_dlp",
-      "reason": "Custom DLP entries need body/pattern reconstruction and should be handled with the broader DLP ownership model.",
-      "evidence": "Cloudflare provider v5.19.1 requires enabled, name, and pattern. DLP entry APIs are shared with predefined and integration-backed entries, so broad import needs a dedicated design for entry type separation, profile attachments, and sensitive matching body ownership.",
+      "resource": "cloudflare_zero_trust_device_subnet",
+      "service_family": "zero_trust_network",
+      "reason": "Zero Trust device subnet imports are deferred to a separate network-routing lane rather than the device/DLP lane.",
+      "evidence": "Terraform provider v5.19.1 imports subnets with <account_id>/<subnet_id>, but the API path is /accounts/{account_id}/zerotrust/subnets and the model includes Cloudflare source subnets and virtual network routing state. This overlaps the network edge boundary that is out of scope for the Zero Trust device/DLP lane.",
       "status": "deferred",
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
-        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zero_trust_dlp_custom_entry"
-      ]
-    },
-    {
-      "resource": "cloudflare_zero_trust_dlp_custom_profile",
-      "service_family": "zero_trust_dlp",
-      "reason": "Custom DLP profiles own entry sets, data classes, tags, sensitivity levels, and shared entries that need a profile/entry reconstruction design.",
-      "evidence": "Cloudflare provider v5.19.1 exposes entries, shared_entries, data_classes, data_tags, sensitivity_levels, context_awareness, OCR, and AI context settings. Importing profiles independently from entries can produce incomplete or conflicting DLP ownership.",
-      "status": "deferred",
-      "references": [
-        "https://github.com/chenrui333/terraformer/issues/335",
-        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zero_trust_dlp_custom_profile"
+        "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zero_trust_device_subnet"
       ]
     },
     {
       "resource": "cloudflare_zero_trust_dlp_dataset",
       "service_family": "zero_trust_dlp",
-      "reason": "DLP datasets are high-cardinality content/body resources with generated upload/version state.",
-      "evidence": "Cloudflare provider v5.19.1 models dataset contents, columns, uploads, status, version, max_cells, and num_cells. Broad import should not reconstruct dataset bodies or generated upload lifecycle state without a dedicated design.",
-      "status": "deferred",
+      "reason": "DLP datasets are high-cardinality content/body resources without a Terraform provider import path.",
+      "evidence": "Terraform provider v5.19.1 documents cloudflare_zero_trust_dlp_dataset as not currently supporting terraform import. The provider model contains dataset, uploads, version, max_cells, and no_refresh body/source fields that Terraformer cannot reconstruct safely from broad discovery.",
+      "status": "not-importable",
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zero_trust_dlp_dataset"
@@ -801,7 +801,7 @@
       "resource": "cloudflare_zero_trust_dlp_entry",
       "service_family": "zero_trust_dlp",
       "reason": "Generic DLP entry imports would duplicate or obscure custom, predefined, and integration entry ownership.",
-      "evidence": "Cloudflare provider v5.19.1 requires enabled, name, and pattern for the generic entry resource while separate custom, predefined, and integration entry resources use the same DLP entry API family. A DLP sweep needs type-aware ownership before Terraformer can emit usable HCL.",
+      "evidence": "Cloudflare provider v5.19.1 requires enabled, name, and pattern for the generic entry resource while separate custom, predefined, and integration entry resources use the same DLP entry API family. The zero_trust_device_dlp service imports custom entries through cloudflare_zero_trust_dlp_custom_entry and keeps generic entry ownership deferred.",
       "status": "deferred",
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
@@ -823,8 +823,8 @@
       "resource": "cloudflare_zero_trust_dlp_predefined_entry",
       "service_family": "zero_trust_dlp",
       "reason": "Predefined DLP entries are Cloudflare catalog entries whose enabled state overlaps with predefined profile configuration.",
-      "evidence": "Cloudflare provider v5.19.1 requires entry_id and enabled while predefined profile resources also own enabled entry sets. Broad import would need to avoid duplicate ownership between entry and profile resources.",
-      "status": "deferred",
+      "evidence": "Cloudflare provider v5.19.1 requires entry_id and enabled while predefined profile resources also own enabled entry sets. Broad import should not claim the Cloudflare-managed predefined DLP catalog or duplicate predefined profile ownership.",
+      "status": "cloudflare-managed",
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zero_trust_dlp_predefined_entry"
@@ -834,8 +834,8 @@
       "resource": "cloudflare_zero_trust_dlp_predefined_profile",
       "service_family": "zero_trust_dlp",
       "reason": "Predefined DLP profiles mix Cloudflare catalog state with account-specific enabled entry ownership.",
-      "evidence": "Cloudflare provider v5.19.1 requires profile_id and can own enabled_entries while also reading catalog entries, OCR, AI context, and sensitivity settings. Import should be handled with a DLP profile/entry ownership design.",
-      "status": "deferred",
+      "evidence": "Cloudflare provider v5.19.1 requires profile_id and can own enabled_entries while also reading catalog entries, OCR, AI context, and sensitivity settings. Broad import should not claim the Cloudflare-managed predefined DLP catalog or duplicate predefined entry ownership.",
+      "status": "cloudflare-managed",
       "references": [
         "https://github.com/chenrui333/terraformer/issues/335",
         "https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/zero_trust_dlp_predefined_profile"
