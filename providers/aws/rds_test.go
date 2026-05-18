@@ -35,11 +35,13 @@ func TestRDSRoleAssociationImportID(t *testing.T) {
 
 func TestRDSAddDBInstanceRoleAssociations(t *testing.T) {
 	roleARN := "arn:aws:iam::123456789012:role/service-role/rds-monitoring-role"
+	commaRoleARN := "arn:aws:iam::123456789012:role/service-role/rds,monitoring-role"
 	g := &RDSGenerator{}
 	g.addDBInstanceRoleAssociations("db-1", []rdstypes.DBInstanceRole{
 		{FeatureName: aws.String("s3Import")},
 		{RoleArn: aws.String(roleARN)},
 		{FeatureName: aws.String("s3Import"), RoleArn: aws.String(roleARN), Status: aws.String("PENDING")},
+		{FeatureName: aws.String("s3Import"), RoleArn: aws.String(commaRoleARN), Status: aws.String("ACTIVE")},
 		{FeatureName: aws.String("s3Import"), RoleArn: aws.String(roleARN), Status: aws.String("ACTIVE")},
 	})
 
@@ -79,9 +81,11 @@ func TestRDSClusterInstanceResource(t *testing.T) {
 
 func TestRDSAddClusterRoleAssociations(t *testing.T) {
 	roleARN := "arn:aws:iam::123456789012:role/service-role/rds-cluster-role"
+	commaRoleARN := "arn:aws:iam::123456789012:role/service-role/rds,cluster-role"
 	g := &RDSGenerator{}
 	g.addRDSClusterRoleAssociations("cluster-1", []rdstypes.DBClusterRole{
 		{FeatureName: aws.String("s3Import"), RoleArn: aws.String(roleARN), Status: aws.String("PENDING")},
+		{FeatureName: aws.String("s3Import"), RoleArn: aws.String(commaRoleARN), Status: aws.String("ACTIVE")},
 		{FeatureName: aws.String("s3Import"), RoleArn: aws.String(roleARN), Status: aws.String("ACTIVE")},
 	})
 
@@ -100,40 +104,6 @@ func TestRDSAddClusterRoleAssociations(t *testing.T) {
 	}
 	if got, want := resource.InstanceState.Attributes["feature_name"], "s3Import"; got != want {
 		t.Fatalf("feature_name = %q, want %q", got, want)
-	}
-}
-
-func TestRDSAddClusterActivityStream(t *testing.T) {
-	clusterARN := "arn:aws:rds:us-east-1:123456789012:cluster:cluster-1"
-	g := &RDSGenerator{}
-	g.addRDSClusterActivityStream(rdstypes.DBCluster{
-		ActivityStreamKmsKeyId: aws.String("arn:aws:kms:us-east-1:123456789012:key/key-id"),
-		ActivityStreamMode:     rdstypes.ActivityStreamModeAsync,
-		ActivityStreamStatus:   rdstypes.ActivityStreamStatusStarted,
-		DBClusterArn:           aws.String(clusterARN),
-		DBClusterIdentifier:    aws.String("cluster-1"),
-	})
-	g.addRDSClusterActivityStream(rdstypes.DBCluster{
-		ActivityStreamMode:   rdstypes.ActivityStreamModeAsync,
-		ActivityStreamStatus: rdstypes.ActivityStreamStatusStopped,
-		DBClusterArn:         aws.String("arn:aws:rds:us-east-1:123456789012:cluster:cluster-2"),
-	})
-
-	if len(g.Resources) != 1 {
-		t.Fatalf("len(Resources) = %d, want 1", len(g.Resources))
-	}
-	resource := g.Resources[0]
-	if got, want := resource.InstanceInfo.Type, "aws_rds_cluster_activity_stream"; got != want {
-		t.Fatalf("resource type = %q, want %q", got, want)
-	}
-	if got, want := resource.InstanceState.ID, clusterARN; got != want {
-		t.Fatalf("resource ID = %q, want %q", got, want)
-	}
-	if got, want := resource.InstanceState.Attributes["resource_arn"], clusterARN; got != want {
-		t.Fatalf("resource_arn = %q, want %q", got, want)
-	}
-	if got, want := resource.InstanceState.Attributes["mode"], "async"; got != want {
-		t.Fatalf("mode = %q, want %q", got, want)
 	}
 }
 
@@ -276,11 +246,11 @@ func TestRDSRoleAssociationStatusImportable(t *testing.T) {
 	}
 }
 
-func TestRDSActivityStreamStatusImportable(t *testing.T) {
-	if !rdsActivityStreamStatusImportable(rdstypes.ActivityStreamStatusStarted) {
-		t.Fatal("started activity stream should be importable")
+func TestRDSRoleAssociationImportIDSupported(t *testing.T) {
+	if !rdsRoleAssociationImportIDSupported("arn:aws:iam::123456789012:role/service-role/rds-role") {
+		t.Fatal("role ARN without comma should be supported")
 	}
-	if rdsActivityStreamStatusImportable(rdstypes.ActivityStreamStatusStopped) {
-		t.Fatal("stopped activity stream should be skipped")
+	if rdsRoleAssociationImportIDSupported("arn:aws:iam::123456789012:role/service-role/rds,role") {
+		t.Fatal("role ARN with comma should be skipped")
 	}
 }

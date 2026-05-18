@@ -40,6 +40,7 @@ func TestComputeDBRuntimeUnsupportedResourceEntries(t *testing.T) {
 		"aws_memorydb_user":                             {serviceFamily: "memorydb", status: "unsupported"},
 		"aws_neptune_cluster_snapshot":                  {serviceFamily: "neptune", status: "unsupported"},
 		"aws_neptune_global_cluster":                    {serviceFamily: "neptune", status: "deferred"},
+		"aws_rds_cluster_activity_stream":               {serviceFamily: "rds", status: "unsupported"},
 		"aws_rds_cluster_snapshot_copy":                 {serviceFamily: "rds", status: "unsupported"},
 		"aws_rds_export_task":                           {serviceFamily: "rds", status: "unsupported"},
 		"aws_rds_instance_state":                        {serviceFamily: "rds", status: "unsupported"},

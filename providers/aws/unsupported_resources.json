@@ -575,6 +575,18 @@
       ]
     },
     {
+      "resource": "aws_rds_cluster_activity_stream",
+      "service_family": "rds",
+      "reason": "RDS cluster activity streams can include engine-native audit fields that Terraform provider read state does not restore, so broad discovery can emit lossy HCL.",
+      "evidence": "Terraform AWS provider models engine_native_audit_fields_included as an optional ForceNew field with default false, but resourceClusterActivityStreamRead only sets kinesis_stream_name, kms_key_id, mode, and resource_arn. Terraformer cannot safely reconstruct streams where engine-native audit fields were enabled.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/rds_cluster_activity_stream",
+        "https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_StartActivityStream.html"
+      ]
+    },
+    {
       "resource": "aws_rds_cluster_snapshot_copy",
       "service_family": "rds",
       "reason": "RDS cluster snapshot copies are action-style resources; broad discovery can see the copied snapshot but not reconstruct the original copy request as stable infrastructure ownership.",

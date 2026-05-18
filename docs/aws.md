@@ -640,7 +640,6 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_db_option_group`
     * `aws_db_event_subscription`
     * `aws_rds_cluster`
-    * `aws_rds_cluster_activity_stream`
     * `aws_rds_cluster_endpoint`
     * `aws_rds_cluster_instance`
     * `aws_rds_cluster_parameter_group`
