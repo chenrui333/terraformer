@@ -63,6 +63,33 @@ permission-sensitive reads when the API supports scoped reads. Filters should
 select or narrow the discovered resources; they should not rewrite global IDs or
 normalize provider-facing import IDs destructively.
 
+When a service key covers multiple Terraform resource types, keep discovery and
+filter decisions aligned with both naming layers:
+
+- Normalize typed filters between Terraformer service keys and Terraform
+  resource names before deciding which loaders to run.
+- Treat typed filters for other requested services as unrelated; they should not
+  suppress this service's broad discovery when cleanup would otherwise ignore
+  them.
+- Gate child, add-on, and association discovery behind matching parent or
+  resource filters and known parent scope so filtered imports do not call
+  unrelated APIs or emit helper resources.
+- Route global, account-scoped, and effectively regional-once resources through
+  one control-plane scope and de-duplicate output across requested regions.
+- Keep gap inventory tooling aligned with service aliases or override mappings
+  when new service families group resources under non-obvious names.
+
+For resources that cross accounts, regions, or ownership roles, model ownership
+separately from visibility:
+
+- Do not infer accepter, handshake, proposal, or action-resource ownership from
+  discovered accepted relationships.
+- Distinguish owner-side and accepter-side resources, and skip or defer cases
+  where proposal IDs, acceptance context, or owner identity cannot be
+  reconstructed.
+- Preserve ARNs, canonical state IDs, or other globally unique identities when
+  the Terraform provider importer or read path requires them.
+
 ## Importability decision model
 
 - Full-list import: use when safe list and read APIs exist and Terraformer can
