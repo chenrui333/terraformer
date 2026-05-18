@@ -487,6 +487,7 @@ func TestNewSageMakerAIControlPlaneResources(t *testing.T) {
 	if got := algorithm.InstanceState.Attributes["algorithm_name"]; got != "fraud-algorithm" {
 		t.Fatalf("algorithm_name attribute = %q, want fraud-algorithm", got)
 	}
+	assertAwsFrameworkResourcePreserveIDAfterRefresh(t, algorithm)
 
 	notebook, ok := newSageMakerNotebookInstanceResource(sagemakertypes.NotebookInstanceSummary{
 		NotebookInstanceName:   aws.String("analysis-notebook"),
@@ -504,6 +505,7 @@ func TestNewSageMakerAIControlPlaneResources(t *testing.T) {
 		ModelCardStatus: sagemakertypes.ModelCardStatusApproved,
 	})
 	assertSageMakerResource(t, modelCard, ok, "risk-card", sageMakerModelCardResourceType)
+	assertAwsFrameworkResourcePreserveIDAfterRefresh(t, modelCard)
 
 	mlflowApp, ok := newSageMakerMLflowAppResource(sagemakertypes.MlflowAppSummary{
 		Arn:    aws.String("arn:aws:sagemaker:us-east-1:123456789012:mlflow-app/team/default"),
@@ -511,6 +513,7 @@ func TestNewSageMakerAIControlPlaneResources(t *testing.T) {
 		Status: sagemakertypes.MlflowAppStatusCreated,
 	})
 	assertSageMakerResource(t, mlflowApp, ok, "arn:aws:sagemaker:us-east-1:123456789012:mlflow-app/team/default", sageMakerMLflowAppResourceType)
+	assertAwsFrameworkResourcePreserveIDAfterRefresh(t, mlflowApp)
 
 	trackingServer, ok := newSageMakerMLflowTrackingServerResource(sagemakertypes.TrackingServerSummary{
 		TrackingServerName:   aws.String("team-tracking"),

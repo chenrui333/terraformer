@@ -987,9 +987,14 @@ func newSageMakerAlgorithmResource(algorithm sagemakertypes.AlgorithmSummary) (t
 	if name == "" || !sageMakerAlgorithmImportable(algorithm.AlgorithmStatus) {
 		return terraformutils.Resource{}, false
 	}
-	return sageMakerResource(name, sageMakerResourceName("algorithm", name), sageMakerAlgorithmResourceType, map[string]string{
+	resource, ok := sageMakerResource(name, sageMakerResourceName("algorithm", name), sageMakerAlgorithmResourceType, map[string]string{
 		"algorithm_name": name,
 	})
+	if !ok {
+		return terraformutils.Resource{}, false
+	}
+	setAwsFrameworkResourcePreserveIDAfterRefresh(&resource)
+	return resource, true
 }
 
 func newSageMakerModelResource(model sagemakertypes.ModelSummary) (terraformutils.Resource, bool) {
@@ -1259,9 +1264,14 @@ func newSageMakerModelCardResource(card sagemakertypes.ModelCardSummary) (terraf
 	if name == "" || !sageMakerModelCardImportable(card.ModelCardStatus) {
 		return terraformutils.Resource{}, false
 	}
-	return sageMakerResource(name, sageMakerResourceName("model-card", name), sageMakerModelCardResourceType, map[string]string{
+	resource, ok := sageMakerResource(name, sageMakerResourceName("model-card", name), sageMakerModelCardResourceType, map[string]string{
 		"model_card_name": name,
 	})
+	if !ok {
+		return terraformutils.Resource{}, false
+	}
+	setAwsFrameworkResourcePreserveIDAfterRefresh(&resource)
+	return resource, true
 }
 
 func newSageMakerMLflowAppResource(app sagemakertypes.MlflowAppSummary) (terraformutils.Resource, bool) {
@@ -1270,10 +1280,15 @@ func newSageMakerMLflowAppResource(app sagemakertypes.MlflowAppSummary) (terrafo
 	if appARN == "" || name == "" || !sageMakerMLflowAppImportable(app.Status) {
 		return terraformutils.Resource{}, false
 	}
-	return sageMakerResource(appARN, sageMakerResourceName("mlflow-app", name), sageMakerMLflowAppResourceType, map[string]string{
+	resource, ok := sageMakerResource(appARN, sageMakerResourceName("mlflow-app", name), sageMakerMLflowAppResourceType, map[string]string{
 		"arn":  appARN,
 		"name": name,
 	})
+	if !ok {
+		return terraformutils.Resource{}, false
+	}
+	setAwsFrameworkResourcePreserveIDAfterRefresh(&resource)
+	return resource, true
 }
 
 func newSageMakerMLflowTrackingServerResource(server sagemakertypes.TrackingServerSummary) (terraformutils.Resource, bool) {
