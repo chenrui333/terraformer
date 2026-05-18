@@ -1,0 +1,25 @@
+providers/aws/rds.go
+  s_c86082602448d5::t_8e63aea81e0933 368-375,386-387,410,412,598-600,602-603,605-608
+  s_c86082602448d5::t_53fc28ac37d4b4 601,604
+  s_c86082602448d5::t_64b62e0c3c4b7b 56,376-383
+providers/aws/rds_test.go
+  s_c86082602448d5::t_80beacd4d16b83 95-135
+  s_c86082602448d5::t_a5c1a5d887db16 85-94,140,145-147,167-196,198-200,202-217
+  s_c86082602448d5::t_5004274f2fe041 197,201
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.9",
+  "base_commit_sha": "c194198a80bc269921405a721e90bfde60c9b567",
+  "prompts": {},
+  "sessions": {
+    "s_c86082602448d5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3920-cd80-7613-a2a4-18b532d6e9d7",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
