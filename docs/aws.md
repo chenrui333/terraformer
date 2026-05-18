@@ -703,17 +703,17 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_route53_hosted_zone_dnssec`
 *   `route53_resolver`
     * `aws_route53_resolver_config`
-    * `aws_route53_resolver_rule`
-    * `aws_route53_resolver_rule_association`
-    * `aws_route53_resolver_endpoint`
     * `aws_route53_resolver_dnssec_config`
+    * `aws_route53_resolver_endpoint`
     * `aws_route53_resolver_firewall_config`
+    * `aws_route53_resolver_firewall_domain_list`
+    * `aws_route53_resolver_firewall_rule`
+    * `aws_route53_resolver_firewall_rule_group`
+    * `aws_route53_resolver_firewall_rule_group_association`
     * `aws_route53_resolver_query_log_config`
     * `aws_route53_resolver_query_log_config_association`
-    * `aws_route53_resolver_firewall_domain_list`
-    * `aws_route53_resolver_firewall_rule_group`
-    * `aws_route53_resolver_firewall_rule`
-    * `aws_route53_resolver_firewall_rule_group_association`
+    * `aws_route53_resolver_rule`
+    * `aws_route53_resolver_rule_association`
 *   `route_table`
     * `aws_route_table`
     * `aws_main_route_table_association`

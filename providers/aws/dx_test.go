@@ -15,13 +15,19 @@ import (
 
 func TestDirectConnectVirtualInterfaceResources(t *testing.T) {
 	currentAccountID := "123456789012"
+	resourceType, ok := directConnectVirtualInterfaceResourceType(directconnecttypes.VirtualInterface{
+		VirtualInterfaceType: aws.String("transit"),
+	})
+	if !ok {
+		t.Fatal("expected transit virtual interface type")
+	}
 	resource, ok := newDirectConnectVirtualInterfaceResource(directconnecttypes.VirtualInterface{
 		VirtualInterfaceId:    aws.String("dxvif-transit"),
 		VirtualInterfaceName:  aws.String("transit-core"),
 		OwnerAccount:          aws.String(currentAccountID),
 		VirtualInterfaceState: directconnecttypes.VirtualInterfaceStateAvailable,
 		VirtualInterfaceType:  aws.String("transit"),
-	}, directConnectTransitVirtualInterfaceResourceType, currentAccountID)
+	}, resourceType, currentAccountID)
 	if !ok {
 		t.Fatal("expected transit virtual interface resource")
 	}
@@ -52,6 +58,43 @@ func TestDirectConnectVirtualInterfaceResources(t *testing.T) {
 		VirtualInterfaceType:  aws.String("transit"),
 	}, directConnectTransitVirtualInterfaceResourceType, currentAccountID); ok {
 		t.Fatal("accepted hosted transit virtual interface should be skipped")
+	}
+	if _, ok := directConnectVirtualInterfaceResourceType(directconnecttypes.VirtualInterface{}); ok {
+		t.Fatal("virtual interface without type should be skipped")
+	}
+}
+
+func TestDirectConnectGatewayResourceFiltersTerminalStates(t *testing.T) {
+	resource, ok := newDirectConnectGatewayResource(directconnecttypes.DirectConnectGateway{
+		DirectConnectGatewayId:    aws.String("dxgw-123"),
+		DirectConnectGatewayState: directconnecttypes.DirectConnectGatewayStateAvailable,
+	})
+	if !ok {
+		t.Fatal("expected gateway resource")
+	}
+	if resource.InstanceState.ID != "dxgw-123" {
+		t.Fatalf("resource ID = %q, want dxgw-123", resource.InstanceState.ID)
+	}
+	if resource.InstanceInfo.Type != directConnectGatewayResourceType {
+		t.Fatalf("resource type = %q, want %s", resource.InstanceInfo.Type, directConnectGatewayResourceType)
+	}
+
+	if _, ok := newDirectConnectGatewayResource(directconnecttypes.DirectConnectGateway{
+		DirectConnectGatewayState: directconnecttypes.DirectConnectGatewayStateAvailable,
+	}); ok {
+		t.Fatal("gateway without ID should be skipped")
+	}
+	if _, ok := newDirectConnectGatewayResource(directconnecttypes.DirectConnectGateway{
+		DirectConnectGatewayId:    aws.String("dxgw-deleting"),
+		DirectConnectGatewayState: directconnecttypes.DirectConnectGatewayStateDeleting,
+	}); ok {
+		t.Fatal("deleting gateway should be skipped")
+	}
+	if _, ok := newDirectConnectGatewayResource(directconnecttypes.DirectConnectGateway{
+		DirectConnectGatewayId:    aws.String("dxgw-deleted"),
+		DirectConnectGatewayState: directconnecttypes.DirectConnectGatewayStateDeleted,
+	}); ok {
+		t.Fatal("deleted gateway should be skipped")
 	}
 }
 

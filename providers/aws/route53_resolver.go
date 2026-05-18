@@ -414,7 +414,7 @@ func newRoute53ResolverFirewallConfigResource(config *route53resolvertypes.Firew
 		route53ResolverFirewallConfigResourceType,
 		"aws",
 		map[string]string{
-			"firewall_fail_open": string(route53resolvertypes.FirewallFailOpenStatusEnabled),
+			"firewall_fail_open": string(config.FirewallFailOpen),
 			"resource_id":        resourceID,
 		},
 		route53ResolverAllowEmptyValues,

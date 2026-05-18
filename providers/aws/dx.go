@@ -36,29 +36,21 @@ type directConnectGatewayAssociationsAPIClient interface {
 func (g *DirectConnectGenerator) getDirectConnectGateways(svc *directconnect.Client) error {
 	input := &directconnect.DescribeDirectConnectGatewaysInput{}
 	for {
-		// Fetch a page of results
 		output, err := svc.DescribeDirectConnectGateways(context.TODO(), input)
 		if err != nil {
 			return err
 		}
 
-		// Process each DirectConnect Gateway
 		for _, dx := range output.DirectConnectGateways {
-			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				*dx.DirectConnectGatewayId, // Dereference the pointer
-				*dx.DirectConnectGatewayId,
-				directConnectGatewayResourceType,
-				"aws",
-				dxAllowEmptyValues,
-			))
+			if resource, ok := newDirectConnectGatewayResource(dx); ok {
+				g.Resources = append(g.Resources, resource)
+			}
 		}
 
-		// Check if there are more pages
 		if !awsHasMorePages(output.NextToken) {
 			break
 		}
 
-		// Update the input token for the next page
 		input.NextToken = output.NextToken
 	}
 	return nil
@@ -87,17 +79,9 @@ func (g *DirectConnectGenerator) getDirectConnectVirtualInterfaces(svc *directco
 	}
 
 	for _, vif := range output.VirtualInterfaces {
-		var resourceType string
-
-		switch *vif.VirtualInterfaceType {
-		case "private":
-			resourceType = directConnectPrivateVirtualInterfaceResourceType
-		case "public":
-			resourceType = directConnectPublicVirtualInterfaceResourceType
-		case "transit":
-			resourceType = directConnectTransitVirtualInterfaceResourceType
-		default:
-			log.Printf("Unknown Virtual Interface Type: %s for ID: %s", *vif.VirtualInterfaceType, *vif.VirtualInterfaceId)
+		resourceType, ok := directConnectVirtualInterfaceResourceType(vif)
+		if !ok {
+			log.Printf("Unknown Virtual Interface Type: %s for ID: %s", StringValue(vif.VirtualInterfaceType), StringValue(vif.VirtualInterfaceId))
 			continue
 		}
 
@@ -107,6 +91,19 @@ func (g *DirectConnectGenerator) getDirectConnectVirtualInterfaces(svc *directco
 	}
 
 	return nil
+}
+
+func directConnectVirtualInterfaceResourceType(vif directconnecttypes.VirtualInterface) (string, bool) {
+	switch StringValue(vif.VirtualInterfaceType) {
+	case "private":
+		return directConnectPrivateVirtualInterfaceResourceType, true
+	case "public":
+		return directConnectPublicVirtualInterfaceResourceType, true
+	case "transit":
+		return directConnectTransitVirtualInterfaceResourceType, true
+	default:
+		return "", false
+	}
 }
 
 func (g *DirectConnectGenerator) getDirectConnectLags(svc *directconnect.Client) error {
@@ -197,6 +194,20 @@ func newDirectConnectConnectionResource(connection directconnecttypes.Connection
 	), true
 }
 
+func newDirectConnectGatewayResource(gateway directconnecttypes.DirectConnectGateway) (terraformutils.Resource, bool) {
+	gatewayID := StringValue(gateway.DirectConnectGatewayId)
+	if gatewayID == "" || !directConnectGatewayImportable(gateway) {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewSimpleResource(
+		gatewayID,
+		gatewayID,
+		directConnectGatewayResourceType,
+		"aws",
+		dxAllowEmptyValues,
+	), true
+}
+
 func newDirectConnectVirtualInterfaceResource(vif directconnecttypes.VirtualInterface, resourceType, currentAccountID string) (terraformutils.Resource, bool) {
 	if !directConnectVirtualInterfaceImportable(vif, currentAccountID) || StringValue(vif.VirtualInterfaceId) == "" || resourceType == "" {
 		return terraformutils.Resource{}, false
@@ -274,6 +285,16 @@ func directConnectConnectionImportable(connection directconnecttypes.Connection)
 	case directconnecttypes.ConnectionStateDeleting,
 		directconnecttypes.ConnectionStateDeleted,
 		directconnecttypes.ConnectionStateRejected:
+		return false
+	default:
+		return true
+	}
+}
+
+func directConnectGatewayImportable(gateway directconnecttypes.DirectConnectGateway) bool {
+	switch gateway.DirectConnectGatewayState {
+	case directconnecttypes.DirectConnectGatewayStateDeleting,
+		directconnecttypes.DirectConnectGatewayStateDeleted:
 		return false
 	default:
 		return true

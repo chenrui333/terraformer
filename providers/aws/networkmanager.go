@@ -261,18 +261,19 @@ func newNetworkManagerConnectionResource(connection networkmanagertypes.Connecti
 	if id == "" || arn == "" || globalNetworkID == "" || !networkManagerConnectionImportable(connection) {
 		return terraformutils.Resource{}, false
 	}
+	attributes := map[string]string{
+		"connected_device_id": StringValue(connection.ConnectedDeviceId),
+		"device_id":           StringValue(connection.DeviceId),
+		"global_network_id":   globalNetworkID,
+	}
+	putNetworkManagerString(attributes, "connected_link_id", StringValue(connection.ConnectedLinkId))
+	putNetworkManagerString(attributes, "link_id", StringValue(connection.LinkId))
 	resource := terraformutils.NewResource(
 		id,
 		networkManagerResourceName("connection", globalNetworkID, id),
 		networkManagerConnectionResourceType,
 		"aws",
-		map[string]string{
-			"connected_device_id": StringValue(connection.ConnectedDeviceId),
-			"connected_link_id":   StringValue(connection.ConnectedLinkId),
-			"device_id":           StringValue(connection.DeviceId),
-			"global_network_id":   globalNetworkID,
-			"link_id":             StringValue(connection.LinkId),
-		},
+		attributes,
 		networkManagerAllowEmptyValues,
 		map[string]interface{}{},
 	)

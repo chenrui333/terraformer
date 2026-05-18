@@ -81,6 +81,12 @@ func TestNetworkManagerSiteDeviceLinkConnectionResources(t *testing.T) {
 		"device_id":           "device-123",
 		"global_network_id":   "global-network-123",
 	})
+	if _, ok := connection.InstanceState.Attributes["connected_link_id"]; ok {
+		t.Fatal("empty connected_link_id should not be seeded")
+	}
+	if _, ok := connection.InstanceState.Attributes["link_id"]; ok {
+		t.Fatal("empty link_id should not be seeded")
+	}
 }
 
 func TestNetworkManagerStatePredicates(t *testing.T) {
