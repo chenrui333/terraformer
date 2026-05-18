@@ -15,6 +15,14 @@ func TestParseAndGroupResourcesIncludesChatbot(t *testing.T) {
 	assertStringSlice(t, regional, []string{"sns"})
 }
 
+func TestParseAndGroupResourcesTreatsNetworkManagerAsGlobal(t *testing.T) {
+	global, eastOnly, chatbot, regional := parseAndGroupResources([]string{"networkmanager", "sns"})
+	assertStringSlice(t, global, []string{"networkmanager"})
+	assertStringSlice(t, eastOnly, nil)
+	assertStringSlice(t, chatbot, nil)
+	assertStringSlice(t, regional, []string{"sns"})
+}
+
 func TestChatbotImportRegionsDeduplicatesEffectiveRegions(t *testing.T) {
 	got := chatbotImportRegions([]string{
 		"us-east-1",

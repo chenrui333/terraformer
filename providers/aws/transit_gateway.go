@@ -487,7 +487,8 @@ func newTransitGatewayMeteringPolicyResource(policy types.TransitGatewayMetering
 		return terraformutils.Resource{}, false
 	}
 	attributes := map[string]string{
-		"transit_gateway_id": transitGatewayID,
+		"transit_gateway_id":                 transitGatewayID,
+		"transit_gateway_metering_policy_id": id,
 	}
 	putTransitGatewayStringListAttributes(attributes, "middlebox_attachment_ids", policy.MiddleboxAttachmentIds)
 	return terraformutils.NewResource(

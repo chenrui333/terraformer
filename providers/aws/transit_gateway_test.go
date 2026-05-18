@@ -211,10 +211,11 @@ func TestNewTransitGatewayMeteringResources(t *testing.T) {
 		TransitGatewayMeteringPolicyId: aws.String("tgw-mp-123"),
 	})
 	assertTransitGatewayResource(t, policy, ok, transitGatewayMeteringPolicyResourceType, "tgw-mp-123", map[string]string{
-		"middlebox_attachment_ids.#": "2",
-		"middlebox_attachment_ids.0": "tgw-attach-mbox-1",
-		"middlebox_attachment_ids.1": "tgw-attach-mbox-2",
-		"transit_gateway_id":         "tgw-123",
+		"middlebox_attachment_ids.#":         "2",
+		"middlebox_attachment_ids.0":         "tgw-attach-mbox-1",
+		"middlebox_attachment_ids.1":         "tgw-attach-mbox-2",
+		"transit_gateway_id":                 "tgw-123",
+		"transit_gateway_metering_policy_id": "tgw-mp-123",
 	})
 
 	entry, ok := newTransitGatewayMeteringPolicyEntryResource("tgw-mp-123", types.TransitGatewayMeteringPolicyEntry{

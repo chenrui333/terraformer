@@ -29,6 +29,7 @@ var SupportedGlobalResources = []string{
 	"ecrpublic",
 	"globalaccelerator",
 	"iam",
+	"networkmanager",
 	"organization",
 	"route53",
 	"waf",
