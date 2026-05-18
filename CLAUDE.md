@@ -87,6 +87,11 @@ Rules:
 - For large provider schemas, practical close-out means every reviewed candidate is supported, evidence-backed deferred/unsupported, or assigned to a named focused follow-up lane.
 - Reduce final follow-up lanes to exact resource names whenever possible, so the
   next lane is bounded before implementation starts.
+- Close the tracking issue as completed only after a final audit confirms docs
+  and provider registration are aligned, unsupported/deferred metadata
+  validates, previously named remaining resources are accounted for, the
+  unclassified count is zero, and validation has passed. Post the close-out
+  summary after that validation, not merely after the last expected lane merges.
 - Do not treat literal Terraform provider parity as the goal when resources are request-style, runtime/media output, high-cardinality content, provider-managed, source/body-heavy, or secret-required.
 - For settings and singleton resources, distinguish durable user-owned configuration from effective API values and platform defaults before moving a resource from deferred metadata to supported import.
 - Use close-out audits to reduce repeated search work: update unsupported metadata when evidence is clear, and group remaining importable resources into focused next lanes.
