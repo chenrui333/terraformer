@@ -68,9 +68,9 @@ filter decisions aligned with both naming layers:
 
 - Normalize typed filters between Terraformer service keys and Terraform
   resource names before deciding which loaders to run.
-- Treat typed filters for other requested services as unrelated; they should not
-  suppress this service's broad discovery when cleanup would otherwise ignore
-  them.
+- Treat typed filters for other service families as unrelated to the current
+  service; they should not disable this service's normal discovery path after
+  service-local filter cleanup.
 - Gate child, add-on, and association discovery behind matching parent or
   resource filters and known parent scope so filtered imports do not call
   unrelated APIs or emit helper resources.
@@ -78,9 +78,9 @@ filter decisions aligned with both naming layers:
   one control-plane scope and de-duplicate output across requested regions.
 - Keep gap inventory tooling aligned with service aliases or override mappings
   when new service families group resources under non-obvious names.
-- Provider docs for service-family generators must list the emitted Terraform
-  resource types, grouped discovery buckets, and any aliases or override
-  mappings used to connect service keys to those groups.
+- Provider docs for multi-resource service-family generators should list the
+  emitted Terraform resource types, grouped discovery buckets, and any aliases
+  or override mappings used to connect service keys to those groups.
 
 For resources that cross accounts, regions, or ownership roles, model ownership
 separately from visibility:
