@@ -21,7 +21,8 @@ type AccessGenerator struct {
 }
 
 type cloudflareAccessShortLivedCertificate struct {
-	ID string `json:"id"`
+	Aud       string `json:"aud"`
+	PublicKey string `json:"public_key"`
 }
 
 func cloudflareAccessShortLivedCertificateOptionalError(err error) bool {
@@ -206,16 +207,15 @@ func cloudflareAccessShortLivedCertificateResource(
 	scopeType string,
 	scopeID string,
 	appID string,
-	certificate cloudflareAccessShortLivedCertificate,
 ) (terraformutils.Resource, bool) {
-	if scopeID == "" || appID == "" || certificate.ID == "" {
+	if scopeID == "" || appID == "" {
 		return terraformutils.Resource{}, false
 	}
 	attributes := accessScopeAttributes(scopeType, scopeID)
 	attributes["app_id"] = appID
 	resource := terraformutils.NewResource(
 		appID,
-		cloudflareResourceName(scopeType, scopeID, "short_lived_certificate", appID, certificate.ID),
+		cloudflareResourceName(scopeType, scopeID, "short_lived_certificate", appID),
 		"cloudflare_zero_trust_access_short_lived_certificate",
 		"cloudflare",
 		attributes,
@@ -237,15 +237,14 @@ func (g *AccessGenerator) appendAccessShortLivedCertificateResources(
 		if app.ID == "" {
 			continue
 		}
-		certificate, err := getAccessShortLivedCertificate(ctx, api, rc, app.ID)
-		if err != nil {
+		if _, err := getAccessShortLivedCertificate(ctx, api, rc, app.ID); err != nil {
 			if cloudflareAccessShortLivedCertificateOptionalError(err) {
 				log.Printf("Skipping Cloudflare Access short-lived certificate discovery for %s/%s app %s: %v", scopeType, rc.Identifier, app.ID, err)
 				continue
 			}
 			return err
 		}
-		resource, ok := cloudflareAccessShortLivedCertificateResource(scopeType, rc.Identifier, app.ID, certificate)
+		resource, ok := cloudflareAccessShortLivedCertificateResource(scopeType, rc.Identifier, app.ID)
 		if ok {
 			g.Resources = append(g.Resources, resource)
 		}
