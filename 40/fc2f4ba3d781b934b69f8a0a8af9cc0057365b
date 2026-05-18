@@ -1,0 +1,21 @@
+providers/aws/network_tgw_unsupported_test.go
+  s_409c28599d88b7::t_8fb44cbfcf4682 36-50
+providers/aws/unsupported_resources.json
+  s_409c28599d88b7::t_1c8a0ccda80846 854-1017
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.9",
+  "base_commit_sha": "40fc2f4ba3d781b934b69f8a0a8af9cc0057365b",
+  "prompts": {},
+  "sessions": {
+    "s_409c28599d88b7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3920-eed6-7691-aaa7-ec58d4da18a4",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
