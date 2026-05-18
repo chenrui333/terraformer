@@ -3,7 +3,6 @@
 package helm
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -53,14 +52,9 @@ func (p *Provider) GetSupportedService() map[string]terraformutils.ServiceGenera
 
 func (p *Provider) ValidateImport(resources []string) error {
 	for _, resource := range resources {
-		if resource == "release" {
-			return ErrReleaseImportNotImplemented
-		}
 		if _, ok := p.GetSupportedService()[resource]; !ok {
 			return fmt.Errorf("helm: %s not supported service", resource)
 		}
 	}
 	return nil
 }
-
-var ErrReleaseImportNotImplemented = errors.New("helm: release import is not implemented yet")

@@ -3,7 +3,6 @@
 package helm
 
 import (
-	"errors"
 	"strings"
 	"testing"
 )
@@ -47,10 +46,9 @@ func TestProviderRejectsUnsupportedService(t *testing.T) {
 	}
 }
 
-func TestProviderValidateImportRejectsReleaseUntilImplemented(t *testing.T) {
+func TestProviderValidateImportAllowsRelease(t *testing.T) {
 	provider := &Provider{}
-	err := provider.ValidateImport([]string{"release"})
-	if !errors.Is(err, ErrReleaseImportNotImplemented) {
-		t.Fatalf("ValidateImport(release) error = %v, want %v", err, ErrReleaseImportNotImplemented)
+	if err := provider.ValidateImport([]string{"release"}); err != nil {
+		t.Fatalf("ValidateImport(release) error = %v", err)
 	}
 }
