@@ -26,21 +26,19 @@ type ReleaseGenerator struct {
 }
 
 type releaseDiscovery interface {
-	DefaultNamespace() string
 	GetRelease(namespace, name string) (*helmrelease.Release, error)
-	ListReleases(namespace string) ([]*helmrelease.Release, error)
+	ListReleases() ([]*helmrelease.Release, error)
 }
 
 type helmReleaseDiscovery struct {
-	settings *cli.EnvSettings
+	settings            *cli.EnvSettings
+	actionConfigFactory func(namespace string) (*action.Configuration, error)
 }
 
 func newHelmReleaseDiscovery() *helmReleaseDiscovery {
-	return &helmReleaseDiscovery{settings: cli.New()}
-}
-
-func (d *helmReleaseDiscovery) DefaultNamespace() string {
-	return d.settings.Namespace()
+	discovery := &helmReleaseDiscovery{settings: cli.New()}
+	discovery.actionConfigFactory = discovery.actionConfig
+	return discovery
 }
 
 func (d *helmReleaseDiscovery) actionConfig(namespace string) (*action.Configuration, error) {
@@ -58,15 +56,15 @@ func (d *helmReleaseDiscovery) actionConfig(namespace string) (*action.Configura
 }
 
 func (d *helmReleaseDiscovery) GetRelease(namespace, name string) (*helmrelease.Release, error) {
-	configuration, err := d.actionConfig(namespace)
+	configuration, err := d.actionConfigFactory(namespace)
 	if err != nil {
 		return nil, err
 	}
 	return action.NewGet(configuration).Run(name)
 }
 
-func (d *helmReleaseDiscovery) ListReleases(namespace string) ([]*helmrelease.Release, error) {
-	configuration, err := d.actionConfig(namespace)
+func (d *helmReleaseDiscovery) newListAction() (*action.List, error) {
+	configuration, err := d.actionConfigFactory("")
 	if err != nil {
 		return nil, err
 	}
@@ -74,6 +72,14 @@ func (d *helmReleaseDiscovery) ListReleases(namespace string) ([]*helmrelease.Re
 	list.All = true
 	list.AllNamespaces = true
 	list.StateMask = action.ListAll
+	return list, nil
+}
+
+func (d *helmReleaseDiscovery) ListReleases() ([]*helmrelease.Release, error) {
+	list, err := d.newListAction()
+	if err != nil {
+		return nil, err
+	}
 	return list.Run()
 }
 
@@ -136,8 +142,7 @@ func (g *ReleaseGenerator) InitResources() error {
 			releases = append(releases, release)
 		}
 	} else {
-		namespace := discovery.DefaultNamespace()
-		releases, err = discovery.ListReleases(namespace)
+		releases, err = discovery.ListReleases()
 		if err != nil {
 			return err
 		}

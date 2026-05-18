@@ -8,20 +8,16 @@ import (
 	"testing"
 
 	"github.com/chenrui333/terraformer/terraformutils"
+	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	helmrelease "helm.sh/helm/v3/pkg/release"
 )
 
 type fakeReleaseDiscovery struct {
-	defaultNamespace string
-	listed           []*helmrelease.Release
-	getByID          map[string]*helmrelease.Release
-	listedNamespace  string
-	gotIDs           []string
-}
-
-func (d *fakeReleaseDiscovery) DefaultNamespace() string {
-	return d.defaultNamespace
+	listed        []*helmrelease.Release
+	getByID       map[string]*helmrelease.Release
+	listWasCalled bool
+	gotIDs        []string
 }
 
 func (d *fakeReleaseDiscovery) GetRelease(namespace, name string) (*helmrelease.Release, error) {
@@ -34,9 +30,33 @@ func (d *fakeReleaseDiscovery) GetRelease(namespace, name string) (*helmrelease.
 	return release, nil
 }
 
-func (d *fakeReleaseDiscovery) ListReleases(namespace string) ([]*helmrelease.Release, error) {
-	d.listedNamespace = namespace
+func (d *fakeReleaseDiscovery) ListReleases() ([]*helmrelease.Release, error) {
+	d.listWasCalled = true
 	return d.listed, nil
+}
+
+func TestHelmReleaseDiscoveryListActionUsesAllNamespacesStorage(t *testing.T) {
+	var gotNamespace string
+	discovery := &helmReleaseDiscovery{
+		actionConfigFactory: func(namespace string) (*action.Configuration, error) {
+			gotNamespace = namespace
+			return &action.Configuration{}, nil
+		},
+	}
+
+	list, err := discovery.newListAction()
+	if err != nil {
+		t.Fatalf("newListAction() error = %v", err)
+	}
+	if gotNamespace != "" {
+		t.Fatalf("list action config namespace = %q, want empty namespace for all namespaces", gotNamespace)
+	}
+	if !list.All || !list.AllNamespaces {
+		t.Fatalf("list flags All=%v AllNamespaces=%v, want both true", list.All, list.AllNamespaces)
+	}
+	if list.StateMask != action.ListAll {
+		t.Fatalf("list StateMask = %v, want ListAll", list.StateMask)
+	}
 }
 
 func TestReleaseImportIDConstruction(t *testing.T) {
@@ -213,7 +233,6 @@ func TestReleaseResourceOmitsMissingChartAndRepository(t *testing.T) {
 
 func TestReleaseGeneratorInitResourcesUsesRealDiscovery(t *testing.T) {
 	discovery := &fakeReleaseDiscovery{
-		defaultNamespace: "apps",
 		listed: []*helmrelease.Release{
 			testRelease("nginx", "apps", 1, helmrelease.StatusDeployed),
 		},
@@ -223,8 +242,8 @@ func TestReleaseGeneratorInitResourcesUsesRealDiscovery(t *testing.T) {
 	if err := generator.InitResources(); err != nil {
 		t.Fatalf("InitResources() error = %v", err)
 	}
-	if discovery.listedNamespace != "apps" {
-		t.Fatalf("listed namespace = %q, want apps", discovery.listedNamespace)
+	if !discovery.listWasCalled {
+		t.Fatal("ListReleases was not called for broad discovery")
 	}
 	if len(generator.Resources) != 1 {
 		t.Fatalf("resources = %d, want 1", len(generator.Resources))
@@ -254,8 +273,8 @@ func TestReleaseGeneratorExactFiltersUseNamespaceNameGets(t *testing.T) {
 	if !reflect.DeepEqual(discovery.gotIDs, wantGets) {
 		t.Fatalf("GetRelease IDs = %#v, want %#v", discovery.gotIDs, wantGets)
 	}
-	if discovery.listedNamespace != "" {
-		t.Fatalf("ListReleases was called for namespace %q", discovery.listedNamespace)
+	if discovery.listWasCalled {
+		t.Fatal("ListReleases was called for exact filters")
 	}
 	if len(generator.Resources) != 2 {
 		t.Fatalf("resources = %d, want 2", len(generator.Resources))
