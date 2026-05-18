@@ -65,6 +65,34 @@ func TestCloudflareCertificatePackResourcePreservesBranding(t *testing.T) {
 	}
 }
 
+func TestCloudflareOriginCACertificateResourcePreservesHostnameOrder(t *testing.T) {
+	resource, ok := cloudflareOriginCACertificateResource(cf.Zone{ID: "zone-123", Name: "example.com"}, cloudflareCertificateRawResource{
+		"id":           "origin-456",
+		"csr":          "-----BEGIN CERTIFICATE REQUEST-----",
+		"request_type": "origin-rsa",
+		"hostnames":    []interface{}{"z.example.com", "a.example.com"},
+	})
+	if !ok {
+		t.Fatal("expected origin CA certificate resource")
+	}
+	if got := resource.InstanceState.Attributes["hostnames.0"]; got != "z.example.com" {
+		t.Fatalf("hostnames.0 = %q, want z.example.com", got)
+	}
+	if got := resource.InstanceState.Attributes["hostnames.1"]; got != "a.example.com" {
+		t.Fatalf("hostnames.1 = %q, want a.example.com", got)
+	}
+	hostnames, ok := resource.AdditionalFields["hostnames"].([]interface{})
+	if !ok {
+		t.Fatalf("AdditionalFields[hostnames] = %#v, want []interface{}", resource.AdditionalFields["hostnames"])
+	}
+	if got := hostnames[0]; got != "z.example.com" {
+		t.Fatalf("AdditionalFields[hostnames][0] = %#v, want z.example.com", got)
+	}
+	if got := hostnames[1]; got != "a.example.com" {
+		t.Fatalf("AdditionalFields[hostnames][1] = %#v, want a.example.com", got)
+	}
+}
+
 func TestCloudflareCertificateAuthorityHostnameAssociationsResource(t *testing.T) {
 	resource, ok := cloudflareCertificateAuthorityHostnameAssociationsResource(
 		cf.Zone{ID: "zone-123", Name: "example.com"},

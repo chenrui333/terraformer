@@ -10,7 +10,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -338,7 +337,6 @@ func cloudflareOriginCACertificateImportable(certificate cloudflareCertificateRa
 }
 
 func cloudflareCertificateListAttributes(field string, values []string, attributes map[string]string, additionalFields map[string]interface{}) {
-	sort.Strings(values)
 	attributes[field+".#"] = strconv.Itoa(len(values))
 	list := make([]interface{}, 0, len(values))
 	for i, value := range values {
