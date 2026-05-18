@@ -3,9 +3,13 @@
 package aws
 
 import (
+	"context"
 	"testing"
 
+	"github.com/chenrui333/terraformer/terraformutils"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/directconnect"
 	directconnecttypes "github.com/aws/aws-sdk-go-v2/service/directconnect/types"
 )
 
@@ -59,8 +63,8 @@ func TestDirectConnectLagResourceFiltersTerminalStates(t *testing.T) {
 }
 
 func TestDirectConnectGatewayAssociationResource(t *testing.T) {
-	if got, want := directConnectGatewayAssociationStateID("dxgw-123", "tgw-123"), "ga-dxgw-123tgw-123"; got != want {
-		t.Fatalf("directConnectGatewayAssociationStateID() = %q, want %q", got, want)
+	if got, want := directConnectGatewayAssociationImportID("dxgw-123", "tgw-123"), "dxgw-123/tgw-123"; got != want {
+		t.Fatalf("directConnectGatewayAssociationImportID() = %q, want %q", got, want)
 	}
 
 	resource, ok := newDirectConnectGatewayAssociationResource(directconnecttypes.DirectConnectGatewayAssociation{
@@ -77,8 +81,8 @@ func TestDirectConnectGatewayAssociationResource(t *testing.T) {
 	if !ok {
 		t.Fatal("expected gateway association resource")
 	}
-	if resource.InstanceState.ID != "ga-dxgw-123tgw-123" {
-		t.Fatalf("resource ID = %q, want ga-dxgw-123tgw-123", resource.InstanceState.ID)
+	if resource.InstanceState.ID != "dxgw-123/tgw-123" {
+		t.Fatalf("resource ID = %q, want dxgw-123/tgw-123", resource.InstanceState.ID)
 	}
 	if resource.InstanceInfo.Type != directConnectGatewayAssociationResourceType {
 		t.Fatalf("resource type = %q, want %s", resource.InstanceInfo.Type, directConnectGatewayAssociationResourceType)
@@ -103,4 +107,112 @@ func TestDirectConnectConnectionResourceFiltersTerminalStates(t *testing.T) {
 	}); ok {
 		t.Fatal("rejected connection should be skipped")
 	}
+}
+
+func TestDirectConnectGatewayIDs(t *testing.T) {
+	g := DirectConnectGenerator{}
+	g.Resources = []terraformutils.Resource{
+		terraformutils.NewSimpleResource("dxgw-123", "dxgw-123", directConnectGatewayResourceType, "aws", dxAllowEmptyValues),
+		terraformutils.NewSimpleResource("", "empty-gateway", directConnectGatewayResourceType, "aws", dxAllowEmptyValues),
+		terraformutils.NewSimpleResource("dxlag-123", "dxlag-123", directConnectLagResourceType, "aws", dxAllowEmptyValues),
+		{},
+	}
+
+	ids := g.directConnectGatewayIDs()
+	if len(ids) != 1 || ids[0] != "dxgw-123" {
+		t.Fatalf("directConnectGatewayIDs() = %#v, want [dxgw-123]", ids)
+	}
+}
+
+func TestDirectConnectGatewayAssociationPaginationUsesGatewayFilter(t *testing.T) {
+	g := DirectConnectGenerator{}
+	g.Resources = []terraformutils.Resource{
+		terraformutils.NewSimpleResource("dxgw-123", "dxgw-123", directConnectGatewayResourceType, "aws", dxAllowEmptyValues),
+	}
+	client := &stubDirectConnectGatewayAssociationsClient{
+		outputs: []*directconnect.DescribeDirectConnectGatewayAssociationsOutput{
+			{
+				DirectConnectGatewayAssociations: []directconnecttypes.DirectConnectGatewayAssociation{
+					{
+						AssociatedGateway: &directconnecttypes.AssociatedGateway{
+							Id:   aws.String("tgw-123"),
+							Type: directconnecttypes.GatewayTypeTransitGateway,
+						},
+						AssociationId:          aws.String("dxgwa-123"),
+						AssociationState:       directconnecttypes.DirectConnectGatewayAssociationStateAssociated,
+						DirectConnectGatewayId: aws.String("dxgw-123"),
+					},
+				},
+				NextToken: aws.String("next"),
+			},
+			{
+				DirectConnectGatewayAssociations: []directconnecttypes.DirectConnectGatewayAssociation{
+					{
+						AssociatedGateway: &directconnecttypes.AssociatedGateway{
+							Id:   aws.String("tgw-dead"),
+							Type: directconnecttypes.GatewayTypeTransitGateway,
+						},
+						AssociationId:          aws.String("dxgwa-dead"),
+						AssociationState:       directconnecttypes.DirectConnectGatewayAssociationStateDisassociated,
+						DirectConnectGatewayId: aws.String("dxgw-123"),
+					},
+				},
+			},
+		},
+	}
+
+	if err := g.getDirectConnectGatewayAssociations(client); err != nil {
+		t.Fatalf("getDirectConnectGatewayAssociations() error = %v", err)
+	}
+	if len(client.requests) != 2 {
+		t.Fatalf("DescribeDirectConnectGatewayAssociations calls = %d, want 2", len(client.requests))
+	}
+	if got := aws.ToString(client.requests[0].DirectConnectGatewayId); got != "dxgw-123" {
+		t.Fatalf("first DirectConnectGatewayId = %q, want dxgw-123", got)
+	}
+	if client.requests[0].NextToken != nil {
+		t.Fatalf("first NextToken = %q, want nil", aws.ToString(client.requests[0].NextToken))
+	}
+	if got := aws.ToString(client.requests[1].DirectConnectGatewayId); got != "dxgw-123" {
+		t.Fatalf("second DirectConnectGatewayId = %q, want dxgw-123", got)
+	}
+	if got := aws.ToString(client.requests[1].NextToken); got != "next" {
+		t.Fatalf("second NextToken = %q, want next", got)
+	}
+	if len(g.Resources) != 2 {
+		t.Fatalf("resource count = %d, want 2", len(g.Resources))
+	}
+	association := g.Resources[1]
+	if association.InstanceInfo.Type != directConnectGatewayAssociationResourceType {
+		t.Fatalf("association resource type = %q, want %s", association.InstanceInfo.Type, directConnectGatewayAssociationResourceType)
+	}
+	if association.InstanceState.ID != "dxgw-123/tgw-123" {
+		t.Fatalf("association resource ID = %q, want dxgw-123/tgw-123", association.InstanceState.ID)
+	}
+}
+
+func TestDirectConnectGatewayAssociationsSkippedWithoutGateways(t *testing.T) {
+	g := DirectConnectGenerator{}
+	client := &stubDirectConnectGatewayAssociationsClient{}
+
+	if err := g.getDirectConnectGatewayAssociations(client); err != nil {
+		t.Fatalf("getDirectConnectGatewayAssociations() error = %v", err)
+	}
+	if len(client.requests) != 0 {
+		t.Fatalf("DescribeDirectConnectGatewayAssociations calls = %d, want 0", len(client.requests))
+	}
+}
+
+type stubDirectConnectGatewayAssociationsClient struct {
+	requests []*directconnect.DescribeDirectConnectGatewayAssociationsInput
+	outputs  []*directconnect.DescribeDirectConnectGatewayAssociationsOutput
+}
+
+func (c *stubDirectConnectGatewayAssociationsClient) DescribeDirectConnectGatewayAssociations(_ context.Context, input *directconnect.DescribeDirectConnectGatewayAssociationsInput, _ ...func(*directconnect.Options)) (*directconnect.DescribeDirectConnectGatewayAssociationsOutput, error) {
+	inputCopy := *input
+	c.requests = append(c.requests, &inputCopy)
+	if len(c.requests) > len(c.outputs) {
+		return &directconnect.DescribeDirectConnectGatewayAssociationsOutput{}, nil
+	}
+	return c.outputs[len(c.requests)-1], nil
 }

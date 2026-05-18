@@ -8,6 +8,7 @@ import (
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/directconnect"
 	directconnecttypes "github.com/aws/aws-sdk-go-v2/service/directconnect/types"
 )
@@ -26,6 +27,10 @@ const (
 
 type DirectConnectGenerator struct {
 	AWSService
+}
+
+type directConnectGatewayAssociationsAPIClient interface {
+	DescribeDirectConnectGatewayAssociations(context.Context, *directconnect.DescribeDirectConnectGatewayAssociationsInput, ...func(*directconnect.Options)) (*directconnect.DescribeDirectConnectGatewayAssociationsOutput, error)
 }
 
 func (g *DirectConnectGenerator) getDirectConnectGateways(svc *directconnect.Client) error {
@@ -124,8 +129,36 @@ func (g *DirectConnectGenerator) getDirectConnectLags(svc *directconnect.Client)
 	return nil
 }
 
-func (g *DirectConnectGenerator) getDirectConnectGatewayAssociations(svc *directconnect.Client) error {
-	input := &directconnect.DescribeDirectConnectGatewayAssociationsInput{}
+func (g *DirectConnectGenerator) getDirectConnectGatewayAssociations(svc directConnectGatewayAssociationsAPIClient) error {
+	for _, gatewayID := range g.directConnectGatewayIDs() {
+		if err := g.getDirectConnectGatewayAssociationsForGateway(svc, gatewayID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (g *DirectConnectGenerator) directConnectGatewayIDs() []string {
+	ids := []string{}
+	for _, resource := range g.Resources {
+		if resource.InstanceInfo == nil || resource.InstanceState == nil {
+			continue
+		}
+		if resource.InstanceInfo.Type != directConnectGatewayResourceType || resource.InstanceState.ID == "" {
+			continue
+		}
+		ids = append(ids, resource.InstanceState.ID)
+	}
+	return ids
+}
+
+func (g *DirectConnectGenerator) getDirectConnectGatewayAssociationsForGateway(svc directConnectGatewayAssociationsAPIClient, gatewayID string) error {
+	if gatewayID == "" {
+		return nil
+	}
+	input := &directconnect.DescribeDirectConnectGatewayAssociationsInput{
+		DirectConnectGatewayId: aws.String(gatewayID),
+	}
 	for {
 		output, err := svc.DescribeDirectConnectGatewayAssociations(context.TODO(), input)
 		if err != nil {
@@ -213,7 +246,7 @@ func newDirectConnectGatewayAssociationResource(association directconnecttypes.D
 		return terraformutils.Resource{}, false
 	}
 	return terraformutils.NewResource(
-		directConnectGatewayAssociationStateID(dxGatewayID, associatedGatewayID),
+		directConnectGatewayAssociationImportID(dxGatewayID, associatedGatewayID),
 		awsResourceNameWithLengths("gateway_association", dxGatewayID, associatedGatewayID),
 		directConnectGatewayAssociationResourceType,
 		"aws",
@@ -272,8 +305,8 @@ func directConnectGatewayAssociationImportable(association directconnecttypes.Di
 	}
 }
 
-func directConnectGatewayAssociationStateID(dxGatewayID, associatedGatewayID string) string {
-	return "ga-" + dxGatewayID + associatedGatewayID
+func directConnectGatewayAssociationImportID(dxGatewayID, associatedGatewayID string) string {
+	return dxGatewayID + "/" + associatedGatewayID
 }
 
 func (g *DirectConnectGenerator) InitResources() error {
