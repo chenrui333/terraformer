@@ -1,0 +1,24 @@
+docs/helm.md
+  s_02a03e5d07ca80::t_1ce75b2167fc8f 37-42
+providers/helm/release.go
+  s_02a03e5d07ca80::t_2de68bdaf55c96 180,191
+  s_02a03e5d07ca80::t_37b5e1a50a6fa3 6-7,192-193
+providers/helm/release_test.go
+  s_02a03e5d07ca80::t_4968bd543d40a4 187-230
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "567ee0f568e5cfafca6ba1819b7f9bb0286c0c1b",
+  "prompts": {},
+  "sessions": {
+    "s_02a03e5d07ca80": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3856-f507-71f0-b32a-4ebb87edd148",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
