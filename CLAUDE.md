@@ -405,8 +405,8 @@ extra boundaries before broad import.
 Rules:
 
 - Import only the latest durable managed revision by default. Skip historical,
-  superseded, deleted, pending, failed, or rollback states unless provider
-  refresh and follow-up plan behavior are verified safe.
+  superseded, deleted, pending, rollback, or otherwise non-manageable states
+  unless provider refresh and follow-up plan behavior are verified safe.
 - Use exact ID filters for resource families where broad discovery is
   permission-sensitive, noisy, or only partially safe. Keep filter IDs in the
   upstream provider-compatible shape, and preserve exact-filter matches through
@@ -422,11 +422,10 @@ cluster, project, namespace, or region context.
 
 Rules:
 
-- Bridge provider-supported auth and context settings into provider or domain
-  SDK discovery clients when Terraformer discovers with one client and refreshes
-  with the Terraform provider. Keep credentials in environment variables,
-  profiles, kubeconfig files, or provider config; do not write them into
-  generated HCL.
+- Align provider-supported auth and context settings between provider/domain SDK
+  discovery clients and Terraform provider refresh. Keep credentials in
+  environment variables, profiles, kubeconfig files, or provider config; do not
+  write them into generated HCL.
 - Partial imports of safe metadata are acceptable when the provider can refresh
   the resource and unrecoverable authored fields are optional or intentionally
   omitted. Document the omitted fields and any manual follow-up in
