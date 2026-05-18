@@ -129,8 +129,26 @@ func TestTransitGatewayShouldLoadResourceForTypedFilters(t *testing.T) {
 		FieldPath:        "id",
 		AcceptableValues: []string{"tgw-attach-peer"},
 	}}
-	if !g.shouldLoadTransitGatewayResource(transitGatewayResourceType, transitGatewayPeeringAttachmentResourceType, transitGatewayPeeringAttachmentAccepterType) {
-		t.Fatal("typed peering filter should keep transit gateway discovery for local side detection")
+	if g.shouldLoadTransitGatewayResource(transitGatewayResourceType) {
+		t.Fatal("typed peering filter should not request transit gateway resources")
+	}
+	if !g.shouldLoadTransitGatewayResource(transitGatewayPeeringAttachmentResourceType) {
+		t.Fatal("typed peering filter should load peering attachment discovery")
+	}
+	if g.shouldLoadTransitGatewayResource(transitGatewayPeeringAttachmentAccepterType) {
+		t.Fatal("typed peering attachment filter should skip peering accepter resources")
+	}
+
+	g.Filter = []terraformutils.ResourceFilter{{
+		ServiceName:      "transit_gateway",
+		FieldPath:        "id",
+		AcceptableValues: []string{"tgw-123"},
+	}}
+	if !g.shouldLoadTransitGatewayResource(transitGatewayResourceType) {
+		t.Fatal("service-name transit gateway filter should load transit gateway resources")
+	}
+	if g.shouldLoadTransitGatewayResource(transitGatewayConnectResourceType) {
+		t.Fatal("service-name transit gateway filter should skip connect discovery")
 	}
 
 	g.Filter = []terraformutils.ResourceFilter{{
@@ -139,6 +157,69 @@ func TestTransitGatewayShouldLoadResourceForTypedFilters(t *testing.T) {
 	}}
 	if !g.shouldLoadTransitGatewayResource(transitGatewayConnectResourceType) {
 		t.Fatal("untyped ID filters should preserve broad discovery")
+	}
+}
+
+func TestTransitGatewayCanCollectLocalIDsWithoutAppendingResources(t *testing.T) {
+	g := TransitGatewayGenerator{}
+	localTGWs := map[string]struct{}{}
+	g.addTransitGatewayResource(types.TransitGateway{
+		TransitGatewayId: aws.String("tgw-123"),
+		State:            types.TransitGatewayStateAvailable,
+	}, localTGWs, false)
+
+	if _, ok := localTGWs["tgw-123"]; !ok {
+		t.Fatal("local TGW ID was not collected")
+	}
+	if len(g.Resources) != 0 {
+		t.Fatalf("helper TGW was appended to resources, got %d resources", len(g.Resources))
+	}
+
+	g.addTransitGatewayResource(types.TransitGateway{
+		TransitGatewayId: aws.String("tgw-456"),
+		State:            types.TransitGatewayStateAvailable,
+	}, localTGWs, true)
+	if len(g.Resources) != 1 {
+		t.Fatalf("transit gateway resources len = %d, want 1", len(g.Resources))
+	}
+	if got := g.Resources[0].InstanceState.ID; got != "tgw-456" {
+		t.Fatalf("appended transit gateway ID = %q, want tgw-456", got)
+	}
+}
+
+func TestNewTransitGatewayPeeringAttachmentResourceHonorsRequestedTypes(t *testing.T) {
+	localTGWs := map[string]struct{}{
+		"tgw-local": {},
+	}
+
+	requesterResource, ok := newTransitGatewayPeeringAttachmentResource(types.TransitGatewayPeeringAttachment{
+		TransitGatewayAttachmentId: aws.String("tgw-attach-requester"),
+		State:                      types.TransitGatewayAttachmentStateAvailable,
+		RequesterTgwInfo:           &types.PeeringTgwInfo{TransitGatewayId: aws.String("tgw-local")},
+	}, localTGWs, true, false)
+	assertTransitGatewayResource(t, requesterResource, ok, transitGatewayPeeringAttachmentResourceType, "tgw-attach-requester", nil)
+
+	if _, ok := newTransitGatewayPeeringAttachmentResource(types.TransitGatewayPeeringAttachment{
+		TransitGatewayAttachmentId: aws.String("tgw-attach-requester"),
+		State:                      types.TransitGatewayAttachmentStateAvailable,
+		RequesterTgwInfo:           &types.PeeringTgwInfo{TransitGatewayId: aws.String("tgw-local")},
+	}, localTGWs, false, true); ok {
+		t.Fatal("requester-side peering attachment should not be emitted when only accepter resources are requested")
+	}
+
+	accepterResource, ok := newTransitGatewayPeeringAttachmentResource(types.TransitGatewayPeeringAttachment{
+		TransitGatewayAttachmentId: aws.String("tgw-attach-accepter"),
+		State:                      types.TransitGatewayAttachmentStateAvailable,
+		AccepterTgwInfo:            &types.PeeringTgwInfo{TransitGatewayId: aws.String("tgw-local")},
+	}, localTGWs, false, true)
+	assertTransitGatewayResource(t, accepterResource, ok, transitGatewayPeeringAttachmentAccepterType, "tgw-attach-accepter", nil)
+
+	if _, ok := newTransitGatewayPeeringAttachmentResource(types.TransitGatewayPeeringAttachment{
+		TransitGatewayAttachmentId: aws.String("tgw-attach-accepter"),
+		State:                      types.TransitGatewayAttachmentStateAvailable,
+		AccepterTgwInfo:            &types.PeeringTgwInfo{TransitGatewayId: aws.String("tgw-local")},
+	}, localTGWs, true, false); ok {
+		t.Fatal("accepter-side peering attachment should not be emitted when only requester resources are requested")
 	}
 }
 

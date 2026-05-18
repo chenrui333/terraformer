@@ -46,27 +46,40 @@ type transitGatewayMeteringPolicyAPIClient interface {
 	GetTransitGatewayMeteringPolicyEntries(context.Context, *ec2.GetTransitGatewayMeteringPolicyEntriesInput, ...func(*ec2.Options)) (*ec2.GetTransitGatewayMeteringPolicyEntriesOutput, error)
 }
 
-func (g *TransitGatewayGenerator) getTransitGateways(svc *ec2.Client) error {
+func (g *TransitGatewayGenerator) addTransitGatewayResource(tgw types.TransitGateway, localTGWs map[string]struct{}, addResource bool) {
+	if tgw.State == types.TransitGatewayStateDeleted || tgw.State == types.TransitGatewayStateDeleting {
+		return
+	}
+	transitGatewayID := StringValue(tgw.TransitGatewayId)
+	if transitGatewayID == "" {
+		return
+	}
+	localTGWs[transitGatewayID] = struct{}{}
+	if !addResource {
+		return
+	}
+	g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
+		transitGatewayID,
+		transitGatewayID,
+		transitGatewayResourceType,
+		"aws",
+		tgwAllowEmptyValues,
+	))
+}
+
+func (g *TransitGatewayGenerator) getTransitGateways(svc *ec2.Client, addResources bool) (map[string]struct{}, error) {
+	localTGWs := make(map[string]struct{})
 	p := ec2.NewDescribeTransitGatewaysPaginator(svc, &ec2.DescribeTransitGatewaysInput{})
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
 		if err != nil {
-			return err
+			return nil, err
 		}
 		for _, tgw := range page.TransitGateways {
-			if tgw.State == types.TransitGatewayStateDeleted || tgw.State == types.TransitGatewayStateDeleting {
-				continue
-			}
-			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				StringValue(tgw.TransitGatewayId),
-				StringValue(tgw.TransitGatewayId),
-				transitGatewayResourceType,
-				"aws",
-				tgwAllowEmptyValues,
-			))
+			g.addTransitGatewayResource(tgw, localTGWs, addResources)
 		}
 	}
-	return nil
+	return localTGWs, nil
 }
 
 func (g *TransitGatewayGenerator) getTransitGatewayRouteTables(svc *ec2.Client) error {
@@ -115,18 +128,7 @@ func (g *TransitGatewayGenerator) getTransitGatewayVpcAttachments(svc *ec2.Clien
 	return nil
 }
 
-func (g *TransitGatewayGenerator) localTGWIDs() map[string]struct{} {
-	ids := make(map[string]struct{})
-	for _, r := range g.Resources {
-		if r.InstanceInfo.Type == transitGatewayResourceType {
-			ids[r.InstanceState.ID] = struct{}{}
-		}
-	}
-	return ids
-}
-
-func (g *TransitGatewayGenerator) getTransitGatewayPeeringAttachments(svc *ec2.Client) error {
-	localTGWs := g.localTGWIDs()
+func (g *TransitGatewayGenerator) getTransitGatewayPeeringAttachments(svc *ec2.Client, localTGWs map[string]struct{}, loadAttachments, loadAccepters bool) error {
 	p := ec2.NewDescribeTransitGatewayPeeringAttachmentsPaginator(svc, &ec2.DescribeTransitGatewayPeeringAttachmentsInput{})
 	for p.HasMorePages() {
 		page, err := p.NextPage(context.TODO())
@@ -134,38 +136,50 @@ func (g *TransitGatewayGenerator) getTransitGatewayPeeringAttachments(svc *ec2.C
 			return err
 		}
 		for _, att := range page.TransitGatewayPeeringAttachments {
-			if !transitGatewayAttachmentImportable(att.State) {
+			resource, ok := newTransitGatewayPeeringAttachmentResource(att, localTGWs, loadAttachments, loadAccepters)
+			if !ok {
 				continue
 			}
-
-			requesterTGW := ""
-			if att.RequesterTgwInfo != nil && att.RequesterTgwInfo.TransitGatewayId != nil {
-				requesterTGW = *att.RequesterTgwInfo.TransitGatewayId
-			}
-			accepterTGW := ""
-			if att.AccepterTgwInfo != nil && att.AccepterTgwInfo.TransitGatewayId != nil {
-				accepterTGW = *att.AccepterTgwInfo.TransitGatewayId
-			}
-
-			resourceType := ""
-			if _, isLocal := localTGWs[requesterTGW]; isLocal {
-				resourceType = transitGatewayPeeringAttachmentResourceType
-			} else if _, isLocal := localTGWs[accepterTGW]; isLocal {
-				resourceType = transitGatewayPeeringAttachmentAccepterType
-			} else {
-				continue
-			}
-
-			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				StringValue(att.TransitGatewayAttachmentId),
-				StringValue(att.TransitGatewayAttachmentId),
-				resourceType,
-				"aws",
-				tgwAllowEmptyValues,
-			))
+			g.Resources = append(g.Resources, resource)
 		}
 	}
 	return nil
+}
+
+func newTransitGatewayPeeringAttachmentResource(att types.TransitGatewayPeeringAttachment, localTGWs map[string]struct{}, loadAttachments, loadAccepters bool) (terraformutils.Resource, bool) {
+	if !transitGatewayAttachmentImportable(att.State) {
+		return terraformutils.Resource{}, false
+	}
+	attachmentID := StringValue(att.TransitGatewayAttachmentId)
+	if attachmentID == "" {
+		return terraformutils.Resource{}, false
+	}
+
+	requesterTGW := ""
+	if att.RequesterTgwInfo != nil && att.RequesterTgwInfo.TransitGatewayId != nil {
+		requesterTGW = *att.RequesterTgwInfo.TransitGatewayId
+	}
+	accepterTGW := ""
+	if att.AccepterTgwInfo != nil && att.AccepterTgwInfo.TransitGatewayId != nil {
+		accepterTGW = *att.AccepterTgwInfo.TransitGatewayId
+	}
+
+	resourceType := ""
+	if _, isLocal := localTGWs[requesterTGW]; isLocal && loadAttachments {
+		resourceType = transitGatewayPeeringAttachmentResourceType
+	} else if _, isLocal := localTGWs[accepterTGW]; isLocal && loadAccepters {
+		resourceType = transitGatewayPeeringAttachmentAccepterType
+	} else {
+		return terraformutils.Resource{}, false
+	}
+
+	return terraformutils.NewSimpleResource(
+		attachmentID,
+		attachmentID,
+		resourceType,
+		"aws",
+		tgwAllowEmptyValues,
+	), true
 }
 
 func (g *TransitGatewayGenerator) getTransitGatewayRouteTableAssociations(svc *ec2.Client, loadAssociations, loadPropagations bool) error {
@@ -806,13 +820,15 @@ func (g *TransitGatewayGenerator) InitResources() error {
 	svc := ec2.NewFromConfig(config)
 	g.Resources = []terraformutils.Resource{}
 
-	loadTransitGateways := g.shouldLoadTransitGatewayResource(
-		transitGatewayResourceType,
-		transitGatewayPeeringAttachmentResourceType,
-		transitGatewayPeeringAttachmentAccepterType,
-	)
-	if loadTransitGateways {
-		if err := g.getTransitGateways(svc); err != nil {
+	loadTransitGateways := g.shouldLoadTransitGatewayResource(transitGatewayResourceType)
+	loadPeeringAttachments := g.shouldLoadTransitGatewayResource(transitGatewayPeeringAttachmentResourceType)
+	loadPeeringAttachmentAccepters := g.shouldLoadTransitGatewayResource(transitGatewayPeeringAttachmentAccepterType)
+	loadPeeringResources := loadPeeringAttachments || loadPeeringAttachmentAccepters
+	localTGWs := map[string]struct{}{}
+	if loadTransitGateways || loadPeeringResources {
+		var err error
+		localTGWs, err = g.getTransitGateways(svc, loadTransitGateways)
+		if err != nil {
 			return err
 		}
 	}
@@ -848,8 +864,8 @@ func (g *TransitGatewayGenerator) InitResources() error {
 			return err
 		}
 	}
-	if g.shouldLoadTransitGatewayResource(transitGatewayPeeringAttachmentResourceType, transitGatewayPeeringAttachmentAccepterType) {
-		if err := g.getTransitGatewayPeeringAttachments(svc); err != nil {
+	if loadPeeringResources {
+		if err := g.getTransitGatewayPeeringAttachments(svc, localTGWs, loadPeeringAttachments, loadPeeringAttachmentAccepters); err != nil {
 			return err
 		}
 	}
