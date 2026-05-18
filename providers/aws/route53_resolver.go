@@ -26,6 +26,9 @@ const (
 	route53ResolverFirewallRuleGroupResourceType            = "aws_route53_resolver_firewall_rule_group"
 	route53ResolverFirewallRuleResourceType                 = "aws_route53_resolver_firewall_rule"
 	route53ResolverFirewallRuleGroupAssociationResourceType = "aws_route53_resolver_firewall_rule_group_association"
+	route53ResolverConfigResourceType                       = "aws_route53_resolver_config"
+	route53ResolverDNSSECConfigResourceType                 = "aws_route53_resolver_dnssec_config"
+	route53ResolverFirewallConfigResourceType               = "aws_route53_resolver_firewall_config"
 	route53ResolverFirewallRuleIDSeparator                  = ":"
 	route53ResolverAutodefinedIDPart                        = "autodefined"
 	route53ResolverAWSOwnerID                               = "Route 53 Resolver"
@@ -45,11 +48,14 @@ func (g *Route53ResolverGenerator) InitResources() error {
 	svc := route53resolver.NewFromConfig(config)
 
 	loaders := []func(*route53resolver.Client) error{
+		g.loadResolverConfigs,
+		g.loadResolverDNSSECConfigs,
 		g.loadResolverEndpoints,
 		g.loadResolverRules,
 		g.loadResolverRuleAssociations,
 		g.loadResolverQueryLogConfigs,
 		g.loadResolverQueryLogConfigAssociations,
+		g.loadFirewallConfigs,
 		g.loadFirewallDomainLists,
 		g.loadFirewallRuleGroups,
 		g.loadFirewallRuleGroupAssociations,
@@ -57,6 +63,32 @@ func (g *Route53ResolverGenerator) InitResources() error {
 	for _, loader := range loaders {
 		if err := loader(svc); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func (g *Route53ResolverGenerator) loadResolverConfigs(svc *route53resolver.Client) error {
+	configs, err := listRoute53ResolverConfigs(svc)
+	if err != nil {
+		return err
+	}
+	for i := range configs {
+		if resource, ok := newRoute53ResolverConfigResource(&configs[i]); ok {
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
+func (g *Route53ResolverGenerator) loadResolverDNSSECConfigs(svc *route53resolver.Client) error {
+	configs, err := listRoute53ResolverDNSSECConfigs(svc)
+	if err != nil {
+		return err
+	}
+	for i := range configs {
+		if resource, ok := newRoute53ResolverDNSSECConfigResource(&configs[i]); ok {
+			g.Resources = append(g.Resources, resource)
 		}
 	}
 	return nil
@@ -206,6 +238,19 @@ func (g *Route53ResolverGenerator) loadResolverQueryLogConfigAssociations(svc *r
 	return nil
 }
 
+func (g *Route53ResolverGenerator) loadFirewallConfigs(svc *route53resolver.Client) error {
+	configs, err := listRoute53ResolverFirewallConfigs(svc)
+	if err != nil {
+		return err
+	}
+	for i := range configs {
+		if resource, ok := newRoute53ResolverFirewallConfigResource(&configs[i]); ok {
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
 func (g *Route53ResolverGenerator) loadFirewallDomainLists(svc *route53resolver.Client) error {
 	p := route53resolver.NewListFirewallDomainListsPaginator(svc, &route53resolver.ListFirewallDomainListsInput{})
 	for p.HasMorePages() {
@@ -316,6 +361,65 @@ func (g *Route53ResolverGenerator) loadFirewallRuleGroupAssociations(svc *route5
 		}
 	}
 	return nil
+}
+
+func newRoute53ResolverConfigResource(config *route53resolvertypes.ResolverConfig) (terraformutils.Resource, bool) {
+	if !route53ResolverConfigImportable(config) {
+		return terraformutils.Resource{}, false
+	}
+	configID := StringValue(config.Id)
+	resourceID := StringValue(config.ResourceId)
+	return terraformutils.NewResource(
+		configID,
+		route53ResolverResourceName("config", resourceID, configID),
+		route53ResolverConfigResourceType,
+		"aws",
+		map[string]string{
+			"autodefined_reverse_flag": string(route53resolvertypes.AutodefinedReverseFlagDisable),
+			"resource_id":              resourceID,
+		},
+		route53ResolverAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
+func newRoute53ResolverDNSSECConfigResource(config *route53resolvertypes.ResolverDnssecConfig) (terraformutils.Resource, bool) {
+	if !route53ResolverDNSSECConfigImportable(config) {
+		return terraformutils.Resource{}, false
+	}
+	configID := StringValue(config.Id)
+	resourceID := StringValue(config.ResourceId)
+	return terraformutils.NewResource(
+		configID,
+		route53ResolverResourceName("dnssec_config", resourceID, configID),
+		route53ResolverDNSSECConfigResourceType,
+		"aws",
+		map[string]string{
+			"resource_id": resourceID,
+		},
+		route53ResolverAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
+func newRoute53ResolverFirewallConfigResource(config *route53resolvertypes.FirewallConfig) (terraformutils.Resource, bool) {
+	if !route53ResolverFirewallConfigImportable(config) {
+		return terraformutils.Resource{}, false
+	}
+	configID := StringValue(config.Id)
+	resourceID := StringValue(config.ResourceId)
+	return terraformutils.NewResource(
+		configID,
+		route53ResolverResourceName("firewall_config", resourceID, configID),
+		route53ResolverFirewallConfigResourceType,
+		"aws",
+		map[string]string{
+			"firewall_fail_open": string(config.FirewallFailOpen),
+			"resource_id":        resourceID,
+		},
+		route53ResolverAllowEmptyValues,
+		map[string]interface{}{},
+	), true
 }
 
 func newRoute53ResolverEndpointResource(endpoint *route53resolvertypes.ResolverEndpoint, ipAddresses []route53resolvertypes.IpAddressResponse) (terraformutils.Resource, bool) {
@@ -507,6 +611,27 @@ func newRoute53ResolverFirewallRuleGroupAssociationResource(association *route53
 		route53ResolverAllowEmptyValues,
 		map[string]interface{}{},
 	), true
+}
+
+func route53ResolverConfigImportable(config *route53resolvertypes.ResolverConfig) bool {
+	return config != nil &&
+		StringValue(config.Id) != "" &&
+		StringValue(config.ResourceId) != "" &&
+		config.AutodefinedReverse == route53resolvertypes.ResolverAutodefinedReverseStatusDisabled
+}
+
+func route53ResolverDNSSECConfigImportable(config *route53resolvertypes.ResolverDnssecConfig) bool {
+	return config != nil &&
+		StringValue(config.Id) != "" &&
+		StringValue(config.ResourceId) != "" &&
+		config.ValidationStatus == route53resolvertypes.ResolverDNSSECValidationStatusEnabled
+}
+
+func route53ResolverFirewallConfigImportable(config *route53resolvertypes.FirewallConfig) bool {
+	return config != nil &&
+		StringValue(config.Id) != "" &&
+		StringValue(config.ResourceId) != "" &&
+		config.FirewallFailOpen == route53resolvertypes.FirewallFailOpenStatusEnabled
 }
 
 func route53ResolverEndpointImportable(endpoint *route53resolvertypes.ResolverEndpoint, ipAddresses []route53resolvertypes.IpAddressResponse) bool {
@@ -746,6 +871,45 @@ func getRoute53ResolverFirewallRuleGroupAssociation(svc *route53resolver.Client,
 		return nil, err
 	}
 	return output.FirewallRuleGroupAssociation, nil
+}
+
+func listRoute53ResolverConfigs(svc route53resolver.ListResolverConfigsAPIClient) ([]route53resolvertypes.ResolverConfig, error) {
+	p := route53resolver.NewListResolverConfigsPaginator(svc, &route53resolver.ListResolverConfigsInput{})
+	var configs []route53resolvertypes.ResolverConfig
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return nil, err
+		}
+		configs = append(configs, page.ResolverConfigs...)
+	}
+	return configs, nil
+}
+
+func listRoute53ResolverDNSSECConfigs(svc route53resolver.ListResolverDnssecConfigsAPIClient) ([]route53resolvertypes.ResolverDnssecConfig, error) {
+	p := route53resolver.NewListResolverDnssecConfigsPaginator(svc, &route53resolver.ListResolverDnssecConfigsInput{})
+	var configs []route53resolvertypes.ResolverDnssecConfig
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return nil, err
+		}
+		configs = append(configs, page.ResolverDnssecConfigs...)
+	}
+	return configs, nil
+}
+
+func listRoute53ResolverFirewallConfigs(svc route53resolver.ListFirewallConfigsAPIClient) ([]route53resolvertypes.FirewallConfig, error) {
+	p := route53resolver.NewListFirewallConfigsPaginator(svc, &route53resolver.ListFirewallConfigsInput{})
+	var configs []route53resolvertypes.FirewallConfig
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return nil, err
+		}
+		configs = append(configs, page.FirewallConfigs...)
+	}
+	return configs, nil
 }
 
 func listRoute53ResolverEndpointIPAddresses(svc *route53resolver.Client, endpointID string) ([]route53resolvertypes.IpAddressResponse, error) {

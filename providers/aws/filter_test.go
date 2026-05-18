@@ -33,6 +33,31 @@ func TestAWSServiceParseFiltersNormalizesAWSResourceTypes(t *testing.T) {
 	}
 }
 
+func TestAWSServiceParseFiltersNormalizesTransitGatewayServiceName(t *testing.T) {
+	s := AWSService{}
+	s.ParseFilters([]string{"transit_gateway=tgw-123"})
+
+	if len(s.Filter) != 1 {
+		t.Fatalf("filters length = %d, want 1", len(s.Filter))
+	}
+	if got := s.Filter[0].ServiceName; got != "ec2_transit_gateway" {
+		t.Fatalf("filter service name = %q, want ec2_transit_gateway", got)
+	}
+
+	s.Resources = []terraformutils.Resource{
+		terraformutils.NewSimpleResource("tgw-123", "tgw-123", "aws_ec2_transit_gateway", "aws", nil),
+		terraformutils.NewSimpleResource("tgw-456", "tgw-456", "aws_ec2_transit_gateway", "aws", nil),
+	}
+	s.InitialCleanup()
+
+	if len(s.Resources) != 1 {
+		t.Fatalf("resources length after cleanup = %d, want 1", len(s.Resources))
+	}
+	if got := s.Resources[0].InstanceState.ID; got != "tgw-123" {
+		t.Fatalf("kept resource ID = %q, want tgw-123", got)
+	}
+}
+
 func TestShouldLoadAWSResourceForTypedFilters(t *testing.T) {
 	tests := []struct {
 		name         string

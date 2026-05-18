@@ -493,6 +493,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/mediaconvert v1.91.2
 	github.com/aws/aws-sdk-go-v2/service/mediapackagev2 v1.37.0
 	github.com/aws/aws-sdk-go-v2/service/mwaa v1.40.0
+	github.com/aws/aws-sdk-go-v2/service/networkmanager v1.41.10
 	github.com/aws/aws-sdk-go-v2/service/notifications v1.7.22
 	github.com/aws/aws-sdk-go-v2/service/notificationscontacts v1.5.25
 	github.com/aws/aws-sdk-go-v2/service/opensearch v1.68.0

@@ -310,6 +310,146 @@
       ]
     },
     {
+      "resource": "aws_dx_bgp_peer",
+      "service_family": "dx",
+      "reason": "Direct Connect BGP peer resources overlap with BGP peer blocks already represented on Direct Connect virtual interface resources.",
+      "evidence": "Direct Connect DescribeVirtualInterfaces returns BGP peers as nested data on each virtual interface, and Terraform AWS provider virtual interface resources read BGP peer state inline. Broad standalone BGP peer imports would duplicate ownership with aws_dx_private_virtual_interface, aws_dx_public_virtual_interface, and aws_dx_transit_virtual_interface.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/dx_bgp_peer",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/dx_private_virtual_interface"
+      ]
+    },
+    {
+      "resource": "aws_dx_connection_association",
+      "service_family": "dx",
+      "reason": "Connection-to-LAG association imports would duplicate LAG membership already returned on the owning Direct Connect connection and LAG resources.",
+      "evidence": "Direct Connect DescribeLags returns the bundled connections, while DescribeConnections returns each connection's lag_id. Importing aws_dx_connection_association broadly would create a second Terraform owner for the same membership edge.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/dx_connection_association",
+        "https://docs.aws.amazon.com/directconnect/latest/APIReference/API_DescribeLags.html"
+      ]
+    },
+    {
+      "resource": "aws_dx_connection_confirmation",
+      "service_family": "dx",
+      "reason": "Connection confirmations are acceptance lifecycle operations, not durable inventory resources for broad import.",
+      "evidence": "Terraform AWS provider models aws_dx_connection_confirmation as the confirmation action for a hosted connection. Direct Connect discovery can see connection state, but it cannot safely infer Terraform ownership of the original confirmation lifecycle.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/dx_connection_confirmation"
+      ]
+    },
+    {
+      "resource": "aws_dx_gateway_association_proposal",
+      "service_family": "dx",
+      "reason": "Gateway association proposals are cross-account request lifecycle resources and should not be inferred from existing Direct Connect gateway associations.",
+      "evidence": "Terraform AWS provider creates a proposal that another account accepts. DescribeDirectConnectGatewayAssociationProposals can discover proposals, but broad import cannot safely decide whether Terraform should own the request lifecycle instead of the accepted association.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/dx_gateway_association_proposal",
+        "https://docs.aws.amazon.com/directconnect/latest/APIReference/API_DescribeDirectConnectGatewayAssociationProposals.html"
+      ]
+    },
+    {
+      "resource": "aws_dx_hosted_connection",
+      "service_family": "dx",
+      "reason": "Hosted Direct Connect connections are provider/customer handoff resources whose confirmation lifecycle cannot be safely inferred from broad discovery.",
+      "evidence": "Terraform AWS provider creates hosted connections for a different owner account. DescribeHostedConnections can enumerate hosted connections, but importing them broadly would assume ownership of a cross-account provisioning handoff.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/dx_hosted_connection",
+        "https://docs.aws.amazon.com/directconnect/latest/APIReference/API_DescribeHostedConnections.html"
+      ]
+    },
+    {
+      "resource": "aws_dx_hosted_private_virtual_interface",
+      "service_family": "dx",
+      "reason": "Hosted private virtual interfaces are cross-account proposal resources and duplicate the accepted virtual interface inventory path.",
+      "evidence": "Terraform AWS provider models the hosted request separately from the accepted aws_dx_private_virtual_interface_accepter flow. Direct Connect DescribeVirtualInterfaces returns accepted interface state, not a safe Terraform owner for the hosted request.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/dx_hosted_private_virtual_interface",
+        "https://docs.aws.amazon.com/directconnect/latest/APIReference/API_DescribeVirtualInterfaces.html"
+      ]
+    },
+    {
+      "resource": "aws_dx_hosted_private_virtual_interface_accepter",
+      "service_family": "dx",
+      "reason": "Hosted private virtual interface accepters are acceptance lifecycle resources and should not be imported from existing accepted interfaces.",
+      "evidence": "Terraform AWS provider accepts a hosted private virtual interface. Discovery can see the resulting virtual interface, but cannot safely infer ownership of the acceptance operation.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/dx_hosted_private_virtual_interface_accepter"
+      ]
+    },
+    {
+      "resource": "aws_dx_hosted_public_virtual_interface",
+      "service_family": "dx",
+      "reason": "Hosted public virtual interfaces are cross-account proposal resources and duplicate the accepted virtual interface inventory path.",
+      "evidence": "Terraform AWS provider models the hosted request separately from the accepted aws_dx_public_virtual_interface_accepter flow. Direct Connect DescribeVirtualInterfaces returns accepted interface state, not a safe Terraform owner for the hosted request.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/dx_hosted_public_virtual_interface",
+        "https://docs.aws.amazon.com/directconnect/latest/APIReference/API_DescribeVirtualInterfaces.html"
+      ]
+    },
+    {
+      "resource": "aws_dx_hosted_public_virtual_interface_accepter",
+      "service_family": "dx",
+      "reason": "Hosted public virtual interface accepters are acceptance lifecycle resources and should not be imported from existing accepted interfaces.",
+      "evidence": "Terraform AWS provider accepts a hosted public virtual interface. Discovery can see the resulting virtual interface, but cannot safely infer ownership of the acceptance operation.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/dx_hosted_public_virtual_interface_accepter"
+      ]
+    },
+    {
+      "resource": "aws_dx_hosted_transit_virtual_interface",
+      "service_family": "dx",
+      "reason": "Hosted transit virtual interfaces are cross-account proposal resources and duplicate the accepted transit virtual interface inventory path.",
+      "evidence": "Terraform AWS provider models the hosted request separately from the accepted aws_dx_hosted_transit_virtual_interface_accepter flow. Direct Connect DescribeVirtualInterfaces returns accepted interface state, not a safe Terraform owner for the hosted request.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/dx_hosted_transit_virtual_interface",
+        "https://docs.aws.amazon.com/directconnect/latest/APIReference/API_DescribeVirtualInterfaces.html"
+      ]
+    },
+    {
+      "resource": "aws_dx_hosted_transit_virtual_interface_accepter",
+      "service_family": "dx",
+      "reason": "Hosted transit virtual interface accepters are acceptance lifecycle resources and should not be imported from existing accepted interfaces.",
+      "evidence": "Terraform AWS provider accepts a hosted transit virtual interface. Discovery can see the resulting virtual interface, but cannot safely infer ownership of the acceptance operation.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/dx_hosted_transit_virtual_interface_accepter"
+      ]
+    },
+    {
+      "resource": "aws_dx_macsec_key_association",
+      "service_family": "dx",
+      "reason": "Direct Connect MACsec key associations require secret key material that cannot be reconstructed from discovery.",
+      "evidence": "Terraform AWS provider models MACsec association around secret material, while Direct Connect DescribeConnections and DescribeLags return metadata for associated MACsec keys rather than the original CKN/CAK values needed for valid configuration.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/dx_macsec_key_association",
+        "https://docs.aws.amazon.com/directconnect/latest/APIReference/API_AssociateMacSecKey.html"
+      ]
+    },
+    {
       "resource": "aws_ebs_snapshot_block_public_access",
       "service_family": "ebs",
       "reason": "The current Terraform AWS provider resource does not expose an import path for this regional singleton setting, so Terraformer cannot seed it through provider import/refresh.",
@@ -391,6 +531,78 @@
         "https://github.com/chenrui333/terraformer/issues/338",
         "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ec2_tag",
         "https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeTags.html"
+      ]
+    },
+    {
+      "resource": "aws_ec2_transit_gateway_default_route_table_association",
+      "service_family": "transit_gateway",
+      "reason": "Default route table association is already modeled on the transit gateway and would duplicate ownership if emitted as a standalone resource.",
+      "evidence": "Terraform AWS provider exposes default_route_table_association on aws_ec2_transit_gateway, and Terraformer already skips default transit gateway route tables and their default association edges to avoid duplicate generated ownership.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ec2_transit_gateway_default_route_table_association",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ec2_transit_gateway"
+      ]
+    },
+    {
+      "resource": "aws_ec2_transit_gateway_default_route_table_propagation",
+      "service_family": "transit_gateway",
+      "reason": "Default route table propagation is already modeled on the transit gateway and would duplicate ownership if emitted as a standalone resource.",
+      "evidence": "Terraform AWS provider exposes default_route_table_propagation on aws_ec2_transit_gateway, and Terraformer already skips default transit gateway route tables and their default propagation edges to avoid duplicate generated ownership.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ec2_transit_gateway_default_route_table_propagation",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ec2_transit_gateway"
+      ]
+    },
+    {
+      "resource": "aws_ec2_transit_gateway_multicast_domain_association",
+      "service_family": "transit_gateway",
+      "reason": "The Terraform AWS provider resource does not expose an importer for multicast domain associations, so Terraformer cannot seed a provider-recognized import state.",
+      "evidence": "The audited Terraform AWS provider resource for aws_ec2_transit_gateway_multicast_domain_association has no ResourceImporter, even though EC2 GetTransitGatewayMulticastDomainAssociations can list the relationships.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ec2_transit_gateway_multicast_domain_association",
+        "https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_GetTransitGatewayMulticastDomainAssociations.html"
+      ]
+    },
+    {
+      "resource": "aws_ec2_transit_gateway_multicast_group_member",
+      "service_family": "transit_gateway",
+      "reason": "The Terraform AWS provider resource does not expose an importer for multicast group members, so Terraformer cannot seed a provider-recognized import state.",
+      "evidence": "The audited Terraform AWS provider resource for aws_ec2_transit_gateway_multicast_group_member has no ResourceImporter, even though EC2 SearchTransitGatewayMulticastGroups can list member ENIs.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ec2_transit_gateway_multicast_group_member",
+        "https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_SearchTransitGatewayMulticastGroups.html"
+      ]
+    },
+    {
+      "resource": "aws_ec2_transit_gateway_multicast_group_source",
+      "service_family": "transit_gateway",
+      "reason": "The Terraform AWS provider resource does not expose an importer for multicast group sources, so Terraformer cannot seed a provider-recognized import state.",
+      "evidence": "The audited Terraform AWS provider resource for aws_ec2_transit_gateway_multicast_group_source has no ResourceImporter, even though EC2 SearchTransitGatewayMulticastGroups can list source ENIs.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ec2_transit_gateway_multicast_group_source",
+        "https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_SearchTransitGatewayMulticastGroups.html"
+      ]
+    },
+    {
+      "resource": "aws_ec2_transit_gateway_vpc_attachment_accepter",
+      "service_family": "transit_gateway",
+      "reason": "Transit gateway VPC attachment accepters represent an acceptance lifecycle in another owner context and should not be inferred from existing attachments.",
+      "evidence": "Terraform AWS provider accepts a pending VPC attachment and then reads the resulting attachment by ID. EC2 DescribeTransitGatewayVpcAttachments can discover existing attachments, but it cannot safely infer Terraform ownership of the acceptance operation.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ec2_transit_gateway_vpc_attachment_accepter",
+        "https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_AcceptTransitGatewayVpcAttachment.html"
       ]
     },
     {
@@ -625,6 +837,182 @@
         "https://github.com/chenrui333/terraformer/issues/338",
         "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/neptune_global_cluster",
         "https://docs.aws.amazon.com/neptune/latest/userguide/global-databases.html"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_attachment_accepter",
+      "service_family": "networkmanager",
+      "reason": "Network Manager attachment accepters are acceptance lifecycle resources and should not be inferred from existing attachments.",
+      "evidence": "Terraform AWS provider accepts VPC, VPN, Connect, transit gateway route table, or Direct Connect gateway attachments through one accepter resource. Network Manager attachment discovery can see accepted attachments, but cannot safely infer ownership of the acceptance lifecycle.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_attachment_accepter"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_attachment_routing_policy_label",
+      "service_family": "networkmanager",
+      "reason": "Network Manager attachment routing policy labels are Cloud WAN attachment-policy adjuncts and need a focused Cloud WAN follow-up lane before broad inventory can manage them safely.",
+      "evidence": "Terraform AWS provider manages this resource as a core-network attachment policy label bound to attachment_id and policy_rule_number. Terraformer Network Manager support currently imports global networks and site/device/link/connection inventory, and does not yet validate Cloud WAN attachment ownership or policy-rule import shape.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_attachment_routing_policy_label"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_connect_attachment",
+      "service_family": "networkmanager",
+      "reason": "Network Manager Connect attachments belong to the Cloud WAN attachment family and need a focused follow-up lane for ownership, state filtering, and duplicate prevention.",
+      "evidence": "Terraform AWS provider models Connect attachments under a core network with transport_attachment_id and optional network_function_group_name. Broad Network Manager discovery can observe existing attachments, but this PR does not yet validate whether they duplicate underlying TGW/VPN/DX ownership or accepter lifecycles.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_connect_attachment"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_connect_peer",
+      "service_family": "networkmanager",
+      "reason": "Network Manager Connect peers require Cloud WAN attachment ownership handling and are deferred to the Cloud WAN follow-up lane.",
+      "evidence": "Terraform AWS provider manages connect peers from connect_attachment_id plus peer addressing and optional BGP configuration. Terraformer does not yet import Cloud WAN attachments, so importing peers independently would create incomplete or misleading ownership.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_connect_peer"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_core_network",
+      "service_family": "networkmanager",
+      "reason": "Network Manager core networks are the Cloud WAN control-plane root and need a dedicated follow-up lane before broad import support.",
+      "evidence": "Terraform AWS provider manages core networks with global_network_id plus policy_document-driven Cloud WAN configuration. Terraformer Network Manager support currently covers global networks and their site/device/link/connection inventory, leaving Cloud WAN policy ownership for separate validation.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_core_network"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_core_network_policy_attachment",
+      "service_family": "networkmanager",
+      "reason": "Network Manager core network policy attachments are Cloud WAN policy lifecycle resources and are deferred to a focused Cloud WAN lane.",
+      "evidence": "Terraform AWS provider applies policy documents to core networks through this resource. Broad discovery must prove that the current policy version and attachment lifecycle can be reconstructed without over-owning policy changes before Terraformer can safely import it.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_core_network_policy_attachment"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_customer_gateway_association",
+      "service_family": "networkmanager",
+      "reason": "Network Manager customer gateway associations need duplicate-ownership checks against VPN/customer-gateway resources before broad import.",
+      "evidence": "Terraform AWS provider manages the association between a global network device/link and an EC2 customer gateway ARN. Terraformer imports Network Manager topology objects but does not yet prove safe ownership boundaries with the underlying customer gateway and VPN resources.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_customer_gateway_association"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_dx_gateway_attachment",
+      "service_family": "networkmanager",
+      "reason": "Network Manager Direct Connect gateway attachments belong to the Cloud WAN attachment family and need regional and duplicate-ownership validation before broad import.",
+      "evidence": "Terraform AWS provider models the Cloud WAN attachment to a Direct Connect gateway. Terraformer imports Direct Connect gateway associations separately and does not yet validate Cloud WAN attachment discovery against Direct Connect ownership or cross-region gateway associations.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_dx_gateway_attachment"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_link_association",
+      "service_family": "networkmanager",
+      "reason": "Network Manager link associations need topology duplicate-ownership handling before broad import.",
+      "evidence": "Terraform AWS provider manages link-to-device associations separately from the device and link resources. Terraformer imports devices and links themselves, and importing associations requires additional validation that generated HCL will not duplicate inline or inferred topology ownership.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_link_association"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_prefix_list_association",
+      "service_family": "networkmanager",
+      "reason": "Network Manager prefix list associations are Cloud WAN route-policy adjuncts and are deferred to the Cloud WAN follow-up lane.",
+      "evidence": "Terraform AWS provider manages prefix-list associations by global_network_id and route_table_identifier. Terraformer does not yet import Cloud WAN route tables or policy routing surfaces, so importing the association alone would be incomplete.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_prefix_list_association"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_site_to_site_vpn_attachment",
+      "service_family": "networkmanager",
+      "reason": "Network Manager site-to-site VPN attachments belong to the Cloud WAN attachment family and need duplicate-ownership validation before broad import.",
+      "evidence": "Terraform AWS provider models the Cloud WAN attachment for an existing VPN connection. Terraformer does not yet validate safe ownership boundaries with aws_vpn_connection or Network Manager attachment accepter lifecycles.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_site_to_site_vpn_attachment"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_transit_gateway_connect_peer_association",
+      "service_family": "networkmanager",
+      "reason": "Network Manager transit gateway connect peer associations need duplicate-ownership checks against TGW Connect resources before broad import.",
+      "evidence": "Terraform AWS provider manages this association between a global network device/link and a transit gateway connect peer ARN. Terraformer imports TGW and Network Manager topology resources separately, but does not yet validate this cross-service association's ownership boundaries.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_transit_gateway_connect_peer_association"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_transit_gateway_peering",
+      "service_family": "networkmanager",
+      "reason": "Network Manager transit gateway peerings need Cloud WAN peering and cross-region ownership handling before broad import.",
+      "evidence": "Terraform AWS provider models a peering between a core network and a transit gateway. Broad discovery must route the resource through the correct regional provider and avoid duplicating TGW ownership before Terraformer can safely import it.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_transit_gateway_peering"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_transit_gateway_registration",
+      "service_family": "networkmanager",
+      "reason": "Network Manager transit gateway registrations need Cloud WAN registration ownership handling before broad import.",
+      "evidence": "Terraform AWS provider manages registration of a transit gateway into a global network. Terraformer does not yet validate whether broad Network Manager discovery can infer user ownership of that registration without duplicating TGW resources across regional imports.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_transit_gateway_registration"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_transit_gateway_route_table_attachment",
+      "service_family": "networkmanager",
+      "reason": "Network Manager transit gateway route table attachments belong to the Cloud WAN attachment family and need TGW route-table ownership validation before broad import.",
+      "evidence": "Terraform AWS provider models the Cloud WAN attachment for a transit gateway route table. Terraformer imports TGW route-table adjuncts separately and does not yet validate safe ownership boundaries with TGW route table and attachment resources.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_transit_gateway_route_table_attachment"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_vpc_attachment",
+      "service_family": "networkmanager",
+      "reason": "Network Manager VPC attachments belong to the Cloud WAN attachment family and need duplicate-ownership validation before broad import.",
+      "evidence": "Terraform AWS provider manages VPC attachment creation through Cloud WAN, while Terraformer already imports foundational VPC resources separately. Broad Network Manager discovery must avoid over-owning VPC attachment lifecycle and accepter states before supporting this resource.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_vpc_attachment"
       ]
     },
     {
@@ -995,6 +1383,42 @@
         "https://github.com/chenrui333/terraformer/issues/338",
         "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/rds_reserved_instance",
         "https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_PurchaseReservedDBInstancesOffering.html"
+      ]
+    },
+    {
+      "resource": "aws_route53_records_exclusive",
+      "service_family": "route53",
+      "reason": "Exclusive Route 53 record management would duplicate ownership with the existing aws_route53_record importer.",
+      "evidence": "Terraformer already imports individual aws_route53_record resources from Route 53 record sets. Broadly adding aws_route53_records_exclusive would create a second owner for the same hosted-zone record inventory and can delete records not represented in the exclusive set.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_records_exclusive",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_record"
+      ]
+    },
+    {
+      "resource": "aws_route53_vpc_association_authorization",
+      "service_family": "route53",
+      "reason": "Hosted zone VPC association authorization is a cross-account authorization lifecycle resource, not durable inventory to infer from existing associations.",
+      "evidence": "Terraform AWS provider creates an authorization for a future AssociateVPCWithHostedZone call. Route 53 discovery can list existing hosted zone VPC associations, but it does not reconstruct outstanding authorization intent as stable infrastructure ownership.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_vpc_association_authorization",
+        "https://docs.aws.amazon.com/Route53/latest/APIReference/API_CreateVPCAssociationAuthorization.html"
+      ]
+    },
+    {
+      "resource": "aws_route53_zone_association",
+      "service_family": "route53",
+      "reason": "Hosted zone association resources can duplicate VPC association ownership already represented on aws_route53_zone.",
+      "evidence": "Terraform AWS provider reads VPC associations on aws_route53_zone and also offers aws_route53_zone_association as a split resource. Broad discovery cannot safely decide which ownership model a user intended for every hosted zone/VPC relationship.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_zone",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_zone_association"
       ]
     },
     {

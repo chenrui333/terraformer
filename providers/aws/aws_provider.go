@@ -46,6 +46,12 @@ var SupportedChatbotResources = []string{
 	"chatbot",
 }
 
+// SupportedRegionalOnceResources use regional endpoints but enumerate account-wide inventory, so importing them once
+// avoids duplicate output when multiple --regions are supplied.
+var SupportedRegionalOnceResources = []string{
+	"networkmanager",
+}
+
 func (p AWSProvider) GetResourceConnections() map[string]map[string][]string {
 	return map[string]map[string][]string{
 		"alb": {
@@ -401,6 +407,7 @@ func (p *AWSProvider) GetSupportedService() map[string]terraformutils.ServiceGen
 		"nacl":                  &AwsFacade{service: &NaclGenerator{}},
 		"nat":                   &AwsFacade{service: &NatGatewayGenerator{}},
 		"neptune":               &AwsFacade{service: &NeptuneGenerator{}},
+		"networkmanager":        &AwsFacade{service: &NetworkManagerGenerator{}},
 		"notifications":         &AwsFacade{service: &NotificationsGenerator{}},
 		"notificationscontacts": &AwsFacade{service: &NotificationsContactsGenerator{}},
 		"opsworks":              &AwsFacade{service: &OpsworksGenerator{}},
