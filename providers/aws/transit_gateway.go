@@ -491,7 +491,7 @@ func newTransitGatewayMeteringPolicyResource(policy types.TransitGatewayMetering
 		"transit_gateway_metering_policy_id": id,
 	}
 	putTransitGatewayStringListAttributes(attributes, "middlebox_attachment_ids", policy.MiddleboxAttachmentIds)
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		id,
 		transitGatewayResourceName("metering_policy", transitGatewayID, id),
 		transitGatewayMeteringPolicyResourceType,
@@ -499,7 +499,9 @@ func newTransitGatewayMeteringPolicyResource(policy types.TransitGatewayMetering
 		attributes,
 		tgwAllowEmptyValues,
 		map[string]interface{}{},
-	), true
+	)
+	setAwsFrameworkResourcePreserveIDAfterRefresh(&resource)
+	return resource, true
 }
 
 func newTransitGatewayMeteringPolicyEntryResource(policyID string, entry types.TransitGatewayMeteringPolicyEntry) (terraformutils.Resource, bool) {
@@ -527,7 +529,7 @@ func newTransitGatewayMeteringPolicyEntryResource(policyID string, entry types.T
 		putTransitGatewayString(attributes, "source_transit_gateway_attachment_type", string(entry.MeteringPolicyRule.SourceTransitGatewayAttachmentType))
 	}
 	id := transitGatewayMeteringPolicyEntryID(policyID, ruleNumber)
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		id,
 		transitGatewayResourceName("metering_policy_entry", policyID, ruleNumber),
 		transitGatewayMeteringPolicyEntryResourceType,
@@ -535,7 +537,9 @@ func newTransitGatewayMeteringPolicyEntryResource(policyID string, entry types.T
 		attributes,
 		tgwAllowEmptyValues,
 		map[string]interface{}{},
-	), true
+	)
+	setAwsFrameworkResourcePreserveIDAfterRefresh(&resource)
+	return resource, true
 }
 
 func newTransitGatewayPolicyTableResource(table types.TransitGatewayPolicyTable) (terraformutils.Resource, bool) {

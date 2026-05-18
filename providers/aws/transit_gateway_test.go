@@ -217,6 +217,7 @@ func TestNewTransitGatewayMeteringResources(t *testing.T) {
 		"transit_gateway_id":                 "tgw-123",
 		"transit_gateway_metering_policy_id": "tgw-mp-123",
 	})
+	assertAwsFrameworkResourcePreserveIDAfterRefresh(t, policy)
 
 	entry, ok := newTransitGatewayMeteringPolicyEntryResource("tgw-mp-123", types.TransitGatewayMeteringPolicyEntry{
 		MeteredAccount:   types.TransitGatewayMeteringPayerTypeDestinationAttachmentOwner,
@@ -248,6 +249,7 @@ func TestNewTransitGatewayMeteringResources(t *testing.T) {
 		"source_transit_gateway_attachment_type":      "connect",
 		"transit_gateway_metering_policy_id":          "tgw-mp-123",
 	})
+	assertAwsFrameworkResourcePreserveIDAfterRefresh(t, entry)
 
 	if _, ok := newTransitGatewayMeteringPolicyResource(types.TransitGatewayMeteringPolicy{State: types.TransitGatewayMeteringPolicyStateDeleted, TransitGatewayId: aws.String("tgw-123"), TransitGatewayMeteringPolicyId: aws.String("tgw-mp-deleted")}); ok {
 		t.Fatal("deleted metering policy should be skipped")
