@@ -39,6 +39,8 @@ List of supported Cloudflare services:
   * `cloudflare_custom_origin_trust_store`
   * `cloudflare_mtls_certificate`
   * `cloudflare_origin_ca_certificate`
+* `connectivity`
+  * `cloudflare_connectivity_directory_service`
 * `dns`
   * `cloudflare_dns_record`
   * `cloudflare_zone`
@@ -164,6 +166,7 @@ List of supported Cloudflare services:
   * `cloudflare_turnstile_widget`
 * `tunnel`
   * `cloudflare_zero_trust_tunnel_cloudflared`
+  * `cloudflare_zero_trust_tunnel_cloudflared_route`
   * `cloudflare_zero_trust_tunnel_cloudflared_virtual_network`
 * `waiting_room`
   * `cloudflare_waiting_room`
