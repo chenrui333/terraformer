@@ -22,10 +22,11 @@ type ZeroTrustDeviceDLPGenerator struct {
 type zeroTrustDeviceDLPRawResource map[string]interface{}
 
 type zeroTrustDeviceDLPDiscovery struct {
-	name      string
-	account   string
-	resources *[]terraformutils.Resource
-	discover  func() error
+	name          string
+	account       string
+	resourceTypes []string
+	resources     *[]terraformutils.Resource
+	discover      func() error
 }
 
 const zeroTrustDeviceDLPEnabledAllowEmptyPattern = "^enabled$"
@@ -76,9 +77,12 @@ func zeroTrustDeviceDLPResourceType(resource zeroTrustDeviceDLPRawResource) stri
 	return strings.ToLower(zeroTrustDeviceDLPString(resource, "type"))
 }
 
-func runZeroTrustDeviceDLPDiscoveries(discoveries []zeroTrustDeviceDLPDiscovery) error {
+func runZeroTrustDeviceDLPDiscoveries(discoveries []zeroTrustDeviceDLPDiscovery, filters []terraformutils.ResourceFilter) error {
 	for _, discovery := range discoveries {
 		if discovery.discover == nil {
+			continue
+		}
+		if !zeroTrustDeviceDLPDiscoveryMatchesFilters(discovery, filters) {
 			continue
 		}
 		resourceCount := 0
@@ -95,8 +99,52 @@ func runZeroTrustDeviceDLPDiscoveries(discoveries []zeroTrustDeviceDLPDiscovery)
 			}
 			return fmt.Errorf("discover Cloudflare Zero Trust device/DLP %s for %s: %w", discovery.name, discovery.account, err)
 		}
+		zeroTrustDeviceDLPFilterDiscoveryResources(discovery.resources, resourceCount, filters)
 	}
 	return nil
+}
+
+func zeroTrustDeviceDLPDiscoveryMatchesFilters(discovery zeroTrustDeviceDLPDiscovery, filters []terraformutils.ResourceFilter) bool {
+	if len(filters) == 0 || zeroTrustDeviceDLPHasGlobalFilter(filters) {
+		return true
+	}
+	for _, resourceType := range discovery.resourceTypes {
+		if zeroTrustDeviceDLPResourceTypeMatchesFilters(resourceType, filters) {
+			return true
+		}
+	}
+	return false
+}
+
+func zeroTrustDeviceDLPFilterDiscoveryResources(resources *[]terraformutils.Resource, start int, filters []terraformutils.ResourceFilter) {
+	if resources == nil || len(filters) == 0 || zeroTrustDeviceDLPHasGlobalFilter(filters) {
+		return
+	}
+	filtered := (*resources)[:start]
+	for _, resource := range (*resources)[start:] {
+		if resource.InstanceInfo != nil && zeroTrustDeviceDLPResourceTypeMatchesFilters(resource.InstanceInfo.Type, filters) {
+			filtered = append(filtered, resource)
+		}
+	}
+	*resources = filtered
+}
+
+func zeroTrustDeviceDLPHasGlobalFilter(filters []terraformutils.ResourceFilter) bool {
+	for _, filter := range filters {
+		if filter.ServiceName == "" {
+			return true
+		}
+	}
+	return false
+}
+
+func zeroTrustDeviceDLPResourceTypeMatchesFilters(resourceType string, filters []terraformutils.ResourceFilter) bool {
+	for _, filter := range filters {
+		if filter.IsApplicable(resourceType) || filter.IsApplicable(strings.TrimPrefix(resourceType, "cloudflare_")) {
+			return true
+		}
+	}
+	return false
 }
 
 func zeroTrustDeviceDLPOptionalDiscoveryError(err error) bool {
@@ -533,78 +581,93 @@ func (g *ZeroTrustDeviceDLPGenerator) appendDLPSettingsResource(ctx context.Cont
 func (g *ZeroTrustDeviceDLPGenerator) appendZeroTrustDeviceDLPResources(ctx context.Context, api *cf.API, accountID string) error {
 	return runZeroTrustDeviceDLPDiscoveries([]zeroTrustDeviceDLPDiscovery{
 		{
-			name:      "device default profile",
-			account:   accountID,
+			name:    "device default profile",
+			account: accountID,
+			resourceTypes: []string{
+				"cloudflare_zero_trust_device_default_profile",
+				"cloudflare_zero_trust_device_default_profile_local_domain_fallback",
+			},
 			resources: &g.Resources,
 			discover: func() error {
 				return g.appendDeviceDefaultProfileResources(ctx, api, accountID)
 			},
 		},
 		{
-			name:      "device custom profiles",
-			account:   accountID,
+			name:    "device custom profiles",
+			account: accountID,
+			resourceTypes: []string{
+				"cloudflare_zero_trust_device_custom_profile",
+				"cloudflare_zero_trust_device_custom_profile_local_domain_fallback",
+			},
 			resources: &g.Resources,
 			discover: func() error {
 				return g.appendDeviceCustomProfileResources(ctx, api, accountID)
 			},
 		},
 		{
-			name:      "device managed networks",
-			account:   accountID,
-			resources: &g.Resources,
+			name:          "device managed networks",
+			account:       accountID,
+			resourceTypes: []string{"cloudflare_zero_trust_device_managed_networks"},
+			resources:     &g.Resources,
 			discover: func() error {
 				return g.appendDeviceManagedNetworkResources(ctx, api, accountID)
 			},
 		},
 		{
-			name:      "device IP profiles",
-			account:   accountID,
-			resources: &g.Resources,
+			name:          "device IP profiles",
+			account:       accountID,
+			resourceTypes: []string{"cloudflare_zero_trust_device_ip_profile"},
+			resources:     &g.Resources,
 			discover: func() error {
 				return g.appendDeviceIPProfileResources(ctx, api, accountID)
 			},
 		},
 		{
-			name:      "DEX rules",
-			account:   accountID,
-			resources: &g.Resources,
+			name:          "DEX rules",
+			account:       accountID,
+			resourceTypes: []string{"cloudflare_zero_trust_dex_rule"},
+			resources:     &g.Resources,
 			discover: func() error {
 				return g.appendDEXRuleResources(ctx, api, accountID)
 			},
 		},
 		{
-			name:      "DEX tests",
-			account:   accountID,
-			resources: &g.Resources,
+			name:          "DEX tests",
+			account:       accountID,
+			resourceTypes: []string{"cloudflare_zero_trust_dex_test"},
+			resources:     &g.Resources,
 			discover: func() error {
 				return g.appendDEXTestResources(ctx, api, accountID)
 			},
 		},
 		{
-			name:      "DLP custom profiles",
-			account:   accountID,
-			resources: &g.Resources,
+			name:          "DLP custom profiles",
+			account:       accountID,
+			resourceTypes: []string{"cloudflare_zero_trust_dlp_custom_profile"},
+			resources:     &g.Resources,
 			discover: func() error {
 				return g.appendDLPCustomProfileResources(ctx, api, accountID)
 			},
 		},
 		{
-			name:      "DLP custom entries",
-			account:   accountID,
-			resources: &g.Resources,
+			name:          "DLP custom entries",
+			account:       accountID,
+			resourceTypes: []string{"cloudflare_zero_trust_dlp_custom_entry"},
+			resources:     &g.Resources,
 			discover: func() error {
 				return g.appendDLPCustomEntryResources(ctx, api, accountID)
 			},
 		},
 		{
-			name:      "DLP settings",
-			account:   accountID,
-			resources: &g.Resources,
+			name:          "DLP settings",
+			account:       accountID,
+			resourceTypes: []string{"cloudflare_zero_trust_dlp_settings"},
+			resources:     &g.Resources,
 			discover: func() error {
 				return g.appendDLPSettingsResource(ctx, api, accountID)
 			},
 		},
-	})
+	}, g.Filter)
 }
 
 func (g *ZeroTrustDeviceDLPGenerator) InitResources() error {

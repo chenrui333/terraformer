@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/chenrui333/terraformer/terraformutils"
 	cf "github.com/cloudflare/cloudflare-go"
 )
 
@@ -403,6 +404,57 @@ func TestAppendZeroTrustDeviceDLPResourcesDiscoversSupportedResources(t *testing
 			t.Fatalf("%s import ID = %q, want %q", resourceType, got[resourceType], wantImportID)
 		}
 	}
+
+	t.Run("typed filter only discovers selected resource type", func(t *testing.T) {
+		var paths []string
+		api := newZeroTrustDeviceDLPTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			paths = append(paths, r.URL.Path)
+			switch r.URL.Path {
+			case "/accounts/account-123/dlp/profiles":
+				writeZeroTrustDeviceDLPTestResponse(t, w, []map[string]string{
+					{"id": "dlp-profile-123", "name": "Secrets", "type": "custom"},
+				}, nil)
+			default:
+				t.Fatalf("unexpected discovery path %q", r.URL.Path)
+			}
+		}))
+		g := &ZeroTrustDeviceDLPGenerator{}
+		g.Filter = []terraformutils.ResourceFilter{{
+			ServiceName:      "zero_trust_dlp_custom_profile",
+			FieldPath:        "id",
+			AcceptableValues: []string{"dlp-profile-123"},
+		}}
+		if err := g.appendZeroTrustDeviceDLPResources(context.Background(), api, "account-123"); err != nil {
+			t.Fatalf("appendZeroTrustDeviceDLPResources() error = %v", err)
+		}
+		if len(paths) != 1 || paths[0] != "/accounts/account-123/dlp/profiles" {
+			t.Fatalf("discovery paths = %v, want only DLP profiles", paths)
+		}
+		if len(g.Resources) != 1 {
+			t.Fatalf("resource count = %d, want 1", len(g.Resources))
+		}
+		if got := g.Resources[0].InstanceInfo.Type; got != "cloudflare_zero_trust_dlp_custom_profile" {
+			t.Fatalf("resource type = %q, want cloudflare_zero_trust_dlp_custom_profile", got)
+		}
+		for _, siblingType := range []string{
+			"cloudflare_zero_trust_device_default_profile",
+			"cloudflare_zero_trust_device_default_profile_local_domain_fallback",
+			"cloudflare_zero_trust_device_custom_profile",
+			"cloudflare_zero_trust_device_custom_profile_local_domain_fallback",
+			"cloudflare_zero_trust_device_managed_networks",
+			"cloudflare_zero_trust_device_ip_profile",
+			"cloudflare_zero_trust_dex_rule",
+			"cloudflare_zero_trust_dex_test",
+			"cloudflare_zero_trust_dlp_custom_entry",
+			"cloudflare_zero_trust_dlp_settings",
+		} {
+			for _, resource := range g.Resources {
+				if resource.InstanceInfo.Type == siblingType {
+					t.Fatalf("unexpected sibling resource type %q", siblingType)
+				}
+			}
+		}
+	})
 }
 
 func TestZeroTrustDeviceDLPUnsupportedResourcesMetadata(t *testing.T) {
