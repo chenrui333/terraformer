@@ -281,6 +281,7 @@ func directConnectVirtualInterfaceImportable(vif directconnecttypes.VirtualInter
 	switch vif.VirtualInterfaceState {
 	case directconnecttypes.VirtualInterfaceStateDeleting,
 		directconnecttypes.VirtualInterfaceStateDeleted,
+		directconnecttypes.VirtualInterfaceStateConfirming,
 		directconnecttypes.VirtualInterfaceStateRejected:
 		return false
 	default:

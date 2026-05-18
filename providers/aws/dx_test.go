@@ -36,6 +36,13 @@ func TestDirectConnectVirtualInterfaceResources(t *testing.T) {
 	}, directConnectTransitVirtualInterfaceResourceType); ok {
 		t.Fatal("deleted virtual interface should be skipped")
 	}
+	if _, ok := newDirectConnectVirtualInterfaceResource(directconnecttypes.VirtualInterface{
+		VirtualInterfaceId:    aws.String("dxvif-confirming"),
+		VirtualInterfaceState: directconnecttypes.VirtualInterfaceStateConfirming,
+		VirtualInterfaceType:  aws.String("transit"),
+	}, directConnectTransitVirtualInterfaceResourceType); ok {
+		t.Fatal("confirming hosted transit virtual interface should be skipped")
+	}
 }
 
 func TestDirectConnectLagResourceFiltersTerminalStates(t *testing.T) {
