@@ -76,6 +76,44 @@ func TestProviderGetConfigBridgesKubeconfigForRefresh(t *testing.T) {
 	}
 }
 
+func TestProviderGetConfigBridgesProviderKubeEnvForDiscovery(t *testing.T) {
+	t.Setenv("KUBE_CONFIG_PATH", "/tmp/provider-kubeconfig")
+	t.Setenv("KUBE_CONFIG_PATHS", "")
+	t.Setenv("KUBECONFIG", "")
+	t.Setenv("KUBE_CTX", "provider-context")
+	t.Setenv("HELM_KUBECONTEXT", "")
+	t.Setenv("KUBE_HOST", "https://example.test")
+	t.Setenv("HELM_KUBEAPISERVER", "")
+	t.Setenv("KUBE_TOKEN", "provider-token")
+	t.Setenv("HELM_KUBETOKEN", "")
+	t.Setenv("KUBE_INSECURE", "true")
+	t.Setenv("HELM_KUBEINSECURE_SKIP_TLS_VERIFY", "")
+	t.Setenv("KUBE_TLS_SERVER_NAME", "api.example.test")
+	t.Setenv("HELM_KUBETLS_SERVER_NAME", "")
+
+	provider := &Provider{}
+	provider.GetConfig()
+
+	if got := os.Getenv("KUBECONFIG"); got != "/tmp/provider-kubeconfig" {
+		t.Fatalf("KUBECONFIG = %q, want provider kubeconfig path", got)
+	}
+	if got := os.Getenv("HELM_KUBECONTEXT"); got != "provider-context" {
+		t.Fatalf("HELM_KUBECONTEXT = %q, want provider context", got)
+	}
+	if got := os.Getenv("HELM_KUBEAPISERVER"); got != "https://example.test" {
+		t.Fatalf("HELM_KUBEAPISERVER = %q, want provider host", got)
+	}
+	if got := os.Getenv("HELM_KUBETOKEN"); got != "provider-token" {
+		t.Fatalf("HELM_KUBETOKEN = %q, want provider token", got)
+	}
+	if got := os.Getenv("HELM_KUBEINSECURE_SKIP_TLS_VERIFY"); got != "true" {
+		t.Fatalf("HELM_KUBEINSECURE_SKIP_TLS_VERIFY = %q, want provider insecure flag", got)
+	}
+	if got := os.Getenv("HELM_KUBETLS_SERVER_NAME"); got != "api.example.test" {
+		t.Fatalf("HELM_KUBETLS_SERVER_NAME = %q, want provider TLS server name", got)
+	}
+}
+
 func TestProviderGetConfigBridgesMultipleKubeconfigPaths(t *testing.T) {
 	first := filepath.Join(t.TempDir(), "first")
 	second := filepath.Join(t.TempDir(), "second")
@@ -123,6 +161,9 @@ func TestProviderGetConfigUsesDefaultKubeconfigForRefresh(t *testing.T) {
 
 	if got := os.Getenv("KUBE_CONFIG_PATH"); got != defaultKubeconfig {
 		t.Fatalf("KUBE_CONFIG_PATH = %q, want default kubeconfig %q", got, defaultKubeconfig)
+	}
+	if got := os.Getenv("KUBECONFIG"); got != defaultKubeconfig {
+		t.Fatalf("KUBECONFIG = %q, want default kubeconfig %q", got, defaultKubeconfig)
 	}
 }
 

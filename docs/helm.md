@@ -13,13 +13,13 @@ terraformer import helm --resources=release
 ```
 
 Helm provider authentication follows the standard Helm and Kubernetes client
-configuration. Terraformer uses the same current kubeconfig path or `KUBECONFIG`
-setting for discovery and provider refresh, bridging it to the `KUBE_CONFIG_PATH`
-or `KUBE_CONFIG_PATHS` variables consumed by the HashiCorp `helm` provider when
-needed. Terraformer does not write kubeconfig contents or Kubernetes credentials
-into generated configuration; use the current kubeconfig context, `HELM_*`
-environment variables, or provider configuration supported by the HashiCorp
-`helm` provider.
+configuration. Terraformer uses the same current kubeconfig path, `KUBECONFIG`,
+`KUBE_CONFIG_PATH`, or `KUBE_CONFIG_PATHS` setting for discovery and provider
+refresh, and mirrors equivalent `KUBE_*` and `HELM_*` context/server/token
+environment variables when needed. Terraformer does not write kubeconfig
+contents or Kubernetes credentials into generated configuration; use the current
+kubeconfig context, `HELM_*` environment variables, or provider configuration
+supported by the HashiCorp `helm` provider.
 
 Release discovery uses Helm SDK action APIs and broad imports search all
 namespaces that the current Kubernetes credentials can list. To import a

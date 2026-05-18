@@ -5,6 +5,7 @@ package helm
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"reflect"
 	"testing"
 
@@ -57,6 +58,26 @@ func TestHelmReleaseDiscoveryListActionUsesAllNamespacesStorage(t *testing.T) {
 	}
 	if list.StateMask != action.ListAll {
 		t.Fatalf("list StateMask = %v, want ListAll", list.StateMask)
+	}
+}
+
+func TestHelmReleaseDiscoveryMirrorsProviderKubeEnv(t *testing.T) {
+	t.Setenv("KUBE_CONFIG_PATH", "/tmp/provider-kubeconfig")
+	t.Setenv("KUBE_CONFIG_PATHS", "")
+	t.Setenv("KUBECONFIG", "")
+	t.Setenv("KUBE_CTX", "provider-context")
+	t.Setenv("HELM_KUBECONTEXT", "")
+
+	discovery := newHelmReleaseDiscovery()
+
+	if got := os.Getenv("KUBECONFIG"); got != "/tmp/provider-kubeconfig" {
+		t.Fatalf("KUBECONFIG = %q, want provider kubeconfig path", got)
+	}
+	if got := os.Getenv("HELM_KUBECONTEXT"); got != "provider-context" {
+		t.Fatalf("HELM_KUBECONTEXT = %q, want provider context", got)
+	}
+	if discovery.settings.KubeContext != "provider-context" {
+		t.Fatalf("discovery kube context = %q, want provider-context", discovery.settings.KubeContext)
 	}
 }
 

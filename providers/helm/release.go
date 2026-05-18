@@ -57,6 +57,7 @@ type helmReleaseDiscovery struct {
 }
 
 func newHelmReleaseDiscovery() *helmReleaseDiscovery {
+	configureHelmProviderKubeEnv()
 	discovery := &helmReleaseDiscovery{settings: cli.New()}
 	discovery.actionConfigFactory = discovery.actionConfig
 	return discovery
