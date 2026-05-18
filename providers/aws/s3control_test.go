@@ -365,6 +365,28 @@ func TestS3ControlMultiRegionAccessPointOperationOption(t *testing.T) {
 	}
 }
 
+func TestS3ControlShouldLoadAccountGlobalResources(t *testing.T) {
+	tests := []struct {
+		name   string
+		region string
+		want   bool
+	}{
+		{name: "default import", region: NoRegion, want: true},
+		{name: "canonical public partition region", region: MainRegionPublicPartition, want: true},
+		{name: "global sentinel", region: GlobalRegion, want: false},
+		{name: "mrap control plane region", region: s3ControlMultiRegionAccessPointRegion, want: false},
+		{name: "other regional import", region: "eu-central-1", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := s3ControlShouldLoadAccountGlobalResources(tt.region); got != tt.want {
+				t.Fatalf("s3ControlShouldLoadAccountGlobalResources(%q) = %t, want %t", tt.region, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestS3ControlResourceNameAvoidsSanitizedCollisions(t *testing.T) {
 	left := terraformutils.TfSanitize(s3ControlResourceName("access_point", testS3ControlAccountID, "a_b", "c"))
 	right := terraformutils.TfSanitize(s3ControlResourceName("access_point", testS3ControlAccountID, "a", "b_c"))

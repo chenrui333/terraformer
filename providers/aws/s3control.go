@@ -55,12 +55,17 @@ func (g *S3ControlGenerator) InitResources() error {
 	}
 
 	svc := s3control.NewFromConfig(config)
-	g.addAccountPublicAccessBlock(svc, *accountID)
+	loadAccountGlobalResources := s3ControlShouldLoadAccountGlobalResources(g.GetArgs()["region"].(string))
+	if loadAccountGlobalResources {
+		g.addAccountPublicAccessBlock(svc, *accountID)
+	}
 	if err := g.loadAccessGrants(svc, *accountID); err != nil {
 		log.Printf("skipping S3 Control Access Grants discovery for %s: %v", *accountID, err)
 	}
-	if err := g.loadMultiRegionAccessPoints(svc, *accountID); err != nil {
-		log.Printf("skipping S3 Control Multi-Region Access Point discovery for %s: %v", *accountID, err)
+	if loadAccountGlobalResources {
+		if err := g.loadMultiRegionAccessPoints(svc, *accountID); err != nil {
+			log.Printf("skipping S3 Control Multi-Region Access Point discovery for %s: %v", *accountID, err)
+		}
 	}
 	if err := g.loadStorageLensConfigurations(svc, *accountID); err != nil {
 		log.Printf("skipping S3 Control Storage Lens discovery for %s: %v", *accountID, err)
@@ -785,6 +790,10 @@ func s3ControlMultiRegionAccessPointImportable(accessPoint s3controltypes.MultiR
 
 func s3ControlMultiRegionAccessPointOperationOption(options *s3control.Options) {
 	options.Region = s3ControlMultiRegionAccessPointRegion
+}
+
+func s3ControlShouldLoadAccountGlobalResources(region string) bool {
+	return region == NoRegion || region == MainRegionPublicPartition
 }
 
 func s3ControlResourceName(parts ...string) string {
