@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -16,6 +17,11 @@ import (
 
 type AccessGenerator struct {
 	CloudflareService
+}
+
+type accessInfrastructureTarget struct {
+	ID       string `json:"id,omitempty"`
+	Hostname string `json:"hostname,omitempty"`
 }
 
 func accessScopeAttributes(scopeType, scopeID string) map[string]string {
@@ -323,6 +329,60 @@ func listAccessTags(ctx context.Context, api *cf.API, rc *cf.ResourceContainer) 
 	return tags, nil
 }
 
+func (g *AccessGenerator) appendAccountAccessInfrastructureTargetResources(ctx context.Context, api *cf.API, accountID string) error {
+	targets, err := listAccessInfrastructureTargets(ctx, api, accountID)
+	if err != nil {
+		if cloudflareNotFoundError(err) || cloudflareSecurityOptionalDiscoveryError(err) {
+			log.Printf("Skipping Cloudflare Access infrastructure target discovery for account %s: %v", accountID, err)
+			return nil
+		}
+		return err
+	}
+	for _, target := range targets {
+		if target.ID == "" {
+			continue
+		}
+		resource := terraformutils.NewResource(
+			target.ID,
+			cloudflareResourceName("accounts", accountID, target.Hostname, target.ID),
+			"cloudflare_zero_trust_access_infrastructure_target",
+			"cloudflare",
+			map[string]string{"account_id": accountID},
+			[]string{},
+			map[string]interface{}{},
+		)
+		setCloudflareImportID(&resource, fmt.Sprintf("%s/%s", accountID, target.ID))
+		g.Resources = append(g.Resources, resource)
+	}
+	return nil
+}
+
+func listAccessInfrastructureTargets(ctx context.Context, api *cf.API, accountID string) ([]accessInfrastructureTarget, error) {
+	var targets []accessInfrastructureTarget
+	page, cursor := 1, ""
+	for {
+		response, err := api.Raw(
+			ctx,
+			http.MethodGet,
+			fmt.Sprintf("/accounts/%s/infrastructure/targets?%s", accountID, cloudflarePaginationQuery(page, cursor)),
+			nil,
+			nil,
+		)
+		if err != nil {
+			return nil, err
+		}
+		var pageTargets []accessInfrastructureTarget
+		if err := json.Unmarshal(response.Result, &pageTargets); err != nil {
+			return nil, err
+		}
+		targets = append(targets, pageTargets...)
+		if !cloudflareAdvancePagination(response.ResultInfo, &page, &cursor) {
+			break
+		}
+	}
+	return targets, nil
+}
+
 func (g *AccessGenerator) appendScopedAccessResources(ctx context.Context, api *cf.API, rc *cf.ResourceContainer, scopeType string) error {
 	for _, f := range []func(context.Context, *cf.API, *cf.ResourceContainer, string) error{
 		g.appendAccessApplicationResources,
@@ -355,6 +415,7 @@ func (g *AccessGenerator) InitResources() error {
 			g.appendAccountAccessPolicyResources,
 			g.appendAccountAccessCustomPageResources,
 			g.appendAccountAccessTagResources,
+			g.appendAccountAccessInfrastructureTargetResources,
 		} {
 			if err := f(ctx, api, accountID); err != nil {
 				return err

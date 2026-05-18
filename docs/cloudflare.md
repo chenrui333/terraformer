@@ -23,6 +23,7 @@ List of supported Cloudflare services:
   * `cloudflare_zero_trust_access_custom_page`
   * `cloudflare_zero_trust_access_group`
   * `cloudflare_zero_trust_access_identity_provider`
+  * `cloudflare_zero_trust_access_infrastructure_target`
   * `cloudflare_zero_trust_access_mtls_certificate`
   * `cloudflare_zero_trust_access_policy`
   * `cloudflare_zero_trust_access_service_token`
@@ -93,10 +94,23 @@ List of supported Cloudflare services:
 * `security`
   * `cloudflare_api_shield`
   * `cloudflare_api_shield_operation`
+  * `cloudflare_cloud_connector_rules`
+  * `cloudflare_custom_page_asset`
+  * `cloudflare_custom_pages`
+  * `cloudflare_email_security_block_sender`
+  * `cloudflare_email_security_impersonation_registry`
+  * `cloudflare_leaked_credential_check_rule`
   * `cloudflare_page_shield_policy`
   * `cloudflare_schema_validation_schemas`
+  * `cloudflare_token_validation_config`
+  * `cloudflare_token_validation_rules`
+  * `cloudflare_user_agent_blocking_rule`
   * `cloudflare_vulnerability_scanner_credential_set`
   * `cloudflare_vulnerability_scanner_target_environment`
+
+  `security` requires `CLOUDFLARE_ACCOUNT_ID` for account-scoped Email Security
+  and custom page resources. Default Cloudflare custom pages are skipped; only
+  customized pages are imported.
 * `settings`
   * `cloudflare_account_dns_settings_internal_view`
   * `cloudflare_argo_smart_routing`
