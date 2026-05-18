@@ -122,6 +122,41 @@ func TestListZeroTrustDeviceDLPResourcesHandlesObjectWrappedDEXTests(t *testing.
 	}
 }
 
+func TestListZeroTrustDeviceDLPResourcesHandlesV4DEXRulePages(t *testing.T) {
+	api := newZeroTrustDeviceDLPTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/accounts/account-123/dex/rules" {
+			t.Fatalf("path = %q, want /accounts/account-123/dex/rules", r.URL.Path)
+		}
+		writeZeroTrustDeviceDLPTestResponse(t, w, map[string]interface{}{
+			"items": []map[string]interface{}{
+				{
+					"rules": []map[string]string{
+						{"id": "dex-rule-1", "name": "HTTP"},
+						{"id": "dex-rule-2", "name": "Traceroute"},
+					},
+				},
+			},
+		}, map[string]int{
+			"page":     1,
+			"per_page": cloudflarePageSize,
+		})
+	}))
+
+	resources, err := listZeroTrustDeviceDLPResources(context.Background(), api, "/accounts/account-123/dex/rules")
+	if err != nil {
+		t.Fatalf("listZeroTrustDeviceDLPResources() error = %v", err)
+	}
+	if len(resources) != 2 {
+		t.Fatalf("resource count = %d, want 2", len(resources))
+	}
+	if got := zeroTrustDeviceDLPString(resources[0], "id"); got != "dex-rule-1" {
+		t.Fatalf("first id = %q, want dex-rule-1", got)
+	}
+	if got := zeroTrustDeviceDLPString(resources[1], "id"); got != "dex-rule-2" {
+		t.Fatalf("second id = %q, want dex-rule-2", got)
+	}
+}
+
 func TestZeroTrustDLPCustomProfileImportable(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -251,10 +286,16 @@ func TestAppendZeroTrustDeviceDLPResourcesDiscoversSupportedResources(t *testing
 				"name": "Trusted devices",
 			}}, nil)
 		case "/accounts/account-123/dex/rules":
-			writeZeroTrustDeviceDLPTestResponse(t, w, []map[string]string{{
-				"id":   "dex-rule-123",
-				"name": "HTTP tests",
-			}}, nil)
+			writeZeroTrustDeviceDLPTestResponse(t, w, map[string]interface{}{
+				"items": []map[string]interface{}{
+					{
+						"rules": []map[string]string{{
+							"id":   "dex-rule-123",
+							"name": "HTTP tests",
+						}},
+					},
+				},
+			}, nil)
 		case "/accounts/account-123/dex/devices/dex_tests":
 			writeZeroTrustDeviceDLPTestResponse(t, w, []map[string]string{{
 				"test_id": "dex-test-123",

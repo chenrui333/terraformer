@@ -137,16 +137,55 @@ func zeroTrustDeviceDLPPagedResources(result json.RawMessage) ([]zeroTrustDevice
 		return pageResources, nil
 	}
 
-	var objectResult map[string][]zeroTrustDeviceDLPRawResource
+	var objectResult zeroTrustDeviceDLPRawResource
 	if err := json.Unmarshal(result, &objectResult); err != nil {
 		return nil, err
 	}
-	for _, key := range []string{"dex_tests", "tests", "rules", "result"} {
-		if resources, ok := objectResult[key]; ok {
-			return resources, nil
+	if resources, ok := zeroTrustDeviceDLPResourcesFromObject(objectResult, "dex_tests", "tests", "rules", "result"); ok {
+		return resources, nil
+	}
+	if items, ok := zeroTrustDeviceDLPResourcesFromValue(objectResult["items"]); ok {
+		var resources []zeroTrustDeviceDLPRawResource
+		for _, item := range items {
+			itemResources, ok := zeroTrustDeviceDLPResourcesFromObject(item, "rules", "dex_tests", "tests")
+			if !ok {
+				continue
+			}
+			resources = append(resources, itemResources...)
 		}
+		return resources, nil
 	}
 	return nil, fmt.Errorf("unsupported Zero Trust device/DLP list response shape")
+}
+
+func zeroTrustDeviceDLPResourcesFromObject(
+	object zeroTrustDeviceDLPRawResource,
+	keys ...string,
+) ([]zeroTrustDeviceDLPRawResource, bool) {
+	for _, key := range keys {
+		if resources, ok := zeroTrustDeviceDLPResourcesFromValue(object[key]); ok {
+			return resources, true
+		}
+	}
+	return nil, false
+}
+
+func zeroTrustDeviceDLPResourcesFromValue(value interface{}) ([]zeroTrustDeviceDLPRawResource, bool) {
+	switch resources := value.(type) {
+	case []zeroTrustDeviceDLPRawResource:
+		return resources, true
+	case []interface{}:
+		converted := make([]zeroTrustDeviceDLPRawResource, 0, len(resources))
+		for _, resource := range resources {
+			resourceMap, ok := resource.(map[string]interface{})
+			if !ok {
+				return nil, false
+			}
+			converted = append(converted, zeroTrustDeviceDLPRawResource(resourceMap))
+		}
+		return converted, true
+	}
+	return nil, false
 }
 
 func readZeroTrustDeviceDLPResource(ctx context.Context, api *cf.API, path string) (zeroTrustDeviceDLPRawResource, bool, error) {
