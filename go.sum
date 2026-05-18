@@ -1081,6 +1081,7 @@ github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8m
 github.com/nbio/st v0.0.0-20140626010706-e9e8d9816f32/go.mod h1:9wM+0iRr9ahx58uYLpLIr5fm8diHn0JbqRycJi6w0Ms=
 github.com/newrelic/newrelic-client-go v1.1.0 h1:aflNjzQ21c+2GwBVh+UbAf9lznkRfCcVABoc5UM4IXw=
 github.com/newrelic/newrelic-client-go v1.1.0/go.mod h1:RYMXt7hgYw7nzuXIGd2BH0F1AivgWw7WrBhNBQZEB4k=
+github.com/newrelic/newrelic-client-go/v2 v2.83.4/go.mod h1:kROngr/zeNyxbdOI3zPK4Al+ze32XjLEVUDzjxsKW9g=
 github.com/nicksnyder/go-i18n v1.10.3 h1:0U60fnLBNrLBVt8vb8Q67yKNs+gykbQuLsIkiesJL+w=
 github.com/nicksnyder/go-i18n v1.10.3/go.mod h1:hvLG5HTlZ4UfSuVLSRuX7JRUomIaoKQM19hm6f+no7o=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
