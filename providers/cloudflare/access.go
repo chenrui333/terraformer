@@ -5,6 +5,7 @@ package cloudflare
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -17,6 +18,19 @@ import (
 
 type AccessGenerator struct {
 	CloudflareService
+}
+
+type cloudflareAccessShortLivedCertificate struct {
+	Aud       string `json:"aud"`
+	PublicKey string `json:"public_key"`
+}
+
+func cloudflareAccessShortLivedCertificateOptionalError(err error) bool {
+	var notFoundErr *cf.NotFoundError
+	if errors.As(err, &notFoundErr) {
+		return true
+	}
+	return cloudflareCertificateOptionalDiscoveryError(err)
 }
 
 type accessInfrastructureTarget struct {
@@ -32,34 +46,38 @@ func accessScopeAttributes(scopeType, scopeID string) map[string]string {
 }
 
 func (g *AccessGenerator) appendAccessApplicationResources(
-	ctx context.Context,
-	api *cf.API,
+	applications []cf.AccessApplication,
 	rc *cf.ResourceContainer,
 	scopeType string,
-) error {
+) {
+	for _, app := range applications {
+		g.Resources = append(g.Resources, terraformutils.NewResource(
+			app.ID,
+			cloudflareResourceName(scopeType, rc.Identifier, app.Name, app.ID),
+			"cloudflare_zero_trust_access_application",
+			"cloudflare",
+			accessScopeAttributes(scopeType, rc.Identifier),
+			[]string{},
+			map[string]interface{}{},
+		))
+	}
+}
+
+func listAccessApplications(ctx context.Context, api *cf.API, rc *cf.ResourceContainer) ([]cf.AccessApplication, error) {
+	var allApplications []cf.AccessApplication
 	params := cf.ListAccessApplicationsParams{ResultInfo: cf.ResultInfo{Page: 1, PerPage: cloudflarePageSize}}
 	for {
 		applications, info, err := api.ListAccessApplications(ctx, rc, params)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		for _, app := range applications {
-			g.Resources = append(g.Resources, terraformutils.NewResource(
-				app.ID,
-				cloudflareResourceName(scopeType, rc.Identifier, app.Name, app.ID),
-				"cloudflare_zero_trust_access_application",
-				"cloudflare",
-				accessScopeAttributes(scopeType, rc.Identifier),
-				[]string{},
-				map[string]interface{}{},
-			))
-		}
+		allApplications = append(allApplications, applications...)
 		if info == nil || !info.HasMorePages() {
 			break
 		}
 		params.ResultInfo = info.Next()
 	}
-	return nil
+	return allApplications, nil
 }
 
 func (g *AccessGenerator) appendAccessGroupResources(
@@ -183,6 +201,73 @@ func (g *AccessGenerator) appendAccessServiceTokenResources(ctx context.Context,
 		))
 	}
 	return nil
+}
+
+func cloudflareAccessShortLivedCertificateResource(
+	scopeType string,
+	scopeID string,
+	appID string,
+) (terraformutils.Resource, bool) {
+	if scopeID == "" || appID == "" {
+		return terraformutils.Resource{}, false
+	}
+	attributes := accessScopeAttributes(scopeType, scopeID)
+	attributes["app_id"] = appID
+	resource := terraformutils.NewResource(
+		appID,
+		cloudflareResourceName(scopeType, scopeID, "short_lived_certificate", appID),
+		"cloudflare_zero_trust_access_short_lived_certificate",
+		"cloudflare",
+		attributes,
+		[]string{},
+		map[string]interface{}{},
+	)
+	setCloudflareImportID(&resource, fmt.Sprintf("%s/%s/%s", scopeType, scopeID, appID))
+	return resource, true
+}
+
+func (g *AccessGenerator) appendAccessShortLivedCertificateResources(
+	ctx context.Context,
+	api *cf.API,
+	rc *cf.ResourceContainer,
+	scopeType string,
+	applications []cf.AccessApplication,
+) error {
+	for _, app := range applications {
+		if app.ID == "" {
+			continue
+		}
+		if _, err := getAccessShortLivedCertificate(ctx, api, rc, app.ID); err != nil {
+			if cloudflareAccessShortLivedCertificateOptionalError(err) {
+				log.Printf("Skipping Cloudflare Access short-lived certificate discovery for %s/%s app %s: %v", scopeType, rc.Identifier, app.ID, err)
+				continue
+			}
+			return err
+		}
+		resource, ok := cloudflareAccessShortLivedCertificateResource(scopeType, rc.Identifier, app.ID)
+		if ok {
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
+func getAccessShortLivedCertificate(ctx context.Context, api *cf.API, rc *cf.ResourceContainer, appID string) (cloudflareAccessShortLivedCertificate, error) {
+	response, err := api.Raw(
+		ctx,
+		http.MethodGet,
+		fmt.Sprintf("/%s/%s/access/apps/%s/ca", rc.Level, rc.Identifier, appID),
+		nil,
+		nil,
+	)
+	if err != nil {
+		return cloudflareAccessShortLivedCertificate{}, err
+	}
+	var certificate cloudflareAccessShortLivedCertificate
+	if err := json.Unmarshal(response.Result, &certificate); err != nil {
+		return cloudflareAccessShortLivedCertificate{}, err
+	}
+	return certificate, nil
 }
 
 func listAccessServiceTokens(ctx context.Context, api *cf.API, rc *cf.ResourceContainer) ([]cf.AccessServiceToken, error) {
@@ -384,8 +469,13 @@ func listAccessInfrastructureTargets(ctx context.Context, api *cf.API, accountID
 }
 
 func (g *AccessGenerator) appendScopedAccessResources(ctx context.Context, api *cf.API, rc *cf.ResourceContainer, scopeType string) error {
+	applications, err := listAccessApplications(ctx, api, rc)
+	if err != nil {
+		return fmt.Errorf("%s/%s: %w", scopeType, rc.Identifier, err)
+	}
+	g.appendAccessApplicationResources(applications, rc, scopeType)
+
 	for _, f := range []func(context.Context, *cf.API, *cf.ResourceContainer, string) error{
-		g.appendAccessApplicationResources,
 		g.appendAccessGroupResources,
 		g.appendAccessIdentityProviderResources,
 		g.appendAccessMTLSCertificateResources,
@@ -394,6 +484,9 @@ func (g *AccessGenerator) appendScopedAccessResources(ctx context.Context, api *
 		if err := f(ctx, api, rc, scopeType); err != nil {
 			return fmt.Errorf("%s/%s: %w", scopeType, rc.Identifier, err)
 		}
+	}
+	if err := g.appendAccessShortLivedCertificateResources(ctx, api, rc, scopeType, applications); err != nil {
+		return fmt.Errorf("%s/%s: %w", scopeType, rc.Identifier, err)
 	}
 	return nil
 }

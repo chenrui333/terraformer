@@ -27,12 +27,18 @@ List of supported Cloudflare services:
   * `cloudflare_zero_trust_access_mtls_certificate`
   * `cloudflare_zero_trust_access_policy`
   * `cloudflare_zero_trust_access_service_token`
+  * `cloudflare_zero_trust_access_short_lived_certificate`
   * `cloudflare_zero_trust_access_tag`
 * `account_member`
   * `cloudflare_account_member`
 * `certificates`
+  * `cloudflare_certificate_authorities_hostname_associations`
+  * `cloudflare_certificate_pack`
+  * `cloudflare_client_certificate`
   * `cloudflare_custom_hostname`
+  * `cloudflare_custom_origin_trust_store`
   * `cloudflare_mtls_certificate`
+  * `cloudflare_origin_ca_certificate`
 * `dns`
   * `cloudflare_dns_record`
   * `cloudflare_zone`
