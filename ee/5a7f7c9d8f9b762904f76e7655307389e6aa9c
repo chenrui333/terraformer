@@ -1,0 +1,22 @@
+tools/aws-gap-inventory/inventory.go
+  s_b7f71d4ea551ef::t_7ae37bc61642e9 31
+  s_b7f71d4ea551ef::t_5b693c0013bc9d 245-249,267-281
+tools/aws-gap-inventory/inventory_test.go
+  s_b7f71d4ea551ef::t_2796eee87584d5 173-268
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "ee5a7f7c9d8f9b762904f76e7655307389e6aa9c",
+  "prompts": {},
+  "sessions": {
+    "s_b7f71d4ea551ef": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3920-a881-7301-87f7-2d86252a05ca",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}

@@ -1,0 +1,34 @@
+providers/aws/sagemaker.go
+  s_b7f71d4ea551ef::t_beb20cfad25fef 19,32-34,39-40,56,69-71,76-77
+  s_b7f71d4ea551ef::t_f9224fb63ba0df 141-145,214-223,272-283
+  s_b7f71d4ea551ef::t_c0657568966848 349-374
+  s_b7f71d4ea551ef::t_18e61195fcf949 644-695
+  s_b7f71d4ea551ef::t_a0926f1dec80fb 843-920
+  s_b7f71d4ea551ef::t_3ec7e64bbcfac6 985-989,991-992,998-999,1159-1178,1262-1266,1268-1269,1275-1282,1284-1286,1292-1300,994-995,1271-1272,1288-1289
+  s_b7f71d4ea551ef::t_6a490b62486c54 1393-1396,1443-1465
+  s_b7f71d4ea551ef::t_97897ec7aebd24 990,993,996-997,1267,1270,1273-1274,1283,1287,1290-1291
+providers/aws/sagemaker_test.go
+  s_b7f71d4ea551ef::t_16ec3cab46b2ce 6,56-84
+  s_b7f71d4ea551ef::t_361dabba462ddb 481-489,491-507,509-515,517-543
+  s_b7f71d4ea551ef::t_e2807a73cac395 554-556,593-603
+  s_b7f71d4ea551ef::t_917bc07caed30c 783-785,822-827,852-859
+  s_b7f71d4ea551ef::t_1ce7c2d406ae97 893-899,902-903,905-906
+  s_b7f71d4ea551ef::t_8f10b255775323 900-901,904
+  s_b7f71d4ea551ef::t_97897ec7aebd24 490,508,516
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "f89605beb596ac0fb05bf0f72c1a9cedf3a933af",
+  "prompts": {},
+  "sessions": {
+    "s_b7f71d4ea551ef": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3920-a881-7301-87f7-2d86252a05ca",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}

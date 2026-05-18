@@ -1,0 +1,45 @@
+providers/aws/lex_test.go
+  s_b7f71d4ea551ef::t_251fedbbfce2f7 1-209,211,215-220,250-274,291-319,236,243,246,248-249,280-281,283,287,289-290
+  s_b7f71d4ea551ef::t_cade337e900ab5 223
+  s_b7f71d4ea551ef::t_8f10b255775323 224-225,226-235,237-242,244-245,247,277-279,282,284-286,288
+providers/aws/ai_bi_lex_unsupported_test.go
+  s_b7f71d4ea551ef::t_a44775398933a3 1-55,57-62,64-72,74,76-87,92-103
+  s_b7f71d4ea551ef::t_6d2d450fcd3ff5 56,63,73
+  s_b7f71d4ea551ef::t_7ae37bc61642e9 75,88-91
+providers/aws/unsupported_resources.json
+  s_b7f71d4ea551ef::t_8cf1edc3179161 40-76,78-153,155-181,679-693,697-715,719-832,869-889,902-906,910-917,921-928,932-939,943
+  s_b7f71d4ea551ef::t_9a0c4c1ddfd2a1 77,154,498-508,623-676,694
+  s_b7f71d4ea551ef::t_7ae37bc61642e9 716,907,918,929,940
+providers/aws/quicksight.go
+  s_b7f71d4ea551ef::t_fee3f6a5cb6772 1-57,61-98,111-118,131-570,105,108-110,125,128-130
+  s_b7f71d4ea551ef::t_8f10b255775323 101,99,102-104,106-107,119,122-124,126-127
+providers/aws/lex.go
+  s_b7f71d4ea551ef::t_7e63e33720bf3d 1-72,76-182,184-185,187-358,362-730
+  s_b7f71d4ea551ef::t_8f10b255775323 183,186
+providers/aws/sagemaker_test.go
+  s_b7f71d4ea551ef::t_16ec3cab46b2ce 6,56-84
+  s_b7f71d4ea551ef::t_361dabba462ddb 481-540
+  s_b7f71d4ea551ef::t_e2807a73cac395 551-553,590-600
+  s_b7f71d4ea551ef::t_917bc07caed30c 780-782,819-824,849-856
+  s_b7f71d4ea551ef::t_1ce7c2d406ae97 890-896,899-900,902-903
+  s_b7f71d4ea551ef::t_8f10b255775323 897-898,901
+tools/aws-gap-inventory/inventory.go
+  s_b7f71d4ea551ef::t_7ae37bc61642e9 31
+  s_b7f71d4ea551ef::t_5b693c0013bc9d 233-234
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "1c60c8784994e80d1d0ff70e2c0a3af6e54a9f19",
+  "prompts": {},
+  "sessions": {
+    "s_b7f71d4ea551ef": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3920-a881-7301-87f7-2d86252a05ca",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}

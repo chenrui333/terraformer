@@ -1,0 +1,21 @@
+providers/aws/quicksight_test.go
+  s_b7f71d4ea551ef::t_8c75a9bd8455c7 1-181,184-185,187-188,191-198,203-241,202
+  s_b7f71d4ea551ef::t_5ae65dfe5fb4ac 199,200-201
+  s_b7f71d4ea551ef::t_cade337e900ab5 182-183,186,189-190
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "13d486bbbf8f4dcbcd6dd78c560d930f609e46cc",
+  "prompts": {},
+  "sessions": {
+    "s_b7f71d4ea551ef": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3920-a881-7301-87f7-2d86252a05ca",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
