@@ -197,6 +197,9 @@ func TestQuickSightInitialCleanupHonorsTypedFilters(t *testing.T) {
 	if got := g.Resources[0].InstanceInfo.Type; got != quickSightGroupResourceType {
 		t.Fatalf("InitialCleanup() kept resource type = %q, want %s", got, quickSightGroupResourceType)
 	}
+	if got := g.Resources[0].InstanceState.Attributes["group_name"]; got != "authors" {
+		t.Fatalf("InitialCleanup() kept group_name = %q, want authors", got)
+	}
 }
 
 func TestQuickSightResourceNameUniqueness(t *testing.T) {
