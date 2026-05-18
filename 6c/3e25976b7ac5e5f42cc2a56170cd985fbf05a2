@@ -1,0 +1,21 @@
+providers/aws/docdb.go
+  s_c86082602448d5::t_42a2b34951574d 14,34,44-66
+providers/aws/docdb_test.go
+  s_c86082602448d5::t_ce456bc0ab90da 13,61-64,68,154-172
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.9",
+  "base_commit_sha": "6c3e25976b7ac5e5f42cc2a56170cd985fbf05a2",
+  "prompts": {},
+  "sessions": {
+    "s_c86082602448d5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3920-cd80-7613-a2a4-18b532d6e9d7",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
