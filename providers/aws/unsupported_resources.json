@@ -467,6 +467,42 @@
       ]
     },
     {
+      "resource": "aws_s3_bucket_object",
+      "service_family": "s3",
+      "reason": "S3 bucket objects are high-cardinality object content, not durable infrastructure configuration for broad account inventory.",
+      "evidence": "Terraform AWS provider models aws_s3_bucket_object around object bodies, sources, checksums, and metadata. S3 ListObjectsV2 can enumerate object keys but cannot reconstruct local source files or safe generated HCL for arbitrary bucket contents.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_object",
+        "https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html"
+      ]
+    },
+    {
+      "resource": "aws_s3_object",
+      "service_family": "s3",
+      "reason": "S3 objects are high-cardinality object content, not durable infrastructure configuration for broad account inventory.",
+      "evidence": "Terraform AWS provider models aws_s3_object around object content, source paths, checksums, and metadata. S3 ListObjectsV2 can enumerate object keys but cannot reconstruct local source files or safe generated HCL for arbitrary bucket contents.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_object",
+        "https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html"
+      ]
+    },
+    {
+      "resource": "aws_s3_object_copy",
+      "service_family": "s3",
+      "reason": "S3 object copies are action-style resources; broad discovery can see destination objects but cannot reconstruct the original copy operation as stable infrastructure ownership.",
+      "evidence": "Terraform AWS provider requires source and destination object copy configuration. S3 object listing and HeadObject describe the resulting object, not the original copy request, source object lifecycle, or copy-time options.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_object_copy",
+        "https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html"
+      ]
+    },
+    {
       "resource": "aws_sagemaker_human_task_ui",
       "service_family": "sagemaker",
       "reason": "SageMaker Human Task UI imports cannot reconstruct the required ui_template.content field from SageMaker APIs.",

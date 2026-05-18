@@ -675,9 +675,14 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
 *   `s3`
     * `aws_s3_bucket`
     * `aws_s3_bucket_accelerate_configuration`
+    * `aws_s3_bucket_acl`
+    * `aws_s3_bucket_analytics_configuration`
     * `aws_s3_bucket_cors_configuration`
+    * `aws_s3_bucket_intelligent_tiering_configuration`
+    * `aws_s3_bucket_inventory`
     * `aws_s3_bucket_lifecycle_configuration`
     * `aws_s3_bucket_logging`
+    * `aws_s3_bucket_metric`
     * `aws_s3_bucket_notification`
     * `aws_s3_bucket_object_lock_configuration`
     * `aws_s3_bucket_ownership_controls`
@@ -689,10 +694,17 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_s3_bucket_versioning`
     * `aws_s3_bucket_website_configuration`
 *   `s3control`
+    * `aws_s3_account_public_access_block`
     * `aws_s3_access_point`
+    * `aws_s3control_access_grant`
+    * `aws_s3control_access_grants_instance`
+    * `aws_s3control_access_grants_instance_resource_policy`
+    * `aws_s3control_access_grants_location`
     * `aws_s3control_access_point_policy`
+    * `aws_s3control_multi_region_access_point`
     * `aws_s3control_object_lambda_access_point`
     * `aws_s3control_object_lambda_access_point_policy`
+    * `aws_s3control_storage_lens_configuration`
 *   `s3tables`
     * `aws_s3tables_table_bucket`
     * `aws_s3tables_namespace`

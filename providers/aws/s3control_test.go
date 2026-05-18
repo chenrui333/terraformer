@@ -185,6 +185,77 @@ func TestNewS3ControlObjectLambdaAccessPointPolicyResource(t *testing.T) {
 	}
 }
 
+func TestNewS3ControlStorageReleaseResources(t *testing.T) {
+	accountPublicAccessBlock, ok := newS3AccountPublicAccessBlockResource(testS3ControlAccountID, &s3controltypes.PublicAccessBlockConfiguration{})
+	assertS3ControlResourceAttributes(t, accountPublicAccessBlock, ok, s3AccountPublicAccessBlockResourceType, testS3ControlAccountID,
+		[]string{"account_public_access_block", testS3ControlAccountID},
+		map[string]string{"account_id": testS3ControlAccountID})
+
+	instance, ok := newS3ControlAccessGrantsInstanceResource(testS3ControlAccountID, s3controltypes.ListAccessGrantsInstanceEntry{
+		AccessGrantsInstanceId: aws.String("default"),
+	})
+	assertS3ControlResourceAttributes(t, instance, ok, s3ControlAccessGrantsInstanceResourceType, testS3ControlAccountID,
+		[]string{"access_grants_instance", testS3ControlAccountID, "default"},
+		map[string]string{"account_id": testS3ControlAccountID})
+	assertAwsFrameworkResourcePreserveIDAfterRefresh(t, instance)
+
+	policyBody := `{"Version":"2012-10-17"}`
+	resourcePolicy, ok := newS3ControlAccessGrantsInstanceResourcePolicyResource(testS3ControlAccountID, policyBody)
+	assertS3ControlResourceAttributes(t, resourcePolicy, ok, s3ControlAccessGrantsInstanceResourcePolicyType, testS3ControlAccountID,
+		[]string{"access_grants_instance_resource_policy", testS3ControlAccountID},
+		map[string]string{"account_id": testS3ControlAccountID, "policy": policyBody})
+	assertAwsFrameworkResourcePreserveIDAfterRefresh(t, resourcePolicy)
+
+	location, ok := newS3ControlAccessGrantsLocationResource(testS3ControlAccountID, s3controltypes.ListAccessGrantsLocationsEntry{
+		AccessGrantsLocationId: aws.String("default"),
+		IAMRoleArn:             aws.String("arn:aws:iam::123456789012:role/access-grants"),
+		LocationScope:          aws.String("s3://"),
+	})
+	assertS3ControlResourceAttributes(t, location, ok, s3ControlAccessGrantsLocationResourceType, "123456789012,default",
+		[]string{"access_grants_location", testS3ControlAccountID, "default"},
+		map[string]string{
+			"access_grants_location_id": "default",
+			"account_id":                testS3ControlAccountID,
+			"iam_role_arn":              "arn:aws:iam::123456789012:role/access-grants",
+			"location_scope":            "s3://",
+		})
+	assertAwsFrameworkResourcePreserveIDAfterRefresh(t, location)
+
+	grant, ok := newS3ControlAccessGrantResource(testS3ControlAccountID, s3controltypes.ListAccessGrantEntry{
+		AccessGrantId:          aws.String("grant-123"),
+		AccessGrantsLocationId: aws.String("default"),
+		Grantee: &s3controltypes.Grantee{
+			GranteeIdentifier: aws.String("arn:aws:iam::123456789012:role/app"),
+			GranteeType:       s3controltypes.GranteeTypeIam,
+		},
+		Permission: s3controltypes.PermissionRead,
+	})
+	assertS3ControlResourceAttributes(t, grant, ok, s3ControlAccessGrantResourceType, "123456789012,grant-123",
+		[]string{"access_grant", testS3ControlAccountID, "grant-123"},
+		map[string]string{
+			"access_grant_id":           "grant-123",
+			"access_grants_location_id": "default",
+			"account_id":                testS3ControlAccountID,
+			"permission":                "READ",
+		})
+	assertAwsFrameworkResourcePreserveIDAfterRefresh(t, grant)
+
+	mrap, ok := newS3ControlMultiRegionAccessPointResource(testS3ControlAccountID, s3controltypes.MultiRegionAccessPointReport{
+		Name:   aws.String("global-assets"),
+		Status: s3controltypes.MultiRegionAccessPointStatusReady,
+	})
+	assertS3ControlResourceAttributes(t, mrap, ok, s3ControlMultiRegionAccessPointResourceType, "123456789012:global-assets",
+		[]string{"multi_region_access_point", testS3ControlAccountID, "global-assets"},
+		map[string]string{"account_id": testS3ControlAccountID})
+
+	storageLens, ok := newS3ControlStorageLensConfigurationResource(testS3ControlAccountID, s3controltypes.ListStorageLensConfigurationEntry{
+		Id: aws.String("org-lens"),
+	})
+	assertS3ControlResourceAttributes(t, storageLens, ok, s3ControlStorageLensConfigurationResourceType, "123456789012:org-lens",
+		[]string{"storage_lens_configuration", testS3ControlAccountID, "org-lens"},
+		map[string]string{"account_id": testS3ControlAccountID, "config_id": "org-lens"})
+}
+
 func TestS3ControlAccessPointImportIDFromARN(t *testing.T) {
 	outpostsARN := "arn:aws:s3-outposts:us-east-1:123456789012:outpost/op-1234567890123456/accesspoint/core-ap"
 	tests := []struct {
@@ -264,6 +335,58 @@ func TestS3ControlObjectLambdaAccessPointReadable(t *testing.T) {
 	}
 }
 
+func TestS3ControlMultiRegionAccessPointImportable(t *testing.T) {
+	tests := []struct {
+		name   string
+		status s3controltypes.MultiRegionAccessPointStatus
+		want   bool
+	}{
+		{name: "ready", status: s3controltypes.MultiRegionAccessPointStatusReady, want: true},
+		{name: "inconsistent", status: s3controltypes.MultiRegionAccessPointStatusInconsistentAcrossRegions, want: true},
+		{name: "creating", status: s3controltypes.MultiRegionAccessPointStatusCreating, want: false},
+		{name: "deleting", status: s3controltypes.MultiRegionAccessPointStatusDeleting, want: false},
+		{name: "empty", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := s3ControlMultiRegionAccessPointImportable(s3controltypes.MultiRegionAccessPointReport{Status: tt.status}); got != tt.want {
+				t.Fatalf("importable = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestS3ControlMultiRegionAccessPointOperationOption(t *testing.T) {
+	options := &s3control.Options{Region: "eu-central-1"}
+	s3ControlMultiRegionAccessPointOperationOption(options)
+	if options.Region != s3ControlMultiRegionAccessPointRegion {
+		t.Fatalf("Region = %q, want %q", options.Region, s3ControlMultiRegionAccessPointRegion)
+	}
+}
+
+func TestS3ControlShouldLoadAccountGlobalResources(t *testing.T) {
+	tests := []struct {
+		name   string
+		region string
+		want   bool
+	}{
+		{name: "default import", region: NoRegion, want: true},
+		{name: "canonical public partition region", region: MainRegionPublicPartition, want: true},
+		{name: "global sentinel", region: GlobalRegion, want: false},
+		{name: "mrap control plane region", region: s3ControlMultiRegionAccessPointRegion, want: false},
+		{name: "other regional import", region: "eu-central-1", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := s3ControlShouldLoadAccountGlobalResources(tt.region); got != tt.want {
+				t.Fatalf("s3ControlShouldLoadAccountGlobalResources(%q) = %t, want %t", tt.region, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestS3ControlResourceNameAvoidsSanitizedCollisions(t *testing.T) {
 	left := terraformutils.TfSanitize(s3ControlResourceName("access_point", testS3ControlAccountID, "a_b", "c"))
 	right := terraformutils.TfSanitize(s3ControlResourceName("access_point", testS3ControlAccountID, "a", "b_c"))
@@ -280,7 +403,10 @@ func TestS3ControlResourceNotFound(t *testing.T) {
 	}{
 		{name: "nil", want: false},
 		{name: "typed not found", err: &s3controltypes.NotFoundException{}, want: true},
+		{name: "no such access grant", err: &smithy.GenericAPIError{Code: "NoSuchAccessGrant"}, want: true},
+		{name: "no such access grants instance", err: &smithy.GenericAPIError{Code: "NoSuchAccessGrantsInstance"}, want: true},
 		{name: "no such access point", err: &smithy.GenericAPIError{Code: "NoSuchAccessPoint"}, want: true},
+		{name: "no account public access block", err: &smithy.GenericAPIError{Code: "NoSuchPublicAccessBlockConfiguration"}, want: true},
 		{name: "no such policy", err: &smithy.GenericAPIError{Code: "NoSuchAccessPointPolicy"}, want: true},
 		{name: "wrapped not found", err: errors.Join(errors.New("lookup failed"), &s3controltypes.NotFoundException{}), want: true},
 		{name: "access denied", err: &smithy.GenericAPIError{Code: "AccessDenied"}, want: false},

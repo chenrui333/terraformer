@@ -19,11 +19,20 @@ import (
 )
 
 const (
+	s3AccountPublicAccessBlockResourceType             = "aws_s3_account_public_access_block"
 	s3ControlAccessPointResourceType                   = "aws_s3_access_point"
 	s3ControlAccessPointPolicyResourceType             = "aws_s3control_access_point_policy"
+	s3ControlAccessGrantResourceType                   = "aws_s3control_access_grant"
+	s3ControlAccessGrantsInstanceResourceType          = "aws_s3control_access_grants_instance"
+	s3ControlAccessGrantsInstanceResourcePolicyType    = "aws_s3control_access_grants_instance_resource_policy"
+	s3ControlAccessGrantsLocationResourceType          = "aws_s3control_access_grants_location"
+	s3ControlMultiRegionAccessPointResourceType        = "aws_s3control_multi_region_access_point"
 	s3ControlObjectLambdaAccessPointResourceType       = "aws_s3control_object_lambda_access_point"
 	s3ControlObjectLambdaAccessPointPolicyResourceType = "aws_s3control_object_lambda_access_point_policy"
+	s3ControlStorageLensConfigurationResourceType      = "aws_s3control_storage_lens_configuration"
 	s3ControlAccessPointIDSeparator                    = ":"
+	s3ControlCommaIDSeparator                          = ","
+	s3ControlMultiRegionAccessPointRegion              = "us-west-2"
 )
 
 var s3ControlAllowEmptyValues = []string{"tags."}
@@ -46,6 +55,21 @@ func (g *S3ControlGenerator) InitResources() error {
 	}
 
 	svc := s3control.NewFromConfig(config)
+	loadAccountGlobalResources := s3ControlShouldLoadAccountGlobalResources(g.GetArgs()["region"].(string))
+	if loadAccountGlobalResources {
+		g.addAccountPublicAccessBlock(svc, *accountID)
+	}
+	if err := g.loadAccessGrants(svc, *accountID); err != nil {
+		log.Printf("skipping S3 Control Access Grants discovery for %s: %v", *accountID, err)
+	}
+	if loadAccountGlobalResources {
+		if err := g.loadMultiRegionAccessPoints(svc, *accountID); err != nil {
+			log.Printf("skipping S3 Control Multi-Region Access Point discovery for %s: %v", *accountID, err)
+		}
+	}
+	if err := g.loadStorageLensConfigurations(svc, *accountID); err != nil {
+		log.Printf("skipping S3 Control Storage Lens discovery for %s: %v", *accountID, err)
+	}
 	if err := g.loadAccessPoints(svc, *accountID); err != nil {
 		return err
 	}
@@ -70,8 +94,160 @@ func (g *S3ControlGenerator) PostConvertHook() error {
 			}
 			wrapS3ControlPolicyHeredoc(g, &g.Resources[i])
 		case s3ControlAccessPointPolicyResourceType,
+			s3ControlAccessGrantsInstanceResourcePolicyType,
 			s3ControlObjectLambdaAccessPointPolicyResourceType:
 			wrapS3ControlPolicyHeredoc(g, &g.Resources[i])
+		}
+	}
+	return nil
+}
+
+func (g *S3ControlGenerator) addAccountPublicAccessBlock(svc *s3control.Client, accountID string) {
+	if accountID == "" {
+		return
+	}
+	output, err := svc.GetPublicAccessBlock(context.TODO(), &s3control.GetPublicAccessBlockInput{
+		AccountId: aws.String(accountID),
+	})
+	if s3ControlResourceNotFound(err) {
+		return
+	}
+	if err != nil {
+		log.Printf("skipping S3 account public access block discovery for %s: %v", accountID, err)
+		return
+	}
+	if output == nil || output.PublicAccessBlockConfiguration == nil {
+		return
+	}
+	if resource, ok := newS3AccountPublicAccessBlockResource(accountID, output.PublicAccessBlockConfiguration); ok {
+		g.Resources = append(g.Resources, resource)
+	}
+}
+
+func (g *S3ControlGenerator) loadAccessGrants(svc *s3control.Client, accountID string) error {
+	if accountID == "" {
+		return nil
+	}
+	if err := g.loadAccessGrantsInstances(svc, accountID); err != nil {
+		return err
+	}
+	if err := g.loadAccessGrantsLocations(svc, accountID); err != nil {
+		return err
+	}
+	return g.loadAccessGrantResources(svc, accountID)
+}
+
+func (g *S3ControlGenerator) loadAccessGrantsInstances(svc *s3control.Client, accountID string) error {
+	paginator := s3control.NewListAccessGrantsInstancesPaginator(svc, &s3control.ListAccessGrantsInstancesInput{
+		AccountId: aws.String(accountID),
+	})
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(context.TODO())
+		if s3ControlResourceNotFound(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		for _, instance := range page.AccessGrantsInstancesList {
+			if resource, ok := newS3ControlAccessGrantsInstanceResource(accountID, instance); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+	}
+	g.addAccessGrantsInstanceResourcePolicy(svc, accountID)
+	return nil
+}
+
+func (g *S3ControlGenerator) addAccessGrantsInstanceResourcePolicy(svc *s3control.Client, accountID string) {
+	policy, ok := getS3ControlAccessGrantsInstanceResourcePolicy(svc, accountID)
+	if !ok {
+		return
+	}
+	if resource, ok := newS3ControlAccessGrantsInstanceResourcePolicyResource(accountID, policy); ok {
+		g.Resources = append(g.Resources, resource)
+	}
+}
+
+func (g *S3ControlGenerator) loadAccessGrantsLocations(svc *s3control.Client, accountID string) error {
+	paginator := s3control.NewListAccessGrantsLocationsPaginator(svc, &s3control.ListAccessGrantsLocationsInput{
+		AccountId: aws.String(accountID),
+	})
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(context.TODO())
+		if s3ControlResourceNotFound(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		for _, location := range page.AccessGrantsLocationsList {
+			if resource, ok := newS3ControlAccessGrantsLocationResource(accountID, location); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+	}
+	return nil
+}
+
+func (g *S3ControlGenerator) loadAccessGrantResources(svc *s3control.Client, accountID string) error {
+	paginator := s3control.NewListAccessGrantsPaginator(svc, &s3control.ListAccessGrantsInput{
+		AccountId: aws.String(accountID),
+	})
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(context.TODO())
+		if s3ControlResourceNotFound(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		for _, grant := range page.AccessGrantsList {
+			if resource, ok := newS3ControlAccessGrantResource(accountID, grant); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+	}
+	return nil
+}
+
+func (g *S3ControlGenerator) loadMultiRegionAccessPoints(svc *s3control.Client, accountID string) error {
+	paginator := s3control.NewListMultiRegionAccessPointsPaginator(svc, &s3control.ListMultiRegionAccessPointsInput{
+		AccountId: aws.String(accountID),
+	})
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(context.TODO(), s3ControlMultiRegionAccessPointOperationOption)
+		if s3ControlResourceNotFound(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		for _, accessPoint := range page.AccessPoints {
+			if resource, ok := newS3ControlMultiRegionAccessPointResource(accountID, accessPoint); ok {
+				g.Resources = append(g.Resources, resource)
+			}
+		}
+	}
+	return nil
+}
+
+func (g *S3ControlGenerator) loadStorageLensConfigurations(svc *s3control.Client, accountID string) error {
+	paginator := s3control.NewListStorageLensConfigurationsPaginator(svc, &s3control.ListStorageLensConfigurationsInput{
+		AccountId: aws.String(accountID),
+	})
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(context.TODO())
+		if s3ControlResourceNotFound(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		for _, configuration := range page.StorageLensConfigurationList {
+			if resource, ok := newS3ControlStorageLensConfigurationResource(accountID, configuration); ok {
+				g.Resources = append(g.Resources, resource)
+			}
 		}
 	}
 	return nil
@@ -191,6 +367,153 @@ func (g *S3ControlGenerator) addObjectLambdaAccessPointPolicy(svc *s3control.Cli
 	if resource, ok := newS3ControlObjectLambdaAccessPointPolicyResource(accountID, name, policy); ok {
 		g.Resources = append(g.Resources, resource)
 	}
+}
+
+func newS3AccountPublicAccessBlockResource(accountID string, configuration *s3controltypes.PublicAccessBlockConfiguration) (terraformutils.Resource, bool) {
+	if accountID == "" || configuration == nil {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewResource(
+		accountID,
+		s3ControlResourceName("account_public_access_block", accountID),
+		s3AccountPublicAccessBlockResourceType,
+		"aws",
+		map[string]string{
+			"account_id": accountID,
+		},
+		s3ControlAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
+func newS3ControlAccessGrantsInstanceResource(accountID string, instance s3controltypes.ListAccessGrantsInstanceEntry) (terraformutils.Resource, bool) {
+	instanceID := StringValue(instance.AccessGrantsInstanceId)
+	if accountID == "" || instanceID == "" {
+		return terraformutils.Resource{}, false
+	}
+	resource := terraformutils.NewResource(
+		accountID,
+		s3ControlResourceName("access_grants_instance", accountID, instanceID),
+		s3ControlAccessGrantsInstanceResourceType,
+		"aws",
+		map[string]string{
+			"account_id": accountID,
+		},
+		s3ControlAllowEmptyValues,
+		map[string]interface{}{},
+	)
+	setAwsFrameworkResourcePreserveIDAfterRefresh(&resource)
+	return resource, true
+}
+
+func newS3ControlAccessGrantsInstanceResourcePolicyResource(accountID, policy string) (terraformutils.Resource, bool) {
+	if accountID == "" || policy == "" {
+		return terraformutils.Resource{}, false
+	}
+	resource := terraformutils.NewResource(
+		accountID,
+		s3ControlResourceName("access_grants_instance_resource_policy", accountID),
+		s3ControlAccessGrantsInstanceResourcePolicyType,
+		"aws",
+		map[string]string{
+			"account_id": accountID,
+			"policy":     policy,
+		},
+		s3ControlAllowEmptyValues,
+		map[string]interface{}{},
+	)
+	setAwsFrameworkResourcePreserveIDAfterRefresh(&resource)
+	return resource, true
+}
+
+func newS3ControlAccessGrantsLocationResource(accountID string, location s3controltypes.ListAccessGrantsLocationsEntry) (terraformutils.Resource, bool) {
+	locationID := StringValue(location.AccessGrantsLocationId)
+	locationScope := StringValue(location.LocationScope)
+	iamRoleARN := StringValue(location.IAMRoleArn)
+	if accountID == "" || locationID == "" || locationScope == "" || iamRoleARN == "" {
+		return terraformutils.Resource{}, false
+	}
+	resource := terraformutils.NewResource(
+		s3ControlCommaImportID(accountID, locationID),
+		s3ControlResourceName("access_grants_location", accountID, locationID),
+		s3ControlAccessGrantsLocationResourceType,
+		"aws",
+		map[string]string{
+			"access_grants_location_id": locationID,
+			"account_id":                accountID,
+			"iam_role_arn":              iamRoleARN,
+			"location_scope":            locationScope,
+		},
+		s3ControlAllowEmptyValues,
+		map[string]interface{}{},
+	)
+	setAwsFrameworkResourcePreserveIDAfterRefresh(&resource)
+	return resource, true
+}
+
+func newS3ControlAccessGrantResource(accountID string, grant s3controltypes.ListAccessGrantEntry) (terraformutils.Resource, bool) {
+	grantID := StringValue(grant.AccessGrantId)
+	locationID := StringValue(grant.AccessGrantsLocationId)
+	permission := string(grant.Permission)
+	if accountID == "" || grantID == "" || locationID == "" || permission == "" || grant.Grantee == nil {
+		return terraformutils.Resource{}, false
+	}
+	if StringValue(grant.Grantee.GranteeIdentifier) == "" || grant.Grantee.GranteeType == "" {
+		return terraformutils.Resource{}, false
+	}
+	resource := terraformutils.NewResource(
+		s3ControlCommaImportID(accountID, grantID),
+		s3ControlResourceName("access_grant", accountID, grantID),
+		s3ControlAccessGrantResourceType,
+		"aws",
+		map[string]string{
+			"access_grant_id":           grantID,
+			"access_grants_location_id": locationID,
+			"account_id":                accountID,
+			"permission":                permission,
+		},
+		s3ControlAllowEmptyValues,
+		map[string]interface{}{},
+	)
+	setAwsFrameworkResourcePreserveIDAfterRefresh(&resource)
+	return resource, true
+}
+
+func newS3ControlMultiRegionAccessPointResource(accountID string, accessPoint s3controltypes.MultiRegionAccessPointReport) (terraformutils.Resource, bool) {
+	name := StringValue(accessPoint.Name)
+	if accountID == "" || name == "" || !s3ControlMultiRegionAccessPointImportable(accessPoint) {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewResource(
+		s3ControlColonImportID(accountID, name),
+		s3ControlResourceName("multi_region_access_point", accountID, name),
+		s3ControlMultiRegionAccessPointResourceType,
+		"aws",
+		map[string]string{
+			"account_id": accountID,
+		},
+		s3ControlAllowEmptyValues,
+		map[string]interface{}{},
+	), true
+}
+
+func newS3ControlStorageLensConfigurationResource(accountID string, configuration s3controltypes.ListStorageLensConfigurationEntry) (terraformutils.Resource, bool) {
+	configID := StringValue(configuration.Id)
+	if accountID == "" || configID == "" {
+		return terraformutils.Resource{}, false
+	}
+	return terraformutils.NewResource(
+		s3ControlColonImportID(accountID, configID),
+		s3ControlResourceName("storage_lens_configuration", accountID, configID),
+		s3ControlStorageLensConfigurationResourceType,
+		"aws",
+		map[string]string{
+			"account_id": accountID,
+			"config_id":  configID,
+		},
+		s3ControlAllowEmptyValues,
+		map[string]interface{}{},
+	), true
 }
 
 func newS3ControlAccessPointResource(accountID string, accessPoint *s3control.GetAccessPointOutput) (terraformutils.Resource, bool) {
@@ -366,6 +689,30 @@ func getS3ControlObjectLambdaAccessPointPolicy(svc *s3control.Client, accountID,
 	return policy, true
 }
 
+func getS3ControlAccessGrantsInstanceResourcePolicy(svc *s3control.Client, accountID string) (string, bool) {
+	if accountID == "" {
+		return "", false
+	}
+	policyOutput, err := svc.GetAccessGrantsInstanceResourcePolicy(context.TODO(), &s3control.GetAccessGrantsInstanceResourcePolicyInput{
+		AccountId: aws.String(accountID),
+	})
+	if s3ControlResourceNotFound(err) {
+		return "", false
+	}
+	if err != nil {
+		log.Printf("skipping S3 Control Access Grants instance resource policy discovery for %s: %v", accountID, err)
+		return "", false
+	}
+	if policyOutput == nil {
+		return "", false
+	}
+	policy := StringValue(policyOutput.Policy)
+	if policy == "" {
+		return "", false
+	}
+	return policy, true
+}
+
 func s3ControlAccessPointImportID(accountID, accessPointName, accessPointARN string) string {
 	if s3ControlARNService(accessPointARN) == "s3-outposts" {
 		return accessPointARN
@@ -396,6 +743,14 @@ func s3ControlObjectLambdaAccessPointImportID(accountID, accessPointName string)
 	return strings.Join([]string{accountID, accessPointName}, s3ControlAccessPointIDSeparator)
 }
 
+func s3ControlCommaImportID(parts ...string) string {
+	return strings.Join(parts, s3ControlCommaIDSeparator)
+}
+
+func s3ControlColonImportID(parts ...string) string {
+	return strings.Join(parts, s3ControlAccessPointIDSeparator)
+}
+
 func s3ControlAccessPointAPIName(accessPointName, accessPointARN string) string {
 	if s3ControlARNService(accessPointARN) == "s3-outposts" {
 		return accessPointARN
@@ -421,6 +776,24 @@ func s3ControlObjectLambdaAccessPointImportable(configuration *s3control.GetAcce
 
 func s3ControlObjectLambdaAccessPointReadable(accessPoint *s3control.GetAccessPointForObjectLambdaOutput) bool {
 	return accessPoint != nil && accessPoint.Alias != nil
+}
+
+func s3ControlMultiRegionAccessPointImportable(accessPoint s3controltypes.MultiRegionAccessPointReport) bool {
+	switch accessPoint.Status {
+	case s3controltypes.MultiRegionAccessPointStatusReady,
+		s3controltypes.MultiRegionAccessPointStatusInconsistentAcrossRegions:
+		return true
+	default:
+		return false
+	}
+}
+
+func s3ControlMultiRegionAccessPointOperationOption(options *s3control.Options) {
+	options.Region = s3ControlMultiRegionAccessPointRegion
+}
+
+func s3ControlShouldLoadAccountGlobalResources(region string) bool {
+	return region == NoRegion || region == MainRegionPublicPartition
 }
 
 func s3ControlResourceName(parts ...string) string {
@@ -452,11 +825,16 @@ func s3ControlResourceNotFound(err error) bool {
 		return false
 	}
 	switch apiErr.ErrorCode() {
-	case "NoSuchAccessPoint",
+	case "NoSuchAccessGrant",
+		"NoSuchAccessGrantsInstance",
+		"NoSuchAccessGrantsLocation",
+		"NoSuchAccessPoint",
 		"NoSuchAccessPointPolicy",
 		"NoSuchBucket",
+		"NoSuchPublicAccessBlockConfiguration",
 		"NotFound",
-		"NotFoundException":
+		"NotFoundException",
+		"ResourceNotFoundException":
 		return true
 	default:
 		return false
