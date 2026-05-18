@@ -21,7 +21,17 @@ var S3AllowEmptyValues = []string{"tags."}
 
 var S3AdditionalFields = map[string]interface{}{}
 
+const (
+	s3BucketACLResourceType                             = "aws_s3_bucket_acl"
+	s3BucketAnalyticsConfigurationResourceType          = "aws_s3_bucket_analytics_configuration"
+	s3BucketIntelligentTieringConfigurationResourceType = "aws_s3_bucket_intelligent_tiering_configuration"
+	s3BucketInventoryResourceType                       = "aws_s3_bucket_inventory"
+	s3BucketMetricResourceType                          = "aws_s3_bucket_metric"
+	s3BucketNamedConfigurationIDSeparator               = ":"
+)
+
 var s3BucketSplitResourceInlineFields = map[string][]string{
+	s3BucketACLResourceType:                              {"acl", "grant"},
 	"aws_s3_bucket_accelerate_configuration":             {"acceleration_status"},
 	"aws_s3_bucket_cors_configuration":                   {"cors_rule"},
 	"aws_s3_bucket_lifecycle_configuration":              {"lifecycle_rule"},
@@ -94,6 +104,7 @@ func (g *S3Generator) addBucketConfigurationResources(svc *s3.Client, resources 
 	if bucketName == "" {
 		return
 	}
+	g.addBucketACLResource(svc, resources, bucketName)
 	if output, err := svc.GetBucketAccelerateConfiguration(context.TODO(), &s3.GetBucketAccelerateConfigurationInput{Bucket: &bucketName}); err == nil {
 		if output.Status == types.BucketAccelerateStatusEnabled {
 			addS3BucketConfigurationResource(resources, bucketName, "aws_s3_bucket_accelerate_configuration")
@@ -185,6 +196,105 @@ func (g *S3Generator) addBucketConfigurationResources(svc *s3.Client, resources 
 	} else {
 		logS3OptionalBucketConfigurationError(bucketName, "aws_s3_bucket_website_configuration", err)
 	}
+	g.addBucketAnalyticsConfigurations(svc, resources, bucketName)
+	g.addBucketIntelligentTieringConfigurations(svc, resources, bucketName)
+	g.addBucketInventoryConfigurations(svc, resources, bucketName)
+	g.addBucketMetricConfigurations(svc, resources, bucketName)
+}
+
+func (g *S3Generator) addBucketACLResource(svc *s3.Client, resources *[]terraformutils.Resource, bucketName string) {
+	output, err := svc.GetBucketAcl(context.TODO(), &s3.GetBucketAclInput{Bucket: &bucketName})
+	if err != nil {
+		logS3OptionalBucketConfigurationError(bucketName, s3BucketACLResourceType, err)
+		return
+	}
+	if s3BucketACLImportable(output) {
+		addS3BucketConfigurationResource(resources, bucketName, s3BucketACLResourceType)
+	}
+}
+
+func (g *S3Generator) addBucketAnalyticsConfigurations(svc *s3.Client, resources *[]terraformutils.Resource, bucketName string) {
+	var continuationToken *string
+	for {
+		page, err := svc.ListBucketAnalyticsConfigurations(context.TODO(), &s3.ListBucketAnalyticsConfigurationsInput{
+			Bucket:            &bucketName,
+			ContinuationToken: continuationToken,
+		})
+		if err != nil {
+			logS3OptionalBucketConfigurationError(bucketName, s3BucketAnalyticsConfigurationResourceType, err)
+			return
+		}
+		for _, configuration := range page.AnalyticsConfigurationList {
+			addS3BucketNamedConfigurationResource(resources, bucketName, StringValue(configuration.Id), s3BucketAnalyticsConfigurationResourceType)
+		}
+		if !aws.ToBool(page.IsTruncated) || StringValue(page.NextContinuationToken) == "" {
+			return
+		}
+		continuationToken = page.NextContinuationToken
+	}
+}
+
+func (g *S3Generator) addBucketIntelligentTieringConfigurations(svc *s3.Client, resources *[]terraformutils.Resource, bucketName string) {
+	var continuationToken *string
+	for {
+		page, err := svc.ListBucketIntelligentTieringConfigurations(context.TODO(), &s3.ListBucketIntelligentTieringConfigurationsInput{
+			Bucket:            &bucketName,
+			ContinuationToken: continuationToken,
+		})
+		if err != nil {
+			logS3OptionalBucketConfigurationError(bucketName, s3BucketIntelligentTieringConfigurationResourceType, err)
+			return
+		}
+		for _, configuration := range page.IntelligentTieringConfigurationList {
+			addS3BucketNamedConfigurationResource(resources, bucketName, StringValue(configuration.Id), s3BucketIntelligentTieringConfigurationResourceType)
+		}
+		if !aws.ToBool(page.IsTruncated) || StringValue(page.NextContinuationToken) == "" {
+			return
+		}
+		continuationToken = page.NextContinuationToken
+	}
+}
+
+func (g *S3Generator) addBucketInventoryConfigurations(svc *s3.Client, resources *[]terraformutils.Resource, bucketName string) {
+	var continuationToken *string
+	for {
+		page, err := svc.ListBucketInventoryConfigurations(context.TODO(), &s3.ListBucketInventoryConfigurationsInput{
+			Bucket:            &bucketName,
+			ContinuationToken: continuationToken,
+		})
+		if err != nil {
+			logS3OptionalBucketConfigurationError(bucketName, s3BucketInventoryResourceType, err)
+			return
+		}
+		for _, configuration := range page.InventoryConfigurationList {
+			addS3BucketNamedConfigurationResource(resources, bucketName, StringValue(configuration.Id), s3BucketInventoryResourceType)
+		}
+		if !aws.ToBool(page.IsTruncated) || StringValue(page.NextContinuationToken) == "" {
+			return
+		}
+		continuationToken = page.NextContinuationToken
+	}
+}
+
+func (g *S3Generator) addBucketMetricConfigurations(svc *s3.Client, resources *[]terraformutils.Resource, bucketName string) {
+	var continuationToken *string
+	for {
+		page, err := svc.ListBucketMetricsConfigurations(context.TODO(), &s3.ListBucketMetricsConfigurationsInput{
+			Bucket:            &bucketName,
+			ContinuationToken: continuationToken,
+		})
+		if err != nil {
+			logS3OptionalBucketConfigurationError(bucketName, s3BucketMetricResourceType, err)
+			return
+		}
+		for _, configuration := range page.MetricsConfigurationList {
+			addS3BucketNamedConfigurationResource(resources, bucketName, StringValue(configuration.Id), s3BucketMetricResourceType)
+		}
+		if !aws.ToBool(page.IsTruncated) || StringValue(page.NextContinuationToken) == "" {
+			return
+		}
+		continuationToken = page.NextContinuationToken
+	}
 }
 
 func addS3BucketConfigurationResource(resources *[]terraformutils.Resource, bucketName, resourceType string) {
@@ -199,6 +309,54 @@ func addS3BucketConfigurationResource(resources *[]terraformutils.Resource, buck
 		S3AllowEmptyValues,
 		S3AdditionalFields,
 	))
+}
+
+func addS3BucketNamedConfigurationResource(resources *[]terraformutils.Resource, bucketName, configurationName, resourceType string) {
+	if bucketName == "" || configurationName == "" {
+		return
+	}
+	*resources = append(*resources, terraformutils.NewResource(
+		s3BucketNamedConfigurationImportID(bucketName, configurationName),
+		s3BucketNamedConfigurationResourceName(resourceType, bucketName, configurationName),
+		resourceType,
+		"aws",
+		map[string]string{
+			"bucket": bucketName,
+			"name":   configurationName,
+		},
+		S3AllowEmptyValues,
+		S3AdditionalFields,
+	))
+}
+
+func s3BucketNamedConfigurationImportID(bucketName, configurationName string) string {
+	return strings.Join([]string{bucketName, configurationName}, s3BucketNamedConfigurationIDSeparator)
+}
+
+func s3BucketNamedConfigurationResourceName(resourceType, bucketName, configurationName string) string {
+	return strings.Join([]string{strings.TrimPrefix(resourceType, s3BucketResourceTypePrefix()), bucketName, configurationName}, "_")
+}
+
+func s3BucketResourceTypePrefix() string {
+	return "aws" + "_s3_bucket_"
+}
+
+func s3BucketACLImportable(output *s3.GetBucketAclOutput) bool {
+	return output != nil && !s3BucketACLIsDefaultPrivate(output)
+}
+
+func s3BucketACLIsDefaultPrivate(output *s3.GetBucketAclOutput) bool {
+	if output == nil || len(output.Grants) != 1 {
+		return false
+	}
+	ownerID := StringValue(output.Owner.ID)
+	grant := output.Grants[0]
+	if grant.Grantee == nil || ownerID == "" {
+		return false
+	}
+	return grant.Permission == types.PermissionFullControl &&
+		grant.Grantee.Type == types.TypeCanonicalUser &&
+		StringValue(grant.Grantee.ID) == ownerID
 }
 
 func s3BucketNotificationConfigured(output *s3.GetBucketNotificationConfigurationOutput) bool {
@@ -245,6 +403,7 @@ func s3BucketConfigurationMissing(err error) bool {
 	}
 	switch apiErr.ErrorCode() {
 	case "NoSuchBucket",
+		"NoSuchConfiguration",
 		"NoSuchBucketPolicy",
 		"NoSuchCORSConfiguration",
 		"NoSuchLifecycleConfiguration",
