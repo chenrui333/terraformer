@@ -40,15 +40,10 @@ func accessScopeAttributes(scopeType, scopeID string) map[string]string {
 }
 
 func (g *AccessGenerator) appendAccessApplicationResources(
-	ctx context.Context,
-	api *cf.API,
+	applications []cf.AccessApplication,
 	rc *cf.ResourceContainer,
 	scopeType string,
-) error {
-	applications, err := listAccessApplications(ctx, api, rc)
-	if err != nil {
-		return err
-	}
+) {
 	for _, app := range applications {
 		g.Resources = append(g.Resources, terraformutils.NewResource(
 			app.ID,
@@ -60,7 +55,6 @@ func (g *AccessGenerator) appendAccessApplicationResources(
 			map[string]interface{}{},
 		))
 	}
-	return nil
 }
 
 func listAccessApplications(ctx context.Context, api *cf.API, rc *cf.ResourceContainer) ([]cf.AccessApplication, error) {
@@ -232,11 +226,8 @@ func (g *AccessGenerator) appendAccessShortLivedCertificateResources(
 	api *cf.API,
 	rc *cf.ResourceContainer,
 	scopeType string,
+	applications []cf.AccessApplication,
 ) error {
-	applications, err := listAccessApplications(ctx, api, rc)
-	if err != nil {
-		return err
-	}
 	for _, app := range applications {
 		if app.ID == "" {
 			continue
@@ -420,17 +411,24 @@ func listAccessTags(ctx context.Context, api *cf.API, rc *cf.ResourceContainer) 
 }
 
 func (g *AccessGenerator) appendScopedAccessResources(ctx context.Context, api *cf.API, rc *cf.ResourceContainer, scopeType string) error {
+	applications, err := listAccessApplications(ctx, api, rc)
+	if err != nil {
+		return fmt.Errorf("%s/%s: %w", scopeType, rc.Identifier, err)
+	}
+	g.appendAccessApplicationResources(applications, rc, scopeType)
+
 	for _, f := range []func(context.Context, *cf.API, *cf.ResourceContainer, string) error{
-		g.appendAccessApplicationResources,
 		g.appendAccessGroupResources,
 		g.appendAccessIdentityProviderResources,
 		g.appendAccessMTLSCertificateResources,
 		g.appendAccessServiceTokenResources,
-		g.appendAccessShortLivedCertificateResources,
 	} {
 		if err := f(ctx, api, rc, scopeType); err != nil {
 			return fmt.Errorf("%s/%s: %w", scopeType, rc.Identifier, err)
 		}
+	}
+	if err := g.appendAccessShortLivedCertificateResources(ctx, api, rc, scopeType, applications); err != nil {
+		return fmt.Errorf("%s/%s: %w", scopeType, rc.Identifier, err)
 	}
 	return nil
 }

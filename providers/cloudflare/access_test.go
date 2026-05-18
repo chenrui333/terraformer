@@ -72,3 +72,34 @@ func TestCloudflareAccessShortLivedCertificateOptionalError(t *testing.T) {
 		t.Fatal("permission-gated CA lookup should be optional")
 	}
 }
+
+func TestAppendScopedAccessResourcesListsApplicationsOnce(t *testing.T) {
+	appListCalls := 0
+	api := newCloudflareNetworkEdgeTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/accounts/account-123/access/apps":
+			appListCalls++
+			writeCloudflareNetworkEdgeTestResponse(t, w, []map[string]string{{
+				"id":   "app-456",
+				"name": "internal-app",
+			}}, nil)
+		case "/accounts/account-123/access/groups",
+			"/accounts/account-123/access/identity_providers",
+			"/accounts/account-123/access/certificates",
+			"/accounts/account-123/access/service_tokens":
+			writeCloudflareNetworkEdgeTestResponse(t, w, []map[string]string{}, nil)
+		case "/accounts/account-123/access/apps/app-456/ca":
+			writeCloudflareNetworkEdgeTestResponse(t, w, map[string]string{"id": "ca-789"}, nil)
+		default:
+			t.Fatalf("unexpected path %q", r.URL.Path)
+		}
+	}))
+
+	var generator AccessGenerator
+	if err := generator.appendScopedAccessResources(context.Background(), api, cf.AccountIdentifier("account-123"), "accounts"); err != nil {
+		t.Fatalf("appendScopedAccessResources() error = %v", err)
+	}
+	if appListCalls != 1 {
+		t.Fatalf("application list calls = %d, want 1", appListCalls)
+	}
+}
