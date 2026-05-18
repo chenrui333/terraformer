@@ -1,0 +1,22 @@
+providers/aws/dx.go
+  s_409c28599d88b7::t_4b38f61e354441 216,275-276
+providers/aws/dx_test.go
+  s_409c28599d88b7::t_ef72b87c42b9ae 34
+  s_409c28599d88b7::t_4b38f61e354441 62-64,80-82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.9",
+  "base_commit_sha": "6dd51931f3c459888ace17aa6ec99ba6453ff356",
+  "prompts": {},
+  "sessions": {
+    "s_409c28599d88b7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3920-eed6-7691-aaa7-ec58d4da18a4",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
