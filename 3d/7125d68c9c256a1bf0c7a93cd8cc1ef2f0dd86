@@ -1,0 +1,21 @@
+providers/aws/sagemaker_test.go
+  s_b7f71d4ea551ef::t_97897ec7aebd24 490,508,516
+providers/aws/sagemaker.go
+  s_b7f71d4ea551ef::t_97897ec7aebd24 990,993-997,1267,1270-1274,1283,1287-1291
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "3d7125d68c9c256a1bf0c7a93cd8cc1ef2f0dd86",
+  "prompts": {},
+  "sessions": {
+    "s_b7f71d4ea551ef": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3920-a881-7301-87f7-2d86252a05ca",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
