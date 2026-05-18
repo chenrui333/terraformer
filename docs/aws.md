@@ -512,6 +512,17 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_lambda_permission`
     * `aws_lambda_provisioned_concurrency_config`
     * `aws_lambda_runtime_management_config`
+*   `lex`
+    * `aws_lex_bot`
+    * `aws_lex_bot_alias`
+    * `aws_lex_intent`
+    * `aws_lex_slot_type`
+*   `lexv2models`
+    * `aws_lexv2models_bot`
+    * `aws_lexv2models_bot_locale`
+    * `aws_lexv2models_intent`
+    * `aws_lexv2models_slot`
+    * `aws_lexv2models_slot_type`
 *   `logs`
     * `aws_cloudwatch_log_account_policy`
     * `aws_cloudwatch_log_anomaly_detector`
@@ -612,6 +623,13 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_pipes_pipe`
 *   `qldb`
     * `aws_qldb_ledger`
+*   `quicksight`
+    * `aws_quicksight_folder`
+    * `aws_quicksight_folder_membership`
+    * `aws_quicksight_group`
+    * `aws_quicksight_group_membership`
+    * `aws_quicksight_namespace`
+    * `aws_quicksight_vpc_connection`
 *   `rds`
     * `aws_db_instance`
     * `aws_db_instance_role_association`
@@ -712,6 +730,7 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_s3tables_table_bucket_policy`
     * `aws_s3tables_table_policy`
 *   `sagemaker`
+    * `aws_sagemaker_algorithm`
     * `aws_sagemaker_app`
     * `aws_sagemaker_app_image_config`
     * `aws_sagemaker_code_repository`
@@ -724,10 +743,15 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_sagemaker_flow_definition`
     * `aws_sagemaker_image`
     * `aws_sagemaker_image_version`
+    * `aws_sagemaker_mlflow_app`
+    * `aws_sagemaker_mlflow_tracking_server`
+    * `aws_sagemaker_model_card`
     * `aws_sagemaker_model`
     * `aws_sagemaker_model_package_group`
     * `aws_sagemaker_model_package_group_policy`
     * `aws_sagemaker_monitoring_schedule`
+    * `aws_sagemaker_notebook_instance`
+    * `aws_sagemaker_notebook_instance_lifecycle_configuration`
     * `aws_sagemaker_pipeline`
     * `aws_sagemaker_project`
     * `aws_sagemaker_servicecatalog_portfolio_status`

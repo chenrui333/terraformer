@@ -28,10 +28,22 @@ var (
 		"deferred":         true,
 		"needs-research":   true,
 		"not-importable":   true,
+		"runtime-data":     true,
 		"unsupported":      true,
 		"unsafe-discovery": true,
 	}
 	resourceServiceOverrides = map[string]map[string][]string{
+		"lex.go": {
+			"aws_lex_bot":                {"lex"},
+			"aws_lex_bot_alias":          {"lex"},
+			"aws_lex_intent":             {"lex"},
+			"aws_lex_slot_type":          {"lex"},
+			"aws_lexv2models_bot":        {"lexv2models"},
+			"aws_lexv2models_bot_locale": {"lexv2models"},
+			"aws_lexv2models_intent":     {"lexv2models"},
+			"aws_lexv2models_slot":       {"lexv2models"},
+			"aws_lexv2models_slot_type":  {"lexv2models"},
+		},
 		"wafv2.go": {
 			"aws_wafv2_web_acl_association": {"wafv2_regional"},
 		},
@@ -226,9 +238,13 @@ func scanTerraformerResources(awsDir string) (resourceFamilySet, error) {
 		if len(serviceFamilies) == 0 {
 			serviceFamilies = []string{fallbackServiceFamily(path)}
 		}
+		mapKeyLiteralPositions := stringMapKeyLiteralPositions(file)
 		ast.Inspect(file, func(node ast.Node) bool {
 			literal, ok := node.(*ast.BasicLit)
 			if !ok || literal.Kind != token.STRING {
+				return true
+			}
+			if mapKeyLiteralPositions[literal.Pos()] {
 				return true
 			}
 			value, err := unquote(literal.Value)
@@ -246,6 +262,23 @@ func scanTerraformerResources(awsDir string) (resourceFamilySet, error) {
 		return nil, err
 	}
 	return resources, nil
+}
+
+func stringMapKeyLiteralPositions(file *ast.File) map[token.Pos]bool {
+	positions := map[token.Pos]bool{}
+	ast.Inspect(file, func(node ast.Node) bool {
+		kv, ok := node.(*ast.KeyValueExpr)
+		if !ok {
+			return true
+		}
+		literal, ok := kv.Key.(*ast.BasicLit)
+		if !ok || literal.Kind != token.STRING {
+			return true
+		}
+		positions[literal.Pos()] = true
+		return true
+	})
+	return positions
 }
 
 func servicesByFile(awsDir string) (map[string][]string, error) {

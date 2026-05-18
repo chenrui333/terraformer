@@ -16,6 +16,7 @@ import (
 )
 
 const (
+	sageMakerAlgorithmResourceType                = "aws_sagemaker_algorithm"
 	sageMakerAppResourceType                      = "aws_sagemaker_app"
 	sageMakerAppImageConfigResourceType           = "aws_sagemaker_app_image_config"
 	sageMakerCodeRepositoryResourceType           = "aws_sagemaker_code_repository"
@@ -28,10 +29,15 @@ const (
 	sageMakerFlowDefinitionResourceType           = "aws_sagemaker_flow_definition"
 	sageMakerImageResourceType                    = "aws_sagemaker_image"
 	sageMakerImageVersionResourceType             = "aws_sagemaker_image_version"
+	sageMakerMLflowAppResourceType                = "aws_sagemaker_mlflow_app"
+	sageMakerMLflowTrackingServerResourceType     = "aws_sagemaker_mlflow_tracking_server"
+	sageMakerModelCardResourceType                = "aws_sagemaker_model_card"
 	sageMakerModelPackageGroupResourceType        = "aws_sagemaker_model_package_group"
 	sageMakerModelPackageGroupPolicyResourceType  = "aws_sagemaker_model_package_group_policy"
 	sageMakerModelResourceType                    = "aws_sagemaker_model"
 	sageMakerMonitoringScheduleResourceType       = "aws_sagemaker_monitoring_schedule"
+	sageMakerNotebookInstanceResourceType         = "aws_sagemaker_notebook_instance"
+	sageMakerNotebookInstanceLifecycleConfigType  = "aws_sagemaker_notebook_instance_lifecycle_configuration"
 	sageMakerPipelineResourceType                 = "aws_sagemaker_pipeline"
 	sageMakerProjectResourceType                  = "aws_sagemaker_project"
 	sageMakerServicecatalogPortfolioStatusType    = "aws_sagemaker_servicecatalog_portfolio_status"
@@ -47,6 +53,7 @@ const (
 var (
 	sageMakerAllowEmptyValues = []string{"tags."}
 	sageMakerResourceTypes    = []string{
+		sageMakerServiceName(sageMakerAlgorithmResourceType),
 		sageMakerServiceName(sageMakerAppResourceType),
 		sageMakerServiceName(sageMakerAppImageConfigResourceType),
 		sageMakerServiceName(sageMakerCodeRepositoryResourceType),
@@ -59,10 +66,15 @@ var (
 		sageMakerServiceName(sageMakerFlowDefinitionResourceType),
 		sageMakerServiceName(sageMakerImageResourceType),
 		sageMakerServiceName(sageMakerImageVersionResourceType),
+		sageMakerServiceName(sageMakerMLflowAppResourceType),
+		sageMakerServiceName(sageMakerMLflowTrackingServerResourceType),
+		sageMakerServiceName(sageMakerModelCardResourceType),
 		sageMakerServiceName(sageMakerModelPackageGroupResourceType),
 		sageMakerServiceName(sageMakerModelPackageGroupPolicyResourceType),
 		sageMakerServiceName(sageMakerModelResourceType),
 		sageMakerServiceName(sageMakerMonitoringScheduleResourceType),
+		sageMakerServiceName(sageMakerNotebookInstanceResourceType),
+		sageMakerServiceName(sageMakerNotebookInstanceLifecycleConfigType),
 		sageMakerServiceName(sageMakerPipelineResourceType),
 		sageMakerServiceName(sageMakerProjectResourceType),
 		sageMakerServiceName(sageMakerServicecatalogPortfolioStatusType),
@@ -126,6 +138,11 @@ func (g *SageMakerGenerator) InitResources() error {
 	}
 	svc := sagemaker.NewFromConfig(config)
 
+	if g.shouldLoadSageMakerResource(sageMakerServiceName(sageMakerAlgorithmResourceType)) {
+		if err := g.loadAlgorithms(svc); err != nil {
+			return err
+		}
+	}
 	if g.shouldLoadSageMakerResource(sageMakerServiceName(sageMakerModelResourceType)) {
 		if err := g.loadModels(svc); err != nil {
 			return err
@@ -194,6 +211,16 @@ func (g *SageMakerGenerator) InitResources() error {
 			return err
 		}
 	}
+	if g.shouldLoadSageMakerResource(sageMakerServiceName(sageMakerNotebookInstanceResourceType)) {
+		if err := g.loadNotebookInstances(svc); err != nil {
+			return err
+		}
+	}
+	if g.shouldLoadSageMakerResource(sageMakerServiceName(sageMakerNotebookInstanceLifecycleConfigType)) {
+		if err := g.loadNotebookInstanceLifecycleConfigs(svc); err != nil {
+			return err
+		}
+	}
 	if g.shouldLoadSageMakerResource(sageMakerServiceName(sageMakerFeatureGroupResourceType)) {
 		if err := g.loadFeatureGroups(svc); err != nil {
 			return err
@@ -239,6 +266,21 @@ func (g *SageMakerGenerator) InitResources() error {
 	}
 	if g.shouldLoadSageMakerResource(sageMakerServiceName(sageMakerMonitoringScheduleResourceType)) {
 		if err := g.loadMonitoringSchedules(svc); err != nil {
+			return err
+		}
+	}
+	if g.shouldLoadSageMakerResource(sageMakerServiceName(sageMakerModelCardResourceType)) {
+		if err := g.loadModelCards(svc); err != nil {
+			return err
+		}
+	}
+	if g.shouldLoadSageMakerResource(sageMakerServiceName(sageMakerMLflowAppResourceType)) {
+		if err := g.loadMLflowApps(svc); err != nil {
+			return err
+		}
+	}
+	if g.shouldLoadSageMakerResource(sageMakerServiceName(sageMakerMLflowTrackingServerResourceType)) {
+		if err := g.loadMLflowTrackingServers(svc); err != nil {
 			return err
 		}
 	}
@@ -302,6 +344,32 @@ func (g *SageMakerGenerator) hasUntypedFilter() bool {
 
 func sageMakerServiceName(resourceType string) string {
 	return strings.TrimPrefix(resourceType, "aws_")
+}
+
+func (g *SageMakerGenerator) loadAlgorithms(svc *sagemaker.Client) error {
+	algorithms, err := listSageMakerAlgorithms(svc)
+	if err != nil {
+		return err
+	}
+	for _, algorithm := range algorithms {
+		if resource, ok := newSageMakerAlgorithmResource(algorithm); ok {
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
+func listSageMakerAlgorithms(svc sagemaker.ListAlgorithmsAPIClient) ([]sagemakertypes.AlgorithmSummary, error) {
+	p := sagemaker.NewListAlgorithmsPaginator(svc, &sagemaker.ListAlgorithmsInput{})
+	algorithms := []sagemakertypes.AlgorithmSummary{}
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return nil, err
+		}
+		algorithms = append(algorithms, page.AlgorithmSummaryList...)
+	}
+	return algorithms, nil
 }
 
 func (g *SageMakerGenerator) loadModels(svc *sagemaker.Client) error {
@@ -573,6 +641,58 @@ func (g *SageMakerGenerator) loadCodeRepositories(svc *sagemaker.Client) error {
 	return nil
 }
 
+func (g *SageMakerGenerator) loadNotebookInstances(svc *sagemaker.Client) error {
+	notebooks, err := listSageMakerNotebookInstances(svc)
+	if err != nil {
+		return err
+	}
+	for _, notebook := range notebooks {
+		if resource, ok := newSageMakerNotebookInstanceResource(notebook); ok {
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
+func listSageMakerNotebookInstances(svc sagemaker.ListNotebookInstancesAPIClient) ([]sagemakertypes.NotebookInstanceSummary, error) {
+	p := sagemaker.NewListNotebookInstancesPaginator(svc, &sagemaker.ListNotebookInstancesInput{})
+	notebooks := []sagemakertypes.NotebookInstanceSummary{}
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return nil, err
+		}
+		notebooks = append(notebooks, page.NotebookInstances...)
+	}
+	return notebooks, nil
+}
+
+func (g *SageMakerGenerator) loadNotebookInstanceLifecycleConfigs(svc *sagemaker.Client) error {
+	configs, err := listSageMakerNotebookInstanceLifecycleConfigs(svc)
+	if err != nil {
+		return err
+	}
+	for _, config := range configs {
+		if resource, ok := newSageMakerNotebookInstanceLifecycleConfigResource(config); ok {
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
+func listSageMakerNotebookInstanceLifecycleConfigs(svc sagemaker.ListNotebookInstanceLifecycleConfigsAPIClient) ([]sagemakertypes.NotebookInstanceLifecycleConfigSummary, error) {
+	p := sagemaker.NewListNotebookInstanceLifecycleConfigsPaginator(svc, &sagemaker.ListNotebookInstanceLifecycleConfigsInput{})
+	configs := []sagemakertypes.NotebookInstanceLifecycleConfigSummary{}
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return nil, err
+		}
+		configs = append(configs, page.NotebookInstanceLifecycleConfigs...)
+	}
+	return configs, nil
+}
+
 func (g *SageMakerGenerator) loadFeatureGroups(svc *sagemaker.Client) error {
 	p := sagemaker.NewListFeatureGroupsPaginator(svc, &sagemaker.ListFeatureGroupsInput{})
 	for p.HasMorePages() {
@@ -720,6 +840,84 @@ func (g *SageMakerGenerator) loadMonitoringSchedules(svc *sagemaker.Client) erro
 	return nil
 }
 
+func (g *SageMakerGenerator) loadModelCards(svc *sagemaker.Client) error {
+	cards, err := listSageMakerModelCards(svc)
+	if err != nil {
+		return err
+	}
+	for _, card := range cards {
+		if resource, ok := newSageMakerModelCardResource(card); ok {
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
+func listSageMakerModelCards(svc sagemaker.ListModelCardsAPIClient) ([]sagemakertypes.ModelCardSummary, error) {
+	p := sagemaker.NewListModelCardsPaginator(svc, &sagemaker.ListModelCardsInput{})
+	cards := []sagemakertypes.ModelCardSummary{}
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return nil, err
+		}
+		cards = append(cards, page.ModelCardSummaries...)
+	}
+	return cards, nil
+}
+
+func (g *SageMakerGenerator) loadMLflowApps(svc *sagemaker.Client) error {
+	apps, err := listSageMakerMLflowApps(svc)
+	if err != nil {
+		return err
+	}
+	for _, app := range apps {
+		if resource, ok := newSageMakerMLflowAppResource(app); ok {
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
+func listSageMakerMLflowApps(svc sagemaker.ListMlflowAppsAPIClient) ([]sagemakertypes.MlflowAppSummary, error) {
+	p := sagemaker.NewListMlflowAppsPaginator(svc, &sagemaker.ListMlflowAppsInput{})
+	apps := []sagemakertypes.MlflowAppSummary{}
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return nil, err
+		}
+		apps = append(apps, page.Summaries...)
+	}
+	return apps, nil
+}
+
+func (g *SageMakerGenerator) loadMLflowTrackingServers(svc *sagemaker.Client) error {
+	servers, err := listSageMakerMLflowTrackingServers(svc)
+	if err != nil {
+		return err
+	}
+	for _, server := range servers {
+		if resource, ok := newSageMakerMLflowTrackingServerResource(server); ok {
+			g.Resources = append(g.Resources, resource)
+		}
+	}
+	return nil
+}
+
+func listSageMakerMLflowTrackingServers(svc sagemaker.ListMlflowTrackingServersAPIClient) ([]sagemakertypes.TrackingServerSummary, error) {
+	p := sagemaker.NewListMlflowTrackingServersPaginator(svc, &sagemaker.ListMlflowTrackingServersInput{})
+	servers := []sagemakertypes.TrackingServerSummary{}
+	for p.HasMorePages() {
+		page, err := p.NextPage(context.TODO())
+		if err != nil {
+			return nil, err
+		}
+		servers = append(servers, page.TrackingServerSummaries...)
+	}
+	return servers, nil
+}
+
 func (g *SageMakerGenerator) loadWorkforces(svc *sagemaker.Client) error {
 	p := sagemaker.NewListWorkforcesPaginator(svc, &sagemaker.ListWorkforcesInput{})
 	for p.HasMorePages() {
@@ -782,6 +980,21 @@ func (g *SageMakerGenerator) loadDeviceFleets(svc *sagemaker.Client) error {
 		}
 	}
 	return nil
+}
+
+func newSageMakerAlgorithmResource(algorithm sagemakertypes.AlgorithmSummary) (terraformutils.Resource, bool) {
+	name := StringValue(algorithm.AlgorithmName)
+	if name == "" || !sageMakerAlgorithmImportable(algorithm.AlgorithmStatus) {
+		return terraformutils.Resource{}, false
+	}
+	resource, ok := sageMakerResource(name, sageMakerResourceName("algorithm", name), sageMakerAlgorithmResourceType, map[string]string{
+		"algorithm_name": name,
+	})
+	if !ok {
+		return terraformutils.Resource{}, false
+	}
+	setAwsFrameworkResourcePreserveIDAfterRefresh(&resource)
+	return resource, true
 }
 
 func newSageMakerModelResource(model sagemakertypes.ModelSummary) (terraformutils.Resource, bool) {
@@ -943,6 +1156,26 @@ func newSageMakerCodeRepositoryResource(repo sagemakertypes.CodeRepositorySummar
 	})
 }
 
+func newSageMakerNotebookInstanceResource(notebook sagemakertypes.NotebookInstanceSummary) (terraformutils.Resource, bool) {
+	name := StringValue(notebook.NotebookInstanceName)
+	if name == "" || !sageMakerNotebookInstanceImportable(notebook.NotebookInstanceStatus) {
+		return terraformutils.Resource{}, false
+	}
+	return sageMakerResource(name, sageMakerResourceName("notebook-instance", name), sageMakerNotebookInstanceResourceType, map[string]string{
+		"name": name,
+	})
+}
+
+func newSageMakerNotebookInstanceLifecycleConfigResource(config sagemakertypes.NotebookInstanceLifecycleConfigSummary) (terraformutils.Resource, bool) {
+	name := StringValue(config.NotebookInstanceLifecycleConfigName)
+	if name == "" {
+		return terraformutils.Resource{}, false
+	}
+	return sageMakerResource(name, sageMakerResourceName("notebook-instance-lifecycle-config", name), sageMakerNotebookInstanceLifecycleConfigType, map[string]string{
+		"name": name,
+	})
+}
+
 func newSageMakerFeatureGroupResource(group sagemakertypes.FeatureGroupSummary) (terraformutils.Resource, bool) {
 	name := StringValue(group.FeatureGroupName)
 	if name == "" || !sageMakerFeatureGroupImportable(group.FeatureGroupStatus) {
@@ -1023,6 +1256,48 @@ func newSageMakerMonitoringScheduleResource(schedule sagemakertypes.MonitoringSc
 	}
 	return sageMakerResource(name, sageMakerResourceName("monitoring-schedule", name), sageMakerMonitoringScheduleResourceType, map[string]string{
 		"name": name,
+	})
+}
+
+func newSageMakerModelCardResource(card sagemakertypes.ModelCardSummary) (terraformutils.Resource, bool) {
+	name := StringValue(card.ModelCardName)
+	if name == "" || !sageMakerModelCardImportable(card.ModelCardStatus) {
+		return terraformutils.Resource{}, false
+	}
+	resource, ok := sageMakerResource(name, sageMakerResourceName("model-card", name), sageMakerModelCardResourceType, map[string]string{
+		"model_card_name": name,
+	})
+	if !ok {
+		return terraformutils.Resource{}, false
+	}
+	setAwsFrameworkResourcePreserveIDAfterRefresh(&resource)
+	return resource, true
+}
+
+func newSageMakerMLflowAppResource(app sagemakertypes.MlflowAppSummary) (terraformutils.Resource, bool) {
+	appARN := StringValue(app.Arn)
+	name := StringValue(app.Name)
+	if appARN == "" || name == "" || !sageMakerMLflowAppImportable(app.Status) {
+		return terraformutils.Resource{}, false
+	}
+	resource, ok := sageMakerResource(appARN, sageMakerResourceName("mlflow-app", name), sageMakerMLflowAppResourceType, map[string]string{
+		"arn":  appARN,
+		"name": name,
+	})
+	if !ok {
+		return terraformutils.Resource{}, false
+	}
+	setAwsFrameworkResourcePreserveIDAfterRefresh(&resource)
+	return resource, true
+}
+
+func newSageMakerMLflowTrackingServerResource(server sagemakertypes.TrackingServerSummary) (terraformutils.Resource, bool) {
+	name := StringValue(server.TrackingServerName)
+	if name == "" || !sageMakerMLflowTrackingServerImportable(server.TrackingServerStatus) {
+		return terraformutils.Resource{}, false
+	}
+	return sageMakerResource(name, sageMakerResourceName("mlflow-tracking-server", name), sageMakerMLflowTrackingServerResourceType, map[string]string{
+		"tracking_server_name": name,
 	})
 }
 
@@ -1115,6 +1390,10 @@ func sageMakerEndpointImportable(status sagemakertypes.EndpointStatus) bool {
 	return status == sagemakertypes.EndpointStatusInService
 }
 
+func sageMakerAlgorithmImportable(status sagemakertypes.AlgorithmStatus) bool {
+	return status == sagemakertypes.AlgorithmStatusCompleted
+}
+
 func sageMakerDomainImportable(status sagemakertypes.DomainStatus) bool {
 	return status == sagemakertypes.DomainStatusInService
 }
@@ -1159,6 +1438,31 @@ func sageMakerProjectImportable(status sagemakertypes.ProjectStatus) bool {
 func sageMakerMonitoringScheduleImportable(status sagemakertypes.ScheduleStatus) bool {
 	return status == sagemakertypes.ScheduleStatusScheduled ||
 		status == sagemakertypes.ScheduleStatusStopped
+}
+
+func sageMakerNotebookInstanceImportable(status sagemakertypes.NotebookInstanceStatus) bool {
+	return status == sagemakertypes.NotebookInstanceStatusInService ||
+		status == sagemakertypes.NotebookInstanceStatusStopped
+}
+
+func sageMakerModelCardImportable(status sagemakertypes.ModelCardStatus) bool {
+	return status == sagemakertypes.ModelCardStatusDraft ||
+		status == sagemakertypes.ModelCardStatusPendingreview ||
+		status == sagemakertypes.ModelCardStatusApproved ||
+		status == sagemakertypes.ModelCardStatusArchived
+}
+
+func sageMakerMLflowAppImportable(status sagemakertypes.MlflowAppStatus) bool {
+	return status == sagemakertypes.MlflowAppStatusCreated ||
+		status == sagemakertypes.MlflowAppStatusUpdated
+}
+
+func sageMakerMLflowTrackingServerImportable(status sagemakertypes.TrackingServerStatus) bool {
+	return status == sagemakertypes.TrackingServerStatusCreated ||
+		status == sagemakertypes.TrackingServerStatusUpdated ||
+		status == sagemakertypes.TrackingServerStatusStarted ||
+		status == sagemakertypes.TrackingServerStatusStopped ||
+		status == sagemakertypes.TrackingServerStatusMaintenanceComplete
 }
 
 func sageMakerFlowDefinitionImportable(status sagemakertypes.FlowDefinitionStatus) bool {

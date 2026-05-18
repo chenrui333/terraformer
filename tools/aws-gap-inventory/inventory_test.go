@@ -170,6 +170,102 @@ func TestBuildInventoryPreservesDuplicateDocsResourceFamilies(t *testing.T) {
 	assertStrings(t, familyByName(t, inv, "wafv2_regional").TerraformerResources, []string{"aws_wafv2_web_acl", "aws_wafv2_web_acl_association"})
 }
 
+func TestBuildInventoryKeepsMixedLexResourcesInCorrectFamilies(t *testing.T) {
+	root := t.TempDir()
+	awsDir := filepath.Join(root, "providers", "aws")
+	if err := os.MkdirAll(awsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	writeFile(t, filepath.Join(awsDir, "aws_provider.go"),
+		"package aws\n\n"+
+			"func (p *AWSProvider) GetSupportedService() map[string]terraformutils.ServiceGenerator {\n"+
+			"\treturn map[string]terraformutils.ServiceGenerator{\n"+
+			"\t\t\"lex\": &AwsFacade{service: &LexGenerator{}},\n"+
+			"\t\t\"lexv2models\": &AwsFacade{service: &LexV2ModelsGenerator{}},\n"+
+			"\t}\n"+
+			"}\n")
+	writeFile(t, filepath.Join(awsDir, "lex.go"),
+		"package aws\n\n"+
+			"type LexGenerator struct{}\n"+
+			"type LexV2ModelsGenerator struct{}\n"+
+			"func (g *LexGenerator) InitResources() {\n"+
+			"\t_ = \"aws_lex_bot\"\n"+
+			"}\n"+
+			"func (g *LexV2ModelsGenerator) InitResources() {\n"+
+			"\t_ = \"aws_lexv2models_bot\"\n"+
+			"}\n")
+
+	tick := string(rune(96))
+	docsPath := filepath.Join(root, "docs", "aws.md")
+	writeFile(t, docsPath,
+		"#### Supported services\n\n"+
+			"*   "+tick+"lex"+tick+"\n"+
+			"    * "+tick+"aws_lex_bot"+tick+"\n"+
+			"*   "+tick+"lexv2models"+tick+"\n"+
+			"    * "+tick+"aws_lexv2models_bot"+tick+"\n")
+	skipListPath := filepath.Join(awsDir, "unsupported_resources.json")
+	writeFile(t, skipListPath, "{\n  \"version\": 1,\n  \"resources\": []\n}\n")
+
+	inv, err := buildInventory(options{
+		awsDir:       awsDir,
+		docsPath:     docsPath,
+		skipListPath: skipListPath,
+	})
+	if err != nil {
+		t.Fatalf("buildInventory() error = %v", err)
+	}
+	assertRecords(t, inv.DocsAudit.DocumentedButNotDetected, nil)
+	assertRecords(t, inv.DocsAudit.DetectedButNotDocumented, nil)
+	assertStrings(t, familyByName(t, inv, "lex").TerraformerResources, []string{"aws_lex_bot"})
+	assertStrings(t, familyByName(t, inv, "lexv2models").TerraformerResources, []string{"aws_lexv2models_bot"})
+}
+
+func TestBuildInventoryIgnoresAWSAttributeMapKeys(t *testing.T) {
+	root := t.TempDir()
+	awsDir := filepath.Join(root, "providers", "aws")
+	if err := os.MkdirAll(awsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	writeFile(t, filepath.Join(awsDir, "aws_provider.go"),
+		"package aws\n\n"+
+			"func (p *AWSProvider) GetSupportedService() map[string]terraformutils.ServiceGenerator {\n"+
+			"\treturn map[string]terraformutils.ServiceGenerator{\n"+
+			"\t\t\"quicksight\": &AwsFacade{service: &QuickSightGenerator{}},\n"+
+			"\t}\n"+
+			"}\n")
+	writeFile(t, filepath.Join(awsDir, "quicksight.go"),
+		"package aws\n\n"+
+			"type QuickSightGenerator struct{}\n"+
+			"func (g *QuickSightGenerator) InitResources() {\n"+
+			"\tterraformutils.NewResource(\"id\", \"name\", \"aws_quicksight_group\", \"aws\", map[string]string{\n"+
+			"\t\t\"aws_account_id\": \"123456789012\",\n"+
+			"\t}, nil, nil)\n"+
+			"}\n")
+
+	tick := string(rune(96))
+	docsPath := filepath.Join(root, "docs", "aws.md")
+	writeFile(t, docsPath,
+		"#### Supported services\n\n"+
+			"*   "+tick+"quicksight"+tick+"\n"+
+			"    * "+tick+"aws_quicksight_group"+tick+"\n")
+	skipListPath := filepath.Join(awsDir, "unsupported_resources.json")
+	writeFile(t, skipListPath, "{\n  \"version\": 1,\n  \"resources\": []\n}\n")
+
+	inv, err := buildInventory(options{
+		awsDir:       awsDir,
+		docsPath:     docsPath,
+		skipListPath: skipListPath,
+	})
+	if err != nil {
+		t.Fatalf("buildInventory() error = %v", err)
+	}
+	assertRecords(t, inv.DocsAudit.DocumentedButNotDetected, nil)
+	assertRecords(t, inv.DocsAudit.DetectedButNotDocumented, nil)
+	assertStrings(t, familyByName(t, inv, "quicksight").TerraformerResources, []string{"aws_quicksight_group"})
+}
+
 func TestFallbackServiceFamilyPreservesUnderscores(t *testing.T) {
 	got := fallbackServiceFamily(filepath.Join("providers", "aws", "transit_gateway.go"))
 	if got != "transit_gateway" {

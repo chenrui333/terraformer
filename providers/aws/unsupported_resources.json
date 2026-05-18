@@ -37,6 +37,149 @@
       ]
     },
     {
+      "resource": "aws_bedrock_custom_model",
+      "service_family": "bedrock",
+      "reason": "Bedrock custom models are training/output artifacts whose original training data and job inputs are not safely reconstructable for broad inventory import.",
+      "evidence": "Terraform AWS provider models custom model creation from training_data_config, output_data_config, role ARN, and customization inputs. Bedrock ListCustomModels/GetCustomModel expose model metadata after training, not the full source request needed to generate stable HCL.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/bedrock_custom_model"
+      ]
+    },
+    {
+      "resource": "aws_bedrockagentcore_agent_runtime",
+      "service_family": "bedrockagentcore",
+      "reason": "AgentCore runtime imports need a focused source and runtime-shape audit before broad discovery is safe.",
+      "evidence": "The Terraform AWS provider resource manages runtime source/configuration inputs for a newly added Bedrock AgentCore surface. This lane defers AgentCore runtime imports until provider read reconstruction and AWS list/describe coverage are verified end to end.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/bedrockagentcore_agent_runtime"
+      ]
+    },
+    {
+      "resource": "aws_bedrockagentcore_agent_runtime_endpoint",
+      "service_family": "bedrockagentcore",
+      "reason": "AgentCore runtime endpoints are dependent runtime subresources and need a focused import ID and read-state audit before broad discovery.",
+      "evidence": "Terraform AWS provider models endpoint state under an AgentCore runtime. Broad inventory should not emit dependent AgentCore endpoint resources until parent runtime reconstruction and endpoint list/describe behavior are validated together.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/bedrockagentcore_agent_runtime_endpoint"
+      ]
+    },
+    {
+      "resource": "aws_bedrockagentcore_api_key_credential_provider",
+      "service_family": "bedrockagentcore",
+      "reason": "AgentCore API key credential providers require secret API key material that AWS read APIs do not return.",
+      "evidence": "Terraform AWS provider models an API key credential provider with sensitive key input. Provider read/import can identify the credential provider but cannot reconstruct the secret value needed for valid generated configuration.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/bedrockagentcore_api_key_credential_provider"
+      ]
+    },
+    {
+      "resource": "aws_bedrockagentcore_browser",
+      "service_family": "bedrockagentcore",
+      "reason": "AgentCore browser resources are new control-plane resources whose import/read reconstruction has not been proven safe for broad discovery.",
+      "evidence": "The Terraform AWS provider exposes the AgentCore browser resource, but this lane has no verified AWS list/describe and provider refresh contract covering every required HCL field.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/bedrockagentcore_browser"
+      ]
+    },
+    {
+      "resource": "aws_bedrockagentcore_code_interpreter",
+      "service_family": "bedrockagentcore",
+      "reason": "AgentCore code interpreter resources need a focused import/read reconstruction audit before broad import support.",
+      "evidence": "The Terraform AWS provider exposes the AgentCore code interpreter resource, but broad Terraformer discovery should wait until required configuration fields and stable list/describe identifiers are verified.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/bedrockagentcore_code_interpreter"
+      ]
+    },
+    {
+      "resource": "aws_bedrockagentcore_gateway",
+      "service_family": "bedrockagentcore",
+      "reason": "AgentCore gateways can carry integration and authorization configuration that needs a focused safe-import design.",
+      "evidence": "Terraform AWS provider models gateway configuration beyond a simple stable identifier. This release lane defers gateway discovery until provider read state is proven to reconstruct the required configuration without secret or body material gaps.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/bedrockagentcore_gateway"
+      ]
+    },
+    {
+      "resource": "aws_bedrockagentcore_gateway_target",
+      "service_family": "bedrockagentcore",
+      "reason": "AgentCore gateway targets are integration subresources and need a focused source/credential reconstruction audit.",
+      "evidence": "Terraform AWS provider manages gateway target configuration under an AgentCore gateway. Broad discovery should not emit gateway targets until target type requirements, credentials, and provider read behavior are verified.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/bedrockagentcore_gateway_target"
+      ]
+    },
+    {
+      "resource": "aws_bedrockagentcore_memory",
+      "service_family": "bedrockagentcore",
+      "reason": "AgentCore memory resources need a focused import/read audit before broad release-critical import support.",
+      "evidence": "The Terraform AWS provider exposes AgentCore memory as a new service surface. Terraformer should verify durable configuration fields and stable list/describe pagination before adding broad import support.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/bedrockagentcore_memory"
+      ]
+    },
+    {
+      "resource": "aws_bedrockagentcore_memory_strategy",
+      "service_family": "bedrockagentcore",
+      "reason": "AgentCore memory strategies are dependent configuration subresources and need a focused provider refresh audit.",
+      "evidence": "Terraform AWS provider models memory strategies under AgentCore memory. This lane defers the dependent subresource until parent memory support and read reconstruction are validated together.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/bedrockagentcore_memory_strategy"
+      ]
+    },
+    {
+      "resource": "aws_bedrockagentcore_oauth2_credential_provider",
+      "service_family": "bedrockagentcore",
+      "reason": "AgentCore OAuth2 credential providers require client secret material that AWS read APIs do not return.",
+      "evidence": "Terraform AWS provider models OAuth2 credential provider secret inputs. Provider import/read can identify provider metadata but cannot recover client_secret-style values needed for generated HCL.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/bedrockagentcore_oauth2_credential_provider"
+      ]
+    },
+    {
+      "resource": "aws_bedrockagentcore_token_vault_cmk",
+      "service_family": "bedrockagentcore",
+      "reason": "AgentCore token vault CMK is a singleton-style security setting that needs explicit ownership detection before broad import.",
+      "evidence": "Terraform AWS provider models token vault KMS key configuration. Broad discovery must avoid importing effective defaults or service-managed security state as explicit Terraform ownership without a verified ownership signal.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/bedrockagentcore_token_vault_cmk"
+      ]
+    },
+    {
+      "resource": "aws_bedrockagentcore_workload_identity",
+      "service_family": "bedrockagentcore",
+      "reason": "AgentCore workload identities need a focused identity ownership and provider refresh audit before broad discovery.",
+      "evidence": "Terraform AWS provider exposes AgentCore workload identities as a new service surface. This lane defers them until stable list/describe coverage and importable ownership semantics are verified.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/bedrockagentcore_workload_identity"
+      ]
+    },
+    {
       "resource": "aws_chatbot_teams_channel_configuration",
       "service_family": "chatbot",
       "reason": "Chatbot Teams channel configurations cannot be safely discovered into unique Terraform import IDs for every channel configuration.",
@@ -353,6 +496,17 @@
       ]
     },
     {
+      "resource": "aws_lexv2models_bot_version",
+      "service_family": "lexv2models",
+      "reason": "Lex v2 bot versions require locale specification state that provider import/read does not reconstruct.",
+      "evidence": "Terraform AWS provider models aws_lexv2models_bot_version with locale_specification input. The provider import ID can locate a bot version, but import tests ignore locale_specification and broad discovery cannot reconstruct the requested locale build configuration from ListBotVersions alone.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lexv2models_bot_version"
+      ]
+    },
+    {
       "resource": "aws_mq_broker",
       "service_family": "mq",
       "reason": "MQ brokers require sensitive user.password values, and LDAP brokers can require service_account_password; Amazon MQ APIs do not return those passwords for imported brokers.",
@@ -467,6 +621,215 @@
       ]
     },
     {
+      "resource": "aws_quicksight_account_settings",
+      "service_family": "quicksight",
+      "reason": "QuickSight account settings are singleton account state and need explicit ownership detection before Terraformer imports them broadly.",
+      "evidence": "QuickSight account settings APIs expose effective account configuration, but broad discovery cannot distinguish intentionally managed Terraform settings from service defaults or console-managed state without a focused singleton design.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/quicksight_account_settings"
+      ]
+    },
+    {
+      "resource": "aws_quicksight_account_subscription",
+      "service_family": "quicksight",
+      "reason": "QuickSight account subscription manages account enrollment and edition state rather than ordinary inventory.",
+      "evidence": "Terraform AWS provider models subscription creation/deletion for a QuickSight account. Importing an existing subscription from broad discovery would assume ownership of account-level service enrollment lifecycle.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/quicksight_account_subscription"
+      ]
+    },
+    {
+      "resource": "aws_quicksight_analysis",
+      "service_family": "quicksight",
+      "reason": "QuickSight analyses have large definition bodies and permissions that need focused reconstruction tests before broad import.",
+      "evidence": "Terraform AWS provider can read analysis definitions, but broad import must verify definition fidelity, permissions, and source entity handling before generating high-confidence HCL for arbitrary analyses.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/quicksight_analysis"
+      ]
+    },
+    {
+      "resource": "aws_quicksight_custom_permissions",
+      "service_family": "quicksight",
+      "reason": "QuickSight custom permission profiles are security policy surfaces that need focused read-state and ownership validation.",
+      "evidence": "Terraform AWS provider manages custom permission capability sets. This lane defers broad discovery until provider read output is verified to reconstruct all required permission options without noisy defaults.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/quicksight_custom_permissions"
+      ]
+    },
+    {
+      "resource": "aws_quicksight_dashboard",
+      "service_family": "quicksight",
+      "reason": "QuickSight dashboards have large definition/source payloads and publication/version semantics that need focused reconstruction tests.",
+      "evidence": "Terraform AWS provider can read dashboard definitions, but broad discovery must verify definition fidelity, permissions, and version/source handling before emitting arbitrary dashboards as stable Terraform configuration.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/quicksight_dashboard"
+      ]
+    },
+    {
+      "resource": "aws_quicksight_data_set",
+      "service_family": "quicksight",
+      "reason": "QuickSight datasets have schema-heavy physical/logical table definitions that need focused reconstruction validation.",
+      "evidence": "Terraform AWS provider reads dataset definitions, but broad import must verify every source variant, transform, permission, and refresh-stable field before adding high-confidence dataset HCL generation.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/quicksight_data_set"
+      ]
+    },
+    {
+      "resource": "aws_quicksight_data_source",
+      "service_family": "quicksight",
+      "reason": "QuickSight data sources can require credential material that QuickSight read APIs do not return.",
+      "evidence": "Terraform AWS provider supports multiple data source credential modes, including sensitive credential blocks. Broad discovery cannot safely reconstruct credential-backed data sources without leaking or inventing secret values.",
+      "status": "unsupported",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/quicksight_data_source"
+      ]
+    },
+    {
+      "resource": "aws_quicksight_iam_policy_assignment",
+      "service_family": "quicksight",
+      "reason": "QuickSight IAM policy assignments need focused identity and permissions ownership validation before broad import.",
+      "evidence": "Terraform AWS provider models IAM policy assignments across users/groups in a namespace. Broad discovery should verify identity mapping and provider read reconstruction before emitting security assignments.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/quicksight_iam_policy_assignment"
+      ]
+    },
+    {
+      "resource": "aws_quicksight_ingestion",
+      "service_family": "quicksight",
+      "reason": "QuickSight ingestions are runtime execution artifacts, not durable infrastructure inventory.",
+      "evidence": "Terraform AWS provider models ingestion execution IDs for a dataset. QuickSight ListIngestions returns job history/results, and importing every ingestion would turn high-cardinality runtime events into Terraform resources.",
+      "status": "runtime-data",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/quicksight_ingestion"
+      ]
+    },
+    {
+      "resource": "aws_quicksight_ip_restriction",
+      "service_family": "quicksight",
+      "reason": "QuickSight IP restrictions are singleton account security settings and need explicit ownership detection before broad import.",
+      "evidence": "QuickSight account-level IP restriction reads expose effective security configuration. Terraformer should avoid importing account-wide guardrails as Terraform-owned state without a focused singleton design.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/quicksight_ip_restriction"
+      ]
+    },
+    {
+      "resource": "aws_quicksight_key_registration",
+      "service_family": "quicksight",
+      "reason": "QuickSight key registration is an account security setting that needs focused ownership and provider refresh validation.",
+      "evidence": "Terraform AWS provider manages registered QuickSight keys. Broad discovery should verify explicit ownership and avoid importing account security defaults or service-managed state as Terraform-owned configuration.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/quicksight_key_registration"
+      ]
+    },
+    {
+      "resource": "aws_quicksight_refresh_schedule",
+      "service_family": "quicksight",
+      "reason": "QuickSight refresh schedules are dataset-dependent subresources and need parent dataset reconstruction before broad import.",
+      "evidence": "Terraform AWS provider models refresh schedules under datasets. This lane defers them until dataset import support is proven so generated schedules can reference stable parent dataset configuration.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/quicksight_refresh_schedule"
+      ]
+    },
+    {
+      "resource": "aws_quicksight_role_custom_permission",
+      "service_family": "quicksight",
+      "reason": "QuickSight role custom permissions are security assignments and need focused ownership validation before broad import.",
+      "evidence": "Terraform AWS provider manages role-to-permission associations. Broad discovery should verify account/namespace role ownership and avoid importing implicit or console-managed security bindings without review.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/quicksight_role_custom_permission"
+      ]
+    },
+    {
+      "resource": "aws_quicksight_role_membership",
+      "service_family": "quicksight",
+      "reason": "QuickSight role memberships are security association resources and need focused ownership validation before broad import.",
+      "evidence": "Terraform AWS provider models role membership relationships. Broad discovery should verify identity mapping, explicit ownership, and provider read behavior before emitting role memberships.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/quicksight_role_membership"
+      ]
+    },
+    {
+      "resource": "aws_quicksight_template",
+      "service_family": "quicksight",
+      "reason": "QuickSight templates have definition/source version semantics that need focused reconstruction tests before broad import.",
+      "evidence": "Terraform AWS provider can read template definitions, but broad import must verify definition fidelity, permissions, aliases, and source entity handling before emitting arbitrary templates as stable HCL.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/quicksight_template"
+      ]
+    },
+    {
+      "resource": "aws_quicksight_template_alias",
+      "service_family": "quicksight",
+      "reason": "QuickSight template aliases are dependent version pointers and should wait for safe template import support.",
+      "evidence": "Terraform AWS provider models aliases under templates. Broad discovery should import aliases only after template definition/version import has been validated to avoid orphaned or noisy alias resources.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/quicksight_template_alias"
+      ]
+    },
+    {
+      "resource": "aws_quicksight_theme",
+      "service_family": "quicksight",
+      "reason": "QuickSight themes have definition/version state that needs focused reconstruction validation before broad import.",
+      "evidence": "Terraform AWS provider reads theme configuration, but broad import should verify theme version, permissions, and refresh-stable definition fields before adding high-confidence support.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/quicksight_theme"
+      ]
+    },
+    {
+      "resource": "aws_quicksight_user",
+      "service_family": "quicksight",
+      "reason": "QuickSight users are not importable by the current Terraform AWS provider resource.",
+      "evidence": "The Terraform AWS provider aws_quicksight_user SDK resource has no ResourceImporter. Terraformer cannot seed this resource through provider import/refresh even though ListUsers can discover users.",
+      "status": "not-importable",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/quicksight_user"
+      ]
+    },
+    {
+      "resource": "aws_quicksight_user_custom_permission",
+      "service_family": "quicksight",
+      "reason": "QuickSight user custom permissions are security assignments and need focused ownership validation before broad import.",
+      "evidence": "Terraform AWS provider models user-to-permission profile associations. Broad discovery should verify identity ownership and provider read reconstruction before emitting user permission bindings.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/quicksight_user_custom_permission"
+      ]
+    },
+    {
       "resource": "aws_s3_bucket_object",
       "service_family": "s3",
       "reason": "S3 bucket objects are high-cardinality object content, not durable infrastructure configuration for broad account inventory.",
@@ -503,6 +866,28 @@
       ]
     },
     {
+      "resource": "aws_sagemaker_device",
+      "service_family": "sagemaker",
+      "reason": "SageMaker devices are high-cardinality edge inventory under device fleets and need filtered follow-up design.",
+      "evidence": "Terraform AWS provider imports devices by fleet and device name, while ListDevices can enumerate many individual edge devices. This lane keeps durable fleet-level inventory and defers per-device import to avoid unbounded generated configuration.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sagemaker_device"
+      ]
+    },
+    {
+      "resource": "aws_sagemaker_hub",
+      "service_family": "sagemaker",
+      "reason": "The current SageMaker SDK version in Terraformer does not expose paginator support needed for broad hub discovery.",
+      "evidence": "The audited Terraformer AWS SDK module exposes SageMaker hub types but not ListHubs paginator support. This resource needs an SDK/discovery follow-up before high-confidence import coverage can be added.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sagemaker_hub"
+      ]
+    },
+    {
       "resource": "aws_sagemaker_human_task_ui",
       "service_family": "sagemaker",
       "reason": "SageMaker Human Task UI imports cannot reconstruct the required ui_template.content field from SageMaker APIs.",
@@ -512,6 +897,50 @@
         "https://github.com/chenrui333/terraformer/issues/338",
         "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sagemaker_human_task_ui",
         "https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribeHumanTaskUi.html"
+      ]
+    },
+    {
+      "resource": "aws_sagemaker_hyper_parameter_tuning_job",
+      "service_family": "sagemaker",
+      "reason": "SageMaker hyperparameter tuning jobs are runtime/job execution artifacts rather than durable inventory.",
+      "evidence": "Terraform AWS provider models tuning job execution configuration and DescribeHyperParameterTuningJob returns completed job state/history. Broad discovery would turn job runs into Terraform-managed resources.",
+      "status": "runtime-data",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sagemaker_hyper_parameter_tuning_job"
+      ]
+    },
+    {
+      "resource": "aws_sagemaker_labeling_job",
+      "service_family": "sagemaker",
+      "reason": "SageMaker labeling jobs are runtime execution jobs with source/output data semantics, not durable infrastructure inventory.",
+      "evidence": "Terraform AWS provider models labeling job request configuration and DescribeLabelingJob returns job execution state. Broad discovery cannot safely treat historical labeling jobs as ongoing Terraform-owned infrastructure.",
+      "status": "runtime-data",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sagemaker_labeling_job"
+      ]
+    },
+    {
+      "resource": "aws_sagemaker_model_card_export_job",
+      "service_family": "sagemaker",
+      "reason": "SageMaker model card export jobs are action-style runtime jobs, not durable inventory.",
+      "evidence": "Terraform AWS provider models export job request/output configuration. SageMaker list/describe APIs expose job execution metadata, but broad discovery should not import one-off export runs as managed Terraform resources.",
+      "status": "runtime-data",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sagemaker_model_card_export_job"
+      ]
+    },
+    {
+      "resource": "aws_sagemaker_training_job",
+      "service_family": "sagemaker",
+      "reason": "SageMaker training jobs are runtime execution artifacts, not stable infrastructure inventory.",
+      "evidence": "Terraform AWS provider models a training job request and DescribeTrainingJob returns job execution state after the run. Broad discovery would import historical/completed training jobs rather than durable control-plane configuration.",
+      "status": "runtime-data",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sagemaker_training_job"
       ]
     },
     {

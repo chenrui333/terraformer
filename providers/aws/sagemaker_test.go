@@ -3,6 +3,7 @@
 package aws
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"sort"
@@ -51,6 +52,36 @@ func TestSageMakerResourceNameUniqueness(t *testing.T) {
 	imageVersionSecond := terraformutils.TfSanitize(sageMakerResourceName("image-version", "image-b", "1"))
 	if imageVersionFirst == imageVersionSecond {
 		t.Fatalf("image version resource names should include parent image identity: %q", imageVersionFirst)
+	}
+
+	notebookFirst := terraformutils.TfSanitize(sageMakerResourceName("notebook-instance", "ab", "c"))
+	notebookSecond := terraformutils.TfSanitize(sageMakerResourceName("notebook-instance", "a", "bc"))
+	if notebookFirst == notebookSecond {
+		t.Fatalf("notebook instance resource names should be length-prefixed: %q", notebookFirst)
+	}
+}
+
+func TestSageMakerPagination(t *testing.T) {
+	client := &fakeSageMakerListAlgorithmsClient{
+		pages: []*sagemaker.ListAlgorithmsOutput{
+			{
+				AlgorithmSummaryList: []sagemakertypes.AlgorithmSummary{{AlgorithmName: aws.String("fraud")}},
+				NextToken:            aws.String("next"),
+			},
+			{
+				AlgorithmSummaryList: []sagemakertypes.AlgorithmSummary{{AlgorithmName: aws.String("forecast")}},
+			},
+		},
+	}
+	algorithms, err := listSageMakerAlgorithms(client)
+	if err != nil {
+		t.Fatalf("listSageMakerAlgorithms() error = %v", err)
+	}
+	if len(algorithms) != 2 {
+		t.Fatalf("listSageMakerAlgorithms() len = %d, want 2", len(algorithms))
+	}
+	if client.calls != 2 {
+		t.Fatalf("ListAlgorithms calls = %d, want 2", client.calls)
 	}
 }
 
@@ -447,6 +478,69 @@ func TestNewSageMakerGroundTruthAndLowRiskResources(t *testing.T) {
 	}
 }
 
+func TestNewSageMakerAIControlPlaneResources(t *testing.T) {
+	algorithm, ok := newSageMakerAlgorithmResource(sagemakertypes.AlgorithmSummary{
+		AlgorithmName:   aws.String("fraud-algorithm"),
+		AlgorithmStatus: sagemakertypes.AlgorithmStatusCompleted,
+	})
+	assertSageMakerResource(t, algorithm, ok, "fraud-algorithm", sageMakerAlgorithmResourceType)
+	if got := algorithm.InstanceState.Attributes["algorithm_name"]; got != "fraud-algorithm" {
+		t.Fatalf("algorithm_name attribute = %q, want fraud-algorithm", got)
+	}
+	assertAwsFrameworkResourcePreserveIDAfterRefresh(t, algorithm)
+
+	notebook, ok := newSageMakerNotebookInstanceResource(sagemakertypes.NotebookInstanceSummary{
+		NotebookInstanceName:   aws.String("analysis-notebook"),
+		NotebookInstanceStatus: sagemakertypes.NotebookInstanceStatusStopped,
+	})
+	assertSageMakerResource(t, notebook, ok, "analysis-notebook", sageMakerNotebookInstanceResourceType)
+
+	notebookLifecycle, ok := newSageMakerNotebookInstanceLifecycleConfigResource(sagemakertypes.NotebookInstanceLifecycleConfigSummary{
+		NotebookInstanceLifecycleConfigName: aws.String("bootstrap-notebook"),
+	})
+	assertSageMakerResource(t, notebookLifecycle, ok, "bootstrap-notebook", sageMakerNotebookInstanceLifecycleConfigType)
+
+	modelCard, ok := newSageMakerModelCardResource(sagemakertypes.ModelCardSummary{
+		ModelCardName:   aws.String("risk-card"),
+		ModelCardStatus: sagemakertypes.ModelCardStatusApproved,
+	})
+	assertSageMakerResource(t, modelCard, ok, "risk-card", sageMakerModelCardResourceType)
+	assertAwsFrameworkResourcePreserveIDAfterRefresh(t, modelCard)
+
+	mlflowApp, ok := newSageMakerMLflowAppResource(sagemakertypes.MlflowAppSummary{
+		Arn:    aws.String("arn:aws:sagemaker:us-east-1:123456789012:mlflow-app/team/default"),
+		Name:   aws.String("default"),
+		Status: sagemakertypes.MlflowAppStatusCreated,
+	})
+	assertSageMakerResource(t, mlflowApp, ok, "arn:aws:sagemaker:us-east-1:123456789012:mlflow-app/team/default", sageMakerMLflowAppResourceType)
+	assertAwsFrameworkResourcePreserveIDAfterRefresh(t, mlflowApp)
+
+	trackingServer, ok := newSageMakerMLflowTrackingServerResource(sagemakertypes.TrackingServerSummary{
+		TrackingServerName:   aws.String("team-tracking"),
+		TrackingServerStatus: sagemakertypes.TrackingServerStatusStarted,
+	})
+	assertSageMakerResource(t, trackingServer, ok, "team-tracking", sageMakerMLflowTrackingServerResourceType)
+
+	if _, ok := newSageMakerAlgorithmResource(sagemakertypes.AlgorithmSummary{
+		AlgorithmName:   aws.String("fraud-algorithm"),
+		AlgorithmStatus: sagemakertypes.AlgorithmStatusInProgress,
+	}); ok {
+		t.Fatal("in-progress algorithm should be skipped")
+	}
+	if _, ok := newSageMakerNotebookInstanceResource(sagemakertypes.NotebookInstanceSummary{
+		NotebookInstanceName:   aws.String("analysis-notebook"),
+		NotebookInstanceStatus: sagemakertypes.NotebookInstanceStatusUpdating,
+	}); ok {
+		t.Fatal("updating notebook should be skipped")
+	}
+	if _, ok := newSageMakerMLflowTrackingServerResource(sagemakertypes.TrackingServerSummary{
+		TrackingServerName:   aws.String("team-tracking"),
+		TrackingServerStatus: sagemakertypes.TrackingServerStatusMaintenanceInProgress,
+	}); ok {
+		t.Fatal("maintenance-in-progress tracking server should be skipped")
+	}
+}
+
 func TestSageMakerWorkforceNameFromARN(t *testing.T) {
 	if got, want := sageMakerWorkforceNameFromARN("arn:aws:sagemaker:us-east-1:123456789012:workforce/private"), "private"; got != want {
 		t.Fatalf("sageMakerWorkforceNameFromARN() = %q, want %q", got, want)
@@ -457,6 +551,9 @@ func TestSageMakerWorkforceNameFromARN(t *testing.T) {
 }
 
 func TestSageMakerImportableStatuses(t *testing.T) {
+	if !sageMakerAlgorithmImportable(sagemakertypes.AlgorithmStatusCompleted) || sageMakerAlgorithmImportable(sagemakertypes.AlgorithmStatusInProgress) {
+		t.Fatal("algorithm importability should allow Completed only")
+	}
 	if !sageMakerEndpointImportable(sagemakertypes.EndpointStatusInService) || sageMakerEndpointImportable(sagemakertypes.EndpointStatusFailed) {
 		t.Fatal("endpoint importability should allow InService only")
 	}
@@ -492,6 +589,18 @@ func TestSageMakerImportableStatuses(t *testing.T) {
 	}
 	if !sageMakerMonitoringScheduleImportable(sagemakertypes.ScheduleStatusScheduled) || !sageMakerMonitoringScheduleImportable(sagemakertypes.ScheduleStatusStopped) || sageMakerMonitoringScheduleImportable(sagemakertypes.ScheduleStatusFailed) {
 		t.Fatal("monitoring schedule importability should allow scheduled/stopped only")
+	}
+	if !sageMakerNotebookInstanceImportable(sagemakertypes.NotebookInstanceStatusStopped) || sageMakerNotebookInstanceImportable(sagemakertypes.NotebookInstanceStatusUpdating) {
+		t.Fatal("notebook instance importability should allow in-service/stopped only")
+	}
+	if !sageMakerModelCardImportable(sagemakertypes.ModelCardStatusDraft) || !sageMakerModelCardImportable(sagemakertypes.ModelCardStatusArchived) {
+		t.Fatal("model card importability should allow all stable model card statuses")
+	}
+	if !sageMakerMLflowAppImportable(sagemakertypes.MlflowAppStatusUpdated) || sageMakerMLflowAppImportable(sagemakertypes.MlflowAppStatusUpdateFailed) {
+		t.Fatal("MLflow app importability should allow created/updated only")
+	}
+	if !sageMakerMLflowTrackingServerImportable(sagemakertypes.TrackingServerStatusMaintenanceComplete) || sageMakerMLflowTrackingServerImportable(sagemakertypes.TrackingServerStatusMaintenanceInProgress) {
+		t.Fatal("MLflow tracking server importability should allow stable states only")
 	}
 	if !sageMakerFlowDefinitionImportable(sagemakertypes.FlowDefinitionStatusActive) || sageMakerFlowDefinitionImportable(sagemakertypes.FlowDefinitionStatusDeleting) {
 		t.Fatal("flow definition importability should allow Active only")
@@ -671,6 +780,9 @@ func sageMakerTestResources(t *testing.T) []terraformutils.Resource {
 		name string
 		make func() (terraformutils.Resource, bool)
 	}{
+		{name: "algorithm", make: func() (terraformutils.Resource, bool) {
+			return newSageMakerAlgorithmResource(sagemakertypes.AlgorithmSummary{AlgorithmName: aws.String("fraud-algorithm"), AlgorithmStatus: sagemakertypes.AlgorithmStatusCompleted})
+		}},
 		{name: "model", make: func() (terraformutils.Resource, bool) {
 			return newSageMakerModelResource(sagemakertypes.ModelSummary{ModelName: aws.String("fraud-model")})
 		}},
@@ -707,6 +819,12 @@ func sageMakerTestResources(t *testing.T) []terraformutils.Resource {
 		{name: "code repository", make: func() (terraformutils.Resource, bool) {
 			return newSageMakerCodeRepositoryResource(sagemakertypes.CodeRepositorySummary{CodeRepositoryName: aws.String("notebooks")})
 		}},
+		{name: "notebook instance", make: func() (terraformutils.Resource, bool) {
+			return newSageMakerNotebookInstanceResource(sagemakertypes.NotebookInstanceSummary{NotebookInstanceName: aws.String("analysis-notebook"), NotebookInstanceStatus: sagemakertypes.NotebookInstanceStatusInService})
+		}},
+		{name: "notebook instance lifecycle config", make: func() (terraformutils.Resource, bool) {
+			return newSageMakerNotebookInstanceLifecycleConfigResource(sagemakertypes.NotebookInstanceLifecycleConfigSummary{NotebookInstanceLifecycleConfigName: aws.String("bootstrap-notebook")})
+		}},
 		{name: "feature group", make: func() (terraformutils.Resource, bool) {
 			return newSageMakerFeatureGroupResource(sagemakertypes.FeatureGroupSummary{FeatureGroupName: aws.String("features"), FeatureGroupStatus: sagemakertypes.FeatureGroupStatusCreated})
 		}},
@@ -730,6 +848,15 @@ func sageMakerTestResources(t *testing.T) []terraformutils.Resource {
 		}},
 		{name: "monitoring schedule", make: func() (terraformutils.Resource, bool) {
 			return newSageMakerMonitoringScheduleResource(sagemakertypes.MonitoringScheduleSummary{MonitoringScheduleName: aws.String("quality-schedule"), MonitoringScheduleStatus: sagemakertypes.ScheduleStatusScheduled})
+		}},
+		{name: "model card", make: func() (terraformutils.Resource, bool) {
+			return newSageMakerModelCardResource(sagemakertypes.ModelCardSummary{ModelCardName: aws.String("risk-card"), ModelCardStatus: sagemakertypes.ModelCardStatusApproved})
+		}},
+		{name: "mlflow app", make: func() (terraformutils.Resource, bool) {
+			return newSageMakerMLflowAppResource(sagemakertypes.MlflowAppSummary{Arn: aws.String("arn:aws:sagemaker:us-east-1:123456789012:mlflow-app/team/default"), Name: aws.String("default"), Status: sagemakertypes.MlflowAppStatusCreated})
+		}},
+		{name: "mlflow tracking server", make: func() (terraformutils.Resource, bool) {
+			return newSageMakerMLflowTrackingServerResource(sagemakertypes.TrackingServerSummary{TrackingServerName: aws.String("team-tracking"), TrackingServerStatus: sagemakertypes.TrackingServerStatusStarted})
 		}},
 		{name: "workforce", make: func() (terraformutils.Resource, bool) {
 			return newSageMakerWorkforceResource(sagemakertypes.Workforce{Status: sagemakertypes.WorkforceStatusActive, WorkforceName: aws.String("private")})
@@ -762,4 +889,18 @@ func sageMakerTestStringSliceContains(values []string, want string) bool {
 		}
 	}
 	return false
+}
+
+type fakeSageMakerListAlgorithmsClient struct {
+	pages []*sagemaker.ListAlgorithmsOutput
+	calls int
+}
+
+func (f *fakeSageMakerListAlgorithmsClient) ListAlgorithms(context.Context, *sagemaker.ListAlgorithmsInput, ...func(*sagemaker.Options)) (*sagemaker.ListAlgorithmsOutput, error) {
+	f.calls++
+	if f.calls > len(f.pages) {
+		return &sagemaker.ListAlgorithmsOutput{}, nil
+	}
+	page := f.pages[f.calls-1]
+	return page, nil
 }
