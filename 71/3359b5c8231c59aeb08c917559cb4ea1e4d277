@@ -1,0 +1,19 @@
+providers/aws/filter.go
+  s_409c28599d88b7::t_588c58a85eb3a3 50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.9",
+  "base_commit_sha": "713359b5c8231c59aeb08c917559cb4ea1e4d277",
+  "prompts": {},
+  "sessions": {
+    "s_409c28599d88b7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3920-eed6-7691-aaa7-ec58d4da18a4",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
