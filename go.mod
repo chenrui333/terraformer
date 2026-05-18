@@ -332,7 +332,6 @@ require (
 	github.com/xlab/treeprint v1.2.0 // indirect
 	k8s.io/apiextensions-apiserver v0.36.0 // indirect
 	k8s.io/apiserver v0.36.0 // indirect
-	k8s.io/cli-runtime v0.36.0 // indirect
 	k8s.io/component-base v0.36.0 // indirect
 	k8s.io/kubectl v0.36.0 // indirect
 	oras.land/oras-go/v2 v2.6.0 // indirect
@@ -543,6 +542,7 @@ require (
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc v1.3.83
 	gitlab.com/gitlab-org/api/client-go v1.46.0
 	helm.sh/helm/v3 v3.21.0
+	k8s.io/cli-runtime v0.36.0
 	software.sslmate.com/src/go-pkcs12 v0.7.1
 )
 
