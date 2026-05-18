@@ -590,7 +590,7 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_neptune_event_subscription`
     * `aws_neptune_parameter_group`
     * `aws_neptune_subnet_group`
-*   `networkmanager`
+*   `networkmanager` (imported once per run through a single effective regional control-plane endpoint; resources are not duplicated per requested region)
     * `aws_networkmanager_connection`
     * `aws_networkmanager_device`
     * `aws_networkmanager_global_network`
