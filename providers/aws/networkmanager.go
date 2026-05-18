@@ -37,7 +37,7 @@ func (g *NetworkManagerGenerator) InitResources() error {
 	loadDevices := g.shouldLoadNetworkManagerResource(networkManagerDeviceResourceType)
 	loadLinks := g.shouldLoadNetworkManagerResource(networkManagerLinkResourceType)
 	loadConnections := g.shouldLoadNetworkManagerResource(networkManagerConnectionResourceType)
-	if !(loadGlobalNetworks || loadSites || loadDevices || loadLinks || loadConnections) {
+	if !loadGlobalNetworks && !loadSites && !loadDevices && !loadLinks && !loadConnections {
 		return nil
 	}
 
