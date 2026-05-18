@@ -870,6 +870,7 @@ github.com/hashicorp/golang-lru/v2 v2.0.5 h1:wW7h1TG88eUIJ2i69gaE3uNVtEPIagzhGvH
 github.com/hashicorp/golang-lru/v2 v2.0.5/go.mod h1:QeFd9opnmA6QUJc5vARoKUSoFhyfM2/ZepoAG6RGpeM=
 github.com/hashicorp/hcl v1.0.1-vault-7 h1:ag5OxFVy3QYTFTJODRzTKVZ6xvdfLLCA1cy/Y6xGI0I=
 github.com/hashicorp/hcl v1.0.1-vault-7/go.mod h1:XYhtn6ijBSAj6n4YqAaf7RBPS4I06AItNorpy+MoQNM=
+github.com/hashicorp/hcl/v2 v2.24.0/go.mod h1:oGoO1FIQYfn/AgyOhlg9qLC6/nOJPX3qGbkZpYAcqfM=
 github.com/hashicorp/jsonapi v1.5.0 h1:toO1EpzVl1b3xTjC/Tw4XMIlHgJreeTnyb1a1sHnlPk=
 github.com/hashicorp/jsonapi v1.5.0/go.mod h1:kWfdn49yCjQvbpnvY1dxxAuAFzISwrrMDQOcu6NsFoM=
 github.com/hashicorp/terraform-plugin-framework v1.19.0 h1:q0bwyhxAOR3vfdgbk9iplv3MlTv/dhBHTXjQOtQDoBA=
