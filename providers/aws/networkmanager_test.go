@@ -129,6 +129,19 @@ func TestNetworkManagerTypedFilterBehavior(t *testing.T) {
 	if g.shouldLoadNetworkManagerResource(networkManagerDeviceResourceType) {
 		t.Fatal("site typed filter should not load devices")
 	}
+
+	g.Filter = []terraformutils.ResourceFilter{
+		{ServiceName: "aws_vpc", FieldPath: "id", AcceptableValues: []string{"vpc-123"}},
+	}
+	if !g.shouldLoadNetworkManagerResource(networkManagerGlobalNetworkResourceType) {
+		t.Fatal("unrelated typed filter should preserve global network discovery")
+	}
+	if !g.shouldLoadNetworkManagerResource(networkManagerSiteResourceType) {
+		t.Fatal("unrelated typed filter should preserve site discovery")
+	}
+	if !g.shouldLoadNetworkManagerResource(networkManagerConnectionResourceType) {
+		t.Fatal("unrelated typed filter should preserve connection discovery")
+	}
 }
 
 func assertNetworkManagerResource(t *testing.T, resource terraformutils.Resource, ok bool, resourceType, id, importID string, attributes map[string]string) {

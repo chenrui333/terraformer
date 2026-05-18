@@ -4,6 +4,7 @@ package aws
 
 import (
 	"context"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/networkmanager"
@@ -83,7 +84,22 @@ func (g *NetworkManagerGenerator) InitResources() error {
 }
 
 func (g *NetworkManagerGenerator) shouldLoadNetworkManagerResource(serviceNames ...string) bool {
+	if !g.hasNetworkManagerTypedFilter() {
+		return true
+	}
 	return shouldLoadAWSResourceForTypedFilters(g.Filter, serviceNames...)
+}
+
+func (g *NetworkManagerGenerator) hasNetworkManagerTypedFilter() bool {
+	for _, filter := range g.Filter {
+		if filter.ServiceName == "" {
+			continue
+		}
+		if strings.HasPrefix(normalizeAWSFilterServiceName(filter.ServiceName), "networkmanager_") {
+			return true
+		}
+	}
+	return false
 }
 
 func (g *NetworkManagerGenerator) loadNetworkManagerSites(svc *networkmanager.Client, globalNetworkID string) error {
