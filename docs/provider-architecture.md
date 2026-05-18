@@ -143,9 +143,18 @@ complete, compare:
 - Issue tracker buckets.
 - Stale or superseded PR branches.
 
+For broad-provider close-outs, include counts for upstream provider resources,
+Terraformer-supported resources, evidence-backed unsupported or deferred
+resources, and still-unclassified resources. Separate unclassified resources
+already covered by open PRs from truly remaining work, and reduce final
+follow-up lanes to exact resource names whenever possible.
+
 A lane can close while the broader tracking issue remains open. A large-provider
 issue is closeable only when remaining resources are supported, evidence-backed
 deferred or unsupported, or assigned to focused follow-up lanes.
+
+If a clean audit finds no metadata or documentation corrections, leave the
+worktree unchanged instead of creating a docs-only record of the no-op.
 
 ## Testing expectations
 
