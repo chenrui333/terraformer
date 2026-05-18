@@ -5,7 +5,9 @@ package helm
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -13,6 +15,7 @@ import (
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	helmrelease "helm.sh/helm/v3/pkg/release"
+	"k8s.io/client-go/rest"
 )
 
 type fakeReleaseDiscovery struct {
@@ -35,6 +38,46 @@ func (d *fakeReleaseDiscovery) GetRelease(namespace, name string) (*helmrelease.
 func (d *fakeReleaseDiscovery) ListReleases() ([]*helmrelease.Release, error) {
 	d.listWasCalled = true
 	return d.listed, nil
+}
+
+func clearHelmDiscoveryKubeEnv(t *testing.T) {
+	for _, env := range []string{
+		"KUBE_CONFIG_PATH",
+		"KUBE_CONFIG_PATHS",
+		"KUBECONFIG",
+		"KUBE_CTX",
+		"KUBE_CTX_AUTH_INFO",
+		"KUBE_CTX_CLUSTER",
+		"KUBE_HOST",
+		"KUBE_TOKEN",
+		"KUBE_USER",
+		"KUBE_PASSWORD",
+		"KUBE_INSECURE",
+		"KUBE_TLS_SERVER_NAME",
+		"KUBE_CLUSTER_CA_CERT_DATA",
+		"KUBE_CLIENT_CERT_DATA",
+		"KUBE_CLIENT_KEY_DATA",
+		"KUBE_PROXY_URL",
+		"HELM_KUBECONTEXT",
+		"HELM_KUBEAPISERVER",
+		"HELM_KUBETOKEN",
+		"HELM_KUBECAFILE",
+		"HELM_KUBEINSECURE_SKIP_TLS_VERIFY",
+		"HELM_KUBETLS_SERVER_NAME",
+	} {
+		t.Setenv(env, "")
+	}
+}
+
+func disableDefaultKubeconfig(t *testing.T) {
+	originalDefaultKubeConfigPath := helmDefaultKubeConfigPath
+	missingKubeconfig := filepath.Join(t.TempDir(), "missing-kubeconfig")
+	helmDefaultKubeConfigPath = func() string {
+		return missingKubeconfig
+	}
+	t.Cleanup(func() {
+		helmDefaultKubeConfigPath = originalDefaultKubeConfigPath
+	})
 }
 
 func TestHelmReleaseDiscoveryListActionUsesAllNamespacesStorage(t *testing.T) {
@@ -78,6 +121,143 @@ func TestHelmReleaseDiscoveryMirrorsProviderKubeEnv(t *testing.T) {
 	}
 	if discovery.settings.KubeContext != "provider-context" {
 		t.Fatalf("discovery kube context = %q, want provider-context", discovery.settings.KubeContext)
+	}
+}
+
+func TestHelmReleaseDiscoverySupportsProviderOnlyKubeAuth(t *testing.T) {
+	for _, testCase := range []struct {
+		name   string
+		env    map[string]string
+		assert func(t *testing.T, config *rest.Config)
+	}{
+		{
+			name: "token and CA data",
+			env: map[string]string{
+				"KUBE_TOKEN":                "provider-token",
+				"KUBE_CLUSTER_CA_CERT_DATA": "ca-data",
+				"KUBE_PROXY_URL":            "http://proxy.example.test:8080",
+			},
+			assert: func(t *testing.T, config *rest.Config) {
+				if config.BearerToken != "provider-token" {
+					t.Fatalf("REST bearer token = %q, want provider token", config.BearerToken)
+				}
+				if string(config.CAData) != "ca-data" {
+					t.Fatalf("REST CAData = %q, want provider CA data", string(config.CAData))
+				}
+				if config.Proxy == nil {
+					t.Fatal("REST proxy is nil, want provider proxy URL")
+				}
+				proxyURL, err := config.Proxy(&http.Request{})
+				if err != nil {
+					t.Fatalf("REST proxy error = %v", err)
+				}
+				if proxyURL.String() != "http://proxy.example.test:8080" {
+					t.Fatalf("REST proxy URL = %q, want provider proxy URL", proxyURL.String())
+				}
+			},
+		},
+		{
+			name: "client certificate",
+			env: map[string]string{
+				"KUBE_CLIENT_CERT_DATA": "client-cert-data",
+				"KUBE_CLIENT_KEY_DATA":  "client-key-data",
+			},
+			assert: func(t *testing.T, config *rest.Config) {
+				if string(config.CertData) != "client-cert-data" {
+					t.Fatalf("REST CertData = %q, want provider client cert data", string(config.CertData))
+				}
+				if string(config.KeyData) != "client-key-data" {
+					t.Fatalf("REST KeyData = %q, want provider client key data", string(config.KeyData))
+				}
+			},
+		},
+		{
+			name: "basic auth",
+			env: map[string]string{
+				"KUBE_USER":     "provider-user",
+				"KUBE_PASSWORD": "provider-password",
+			},
+			assert: func(t *testing.T, config *rest.Config) {
+				if config.Username != "provider-user" {
+					t.Fatalf("REST username = %q, want provider user", config.Username)
+				}
+				if config.Password != "provider-password" {
+					t.Fatalf("REST password = %q, want provider password", config.Password)
+				}
+			},
+		},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			clearHelmDiscoveryKubeEnv(t)
+			disableDefaultKubeconfig(t)
+			t.Setenv("KUBE_HOST", "https://example.test")
+			t.Setenv("KUBE_CTX_AUTH_INFO", "provider-user-context")
+			t.Setenv("KUBE_CTX_CLUSTER", "provider-cluster-context")
+			for env, value := range testCase.env {
+				t.Setenv(env, value)
+			}
+
+			discovery := newHelmReleaseDiscovery()
+			restConfig, err := discovery.restClientGetter.ToRESTConfig()
+			if err != nil {
+				t.Fatalf("ToRESTConfig() error = %v", err)
+			}
+			if restConfig.Host != "https://example.test" {
+				t.Fatalf("REST host = %q, want provider host", restConfig.Host)
+			}
+			testCase.assert(t, restConfig)
+		})
+	}
+}
+
+func TestHelmReleaseDiscoverySupportsProviderKubeContextOverrides(t *testing.T) {
+	clearHelmDiscoveryKubeEnv(t)
+	kubeconfig := filepath.Join(t.TempDir(), "config")
+	contents := []byte(`apiVersion: v1
+kind: Config
+clusters:
+- name: base-cluster
+  cluster:
+    server: https://base.example.test
+    insecure-skip-tls-verify: true
+- name: override-cluster
+  cluster:
+    server: https://override.example.test
+    insecure-skip-tls-verify: true
+users:
+- name: base-user
+  user:
+    token: base-token
+- name: override-user
+  user:
+    token: override-token
+contexts:
+- name: base
+  context:
+    cluster: base-cluster
+    user: base-user
+current-context: base
+`)
+	if err := os.WriteFile(kubeconfig, contents, 0o600); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+	t.Setenv("KUBE_CONFIG_PATH", kubeconfig)
+	t.Setenv("KUBE_CONFIG_PATHS", "")
+	t.Setenv("KUBECONFIG", "")
+	t.Setenv("KUBE_CTX", "base")
+	t.Setenv("KUBE_CTX_AUTH_INFO", "override-user")
+	t.Setenv("KUBE_CTX_CLUSTER", "override-cluster")
+
+	discovery := newHelmReleaseDiscovery()
+	restConfig, err := discovery.restClientGetter.ToRESTConfig()
+	if err != nil {
+		t.Fatalf("ToRESTConfig() error = %v", err)
+	}
+	if restConfig.Host != "https://override.example.test" {
+		t.Fatalf("REST host = %q, want override cluster host", restConfig.Host)
+	}
+	if restConfig.BearerToken != "override-token" {
+		t.Fatalf("REST bearer token = %q, want override user token", restConfig.BearerToken)
 	}
 }
 

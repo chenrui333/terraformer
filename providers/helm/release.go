@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
+	"net/url"
 	"os"
 	"sort"
 	"strings"
@@ -16,6 +18,8 @@ import (
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
 	helmrelease "helm.sh/helm/v3/pkg/release"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/client-go/rest"
 )
 
 const (
@@ -53,20 +57,94 @@ type releaseDiscovery interface {
 
 type helmReleaseDiscovery struct {
 	settings            *cli.EnvSettings
+	restClientGetter    genericclioptions.RESTClientGetter
 	actionConfigFactory func(namespace string) (*action.Configuration, error)
 }
 
 func newHelmReleaseDiscovery() *helmReleaseDiscovery {
 	configureHelmProviderKubeEnv()
-	discovery := &helmReleaseDiscovery{settings: cli.New()}
+	settings := cli.New()
+	discovery := &helmReleaseDiscovery{
+		settings:         settings,
+		restClientGetter: helmDiscoveryRESTClientGetter(settings),
+	}
 	discovery.actionConfigFactory = discovery.actionConfig
 	return discovery
 }
 
+func helmDiscoveryRESTClientGetter(settings *cli.EnvSettings) genericclioptions.RESTClientGetter {
+	flags := genericclioptions.NewConfigFlags(false)
+	setStringFlag(flags.Context, settings.KubeContext)
+	setStringFlag(flags.BearerToken, settings.KubeToken)
+	setStringFlag(flags.APIServer, settings.KubeAPIServer)
+	setStringFlag(flags.CAFile, settings.KubeCaFile)
+	setStringFlag(flags.TLSServerName, settings.KubeTLSServerName)
+	setStringFlag(flags.Impersonate, settings.KubeAsUser)
+	setStringFlag(flags.Namespace, settings.Namespace())
+	if len(helmProviderKubeConfigPaths()) > 0 {
+		setStringFlag(flags.AuthInfoName, os.Getenv("KUBE_CTX_AUTH_INFO"))
+		setStringFlag(flags.ClusterName, os.Getenv("KUBE_CTX_CLUSTER"))
+	}
+	if len(settings.KubeAsGroups) > 0 && flags.ImpersonateGroup != nil {
+		*flags.ImpersonateGroup = settings.KubeAsGroups
+	}
+	if flags.Insecure != nil {
+		*flags.Insecure = settings.KubeInsecureSkipTLSVerify
+	}
+	if username := os.Getenv("KUBE_USER"); username != "" {
+		flags.Username = stringPointer(username)
+	}
+	if password := os.Getenv("KUBE_PASSWORD"); password != "" {
+		flags.Password = stringPointer(password)
+	}
+
+	clusterCAData := os.Getenv("KUBE_CLUSTER_CA_CERT_DATA")
+	clientCertData := os.Getenv("KUBE_CLIENT_CERT_DATA")
+	clientKeyData := os.Getenv("KUBE_CLIENT_KEY_DATA")
+	proxyURL := os.Getenv("KUBE_PROXY_URL")
+	flags.WrapConfigFn = func(config *rest.Config) *rest.Config {
+		config.Burst = settings.BurstLimit
+		config.QPS = settings.QPS
+		if clusterCAData != "" {
+			config.CAData = []byte(clusterCAData)
+			config.CAFile = ""
+		}
+		if clientCertData != "" {
+			config.CertData = []byte(clientCertData)
+			config.CertFile = ""
+		}
+		if clientKeyData != "" {
+			config.KeyData = []byte(clientKeyData)
+			config.KeyFile = ""
+		}
+		if proxyURL != "" {
+			if parsedProxyURL, err := url.Parse(proxyURL); err == nil {
+				config.Proxy = http.ProxyURL(parsedProxyURL)
+			}
+		}
+		return config
+	}
+	return flags
+}
+
+func setStringFlag(target *string, value string) {
+	if target != nil && value != "" {
+		*target = value
+	}
+}
+
+func stringPointer(value string) *string {
+	return &value
+}
+
 func (d *helmReleaseDiscovery) actionConfig(namespace string) (*action.Configuration, error) {
 	configuration := new(action.Configuration)
+	restClientGetter := d.restClientGetter
+	if restClientGetter == nil {
+		restClientGetter = d.settings.RESTClientGetter()
+	}
 	err := configuration.Init(
-		d.settings.RESTClientGetter(),
+		restClientGetter,
 		namespace,
 		os.Getenv("HELM_DRIVER"),
 		func(format string, v ...interface{}) { log.Printf(format, v...) },

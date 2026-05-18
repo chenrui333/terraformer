@@ -19,7 +19,9 @@ refresh, and mirrors equivalent `KUBE_*` and `HELM_*` context/server/token
 environment variables when needed. When both provider-style `KUBE_*` variables
 and Helm/client-go variables are set, the provider-style kubeconfig and context
 settings are used for discovery so discovery and refresh target the same
-cluster. Terraformer does not write kubeconfig contents or Kubernetes
+cluster. Provider-style host, token, CA data, client certificate, basic auth,
+proxy, and kubeconfig context override environment variables are also applied to
+Helm discovery. Terraformer does not write kubeconfig contents or Kubernetes
 credentials into generated configuration; use the current kubeconfig context,
 `HELM_*` environment variables, or provider configuration supported by the
 HashiCorp `helm` provider.
