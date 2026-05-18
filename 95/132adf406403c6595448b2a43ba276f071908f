@@ -1,0 +1,25 @@
+providers/aws/rds_test.go
+  s_c86082602448d5::t_88e4d187ef13e6 38,44,84,88,249-251,253-254
+providers/aws/unsupported_resources.json
+  s_c86082602448d5::t_4afce72a9fcffe 578-588
+providers/aws/compute_db_runtime_test.go
+  s_c86082602448d5::t_74865770e0c1f6 43
+providers/aws/rds.go
+  s_c86082602448d5::t_54a3734242b821 339,377,578-579
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "95132adf406403c6595448b2a43ba276f071908f",
+  "prompts": {},
+  "sessions": {
+    "s_c86082602448d5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3920-cd80-7613-a2a4-18b532d6e9d7",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
