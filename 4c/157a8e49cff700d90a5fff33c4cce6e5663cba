@@ -1,0 +1,21 @@
+providers/aws/rds.go
+  s_c86082602448d5::t_2836d69e4281e7 332,391,594,604
+providers/aws/rds_test.go
+  s_c86082602448d5::t_d4f2e88c2135ff 48-49,51-70,371-372,375-376
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.9",
+  "base_commit_sha": "4c157a8e49cff700d90a5fff33c4cce6e5663cba",
+  "prompts": {},
+  "sessions": {
+    "s_c86082602448d5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3920-cd80-7613-a2a4-18b532d6e9d7",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
