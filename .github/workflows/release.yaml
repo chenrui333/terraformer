@@ -30,6 +30,7 @@ concurrency:
 
 env:
   GOWORK: off
+  GOFLAGS: -p=1
   GORELEASER_VERSION: v2.15.4
   GORELEASER_TIMEOUT: 3h
 
