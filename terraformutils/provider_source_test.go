@@ -28,6 +28,7 @@ func TestProviderSource(t *testing.T) {
 		"google-beta":                 "hashicorp/google-beta",
 		"grafana":                     "grafana/grafana",
 		"heroku":                      "heroku/heroku",
+		"helm":                        "hashicorp/helm",
 		"honeycombio":                 "honeycombio/honeycombio",
 		"ibm":                         "IBM-Cloud/ibm",
 		"ionoscloud":                  "ionos-cloud/ionoscloud",

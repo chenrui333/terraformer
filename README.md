@@ -31,6 +31,7 @@ A CLI tool that generates `tf`/`json` and `tfstate` files based on existing infr
         * [Yandex Cloud](/docs/yandex.md)
         * [Ionos Cloud](/docs/ionoscloud.md)
     * Infrastructure Software
+        * [Helm](/docs/helm.md)
         * [Kafka](/docs/kafka.md)
         * [Kubernetes](/docs/kubernetes.md)
         * [OctopusDeploy](/docs/octopus.md)
@@ -272,6 +273,7 @@ Links to download Terraform provider plugins:
     * Yandex provider >0.42.0 - [here](https://releases.hashicorp.com/terraform-provider-yandex/)
     * Ionoscloud provider >6.3.3 - [here](https://github.com/ionos-cloud/terraform-provider-ionoscloud/releases)
 * Infrastructure Software
+    * Helm provider - [here](https://releases.hashicorp.com/terraform-provider-helm/)
     * Kafka provider >=0.13.1 - [here](https://github.com/Mongey/terraform-provider-kafka/releases)
     * Kubernetes provider >=1.9.0 - [here](https://releases.hashicorp.com/terraform-provider-kubernetes/)
     * RabbitMQ provider >=1.1.0 - [here](https://releases.hashicorp.com/terraform-provider-rabbitmq/)
