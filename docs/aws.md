@@ -311,8 +311,11 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
 *   `dx`
     * `aws_dx_connection`
     * `aws_dx_gateway`
+    * `aws_dx_gateway_association`
+    * `aws_dx_lag`
     * `aws_dx_private_virtual_interface`
     * `aws_dx_public_virtual_interface`
+    * `aws_dx_transit_virtual_interface`
 *   `dynamodb`
     * `aws_dynamodb_contributor_insights`
     * `aws_dynamodb_global_table`
@@ -579,15 +582,21 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_network_acl`
 *   `nat`
     * `aws_nat_gateway`
-*   `neptune`
-    * `aws_neptune_cluster`
-    * `aws_neptune_cluster_endpoint`
-    * `aws_neptune_cluster_instance`
-    * `aws_neptune_cluster_parameter_group`
-    * `aws_neptune_event_subscription`
-    * `aws_neptune_parameter_group`
-    * `aws_neptune_subnet_group`
-*   `notifications`
+	*   `neptune`
+	    * `aws_neptune_cluster`
+	    * `aws_neptune_cluster_endpoint`
+	    * `aws_neptune_cluster_instance`
+	    * `aws_neptune_cluster_parameter_group`
+	    * `aws_neptune_event_subscription`
+	    * `aws_neptune_parameter_group`
+	    * `aws_neptune_subnet_group`
+	*   `networkmanager`
+	    * `aws_networkmanager_connection`
+	    * `aws_networkmanager_device`
+	    * `aws_networkmanager_global_network`
+	    * `aws_networkmanager_link`
+	    * `aws_networkmanager_site`
+	*   `notifications`
     * `aws_notifications_channel_association`
     * `aws_notifications_event_rule`
     * `aws_notifications_notification_configuration`
@@ -693,9 +702,12 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_route53_key_signing_key`
     * `aws_route53_hosted_zone_dnssec`
 *   `route53_resolver`
+    * `aws_route53_resolver_config`
     * `aws_route53_resolver_rule`
     * `aws_route53_resolver_rule_association`
     * `aws_route53_resolver_endpoint`
+    * `aws_route53_resolver_dnssec_config`
+    * `aws_route53_resolver_firewall_config`
     * `aws_route53_resolver_query_log_config`
     * `aws_route53_resolver_query_log_config_association`
     * `aws_route53_resolver_firewall_domain_list`
@@ -862,7 +874,20 @@ For AWS provider gap audits and unsupported-resource skip-list maintenance, see 
     * `aws_transcribe_language_model`
 *   `transit_gateway`
     * `aws_ec2_transit_gateway`
+    * `aws_ec2_transit_gateway_connect`
+    * `aws_ec2_transit_gateway_connect_peer`
+    * `aws_ec2_transit_gateway_metering_policy`
+    * `aws_ec2_transit_gateway_metering_policy_entry`
+    * `aws_ec2_transit_gateway_multicast_domain`
+    * `aws_ec2_transit_gateway_peering_attachment`
+    * `aws_ec2_transit_gateway_peering_attachment_accepter`
+    * `aws_ec2_transit_gateway_policy_table`
+    * `aws_ec2_transit_gateway_policy_table_association`
+    * `aws_ec2_transit_gateway_prefix_list_reference`
+    * `aws_ec2_transit_gateway_route`
     * `aws_ec2_transit_gateway_route_table`
+    * `aws_ec2_transit_gateway_route_table_association`
+    * `aws_ec2_transit_gateway_route_table_propagation`
     * `aws_ec2_transit_gateway_vpc_attachment`
 *   `verifiedaccess`
     * `aws_verifiedaccess_endpoint`

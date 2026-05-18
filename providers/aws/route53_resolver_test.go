@@ -3,10 +3,12 @@
 package aws
 
 import (
+	"context"
 	"errors"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/route53resolver"
 	route53resolvertypes "github.com/aws/aws-sdk-go-v2/service/route53resolver/types"
 	"github.com/aws/smithy-go"
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -21,12 +23,128 @@ const (
 	testRoute53ResolverFirewallDomainID    = "rslvr-fdl-1234567890abcdef0"
 	testRoute53ResolverFirewallRuleGroupID = "rslvr-frg-1234567890abcdef0"
 	testRoute53ResolverFirewallAssocID     = "rslvr-frgassoc-1234567890abcdef0"
+	testRoute53ResolverConfigID            = "rslvr-rc-1234567890abcdef0"
+	testRoute53ResolverDNSSECConfigID      = "rslvr-dnssec-1234567890abcdef0"
+	testRoute53ResolverFirewallConfigID    = "rslvr-fc-1234567890abcdef0"
 	testRoute53ResolverVPCID               = "vpc-1234567890abcdef0"
 )
 
 func TestRoute53ResolverResourceIDs(t *testing.T) {
 	if got, want := route53ResolverFirewallRuleImportID(testRoute53ResolverFirewallRuleGroupID, testRoute53ResolverFirewallDomainID), testRoute53ResolverFirewallRuleGroupID+":"+testRoute53ResolverFirewallDomainID; got != want {
 		t.Fatalf("firewall rule import ID = %q, want %q", got, want)
+	}
+}
+
+func TestNewRoute53ResolverConfigResources(t *testing.T) {
+	resolverConfig, ok := newRoute53ResolverConfigResource(&route53resolvertypes.ResolverConfig{
+		AutodefinedReverse: route53resolvertypes.ResolverAutodefinedReverseStatusDisabled,
+		Id:                 aws.String(testRoute53ResolverConfigID),
+		ResourceId:         aws.String(testRoute53ResolverVPCID),
+	})
+	assertRoute53ResolverResourceAttributes(t, resolverConfig, ok, route53ResolverConfigResourceType, testRoute53ResolverConfigID,
+		[]string{"config", testRoute53ResolverVPCID, testRoute53ResolverConfigID},
+		map[string]string{"autodefined_reverse_flag": "DISABLE", "resource_id": testRoute53ResolverVPCID})
+
+	dnssecConfig, ok := newRoute53ResolverDNSSECConfigResource(&route53resolvertypes.ResolverDnssecConfig{
+		Id:               aws.String(testRoute53ResolverDNSSECConfigID),
+		ResourceId:       aws.String(testRoute53ResolverVPCID),
+		ValidationStatus: route53resolvertypes.ResolverDNSSECValidationStatusEnabled,
+	})
+	assertRoute53ResolverResourceAttributes(t, dnssecConfig, ok, route53ResolverDNSSECConfigResourceType, testRoute53ResolverDNSSECConfigID,
+		[]string{"dnssec_config", testRoute53ResolverVPCID, testRoute53ResolverDNSSECConfigID},
+		map[string]string{"resource_id": testRoute53ResolverVPCID})
+
+	firewallConfig, ok := newRoute53ResolverFirewallConfigResource(&route53resolvertypes.FirewallConfig{
+		FirewallFailOpen: route53resolvertypes.FirewallFailOpenStatusEnabled,
+		Id:               aws.String(testRoute53ResolverFirewallConfigID),
+		ResourceId:       aws.String(testRoute53ResolverVPCID),
+	})
+	assertRoute53ResolverResourceAttributes(t, firewallConfig, ok, route53ResolverFirewallConfigResourceType, testRoute53ResolverFirewallConfigID,
+		[]string{"firewall_config", testRoute53ResolverVPCID, testRoute53ResolverFirewallConfigID},
+		map[string]string{"firewall_fail_open": "ENABLED", "resource_id": testRoute53ResolverVPCID})
+
+	if _, ok := newRoute53ResolverConfigResource(&route53resolvertypes.ResolverConfig{AutodefinedReverse: route53resolvertypes.ResolverAutodefinedReverseStatusEnabled, Id: aws.String(testRoute53ResolverConfigID), ResourceId: aws.String(testRoute53ResolverVPCID)}); ok {
+		t.Fatal("default enabled resolver config should be skipped")
+	}
+	if _, ok := newRoute53ResolverConfigResource(&route53resolvertypes.ResolverConfig{AutodefinedReverse: route53resolvertypes.ResolverAutodefinedReverseStatusEnabling, Id: aws.String(testRoute53ResolverConfigID), ResourceId: aws.String(testRoute53ResolverVPCID)}); ok {
+		t.Fatal("pending resolver config should be skipped")
+	}
+	if _, ok := newRoute53ResolverDNSSECConfigResource(&route53resolvertypes.ResolverDnssecConfig{Id: aws.String(testRoute53ResolverDNSSECConfigID), ResourceId: aws.String(testRoute53ResolverVPCID), ValidationStatus: route53resolvertypes.ResolverDNSSECValidationStatusDisabled}); ok {
+		t.Fatal("disabled DNSSEC config should be skipped")
+	}
+	if _, ok := newRoute53ResolverFirewallConfigResource(&route53resolvertypes.FirewallConfig{FirewallFailOpen: route53resolvertypes.FirewallFailOpenStatusDisabled, Id: aws.String(testRoute53ResolverFirewallConfigID), ResourceId: aws.String(testRoute53ResolverVPCID)}); ok {
+		t.Fatal("default disabled firewall config should be skipped")
+	}
+}
+
+func TestRoute53ResolverConfigPagination(t *testing.T) {
+	client := &fakeRoute53ResolverConfigListClient{
+		resolverConfigPages: []*route53resolver.ListResolverConfigsOutput{
+			{
+				NextToken: aws.String("next-resolver"),
+				ResolverConfigs: []route53resolvertypes.ResolverConfig{{
+					AutodefinedReverse: route53resolvertypes.ResolverAutodefinedReverseStatusDisabled,
+					Id:                 aws.String(testRoute53ResolverConfigID),
+					ResourceId:         aws.String(testRoute53ResolverVPCID),
+				}},
+			},
+			{ResolverConfigs: []route53resolvertypes.ResolverConfig{{Id: aws.String("rslvr-rc-2"), ResourceId: aws.String("vpc-2")}}},
+		},
+		dnssecConfigPages: []*route53resolver.ListResolverDnssecConfigsOutput{
+			{
+				NextToken: aws.String("next-dnssec"),
+				ResolverDnssecConfigs: []route53resolvertypes.ResolverDnssecConfig{{
+					Id:               aws.String(testRoute53ResolverDNSSECConfigID),
+					ResourceId:       aws.String(testRoute53ResolverVPCID),
+					ValidationStatus: route53resolvertypes.ResolverDNSSECValidationStatusEnabled,
+				}},
+			},
+			{ResolverDnssecConfigs: []route53resolvertypes.ResolverDnssecConfig{{Id: aws.String("rslvr-dnssec-2"), ResourceId: aws.String("vpc-2")}}},
+		},
+		firewallConfigPages: []*route53resolver.ListFirewallConfigsOutput{
+			{
+				FirewallConfigs: []route53resolvertypes.FirewallConfig{{
+					FirewallFailOpen: route53resolvertypes.FirewallFailOpenStatusEnabled,
+					Id:               aws.String(testRoute53ResolverFirewallConfigID),
+					ResourceId:       aws.String(testRoute53ResolverVPCID),
+				}},
+				NextToken: aws.String("next-firewall"),
+			},
+			{FirewallConfigs: []route53resolvertypes.FirewallConfig{{Id: aws.String("rslvr-fc-2"), ResourceId: aws.String("vpc-2")}}},
+		},
+	}
+
+	resolverConfigs, err := listRoute53ResolverConfigs(client)
+	if err != nil {
+		t.Fatalf("list resolver configs: %v", err)
+	}
+	if got, want := len(resolverConfigs), 2; got != want {
+		t.Fatalf("resolver config count = %d, want %d", got, want)
+	}
+	if got, want := StringValue(client.resolverConfigInputs[1].NextToken), "next-resolver"; got != want {
+		t.Fatalf("resolver config page token = %q, want %q", got, want)
+	}
+
+	dnssecConfigs, err := listRoute53ResolverDNSSECConfigs(client)
+	if err != nil {
+		t.Fatalf("list DNSSEC configs: %v", err)
+	}
+	if got, want := len(dnssecConfigs), 2; got != want {
+		t.Fatalf("DNSSEC config count = %d, want %d", got, want)
+	}
+	if got, want := StringValue(client.dnssecConfigInputs[1].NextToken), "next-dnssec"; got != want {
+		t.Fatalf("DNSSEC config page token = %q, want %q", got, want)
+	}
+
+	firewallConfigs, err := listRoute53ResolverFirewallConfigs(client)
+	if err != nil {
+		t.Fatalf("list firewall configs: %v", err)
+	}
+	if got, want := len(firewallConfigs), 2; got != want {
+		t.Fatalf("firewall config count = %d, want %d", got, want)
+	}
+	if got, want := StringValue(client.firewallConfigInputs[1].NextToken), "next-firewall"; got != want {
+		t.Fatalf("firewall config page token = %q, want %q", got, want)
 	}
 }
 
@@ -262,4 +380,34 @@ func assertRoute53ResolverResourceAttributes(t *testing.T, resource terraformuti
 	if resource.ResourceName != wantName {
 		t.Fatalf("resource name = %q, want %q", resource.ResourceName, wantName)
 	}
+}
+
+type fakeRoute53ResolverConfigListClient struct {
+	resolverConfigPages  []*route53resolver.ListResolverConfigsOutput
+	resolverConfigInputs []*route53resolver.ListResolverConfigsInput
+	dnssecConfigPages    []*route53resolver.ListResolverDnssecConfigsOutput
+	dnssecConfigInputs   []*route53resolver.ListResolverDnssecConfigsInput
+	firewallConfigPages  []*route53resolver.ListFirewallConfigsOutput
+	firewallConfigInputs []*route53resolver.ListFirewallConfigsInput
+}
+
+func (c *fakeRoute53ResolverConfigListClient) ListResolverConfigs(ctx context.Context, input *route53resolver.ListResolverConfigsInput, optFns ...func(*route53resolver.Options)) (*route53resolver.ListResolverConfigsOutput, error) {
+	c.resolverConfigInputs = append(c.resolverConfigInputs, input)
+	page := c.resolverConfigPages[0]
+	c.resolverConfigPages = c.resolverConfigPages[1:]
+	return page, nil
+}
+
+func (c *fakeRoute53ResolverConfigListClient) ListResolverDnssecConfigs(ctx context.Context, input *route53resolver.ListResolverDnssecConfigsInput, optFns ...func(*route53resolver.Options)) (*route53resolver.ListResolverDnssecConfigsOutput, error) {
+	c.dnssecConfigInputs = append(c.dnssecConfigInputs, input)
+	page := c.dnssecConfigPages[0]
+	c.dnssecConfigPages = c.dnssecConfigPages[1:]
+	return page, nil
+}
+
+func (c *fakeRoute53ResolverConfigListClient) ListFirewallConfigs(ctx context.Context, input *route53resolver.ListFirewallConfigsInput, optFns ...func(*route53resolver.Options)) (*route53resolver.ListFirewallConfigsOutput, error) {
+	c.firewallConfigInputs = append(c.firewallConfigInputs, input)
+	page := c.firewallConfigPages[0]
+	c.firewallConfigPages = c.firewallConfigPages[1:]
+	return page, nil
 }

@@ -401,6 +401,7 @@ func (p *AWSProvider) GetSupportedService() map[string]terraformutils.ServiceGen
 		"nacl":                  &AwsFacade{service: &NaclGenerator{}},
 		"nat":                   &AwsFacade{service: &NatGatewayGenerator{}},
 		"neptune":               &AwsFacade{service: &NeptuneGenerator{}},
+		"networkmanager":        &AwsFacade{service: &NetworkManagerGenerator{}},
 		"notifications":         &AwsFacade{service: &NotificationsGenerator{}},
 		"notificationscontacts": &AwsFacade{service: &NotificationsContactsGenerator{}},
 		"opsworks":              &AwsFacade{service: &OpsworksGenerator{}},
