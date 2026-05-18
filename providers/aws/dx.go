@@ -264,6 +264,9 @@ func newDirectConnectGatewayAssociationResource(association directconnecttypes.D
 }
 
 func directConnectConnectionImportable(connection directconnecttypes.Connection) bool {
+	if StringValue(connection.LagId) != "" {
+		return false
+	}
 	switch connection.ConnectionState {
 	case directconnecttypes.ConnectionStateDeleting,
 		directconnecttypes.ConnectionStateDeleted,

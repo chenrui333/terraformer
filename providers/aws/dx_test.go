@@ -119,6 +119,13 @@ func TestDirectConnectConnectionResourceFiltersTerminalStates(t *testing.T) {
 	}); ok {
 		t.Fatal("rejected connection should be skipped")
 	}
+	if _, ok := newDirectConnectConnectionResource(directconnecttypes.Connection{
+		ConnectionId:    aws.String("dxcon-lag-member"),
+		ConnectionState: directconnecttypes.ConnectionStateAvailable,
+		LagId:           aws.String("dxlag-123"),
+	}); ok {
+		t.Fatal("LAG member connection should be skipped")
+	}
 }
 
 func TestDirectConnectGatewayIDs(t *testing.T) {
