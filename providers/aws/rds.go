@@ -329,7 +329,7 @@ func (g *RDSGenerator) addDBInstanceRoleAssociations(instanceID string, roles []
 	for _, role := range roles {
 		roleARN := StringValue(role.RoleArn)
 		featureName := StringValue(role.FeatureName)
-		if roleARN == "" || featureName == "" || !rdsRoleAssociationStatusImportable(StringValue(role.Status)) || !rdsRoleAssociationImportIDSupported(roleARN) {
+		if roleARN == "" || featureName == "" || !rdsRoleAssociationStatusImportable(StringValue(role.Status)) {
 			continue
 		}
 		g.Resources = append(g.Resources, terraformutils.NewResource(
@@ -388,7 +388,7 @@ func (g *RDSGenerator) addRDSClusterRoleAssociations(clusterID string, roles []r
 	for _, role := range roles {
 		roleARN := StringValue(role.RoleArn)
 		featureName := StringValue(role.FeatureName)
-		if clusterID == "" || roleARN == "" || !rdsRoleAssociationStatusImportable(StringValue(role.Status)) || !rdsRoleAssociationImportIDSupported(roleARN) {
+		if clusterID == "" || roleARN == "" || !rdsRoleAssociationStatusImportable(StringValue(role.Status)) || !rdsClusterRoleAssociationImportIDSupported(roleARN) {
 			continue
 		}
 		attributes := map[string]string{
@@ -591,7 +591,7 @@ func rdsRoleAssociationStatusImportable(status string) bool {
 	return strings.EqualFold(status, "active")
 }
 
-func rdsRoleAssociationImportIDSupported(roleARN string) bool {
+func rdsClusterRoleAssociationImportIDSupported(roleARN string) bool {
 	return !strings.Contains(roleARN, ",")
 }
 
@@ -601,7 +601,7 @@ func rdsClusterRoleAssociationsSplitSafe(roles []rdstypes.DBClusterRole) bool {
 		if roleARN == "" {
 			continue
 		}
-		if !rdsRoleAssociationStatusImportable(StringValue(role.Status)) || !rdsRoleAssociationImportIDSupported(roleARN) {
+		if !rdsRoleAssociationStatusImportable(StringValue(role.Status)) || !rdsClusterRoleAssociationImportIDSupported(roleARN) {
 			return false
 		}
 	}

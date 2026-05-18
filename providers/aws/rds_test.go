@@ -45,18 +45,29 @@ func TestRDSAddDBInstanceRoleAssociations(t *testing.T) {
 		{FeatureName: aws.String("s3Import"), RoleArn: aws.String(roleARN), Status: aws.String("ACTIVE")},
 	})
 
-	if len(g.Resources) != 1 {
-		t.Fatalf("len(Resources) = %d, want 1", len(g.Resources))
+	if len(g.Resources) != 2 {
+		t.Fatalf("len(Resources) = %d, want 2", len(g.Resources))
 	}
-	resource := g.Resources[0]
-	if got, want := resource.InstanceInfo.Type, "aws_db_instance_role_association"; got != want {
-		t.Fatalf("resource type = %q, want %q", got, want)
+	wantIDs := map[string]bool{
+		"db-1," + commaRoleARN: false,
+		"db-1," + roleARN:      false,
 	}
-	if got, want := resource.InstanceState.ID, "db-1,"+roleARN; got != want {
-		t.Fatalf("resource ID = %q, want %q", got, want)
+	for _, resource := range g.Resources {
+		if got, want := resource.InstanceInfo.Type, "aws_db_instance_role_association"; got != want {
+			t.Fatalf("resource type = %q, want %q", got, want)
+		}
+		if _, ok := wantIDs[resource.InstanceState.ID]; !ok {
+			t.Fatalf("resource ID = %q, want one of %v", resource.InstanceState.ID, wantIDs)
+		}
+		wantIDs[resource.InstanceState.ID] = true
+		if got, want := resource.InstanceState.Attributes["feature_name"], "s3Import"; got != want {
+			t.Fatalf("feature_name = %q, want %q", got, want)
+		}
 	}
-	if got, want := resource.InstanceState.Attributes["feature_name"], "s3Import"; got != want {
-		t.Fatalf("feature_name = %q, want %q", got, want)
+	for id, seen := range wantIDs {
+		if !seen {
+			t.Fatalf("missing resource ID %q", id)
+		}
 	}
 }
 
@@ -357,11 +368,11 @@ func TestRDSRoleAssociationStatusImportable(t *testing.T) {
 	}
 }
 
-func TestRDSRoleAssociationImportIDSupported(t *testing.T) {
-	if !rdsRoleAssociationImportIDSupported("arn:aws:iam::123456789012:role/service-role/rds-role") {
+func TestRDSClusterRoleAssociationImportIDSupported(t *testing.T) {
+	if !rdsClusterRoleAssociationImportIDSupported("arn:aws:iam::123456789012:role/service-role/rds-role") {
 		t.Fatal("role ARN without comma should be supported")
 	}
-	if rdsRoleAssociationImportIDSupported("arn:aws:iam::123456789012:role/service-role/rds,role") {
-		t.Fatal("role ARN with comma should be skipped")
+	if rdsClusterRoleAssociationImportIDSupported("arn:aws:iam::123456789012:role/service-role/rds,role") {
+		t.Fatal("cluster role ARN with comma should be skipped")
 	}
 }
