@@ -3,6 +3,8 @@
 package helm
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
@@ -175,7 +177,7 @@ func createReleaseResources(releases []*helmrelease.Release) []terraformutils.Re
 
 		resources = append(resources, terraformutils.NewResource(
 			id,
-			fmt.Sprintf("release_%s_%s", release.Namespace, release.Name),
+			releaseResourceName(id, release.Namespace, release.Name),
 			helmReleaseResourceType,
 			helmProviderName,
 			attributes,
@@ -184,6 +186,11 @@ func createReleaseResources(releases []*helmrelease.Release) []terraformutils.Re
 		))
 	}
 	return resources
+}
+
+func releaseResourceName(id, namespace, name string) string {
+	sum := sha256.Sum256([]byte(id))
+	return fmt.Sprintf("release_%s_%s_%s", namespace, name, hex.EncodeToString(sum[:8]))
 }
 
 func selectLatestImportableReleases(releases []*helmrelease.Release) []*helmrelease.Release {

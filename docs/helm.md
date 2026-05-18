@@ -34,11 +34,12 @@ separator:
 terraformer import helm --resources=release --filter=release=default/nginx:kube-system/metrics-server
 ```
 
-Broad discovery imports only the latest deployed revision for each release.
-Historical or superseded revisions, uninstalled or uninstalling releases,
-pending install/upgrade/rollback releases, failed releases, and unknown states
-are skipped. Failed releases are not imported because the provider refresh path
-is not treated as safe for this lane.
+Broad discovery imports a release only when its latest revision is in
+`deployed` state; otherwise the release is skipped. Historical or superseded
+revisions, uninstalled or uninstalling releases, pending install/upgrade/rollback
+releases, failed releases, and unknown states are skipped. Failed releases are
+not imported because the provider refresh path is not treated as safe for this
+lane.
 
 Generated resources seed only fields that can be recovered safely from Helm
 release metadata:

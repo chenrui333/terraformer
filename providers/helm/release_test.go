@@ -184,6 +184,50 @@ func TestReleaseResourceSeedsSafeFields(t *testing.T) {
 	}
 }
 
+func TestReleaseResourceLabelCollisions(t *testing.T) {
+	releases := []*helmrelease.Release{
+		testRelease("c", "a_b", 1, helmrelease.StatusDeployed),
+		testRelease("b_c", "a", 1, helmrelease.StatusDeployed),
+	}
+
+	resources := createReleaseResources(releases)
+	if len(resources) != 2 {
+		t.Fatalf("resources = %d, want 2", len(resources))
+	}
+
+	resourcesByID := map[string]terraformutils.Resource{}
+	resourceNames := map[string]struct{}{}
+	for _, resource := range resources {
+		if _, exists := resourceNames[resource.ResourceName]; exists {
+			t.Fatalf("duplicate resource name %q in %#v", resource.ResourceName, resources)
+		}
+		resourceNames[resource.ResourceName] = struct{}{}
+		resourcesByID[resource.InstanceState.ID] = resource
+	}
+
+	want := map[string]map[string]string{
+		"a_b/c": {
+			"namespace": "a_b",
+			"name":      "c",
+		},
+		"a/b_c": {
+			"namespace": "a",
+			"name":      "b_c",
+		},
+	}
+	for id, attributes := range want {
+		resource, ok := resourcesByID[id]
+		if !ok {
+			t.Fatalf("missing resource ID %q in %#v", id, resourcesByID)
+		}
+		for key, value := range attributes {
+			if got := resource.InstanceState.Attributes[key]; got != value {
+				t.Fatalf("resource %q attribute %q = %q, want %q", id, key, got, value)
+			}
+		}
+	}
+}
+
 func TestReleaseResourceDoesNotExportValuesSecretsOrManifests(t *testing.T) {
 	release := testRelease("payments", "apps", 1, helmrelease.StatusDeployed)
 	release.Config = map[string]interface{}{
