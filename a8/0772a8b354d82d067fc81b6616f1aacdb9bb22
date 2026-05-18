@@ -1,0 +1,21 @@
+providers/cloudflare/certificates_test.go
+  s_8116db84abb0ec::t_86fdf911e1e2a6 46-67
+providers/cloudflare/certificates.go
+  s_8116db84abb0ec::t_86fdf911e1e2a6 91-109,360-364,371
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "a80772a8b354d82d067fc81b6616f1aacdb9bb22",
+  "prompts": {},
+  "sessions": {
+    "s_8116db84abb0ec": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e386f-b7c9-7150-b21e-94b38441ebd7",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
