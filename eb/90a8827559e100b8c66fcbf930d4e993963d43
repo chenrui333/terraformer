@@ -1,0 +1,19 @@
+docs/aws.md
+  s_409c28599d88b7::t_df37cac684021e 593
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.9",
+  "base_commit_sha": "eb90a8827559e100b8c66fcbf930d4e993963d43",
+  "prompts": {},
+  "sessions": {
+    "s_409c28599d88b7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3920-eed6-7691-aaa7-ec58d4da18a4",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
