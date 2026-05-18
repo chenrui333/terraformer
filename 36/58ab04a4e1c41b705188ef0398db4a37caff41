@@ -1,0 +1,19 @@
+docs/provider-architecture.md
+  s_409c28599d88b7::t_2d357c1b27f195 71-73,81-83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.9",
+  "base_commit_sha": "3658ab04a4e1c41b705188ef0398db4a37caff41",
+  "prompts": {},
+  "sessions": {
+    "s_409c28599d88b7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3920-eed6-7691-aaa7-ec58d4da18a4",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
