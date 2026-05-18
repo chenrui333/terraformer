@@ -191,8 +191,8 @@ func newNetworkManagerSiteResource(site networkmanagertypes.Site) (terraformutil
 	if id == "" || arn == "" || globalNetworkID == "" || !networkManagerSiteImportable(site) {
 		return terraformutils.Resource{}, false
 	}
-	return terraformutils.NewResource(
-		arn,
+	resource := terraformutils.NewResource(
+		id,
 		networkManagerResourceName("site", globalNetworkID, id),
 		networkManagerSiteResourceType,
 		"aws",
@@ -201,7 +201,9 @@ func newNetworkManagerSiteResource(site networkmanagertypes.Site) (terraformutil
 		},
 		networkManagerAllowEmptyValues,
 		map[string]interface{}{},
-	), true
+	)
+	setNetworkManagerImportID(&resource, arn)
+	return resource, true
 }
 
 func newNetworkManagerDeviceResource(device networkmanagertypes.Device) (terraformutils.Resource, bool) {
@@ -215,15 +217,17 @@ func newNetworkManagerDeviceResource(device networkmanagertypes.Device) (terrafo
 		"global_network_id": globalNetworkID,
 	}
 	putNetworkManagerString(attributes, "site_id", StringValue(device.SiteId))
-	return terraformutils.NewResource(
-		arn,
+	resource := terraformutils.NewResource(
+		id,
 		networkManagerResourceName("device", globalNetworkID, id),
 		networkManagerDeviceResourceType,
 		"aws",
 		attributes,
 		networkManagerAllowEmptyValues,
 		map[string]interface{}{},
-	), true
+	)
+	setNetworkManagerImportID(&resource, arn)
+	return resource, true
 }
 
 func newNetworkManagerLinkResource(link networkmanagertypes.Link) (terraformutils.Resource, bool) {
@@ -234,8 +238,8 @@ func newNetworkManagerLinkResource(link networkmanagertypes.Link) (terraformutil
 	if id == "" || arn == "" || globalNetworkID == "" || siteID == "" || !networkManagerLinkImportable(link) {
 		return terraformutils.Resource{}, false
 	}
-	return terraformutils.NewResource(
-		arn,
+	resource := terraformutils.NewResource(
+		id,
 		networkManagerResourceName("link", globalNetworkID, siteID, id),
 		networkManagerLinkResourceType,
 		"aws",
@@ -245,7 +249,9 @@ func newNetworkManagerLinkResource(link networkmanagertypes.Link) (terraformutil
 		},
 		networkManagerAllowEmptyValues,
 		map[string]interface{}{},
-	), true
+	)
+	setNetworkManagerImportID(&resource, arn)
+	return resource, true
 }
 
 func newNetworkManagerConnectionResource(connection networkmanagertypes.Connection) (terraformutils.Resource, bool) {
@@ -255,8 +261,8 @@ func newNetworkManagerConnectionResource(connection networkmanagertypes.Connecti
 	if id == "" || arn == "" || globalNetworkID == "" || !networkManagerConnectionImportable(connection) {
 		return terraformutils.Resource{}, false
 	}
-	return terraformutils.NewResource(
-		arn,
+	resource := terraformutils.NewResource(
+		id,
 		networkManagerResourceName("connection", globalNetworkID, id),
 		networkManagerConnectionResourceType,
 		"aws",
@@ -269,7 +275,9 @@ func newNetworkManagerConnectionResource(connection networkmanagertypes.Connecti
 		},
 		networkManagerAllowEmptyValues,
 		map[string]interface{}{},
-	), true
+	)
+	setNetworkManagerImportID(&resource, arn)
+	return resource, true
 }
 
 func networkManagerGlobalNetworkImportable(globalNetwork networkmanagertypes.GlobalNetwork) bool {
@@ -296,6 +304,16 @@ func putNetworkManagerString(attributes map[string]string, key, value string) {
 	if value != "" {
 		attributes[key] = value
 	}
+}
+
+func setNetworkManagerImportID(resource *terraformutils.Resource, importID string) {
+	if resource == nil || resource.InstanceState == nil || importID == "" {
+		return
+	}
+	if resource.InstanceState.Meta == nil {
+		resource.InstanceState.Meta = map[string]interface{}{}
+	}
+	resource.InstanceState.Meta["import_id"] = importID
 }
 
 func networkManagerResourceName(parts ...string) string {

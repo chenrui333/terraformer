@@ -16,7 +16,7 @@ func TestNetworkManagerGlobalNetworkResource(t *testing.T) {
 		GlobalNetworkId: aws.String("global-network-123"),
 		State:           networkmanagertypes.GlobalNetworkStateAvailable,
 	})
-	assertNetworkManagerResource(t, resource, ok, networkManagerGlobalNetworkResourceType, "global-network-123", nil)
+	assertNetworkManagerResource(t, resource, ok, networkManagerGlobalNetworkResourceType, "global-network-123", "", nil)
 
 	if _, ok := newNetworkManagerGlobalNetworkResource(networkmanagertypes.GlobalNetwork{
 		GlobalNetworkId: aws.String("global-network-deleting"),
@@ -40,7 +40,7 @@ func TestNetworkManagerSiteDeviceLinkConnectionResources(t *testing.T) {
 		SiteId:          aws.String("site-123"),
 		State:           networkmanagertypes.SiteStateAvailable,
 	})
-	assertNetworkManagerResource(t, site, ok, networkManagerSiteResourceType, siteARN, map[string]string{
+	assertNetworkManagerResource(t, site, ok, networkManagerSiteResourceType, "site-123", siteARN, map[string]string{
 		"global_network_id": "global-network-123",
 	})
 
@@ -51,7 +51,7 @@ func TestNetworkManagerSiteDeviceLinkConnectionResources(t *testing.T) {
 		SiteId:          aws.String("site-123"),
 		State:           networkmanagertypes.DeviceStateAvailable,
 	})
-	assertNetworkManagerResource(t, device, ok, networkManagerDeviceResourceType, deviceARN, map[string]string{
+	assertNetworkManagerResource(t, device, ok, networkManagerDeviceResourceType, "device-123", deviceARN, map[string]string{
 		"global_network_id": "global-network-123",
 		"site_id":           "site-123",
 	})
@@ -63,7 +63,7 @@ func TestNetworkManagerSiteDeviceLinkConnectionResources(t *testing.T) {
 		SiteId:          aws.String("site-123"),
 		State:           networkmanagertypes.LinkStateAvailable,
 	})
-	assertNetworkManagerResource(t, link, ok, networkManagerLinkResourceType, linkARN, map[string]string{
+	assertNetworkManagerResource(t, link, ok, networkManagerLinkResourceType, "link-123", linkARN, map[string]string{
 		"global_network_id": "global-network-123",
 		"site_id":           "site-123",
 	})
@@ -76,7 +76,7 @@ func TestNetworkManagerSiteDeviceLinkConnectionResources(t *testing.T) {
 		GlobalNetworkId:   aws.String("global-network-123"),
 		State:             networkmanagertypes.ConnectionStateAvailable,
 	})
-	assertNetworkManagerResource(t, connection, ok, networkManagerConnectionResourceType, connectionARN, map[string]string{
+	assertNetworkManagerResource(t, connection, ok, networkManagerConnectionResourceType, "connection-123", connectionARN, map[string]string{
 		"connected_device_id": "device-456",
 		"device_id":           "device-123",
 		"global_network_id":   "global-network-123",
@@ -86,6 +86,7 @@ func TestNetworkManagerSiteDeviceLinkConnectionResources(t *testing.T) {
 func TestNetworkManagerStatePredicates(t *testing.T) {
 	if _, ok := newNetworkManagerSiteResource(networkmanagertypes.Site{
 		GlobalNetworkId: aws.String("global-network-123"),
+		SiteArn:         aws.String("arn:aws:networkmanager::123456789012:site/global-network-123/site-deleting"),
 		SiteId:          aws.String("site-deleting"),
 		State:           networkmanagertypes.SiteStateDeleting,
 	}); ok {
@@ -124,7 +125,7 @@ func TestNetworkManagerTypedFilterBehavior(t *testing.T) {
 	}
 }
 
-func assertNetworkManagerResource(t *testing.T, resource terraformutils.Resource, ok bool, resourceType, id string, attributes map[string]string) {
+func assertNetworkManagerResource(t *testing.T, resource terraformutils.Resource, ok bool, resourceType, id, importID string, attributes map[string]string) {
 	t.Helper()
 	if !ok {
 		t.Fatalf("expected %s resource", resourceType)
@@ -134,6 +135,11 @@ func assertNetworkManagerResource(t *testing.T, resource terraformutils.Resource
 	}
 	if resource.InstanceState.ID != id {
 		t.Fatalf("resource ID = %q, want %s", resource.InstanceState.ID, id)
+	}
+	if importID != "" {
+		if got := resource.InstanceState.Meta["import_id"]; got != importID {
+			t.Fatalf("import_id = %#v, want %q", got, importID)
+		}
 	}
 	for key, want := range attributes {
 		if got := resource.InstanceState.Attributes[key]; got != want {
