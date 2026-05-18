@@ -212,7 +212,7 @@ func TestLexInitialCleanupHonorsTypedFilters(t *testing.T) {
 	g.Resources = []terraformutils.Resource{bot, alias, billing}
 	g.Filter = []terraformutils.ResourceFilter{{
 		ServiceName:      "lex_bot",
-		FieldPath:        "name",
+		FieldPath:        "id",
 		AcceptableValues: []string{"support"},
 	}}
 	g.InitialCleanup()
@@ -239,8 +239,8 @@ func TestLexInitialCleanupHonorsTypedFilters(t *testing.T) {
 	v2.Resources = []terraformutils.Resource{intent, otherIntent}
 	v2.Filter = []terraformutils.ResourceFilter{{
 		ServiceName:      "lexv2models_intent",
-		FieldPath:        "name",
-		AcceptableValues: []string{"FallbackIntent"},
+		FieldPath:        "id",
+		AcceptableValues: []string{"INT123:BOT123:DRAFT:en_US"},
 	}}
 	v2.InitialCleanup()
 
@@ -249,6 +249,67 @@ func TestLexInitialCleanupHonorsTypedFilters(t *testing.T) {
 	}
 	if got := v2.Resources[0].InstanceState.Attributes["name"]; got != "FallbackIntent" {
 		t.Fatalf("LexV2 InitialCleanup() kept resource name = %q, want FallbackIntent", got)
+	}
+}
+
+func TestLexInitialCleanupPreservesPostRefreshFilters(t *testing.T) {
+	bot, ok := newLexBotResource(lexmodelstypes.BotMetadata{Name: aws.String("support"), Status: lexmodelstypes.StatusReady})
+	assertLexResource(t, bot, ok, "support", lexBotResourceType)
+	alias, ok := newLexBotAliasResource("support", lexmodelstypes.BotAliasMetadata{Name: aws.String("prod")})
+	assertLexResource(t, alias, ok, "support:prod", lexBotAliasResourceType)
+	billing, ok := newLexBotResource(lexmodelstypes.BotMetadata{Name: aws.String("billing"), Status: lexmodelstypes.StatusReady})
+	assertLexResource(t, billing, ok, "billing", lexBotResourceType)
+
+	g := LexGenerator{}
+	g.Resources = []terraformutils.Resource{bot, alias, billing}
+	g.Filter = []terraformutils.ResourceFilter{{
+		ServiceName:      "lex_bot",
+		FieldPath:        "arn",
+		AcceptableValues: []string{"arn:aws:lex:us-east-1:123456789012:bot:support"},
+	}}
+	g.InitialCleanup()
+
+	if len(g.Resources) != 2 {
+		t.Fatalf("InitialCleanup() resources len = %d, want 2", len(g.Resources))
+	}
+	for _, resource := range g.Resources {
+		if got := resource.InstanceInfo.Type; got != lexBotResourceType {
+			t.Fatalf("InitialCleanup() kept resource type = %q, want %s", got, lexBotResourceType)
+		}
+	}
+
+	intent, ok := newLexV2IntentResource("BOT123", "en_US", lexv2types.IntentSummary{
+		IntentId:   aws.String("INT123"),
+		IntentName: aws.String("FallbackIntent"),
+	})
+	assertLexResource(t, intent, ok, "INT123:BOT123:DRAFT:en_US", lexV2IntentResourceType)
+	otherIntent, ok := newLexV2IntentResource("BOT123", "en_US", lexv2types.IntentSummary{
+		IntentId:   aws.String("INT456"),
+		IntentName: aws.String("OrderFlowers"),
+	})
+	assertLexResource(t, otherIntent, ok, "INT456:BOT123:DRAFT:en_US", lexV2IntentResourceType)
+	slot, ok := newLexV2SlotResource("BOT123", "en_US", "INT123", lexv2types.SlotSummary{
+		SlotId:   aws.String("SLOT123"),
+		SlotName: aws.String("FlowerType"),
+	})
+	assertLexResource(t, slot, ok, "BOT123,DRAFT,INT123,en_US,SLOT123", lexV2SlotResourceType)
+
+	v2 := LexV2ModelsGenerator{}
+	v2.Resources = []terraformutils.Resource{intent, otherIntent, slot}
+	v2.Filter = []terraformutils.ResourceFilter{{
+		ServiceName:      "lexv2models_intent",
+		FieldPath:        "tags.env",
+		AcceptableValues: []string{"prod"},
+	}}
+	v2.InitialCleanup()
+
+	if len(v2.Resources) != 2 {
+		t.Fatalf("LexV2 InitialCleanup() resources len = %d, want 2", len(v2.Resources))
+	}
+	for _, resource := range v2.Resources {
+		if got := resource.InstanceInfo.Type; got != lexV2IntentResourceType {
+			t.Fatalf("LexV2 InitialCleanup() kept resource type = %q, want %s", got, lexV2IntentResourceType)
+		}
 	}
 }
 

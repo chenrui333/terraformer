@@ -70,6 +70,9 @@ func (g *LexGenerator) InitialCleanup() {
 		}
 		allPredicatesTrue := true
 		for _, filter := range g.Filter {
+			if filter.FieldPath != "id" {
+				continue
+			}
 			if filter.ServiceName != "" && filter.ServiceName != serviceName {
 				continue
 			}
@@ -353,6 +356,9 @@ func (g *LexV2ModelsGenerator) InitialCleanup() {
 		}
 		allPredicatesTrue := true
 		for _, filter := range g.Filter {
+			if filter.FieldPath != "id" {
+				continue
+			}
 			if filter.ServiceName != "" && filter.ServiceName != serviceName {
 				continue
 			}

@@ -186,8 +186,8 @@ func TestQuickSightInitialCleanupHonorsTypedFilters(t *testing.T) {
 	g.Resources = []terraformutils.Resource{namespace, group, readers}
 	g.Filter = []terraformutils.ResourceFilter{{
 		ServiceName:      "quicksight_group",
-		FieldPath:        "group_name",
-		AcceptableValues: []string{"authors"},
+		FieldPath:        "id",
+		AcceptableValues: []string{"123456789012/default/authors"},
 	}}
 	g.InitialCleanup()
 
@@ -199,6 +199,47 @@ func TestQuickSightInitialCleanupHonorsTypedFilters(t *testing.T) {
 	}
 	if got := g.Resources[0].InstanceState.Attributes["group_name"]; got != "authors" {
 		t.Fatalf("InitialCleanup() kept group_name = %q, want authors", got)
+	}
+}
+
+func TestQuickSightInitialCleanupPreservesPostRefreshFilters(t *testing.T) {
+	namespace, ok := newQuickSightNamespaceResource("123456789012", quicksighttypes.NamespaceInfoV2{
+		CreationStatus: quicksighttypes.NamespaceStatusCreated,
+		Name:           aws.String("default"),
+	})
+	assertQuickSightResource(t, namespace, ok, "123456789012,default", quickSightNamespaceResourceType)
+	group, ok := newQuickSightGroupResource("123456789012", "default", quicksighttypes.Group{GroupName: aws.String("authors")})
+	assertQuickSightResource(t, group, ok, "123456789012/default/authors", quickSightGroupResourceType)
+	readers, ok := newQuickSightGroupResource("123456789012", "default", quicksighttypes.Group{GroupName: aws.String("readers")})
+	assertQuickSightResource(t, readers, ok, "123456789012/default/readers", quickSightGroupResourceType)
+
+	g := QuickSightGenerator{}
+	g.Resources = []terraformutils.Resource{namespace, group, readers}
+	g.Filter = []terraformutils.ResourceFilter{{
+		ServiceName:      "quicksight_group",
+		FieldPath:        "arn",
+		AcceptableValues: []string{"arn:aws:quicksight:us-east-1:123456789012:group/default/authors"},
+	}}
+	g.InitialCleanup()
+
+	if len(g.Resources) != 2 {
+		t.Fatalf("typed post-refresh InitialCleanup() resources len = %d, want 2", len(g.Resources))
+	}
+	for _, resource := range g.Resources {
+		if got := resource.InstanceInfo.Type; got != quickSightGroupResourceType {
+			t.Fatalf("typed post-refresh InitialCleanup() kept resource type = %q, want %s", got, quickSightGroupResourceType)
+		}
+	}
+
+	g.Resources = []terraformutils.Resource{namespace, group, readers}
+	g.Filter = []terraformutils.ResourceFilter{{
+		FieldPath:        "tags.env",
+		AcceptableValues: []string{"prod"},
+	}}
+	g.InitialCleanup()
+
+	if len(g.Resources) != 3 {
+		t.Fatalf("global post-refresh InitialCleanup() resources len = %d, want 3", len(g.Resources))
 	}
 }
 
