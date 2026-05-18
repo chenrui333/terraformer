@@ -47,8 +47,7 @@ func normalizeAWSResourceFilters(filters []terraformutils.ResourceFilter) {
 
 func normalizeAWSFilterServiceName(serviceName string) string {
 	serviceName = strings.TrimPrefix(serviceName, "aws_")
-	switch serviceName {
-	case "transit_gateway":
+	if serviceName == "transit_gateway" {
 		return "ec2_transit_gateway"
 	}
 	return serviceName
