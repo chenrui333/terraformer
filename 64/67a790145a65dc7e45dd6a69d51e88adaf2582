@@ -1,0 +1,21 @@
+providers/aws/s3control_test.go
+  s_c86082602448d5::t_493a1fa76ab8fe 368-389
+providers/aws/s3control.go
+  s_c86082602448d5::t_0d3b1134e8f210 58-61,65-68,795-796
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "6467a790145a65dc7e45dd6a69d51e88adaf2582",
+  "prompts": {},
+  "sessions": {
+    "s_c86082602448d5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3920-cd80-7613-a2a4-18b532d6e9d7",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
