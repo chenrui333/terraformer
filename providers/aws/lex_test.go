@@ -205,21 +205,50 @@ func TestLexInitialCleanupHonorsTypedFilters(t *testing.T) {
 	assertLexResource(t, bot, ok, "support", lexBotResourceType)
 	alias, ok := newLexBotAliasResource("support", lexmodelstypes.BotAliasMetadata{Name: aws.String("prod")})
 	assertLexResource(t, alias, ok, "support:prod", lexBotAliasResourceType)
+	billing, ok := newLexBotResource(lexmodelstypes.BotMetadata{Name: aws.String("billing"), Status: lexmodelstypes.StatusReady})
+	assertLexResource(t, billing, ok, "billing", lexBotResourceType)
 
 	g := LexGenerator{}
-	g.Resources = []terraformutils.Resource{bot, alias}
+	g.Resources = []terraformutils.Resource{bot, alias, billing}
 	g.Filter = []terraformutils.ResourceFilter{{
-		ServiceName:      "lex_bot_alias",
-		FieldPath:        "id",
-		AcceptableValues: []string{"support:prod"},
+		ServiceName:      "lex_bot",
+		FieldPath:        "name",
+		AcceptableValues: []string{"support"},
 	}}
 	g.InitialCleanup()
 
 	if len(g.Resources) != 1 {
 		t.Fatalf("InitialCleanup() resources len = %d, want 1", len(g.Resources))
 	}
-	if got := g.Resources[0].InstanceInfo.Type; got != lexBotAliasResourceType {
-		t.Fatalf("InitialCleanup() kept resource type = %q, want %s", got, lexBotAliasResourceType)
+	if got := g.Resources[0].InstanceState.Attributes["name"]; got != "support" {
+		t.Fatalf("InitialCleanup() kept resource name = %q, want support", got)
+	}
+
+	intent, ok := newLexV2IntentResource("BOT123", "en_US", lexv2types.IntentSummary{
+		IntentId:   aws.String("INT123"),
+		IntentName: aws.String("FallbackIntent"),
+	})
+	assertLexResource(t, intent, ok, "INT123:BOT123:DRAFT:en_US", lexV2IntentResourceType)
+	otherIntent, ok := newLexV2IntentResource("BOT123", "en_US", lexv2types.IntentSummary{
+		IntentId:   aws.String("INT456"),
+		IntentName: aws.String("OrderFlowers"),
+	})
+	assertLexResource(t, otherIntent, ok, "INT456:BOT123:DRAFT:en_US", lexV2IntentResourceType)
+
+	v2 := LexV2ModelsGenerator{}
+	v2.Resources = []terraformutils.Resource{intent, otherIntent}
+	v2.Filter = []terraformutils.ResourceFilter{{
+		ServiceName:      "lexv2models_intent",
+		FieldPath:        "name",
+		AcceptableValues: []string{"FallbackIntent"},
+	}}
+	v2.InitialCleanup()
+
+	if len(v2.Resources) != 1 {
+		t.Fatalf("LexV2 InitialCleanup() resources len = %d, want 1", len(v2.Resources))
+	}
+	if got := v2.Resources[0].InstanceState.Attributes["name"]; got != "FallbackIntent" {
+		t.Fatalf("LexV2 InitialCleanup() kept resource name = %q, want FallbackIntent", got)
 	}
 }
 

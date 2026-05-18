@@ -55,9 +55,6 @@ func (g *QuickSightGenerator) InitialCleanup() {
 		}
 		allPredicatesTrue := true
 		for _, filter := range g.Filter {
-			if filter.FieldPath != "id" {
-				continue
-			}
 			if filter.ServiceName != "" && filter.ServiceName != serviceName {
 				continue
 			}

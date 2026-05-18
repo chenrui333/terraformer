@@ -179,13 +179,15 @@ func TestQuickSightInitialCleanupHonorsTypedFilters(t *testing.T) {
 	assertQuickSightResource(t, namespace, ok, "123456789012,default", quickSightNamespaceResourceType)
 	group, ok := newQuickSightGroupResource("123456789012", "default", quicksighttypes.Group{GroupName: aws.String("authors")})
 	assertQuickSightResource(t, group, ok, "123456789012/default/authors", quickSightGroupResourceType)
+	readers, ok := newQuickSightGroupResource("123456789012", "default", quicksighttypes.Group{GroupName: aws.String("readers")})
+	assertQuickSightResource(t, readers, ok, "123456789012/default/readers", quickSightGroupResourceType)
 
 	g := QuickSightGenerator{}
-	g.Resources = []terraformutils.Resource{namespace, group}
+	g.Resources = []terraformutils.Resource{namespace, group, readers}
 	g.Filter = []terraformutils.ResourceFilter{{
 		ServiceName:      "quicksight_group",
-		FieldPath:        "id",
-		AcceptableValues: []string{"123456789012/default/authors"},
+		FieldPath:        "group_name",
+		AcceptableValues: []string{"authors"},
 	}}
 	g.InitialCleanup()
 
