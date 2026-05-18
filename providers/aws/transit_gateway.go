@@ -809,7 +809,23 @@ func listTransitGatewayMeteringPolicyEntries(svc transitGatewayMeteringPolicyAPI
 }
 
 func (g *TransitGatewayGenerator) shouldLoadTransitGatewayResource(serviceNames ...string) bool {
+	if !g.hasTransitGatewayTypedFilter() {
+		return true
+	}
 	return shouldLoadAWSResourceForTypedFilters(g.Filter, serviceNames...)
+}
+
+func (g *TransitGatewayGenerator) hasTransitGatewayTypedFilter() bool {
+	for _, filter := range g.Filter {
+		if filter.ServiceName == "" {
+			continue
+		}
+		serviceName := normalizeAWSFilterServiceName(filter.ServiceName)
+		if serviceName == "ec2_transit_gateway" || strings.HasPrefix(serviceName, "ec2_transit_gateway_") {
+			return true
+		}
+	}
+	return false
 }
 
 // Generate TerraformResources from AWS API

@@ -113,6 +113,21 @@ func TestTransitGatewayShouldLoadResourceForTypedFilters(t *testing.T) {
 	}
 
 	g.Filter = []terraformutils.ResourceFilter{{
+		ServiceName:      "aws_vpc",
+		FieldPath:        "id",
+		AcceptableValues: []string{"vpc-123"},
+	}}
+	if !g.shouldLoadTransitGatewayResource(transitGatewayResourceType) {
+		t.Fatal("unrelated typed filter should preserve transit gateway discovery")
+	}
+	if !g.shouldLoadTransitGatewayResource(transitGatewayConnectResourceType) {
+		t.Fatal("unrelated typed filter should preserve transit gateway add-on discovery")
+	}
+	if !g.shouldLoadTransitGatewayResource(transitGatewayPeeringAttachmentResourceType) {
+		t.Fatal("unrelated typed filter should preserve peering discovery")
+	}
+
+	g.Filter = []terraformutils.ResourceFilter{{
 		ServiceName:      "ec2_transit_gateway_connect",
 		FieldPath:        "id",
 		AcceptableValues: []string{"tgw-attach-connect"},
