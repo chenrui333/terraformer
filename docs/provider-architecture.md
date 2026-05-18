@@ -155,8 +155,8 @@ deferred or unsupported, or assigned to focused follow-up lanes.
 Close the tracking issue as completed only after the final audit confirms docs
 and provider registration are aligned, unsupported/deferred metadata validates,
 previously named remaining resources are accounted for, the unclassified count
-is zero, and validation has passed. Post any close-out summary after that final
-validation, not merely after the last expected lane merges.
+for the tracker is zero, and validation has passed. Post any close-out summary
+after that final validation, not merely after the last expected lane merges.
 
 If a clean audit finds no metadata or documentation corrections, leave the
 worktree unchanged instead of creating a docs-only record of the no-op.
