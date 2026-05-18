@@ -283,7 +283,7 @@ func cloudflareCertificatePackImportable(certificatePack cloudflareCertificateRa
 		return false
 	}
 	if cloudflareCertificateString(certificatePack, "certificate_authority") == "" ||
-		cloudflareCertificateString(certificatePack, "type") == "" ||
+		!strings.EqualFold(cloudflareCertificateString(certificatePack, "type"), "advanced") ||
 		cloudflareCertificateString(certificatePack, "validation_method") == "" {
 		return false
 	}

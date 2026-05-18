@@ -97,6 +97,16 @@ func TestCloudflareCertificateImportPolicies(t *testing.T) {
 	}) {
 		t.Fatal("pending deletion certificate pack should be skipped")
 	}
+	if cloudflareCertificatePackImportable(cloudflareCertificateRawResource{
+		"id":                    "pack-123",
+		"certificate_authority": "lets_encrypt",
+		"type":                  "universal",
+		"validation_method":     "txt",
+		"validity_days":         float64(90),
+		"status":                "active",
+	}) {
+		t.Fatal("non-advanced certificate pack should be skipped")
+	}
 	if !cloudflareClientCertificateImportable(cloudflareCertificateRawResource{
 		"id":            "client-123",
 		"csr":           "-----BEGIN CERTIFICATE REQUEST-----",
