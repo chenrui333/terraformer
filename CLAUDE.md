@@ -410,6 +410,8 @@ Rules:
 
 - Add field paths to `AllowEmptyValues` to preserve empty-string attributes that would otherwise be stripped. Note: boolean `"false"` is a non-empty string in flatmap and is NOT dropped — AllowEmptyValues is unnecessary for booleans.
 - For required empty lists that `AllowEmptyValues` cannot preserve (zero-count lists are dropped before the allow check), use `PostConvertHook` to set the field to an empty slice (see `IntegrationAWSLogCollectionGenerator` pattern).
+- Scope empty-value preservation to the exact provider-state paths that require it. For repeated nested blocks, match indexed flatmap paths precisely enough to preserve the intended empty field without keeping unrelated empty config.
+- `PostConvertHook` should restore provider-read state that is present-but-empty; it must not invent alternate nested config, broaden variants, or overwrite a non-empty block merely to satisfy schema shape.
 - Seed required attributes via `NewResource` when provider refresh depends on context not derivable from the import ID alone (e.g. `org_group_id`, `sink_org_id`, `connection_types`).
 - For resources where the only required configuration field is `id`, verify whether `AdditionalFields` or `PostConvertHook` can inject it before marking the resource unsupported.
 - Test that empty configurations produce valid HCL, not omitted blocks.
