@@ -82,8 +82,8 @@ Rules:
   Terraformer-supported resources, evidence-backed unsupported/deferred
   resources, and still-unclassified resources.
 - Separate unclassified resources already covered by open PRs from truly
-  remaining work; do not close the tracker while open PRs are still required for
-  closure.
+  remaining work; do not close the tracker until required open PRs have merged
+  or the remaining work is moved to narrower follow-up issues.
 - For large provider schemas, practical close-out means every reviewed candidate is supported, evidence-backed deferred/unsupported, or assigned to a named focused follow-up lane.
 - Reduce final follow-up lanes to exact resource names whenever possible, so the
   next lane is bounded before implementation starts.
