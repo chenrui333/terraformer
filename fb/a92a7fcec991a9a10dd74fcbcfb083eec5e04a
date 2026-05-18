@@ -1,0 +1,19 @@
+providers/cloudflare/certificates.go
+  s_8116db84abb0ec::t_1f3ed6608ddd87 448
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "fba92a7fcec991a9a10dd74fcbcfb083eec5e04a",
+  "prompts": {},
+  "sessions": {
+    "s_8116db84abb0ec": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e386f-b7c9-7150-b21e-94b38441ebd7",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
