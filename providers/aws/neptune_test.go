@@ -190,7 +190,6 @@ func TestNewNeptuneSubnetAndEventResources(t *testing.T) {
 	}); ok {
 		t.Fatal("no-permission event subscription should be skipped")
 	}
-
 }
 
 func TestNeptuneShouldLoadResource(t *testing.T) {

@@ -55,12 +55,12 @@ func TestDocDBStatusPredicates(t *testing.T) {
 	}
 }
 
-func TestDocDBLoadOptionalResourcesContinuesAfterError(t *testing.T) {
+func TestDocDBLoadOptionalResourcesPropagatesUnexpectedError(t *testing.T) {
 	boom := errors.New("boom")
 	g := &DocDBGenerator{}
 	called := false
 
-	g.loadOptionalResources([]docDBOptionalResourceLoader{
+	err := g.loadOptionalResources([]docDBOptionalResourceLoader{
 		{name: "denied", load: func() error { return boom }},
 		{name: "next", load: func() error {
 			called = true
@@ -68,8 +68,11 @@ func TestDocDBLoadOptionalResourcesContinuesAfterError(t *testing.T) {
 		}},
 	})
 
-	if !called {
-		t.Fatal("loadOptionalResources() should continue after optional loader error")
+	if !errors.Is(err, boom) {
+		t.Fatalf("loadOptionalResources() error = %v, want wrapped boom", err)
+	}
+	if called {
+		t.Fatal("loadOptionalResources() should stop after unexpected loader error")
 	}
 }
 

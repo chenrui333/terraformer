@@ -4,7 +4,7 @@ package aws
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/docdb"
@@ -23,12 +23,13 @@ type docDBOptionalResourceLoader struct {
 	load func() error
 }
 
-func (g *DocDBGenerator) loadOptionalResources(loaders []docDBOptionalResourceLoader) {
+func (g *DocDBGenerator) loadOptionalResources(loaders []docDBOptionalResourceLoader) error {
 	for _, loader := range loaders {
 		if err := loader.load(); err != nil {
-			log.Printf("Skipping DocDB %s: %v", loader.name, err)
+			return fmt.Errorf("load docdb %s: %w", loader.name, err)
 		}
 	}
+	return nil
 }
 
 func (g *DocDBGenerator) InitResources() error {
@@ -50,9 +51,11 @@ func (g *DocDBGenerator) InitResources() error {
 		return err
 	}
 
-	g.loadOptionalResources([]docDBOptionalResourceLoader{
+	if err := g.loadOptionalResources([]docDBOptionalResourceLoader{
 		{name: "event subscriptions", load: func() error { return g.getEventSubscriptions(svc) }},
-	})
+	}); err != nil {
+		return err
+	}
 
 	return nil
 }
