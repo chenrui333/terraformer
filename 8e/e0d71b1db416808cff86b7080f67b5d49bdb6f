@@ -1,0 +1,28 @@
+providers/aws/route53_resolver_test.go
+  s_409c28599d88b7::t_07355efede6d18 6,11,26-28,38-150,384-393,395-400,402-407,409-412
+  s_409c28599d88b7::t_0d4f3bb5fb9465 394,401,408
+providers/aws/transit_gateway_test.go
+  s_409c28599d88b7::t_16b79fd3da630c 6,41,68,77,84-88,92-96,99-106,108-116,118-142,148-164,168-180,184-202,250,261-269,271-277,279-290,356,360-401,428-470
+  s_409c28599d88b7::t_3dbd2d6fd32daf 89-91,97-98,107,117,143-147,165-167,181-183,203-213,219-249,251-260,270,278,291-355,357-359,402-412,414-419,421-427
+  s_409c28599d88b7::t_96eb619133a5d7 214-218
+  s_409c28599d88b7::t_0d4f3bb5fb9465 413,420
+providers/aws/networkmanager.go
+  s_409c28599d88b7::t_7caeacb52e8eaf 1-39,41-299
+  s_409c28599d88b7::t_0d4f3bb5fb9465 40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "8ee0d71b1db416808cff86b7080f67b5d49bdb6f",
+  "prompts": {},
+  "sessions": {
+    "s_409c28599d88b7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3920-eed6-7691-aaa7-ec58d4da18a4",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
