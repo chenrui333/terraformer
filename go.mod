@@ -118,7 +118,7 @@ require (
 	github.com/hashicorp/go-plugin v1.8.0
 	github.com/hashicorp/hcl v1.0.1-vault-7
 	github.com/heimweh/go-pagerduty v0.0.0-20250801140645-0b96cfc9bf17
-	github.com/heroku/heroku-go/v5 v5.5.0
+	github.com/heroku/heroku-go/v6 v6.1.0
 	github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f // indirect
 	github.com/honeycombio/terraform-provider-honeycombio v0.49.0
 	github.com/iancoleman/strcase v0.3.0
@@ -510,6 +510,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/hashicorp/go-azure-sdk/sdk v0.20260507.1215246
 	github.com/hashicorp/vault/api v1.23.0
+	github.com/heroku/heroku-go/v5 v5.5.0
 	github.com/ionos-cloud/sdk-go-cert-manager v1.3.0
 	github.com/ionos-cloud/sdk-go-container-registry v1.3.1
 	github.com/ionos-cloud/sdk-go-dataplatform v1.1.1
