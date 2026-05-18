@@ -1,0 +1,22 @@
+providers/aws/s3.go
+  s_c86082602448d5::t_c7ff8809edaf20 583-584,637-657
+providers/aws/s3_test.go
+  s_c86082602448d5::t_a36b0ec24813a5 440-445,472-475,494-495
+  s_c86082602448d5::t_8b7a70dc2964f7 433-439,446-471,476-493,496-520
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "c5e8cdac227841e940ef9c868416647258c85d5e",
+  "prompts": {},
+  "sessions": {
+    "s_c86082602448d5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3920-cd80-7613-a2a4-18b532d6e9d7",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
