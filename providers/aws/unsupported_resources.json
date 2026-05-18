@@ -851,6 +851,171 @@
       ]
     },
     {
+      "resource": "aws_networkmanager_attachment_routing_policy_label",
+      "service_family": "networkmanager",
+      "reason": "Network Manager attachment routing policy labels are Cloud WAN attachment-policy adjuncts and need a focused Cloud WAN follow-up lane before broad inventory can manage them safely.",
+      "evidence": "Terraform AWS provider manages this resource as a core-network attachment policy label bound to attachment_id and policy_rule_number. Terraformer Network Manager support currently imports global networks and site/device/link/connection inventory, and does not yet validate Cloud WAN attachment ownership or policy-rule import shape.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_attachment_routing_policy_label"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_connect_attachment",
+      "service_family": "networkmanager",
+      "reason": "Network Manager Connect attachments belong to the Cloud WAN attachment family and need a focused follow-up lane for ownership, state filtering, and duplicate prevention.",
+      "evidence": "Terraform AWS provider models Connect attachments under a core network with transport_attachment_id and optional network_function_group_name. Broad Network Manager discovery can observe existing attachments, but this PR does not yet validate whether they duplicate underlying TGW/VPN/DX ownership or accepter lifecycles.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_connect_attachment"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_connect_peer",
+      "service_family": "networkmanager",
+      "reason": "Network Manager Connect peers require Cloud WAN attachment ownership handling and are deferred to the Cloud WAN follow-up lane.",
+      "evidence": "Terraform AWS provider manages connect peers from connect_attachment_id plus peer addressing and optional BGP configuration. Terraformer does not yet import Cloud WAN attachments, so importing peers independently would create incomplete or misleading ownership.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_connect_peer"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_core_network",
+      "service_family": "networkmanager",
+      "reason": "Network Manager core networks are the Cloud WAN control-plane root and need a dedicated follow-up lane before broad import support.",
+      "evidence": "Terraform AWS provider manages core networks with global_network_id plus policy_document-driven Cloud WAN configuration. Terraformer Network Manager support currently covers global networks and their site/device/link/connection inventory, leaving Cloud WAN policy ownership for separate validation.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_core_network"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_core_network_policy_attachment",
+      "service_family": "networkmanager",
+      "reason": "Network Manager core network policy attachments are Cloud WAN policy lifecycle resources and are deferred to a focused Cloud WAN lane.",
+      "evidence": "Terraform AWS provider applies policy documents to core networks through this resource. Broad discovery must prove that the current policy version and attachment lifecycle can be reconstructed without over-owning policy changes before Terraformer can safely import it.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_core_network_policy_attachment"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_customer_gateway_association",
+      "service_family": "networkmanager",
+      "reason": "Network Manager customer gateway associations need duplicate-ownership checks against VPN/customer-gateway resources before broad import.",
+      "evidence": "Terraform AWS provider manages the association between a global network device/link and an EC2 customer gateway ARN. Terraformer imports Network Manager topology objects but does not yet prove safe ownership boundaries with the underlying customer gateway and VPN resources.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_customer_gateway_association"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_dx_gateway_attachment",
+      "service_family": "networkmanager",
+      "reason": "Network Manager Direct Connect gateway attachments belong to the Cloud WAN attachment family and need regional and duplicate-ownership validation before broad import.",
+      "evidence": "Terraform AWS provider models the Cloud WAN attachment to a Direct Connect gateway. Terraformer imports Direct Connect gateway associations separately and does not yet validate Cloud WAN attachment discovery against Direct Connect ownership or cross-region gateway associations.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_dx_gateway_attachment"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_link_association",
+      "service_family": "networkmanager",
+      "reason": "Network Manager link associations need topology duplicate-ownership handling before broad import.",
+      "evidence": "Terraform AWS provider manages link-to-device associations separately from the device and link resources. Terraformer imports devices and links themselves, and importing associations requires additional validation that generated HCL will not duplicate inline or inferred topology ownership.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_link_association"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_prefix_list_association",
+      "service_family": "networkmanager",
+      "reason": "Network Manager prefix list associations are Cloud WAN route-policy adjuncts and are deferred to the Cloud WAN follow-up lane.",
+      "evidence": "Terraform AWS provider manages prefix-list associations by global_network_id and route_table_identifier. Terraformer does not yet import Cloud WAN route tables or policy routing surfaces, so importing the association alone would be incomplete.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_prefix_list_association"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_site_to_site_vpn_attachment",
+      "service_family": "networkmanager",
+      "reason": "Network Manager site-to-site VPN attachments belong to the Cloud WAN attachment family and need duplicate-ownership validation before broad import.",
+      "evidence": "Terraform AWS provider models the Cloud WAN attachment for an existing VPN connection. Terraformer does not yet validate safe ownership boundaries with aws_vpn_connection or Network Manager attachment accepter lifecycles.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_site_to_site_vpn_attachment"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_transit_gateway_connect_peer_association",
+      "service_family": "networkmanager",
+      "reason": "Network Manager transit gateway connect peer associations need duplicate-ownership checks against TGW Connect resources before broad import.",
+      "evidence": "Terraform AWS provider manages this association between a global network device/link and a transit gateway connect peer ARN. Terraformer imports TGW and Network Manager topology resources separately, but does not yet validate this cross-service association's ownership boundaries.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_transit_gateway_connect_peer_association"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_transit_gateway_peering",
+      "service_family": "networkmanager",
+      "reason": "Network Manager transit gateway peerings need Cloud WAN peering and cross-region ownership handling before broad import.",
+      "evidence": "Terraform AWS provider models a peering between a core network and a transit gateway. Broad discovery must route the resource through the correct regional provider and avoid duplicating TGW ownership before Terraformer can safely import it.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_transit_gateway_peering"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_transit_gateway_registration",
+      "service_family": "networkmanager",
+      "reason": "Network Manager transit gateway registrations need Cloud WAN registration ownership handling before broad import.",
+      "evidence": "Terraform AWS provider manages registration of a transit gateway into a global network. Terraformer does not yet validate whether broad Network Manager discovery can infer user ownership of that registration without duplicating TGW resources across regional imports.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_transit_gateway_registration"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_transit_gateway_route_table_attachment",
+      "service_family": "networkmanager",
+      "reason": "Network Manager transit gateway route table attachments belong to the Cloud WAN attachment family and need TGW route-table ownership validation before broad import.",
+      "evidence": "Terraform AWS provider models the Cloud WAN attachment for a transit gateway route table. Terraformer imports TGW route-table adjuncts separately and does not yet validate safe ownership boundaries with TGW route table and attachment resources.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_transit_gateway_route_table_attachment"
+      ]
+    },
+    {
+      "resource": "aws_networkmanager_vpc_attachment",
+      "service_family": "networkmanager",
+      "reason": "Network Manager VPC attachments belong to the Cloud WAN attachment family and need duplicate-ownership validation before broad import.",
+      "evidence": "Terraform AWS provider manages VPC attachment creation through Cloud WAN, while Terraformer already imports foundational VPC resources separately. Broad Network Manager discovery must avoid over-owning VPC attachment lifecycle and accepter states before supporting this resource.",
+      "status": "deferred",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/338",
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkmanager_vpc_attachment"
+      ]
+    },
+    {
       "resource": "aws_opensearch_package",
       "service_family": "opensearch",
       "reason": "OpenSearch packages require package_source.s3_bucket_name and package_source.s3_key, but DescribePackages does not return the source S3 location needed to seed valid Terraform configuration.",
