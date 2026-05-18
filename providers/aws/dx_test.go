@@ -66,6 +66,9 @@ func TestDirectConnectGatewayAssociationResource(t *testing.T) {
 	if got, want := directConnectGatewayAssociationImportID("dxgw-123", "tgw-123"), "dxgw-123/tgw-123"; got != want {
 		t.Fatalf("directConnectGatewayAssociationImportID() = %q, want %q", got, want)
 	}
+	if got, want := directConnectGatewayAssociationStateID("dxgw-123", "tgw-123"), "ga-dxgw-123tgw-123"; got != want {
+		t.Fatalf("directConnectGatewayAssociationStateID() = %q, want %q", got, want)
+	}
 
 	resource, ok := newDirectConnectGatewayAssociationResource(directconnecttypes.DirectConnectGatewayAssociation{
 		AssociatedGateway: &directconnecttypes.AssociatedGateway{
@@ -81,8 +84,11 @@ func TestDirectConnectGatewayAssociationResource(t *testing.T) {
 	if !ok {
 		t.Fatal("expected gateway association resource")
 	}
-	if resource.InstanceState.ID != "dxgw-123/tgw-123" {
-		t.Fatalf("resource ID = %q, want dxgw-123/tgw-123", resource.InstanceState.ID)
+	if resource.InstanceState.ID != "ga-dxgw-123tgw-123" {
+		t.Fatalf("resource ID = %q, want ga-dxgw-123tgw-123", resource.InstanceState.ID)
+	}
+	if got := resource.InstanceState.Meta["import_id"]; got != "dxgw-123/tgw-123" {
+		t.Fatalf("import_id = %#v, want dxgw-123/tgw-123", got)
 	}
 	if resource.InstanceInfo.Type != directConnectGatewayAssociationResourceType {
 		t.Fatalf("resource type = %q, want %s", resource.InstanceInfo.Type, directConnectGatewayAssociationResourceType)
@@ -192,8 +198,11 @@ func TestDirectConnectGatewayAssociationPaginationUsesGatewayFilter(t *testing.T
 	if association.InstanceInfo.Type != directConnectGatewayAssociationResourceType {
 		t.Fatalf("association resource type = %q, want %s", association.InstanceInfo.Type, directConnectGatewayAssociationResourceType)
 	}
-	if association.InstanceState.ID != "dxgw-123/tgw-123" {
-		t.Fatalf("association resource ID = %q, want dxgw-123/tgw-123", association.InstanceState.ID)
+	if association.InstanceState.ID != "ga-dxgw-123tgw-123" {
+		t.Fatalf("association resource ID = %q, want ga-dxgw-123tgw-123", association.InstanceState.ID)
+	}
+	if got := association.InstanceState.Meta["import_id"]; got != "dxgw-123/tgw-123" {
+		t.Fatalf("association import_id = %#v, want dxgw-123/tgw-123", got)
 	}
 }
 

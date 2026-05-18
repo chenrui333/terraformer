@@ -244,7 +244,7 @@ func newDirectConnectGatewayAssociationResource(association directconnecttypes.D
 		return terraformutils.Resource{}, false
 	}
 	resource := terraformutils.NewResource(
-		directConnectGatewayAssociationImportID(dxGatewayID, associatedGatewayID),
+		directConnectGatewayAssociationStateID(dxGatewayID, associatedGatewayID),
 		awsResourceNameWithLengths("gateway_association", dxGatewayID, associatedGatewayID),
 		directConnectGatewayAssociationResourceType,
 		"aws",
@@ -258,6 +258,7 @@ func newDirectConnectGatewayAssociationResource(association directconnecttypes.D
 		dxAllowEmptyValues,
 		map[string]interface{}{},
 	)
+	setDirectConnectImportID(&resource, directConnectGatewayAssociationImportID(dxGatewayID, associatedGatewayID))
 	resource.IgnoreKeys = append(resource.IgnoreKeys, "^associated_gateway_owner_account_id$")
 	return resource, true
 }
@@ -306,6 +307,20 @@ func directConnectGatewayAssociationImportable(association directconnecttypes.Di
 
 func directConnectGatewayAssociationImportID(dxGatewayID, associatedGatewayID string) string {
 	return dxGatewayID + "/" + associatedGatewayID
+}
+
+func directConnectGatewayAssociationStateID(dxGatewayID, associatedGatewayID string) string {
+	return "ga-" + dxGatewayID + associatedGatewayID
+}
+
+func setDirectConnectImportID(resource *terraformutils.Resource, importID string) {
+	if resource == nil || resource.InstanceState == nil || importID == "" {
+		return
+	}
+	if resource.InstanceState.Meta == nil {
+		resource.InstanceState.Meta = map[string]interface{}{}
+	}
+	resource.InstanceState.Meta["import_id"] = importID
 }
 
 func (g *DirectConnectGenerator) InitResources() error {
