@@ -1,0 +1,25 @@
+providers/aws/s3_test.go
+  s_c86082602448d5::t_b9849d82592030 63-94,182-248,513-525
+providers/aws/s3.go
+  s_c86082602448d5::t_674a509e7952cd 30,214,316-338,373,377,381-418,420-464
+  s_c86082602448d5::t_895d0a27a20aaf 374-376,419,471
+  s_c86082602448d5::t_f0f2613fa16095 31,378-380
+providers/aws/s3control.go
+  s_c86082602448d5::t_df6484e6b3a186 60,63,66
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "6144ee2ae6a38c48d308fa048d4f7102dcd9fa6c",
+  "prompts": {},
+  "sessions": {
+    "s_c86082602448d5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3920-cd80-7613-a2a4-18b532d6e9d7",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
