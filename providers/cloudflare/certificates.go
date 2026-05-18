@@ -445,7 +445,7 @@ func cloudflareCertificateAuthorityHostnameAssociationsResource(
 	values := make([]string, 0, len(hostnames))
 	for _, hostname := range hostnames {
 		if hostname != "" {
-			values = append(values, string(hostname))
+			values = append(values, hostname)
 		}
 	}
 	if len(values) == 0 {
