@@ -55,13 +55,33 @@ func TestDocDBStatusPredicates(t *testing.T) {
 	}
 }
 
+func TestDocDBLoadOptionalResourcesContinuesAfterError(t *testing.T) {
+	g := &DocDBGenerator{}
+	called := false
+
+	err := g.loadOptionalResources([]docDBOptionalResourceLoader{
+		{name: "unavailable", load: func() error { return errDocDBOptionalResourceUnavailable }},
+		{name: "next", load: func() error {
+			called = true
+			return nil
+		}},
+	})
+
+	if err != nil {
+		t.Fatalf("loadOptionalResources() error = %v, want nil", err)
+	}
+	if !called {
+		t.Fatal("loadOptionalResources() should continue after skippable optional loader error")
+	}
+}
+
 func TestDocDBLoadOptionalResourcesPropagatesUnexpectedError(t *testing.T) {
 	boom := errors.New("boom")
 	g := &DocDBGenerator{}
 	called := false
 
 	err := g.loadOptionalResources([]docDBOptionalResourceLoader{
-		{name: "denied", load: func() error { return boom }},
+		{name: "event subscriptions", load: func() error { return boom }},
 		{name: "next", load: func() error {
 			called = true
 			return nil
@@ -110,9 +130,26 @@ func TestDocDBLoadEventSubscriptionsPaginates(t *testing.T) {
 	}
 }
 
+func TestDocDBLoadEventSubscriptionsPropagatesError(t *testing.T) {
+	boom := errors.New("boom")
+	g := &DocDBGenerator{}
+	client := &fakeDocDBDescribeEventSubscriptionsClient{
+		t:   t,
+		err: boom,
+	}
+
+	if err := g.getEventSubscriptions(client); !errors.Is(err, boom) {
+		t.Fatalf("getEventSubscriptions() error = %v, want boom", err)
+	}
+	if len(g.Resources) != 0 {
+		t.Fatalf("len(Resources) = %d, want 0", len(g.Resources))
+	}
+}
+
 type fakeDocDBDescribeEventSubscriptionsClient struct {
 	t       *testing.T
 	pages   []*docdb.DescribeEventSubscriptionsOutput
+	err     error
 	calls   int
 	markers []string
 }
@@ -123,6 +160,9 @@ func (c *fakeDocDBDescribeEventSubscriptionsClient) DescribeEventSubscriptions(_
 		c.markers = append(c.markers, "")
 	} else {
 		c.markers = append(c.markers, *input.Marker)
+	}
+	if c.err != nil {
+		return nil, c.err
 	}
 	if c.calls >= len(c.pages) {
 		c.t.Fatalf("unexpected DescribeEventSubscriptions call %d", c.calls+1)

@@ -4,7 +4,9 @@ package aws
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/docdb"
@@ -13,6 +15,8 @@ import (
 )
 
 var docDBAllowEmptyValues = []string{"tags."}
+
+var errDocDBOptionalResourceUnavailable = errors.New("docdb optional resource unavailable")
 
 type DocDBGenerator struct {
 	AWSService
@@ -26,6 +30,10 @@ type docDBOptionalResourceLoader struct {
 func (g *DocDBGenerator) loadOptionalResources(loaders []docDBOptionalResourceLoader) error {
 	for _, loader := range loaders {
 		if err := loader.load(); err != nil {
+			if errors.Is(err, errDocDBOptionalResourceUnavailable) {
+				log.Printf("Skipping DocDB %s: %v", loader.name, err)
+				continue
+			}
 			return fmt.Errorf("load docdb %s: %w", loader.name, err)
 		}
 	}
