@@ -1,0 +1,22 @@
+providers/aws/transit_gateway.go
+  s_409c28599d88b7::t_cfac9cdef9b0d2 741-742
+providers/aws/transit_gateway_test.go
+  s_409c28599d88b7::t_b35f28e7fef9ed 488,511-512
+  s_409c28599d88b7::t_adc017426d7181 386-397,404
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.9",
+  "base_commit_sha": "ec4bbe5d1639d0eb2b88a1cbbbb8fe2e9f15181f",
+  "prompts": {},
+  "sessions": {
+    "s_409c28599d88b7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3920-eed6-7691-aaa7-ec58d4da18a4",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
