@@ -97,6 +97,18 @@ func TestCloudflareOriginCACertificateResourcePreservesHostnameOrder(t *testing.
 	}
 }
 
+func TestCloudflareCertificateOptionalDiscoveryErrorHandlesAuthErrors(t *testing.T) {
+	authenticationErr := cf.NewAuthenticationError(&cf.Error{ErrorMessages: []string{"not authorized"}})
+	if !cloudflareCertificateOptionalDiscoveryError(&authenticationErr) {
+		t.Fatal("permission-gated authentication errors should be treated as optional")
+	}
+
+	authenticationErrWithoutMarker := cf.NewAuthenticationError(&cf.Error{ErrorMessages: []string{"invalid token"}})
+	if cloudflareCertificateOptionalDiscoveryError(&authenticationErrWithoutMarker) {
+		t.Fatal("credential authentication errors should propagate")
+	}
+}
+
 func TestCloudflareCertificateAuthorityHostnameAssociationsResource(t *testing.T) {
 	resource, ok := cloudflareCertificateAuthorityHostnameAssociationsResource(
 		cf.Zone{ID: "zone-123", Name: "example.com"},

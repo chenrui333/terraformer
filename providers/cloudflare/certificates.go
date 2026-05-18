@@ -126,6 +126,8 @@ func cloudflareCertificateOptionalDiscoveryError(err error) bool {
 		return cloudflareCertificateOptionalErrorMessage(requestErr.Error(), requestErr.ErrorMessages())
 	}
 
+	// cloudflare-go can surface permission-gated 403 responses as AuthenticationError.
+	// Only marker-matching non-admin/feature-gated responses are optional; credential failures still propagate.
 	var authenticationErr *cf.AuthenticationError
 	if errors.As(err, &authenticationErr) {
 		return cloudflareCertificateOptionalErrorMessage(authenticationErr.Error(), authenticationErr.ErrorMessages())
