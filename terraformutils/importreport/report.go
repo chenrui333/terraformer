@@ -100,6 +100,18 @@ func (r *Report) HasFailures() bool {
 	return false
 }
 
+func (r *Report) FailedResourceIDs() map[string]bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	ids := make(map[string]bool)
+	for _, e := range r.Events {
+		if e.ResourceID != "" && (e.Status == StatusFailed || e.Status == StatusPanic) {
+			ids[e.ResourceID] = true
+		}
+	}
+	return ids
+}
+
 func (r *Report) Summary() Summary {
 	r.mu.Lock()
 	defer r.mu.Unlock()

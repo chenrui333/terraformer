@@ -145,13 +145,18 @@ func Import(provider terraformutils.ProviderGenerator, options ImportOptions, ar
 	providerMapping.CleanupProviders()
 	providerMapping.ConvertTypedStates(providerWrapper, processReport)
 
-	// Count final surviving resources as imported
+	// Count final surviving resources as imported (skip conversion failures)
+	failedIDs := processReport.FailedResourceIDs()
 	for service, resources := range providerMapping.GetResourcesByService() {
 		for i := range resources {
+			id := resources[i].InstanceInfo.Id
+			if failedIDs[id] {
+				continue
+			}
 			processReport.Add(importreport.ResourceEvent{
 				Service:      service,
 				ResourceType: resources[i].InstanceInfo.Type,
-				ResourceID:   resources[i].InstanceInfo.Id,
+				ResourceID:   id,
 				Status:       importreport.StatusSuccess,
 			})
 		}
