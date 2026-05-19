@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"log"
+	"runtime"
 	"sort"
 	"sync"
 
@@ -244,9 +245,26 @@ func RefreshResourcesByProvider(providersMapping *ProvidersMapping, providerWrap
 
 func RefreshResourceWorker(input chan *Resource, wg *sync.WaitGroup, provider *providerwrapper.ProviderWrapper) {
 	for r := range input {
-		log.Println("Refreshing state...", r.InstanceInfo.Id)
-		r.Refresh(provider)
-		wg.Done()
+		func() {
+			defer func() {
+				if rec := recover(); rec != nil {
+					buf := make([]byte, 4096)
+					n := runtime.Stack(buf, false)
+					id := "<unknown>"
+					if r != nil && r.InstanceInfo != nil {
+						id = r.InstanceInfo.Id
+					}
+					log.Printf("PANIC: Refresh failed for resource %s: %v\n%s",
+						id, rec, buf[:n])
+					if r != nil {
+						r.InstanceState = nil
+					}
+				}
+				wg.Done()
+			}()
+			log.Println("Refreshing state...", r.InstanceInfo.Id)
+			r.Refresh(provider)
+		}()
 	}
 }
 
