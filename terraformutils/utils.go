@@ -5,6 +5,7 @@ package terraformutils
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"log"
 	"runtime"
 	"sort"
@@ -14,6 +15,8 @@ import (
 	"github.com/chenrui333/terraformer/terraformutils/importreport"
 	"github.com/chenrui333/terraformer/terraformutils/providerwrapper"
 )
+
+var errAuthAborted = errors.New("skipped due to auth failure in this session")
 
 type BaseResource struct {
 	Tags map[string]string `json:"tags,omitempty"`
@@ -270,6 +273,10 @@ func RefreshResourcesByProvider(providersMapping *ProvidersMapping, providerWrap
 		if _, wasPanic := panickedIDs.Load(r.InstanceInfo.Id); wasPanic {
 			status = importreport.StatusPanic
 			category = importreport.CategoryPanic
+		} else if errors.Is(r.RefreshError, errAuthAborted) {
+			status = importreport.StatusSkipped
+			category = importreport.CategoryAuth
+			errMsg = r.RefreshError.Error()
 		} else if r.RefreshError != nil {
 			category = importreport.ClassifyError(r.RefreshError)
 			errMsg = r.RefreshError.Error()
@@ -319,6 +326,7 @@ func RefreshResourceWorker(input chan *Resource, wg *sync.WaitGroup, provider *p
 			}()
 			if authAbort.Load() {
 				r.InstanceState = nil
+				r.RefreshError = errAuthAborted
 				return
 			}
 			log.Println("Refreshing state...", r.InstanceInfo.Id)
