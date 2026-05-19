@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"sort"
 	"sync"
+	"sync/atomic"
 
 	"github.com/chenrui333/terraformer/terraformutils/importreport"
 	"github.com/chenrui333/terraformer/terraformutils/providerwrapper"
@@ -162,7 +163,7 @@ func schemaVersion(meta map[string]interface{}) uint64 {
 	}
 }
 
-func RefreshResources(resources []*Resource, provider *providerwrapper.ProviderWrapper, slowProcessingResources [][]*Resource, panickedIDs *sync.Map) ([]*Resource, error) {
+func RefreshResources(resources []*Resource, provider *providerwrapper.ProviderWrapper, slowProcessingResources [][]*Resource, panickedIDs *sync.Map, authAbort *atomic.Bool) ([]*Resource, error) {
 	refreshedResources := []*Resource{}
 	input := make(chan *Resource, len(resources))
 	var wg sync.WaitGroup
@@ -174,7 +175,7 @@ func RefreshResources(resources []*Resource, provider *providerwrapper.ProviderW
 	close(input)
 
 	for i := 0; i < poolSize; i++ {
-		go RefreshResourceWorker(input, &wg, provider, panickedIDs)
+		go RefreshResourceWorker(input, &wg, provider, panickedIDs, authAbort)
 	}
 
 	spInputs := []chan *Resource{}
@@ -188,7 +189,7 @@ func RefreshResources(resources []*Resource, provider *providerwrapper.ProviderW
 
 	for i := 0; i < len(spInputs); i++ {
 		wg.Add(len(slowProcessingResources[i]))
-		go RefreshResourceWorker(spInputs[i], &wg, provider, panickedIDs)
+		go RefreshResourceWorker(spInputs[i], &wg, provider, panickedIDs, authAbort)
 	}
 
 	wg.Wait()
@@ -241,7 +242,8 @@ func RefreshResourcesByProvider(providersMapping *ProvidersMapping, providerWrap
 	}
 
 	var panickedIDs sync.Map
-	refreshedResources, err := RefreshResources(regularResources, providerWrapper, spResourcesList, &panickedIDs)
+	var authAbort atomic.Bool
+	refreshedResources, err := RefreshResources(regularResources, providerWrapper, spResourcesList, &panickedIDs, &authAbort)
 	if err != nil {
 		return err
 	}
@@ -295,7 +297,7 @@ func RefreshResourcesByProvider(providersMapping *ProvidersMapping, providerWrap
 	return nil
 }
 
-func RefreshResourceWorker(input chan *Resource, wg *sync.WaitGroup, provider *providerwrapper.ProviderWrapper, panickedIDs *sync.Map) {
+func RefreshResourceWorker(input chan *Resource, wg *sync.WaitGroup, provider *providerwrapper.ProviderWrapper, panickedIDs *sync.Map, authAbort *atomic.Bool) {
 	for r := range input {
 		func() {
 			defer func() {
@@ -315,8 +317,15 @@ func RefreshResourceWorker(input chan *Resource, wg *sync.WaitGroup, provider *p
 				}
 				wg.Done()
 			}()
+			if authAbort.Load() {
+				r.InstanceState = nil
+				return
+			}
 			log.Println("Refreshing state...", r.InstanceInfo.Id)
 			r.Refresh(provider)
+			if r.RefreshError != nil && importreport.ClassifyError(r.RefreshError) == importreport.CategoryAuth {
+				authAbort.Store(true)
+			}
 		}()
 	}
 }

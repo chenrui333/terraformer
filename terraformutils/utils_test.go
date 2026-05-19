@@ -5,6 +5,7 @@ package terraformutils
 import (
 	"encoding/json"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -205,13 +206,14 @@ func TestRefreshResourceWorker_PanicRecovery(t *testing.T) {
 	input := make(chan *Resource, 1)
 	var wg sync.WaitGroup
 	var panickedIDs sync.Map
+	var authAbort atomic.Bool
 
 	wg.Add(1)
 	input <- &r
 	close(input)
 
 	// nil provider causes panic in Refresh — recovery must catch it
-	RefreshResourceWorker(input, &wg, nil, &panickedIDs)
+	RefreshResourceWorker(input, &wg, nil, &panickedIDs, &authAbort)
 
 	done := make(chan struct{})
 	go func() {
