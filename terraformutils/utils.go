@@ -252,9 +252,13 @@ func RefreshResourcesByProvider(providersMapping *ProvidersMapping, providerWrap
 		refreshedSet[r] = true
 	}
 	for _, r := range allResources {
+		service := providersMapping.GetServiceForResource(r)
+		if service == "" {
+			service = r.InstanceInfo.Type
+		}
 		if refreshedSet[r] {
 			report.Add(importreport.ResourceEvent{
-				Service:      r.InstanceInfo.Type,
+				Service:      service,
 				ResourceType: r.InstanceInfo.Type,
 				ResourceID:   r.InstanceInfo.Id,
 				Status:       importreport.StatusSuccess,
@@ -262,16 +266,21 @@ func RefreshResourcesByProvider(providersMapping *ProvidersMapping, providerWrap
 		} else {
 			status := importreport.StatusFailed
 			category := importreport.CategoryAPI
+			errMsg := ""
 			if _, wasPanic := panickedIDs.Load(r.InstanceInfo.Id); wasPanic {
 				status = importreport.StatusPanic
 				category = importreport.CategoryPanic
+			} else if r.RefreshError != nil {
+				category = importreport.ClassifyError(r.RefreshError)
+				errMsg = r.RefreshError.Error()
 			}
 			report.Add(importreport.ResourceEvent{
-				Service:      r.InstanceInfo.Type,
+				Service:      service,
 				ResourceType: r.InstanceInfo.Type,
 				ResourceID:   r.InstanceInfo.Id,
 				Status:       status,
 				Category:     category,
+				Error:        errMsg,
 			})
 		}
 	}

@@ -114,6 +114,14 @@ func (p *ProvidersMapping) MatchProvider(resource *Resource) ProviderGenerator {
 	return p.resourceToProvider[resource]
 }
 
+func (p *ProvidersMapping) GetServiceForResource(resource *Resource) string {
+	provider := p.resourceToProvider[resource]
+	if provider == nil {
+		return ""
+	}
+	return p.providerToService[provider]
+}
+
 func (p *ProvidersMapping) SetResources(resourceToKeep []*Resource) {
 	p.Resources = map[*Resource]bool{}
 	resourcesGroupsByProviders := map[ProviderGenerator][]Resource{}

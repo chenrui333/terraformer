@@ -25,12 +25,12 @@ func (t TerraformerWriter) Write(p []byte) (n int, err error) {
 func main() {
 	log.SetOutput(TerraformerWriter{})
 	err := cmd.Execute()
-	cmd.FinalizeReport()
+	reportOK := cmd.FinalizeReport()
 	if err != nil {
 		log.Println(err)
 		os.Exit(1)
 	}
-	if cmd.HasReportFailures() {
+	if !reportOK || cmd.HasReportFailures() {
 		os.Exit(1)
 	}
 }

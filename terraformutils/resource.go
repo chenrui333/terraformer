@@ -30,6 +30,7 @@ type Resource struct {
 	AdditionalFields  map[string]interface{} `json:",omitempty"`
 	SlowQueryRequired bool
 	DataFiles         map[string][]byte
+	RefreshError      error `json:"-"`
 }
 
 type ApplicableFilter interface {
@@ -122,6 +123,7 @@ func (r *Resource) Refresh(provider *providerwrapper.ProviderWrapper) {
 	r.InstanceState, err = provider.Refresh(r.InstanceInfo, r.InstanceState)
 	if err != nil {
 		log.Println(err)
+		r.RefreshError = err
 	}
 }
 

@@ -67,16 +67,18 @@ var (
 	reportPath    string
 )
 
-func FinalizeReport() {
+func FinalizeReport() bool {
 	if len(processReport.Events) == 0 {
-		return
+		return true
 	}
 	processReport.Print()
 	if reportPath != "" {
 		if err := processReport.WriteJSONFile(reportPath); err != nil {
-			log.Printf("ERROR: failed to write report: %v", err)
+			log.Printf("ERROR: failed to write report to %s: %v", reportPath, err)
+			return false
 		}
 	}
+	return true
 }
 
 func HasReportFailures() bool {
@@ -181,7 +183,7 @@ func validateImport(provider terraformutils.ProviderGenerator, resources []strin
 }
 
 func initAllServicesResources(providersMapping *terraformutils.ProvidersMapping, options ImportOptions, args []string, providerWrapper *providerwrapper.ProviderWrapper, report *importreport.Report) error {
-	sessionKey := providersMapping.GetBaseProvider().GetName()
+	sessionKey := providersMapping.GetBaseProvider().GetName() + ":" + strings.Join(args, ":")
 	var failedServices []string
 
 	for _, service := range options.Resources {
