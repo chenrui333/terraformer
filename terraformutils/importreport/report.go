@@ -149,6 +149,8 @@ func (r *Report) summaryLocked() Summary {
 	s := Summary{
 		DurationMs: time.Since(r.StartTime).Milliseconds(),
 	}
+	seenFailed := make(map[string]bool)
+	seenPanic := make(map[string]bool)
 	for _, e := range r.Events {
 		switch e.Status {
 		case StatusSuccess:
@@ -159,14 +161,20 @@ func (r *Report) summaryLocked() Summary {
 			}
 		case StatusFailed:
 			if e.ResourceID != "" {
-				s.ResourcesFailed++
+				if !seenFailed[e.ResourceID] {
+					s.ResourcesFailed++
+					seenFailed[e.ResourceID] = true
+				}
 				s.Failures = append(s.Failures, e)
 			} else {
 				s.ServicesFailed++
 				s.Failures = append(s.Failures, e)
 			}
 		case StatusPanic:
-			s.ResourcesPanic++
+			if !seenPanic[e.ResourceID] {
+				s.ResourcesPanic++
+				seenPanic[e.ResourceID] = true
+			}
 			s.Failures = append(s.Failures, e)
 		case StatusSkipped:
 			if e.ResourceID != "" {
