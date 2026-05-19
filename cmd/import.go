@@ -98,7 +98,6 @@ func newImportCmd() *cobra.Command {
 		SilenceErrors: false,
 	}
 
-
 	cmd.AddCommand(newCmdPlanImporter(options))
 	cmd.AddCommand(&cobra.Command{
 		Use:   "no-sort",
