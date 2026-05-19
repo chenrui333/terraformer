@@ -147,10 +147,11 @@ func Import(provider terraformutils.ProviderGenerator, options ImportOptions, ar
 
 	// Count final surviving resources as imported
 	for service, resources := range providerMapping.GetResourcesByService() {
-		for range resources {
+		for i := range resources {
 			processReport.Add(importreport.ResourceEvent{
 				Service:      service,
-				ResourceType: service,
+				ResourceType: resources[i].InstanceInfo.Type,
+				ResourceID:   resources[i].InstanceInfo.Id,
 				Status:       importreport.StatusSuccess,
 			})
 		}
