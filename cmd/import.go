@@ -140,29 +140,14 @@ func Import(provider terraformutils.ProviderGenerator, options ImportOptions, ar
 		return err
 	}
 
+	eventStart := processReport.EventCount()
+
 	providerMapping.ConvertTFStates(providerWrapper, processReport)
 	// change structs with additional data for each resource
 	providerMapping.CleanupProviders()
 	providerMapping.ConvertTypedStates(providerWrapper, processReport)
 
-	// Count final surviving resources as imported (skip conversion failures)
-	failedIDs := processReport.FailedResourceIDs()
-	for service, resources := range providerMapping.GetResourcesByService() {
-		for i := range resources {
-			id := resources[i].InstanceInfo.Id
-			if failedIDs[id] {
-				continue
-			}
-			processReport.Add(importreport.ResourceEvent{
-				Service:      service,
-				ResourceType: resources[i].InstanceInfo.Type,
-				ResourceID:   id,
-				Status:       importreport.StatusSuccess,
-			})
-		}
-	}
-
-	return importFromPlan(providerMapping, options, args)
+	return importFromPlan(providerMapping, options, args, processReport, eventStart)
 }
 
 func initOptionsAndWrapper(provider terraformutils.ProviderGenerator, options ImportOptions, args []string) (*providerwrapper.ProviderWrapper, ImportOptions, error) {
@@ -269,7 +254,7 @@ func initAllServicesResources(providersMapping *terraformutils.ProvidersMapping,
 	return nil
 }
 
-func importFromPlan(providerMapping *terraformutils.ProvidersMapping, options ImportOptions, args []string) error {
+func importFromPlan(providerMapping *terraformutils.ProvidersMapping, options ImportOptions, args []string, report *importreport.Report, eventStart int) error {
 	plan := &ImportPlan{
 		Provider:         providerMapping.GetBaseProvider().GetName(),
 		Options:          options,
@@ -281,8 +266,23 @@ func importFromPlan(providerMapping *terraformutils.ProvidersMapping, options Im
 	if provider, ok := providerMapping.GetBaseProvider().(importResourcesPostProcessor); ok {
 		resourcesByService = provider.PostProcessImportResources(resourcesByService)
 	}
-	for service := range resourcesByService {
-		plan.ImportedResource[service] = append(plan.ImportedResource[service], resourcesByService[service]...)
+
+	// Count successfully imported resources after post-processing
+	failedIDs := report.FailedResourceIDsSince(eventStart)
+	for service, resources := range resourcesByService {
+		for i := range resources {
+			id := resources[i].InstanceInfo.Id
+			if failedIDs[id] {
+				continue
+			}
+			report.Add(importreport.ResourceEvent{
+				Service:      service,
+				ResourceType: resources[i].InstanceInfo.Type,
+				ResourceID:   id,
+				Status:       importreport.StatusSuccess,
+			})
+		}
+		plan.ImportedResource[service] = append(plan.ImportedResource[service], resources...)
 	}
 
 	if options.Plan {

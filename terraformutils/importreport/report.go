@@ -100,11 +100,18 @@ func (r *Report) HasFailures() bool {
 	return false
 }
 
-func (r *Report) FailedResourceIDs() map[string]bool {
+func (r *Report) EventCount() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return len(r.Events)
+}
+
+func (r *Report) FailedResourceIDsSince(startIdx int) map[string]bool {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	ids := make(map[string]bool)
-	for _, e := range r.Events {
+	for i := startIdx; i < len(r.Events); i++ {
+		e := r.Events[i]
 		if e.ResourceID != "" && (e.Status == StatusFailed || e.Status == StatusPanic) {
 			ids[e.ResourceID] = true
 		}
