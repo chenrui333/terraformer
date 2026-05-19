@@ -1,0 +1,25 @@
+cmd/import.go
+  s_5ded0eff3ec989::t_82a4c24993a770 72-74
+  s_5ded0eff3ec989::t_32adcee737ccfb 66-68
+  s_5ded0eff3ec989::t_4170e373395f7d 118
+  s_5ded0eff3ec989::t_bad6f144afc47f 143
+terraformutils/utils.go
+  s_5ded0eff3ec989::t_4334069287558c 216
+  s_5ded0eff3ec989::t_c6de2b0e75d8a3 274-276
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "35b3dc33711ef3f3145d68e2ba40f6b9b84f0761",
+  "prompts": {},
+  "sessions": {
+    "s_5ded0eff3ec989": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ca4fba1e-f1d5-4bbd-91d7-07a8d224dad5",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
