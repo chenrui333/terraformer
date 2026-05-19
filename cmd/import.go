@@ -45,7 +45,6 @@ type ImportOptions struct {
 	NoSort        bool
 	RetryCount    int
 	RetrySleepMs  int
-	ReportPath    string `json:"-"`
 }
 
 type importResourcesPostProcessor interface {
@@ -64,6 +63,11 @@ const DefaultPathPattern = "{output}/{provider}/{service}/"
 const DefaultPathOutput = "generated"
 const DefaultState = "local"
 
+var (
+	processReport = importreport.New()
+	reportPath    string
+)
+
 func newImportCmd() *cobra.Command {
 	options := ImportOptions{}
 	cmd := &cobra.Command{
@@ -72,8 +76,18 @@ func newImportCmd() *cobra.Command {
 		Long:          "Import current state to Terraform configuration",
 		SilenceUsage:  true,
 		SilenceErrors: false,
-		//Version:       version.String(),
+		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+			processReport.Print()
+			if reportPath != "" {
+				if err := processReport.WriteJSONFile(reportPath); err != nil {
+					log.Printf("ERROR: failed to write report: %v", err)
+				}
+			}
+			return nil
+		},
 	}
+
+	cmd.PersistentFlags().StringVar(&reportPath, "report", "", "path to write JSON import report")
 
 	cmd.AddCommand(newCmdPlanImporter(options))
 	cmd.AddCommand(&cobra.Command{
@@ -90,16 +104,6 @@ func newImportCmd() *cobra.Command {
 }
 
 func Import(provider terraformutils.ProviderGenerator, options ImportOptions, args []string) error {
-	report := importreport.New()
-	defer report.Print()
-	defer func() {
-		if options.ReportPath != "" {
-			if err := report.WriteJSONFile(options.ReportPath); err != nil {
-				log.Printf("ERROR: failed to write report: %v", err)
-			}
-		}
-	}()
-
 	providerWrapper, options, err := initOptionsAndWrapper(provider, options, args)
 	if err != nil {
 		return err
@@ -107,12 +111,12 @@ func Import(provider terraformutils.ProviderGenerator, options ImportOptions, ar
 	defer providerWrapper.Kill()
 	providerMapping := terraformutils.NewProvidersMapping(provider)
 
-	err = initAllServicesResources(providerMapping, options, args, providerWrapper, report)
+	err = initAllServicesResources(providerMapping, options, args, providerWrapper, processReport)
 	if err != nil {
 		return err
 	}
 
-	err = terraformutils.RefreshResourcesByProvider(providerMapping, providerWrapper)
+	err = terraformutils.RefreshResourcesByProvider(providerMapping, providerWrapper, processReport)
 	if err != nil {
 		return err
 	}
@@ -127,7 +131,7 @@ func Import(provider terraformutils.ProviderGenerator, options ImportOptions, ar
 		return err
 	}
 
-	if report.HasFailures() {
+	if processReport.HasFailures() {
 		return errors.New("import completed with failures (see summary above)")
 	}
 	return nil
@@ -475,5 +479,4 @@ func baseProviderFlags(flag *pflag.FlagSet, options *ImportOptions, sampleRes, s
 	flag.StringVarP(&options.Output, "output", "O", "hcl", "output format hcl or json")
 	flag.IntVarP(&options.RetryCount, "retry-number", "n", 5, "number of retries to perform when refresh fails")
 	flag.IntVarP(&options.RetrySleepMs, "retry-sleep-ms", "m", 300, "time in ms to sleep between retries")
-	flag.StringVar(&options.ReportPath, "report", "", "path to write JSON import report")
 }

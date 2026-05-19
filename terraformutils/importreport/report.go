@@ -41,11 +41,11 @@ type ResourceEvent struct {
 	Status       Status        `json:"status"`
 	Error        string        `json:"error,omitempty"`
 	Category     ErrorCategory `json:"category,omitempty"`
-	Duration     time.Duration `json:"duration_ms,omitempty"`
+	DurationMs   int64         `json:"duration_ms,omitempty"`
 }
 
 type Summary struct {
-	Duration         time.Duration   `json:"duration_ms"`
+	DurationMs       int64           `json:"duration_ms"`
 	ServicesSuccess  int             `json:"services_success"`
 	ServicesFailed   int             `json:"services_failed"`
 	ServicesSkipped  int             `json:"services_skipped"`
@@ -103,39 +103,7 @@ func (r *Report) HasFailures() bool {
 func (r *Report) Summary() Summary {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-
-	s := Summary{
-		Duration: time.Since(r.StartTime),
-	}
-
-	for _, e := range r.Events {
-		switch e.Status {
-		case StatusSuccess:
-			if e.ResourceID != "" {
-				s.ResourcesImport++
-			} else {
-				s.ServicesSuccess++
-			}
-		case StatusFailed:
-			if e.ResourceID != "" {
-				s.ResourcesFailed++
-				s.Failures = append(s.Failures, e)
-			} else {
-				s.ServicesFailed++
-				s.Failures = append(s.Failures, e)
-			}
-		case StatusPanic:
-			s.ResourcesPanic++
-			s.Failures = append(s.Failures, e)
-		case StatusSkipped:
-			s.ServicesSkipped++
-			s.Skipped = append(s.Skipped, e)
-		case StatusEmpty:
-			s.ServicesSuccess++
-		}
-	}
-
-	return s
+	return r.summaryLocked()
 }
 
 func (r *Report) WriteJSON(w io.Writer) error {
@@ -159,7 +127,7 @@ func (r *Report) WriteJSON(w io.Writer) error {
 
 func (r *Report) summaryLocked() Summary {
 	s := Summary{
-		Duration: time.Since(r.StartTime),
+		DurationMs: time.Since(r.StartTime).Milliseconds(),
 	}
 	for _, e := range r.Events {
 		switch e.Status {
@@ -193,12 +161,13 @@ func (r *Report) summaryLocked() Summary {
 func (r *Report) Print() {
 	s := r.Summary()
 	w := os.Stderr
+	duration := time.Duration(s.DurationMs) * time.Millisecond
 
 	fmt.Fprintf(w, "\n")
 	fmt.Fprintf(w, "═══════════════════════════════════════════\n")
 	fmt.Fprintf(w, " Import Summary\n")
 	fmt.Fprintf(w, "═══════════════════════════════════════════\n")
-	fmt.Fprintf(w, " Duration:    %s\n", s.Duration.Round(time.Second))
+	fmt.Fprintf(w, " Duration:    %s\n", duration.Round(time.Second))
 	fmt.Fprintf(w, " Services:    %d success, %d failed, %d skipped\n",
 		s.ServicesSuccess, s.ServicesFailed, s.ServicesSkipped)
 	fmt.Fprintf(w, " Resources:   %d imported, %d failed, %d panic\n",

@@ -10,6 +10,7 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/chenrui333/terraformer/terraformutils/importreport"
 	"github.com/chenrui333/terraformer/terraformutils/providerwrapper"
 )
 
@@ -212,7 +213,7 @@ func RefreshResources(resources []*Resource, provider *providerwrapper.ProviderW
 	return refreshedResources, nil
 }
 
-func RefreshResourcesByProvider(providersMapping *ProvidersMapping, providerWrapper *providerwrapper.ProviderWrapper) error {
+func RefreshResourcesByProvider(providersMapping *ProvidersMapping, providerWrapper *providerwrapper.ProviderWrapper, report *importreport.Report) error {
 	allResources := providersMapping.ShuffleResources()
 	slowProcessingResources := make(map[ProviderGenerator][]*Resource)
 	regularResources := []*Resource{}
@@ -242,6 +243,34 @@ func RefreshResourcesByProvider(providersMapping *ProvidersMapping, providerWrap
 	refreshedResources, err := RefreshResources(regularResources, providerWrapper, spResourcesList)
 	if err != nil {
 		return err
+	}
+
+	// Feed resource outcomes into the report
+	refreshedSet := make(map[*Resource]bool, len(refreshedResources))
+	for _, r := range refreshedResources {
+		refreshedSet[r] = true
+	}
+	for _, r := range allResources {
+		if refreshedSet[r] {
+			report.Add(importreport.ResourceEvent{
+				Service:      r.InstanceInfo.Type,
+				ResourceType: r.InstanceInfo.Type,
+				ResourceID:   r.InstanceInfo.Id,
+				Status:       importreport.StatusSuccess,
+			})
+		} else {
+			status := importreport.StatusFailed
+			if r.InstanceState == nil {
+				status = importreport.StatusPanic
+			}
+			report.Add(importreport.ResourceEvent{
+				Service:      r.InstanceInfo.Type,
+				ResourceType: r.InstanceInfo.Type,
+				ResourceID:   r.InstanceInfo.Id,
+				Status:       status,
+				Category:     importreport.CategoryAPI,
+			})
+		}
 	}
 
 	failedCount := totalResources - len(refreshedResources)
