@@ -111,8 +111,20 @@ func newImportCmd() *cobra.Command {
 }
 
 func Import(provider terraformutils.ProviderGenerator, options ImportOptions, args []string) error {
+	sessionKey := provider.GetName() + ":" + strings.Join(args, ":")
+
 	providerWrapper, options, err := initOptionsAndWrapper(provider, options, args)
 	if err != nil {
+		cat := importreport.ClassifyError(err)
+		if cat == importreport.CategoryAuth {
+			processReport.SetAuthFailed(sessionKey)
+		}
+		processReport.Add(importreport.ResourceEvent{
+			Service:  provider.GetName(),
+			Status:   importreport.StatusFailed,
+			Category: cat,
+			Error:    err.Error(),
+		})
 		return err
 	}
 	defer providerWrapper.Kill()
@@ -132,6 +144,17 @@ func Import(provider terraformutils.ProviderGenerator, options ImportOptions, ar
 	// change structs with additional data for each resource
 	providerMapping.CleanupProviders()
 	providerMapping.ConvertTypedStates(providerWrapper, processReport)
+
+	// Count final surviving resources as imported
+	for service, resources := range providerMapping.GetResourcesByService() {
+		for range resources {
+			processReport.Add(importreport.ResourceEvent{
+				Service:      service,
+				ResourceType: service,
+				Status:       importreport.StatusSuccess,
+			})
+		}
+	}
 
 	return importFromPlan(providerMapping, options, args)
 }

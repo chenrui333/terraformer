@@ -246,43 +246,37 @@ func RefreshResourcesByProvider(providersMapping *ProvidersMapping, providerWrap
 		return err
 	}
 
-	// Feed resource outcomes into the report
+	// Feed resource failure outcomes into the report (successes counted after conversion)
 	refreshedSet := make(map[*Resource]bool, len(refreshedResources))
 	for _, r := range refreshedResources {
 		refreshedSet[r] = true
 	}
 	for _, r := range allResources {
+		if refreshedSet[r] {
+			continue
+		}
 		service := providersMapping.GetServiceForResource(r)
 		if service == "" {
 			service = r.InstanceInfo.Type
 		}
-		if refreshedSet[r] {
-			report.Add(importreport.ResourceEvent{
-				Service:      service,
-				ResourceType: r.InstanceInfo.Type,
-				ResourceID:   r.InstanceInfo.Id,
-				Status:       importreport.StatusSuccess,
-			})
-		} else {
-			status := importreport.StatusFailed
-			category := importreport.CategoryAPI
-			errMsg := ""
-			if _, wasPanic := panickedIDs.Load(r.InstanceInfo.Id); wasPanic {
-				status = importreport.StatusPanic
-				category = importreport.CategoryPanic
-			} else if r.RefreshError != nil {
-				category = importreport.ClassifyError(r.RefreshError)
-				errMsg = r.RefreshError.Error()
-			}
-			report.Add(importreport.ResourceEvent{
-				Service:      service,
-				ResourceType: r.InstanceInfo.Type,
-				ResourceID:   r.InstanceInfo.Id,
-				Status:       status,
-				Category:     category,
-				Error:        errMsg,
-			})
+		status := importreport.StatusFailed
+		category := importreport.CategoryAPI
+		errMsg := ""
+		if _, wasPanic := panickedIDs.Load(r.InstanceInfo.Id); wasPanic {
+			status = importreport.StatusPanic
+			category = importreport.CategoryPanic
+		} else if r.RefreshError != nil {
+			category = importreport.ClassifyError(r.RefreshError)
+			errMsg = r.RefreshError.Error()
 		}
+		report.Add(importreport.ResourceEvent{
+			Service:      service,
+			ResourceType: r.InstanceInfo.Type,
+			ResourceID:   r.InstanceInfo.Id,
+			Status:       status,
+			Category:     category,
+			Error:        errMsg,
+		})
 	}
 
 	failedCount := totalResources - len(refreshedResources)
