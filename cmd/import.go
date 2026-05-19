@@ -4,7 +4,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -68,6 +67,22 @@ var (
 	reportPath    string
 )
 
+func FinalizeReport() {
+	if len(processReport.Events) == 0 {
+		return
+	}
+	processReport.Print()
+	if reportPath != "" {
+		if err := processReport.WriteJSONFile(reportPath); err != nil {
+			log.Printf("ERROR: failed to write report: %v", err)
+		}
+	}
+}
+
+func HasReportFailures() bool {
+	return processReport.HasFailures()
+}
+
 func newImportCmd() *cobra.Command {
 	options := ImportOptions{}
 	cmd := &cobra.Command{
@@ -76,15 +91,6 @@ func newImportCmd() *cobra.Command {
 		Long:          "Import current state to Terraform configuration",
 		SilenceUsage:  true,
 		SilenceErrors: false,
-		PersistentPostRunE: func(_ *cobra.Command, _ []string) error {
-			processReport.Print()
-			if reportPath != "" {
-				if err := processReport.WriteJSONFile(reportPath); err != nil {
-					log.Printf("ERROR: failed to write report: %v", err)
-				}
-			}
-			return nil
-		},
 	}
 
 	cmd.PersistentFlags().StringVar(&reportPath, "report", "", "path to write JSON import report")
@@ -126,15 +132,7 @@ func Import(provider terraformutils.ProviderGenerator, options ImportOptions, ar
 	providerMapping.CleanupProviders()
 	providerMapping.ConvertTypedStates(providerWrapper)
 
-	err = importFromPlan(providerMapping, options, args)
-	if err != nil {
-		return err
-	}
-
-	if processReport.HasFailures() {
-		return errors.New("import completed with failures (see summary above)")
-	}
-	return nil
+	return importFromPlan(providerMapping, options, args)
 }
 
 func initOptionsAndWrapper(provider terraformutils.ProviderGenerator, options ImportOptions, args []string) (*providerwrapper.ProviderWrapper, ImportOptions, error) {

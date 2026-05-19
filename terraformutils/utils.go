@@ -162,7 +162,7 @@ func schemaVersion(meta map[string]interface{}) uint64 {
 	}
 }
 
-func RefreshResources(resources []*Resource, provider *providerwrapper.ProviderWrapper, slowProcessingResources [][]*Resource) ([]*Resource, error) {
+func RefreshResources(resources []*Resource, provider *providerwrapper.ProviderWrapper, slowProcessingResources [][]*Resource, panickedIDs *sync.Map) ([]*Resource, error) {
 	refreshedResources := []*Resource{}
 	input := make(chan *Resource, len(resources))
 	var wg sync.WaitGroup
@@ -174,7 +174,7 @@ func RefreshResources(resources []*Resource, provider *providerwrapper.ProviderW
 	close(input)
 
 	for i := 0; i < poolSize; i++ {
-		go RefreshResourceWorker(input, &wg, provider)
+		go RefreshResourceWorker(input, &wg, provider, panickedIDs)
 	}
 
 	spInputs := []chan *Resource{}
@@ -188,7 +188,7 @@ func RefreshResources(resources []*Resource, provider *providerwrapper.ProviderW
 
 	for i := 0; i < len(spInputs); i++ {
 		wg.Add(len(slowProcessingResources[i]))
-		go RefreshResourceWorker(spInputs[i], &wg, provider)
+		go RefreshResourceWorker(spInputs[i], &wg, provider, panickedIDs)
 	}
 
 	wg.Wait()
@@ -240,7 +240,8 @@ func RefreshResourcesByProvider(providersMapping *ProvidersMapping, providerWrap
 		totalResources += len(sp)
 	}
 
-	refreshedResources, err := RefreshResources(regularResources, providerWrapper, spResourcesList)
+	var panickedIDs sync.Map
+	refreshedResources, err := RefreshResources(regularResources, providerWrapper, spResourcesList, &panickedIDs)
 	if err != nil {
 		return err
 	}
@@ -260,15 +261,17 @@ func RefreshResourcesByProvider(providersMapping *ProvidersMapping, providerWrap
 			})
 		} else {
 			status := importreport.StatusFailed
-			if r.InstanceState == nil {
+			category := importreport.CategoryAPI
+			if _, wasPanic := panickedIDs.Load(r.InstanceInfo.Id); wasPanic {
 				status = importreport.StatusPanic
+				category = importreport.CategoryPanic
 			}
 			report.Add(importreport.ResourceEvent{
 				Service:      r.InstanceInfo.Type,
 				ResourceType: r.InstanceInfo.Type,
 				ResourceID:   r.InstanceInfo.Id,
 				Status:       status,
-				Category:     importreport.CategoryAPI,
+				Category:     category,
 			})
 		}
 	}
@@ -283,7 +286,7 @@ func RefreshResourcesByProvider(providersMapping *ProvidersMapping, providerWrap
 	return nil
 }
 
-func RefreshResourceWorker(input chan *Resource, wg *sync.WaitGroup, provider *providerwrapper.ProviderWrapper) {
+func RefreshResourceWorker(input chan *Resource, wg *sync.WaitGroup, provider *providerwrapper.ProviderWrapper, panickedIDs *sync.Map) {
 	for r := range input {
 		func() {
 			defer func() {
@@ -293,6 +296,7 @@ func RefreshResourceWorker(input chan *Resource, wg *sync.WaitGroup, provider *p
 					id := "<unknown>"
 					if r != nil && r.InstanceInfo != nil {
 						id = r.InstanceInfo.Id
+						panickedIDs.Store(id, true)
 					}
 					log.Printf("PANIC: Refresh failed for resource %s: %v\n%s",
 						id, rec, buf[:n])

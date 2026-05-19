@@ -204,13 +204,14 @@ func TestRefreshResourceWorker_PanicRecovery(t *testing.T) {
 
 	input := make(chan *Resource, 1)
 	var wg sync.WaitGroup
+	var panickedIDs sync.Map
 
 	wg.Add(1)
 	input <- &r
 	close(input)
 
 	// nil provider causes panic in Refresh — recovery must catch it
-	RefreshResourceWorker(input, &wg, nil)
+	RefreshResourceWorker(input, &wg, nil, &panickedIDs)
 
 	done := make(chan struct{})
 	go func() {
@@ -225,5 +226,9 @@ func TestRefreshResourceWorker_PanicRecovery(t *testing.T) {
 
 	if r.InstanceState != nil {
 		t.Error("expected InstanceState to be nil after panic recovery")
+	}
+
+	if _, ok := panickedIDs.Load(r.InstanceInfo.Id); !ok {
+		t.Errorf("expected %s to be recorded in panickedIDs", r.InstanceInfo.Id)
 	}
 }
