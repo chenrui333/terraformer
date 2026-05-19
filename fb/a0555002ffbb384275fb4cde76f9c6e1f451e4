@@ -1,0 +1,19 @@
+terraformutils/importreport/report.go
+  s_5ded0eff3ec989::t_a662e7971a5230 152-153,164-167,174-177
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "fba0555002ffbb384275fb4cde76f9c6e1f451e4",
+  "prompts": {},
+  "sessions": {
+    "s_5ded0eff3ec989": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ca4fba1e-f1d5-4bbd-91d7-07a8d224dad5",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
