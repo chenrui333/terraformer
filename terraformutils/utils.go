@@ -234,9 +234,20 @@ func RefreshResourcesByProvider(providersMapping *ProvidersMapping, providerWrap
 		spResourcesList = append(spResourcesList, slowProcessingResources[p])
 	}
 
+	totalResources := len(regularResources)
+	for _, sp := range spResourcesList {
+		totalResources += len(sp)
+	}
+
 	refreshedResources, err := RefreshResources(regularResources, providerWrapper, spResourcesList)
 	if err != nil {
 		return err
+	}
+
+	failedCount := totalResources - len(refreshedResources)
+	if failedCount > 0 {
+		log.Printf("Refresh complete: %d resources refreshed, %d failed/skipped",
+			len(refreshedResources), failedCount)
 	}
 
 	providersMapping.SetResources(refreshedResources)

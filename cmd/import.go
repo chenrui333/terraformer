@@ -4,13 +4,14 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"sort"
 	"strings"
-	"sync"
 
+	"github.com/chenrui333/terraformer/terraformutils/importreport"
 	"github.com/chenrui333/terraformer/terraformutils/terraformerstring"
 
 	"github.com/chenrui333/terraformer/terraformutils/providerwrapper"
@@ -44,6 +45,7 @@ type ImportOptions struct {
 	NoSort        bool
 	RetryCount    int
 	RetrySleepMs  int
+	ReportPath    string `json:"-"`
 }
 
 type importResourcesPostProcessor interface {
@@ -88,6 +90,16 @@ func newImportCmd() *cobra.Command {
 }
 
 func Import(provider terraformutils.ProviderGenerator, options ImportOptions, args []string) error {
+	report := importreport.New()
+	defer report.Print()
+	defer func() {
+		if options.ReportPath != "" {
+			if err := report.WriteJSONFile(options.ReportPath); err != nil {
+				log.Printf("ERROR: failed to write report: %v", err)
+			}
+		}
+	}()
+
 	providerWrapper, options, err := initOptionsAndWrapper(provider, options, args)
 	if err != nil {
 		return err
@@ -95,7 +107,7 @@ func Import(provider terraformutils.ProviderGenerator, options ImportOptions, ar
 	defer providerWrapper.Kill()
 	providerMapping := terraformutils.NewProvidersMapping(provider)
 
-	err = initAllServicesResources(providerMapping, options, args, providerWrapper)
+	err = initAllServicesResources(providerMapping, options, args, providerWrapper, report)
 	if err != nil {
 		return err
 	}
@@ -111,8 +123,14 @@ func Import(provider terraformutils.ProviderGenerator, options ImportOptions, ar
 	providerMapping.ConvertTypedStates(providerWrapper)
 
 	err = importFromPlan(providerMapping, options, args)
+	if err != nil {
+		return err
+	}
 
-	return err
+	if report.HasFailures() {
+		return errors.New("import completed with failures (see summary above)")
+	}
+	return nil
 }
 
 func initOptionsAndWrapper(provider terraformutils.ProviderGenerator, options ImportOptions, args []string) (*providerwrapper.ProviderWrapper, ImportOptions, error) {
@@ -160,14 +178,21 @@ func validateImport(provider terraformutils.ProviderGenerator, resources []strin
 	return nil
 }
 
-func initAllServicesResources(providersMapping *terraformutils.ProvidersMapping, options ImportOptions, args []string, providerWrapper *providerwrapper.ProviderWrapper) error {
-	numOfResources := len(options.Resources)
-	var wg sync.WaitGroup
-	wg.Add(numOfResources)
-
+func initAllServicesResources(providersMapping *terraformutils.ProvidersMapping, options ImportOptions, args []string, providerWrapper *providerwrapper.ProviderWrapper, report *importreport.Report) error {
+	sessionKey := providersMapping.GetBaseProvider().GetName()
 	var failedServices []string
 
 	for _, service := range options.Resources {
+		if report.IsAuthFailed(sessionKey) {
+			report.Add(importreport.ResourceEvent{
+				Service:  service,
+				Status:   importreport.StatusSkipped,
+				Category: importreport.CategoryAuth,
+				Error:    "skipped due to prior auth failure",
+			})
+			continue
+		}
+
 		serviceProvider := providersMapping.AddServiceToProvider(service)
 		err := serviceProvider.Init(args)
 		if err != nil {
@@ -175,7 +200,22 @@ func initAllServicesResources(providersMapping *terraformutils.ProvidersMapping,
 		}
 		err = initServiceResources(service, serviceProvider, options, providerWrapper)
 		if err != nil {
+			cat := importreport.ClassifyError(err)
+			if cat == importreport.CategoryAuth {
+				report.SetAuthFailed(sessionKey)
+			}
+			report.Add(importreport.ResourceEvent{
+				Service:  service,
+				Status:   importreport.StatusFailed,
+				Category: cat,
+				Error:    err.Error(),
+			})
 			failedServices = append(failedServices, service)
+		} else {
+			report.Add(importreport.ResourceEvent{
+				Service: service,
+				Status:  importreport.StatusSuccess,
+			})
 		}
 	}
 
@@ -435,4 +475,5 @@ func baseProviderFlags(flag *pflag.FlagSet, options *ImportOptions, sampleRes, s
 	flag.StringVarP(&options.Output, "output", "O", "hcl", "output format hcl or json")
 	flag.IntVarP(&options.RetryCount, "retry-number", "n", 5, "number of retries to perform when refresh fails")
 	flag.IntVarP(&options.RetrySleepMs, "retry-sleep-ms", "m", 300, "time in ms to sleep between retries")
+	flag.StringVar(&options.ReportPath, "report", "", "path to write JSON import report")
 }
