@@ -68,10 +68,9 @@ var (
 )
 
 func FinalizeReport() bool {
-	if len(processReport.Events) == 0 {
-		return true
+	if len(processReport.Events) > 0 {
+		processReport.Print()
 	}
-	processReport.Print()
 	if reportPath != "" {
 		if err := processReport.WriteJSONFile(reportPath); err != nil {
 			log.Printf("ERROR: failed to write report to %s: %v", reportPath, err)
@@ -129,10 +128,10 @@ func Import(provider terraformutils.ProviderGenerator, options ImportOptions, ar
 		return err
 	}
 
-	providerMapping.ConvertTFStates(providerWrapper)
+	providerMapping.ConvertTFStates(providerWrapper, processReport)
 	// change structs with additional data for each resource
 	providerMapping.CleanupProviders()
-	providerMapping.ConvertTypedStates(providerWrapper)
+	providerMapping.ConvertTypedStates(providerWrapper, processReport)
 
 	return importFromPlan(providerMapping, options, args)
 }
@@ -200,7 +199,18 @@ func initAllServicesResources(providersMapping *terraformutils.ProvidersMapping,
 		serviceProvider := providersMapping.AddServiceToProvider(service)
 		err := serviceProvider.Init(args)
 		if err != nil {
-			return err
+			cat := importreport.ClassifyError(err)
+			if cat == importreport.CategoryAuth {
+				report.SetAuthFailed(sessionKey)
+			}
+			report.Add(importreport.ResourceEvent{
+				Service:  service,
+				Status:   importreport.StatusFailed,
+				Category: cat,
+				Error:    err.Error(),
+			})
+			failedServices = append(failedServices, service)
+			continue
 		}
 		err = initServiceResources(service, serviceProvider, options, providerWrapper)
 		if err != nil {
