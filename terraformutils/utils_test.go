@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
 )
@@ -211,7 +212,16 @@ func TestRefreshResourceWorker_PanicRecovery(t *testing.T) {
 	// nil provider causes panic in Refresh — recovery must catch it
 	RefreshResourceWorker(input, &wg, nil)
 
-	wg.Wait()
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("wg.Wait() hung — wg.Done() was not called after panic")
+	}
 
 	if r.InstanceState != nil {
 		t.Error("expected InstanceState to be nil after panic recovery")
