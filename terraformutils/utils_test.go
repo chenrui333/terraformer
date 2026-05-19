@@ -4,6 +4,7 @@ package terraformutils
 
 import (
 	"encoding/json"
+	"sync"
 	"testing"
 
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
@@ -193,5 +194,26 @@ func TestContainsResource(t *testing.T) {
 	}
 	if ContainsResource(list, r2) {
 		t.Error("should not contain r2")
+	}
+}
+
+func TestRefreshResourceWorker_PanicRecovery(t *testing.T) {
+	r := NewResource("panic-id", "panic-resource", "aws_backup_framework", "aws",
+		map[string]string{}, nil, nil)
+
+	input := make(chan *Resource, 1)
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	input <- &r
+	close(input)
+
+	// nil provider causes panic in Refresh — recovery must catch it
+	RefreshResourceWorker(input, &wg, nil)
+
+	wg.Wait()
+
+	if r.InstanceState != nil {
+		t.Error("expected InstanceState to be nil after panic recovery")
 	}
 }
