@@ -135,10 +135,7 @@ func Import(provider terraformutils.ProviderGenerator, options ImportOptions, ar
 	defer providerWrapper.Kill()
 	providerMapping := terraformutils.NewProvidersMapping(provider)
 
-	err = initAllServicesResources(providerMapping, options, args, providerWrapper, processReport)
-	if err != nil {
-		return err
-	}
+	initAllServicesResources(providerMapping, options, args, providerWrapper, processReport)
 
 	err = terraformutils.RefreshResourcesByProvider(providerMapping, providerWrapper, processReport, sessionKey)
 	if err != nil {
@@ -200,7 +197,7 @@ func validateImport(provider terraformutils.ProviderGenerator, resources []strin
 	return nil
 }
 
-func initAllServicesResources(providersMapping *terraformutils.ProvidersMapping, options ImportOptions, args []string, providerWrapper *providerwrapper.ProviderWrapper, report *importreport.Report) error {
+func initAllServicesResources(providersMapping *terraformutils.ProvidersMapping, options ImportOptions, args []string, providerWrapper *providerwrapper.ProviderWrapper, report *importreport.Report) {
 	sessionKey := providersMapping.GetBaseProvider().GetName() + ":" + strings.Join(args, ":")
 	var failedServices []string
 
@@ -255,8 +252,6 @@ func initAllServicesResources(providersMapping *terraformutils.ProvidersMapping,
 	// remove providers that failed to init their service
 	providersMapping.RemoveServices(failedServices)
 	providersMapping.ProcessResources(false)
-
-	return nil
 }
 
 func importFromPlan(providerMapping *terraformutils.ProvidersMapping, options ImportOptions, args []string, report *importreport.Report, eventStart int) error {
