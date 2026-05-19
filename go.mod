@@ -16,7 +16,7 @@ require (
 	github.com/IBM/networking-go-sdk v0.53.4
 	github.com/IBM/platform-services-go-sdk v0.97.4
 	github.com/IBM/vpc-go-sdk v0.83.2
-	github.com/OctopusDeploy/go-octopusdeploy v1.8.6
+	github.com/OctopusDeploy/go-octopusdeploy/v2 v2.108.0
 	github.com/PaloAltoNetworks/pango v0.10.2
 	github.com/aliyun/alibaba-cloud-sdk-go v1.63.107
 	github.com/aliyun/aliyun-tablestore-go-sdk/v5 v5.0.6
@@ -464,6 +464,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/synapse/armsynapse v0.8.0
 	github.com/IBM/continuous-delivery-go-sdk/v2 v2.0.8
 	github.com/IBM/sarama v1.46.1
+	github.com/OctopusDeploy/go-octopusdeploy v1.8.6
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
 	github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.34.3
 	github.com/aws/aws-sdk-go-v2/service/appconfig v1.43.15
