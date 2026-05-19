@@ -63,11 +63,15 @@ const DefaultPathOutput = "generated"
 const DefaultState = "local"
 
 var (
-	processReport = importreport.New()
-	reportPath    string
+	processReport  = importreport.New()
+	reportPath     string
+	importExecuted bool
 )
 
 func FinalizeReport() bool {
+	if !importExecuted {
+		return true
+	}
 	if len(processReport.Events) > 0 {
 		processReport.Print()
 	}
@@ -111,6 +115,7 @@ func newImportCmd() *cobra.Command {
 }
 
 func Import(provider terraformutils.ProviderGenerator, options ImportOptions, args []string) error {
+	importExecuted = true
 	sessionKey := provider.GetName() + ":" + strings.Join(args, ":")
 
 	providerWrapper, options, err := initOptionsAndWrapper(provider, options, args)
@@ -135,7 +140,7 @@ func Import(provider terraformutils.ProviderGenerator, options ImportOptions, ar
 		return err
 	}
 
-	err = terraformutils.RefreshResourcesByProvider(providerMapping, providerWrapper, processReport)
+	err = terraformutils.RefreshResourcesByProvider(providerMapping, providerWrapper, processReport, sessionKey)
 	if err != nil {
 		return err
 	}

@@ -213,7 +213,7 @@ func RefreshResources(resources []*Resource, provider *providerwrapper.ProviderW
 	return refreshedResources, nil
 }
 
-func RefreshResourcesByProvider(providersMapping *ProvidersMapping, providerWrapper *providerwrapper.ProviderWrapper, report *importreport.Report) error {
+func RefreshResourcesByProvider(providersMapping *ProvidersMapping, providerWrapper *providerwrapper.ProviderWrapper, report *importreport.Report, sessionKey string) error {
 	allResources := providersMapping.ShuffleResources()
 	slowProcessingResources := make(map[ProviderGenerator][]*Resource)
 	regularResources := []*Resource{}
@@ -271,6 +271,9 @@ func RefreshResourcesByProvider(providersMapping *ProvidersMapping, providerWrap
 		} else if r.RefreshError != nil {
 			category = importreport.ClassifyError(r.RefreshError)
 			errMsg = r.RefreshError.Error()
+			if category == importreport.CategoryAuth && sessionKey != "" {
+				report.SetAuthFailed(sessionKey)
+			}
 		}
 		report.Add(importreport.ResourceEvent{
 			Service:      service,
