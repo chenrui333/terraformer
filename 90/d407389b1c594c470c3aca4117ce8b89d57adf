@@ -1,0 +1,33 @@
+terraformutils/importreport/report.go
+  s_5ded0eff3ec989::t_207c5660c80888 1-244
+terraformutils/importreport/classify_test.go
+  s_5ded0eff3ec989::t_a0682f9818fcbb 1-57
+terraformutils/utils.go
+  s_5ded0eff3ec989::t_b5d111616528c9 237-241,247-250
+terraformutils/importreport/classify.go
+  s_5ded0eff3ec989::t_d2c60b7c65a398 1-64
+cmd/import.go
+  s_5ded0eff3ec989::t_9c299ca7c4597c 7,14
+  s_5ded0eff3ec989::t_3d979572a2f24a 93-102,110,126-128,130-133
+  s_5ded0eff3ec989::t_c8226eda8be196 48
+  s_5ded0eff3ec989::t_34af50f86501b2 181-182,186-195,203-212,214-218
+  s_5ded0eff3ec989::t_bc50433fe97915 478
+terraformutils/importreport/report_test.go
+  s_5ded0eff3ec989::t_8639e301591e94 1-126
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "90d407389b1c594c470c3aca4117ce8b89d57adf",
+  "prompts": {},
+  "sessions": {
+    "s_5ded0eff3ec989": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ca4fba1e-f1d5-4bbd-91d7-07a8d224dad5",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
