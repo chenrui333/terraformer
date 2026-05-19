@@ -16,6 +16,12 @@ var authPatterns = []string{
 	"AuthFailure",
 	"ExpiredTokenException",
 	"RequestExpired",
+	"AADSTS700082",
+	"refresh token has expired",
+	"AzureCLICredential",
+	"please run 'az login'",
+	"DefaultAzureCredential",
+	"CredentialUnavailableError",
 }
 
 var rateLimitPatterns = []string{

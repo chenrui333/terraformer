@@ -267,7 +267,23 @@ func importFromPlan(providerMapping *terraformutils.ProvidersMapping, options Im
 		resourcesByService = provider.PostProcessImportResources(resourcesByService)
 	}
 
-	// Count successfully imported resources after post-processing
+	for service, resources := range resourcesByService {
+		plan.ImportedResource[service] = append(plan.ImportedResource[service], resources...)
+	}
+
+	var outputErr error
+	if options.Plan {
+		path := Path(options.PathPattern, providerMapping.GetBaseProvider().GetName(), "terraformer", options.PathOutput)
+		outputErr = ExportPlanFile(plan, path, "plan.json")
+	} else {
+		outputErr = ImportFromPlan(providerMapping.GetBaseProvider(), plan)
+	}
+
+	if outputErr != nil {
+		return outputErr
+	}
+
+	// Count successfully imported resources only after output succeeds
 	failedIDs := report.FailedResourceIDsSince(eventStart)
 	for service, resources := range resourcesByService {
 		for i := range resources {
@@ -282,15 +298,9 @@ func importFromPlan(providerMapping *terraformutils.ProvidersMapping, options Im
 				Status:       importreport.StatusSuccess,
 			})
 		}
-		plan.ImportedResource[service] = append(plan.ImportedResource[service], resources...)
 	}
 
-	if options.Plan {
-		path := Path(options.PathPattern, providerMapping.GetBaseProvider().GetName(), "terraformer", options.PathOutput)
-		return ExportPlanFile(plan, path, "plan.json")
-	}
-
-	return ImportFromPlan(providerMapping.GetBaseProvider(), plan)
+	return nil
 }
 
 func initServiceResources(service string, provider terraformutils.ProviderGenerator,
