@@ -45,15 +45,16 @@ type ResourceEvent struct {
 }
 
 type Summary struct {
-	DurationMs      int64           `json:"duration_ms"`
-	ServicesSuccess int             `json:"services_success"`
-	ServicesFailed  int             `json:"services_failed"`
-	ServicesSkipped int             `json:"services_skipped"`
-	ResourcesImport int             `json:"resources_imported"`
-	ResourcesFailed int             `json:"resources_failed"`
-	ResourcesPanic  int             `json:"resources_panic"`
-	Failures        []ResourceEvent `json:"failures,omitempty"`
-	Skipped         []ResourceEvent `json:"skipped,omitempty"`
+	DurationMs       int64           `json:"duration_ms"`
+	ServicesSuccess  int             `json:"services_success"`
+	ServicesFailed   int             `json:"services_failed"`
+	ServicesSkipped  int             `json:"services_skipped"`
+	ResourcesImport  int             `json:"resources_imported"`
+	ResourcesFailed  int             `json:"resources_failed"`
+	ResourcesPanic   int             `json:"resources_panic"`
+	ResourcesSkipped int             `json:"resources_skipped"`
+	Failures         []ResourceEvent `json:"failures,omitempty"`
+	Skipped          []ResourceEvent `json:"skipped,omitempty"`
 }
 
 type Report struct {
@@ -168,7 +169,11 @@ func (r *Report) summaryLocked() Summary {
 			s.ResourcesPanic++
 			s.Failures = append(s.Failures, e)
 		case StatusSkipped:
-			s.ServicesSkipped++
+			if e.ResourceID != "" {
+				s.ResourcesSkipped++
+			} else {
+				s.ServicesSkipped++
+			}
 			s.Skipped = append(s.Skipped, e)
 		case StatusEmpty:
 			s.ServicesSuccess++
@@ -189,8 +194,8 @@ func (r *Report) Print() {
 	fmt.Fprintf(w, " Duration:    %s\n", duration.Round(time.Second))
 	fmt.Fprintf(w, " Services:    %d success, %d failed, %d skipped\n",
 		s.ServicesSuccess, s.ServicesFailed, s.ServicesSkipped)
-	fmt.Fprintf(w, " Resources:   %d imported, %d failed, %d panic\n",
-		s.ResourcesImport, s.ResourcesFailed, s.ResourcesPanic)
+	fmt.Fprintf(w, " Resources:   %d imported, %d failed, %d panic, %d skipped\n",
+		s.ResourcesImport, s.ResourcesFailed, s.ResourcesPanic, s.ResourcesSkipped)
 	fmt.Fprintf(w, "═══════════════════════════════════════════\n")
 
 	if len(s.Failures) > 0 {
@@ -208,11 +213,15 @@ func (r *Report) Print() {
 		}
 	}
 
-	if len(s.Skipped) > 0 {
+	if s.ServicesSkipped > 0 || s.ResourcesSkipped > 0 {
 		fmt.Fprintf(w, " Skipped (auth):\n")
-		names := make([]string, 0, len(s.Skipped))
+		seen := make(map[string]bool)
+		names := make([]string, 0)
 		for _, sk := range s.Skipped {
-			names = append(names, sk.Service)
+			if !seen[sk.Service] {
+				seen[sk.Service] = true
+				names = append(names, sk.Service)
+			}
 		}
 		fmt.Fprintf(w, "   %s\n", strings.Join(names, ", "))
 	}

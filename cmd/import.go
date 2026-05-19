@@ -280,6 +280,12 @@ func importFromPlan(providerMapping *terraformutils.ProvidersMapping, options Im
 	}
 
 	if outputErr != nil {
+		report.Add(importreport.ResourceEvent{
+			Service:  providerMapping.GetBaseProvider().GetName(),
+			Status:   importreport.StatusFailed,
+			Category: importreport.ClassifyError(outputErr),
+			Error:    outputErr.Error(),
+		})
 		return outputErr
 	}
 
