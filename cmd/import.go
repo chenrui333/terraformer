@@ -76,7 +76,7 @@ func newImportCmd() *cobra.Command {
 		Long:          "Import current state to Terraform configuration",
 		SilenceUsage:  true,
 		SilenceErrors: false,
-		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+		PersistentPostRunE: func(_ *cobra.Command, _ []string) error {
 			processReport.Print()
 			if reportPath != "" {
 				if err := processReport.WriteJSONFile(reportPath); err != nil {

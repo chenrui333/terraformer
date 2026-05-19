@@ -45,15 +45,15 @@ type ResourceEvent struct {
 }
 
 type Summary struct {
-	DurationMs       int64           `json:"duration_ms"`
-	ServicesSuccess  int             `json:"services_success"`
-	ServicesFailed   int             `json:"services_failed"`
-	ServicesSkipped  int             `json:"services_skipped"`
-	ResourcesImport  int             `json:"resources_imported"`
-	ResourcesFailed  int             `json:"resources_failed"`
-	ResourcesPanic   int             `json:"resources_panic"`
-	Failures         []ResourceEvent `json:"failures,omitempty"`
-	Skipped          []ResourceEvent `json:"skipped,omitempty"`
+	DurationMs      int64           `json:"duration_ms"`
+	ServicesSuccess int             `json:"services_success"`
+	ServicesFailed  int             `json:"services_failed"`
+	ServicesSkipped int             `json:"services_skipped"`
+	ResourcesImport int             `json:"resources_imported"`
+	ResourcesFailed int             `json:"resources_failed"`
+	ResourcesPanic  int             `json:"resources_panic"`
+	Failures        []ResourceEvent `json:"failures,omitempty"`
+	Skipped         []ResourceEvent `json:"skipped,omitempty"`
 }
 
 type Report struct {

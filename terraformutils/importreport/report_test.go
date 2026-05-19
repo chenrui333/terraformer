@@ -90,10 +90,10 @@ func TestConcurrentAdd(t *testing.T) {
 
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
-		go func(i int) {
+		go func() {
 			defer wg.Done()
 			r.Add(ResourceEvent{Service: "svc", ResourceID: "r", Status: StatusSuccess})
-		}(i)
+		}()
 	}
 	wg.Wait()
 
