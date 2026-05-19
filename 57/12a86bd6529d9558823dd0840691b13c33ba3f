@@ -1,0 +1,20 @@
+cmd/import.go
+  s_5ded0eff3ec989::t_ed26c922c2e430 138
+  s_5ded0eff3ec989::t_9d1628e6d0d6a7 200
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "5712a86bd6529d9558823dd0840691b13c33ba3f",
+  "prompts": {},
+  "sessions": {
+    "s_5ded0eff3ec989": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ca4fba1e-f1d5-4bbd-91d7-07a8d224dad5",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
