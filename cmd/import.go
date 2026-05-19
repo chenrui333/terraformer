@@ -98,7 +98,6 @@ func newImportCmd() *cobra.Command {
 		SilenceErrors: false,
 	}
 
-	cmd.PersistentFlags().StringVar(&reportPath, "report", "", "path to write JSON import report")
 
 	cmd.AddCommand(newCmdPlanImporter(options))
 	cmd.AddCommand(&cobra.Command{
