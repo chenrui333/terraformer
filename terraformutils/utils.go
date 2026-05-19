@@ -255,6 +255,9 @@ func RefreshResourcesByProvider(providersMapping *ProvidersMapping, providerWrap
 		if refreshedSet[r] {
 			continue
 		}
+		if r == nil || r.InstanceInfo == nil {
+			continue
+		}
 		service := providersMapping.GetServiceForResource(r)
 		if service == "" {
 			service = r.InstanceInfo.Type

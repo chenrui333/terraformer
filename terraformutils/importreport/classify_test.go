@@ -47,7 +47,11 @@ func TestClassifyErrorMessage(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		t.Run(tc.msg[:20], func(t *testing.T) {
+		name := tc.msg
+		if len(name) > 40 {
+			name = name[:40]
+		}
+		t.Run(name, func(t *testing.T) {
 			got := ClassifyErrorMessage(tc.msg)
 			if got != tc.want {
 				t.Errorf("ClassifyErrorMessage(%q) = %q, want %q", tc.msg, got, tc.want)

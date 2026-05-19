@@ -52,8 +52,9 @@ func ClassifyErrorMessage(msg string) ErrorCategory {
 }
 
 func isAuthError(msg string) bool {
+	lower := strings.ToLower(msg)
 	for _, pattern := range authPatterns {
-		if strings.Contains(msg, pattern) {
+		if strings.Contains(lower, strings.ToLower(pattern)) {
 			return true
 		}
 	}
@@ -61,8 +62,9 @@ func isAuthError(msg string) bool {
 }
 
 func isRateLimitError(msg string) bool {
+	lower := strings.ToLower(msg)
 	for _, pattern := range rateLimitPatterns {
-		if strings.Contains(msg, pattern) {
+		if strings.Contains(lower, strings.ToLower(pattern)) {
 			return true
 		}
 	}
