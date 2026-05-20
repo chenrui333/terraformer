@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.13.1
+
+`0.13.1` is a focused import-observability release. It makes partial import
+failures visible through summaries, structured reports, categorized errors, and
+auth-aware early exits so large provider runs fail fast and leave actionable
+evidence.
+
+### Highlights
+
+* Add an import observability framework with end-of-run summaries, JSON
+  `--report` output, and non-zero exits when imports or report writes fail.
+* Classify import failures across auth, API, panic, rate-limit, empty,
+  conversion, and unknown categories.
+* Stop cascading provider-session failures after auth errors by skipping
+  remaining services and recording skipped outcomes.
+* Recover and report refresh worker panics so partial runs still produce usable
+  import evidence.
+* Update `golang.org/x/text` to `v0.37.0`.
+
+**Full Changelog**: <https://github.com/chenrui333/terraformer/compare/v0.13.0...v0.13.1>
+
 ## 0.13.0
 
 `0.13.0` is a major provider-coverage release. It adds Kafka and Helm
