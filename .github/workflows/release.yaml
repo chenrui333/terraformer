@@ -68,8 +68,6 @@ jobs:
         go-version-file: go.mod
         cache: true
         cache-dependency-path: go.sum
-    - name: Build
-      run: go build -v ./...
     - name: Test
       run: go test ./... -count=1
     - name: GoReleaser Snapshot
@@ -99,8 +97,6 @@ jobs:
         go-version-file: go.mod
         cache: true
         cache-dependency-path: go.sum
-    - name: Build
-      run: go build -v ./...
     - name: Test
       run: go test ./... -count=1
     - name: GoReleaser Release
