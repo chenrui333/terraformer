@@ -14,6 +14,7 @@ func NewCmdRoot() *cobra.Command {
 		SilenceErrors: true,
 		Version:       terraformerVersion.Version,
 	}
+	cmd.PersistentFlags().StringVar(&reportPath, "report", "", "path to write JSON import report")
 	cmd.AddCommand(newImportCmd())
 	cmd.AddCommand(newPlanCmd())
 	cmd.AddCommand(versionCmd)

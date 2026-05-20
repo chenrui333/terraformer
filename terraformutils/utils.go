@@ -5,13 +5,18 @@ package terraformutils
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"log"
 	"runtime"
 	"sort"
 	"sync"
+	"sync/atomic"
 
+	"github.com/chenrui333/terraformer/terraformutils/importreport"
 	"github.com/chenrui333/terraformer/terraformutils/providerwrapper"
 )
+
+var errAuthAborted = errors.New("skipped due to auth failure in this session")
 
 type BaseResource struct {
 	Tags map[string]string `json:"tags,omitempty"`
@@ -161,7 +166,7 @@ func schemaVersion(meta map[string]interface{}) uint64 {
 	}
 }
 
-func RefreshResources(resources []*Resource, provider *providerwrapper.ProviderWrapper, slowProcessingResources [][]*Resource) ([]*Resource, error) {
+func RefreshResources(resources []*Resource, provider *providerwrapper.ProviderWrapper, slowProcessingResources [][]*Resource, panickedIDs *sync.Map, authAbort *atomic.Bool) ([]*Resource, error) {
 	refreshedResources := []*Resource{}
 	input := make(chan *Resource, len(resources))
 	var wg sync.WaitGroup
@@ -173,7 +178,7 @@ func RefreshResources(resources []*Resource, provider *providerwrapper.ProviderW
 	close(input)
 
 	for i := 0; i < poolSize; i++ {
-		go RefreshResourceWorker(input, &wg, provider)
+		go RefreshResourceWorker(input, &wg, provider, panickedIDs, authAbort)
 	}
 
 	spInputs := []chan *Resource{}
@@ -187,7 +192,7 @@ func RefreshResources(resources []*Resource, provider *providerwrapper.ProviderW
 
 	for i := 0; i < len(spInputs); i++ {
 		wg.Add(len(slowProcessingResources[i]))
-		go RefreshResourceWorker(spInputs[i], &wg, provider)
+		go RefreshResourceWorker(spInputs[i], &wg, provider, panickedIDs, authAbort)
 	}
 
 	wg.Wait()
@@ -212,7 +217,7 @@ func RefreshResources(resources []*Resource, provider *providerwrapper.ProviderW
 	return refreshedResources, nil
 }
 
-func RefreshResourcesByProvider(providersMapping *ProvidersMapping, providerWrapper *providerwrapper.ProviderWrapper) error {
+func RefreshResourcesByProvider(providersMapping *ProvidersMapping, providerWrapper *providerwrapper.ProviderWrapper, report *importreport.Report, sessionKey string) error {
 	allResources := providersMapping.ShuffleResources()
 	slowProcessingResources := make(map[ProviderGenerator][]*Resource)
 	regularResources := []*Resource{}
@@ -234,16 +239,72 @@ func RefreshResourcesByProvider(providersMapping *ProvidersMapping, providerWrap
 		spResourcesList = append(spResourcesList, slowProcessingResources[p])
 	}
 
-	refreshedResources, err := RefreshResources(regularResources, providerWrapper, spResourcesList)
+	totalResources := len(regularResources)
+	for _, sp := range spResourcesList {
+		totalResources += len(sp)
+	}
+
+	var panickedIDs sync.Map
+	var authAbort atomic.Bool
+	refreshedResources, err := RefreshResources(regularResources, providerWrapper, spResourcesList, &panickedIDs, &authAbort)
 	if err != nil {
 		return err
+	}
+
+	// Feed resource failure outcomes into the report (successes counted after conversion)
+	refreshedSet := make(map[*Resource]bool, len(refreshedResources))
+	for _, r := range refreshedResources {
+		refreshedSet[r] = true
+	}
+	for _, r := range allResources {
+		if refreshedSet[r] {
+			continue
+		}
+		if r == nil || r.InstanceInfo == nil {
+			continue
+		}
+		service := providersMapping.GetServiceForResource(r)
+		if service == "" {
+			service = r.InstanceInfo.Type
+		}
+		status := importreport.StatusFailed
+		category := importreport.CategoryAPI
+		errMsg := ""
+		if _, wasPanic := panickedIDs.Load(r.InstanceInfo.Id); wasPanic {
+			status = importreport.StatusPanic
+			category = importreport.CategoryPanic
+		} else if errors.Is(r.RefreshError, errAuthAborted) {
+			status = importreport.StatusSkipped
+			category = importreport.CategoryAuth
+			errMsg = r.RefreshError.Error()
+		} else if r.RefreshError != nil {
+			category = importreport.ClassifyError(r.RefreshError)
+			errMsg = r.RefreshError.Error()
+			if category == importreport.CategoryAuth && sessionKey != "" {
+				report.SetAuthFailed(sessionKey)
+			}
+		}
+		report.Add(importreport.ResourceEvent{
+			Service:      service,
+			ResourceType: r.InstanceInfo.Type,
+			ResourceID:   r.InstanceInfo.Id,
+			Status:       status,
+			Category:     category,
+			Error:        errMsg,
+		})
+	}
+
+	failedCount := totalResources - len(refreshedResources)
+	if failedCount > 0 {
+		log.Printf("Refresh complete: %d resources refreshed, %d failed/skipped",
+			len(refreshedResources), failedCount)
 	}
 
 	providersMapping.SetResources(refreshedResources)
 	return nil
 }
 
-func RefreshResourceWorker(input chan *Resource, wg *sync.WaitGroup, provider *providerwrapper.ProviderWrapper) {
+func RefreshResourceWorker(input chan *Resource, wg *sync.WaitGroup, provider *providerwrapper.ProviderWrapper, panickedIDs *sync.Map, authAbort *atomic.Bool) {
 	for r := range input {
 		func() {
 			defer func() {
@@ -253,6 +314,7 @@ func RefreshResourceWorker(input chan *Resource, wg *sync.WaitGroup, provider *p
 					id := "<unknown>"
 					if r != nil && r.InstanceInfo != nil {
 						id = r.InstanceInfo.Id
+						panickedIDs.Store(id, true)
 					}
 					log.Printf("PANIC: Refresh failed for resource %s: %v\n%s",
 						id, rec, buf[:n])
@@ -262,8 +324,16 @@ func RefreshResourceWorker(input chan *Resource, wg *sync.WaitGroup, provider *p
 				}
 				wg.Done()
 			}()
+			if authAbort.Load() {
+				r.InstanceState = nil
+				r.RefreshError = errAuthAborted
+				return
+			}
 			log.Println("Refreshing state...", r.InstanceInfo.Id)
 			r.Refresh(provider)
+			if r.RefreshError != nil && importreport.ClassifyError(r.RefreshError) == importreport.CategoryAuth {
+				authAbort.Store(true)
+			}
 		}()
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/chenrui333/terraformer/terraformutils/importreport"
 	"github.com/chenrui333/terraformer/terraformutils/providerwrapper"
 )
 
@@ -114,6 +115,14 @@ func (p *ProvidersMapping) MatchProvider(resource *Resource) ProviderGenerator {
 	return p.resourceToProvider[resource]
 }
 
+func (p *ProvidersMapping) GetServiceForResource(resource *Resource) string {
+	provider := p.resourceToProvider[resource]
+	if provider == nil {
+		return ""
+	}
+	return p.providerToService[provider]
+}
+
 func (p *ProvidersMapping) SetResources(resourceToKeep []*Resource) {
 	p.Resources = map[*Resource]bool{}
 	resourcesGroupsByProviders := map[ProviderGenerator][]Resource{}
@@ -147,11 +156,20 @@ func (p *ProvidersMapping) GetResourcesByService() map[string][]Resource {
 	return mapping
 }
 
-func (p *ProvidersMapping) ConvertTFStates(providerWrapper *providerwrapper.ProviderWrapper) {
+func (p *ProvidersMapping) ConvertTFStates(providerWrapper *providerwrapper.ProviderWrapper, report *importreport.Report) {
 	for resource := range p.Resources {
 		err := resource.ConvertTFstate(providerWrapper)
 		if err != nil {
 			log.Printf("failed to convert resources %s because of error %s", resource.InstanceInfo.Id, err)
+			service := p.providerToService[p.resourceToProvider[resource]]
+			report.Add(importreport.ResourceEvent{
+				Service:      service,
+				ResourceType: resource.InstanceInfo.Type,
+				ResourceID:   resource.InstanceInfo.Id,
+				Status:       importreport.StatusFailed,
+				Category:     importreport.CategoryConvert,
+				Error:        err.Error(),
+			})
 		}
 	}
 
@@ -169,11 +187,20 @@ func (p *ProvidersMapping) ConvertTFStates(providerWrapper *providerwrapper.Prov
 	}
 }
 
-func (p *ProvidersMapping) ConvertTypedStates(providerWrapper *providerwrapper.ProviderWrapper) {
+func (p *ProvidersMapping) ConvertTypedStates(providerWrapper *providerwrapper.ProviderWrapper, report *importreport.Report) {
 	for resource := range p.Resources {
 		err := resource.ConvertTypedState(providerWrapper)
 		if err != nil {
 			log.Printf("failed to convert typed state for resource %s because of error %s", resource.InstanceInfo.Id, err)
+			service := p.providerToService[p.resourceToProvider[resource]]
+			report.Add(importreport.ResourceEvent{
+				Service:      service,
+				ResourceType: resource.InstanceInfo.Type,
+				ResourceID:   resource.InstanceInfo.Id,
+				Status:       importreport.StatusFailed,
+				Category:     importreport.CategoryConvert,
+				Error:        err.Error(),
+			})
 		}
 	}
 }

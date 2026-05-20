@@ -9,8 +9,8 @@ import (
 	"os"
 	"sort"
 	"strings"
-	"sync"
 
+	"github.com/chenrui333/terraformer/terraformutils/importreport"
 	"github.com/chenrui333/terraformer/terraformutils/terraformerstring"
 
 	"github.com/chenrui333/terraformer/terraformutils/providerwrapper"
@@ -62,6 +62,32 @@ const DefaultPathPattern = "{output}/{provider}/{service}/"
 const DefaultPathOutput = "generated"
 const DefaultState = "local"
 
+var (
+	processReport  = importreport.New()
+	reportPath     string
+	importExecuted bool
+)
+
+func FinalizeReport() bool {
+	if !importExecuted {
+		return true
+	}
+	if len(processReport.Events) > 0 {
+		processReport.Print()
+	}
+	if reportPath != "" {
+		if err := processReport.WriteJSONFile(reportPath); err != nil {
+			log.Printf("ERROR: failed to write report to %s: %v", reportPath, err)
+			return false
+		}
+	}
+	return true
+}
+
+func HasReportFailures() bool {
+	return processReport.HasFailures()
+}
+
 func newImportCmd() *cobra.Command {
 	options := ImportOptions{}
 	cmd := &cobra.Command{
@@ -70,7 +96,6 @@ func newImportCmd() *cobra.Command {
 		Long:          "Import current state to Terraform configuration",
 		SilenceUsage:  true,
 		SilenceErrors: false,
-		//Version:       version.String(),
 	}
 
 	cmd.AddCommand(newCmdPlanImporter(options))
@@ -88,31 +113,41 @@ func newImportCmd() *cobra.Command {
 }
 
 func Import(provider terraformutils.ProviderGenerator, options ImportOptions, args []string) error {
+	importExecuted = true
+	sessionKey := provider.GetName() + ":" + strings.Join(args, ":")
+
 	providerWrapper, options, err := initOptionsAndWrapper(provider, options, args)
 	if err != nil {
+		cat := importreport.ClassifyError(err)
+		if cat == importreport.CategoryAuth {
+			processReport.SetAuthFailed(sessionKey)
+		}
+		processReport.Add(importreport.ResourceEvent{
+			Service:  provider.GetName(),
+			Status:   importreport.StatusFailed,
+			Category: cat,
+			Error:    err.Error(),
+		})
 		return err
 	}
 	defer providerWrapper.Kill()
 	providerMapping := terraformutils.NewProvidersMapping(provider)
 
-	err = initAllServicesResources(providerMapping, options, args, providerWrapper)
+	initAllServicesResources(providerMapping, options, args, providerWrapper, processReport)
+
+	err = terraformutils.RefreshResourcesByProvider(providerMapping, providerWrapper, processReport, sessionKey)
 	if err != nil {
 		return err
 	}
 
-	err = terraformutils.RefreshResourcesByProvider(providerMapping, providerWrapper)
-	if err != nil {
-		return err
-	}
+	eventStart := processReport.EventCount()
 
-	providerMapping.ConvertTFStates(providerWrapper)
+	providerMapping.ConvertTFStates(providerWrapper, processReport)
 	// change structs with additional data for each resource
 	providerMapping.CleanupProviders()
-	providerMapping.ConvertTypedStates(providerWrapper)
+	providerMapping.ConvertTypedStates(providerWrapper, processReport)
 
-	err = importFromPlan(providerMapping, options, args)
-
-	return err
+	return importFromPlan(providerMapping, options, args, processReport, eventStart)
 }
 
 func initOptionsAndWrapper(provider terraformutils.ProviderGenerator, options ImportOptions, args []string) (*providerwrapper.ProviderWrapper, ImportOptions, error) {
@@ -160,33 +195,64 @@ func validateImport(provider terraformutils.ProviderGenerator, resources []strin
 	return nil
 }
 
-func initAllServicesResources(providersMapping *terraformutils.ProvidersMapping, options ImportOptions, args []string, providerWrapper *providerwrapper.ProviderWrapper) error {
-	numOfResources := len(options.Resources)
-	var wg sync.WaitGroup
-	wg.Add(numOfResources)
-
+func initAllServicesResources(providersMapping *terraformutils.ProvidersMapping, options ImportOptions, args []string, providerWrapper *providerwrapper.ProviderWrapper, report *importreport.Report) {
+	sessionKey := providersMapping.GetBaseProvider().GetName() + ":" + strings.Join(args, ":")
 	var failedServices []string
 
 	for _, service := range options.Resources {
+		if report.IsAuthFailed(sessionKey) {
+			report.Add(importreport.ResourceEvent{
+				Service:  service,
+				Status:   importreport.StatusSkipped,
+				Category: importreport.CategoryAuth,
+				Error:    "skipped due to prior auth failure",
+			})
+			continue
+		}
+
 		serviceProvider := providersMapping.AddServiceToProvider(service)
 		err := serviceProvider.Init(args)
 		if err != nil {
-			return err
+			cat := importreport.ClassifyError(err)
+			if cat == importreport.CategoryAuth {
+				report.SetAuthFailed(sessionKey)
+			}
+			report.Add(importreport.ResourceEvent{
+				Service:  service,
+				Status:   importreport.StatusFailed,
+				Category: cat,
+				Error:    err.Error(),
+			})
+			failedServices = append(failedServices, service)
+			continue
 		}
 		err = initServiceResources(service, serviceProvider, options, providerWrapper)
 		if err != nil {
+			cat := importreport.ClassifyError(err)
+			if cat == importreport.CategoryAuth {
+				report.SetAuthFailed(sessionKey)
+			}
+			report.Add(importreport.ResourceEvent{
+				Service:  service,
+				Status:   importreport.StatusFailed,
+				Category: cat,
+				Error:    err.Error(),
+			})
 			failedServices = append(failedServices, service)
+		} else {
+			report.Add(importreport.ResourceEvent{
+				Service: service,
+				Status:  importreport.StatusSuccess,
+			})
 		}
 	}
 
 	// remove providers that failed to init their service
 	providersMapping.RemoveServices(failedServices)
 	providersMapping.ProcessResources(false)
-
-	return nil
 }
 
-func importFromPlan(providerMapping *terraformutils.ProvidersMapping, options ImportOptions, args []string) error {
+func importFromPlan(providerMapping *terraformutils.ProvidersMapping, options ImportOptions, args []string, report *importreport.Report, eventStart int) error {
 	plan := &ImportPlan{
 		Provider:         providerMapping.GetBaseProvider().GetName(),
 		Options:          options,
@@ -198,16 +264,47 @@ func importFromPlan(providerMapping *terraformutils.ProvidersMapping, options Im
 	if provider, ok := providerMapping.GetBaseProvider().(importResourcesPostProcessor); ok {
 		resourcesByService = provider.PostProcessImportResources(resourcesByService)
 	}
-	for service := range resourcesByService {
-		plan.ImportedResource[service] = append(plan.ImportedResource[service], resourcesByService[service]...)
+
+	for service, resources := range resourcesByService {
+		plan.ImportedResource[service] = append(plan.ImportedResource[service], resources...)
 	}
 
+	var outputErr error
 	if options.Plan {
 		path := Path(options.PathPattern, providerMapping.GetBaseProvider().GetName(), "terraformer", options.PathOutput)
-		return ExportPlanFile(plan, path, "plan.json")
+		outputErr = ExportPlanFile(plan, path, "plan.json")
+	} else {
+		outputErr = ImportFromPlan(providerMapping.GetBaseProvider(), plan)
 	}
 
-	return ImportFromPlan(providerMapping.GetBaseProvider(), plan)
+	if outputErr != nil {
+		report.Add(importreport.ResourceEvent{
+			Service:  providerMapping.GetBaseProvider().GetName(),
+			Status:   importreport.StatusFailed,
+			Category: importreport.ClassifyError(outputErr),
+			Error:    outputErr.Error(),
+		})
+		return outputErr
+	}
+
+	// Count successfully imported resources only after output succeeds
+	failedIDs := report.FailedResourceIDsSince(eventStart)
+	for service, resources := range resourcesByService {
+		for i := range resources {
+			id := resources[i].InstanceInfo.Id
+			if failedIDs[id] {
+				continue
+			}
+			report.Add(importreport.ResourceEvent{
+				Service:      service,
+				ResourceType: resources[i].InstanceInfo.Type,
+				ResourceID:   id,
+				Status:       importreport.StatusSuccess,
+			})
+		}
+	}
+
+	return nil
 }
 
 func initServiceResources(service string, provider terraformutils.ProviderGenerator,
