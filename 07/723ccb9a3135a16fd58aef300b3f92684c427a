@@ -1,0 +1,23 @@
+providers/aws/ssm_test.go
+  s_fc5a58dc293aba::t_4b079117240c35 236-322
+CHANGELOG.md
+  s_fc5a58dc293aba::t_6a5ee796b04b77 3-19
+providers/aws/ssm.go
+  s_fc5a58dc293aba::t_461218e3105613 42-61,522-543
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "07723ccb9a3135a16fd58aef300b3f92684c427a",
+  "prompts": {},
+  "sessions": {
+    "s_fc5a58dc293aba": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e5679-d425-72d0-bd8f-63322787f583",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
