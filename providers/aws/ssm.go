@@ -39,6 +39,26 @@ type ssmOptionalResourceLoader struct {
 	load func() error
 }
 
+func (g *SsmGenerator) InitialCleanup() {
+	if len(g.Filter) == 0 {
+		return
+	}
+	var resources []terraformutils.Resource
+	for _, resource := range g.Resources {
+		allPredicatesTrue := true
+		for _, filter := range g.Filter {
+			if filter.FieldPath != "id" {
+				continue
+			}
+			allPredicatesTrue = allPredicatesTrue && ssmInitialIDFilterMatchesResource(filter, resource)
+		}
+		if allPredicatesTrue && !terraformutils.ContainsResource(resources, resource) {
+			resources = append(resources, resource)
+		}
+	}
+	g.Resources = resources
+}
+
 func (g *SsmGenerator) InitResources() error {
 	config, e := g.generateConfig()
 	if e != nil {
@@ -497,6 +517,30 @@ func setSSMImportID(resource *terraformutils.Resource, importID string) {
 		resource.InstanceState.Meta = map[string]interface{}{}
 	}
 	resource.InstanceState.Meta["import_id"] = importID
+}
+
+func ssmInitialIDFilterMatchesResource(filter terraformutils.ResourceFilter, resource terraformutils.Resource) bool {
+	if filter.Filter(resource) {
+		return true
+	}
+	if resource.InstanceInfo == nil || resource.InstanceState == nil {
+		return false
+	}
+	switch resource.InstanceInfo.Type {
+	case "aws_ssm_maintenance_window_target", "aws_ssm_maintenance_window_task":
+	default:
+		return false
+	}
+	importID, ok := resource.InstanceState.Meta["import_id"].(string)
+	if !ok || importID == "" {
+		return false
+	}
+	for _, acceptableValue := range filter.AcceptableValues {
+		if acceptableValue == importID {
+			return true
+		}
+	}
+	return false
 }
 
 func ssmPatchGroupImportID(patchGroup, baselineID string) string {

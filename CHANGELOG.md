@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.13.2
+
+`0.13.2` is a focused AWS import correctness patch. It fixes refresh-stable
+state seeding for selected AWS resources whose Terraform provider import/read
+contracts differ from the raw AWS discovery identifiers.
+
+### Highlights
+
+* Preserve provider-readable state for Lambda runtime/recursion configuration
+  and ECR account setting imports.
+* Fix SSM maintenance window target/task filtering while keeping provider state
+  IDs compatible with refresh.
+* Keep GuardDuty organization-admin discovery and ACM validation-timeout
+  handling narrowly scoped to provider/API semantics.
+
+**Full Changelog**: <https://github.com/chenrui333/terraformer/compare/v0.13.1...v0.13.2>
+
 ## 0.13.1
 
 `0.13.1` is a focused import-observability release. It makes partial import

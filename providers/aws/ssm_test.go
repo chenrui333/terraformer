@@ -233,6 +233,93 @@ func TestNewSsmMaintenanceWindowTaskResourceUsesChildStateID(t *testing.T) {
 	}
 }
 
+func TestSsmInitialCleanupMatchesMaintenanceWindowChildImportIDs(t *testing.T) {
+	target, ok := newSsmMaintenanceWindowTargetResource("mw-123", ssmtypes.MaintenanceWindowTarget{
+		Name:           aws.String("target"),
+		WindowTargetId: aws.String("target-1"),
+	})
+	if !ok {
+		t.Fatal("target resource ok = false, want true")
+	}
+	otherTarget, ok := newSsmMaintenanceWindowTargetResource("mw-123", ssmtypes.MaintenanceWindowTarget{
+		Name:           aws.String("other-target"),
+		WindowTargetId: aws.String("target-2"),
+	})
+	if !ok {
+		t.Fatal("other target resource ok = false, want true")
+	}
+	task, ok := newSsmMaintenanceWindowTaskResource("mw-123", ssmtypes.MaintenanceWindowTask{
+		Name:         aws.String("task"),
+		WindowTaskId: aws.String("task-1"),
+	})
+	if !ok {
+		t.Fatal("task resource ok = false, want true")
+	}
+	otherTask, ok := newSsmMaintenanceWindowTaskResource("mw-123", ssmtypes.MaintenanceWindowTask{
+		Name:         aws.String("other-task"),
+		WindowTaskId: aws.String("task-2"),
+	})
+	if !ok {
+		t.Fatal("other task resource ok = false, want true")
+	}
+
+	g := SsmGenerator{}
+	g.Resources = []terraformutils.Resource{target, otherTarget, task, otherTask}
+	g.Filter = []terraformutils.ResourceFilter{{
+		FieldPath:        "id",
+		AcceptableValues: []string{"mw-123/target-1", "mw-123/task-1"},
+	}}
+
+	g.InitialCleanup()
+
+	if len(g.Resources) != 2 {
+		t.Fatalf("InitialCleanup() resources len = %d, want 2", len(g.Resources))
+	}
+	got := map[string]bool{}
+	for _, resource := range g.Resources {
+		got[resource.InstanceState.ID] = true
+	}
+	if !got["target-1"] || !got["task-1"] {
+		t.Fatalf("InitialCleanup() kept IDs = %#v, want target-1 and task-1", got)
+	}
+	if got["target-2"] || got["task-2"] {
+		t.Fatalf("InitialCleanup() kept non-matching IDs = %#v", got)
+	}
+}
+
+func TestSsmInitialCleanupStillMatchesMaintenanceWindowChildStateIDs(t *testing.T) {
+	target, ok := newSsmMaintenanceWindowTargetResource("mw-123", ssmtypes.MaintenanceWindowTarget{
+		Name:           aws.String("target"),
+		WindowTargetId: aws.String("target-1"),
+	})
+	if !ok {
+		t.Fatal("target resource ok = false, want true")
+	}
+	task, ok := newSsmMaintenanceWindowTaskResource("mw-123", ssmtypes.MaintenanceWindowTask{
+		Name:         aws.String("task"),
+		WindowTaskId: aws.String("task-1"),
+	})
+	if !ok {
+		t.Fatal("task resource ok = false, want true")
+	}
+
+	g := SsmGenerator{}
+	g.Resources = []terraformutils.Resource{target, task}
+	g.Filter = []terraformutils.ResourceFilter{{
+		FieldPath:        "id",
+		AcceptableValues: []string{"target-1"},
+	}}
+
+	g.InitialCleanup()
+
+	if len(g.Resources) != 1 {
+		t.Fatalf("InitialCleanup() resources len = %d, want 1", len(g.Resources))
+	}
+	if got := g.Resources[0].InstanceState.ID; got != "target-1" {
+		t.Fatalf("InitialCleanup() kept ID = %q, want target-1", got)
+	}
+}
+
 func TestSsmPostConvertHookLinksScopedResources(t *testing.T) {
 	maintenanceWindow := terraformutils.NewSimpleResource("mw-1", "window", "aws_ssm_maintenance_window", "aws", ssmAllowEmptyValues)
 	windowTarget := terraformutils.NewResource(
