@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/acm"
 	acmtypes "github.com/aws/aws-sdk-go-v2/service/acm/types"
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -30,38 +29,34 @@ func (g *ACMGenerator) createCertificatesResources(svc *acm.Client) ([]terraform
 			return nil, fmt.Errorf("list ACM certificates: %w", err)
 		}
 		for _, cert := range page.CertificateSummaryList {
-			certArn := StringValue(cert.CertificateArn)
-			domainName := strings.TrimSuffix(StringValue(cert.DomainName), ".")
-			if certArn == "" || domainName == "" {
+			resource, ok := newACMCertificateResource(cert)
+			if !ok {
 				continue
 			}
-			describeOutput, err := svc.DescribeCertificate(context.TODO(), &acm.DescribeCertificateInput{
-				CertificateArn: aws.String(certArn),
-			})
-			if err != nil {
-				return nil, fmt.Errorf("describe ACM certificate %s: %w", certArn, err)
-			}
-			if describeOutput == nil || describeOutput.Certificate == nil {
-				return nil, fmt.Errorf("describe ACM certificate %s: empty certificate", certArn)
-			}
-			if !acmCertificateStatusImportable(describeOutput.Certificate.Status) {
-				continue
-			}
-			certID := extractCertificateUUID(certArn)
-			resources = append(resources, terraformutils.NewResource(
-				certArn,
-				certID+"_"+domainName,
-				"aws_acm_certificate",
-				"aws",
-				map[string]string{
-					"domain_name": domainName,
-				},
-				acmAllowEmptyValues,
-				acmAdditionalFields,
-			))
+			resources = append(resources, resource)
 		}
 	}
 	return resources, nil
+}
+
+func newACMCertificateResource(cert acmtypes.CertificateSummary) (terraformutils.Resource, bool) {
+	certArn := StringValue(cert.CertificateArn)
+	domainName := strings.TrimSuffix(StringValue(cert.DomainName), ".")
+	if certArn == "" || domainName == "" || !acmCertificateStatusImportable(cert.Status) {
+		return terraformutils.Resource{}, false
+	}
+	certID := extractCertificateUUID(certArn)
+	return terraformutils.NewResource(
+		certArn,
+		certID+"_"+domainName,
+		"aws_acm_certificate",
+		"aws",
+		map[string]string{
+			"domain_name": domainName,
+		},
+		acmAllowEmptyValues,
+		acmAdditionalFields,
+	), true
 }
 
 func acmCertificateStatusImportable(status acmtypes.CertificateStatus) bool {
