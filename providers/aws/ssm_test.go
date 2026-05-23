@@ -171,6 +171,68 @@ func TestSsmServiceSettingMissing(t *testing.T) {
 	}
 }
 
+func TestNewSsmMaintenanceWindowTargetResourceUsesChildStateID(t *testing.T) {
+	resource, ok := newSsmMaintenanceWindowTargetResource("mw-123", ssmtypes.MaintenanceWindowTarget{
+		Name:           aws.String("target"),
+		WindowTargetId: aws.String("11111111-2222-3333-4444-555555555555"),
+	})
+	if !ok {
+		t.Fatal("newSsmMaintenanceWindowTargetResource() ok = false, want true")
+	}
+	if resource.InstanceState.ID != "11111111-2222-3333-4444-555555555555" {
+		t.Fatalf("resource ID = %q, want child target ID", resource.InstanceState.ID)
+	}
+	if got := resource.InstanceState.Attributes["window_id"]; got != "mw-123" {
+		t.Fatalf("window_id = %q, want mw-123", got)
+	}
+	if _, ok := resource.InstanceState.Attributes["window_target_id"]; ok {
+		t.Fatalf("window_target_id attribute was set in provider state: %#v", resource.InstanceState.Attributes)
+	}
+	if got := resource.InstanceState.Meta["import_id"]; got != "mw-123/11111111-2222-3333-4444-555555555555" {
+		t.Fatalf("import_id = %#v, want composite import ID", got)
+	}
+
+	if _, ok := newSsmMaintenanceWindowTargetResource("", ssmtypes.MaintenanceWindowTarget{
+		WindowTargetId: aws.String("11111111-2222-3333-4444-555555555555"),
+	}); ok {
+		t.Fatal("newSsmMaintenanceWindowTargetResource() ok = true for empty window ID, want false")
+	}
+	if _, ok := newSsmMaintenanceWindowTargetResource("mw-123", ssmtypes.MaintenanceWindowTarget{}); ok {
+		t.Fatal("newSsmMaintenanceWindowTargetResource() ok = true for empty target ID, want false")
+	}
+}
+
+func TestNewSsmMaintenanceWindowTaskResourceUsesChildStateID(t *testing.T) {
+	resource, ok := newSsmMaintenanceWindowTaskResource("mw-123", ssmtypes.MaintenanceWindowTask{
+		Name:         aws.String("task"),
+		WindowTaskId: aws.String("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
+	})
+	if !ok {
+		t.Fatal("newSsmMaintenanceWindowTaskResource() ok = false, want true")
+	}
+	if resource.InstanceState.ID != "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" {
+		t.Fatalf("resource ID = %q, want child task ID", resource.InstanceState.ID)
+	}
+	if got := resource.InstanceState.Attributes["window_id"]; got != "mw-123" {
+		t.Fatalf("window_id = %q, want mw-123", got)
+	}
+	if _, ok := resource.InstanceState.Attributes["window_task_id"]; ok {
+		t.Fatalf("window_task_id attribute was set in provider state: %#v", resource.InstanceState.Attributes)
+	}
+	if got := resource.InstanceState.Meta["import_id"]; got != "mw-123/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" {
+		t.Fatalf("import_id = %#v, want composite import ID", got)
+	}
+
+	if _, ok := newSsmMaintenanceWindowTaskResource("", ssmtypes.MaintenanceWindowTask{
+		WindowTaskId: aws.String("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
+	}); ok {
+		t.Fatal("newSsmMaintenanceWindowTaskResource() ok = true for empty window ID, want false")
+	}
+	if _, ok := newSsmMaintenanceWindowTaskResource("mw-123", ssmtypes.MaintenanceWindowTask{}); ok {
+		t.Fatal("newSsmMaintenanceWindowTaskResource() ok = true for empty task ID, want false")
+	}
+}
+
 func TestSsmPostConvertHookLinksScopedResources(t *testing.T) {
 	maintenanceWindow := terraformutils.NewSimpleResource("mw-1", "window", "aws_ssm_maintenance_window", "aws", ssmAllowEmptyValues)
 	windowTarget := terraformutils.NewResource(

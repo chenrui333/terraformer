@@ -1098,6 +1098,9 @@ func guardDutyOrganizationResourceUnavailable(err error) bool {
 	if strings.Contains(message, "delegated administrator") && strings.Contains(message, "not been enabled") {
 		return true
 	}
+	if strings.Contains(message, "organization") && strings.Contains(message, "not the admin account") {
+		return true
+	}
 	return strings.Contains(message, "organization") &&
 		(strings.Contains(message, "administrator") ||
 			strings.Contains(message, "delegated") ||

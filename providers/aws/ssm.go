@@ -198,25 +198,34 @@ func (g *SsmGenerator) addMaintenanceWindowTargets(svc *ssm.Client, windowID str
 			return err
 		}
 		for _, target := range page.Targets {
-			targetID := StringValue(target.WindowTargetId)
-			if targetID == "" {
+			resource, ok := newSsmMaintenanceWindowTargetResource(windowID, target)
+			if !ok {
 				continue
 			}
-			g.Resources = append(g.Resources, terraformutils.NewResource(
-				ssmImportID(windowID, targetID),
-				ssmResourceName(windowID, StringValue(target.Name), targetID),
-				"aws_ssm_maintenance_window_target",
-				"aws",
-				map[string]string{
-					"window_id":        windowID,
-					"window_target_id": targetID,
-				},
-				ssmAllowEmptyValues,
-				map[string]interface{}{},
-			))
+			g.Resources = append(g.Resources, resource)
 		}
 	}
 	return nil
+}
+
+func newSsmMaintenanceWindowTargetResource(windowID string, target ssmtypes.MaintenanceWindowTarget) (terraformutils.Resource, bool) {
+	targetID := StringValue(target.WindowTargetId)
+	if windowID == "" || targetID == "" {
+		return terraformutils.Resource{}, false
+	}
+	resource := terraformutils.NewResource(
+		targetID,
+		ssmResourceName(windowID, StringValue(target.Name), targetID),
+		"aws_ssm_maintenance_window_target",
+		"aws",
+		map[string]string{
+			"window_id": windowID,
+		},
+		ssmAllowEmptyValues,
+		map[string]interface{}{},
+	)
+	setSSMImportID(&resource, ssmImportID(windowID, targetID))
+	return resource, true
 }
 
 func (g *SsmGenerator) addMaintenanceWindowTasks(svc *ssm.Client, windowID string) error {
@@ -229,25 +238,34 @@ func (g *SsmGenerator) addMaintenanceWindowTasks(svc *ssm.Client, windowID strin
 			return err
 		}
 		for _, task := range page.Tasks {
-			taskID := StringValue(task.WindowTaskId)
-			if taskID == "" {
+			resource, ok := newSsmMaintenanceWindowTaskResource(windowID, task)
+			if !ok {
 				continue
 			}
-			g.Resources = append(g.Resources, terraformutils.NewResource(
-				ssmImportID(windowID, taskID),
-				ssmResourceName(windowID, StringValue(task.Name), taskID),
-				"aws_ssm_maintenance_window_task",
-				"aws",
-				map[string]string{
-					"window_id":      windowID,
-					"window_task_id": taskID,
-				},
-				ssmAllowEmptyValues,
-				map[string]interface{}{},
-			))
+			g.Resources = append(g.Resources, resource)
 		}
 	}
 	return nil
+}
+
+func newSsmMaintenanceWindowTaskResource(windowID string, task ssmtypes.MaintenanceWindowTask) (terraformutils.Resource, bool) {
+	taskID := StringValue(task.WindowTaskId)
+	if windowID == "" || taskID == "" {
+		return terraformutils.Resource{}, false
+	}
+	resource := terraformutils.NewResource(
+		taskID,
+		ssmResourceName(windowID, StringValue(task.Name), taskID),
+		"aws_ssm_maintenance_window_task",
+		"aws",
+		map[string]string{
+			"window_id": windowID,
+		},
+		ssmAllowEmptyValues,
+		map[string]interface{}{},
+	)
+	setSSMImportID(&resource, ssmImportID(windowID, taskID))
+	return resource, true
 }
 
 func (g *SsmGenerator) addPatchBaselines(svc *ssm.Client) error {
@@ -469,6 +487,16 @@ func (g *SsmGenerator) linkResourceByID(index int, fieldName, resourceType, outp
 
 func ssmImportID(parts ...string) string {
 	return strings.Join(parts, "/")
+}
+
+func setSSMImportID(resource *terraformutils.Resource, importID string) {
+	if resource == nil || resource.InstanceState == nil || importID == "" {
+		return
+	}
+	if resource.InstanceState.Meta == nil {
+		resource.InstanceState.Meta = map[string]interface{}{}
+	}
+	resource.InstanceState.Meta["import_id"] = importID
 }
 
 func ssmPatchGroupImportID(patchGroup, baselineID string) string {

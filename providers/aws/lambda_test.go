@@ -57,7 +57,7 @@ func TestLambdaRuntimeManagementConfigImportID(t *testing.T) {
 		qualifier    string
 		want         string
 	}{
-		{name: "unqualified", functionName: "my-function", want: "my-function,"},
+		{name: "unqualified", functionName: "my-function", want: "my-function,$LATEST"},
 		{name: "qualified version", functionName: "my-function", qualifier: "1", want: "my-function,1"},
 	}
 
@@ -91,6 +91,15 @@ func TestLambdaRuntimeManagementConfigQualifier(t *testing.T) {
 				t.Fatalf("lambdaRuntimeManagementConfigQualifier() = %q, %t, want %q, %t", got, ok, tt.want, tt.wantOK)
 			}
 		})
+	}
+}
+
+func TestLambdaRuntimeManagementConfigStateQualifier(t *testing.T) {
+	if got := lambdaRuntimeManagementConfigStateQualifier(""); got != "$LATEST" {
+		t.Fatalf("lambdaRuntimeManagementConfigStateQualifier() = %q, want $LATEST", got)
+	}
+	if got := lambdaRuntimeManagementConfigStateQualifier("1"); got != "1" {
+		t.Fatalf("lambdaRuntimeManagementConfigStateQualifier() = %q, want 1", got)
 	}
 }
 
@@ -220,6 +229,7 @@ func TestNewLambdaFunctionRecursionConfigResource(t *testing.T) {
 			t.Fatalf("attribute %q = %q, want %q", key, got, want)
 		}
 	}
+	assertAwsFrameworkResourcePreserveIDAfterRefresh(t, resource)
 	if _, ok := newLambdaFunctionRecursionConfigResource("", &lambda.GetFunctionRecursionConfigOutput{
 		RecursiveLoop: lambdatypes.RecursiveLoopTerminate,
 	}); ok {
@@ -244,8 +254,8 @@ func TestNewLambdaRuntimeManagementConfigResource(t *testing.T) {
 	if resource.InstanceInfo.Type != lambdaRuntimeManagementConfigResourceType {
 		t.Fatalf("resource type = %q, want %q", resource.InstanceInfo.Type, lambdaRuntimeManagementConfigResourceType)
 	}
-	if resource.InstanceState.ID != "my-function," {
-		t.Fatalf("resource ID = %q, want %q", resource.InstanceState.ID, "my-function,")
+	if resource.InstanceState.ID != "my-function,$LATEST" {
+		t.Fatalf("resource ID = %q, want %q", resource.InstanceState.ID, "my-function,$LATEST")
 	}
 	wantName := terraformutils.TfSanitize(lambdaResourceNameWithLengths("runtime_management_config", "my-function", ""))
 	if resource.ResourceName != wantName {
@@ -253,7 +263,7 @@ func TestNewLambdaRuntimeManagementConfigResource(t *testing.T) {
 	}
 	wantAttributes := map[string]string{
 		"function_name":       "my-function",
-		"qualifier":           "",
+		"qualifier":           "$LATEST",
 		"runtime_version_arn": "arn:aws:lambda:us-east-1::runtime:abcd",
 		"update_runtime_on":   "Manual",
 	}
@@ -262,6 +272,7 @@ func TestNewLambdaRuntimeManagementConfigResource(t *testing.T) {
 			t.Fatalf("attribute %q = %q, want %q", key, got, want)
 		}
 	}
+	assertAwsFrameworkResourcePreserveIDAfterRefresh(t, resource)
 	qualifiedResource, ok := newLambdaRuntimeManagementConfigResource("my-function", "1", &lambda.GetRuntimeManagementConfigOutput{
 		UpdateRuntimeOn: lambdatypes.UpdateRuntimeOnAuto,
 	})
@@ -274,6 +285,7 @@ func TestNewLambdaRuntimeManagementConfigResource(t *testing.T) {
 	if got := qualifiedResource.InstanceState.Attributes["qualifier"]; got != "1" {
 		t.Fatalf("qualified resource qualifier = %q, want %q", got, "1")
 	}
+	assertAwsFrameworkResourcePreserveIDAfterRefresh(t, qualifiedResource)
 	if _, ok := newLambdaRuntimeManagementConfigResource("", "", &lambda.GetRuntimeManagementConfigOutput{
 		UpdateRuntimeOn: lambdatypes.UpdateRuntimeOnAuto,
 	}); ok {
