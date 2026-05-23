@@ -1,0 +1,22 @@
+providers/aws/acm.go
+  s_fc5a58dc293aba::t_c65352eaf307c5 32-33,36,42-59
+providers/aws/acm_test.go
+  s_fc5a58dc293aba::t_d2d75f95d357e3 8,34-46,49-60
+  s_fc5a58dc293aba::t_9aa4d82092cd15 47-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "342ae4958d29a79204f613441d9a5ff7ea4eb6ec",
+  "prompts": {},
+  "sessions": {
+    "s_fc5a58dc293aba": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e5679-d425-72d0-bd8f-63322787f583",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
