@@ -1,0 +1,38 @@
+providers/aws/ssm_test.go
+  s_fc5a58dc293aba::t_3d164ea899296d 174-235
+providers/aws/guardduty_test.go
+  s_fc5a58dc293aba::t_9aaec3894ccf85 877-885
+providers/aws/acm_test.go
+  s_fc5a58dc293aba::t_c79dd4f34a1d23 1-32
+providers/aws/lambda.go
+  s_fc5a58dc293aba::t_d11a8673e135ad 302,313-315,383,386,394-395,402-404,530-537
+providers/aws/lambda_test.go
+  s_fc5a58dc293aba::t_12fed5d8258a46 60,97-105,232,257-258,266,275,288
+providers/aws/ssm.go
+  s_fc5a58dc293aba::t_1d69ecfb1a6546 492-501
+  s_fc5a58dc293aba::t_620b90a90a3dfe 201-202,205,211-230,241-242,245,251-268
+providers/aws/ecr_test.go
+  s_fc5a58dc293aba::t_15f23d6ad925ab 88-114
+providers/aws/ecr.go
+  s_fc5a58dc293aba::t_e36a43606d355f 115-116,124-128,133-150
+providers/aws/acm.go
+  s_fc5a58dc293aba::t_898b0e3f358907 10,12-13,33-49,53,57,67-68
+providers/aws/guardduty.go
+  s_fc5a58dc293aba::t_2908723dd4b719 1101-1103
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "0dbf1bda9b90df06b405f0c4dbf89ef5c3b9b5e9",
+  "prompts": {},
+  "sessions": {
+    "s_fc5a58dc293aba": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e5679-d425-72d0-bd8f-63322787f583",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
