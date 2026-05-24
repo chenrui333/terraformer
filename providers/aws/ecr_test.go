@@ -85,6 +85,33 @@ func TestEcrOptionalRegistryResourcesContinueAfterError(t *testing.T) {
 	}
 }
 
+func TestNewEcrAccountSettingResource(t *testing.T) {
+	resource, ok := newEcrAccountSettingResource("BASIC_SCAN_TYPE_VERSION", "AWS_NATIVE")
+	if !ok {
+		t.Fatal("newEcrAccountSettingResource() ok = false, want true")
+	}
+	if resource.InstanceInfo.Type != "aws_ecr_account_setting" {
+		t.Fatalf("resource type = %q, want aws_ecr_account_setting", resource.InstanceInfo.Type)
+	}
+	if resource.InstanceState.ID != "BASIC_SCAN_TYPE_VERSION" {
+		t.Fatalf("resource ID = %q, want BASIC_SCAN_TYPE_VERSION", resource.InstanceState.ID)
+	}
+	if got := resource.InstanceState.Attributes["name"]; got != "BASIC_SCAN_TYPE_VERSION" {
+		t.Fatalf("name = %q, want BASIC_SCAN_TYPE_VERSION", got)
+	}
+	if got := resource.InstanceState.Attributes["value"]; got != "AWS_NATIVE" {
+		t.Fatalf("value = %q, want AWS_NATIVE", got)
+	}
+	assertAwsFrameworkResourcePreserveIDAfterRefresh(t, resource)
+
+	if _, ok := newEcrAccountSettingResource("", "AWS_NATIVE"); ok {
+		t.Fatal("newEcrAccountSettingResource() ok = true for empty name, want false")
+	}
+	if _, ok := newEcrAccountSettingResource("BASIC_SCAN_TYPE_VERSION", ""); ok {
+		t.Fatal("newEcrAccountSettingResource() ok = true for empty value, want false")
+	}
+}
+
 func TestEcrPostConvertHookWrapsPolicyFields(t *testing.T) {
 	registryPolicy := terraformutils.NewSimpleResource("123456789012", "registry-policy", "aws_ecr_registry_policy", "aws", ecrAllowEmptyValues)
 	registryPolicy.Item = map[string]interface{}{"policy": "{\"Resource\":\"${aws:ecr}\"}"}

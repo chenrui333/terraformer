@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/chenrui333/terraformer/terraformutils"
-
 	"github.com/aws/aws-sdk-go-v2/service/acm"
+	acmtypes "github.com/aws/aws-sdk-go-v2/service/acm/types"
+	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 var acmAllowEmptyValues = []string{}
@@ -29,22 +29,38 @@ func (g *ACMGenerator) createCertificatesResources(svc *acm.Client) ([]terraform
 			return nil, fmt.Errorf("list ACM certificates: %w", err)
 		}
 		for _, cert := range page.CertificateSummaryList {
-			certArn := *cert.CertificateArn
-			certID := extractCertificateUUID(certArn)
-			resources = append(resources, terraformutils.NewResource(
-				certArn,
-				certID+"_"+strings.TrimSuffix(*cert.DomainName, "."),
-				"aws_acm_certificate",
-				"aws",
-				map[string]string{
-					"domain_name": *cert.DomainName,
-				},
-				acmAllowEmptyValues,
-				acmAdditionalFields,
-			))
+			resource, ok := newACMCertificateResource(cert)
+			if !ok {
+				continue
+			}
+			resources = append(resources, resource)
 		}
 	}
 	return resources, nil
+}
+
+func newACMCertificateResource(cert acmtypes.CertificateSummary) (terraformutils.Resource, bool) {
+	certArn := StringValue(cert.CertificateArn)
+	domainName := strings.TrimSuffix(StringValue(cert.DomainName), ".")
+	if certArn == "" || domainName == "" || !acmCertificateStatusImportable(cert.Status) {
+		return terraformutils.Resource{}, false
+	}
+	certID := extractCertificateUUID(certArn)
+	return terraformutils.NewResource(
+		certArn,
+		certID+"_"+domainName,
+		"aws_acm_certificate",
+		"aws",
+		map[string]string{
+			"domain_name": domainName,
+		},
+		acmAllowEmptyValues,
+		acmAdditionalFields,
+	), true
+}
+
+func acmCertificateStatusImportable(status acmtypes.CertificateStatus) bool {
+	return status != acmtypes.CertificateStatusValidationTimedOut
 }
 
 // Generate TerraformResources from AWS API,

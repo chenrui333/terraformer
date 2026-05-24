@@ -874,6 +874,16 @@ func TestGuardDutyOrganizationResourceUnavailable(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "not organization admin account",
+			err:  &guarddutytypes.BadRequestException{Message: aws.String("The request failed because you are not the admin account for your AWS Organization.")},
+			want: true,
+		},
+		{
+			name: "not admin account outside organization",
+			err:  &guarddutytypes.BadRequestException{Message: aws.String("The request failed because you are not the admin account.")},
+			want: false,
+		},
+		{
 			name: "not organization error",
 			err:  &guarddutytypes.BadRequestException{Message: aws.String("The request is rejected because a parameter is invalid.")},
 			want: false,

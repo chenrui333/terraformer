@@ -299,7 +299,7 @@ func newLambdaFunctionRecursionConfigResource(functionName string, config *lambd
 	if recursiveLoop == "" {
 		return terraformutils.Resource{}, false
 	}
-	return terraformutils.NewResource(
+	resource := terraformutils.NewResource(
 		lambdaFunctionRecursionConfigImportID(functionName),
 		lambdaResourceNameWithLengths("function_recursion_config", functionName),
 		lambdaFunctionRecursionConfigResourceType,
@@ -310,7 +310,9 @@ func newLambdaFunctionRecursionConfigResource(functionName string, config *lambd
 		},
 		lambdaAllowEmptyValues,
 		map[string]interface{}{},
-	), true
+	)
+	setAwsFrameworkResourcePreserveIDAfterRefresh(&resource)
+	return resource, true
 }
 
 func (g *LambdaGenerator) addRuntimeManagementConfigs(svc *lambda.Client, functions []lambdaFunctionReference) error {
@@ -378,9 +380,10 @@ func newLambdaRuntimeManagementConfigResource(functionName, qualifier string, co
 	if functionName == "" || config == nil {
 		return terraformutils.Resource{}, false
 	}
+	stateQualifier := lambdaRuntimeManagementConfigStateQualifier(qualifier)
 	attributes := map[string]string{
 		"function_name": functionName,
-		"qualifier":     qualifier,
+		"qualifier":     stateQualifier,
 	}
 	if runtimeVersionARN := StringValue(config.RuntimeVersionArn); runtimeVersionARN != "" {
 		attributes["runtime_version_arn"] = runtimeVersionARN
@@ -388,15 +391,17 @@ func newLambdaRuntimeManagementConfigResource(functionName, qualifier string, co
 	if updateRuntimeOn := string(config.UpdateRuntimeOn); updateRuntimeOn != "" {
 		attributes["update_runtime_on"] = updateRuntimeOn
 	}
-	return terraformutils.NewResource(
-		lambdaRuntimeManagementConfigImportID(functionName, qualifier),
+	resource := terraformutils.NewResource(
+		lambdaRuntimeManagementConfigImportID(functionName, stateQualifier),
 		lambdaResourceNameWithLengths("runtime_management_config", functionName, qualifier),
 		lambdaRuntimeManagementConfigResourceType,
 		"aws",
 		attributes,
 		lambdaAllowEmptyValues,
 		map[string]interface{}{},
-	), true
+	)
+	setAwsFrameworkResourcePreserveIDAfterRefresh(&resource)
+	return resource, true
 }
 
 func (g *LambdaGenerator) addProvisionedConcurrencyConfigs(svc *lambda.Client, functions []lambdaFunctionReference) error {
@@ -522,7 +527,14 @@ func lambdaFunctionRecursionConfigImportID(functionName string) string {
 }
 
 func lambdaRuntimeManagementConfigImportID(functionName, qualifier string) string {
-	return functionName + "," + qualifier
+	return functionName + "," + lambdaRuntimeManagementConfigStateQualifier(qualifier)
+}
+
+func lambdaRuntimeManagementConfigStateQualifier(qualifier string) string {
+	if qualifier == "" {
+		return "$LATEST"
+	}
+	return qualifier
 }
 
 func lambdaQualifierFromFunctionARN(functionARN, functionName string) string {

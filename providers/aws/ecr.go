@@ -112,7 +112,8 @@ func (g *EcrGenerator) getAccountSettings(svc *ecr.Client) error {
 		if err != nil {
 			return err
 		}
-		if StringValue(setting.Value) == "" {
+		value := StringValue(setting.Value)
+		if value == "" {
 			continue
 		}
 
@@ -120,14 +121,33 @@ func (g *EcrGenerator) getAccountSettings(svc *ecr.Client) error {
 		if name == "" {
 			name = settingName
 		}
-		g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-			name,
-			name,
-			"aws_ecr_account_setting",
-			"aws",
-			ecrAllowEmptyValues))
+		resource, ok := newEcrAccountSettingResource(name, value)
+		if !ok {
+			continue
+		}
+		g.Resources = append(g.Resources, resource)
 	}
 	return nil
+}
+
+func newEcrAccountSettingResource(name, value string) (terraformutils.Resource, bool) {
+	if name == "" || value == "" {
+		return terraformutils.Resource{}, false
+	}
+	resource := terraformutils.NewResource(
+		name,
+		name,
+		"aws_ecr_account_setting",
+		"aws",
+		map[string]string{
+			"name":  name,
+			"value": value,
+		},
+		ecrAllowEmptyValues,
+		map[string]interface{}{},
+	)
+	setAwsFrameworkResourcePreserveIDAfterRefresh(&resource)
+	return resource, true
 }
 
 func (g *EcrGenerator) getRegistryPolicy(svc *ecr.Client) error {
