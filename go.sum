@@ -894,6 +894,7 @@ github.com/heimweh/go-pagerduty v0.0.0-20250801140645-0b96cfc9bf17 h1:hYkLKNMdma
 github.com/heimweh/go-pagerduty v0.0.0-20250801140645-0b96cfc9bf17/go.mod h1:r59w5iyN01Qvi734yA5hZldbSeJJmsJzee/1kQ/MK7s=
 github.com/heroku/heroku-go/v5 v5.5.0 h1:+pKHpiPskqkkarrPHF7RpeUveXl+mAsKLAEI/ZIY9uA=
 github.com/heroku/heroku-go/v5 v5.5.0/go.mod h1:Uo3XhGPwaTpniR4X1e50BDjg4SzdFk2Bd2mgYZVkfHo=
+github.com/heroku/heroku-go/v6 v6.1.0/go.mod h1:TOVibkAD3yVSHzG0hIJc9KkyxuXiDNcr3zalcdjyeRc=
 github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f h1:7LYC+Yfkj3CTRcShK0KOL/w6iTiKyqqBA9a41Wnggw8=
 github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f/go.mod h1:pFlLw2CfqZiIBOx6BuCeRLCrfxBJipTY0nIOF/VbGcI=
 github.com/honeycombio/terraform-provider-honeycombio v0.49.0 h1:PiOz/EziQK7j7XvOvIT2EMbIvj4TPk9vj0Tk9Excm18=
