@@ -7,7 +7,7 @@ import {
   parseProviderCategories,
   readUtf8,
   readmePath,
-  removePromotedHeading,
+  removeFirstH1,
   rewriteMarkdownLinks,
   shortDescription,
 } from './docs-data.mjs';
@@ -166,9 +166,7 @@ function main() {
   );
 
   for (const page of pages) {
-    const source = page.useHeadingAsTitle
-      ? removePromotedHeading(page.markdown, page.title)
-      : page.markdown;
+    const source = page.hasSourceH1 ? removeFirstH1(page.markdown) : page.markdown;
     const body = rewriteMarkdownLinks(source, page.route, page.sourcePath);
     writeGenerated(
       'docs/' + page.slug + '.md',

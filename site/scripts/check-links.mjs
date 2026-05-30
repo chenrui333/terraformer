@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { generatedDocsDir, generatedRoot } from './docs-data.mjs';
+import { docsPages, generatedDocsDir, generatedRoot } from './docs-data.mjs';
 
 function walkMarkdown(dir) {
   const files = [];
@@ -55,8 +55,9 @@ function main() {
   const requiredFiles = [
     join(generatedRoot, 'index.md'),
     join(generatedDocsDir, 'index.md'),
-    join(generatedDocsDir, 'aws.md'),
-    join(generatedDocsDir, 'provider-architecture.md'),
+    join(generatedDocsDir, 'install.md'),
+    join(generatedDocsDir, 'providers.md'),
+    ...docsPages().map((page) => join(generatedDocsDir, page.slug + '.md')),
   ];
 
   for (const file of requiredFiles) {

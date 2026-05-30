@@ -104,14 +104,10 @@ export function firstHeading(markdown) {
   return match ? stripMarkdown(match[1]) : undefined;
 }
 
-export function removePromotedHeading(markdown, title) {
+export function removeFirstH1(markdown) {
   const lines = markdown.split(/\r?\n/);
   const index = lines.findIndex((line) => /^#\s+/.test(line));
   if (index === -1) {
-    return markdown;
-  }
-  const headingTitle = stripMarkdown(lines[index].replace(/^#\s+/, ''));
-  if (headingTitle !== title) {
     return markdown;
   }
   lines.splice(index, 1);
@@ -179,7 +175,7 @@ export function docsPages() {
     const label = labels.get(slug);
     const heading = firstHeading(markdown);
     const title = label || heading || titleFromSlug(slug);
-    const useHeadingAsTitle = !label && heading === title;
+    const hasSourceH1 = /^#\s+.+$/m.test(markdown);
     const description = label
       ? 'Import ' + label + ' resources into Terraform configuration and state with Terraformer.'
       : shortDescription(markdown, 'Terraformer documentation for ' + title + '.');
@@ -192,7 +188,7 @@ export function docsPages() {
       title,
       description,
       markdown,
-      useHeadingAsTitle,
+      hasSourceH1,
       isProvider: labels.has(slug),
     };
   });
@@ -313,12 +309,16 @@ export function rewriteMarkdownLinks(markdown, fromRoute, sourcePath = 'README.m
 
     const { path, suffix } = splitUrl(rawUrl);
     const normalizedPath = path.replace(/^\.\//, '');
-    const targetRoute = routes.get(path) ?? routes.get(normalizedPath);
+    const resolvedPath = repoPathForLink(path, sourcePath);
+    const targetRoute =
+      routes.get(path) ??
+      routes.get(normalizedPath) ??
+      routes.get(resolvedPath) ??
+      routes.get('/' + resolvedPath);
 
     if (!targetRoute && targetRoute !== '') {
-      const repoPath = repoPathForLink(path, sourcePath);
-      if (existsSync(join(repoRoot, repoPath))) {
-        return '[' + label + '](' + githubBlobUrl(repoPath, suffix) + ')';
+      if (existsSync(join(repoRoot, resolvedPath))) {
+        return '[' + label + '](' + githubBlobUrl(resolvedPath, suffix) + ')';
       }
       return full;
     }

@@ -8,7 +8,7 @@
     "sync-docs": "node scripts/sync-docs.mjs",
     "check": "npm run sync-docs && astro check",
     "build": "npm run sync-docs && astro build",
-    "check-links": "node scripts/check-links.mjs"
+    "check-links": "npm run sync-docs && node scripts/check-links.mjs"
   },
   "dependencies": {
     "@astrojs/check": "0.9.9",
