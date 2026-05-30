@@ -1,0 +1,28 @@
+site/scripts/docs-data.mjs
+  s_f529eb2dfc261f::t_33920616d91745 107,178,191
+  s_f529eb2dfc261f::t_3aed59409b0e09 312-317,320-321
+.github/workflows/docs.yml
+  s_f529eb2dfc261f::t_3aed59409b0e09 32-35,53-56,74
+site/scripts/sync-docs.mjs
+  s_f529eb2dfc261f::t_33920616d91745 10,169
+site/package.json
+  s_f529eb2dfc261f::t_3aed59409b0e09 11
+site/scripts/check-links.mjs
+  s_f529eb2dfc261f::t_3aed59409b0e09 3,58-60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "8defc1baf3737f8be944f148fd5713f596139c02",
+  "prompts": {},
+  "sessions": {
+    "s_f529eb2dfc261f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e79b0-76a0-7c33-a7c4-777d3e4f8341",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
