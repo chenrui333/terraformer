@@ -11,3 +11,9 @@ terraform.tfstate
 terraform.tfstate.backup
 init.tf
 vendor/
+site/node_modules/
+site/dist/
+site/.astro/
+site/.starlight/
+site/src/content/docs/index.md
+site/src/content/docs/docs/

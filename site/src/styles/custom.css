@@ -1,0 +1,47 @@
+:root {
+  --sl-color-accent-low: #153f33;
+  --sl-color-accent: #2aa876;
+  --sl-color-accent-high: #b9f5d7;
+  --sl-color-white: #f7faf7;
+  --sl-color-gray-1: #eaf0ec;
+  --sl-color-gray-2: #cbd6d0;
+  --sl-color-gray-3: #9dacaa;
+  --sl-color-gray-4: #60706c;
+  --sl-color-gray-5: #3d4946;
+  --sl-color-gray-6: #222b29;
+  --sl-color-black: #101513;
+}
+
+:root[data-theme='light'] {
+  --sl-color-accent-low: #d7f2e3;
+  --sl-color-accent: #047857;
+  --sl-color-accent-high: #063f32;
+  --sl-color-white: #13201c;
+  --sl-color-gray-1: #24332e;
+  --sl-color-gray-2: #465852;
+  --sl-color-gray-3: #6d7e78;
+  --sl-color-gray-4: #a9b5b0;
+  --sl-color-gray-5: #d8dfdc;
+  --sl-color-gray-6: #eef3f0;
+  --sl-color-gray-7: #f8faf8;
+  --sl-color-black: #ffffff;
+}
+
+.site-title {
+  letter-spacing: 0;
+}
+
+.sl-markdown-content code:not(:where(pre *)) {
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 4px;
+  padding: 0.05rem 0.28rem;
+}
+
+.sl-markdown-content table {
+  font-size: 0.92rem;
+}
+
+.sl-markdown-content h2 {
+  border-top: 1px solid var(--sl-color-gray-6);
+  padding-top: 1.5rem;
+}
