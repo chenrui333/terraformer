@@ -5,7 +5,7 @@ go 1.26.2
 require (
 	cloud.google.com/go v0.123.0 // indirect
 	cloud.google.com/go/logging v1.18.0
-	cloud.google.com/go/storage v1.62.1
+	cloud.google.com/go/storage v1.62.2
 	github.com/Azure/azure-storage-blob-go v0.15.0
 	github.com/IBM-Cloud/bluemix-go v0.0.0-20260424100510-275dcc5549eb
 	github.com/IBM/go-sdk-core/v3 v3.3.1
@@ -245,7 +245,7 @@ require (
 	golang.org/x/sys v0.43.0 // indirect
 	golang.org/x/term v0.42.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
-	google.golang.org/grpc v1.81.0
+	google.golang.org/grpc v1.81.1
 	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af
 	gopkg.in/go-playground/validator.v9 v9.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
