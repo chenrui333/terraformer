@@ -533,7 +533,7 @@ require (
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cfs v1.3.85
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/clb v1.3.83
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.102
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cvm v1.3.89
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cvm v1.3.100
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.3.78
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/es v1.3.95
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/gaap v1.3.34
