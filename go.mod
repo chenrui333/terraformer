@@ -535,7 +535,7 @@ require (
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.102
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cvm v1.3.89
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.3.78
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/es v1.3.89
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/es v1.3.95
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/gaap v1.3.34
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/mongodb v1.3.93
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/pts v1.3.29
