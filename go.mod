@@ -527,12 +527,12 @@ require (
 	github.com/newrelic/newrelic-client-go v1.1.0
 	github.com/okta/okta-sdk-golang/v5 v5.0.6
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/as v1.3.88
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cbs v1.3.40
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cbs v1.3.102
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cdb v1.3.94
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cdn v1.3.90
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cfs v1.3.85
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/clb v1.3.83
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.94
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.102
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cvm v1.3.89
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.3.78
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/es v1.3.89
