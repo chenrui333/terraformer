@@ -513,7 +513,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/vpclattice v1.21.0
 	github.com/gofrs/uuid/v3 v3.1.2
 	github.com/golang-jwt/jwt/v4 v4.5.2
-	github.com/hashicorp/go-azure-sdk/sdk v0.20260507.1215246
+	github.com/hashicorp/go-azure-sdk/sdk v0.20260520.1174751
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/ionos-cloud/sdk-go-cert-manager v1.3.0
 	github.com/ionos-cloud/sdk-go-container-registry v1.3.1
