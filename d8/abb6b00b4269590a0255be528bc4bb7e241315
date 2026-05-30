@@ -1,0 +1,19 @@
+site/scripts/docs-data.mjs
+  s_f529eb2dfc261f::t_a74dafda5a69ea 17-62,149,154-155,158
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "d8abb6b00b4269590a0255be528bc4bb7e241315",
+  "prompts": {},
+  "sessions": {
+    "s_f529eb2dfc261f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e79b0-76a0-7c33-a7c4-777d3e4f8341",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
