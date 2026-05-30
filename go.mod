@@ -528,7 +528,7 @@ require (
 	github.com/okta/okta-sdk-golang/v5 v5.0.6
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/as v1.3.88
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cbs v1.3.102
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cdb v1.3.94
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cdb v1.3.101
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cdn v1.3.90
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cfs v1.3.85
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/clb v1.3.83
