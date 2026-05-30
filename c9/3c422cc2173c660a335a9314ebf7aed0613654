@@ -1,0 +1,19 @@
+README.md
+  s_f529eb2dfc261f::t_c19ca0d331595d 5,10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "c93c422cc2173c660a335a9314ebf7aed0613654",
+  "prompts": {},
+  "sessions": {
+    "s_f529eb2dfc261f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e79b0-76a0-7c33-a7c4-777d3e4f8341",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
