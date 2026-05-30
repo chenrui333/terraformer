@@ -463,7 +463,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/storage/armstorage/v2 v2.0.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/synapse/armsynapse v0.8.0
 	github.com/IBM/continuous-delivery-go-sdk/v2 v2.0.8
-	github.com/IBM/sarama v1.46.1
+	github.com/IBM/sarama v1.46.3
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
 	github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.34.4
 	github.com/aws/aws-sdk-go-v2/service/appconfig v1.43.15
