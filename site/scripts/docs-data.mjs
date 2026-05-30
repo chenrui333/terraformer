@@ -14,6 +14,52 @@ const backtick = String.fromCharCode(96);
 const fenceMarker = backtick.repeat(3);
 const inlineCodePattern = new RegExp(backtick + '([^' + backtick + ']+)' + backtick, 'g');
 
+function fenceBoundary(line) {
+  const match = new RegExp('^(' + backtick + '{3,}|~{3,})').exec(line.trim());
+  if (!match) {
+    return undefined;
+  }
+  return {
+    marker: match[1][0],
+    length: match[1].length,
+  };
+}
+
+function matchingFence(line, fence) {
+  const boundary = fenceBoundary(line);
+  return boundary && boundary.marker === fence.marker && boundary.length >= fence.length;
+}
+
+function firstMarkdownHeading(markdown, maxDepth) {
+  let fence;
+  const lines = markdown.split(/\r?\n/);
+
+  for (const [index, line] of lines.entries()) {
+    if (fence) {
+      if (matchingFence(line, fence)) {
+        fence = undefined;
+      }
+      continue;
+    }
+
+    const boundary = fenceBoundary(line);
+    if (boundary) {
+      fence = boundary;
+      continue;
+    }
+
+    const match = /^(#{1,6})\s+(.+)$/.exec(line);
+    if (match && match[1].length <= maxDepth) {
+      return {
+        index,
+        title: stripMarkdown(match[2]),
+      };
+    }
+  }
+
+  return undefined;
+}
+
 export function readUtf8(path) {
   return readFileSync(path, 'utf8');
 }
@@ -100,17 +146,16 @@ export function stripMarkdown(value) {
 }
 
 export function firstHeading(markdown) {
-  const match = /^#{1,6}\s+(.+)$/m.exec(markdown);
-  return match ? stripMarkdown(match[1]) : undefined;
+  return firstMarkdownHeading(markdown, 6)?.title;
 }
 
 export function removeFirstH1(markdown) {
   const lines = markdown.split(/\r?\n/);
-  const index = lines.findIndex((line) => /^#\s+/.test(line));
-  if (index === -1) {
+  const heading = firstMarkdownHeading(markdown, 1);
+  if (!heading) {
     return markdown;
   }
-  lines.splice(index, 1);
+  lines.splice(heading.index, 1);
   return lines.join('\n').replace(/^\n+/, '');
 }
 
