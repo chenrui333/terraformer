@@ -1,0 +1,74 @@
+name: Docs
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - README.md
+      - docs/**
+      - site/**
+      - .github/workflows/docs.yml
+  push:
+    branches:
+      - main
+    paths:
+      - README.md
+      - docs/**
+      - site/**
+      - .github/workflows/docs.yml
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: docs check
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm --prefix site ci
+      - run: npm --prefix site run check
+      - run: npm --prefix site run build
+      - run: npm --prefix site run check-links
+      - run: git diff --check
+
+  build:
+    name: docs build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - uses: withastro/action@b7d53628f8b666036b0238aadb0b984a2a489f26
+        with:
+          path: site
+          node-version: 22
+          package-manager: npm
+
+  deploy:
+    name: deploy docs
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128
