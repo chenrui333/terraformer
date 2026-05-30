@@ -2,9 +2,12 @@
 
 [![tests](https://github.com/chenrui333/terraformer/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/chenrui333/terraformer/actions/workflows/test.yml)
 [![linter](https://github.com/chenrui333/terraformer/actions/workflows/linter.yml/badge.svg?branch=main)](https://github.com/chenrui333/terraformer/actions/workflows/linter.yml)
+[![docs](https://github.com/chenrui333/terraformer/actions/workflows/docs.yml/badge.svg?branch=main)](https://github.com/chenrui333/terraformer/actions/workflows/docs.yml)
 
 A CLI tool that generates `tf`/`json` and `tfstate` files based on existing infrastructure
 (reverse Terraform).
+
+Documentation is available at [chenrui333.github.io/terraformer](https://chenrui333.github.io/terraformer/).
 
 # Table of Contents
 - [Demo GCP](#demo-gcp)
