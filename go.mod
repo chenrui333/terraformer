@@ -156,7 +156,7 @@ require (
 require (
 	github.com/IBM-Cloud/container-services-go-sdk v0.0.0-20250409011111-61af13302654
 	github.com/IBM/go-sdk-core v1.1.0
-	github.com/mackerelio/mackerel-client-go v0.41.0
+	github.com/mackerelio/mackerel-client-go v0.42.0
 	github.com/okta/terraform-provider-okta v0.0.0-20260507050055-d8f2f8783a1a
 )
 
@@ -345,7 +345,7 @@ require (
 	cloud.google.com/go/cloudtasks v1.18.0
 	cloud.google.com/go/iam v1.11.0
 	cloud.google.com/go/monitoring v1.29.0
-	github.com/DataDog/datadog-api-client-go/v2 v2.59.0
+	github.com/DataDog/datadog-api-client-go/v2 v2.60.0
 	github.com/Myra-Security-GmbH/myrasec-go/v2 v2.51.0
 	github.com/bradleyfalzon/ghinstallation/v2 v2.18.0
 	github.com/manicminer/hamilton v0.72.0
