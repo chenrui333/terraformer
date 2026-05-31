@@ -13,8 +13,10 @@ import (
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/mitchellh/go-homedir"
-	ycsdk "github.com/yandex-cloud/go-sdk"
-	"github.com/yandex-cloud/go-sdk/iamkey"
+	ycsdk "github.com/yandex-cloud/go-sdk/v2"
+	"github.com/yandex-cloud/go-sdk/v2/credentials"
+	"github.com/yandex-cloud/go-sdk/v2/pkg/iamkey"
+	"github.com/yandex-cloud/go-sdk/v2/pkg/options"
 )
 
 type YandexService struct { //nolint
@@ -32,30 +34,22 @@ func (y *YandexService) InitSDK() (*ycsdk.SDK, error) {
 		if err != nil {
 			return nil, err
 		}
-		serviceAccountKey, err := ycsdk.ServiceAccountKey(key)
+		serviceAccountKey, err := credentials.ServiceAccountKey(key)
 		if err != nil {
 			return nil, err
 		}
-		return ycsdk.Build(context.Background(), ycsdk.Config{
-			Credentials: serviceAccountKey},
-		)
+		return ycsdk.Build(context.Background(), options.WithCredentials(serviceAccountKey))
 	}
 
 	if cToken := y.Args[KeyToken].(string); cToken != "" {
 		if strings.HasPrefix(cToken, "t1.") && strings.Count(cToken, ".") == 2 {
-			return ycsdk.Build(context.Background(), ycsdk.Config{
-				Credentials: ycsdk.NewIAMTokenCredentials(cToken)},
-			)
+			return ycsdk.Build(context.Background(), options.WithCredentials(credentials.IAMToken(cToken)))
 		}
-		return ycsdk.Build(context.Background(), ycsdk.Config{
-			Credentials: ycsdk.OAuthToken(cToken),
-		})
+		return ycsdk.Build(context.Background(), options.WithCredentials(credentials.OAuthToken(cToken)))
 	}
 
-	if sa := ycsdk.InstanceServiceAccount(); checkServiceAccountAvailable(context.Background(), sa) {
-		return ycsdk.Build(context.Background(), ycsdk.Config{
-			Credentials: sa,
-		})
+	if sa := credentials.InstanceServiceAccount(); checkServiceAccountAvailable(context.Background(), sa) {
+		return ycsdk.Build(context.Background(), options.WithCredentials(sa))
 	}
 
 	return nil, fmt.Errorf("one of 'YC_TOKEN' or 'YC_SERVICE_ACCOUNT_KEY_FILE' env variable should be specified; if you are inside compute instance, you can attach service account to it in order to authenticate via instance service account")
@@ -92,9 +86,9 @@ func iamKeyFromJSONContent(content string) (*iamkey.Key, error) {
 	return key, nil
 }
 
-func checkServiceAccountAvailable(ctx context.Context, sa ycsdk.NonExchangeableCredentials) bool {
+func checkServiceAccountAvailable(ctx context.Context, sa credentials.NonExchangeableCredentials) bool {
 	dialer := net.Dialer{Timeout: 50 * time.Millisecond}
-	conn, err := dialer.Dial("tcp", net.JoinHostPort(ycsdk.InstanceMetadataAddr, "80"))
+	conn, err := dialer.Dial("tcp", net.JoinHostPort(credentials.InstanceMetadataAddr, "80"))
 	if err != nil {
 		return false
 	}

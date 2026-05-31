@@ -7,7 +7,7 @@ import (
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/yandex-cloud/go-genproto/yandex/cloud/compute/v1"
-	ycsdk "github.com/yandex-cloud/go-sdk"
+	ycsdk "github.com/yandex-cloud/go-sdk/v2"
 )
 
 type InstanceGenerator struct {
@@ -18,7 +18,7 @@ func (g *InstanceGenerator) loadInstances(sdk *ycsdk.SDK, folderID string) ([]*c
 	instances := []*compute.Instance{}
 	pageToken := ""
 	for {
-		resp, err := sdk.Compute().Instance().List(context.Background(), &compute.ListInstancesRequest{
+		resp, err := compute.NewInstanceServiceClient(yandexGRPCClient(sdk)).List(context.Background(), &compute.ListInstancesRequest{
 			FolderId:  folderID,
 			PageSize:  defaultPageSize,
 			PageToken: pageToken,
