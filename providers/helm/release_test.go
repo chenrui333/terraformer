@@ -12,9 +12,10 @@ import (
 	"testing"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/chart"
-	helmrelease "helm.sh/helm/v3/pkg/release"
+	"helm.sh/helm/v4/pkg/action"
+	chart "helm.sh/helm/v4/pkg/chart/v2"
+	helmreleasecommon "helm.sh/helm/v4/pkg/release/common"
+	helmrelease "helm.sh/helm/v4/pkg/release/v1"
 	"k8s.io/client-go/rest"
 )
 
@@ -318,16 +319,16 @@ func TestReleaseExactFilterParsingMultipleIDs(t *testing.T) {
 }
 
 func TestReleaseStatusSkipPredicates(t *testing.T) {
-	testCases := map[helmrelease.Status]bool{
-		helmrelease.StatusDeployed:        true,
-		helmrelease.StatusSuperseded:      false,
-		helmrelease.StatusUninstalled:     false,
-		helmrelease.StatusUninstalling:    false,
-		helmrelease.StatusPendingInstall:  false,
-		helmrelease.StatusPendingUpgrade:  false,
-		helmrelease.StatusPendingRollback: false,
-		helmrelease.StatusFailed:          false,
-		helmrelease.StatusUnknown:         false,
+	testCases := map[helmreleasecommon.Status]bool{
+		helmreleasecommon.StatusDeployed:        true,
+		helmreleasecommon.StatusSuperseded:      false,
+		helmreleasecommon.StatusUninstalled:     false,
+		helmreleasecommon.StatusUninstalling:    false,
+		helmreleasecommon.StatusPendingInstall:  false,
+		helmreleasecommon.StatusPendingUpgrade:  false,
+		helmreleasecommon.StatusPendingRollback: false,
+		helmreleasecommon.StatusFailed:          false,
+		helmreleasecommon.StatusUnknown:         false,
 	}
 
 	for status, want := range testCases {
@@ -341,11 +342,11 @@ func TestReleaseStatusSkipPredicates(t *testing.T) {
 
 func TestLatestReleaseSelectionRequiresLatestRevisionToBeDeployed(t *testing.T) {
 	releases := []*helmrelease.Release{
-		testRelease("api", "default", 1, helmrelease.StatusDeployed),
-		testRelease("api", "default", 2, helmrelease.StatusFailed),
-		testRelease("web", "default", 1, helmrelease.StatusSuperseded),
-		testRelease("web", "default", 2, helmrelease.StatusDeployed),
-		testRelease("worker", "jobs", 1, helmrelease.StatusPendingUpgrade),
+		testRelease("api", "default", 1, helmreleasecommon.StatusDeployed),
+		testRelease("api", "default", 2, helmreleasecommon.StatusFailed),
+		testRelease("web", "default", 1, helmreleasecommon.StatusSuperseded),
+		testRelease("web", "default", 2, helmreleasecommon.StatusDeployed),
+		testRelease("worker", "jobs", 1, helmreleasecommon.StatusPendingUpgrade),
 	}
 
 	selected := selectLatestImportableReleases(releases)
@@ -358,7 +359,7 @@ func TestLatestReleaseSelectionRequiresLatestRevisionToBeDeployed(t *testing.T) 
 }
 
 func TestReleaseResourceSeedsSafeFields(t *testing.T) {
-	release := testRelease("nginx", "default", 3, helmrelease.StatusDeployed)
+	release := testRelease("nginx", "default", 3, helmreleasecommon.StatusDeployed)
 	release.Chart.Metadata.Name = "nginx-chart"
 	release.Chart.Metadata.Version = "1.2.3"
 	release.Info.Description = "Install complete"
@@ -388,8 +389,8 @@ func TestReleaseResourceSeedsSafeFields(t *testing.T) {
 
 func TestReleaseResourceLabelCollisions(t *testing.T) {
 	releases := []*helmrelease.Release{
-		testRelease("c", "a_b", 1, helmrelease.StatusDeployed),
-		testRelease("b_c", "a", 1, helmrelease.StatusDeployed),
+		testRelease("c", "a_b", 1, helmreleasecommon.StatusDeployed),
+		testRelease("b_c", "a", 1, helmreleasecommon.StatusDeployed),
 	}
 
 	resources := createReleaseResources(releases)
@@ -431,7 +432,7 @@ func TestReleaseResourceLabelCollisions(t *testing.T) {
 }
 
 func TestReleaseResourceDoesNotExportValuesSecretsOrManifests(t *testing.T) {
-	release := testRelease("payments", "apps", 1, helmrelease.StatusDeployed)
+	release := testRelease("payments", "apps", 1, helmreleasecommon.StatusDeployed)
 	release.Config = map[string]interface{}{
 		"adminPassword": "should-not-export",
 	}
@@ -547,7 +548,7 @@ func TestReleasePostConvertHookStripsRefreshedValues(t *testing.T) {
 }
 
 func TestReleaseResourceOmitsMissingChartAndRepository(t *testing.T) {
-	release := testRelease("local", "default", 1, helmrelease.StatusDeployed)
+	release := testRelease("local", "default", 1, helmreleasecommon.StatusDeployed)
 	release.Chart = nil
 
 	resources := createReleaseResources([]*helmrelease.Release{release})
@@ -565,7 +566,7 @@ func TestReleaseResourceOmitsMissingChartAndRepository(t *testing.T) {
 func TestReleaseGeneratorInitResourcesUsesRealDiscovery(t *testing.T) {
 	discovery := &fakeReleaseDiscovery{
 		listed: []*helmrelease.Release{
-			testRelease("nginx", "apps", 1, helmrelease.StatusDeployed),
+			testRelease("nginx", "apps", 1, helmreleasecommon.StatusDeployed),
 		},
 	}
 	generator := &ReleaseGenerator{discovery: discovery}
@@ -587,8 +588,8 @@ func TestReleaseGeneratorInitResourcesUsesRealDiscovery(t *testing.T) {
 func TestReleaseGeneratorExactFiltersUseNamespaceNameGets(t *testing.T) {
 	discovery := &fakeReleaseDiscovery{
 		getByID: map[string]*helmrelease.Release{
-			"default/nginx":              testRelease("nginx", "default", 1, helmrelease.StatusDeployed),
-			"kube-system/metrics-server": testRelease("metrics-server", "kube-system", 2, helmrelease.StatusDeployed),
+			"default/nginx":              testRelease("nginx", "default", 1, helmreleasecommon.StatusDeployed),
+			"kube-system/metrics-server": testRelease("metrics-server", "kube-system", 2, helmreleasecommon.StatusDeployed),
 		},
 	}
 	generator := &ReleaseGenerator{
@@ -671,7 +672,7 @@ func TestReleasePostRefreshCleanupDropsExactFilterMismatchAfterProviderIDNormali
 	}
 }
 
-func testRelease(name, namespace string, version int, status helmrelease.Status) *helmrelease.Release {
+func testRelease(name, namespace string, version int, status helmreleasecommon.Status) *helmrelease.Release {
 	return &helmrelease.Release{
 		Name:      name,
 		Namespace: namespace,

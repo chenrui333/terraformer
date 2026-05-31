@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -15,9 +14,10 @@ import (
 	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/cli"
-	helmrelease "helm.sh/helm/v3/pkg/release"
+	"helm.sh/helm/v4/pkg/action"
+	"helm.sh/helm/v4/pkg/cli"
+	helmreleasecommon "helm.sh/helm/v4/pkg/release/common"
+	helmrelease "helm.sh/helm/v4/pkg/release/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/rest"
 )
@@ -147,7 +147,6 @@ func (d *helmReleaseDiscovery) actionConfig(namespace string) (*action.Configura
 		restClientGetter,
 		namespace,
 		os.Getenv("HELM_DRIVER"),
-		func(format string, v ...interface{}) { log.Printf(format, v...) },
 	)
 	if err != nil {
 		return nil, err
@@ -160,7 +159,15 @@ func (d *helmReleaseDiscovery) GetRelease(namespace, name string) (*helmrelease.
 	if err != nil {
 		return nil, err
 	}
-	return action.NewGet(configuration).Run(name)
+	release, err := action.NewGet(configuration).Run(name)
+	if err != nil {
+		return nil, err
+	}
+	typedRelease, ok := release.(*helmrelease.Release)
+	if !ok {
+		return nil, fmt.Errorf("unexpected helm release type %T", release)
+	}
+	return typedRelease, nil
 }
 
 func (d *helmReleaseDiscovery) newListAction() (*action.List, error) {
@@ -180,7 +187,19 @@ func (d *helmReleaseDiscovery) ListReleases() ([]*helmrelease.Release, error) {
 	if err != nil {
 		return nil, err
 	}
-	return list.Run()
+	releases, err := list.Run()
+	if err != nil {
+		return nil, err
+	}
+	typedReleases := make([]*helmrelease.Release, 0, len(releases))
+	for _, release := range releases {
+		typedRelease, ok := release.(*helmrelease.Release)
+		if !ok {
+			return nil, fmt.Errorf("unexpected helm release type %T", release)
+		}
+		typedReleases = append(typedReleases, typedRelease)
+	}
+	return typedReleases, nil
 }
 
 type releaseImportID struct {
@@ -398,13 +417,13 @@ func selectLatestImportableReleases(releases []*helmrelease.Release) []*helmrele
 	return selected
 }
 
-func isImportableReleaseStatus(status helmrelease.Status) bool {
-	return status == helmrelease.StatusDeployed
+func isImportableReleaseStatus(status helmreleasecommon.Status) bool {
+	return status == helmreleasecommon.StatusDeployed
 }
 
-func releaseStatus(release *helmrelease.Release) helmrelease.Status {
+func releaseStatus(release *helmrelease.Release) helmreleasecommon.Status {
 	if release == nil || release.Info == nil {
-		return helmrelease.StatusUnknown
+		return helmreleasecommon.StatusUnknown
 	}
 	return release.Info.Status
 }
