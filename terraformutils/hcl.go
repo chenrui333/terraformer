@@ -12,15 +12,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/hashicorp/hcl/hcl/ast"
-	hclPrinter "github.com/hashicorp/hcl/hcl/printer"
-	hclParser "github.com/hashicorp/hcl/json/parser"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 )
-
-// Copy code from https://github.com/kubernetes/kops project with few changes for support many provider and heredoc
-
-const safeChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
 
 var (
 	unsafeChars       = regexp.MustCompile(`[^0-9A-Za-z_\-]`)
@@ -34,130 +27,6 @@ var (
 		"true":  {},
 	}
 )
-
-// make HCL output reproducible by sorting the AST nodes
-func sortHclTree(tree interface{}) {
-	switch t := tree.(type) {
-	case []*ast.ObjectItem:
-		sort.Slice(t, func(i, j int) bool {
-			var bI, bJ bytes.Buffer
-			_, _ = hclPrinter.Fprint(&bI, t[i]), hclPrinter.Fprint(&bJ, t[j])
-			return bI.String() < bJ.String()
-		})
-	case []ast.Node:
-		sort.Slice(t, func(i, j int) bool {
-			var bI, bJ bytes.Buffer
-			_, _ = hclPrinter.Fprint(&bI, t[i]), hclPrinter.Fprint(&bJ, t[j])
-			return bI.String() < bJ.String()
-		})
-	default:
-	}
-}
-
-// sanitizer fixes up an invalid HCL AST, as produced by the HCL parser for JSON
-type astSanitizer struct {
-	sort bool
-}
-
-// output prints creates b printable HCL output and returns it.
-func (v *astSanitizer) visit(n interface{}) {
-	switch t := n.(type) {
-	case *ast.File:
-		v.visit(t.Node)
-	case *ast.ObjectList:
-		var index int
-		if v.sort {
-			sortHclTree(t.Items)
-		}
-		for index != len(t.Items) {
-			v.visit(t.Items[index])
-			index++
-		}
-	case *ast.ObjectKey:
-	case *ast.ObjectItem:
-		v.visitObjectItem(t)
-	case *ast.LiteralType:
-	case *ast.ListType:
-		if v.sort {
-			sortHclTree(t.List)
-		}
-	case *ast.ObjectType:
-		if v.sort {
-			sortHclTree(t.List)
-		}
-		v.visit(t.List)
-	default:
-		fmt.Printf(" unknown type: %T\n", n)
-	}
-}
-
-func (v *astSanitizer) visitObjectItem(o *ast.ObjectItem) {
-	for i, k := range o.Keys {
-		if i == 0 {
-			text := k.Token.Text
-			if text != "" && text[0] == '"' && text[len(text)-1] == '"' {
-				v := text[1 : len(text)-1]
-				safe := true
-				for _, c := range v {
-					if !strings.ContainsRune(safeChars, c) {
-						safe = false
-						break
-					}
-				}
-				if strings.HasPrefix(v, "--") { // if the key starts with "--", we must quote it. Seen in aws_glue_job.default_arguments parameter
-					v = fmt.Sprintf(`"%s"`, v)
-				}
-				if safe {
-					k.Token.Text = v
-				}
-			}
-		}
-	}
-	switch t := o.Val.(type) {
-	case *ast.LiteralType: // heredoc support
-		if strings.HasPrefix(t.Token.Text, `"<<`) {
-			t.Token.Text = t.Token.Text[1:]
-			t.Token.Text = t.Token.Text[:len(t.Token.Text)-1]
-			t.Token.Text = strings.ReplaceAll(t.Token.Text, `\n`, "\n")
-			t.Token.Text = strings.ReplaceAll(t.Token.Text, `\t`, "")
-			t.Token.Type = 10
-			// check if text json for Unquote and Indent
-			jsonTest := t.Token.Text
-			lines := strings.Split(jsonTest, "\n")
-			jsonTest = strings.Join(lines[1:len(lines)-1], "\n")
-			jsonTest = strings.ReplaceAll(jsonTest, "\\\"", "\"")
-			// it's json we convert to heredoc back
-			var tmp interface{} = map[string]interface{}{}
-			err := json.Unmarshal([]byte(jsonTest), &tmp)
-			if err != nil {
-				tmp = make([]interface{}, 0)
-				err = json.Unmarshal([]byte(jsonTest), &tmp)
-			}
-			if err == nil {
-				dataJSONBytes, err := json.MarshalIndent(tmp, "", "  ")
-				if err == nil {
-					jsonData := strings.Split(string(dataJSONBytes), "\n")
-					// first line for heredoc
-					jsonData = append([]string{lines[0]}, jsonData...)
-					// last line for heredoc
-					jsonData = append(jsonData, lines[len(lines)-1])
-					hereDoc := strings.Join(jsonData, "\n")
-					t.Token.Text = hereDoc
-				}
-			}
-		}
-	case *ast.ListType:
-		if v.sort {
-			sortHclTree(t.List)
-		}
-	default:
-	}
-
-	// A hack so that Assign.IsValid is true, so that the printer will output =
-	o.Assign.Line = 1
-
-	v.visit(o.Val)
-}
 
 func Print(data interface{}, mapsObjects map[string]struct{}, format string, sort bool) ([]byte, error) {
 	switch format {
@@ -174,19 +43,18 @@ func hclPrint(data interface{}, mapsObjects map[string]struct{}, sort bool) ([]b
 	if err != nil {
 		return dataBytesJSON, err
 	}
-	dataJSON := string(dataBytesJSON)
-	nodes, err := hclParser.Parse([]byte(dataJSON))
-	if err != nil {
-		log.Println(dataJSON)
+	var decoded interface{}
+	if err := json.Unmarshal(dataBytesJSON, &decoded); err != nil {
+		log.Println(string(dataBytesJSON))
 		return []byte{}, fmt.Errorf("error parsing terraform json: %w", err)
 	}
-	var sanitizer astSanitizer
-	sanitizer.sort = sort
-	sanitizer.visit(nodes)
+	root, ok := decoded.(map[string]interface{})
+	if !ok {
+		return []byte{}, fmt.Errorf("error writing HCL: root is %T", decoded)
+	}
 
-	var b bytes.Buffer
-	err = hclPrinter.Fprint(&b, nodes)
-	if err != nil {
+	var b strings.Builder
+	if err := hclWriteRoot(&b, root, mapsObjects, sort); err != nil {
 		return nil, fmt.Errorf("error writing HCL: %w", err)
 	}
 	s := b.String()
@@ -199,38 +67,261 @@ func hclPrint(data interface{}, mapsObjects map[string]struct{}, sort bool) ([]b
 
 	// Apply Terraform style (alignment etc.)
 	formatted := hclwrite.Format([]byte(s))
-	formatted = blockSyntaxAdjustments(formatted, mapsObjects)
-	formatted = requiredProvidersObjectAdjustments(formatted)
 
 	return formatted, nil
 }
 
-func blockSyntaxAdjustments(formatted []byte, mapsObjects map[string]struct{}) []byte {
-	singletonListFix := regexp.MustCompile(`^\s*\w+ = {`)
-	singletonListFixEnd := regexp.MustCompile(`^\s*}`)
-
-	s := string(formatted)
-	old := " = {"
-	newEquals := " {"
-	lines := strings.Split(s, "\n")
-	prefix := make([]string, 0)
-	for i, line := range lines {
-		if singletonListFixEnd.MatchString(line) && len(prefix) > 0 {
-			prefix = prefix[:len(prefix)-1]
-			continue
+func hclWriteRoot(b *strings.Builder, root map[string]interface{}, mapsObjects map[string]struct{}, sortOutput bool) error {
+	for _, key := range orderedHCLKeys(root, sortOutput) {
+		switch key {
+		case "provider", "output":
+			blocks, ok := root[key].(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("%s section is %T", key, root[key])
+			}
+			for _, label := range orderedHCLKeys(blocks, sortOutput) {
+				body, ok := blocks[label].(map[string]interface{})
+				if !ok {
+					return fmt.Errorf("%s %s body is %T", key, label, blocks[label])
+				}
+				fmt.Fprintf(b, "%s %s {\n", key, quoteHCLLabel(label))
+				if err := hclWriteBlockBody(b, body, "", 2, mapsObjects, sortOutput); err != nil {
+					return err
+				}
+				b.WriteString("}\n\n")
+			}
+		case "resource":
+			resources, ok := root[key].(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("resource section is %T", root[key])
+			}
+			for _, resourceType := range orderedHCLKeys(resources, sortOutput) {
+				instances, ok := resources[resourceType].(map[string]interface{})
+				if !ok {
+					return fmt.Errorf("resource %s section is %T", resourceType, resources[resourceType])
+				}
+				for _, name := range orderedHCLKeys(instances, sortOutput) {
+					body, ok := instances[name].(map[string]interface{})
+					if !ok {
+						return fmt.Errorf("resource %s.%s body is %T", resourceType, name, instances[name])
+					}
+					fmt.Fprintf(b, "resource %s %s {\n", quoteHCLLabel(resourceType), quoteHCLLabel(name))
+					if err := hclWriteBlockBody(b, body, "", 2, mapsObjects, sortOutput); err != nil {
+						return err
+					}
+					b.WriteString("}\n\n")
+				}
+			}
+		case "terraform":
+			body, ok := root[key].(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("terraform section is %T", root[key])
+			}
+			b.WriteString("terraform {\n")
+			if err := hclWriteBlockBody(b, body, "", 2, mapsObjects, sortOutput); err != nil {
+				return err
+			}
+			b.WriteString("}\n\n")
+		default:
+			if err := hclWriteConfigEntry(b, key, root[key], key, 0, mapsObjects, sortOutput); err != nil {
+				return err
+			}
 		}
-		if !singletonListFix.MatchString(line) {
-			continue
-		}
-		key := strings.Trim(strings.Split(line, old)[0], " ")
-		prefix = append(prefix, key)
-		if _, exist := mapsObjects[strings.Join(prefix, ".")]; exist {
-			continue
-		}
-		lines[i] = strings.ReplaceAll(line, old, newEquals)
 	}
-	s = strings.Join(lines, "\n")
-	return []byte(s)
+	return nil
+}
+
+func hclWriteBlockBody(b *strings.Builder, body map[string]interface{}, parentPath string, indent int, mapsObjects map[string]struct{}, sortOutput bool) error {
+	for _, key := range orderedHCLKeys(body, sortOutput) {
+		path := key
+		if parentPath != "" {
+			path = parentPath + "." + key
+		}
+		if key == "required_providers" {
+			if err := hclWriteRequiredProviders(b, body[key], indent, sortOutput); err != nil {
+				return err
+			}
+			continue
+		}
+		if err := hclWriteConfigEntry(b, key, body[key], path, indent, mapsObjects, sortOutput); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func hclWriteRequiredProviders(b *strings.Builder, value interface{}, indent int, sortOutput bool) error {
+	indentText := strings.Repeat(" ", indent)
+	b.WriteString(indentText + "required_providers {\n")
+	providers := map[string]interface{}{}
+	switch value := value.(type) {
+	case []interface{}:
+		for _, item := range value {
+			itemMap, ok := item.(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("required_providers entry is %T", item)
+			}
+			for provider, config := range itemMap {
+				providers[provider] = config
+			}
+		}
+	case map[string]interface{}:
+		providers = value
+	default:
+		return fmt.Errorf("required_providers is %T", value)
+	}
+	for _, provider := range orderedHCLKeys(providers, sortOutput) {
+		b.WriteString(strings.Repeat(" ", indent+2) + formatMapKey(provider) + " = ")
+		if err := hclWriteTerraformValue(b, providers[provider], indent+2, sortOutput); err != nil {
+			return err
+		}
+		b.WriteString("\n")
+	}
+	b.WriteString(indentText + "}\n")
+	return nil
+}
+
+func hclWriteConfigEntry(b *strings.Builder, key string, value interface{}, path string, indent int, mapsObjects map[string]struct{}, sortOutput bool) error {
+	indentText := strings.Repeat(" ", indent)
+	if valueMap, ok := value.(map[string]interface{}); ok {
+		if _, isMapObject := mapsObjects[path]; !isMapObject {
+			b.WriteString(indentText + formatMapKey(key) + " {\n")
+			if err := hclWriteBlockBody(b, valueMap, path, indent+2, mapsObjects, sortOutput); err != nil {
+				return err
+			}
+			b.WriteString(indentText + "}\n")
+			return nil
+		}
+	}
+	if valueList, ok := value.([]interface{}); ok && hclListShouldRenderAsBlocks(valueList, path, mapsObjects) {
+		for _, item := range valueList {
+			itemMap := item.(map[string]interface{})
+			b.WriteString(indentText + formatMapKey(key) + " {\n")
+			if err := hclWriteBlockBody(b, itemMap, path, indent+2, mapsObjects, sortOutput); err != nil {
+				return err
+			}
+			b.WriteString(indentText + "}\n")
+		}
+		return nil
+	}
+	b.WriteString(indentText + formatMapKey(key) + " = ")
+	if err := hclWriteTerraformValue(b, value, indent, sortOutput); err != nil {
+		return err
+	}
+	b.WriteString("\n")
+	return nil
+}
+
+func hclListShouldRenderAsBlocks(value []interface{}, path string, mapsObjects map[string]struct{}) bool {
+	if len(value) == 0 {
+		return false
+	}
+	if _, isMapObject := mapsObjects[path]; isMapObject {
+		return false
+	}
+	for _, item := range value {
+		if _, ok := item.(map[string]interface{}); !ok {
+			return false
+		}
+	}
+	return true
+}
+
+func hclWriteTerraformValue(b *strings.Builder, value interface{}, indent int, sortOutput bool) error {
+	switch value := value.(type) {
+	case map[string]interface{}:
+		return hclWriteTerraformMap(b, value, indent, sortOutput)
+	case []interface{}:
+		return hclWriteTerraformList(b, value, indent, sortOutput)
+	case string:
+		if strings.HasPrefix(value, "<<") {
+			b.WriteString(formatHeredoc(value))
+			return nil
+		}
+		b.WriteString(quoteRawHCLString(value))
+		return nil
+	default:
+		raw, err := json.Marshal(value)
+		if err != nil {
+			return err
+		}
+		b.Write(raw)
+		return nil
+	}
+}
+
+func hclWriteTerraformMap(b *strings.Builder, value map[string]interface{}, indent int, sortOutput bool) error {
+	if len(value) == 0 {
+		b.WriteString("{}")
+		return nil
+	}
+	b.WriteString("{\n")
+	childIndent := strings.Repeat(" ", indent+2)
+	for _, key := range orderedHCLKeys(value, sortOutput) {
+		b.WriteString(childIndent + formatMapKey(key) + " = ")
+		if err := hclWriteTerraformValue(b, value[key], indent+2, sortOutput); err != nil {
+			return err
+		}
+		b.WriteString("\n")
+	}
+	b.WriteString(strings.Repeat(" ", indent) + "}")
+	return nil
+}
+
+func hclWriteTerraformList(b *strings.Builder, value []interface{}, indent int, sortOutput bool) error {
+	if len(value) == 0 {
+		b.WriteString("[]")
+		return nil
+	}
+	b.WriteString("[\n")
+	childIndent := strings.Repeat(" ", indent+2)
+	for _, item := range value {
+		b.WriteString(childIndent)
+		if err := hclWriteTerraformValue(b, item, indent+2, sortOutput); err != nil {
+			return err
+		}
+		b.WriteString(",\n")
+	}
+	b.WriteString(strings.Repeat(" ", indent) + "]")
+	return nil
+}
+
+func quoteRawHCLString(value string) string {
+	raw, err := json.Marshal(value)
+	if err != nil {
+		return "\"" + value + "\""
+	}
+	return string(raw)
+}
+
+func formatHeredoc(value string) string {
+	lines := strings.Split(value, "\n")
+	if len(lines) < 3 {
+		return value
+	}
+	jsonTest := strings.Join(lines[1:len(lines)-1], "\n")
+	var tmp interface{}
+	if err := json.Unmarshal([]byte(jsonTest), &tmp); err != nil {
+		return value
+	}
+	dataJSONBytes, err := json.MarshalIndent(tmp, "", "  ")
+	if err != nil {
+		return value
+	}
+	jsonData := append([]string{lines[0]}, strings.Split(string(dataJSONBytes), "\n")...)
+	jsonData = append(jsonData, lines[len(lines)-1])
+	return strings.Join(jsonData, "\n")
+}
+
+func orderedHCLKeys(value map[string]interface{}, sortOutput bool) []string {
+	keys := make([]string, 0, len(value))
+	for key := range value {
+		keys = append(keys, key)
+	}
+	if sortOutput {
+		sort.Strings(keys)
+	}
+	return keys
 }
 
 func formatMapKey(key string) string {
@@ -392,30 +483,6 @@ func appendHCLSection(base []byte, section []byte) []byte {
 	out = append(out, '\n', '\n')
 	out = append(out, section...)
 	return out
-}
-
-func requiredProvidersObjectAdjustments(formatted []byte) []byte {
-	s := string(formatted)
-	requiredProvidersRe := regexp.MustCompile("required_providers \".*\" {")
-	endBraceRe := regexp.MustCompile(`^\s*}`)
-	lines := strings.Split(s, "\n")
-	for i, line := range lines {
-		if requiredProvidersRe.MatchString(line) {
-			parts := strings.Split(strings.TrimSpace(line), " ")
-			provider := strings.ReplaceAll(parts[1], "\"", "")
-			lines[i] = "\trequired_providers {"
-			var innerBlock []string
-			inner := i + 1
-			for ; !endBraceRe.MatchString(lines[inner]); inner++ {
-				innerBlock = append(innerBlock, "\t"+lines[inner])
-			}
-			lines[i+1] = "\t\t" + provider + " = {\n" + strings.Join(innerBlock, "\n") + "\n\t\t}"
-			lines = append(lines[:i+2], lines[inner:]...)
-			break
-		}
-	}
-	s = strings.Join(lines, "\n")
-	return []byte(s)
 }
 
 func escapeRune(s string) string {

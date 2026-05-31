@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	hclParser "github.com/hashicorp/hcl/hcl/parser"
+	"github.com/hashicorp/hcl/v2/hclparse"
 )
 
 func TestPrintResource(t *testing.T) {
@@ -142,7 +142,8 @@ func TestPrintManifestResourceKeepsNestedMapsRenderable(t *testing.T) {
 			t.Fatalf("%s was rendered:\n%s", unwanted, output)
 		}
 	}
-	if _, err := hclParser.Parse(data); err != nil {
-		t.Fatalf("generated HCL does not parse: %v\n%s", err, output)
+	parser := hclparse.NewParser()
+	if _, diagnostics := parser.ParseHCL(data, "generated.tf"); diagnostics.HasErrors() {
+		t.Fatalf("generated HCL does not parse: %v\n%s", diagnostics.Error(), output)
 	}
 }

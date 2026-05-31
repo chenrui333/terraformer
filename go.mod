@@ -299,6 +299,7 @@ require (
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/gosuri/uitable v0.0.4 // indirect
+	github.com/hashicorp/hcl v1.0.1-vault-7 // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
 	github.com/ianlancetaylor/demangle v0.0.0-20240805132620-81f5be970eca // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
@@ -541,7 +542,6 @@ require (
 	github.com/google/go-github/v88 v88.0.0
 	github.com/gophercloud/gophercloud/v2 v2.12.0
 	github.com/hashicorp/go-azure-sdk/sdk v0.20260520.1174751
-	github.com/hashicorp/hcl/v2 v2.24.0
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/ionos-cloud/sdk-go-cert-manager v1.3.0
 	github.com/ionos-cloud/sdk-go-container-registry v1.3.1
