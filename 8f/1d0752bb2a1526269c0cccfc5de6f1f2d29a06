@@ -1,0 +1,21 @@
+providers/octopusdeploy/generic_resources.go
+  s_cab1785d76bd54::t_9070852701b492 6
+providers/octopusdeploy/octopusdeploy_service.go
+  s_cab1785d76bd54::t_9070852701b492 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "8f1d0752bb2a1526269c0cccfc5de6f1f2d29a06",
+  "prompts": {},
+  "sessions": {
+    "s_cab1785d76bd54": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e7a3b-626c-7660-bd49-51eeade61f9e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
