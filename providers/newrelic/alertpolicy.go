@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	newrelic "github.com/newrelic/newrelic-client-go/newrelic"
+	newrelic "github.com/newrelic/newrelic-client-go/v2/newrelic"
 )
 
 type AlertPolicyGenerator struct {
