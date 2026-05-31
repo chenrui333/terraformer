@@ -6,11 +6,10 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 	"testing"
 
-	githubAPI "github.com/google/go-github/v35/github"
+	githubAPI "github.com/google/go-github/v88/github"
 )
 
 func TestCreateMembershipsResourcesReturnsListError(t *testing.T) {
@@ -204,12 +203,13 @@ func newErrorGitHubServer(t *testing.T) *httptest.Server {
 func newTestGitHubClient(t *testing.T, server *httptest.Server) *githubAPI.Client {
 	t.Helper()
 
-	client := githubAPI.NewClient(server.Client())
-	baseURL, err := url.Parse(server.URL + "/")
+	baseURL := server.URL + "/"
+	client, err := githubAPI.NewClient(
+		githubAPI.WithHTTPClient(server.Client()),
+		githubAPI.WithURLs(&baseURL, &baseURL),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	client.BaseURL = baseURL
-	client.UploadURL = baseURL
 	return client
 }

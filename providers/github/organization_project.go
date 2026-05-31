@@ -9,7 +9,7 @@ import (
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
-	githubAPI "github.com/google/go-github/v35/github"
+	githubAPI "github.com/google/go-github/v88/github"
 )
 
 type OrganizationProjectGenerator struct {
@@ -37,13 +37,13 @@ func (g *OrganizationProjectGenerator) InitResources() error {
 func createOrganizationProjects(ctx context.Context, client *githubAPI.Client, owner string) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 
-	opt := &githubAPI.ProjectListOptions{
-		ListOptions: githubAPI.ListOptions{PerPage: 100},
+	opt := &githubAPI.ListProjectsOptions{
+		ListProjectsPaginationOptions: githubAPI.ListProjectsPaginationOptions{PerPage: 100},
 	}
 
 	// List all organization projects for the authenticated user
 	for {
-		projects, resp, err := client.Organizations.ListProjects(ctx, owner, opt)
+		projects, resp, err := client.Projects.ListOrganizationProjects(ctx, owner, opt)
 		if err != nil {
 			return nil, fmt.Errorf("list github organization projects for %s: %w", owner, err)
 		}
@@ -60,10 +60,10 @@ func createOrganizationProjects(ctx context.Context, client *githubAPI.Client, o
 			resources = append(resources, resource)
 		}
 
-		if resp.NextPage == 0 {
+		if resp.After == "" {
 			break
 		}
-		opt.Page = resp.NextPage
+		opt.After = resp.After
 	}
 	return resources, nil
 }

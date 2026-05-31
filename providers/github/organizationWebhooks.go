@@ -9,7 +9,7 @@ import (
 
 	"github.com/chenrui333/terraformer/terraformutils"
 
-	githubAPI "github.com/google/go-github/v35/github"
+	githubAPI "github.com/google/go-github/v88/github"
 )
 
 type OrganizationWebhooksGenerator struct {
