@@ -1,0 +1,25 @@
+providers/gitlab/project.go
+  s_cab1785d76bd54::t_a2b6d23a2d6fbc 11
+providers/gitlab/gitlab_service.go
+  s_cab1785d76bd54::t_a2b6d23a2d6fbc 7
+providers/gitlab/gitlab_errors_test.go
+  s_cab1785d76bd54::t_a2b6d23a2d6fbc 12
+providers/gitlab/group.go
+  s_cab1785d76bd54::t_a2b6d23a2d6fbc 11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "3e5d713df3ae6a0a96011f12a9973a5287964ec2",
+  "prompts": {},
+  "sessions": {
+    "s_cab1785d76bd54": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e7a3b-626c-7660-bd49-51eeade61f9e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
