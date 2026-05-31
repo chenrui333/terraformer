@@ -8,8 +8,6 @@ require (
 	cloud.google.com/go/storage v1.62.2
 	github.com/Azure/azure-storage-blob-go v0.15.0
 	github.com/IBM-Cloud/bluemix-go v0.0.0-20260424100510-275dcc5549eb
-	github.com/IBM/go-sdk-core/v3 v3.3.1
-	github.com/IBM/go-sdk-core/v4 v4.10.0
 	github.com/IBM/go-sdk-core/v5 v5.21.2
 	github.com/IBM/ibm-cos-sdk-go v1.14.0
 	github.com/IBM/keyprotect-go-client v0.16.0
@@ -462,6 +460,8 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/storage/armstorage/v2 v2.0.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/synapse/armsynapse v0.8.0
 	github.com/IBM/continuous-delivery-go-sdk/v2 v2.0.8
+	github.com/IBM/go-sdk-core/v3 v3.3.1
+	github.com/IBM/go-sdk-core/v4 v4.10.0
 	github.com/IBM/sarama v1.49.0
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
 	github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.35.0
