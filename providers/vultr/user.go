@@ -6,7 +6,7 @@ import (
 	"context"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/vultr/govultr"
+	"github.com/vultr/govultr/v3"
 )
 
 type UserGenerator struct {
@@ -17,8 +17,8 @@ func (g UserGenerator) createResources(userList []govultr.User) []terraformutils
 	var resources []terraformutils.Resource
 	for _, user := range userList {
 		resources = append(resources, terraformutils.NewSimpleResource(
-			user.UserID,
-			user.UserID,
+			user.ID,
+			user.ID,
 			"vultr_user",
 			"vultr",
 			[]string{}))
@@ -28,7 +28,7 @@ func (g UserGenerator) createResources(userList []govultr.User) []terraformutils
 
 func (g *UserGenerator) InitResources() error {
 	client := g.generateClient()
-	output, err := client.User.List(context.Background())
+	output, _, _, err := client.User.List(context.Background(), nil)
 	if err != nil {
 		return err
 	}

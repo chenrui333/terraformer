@@ -6,7 +6,7 @@ import (
 	"context"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/vultr/govultr"
+	"github.com/vultr/govultr/v3"
 )
 
 type StartupScriptGenerator struct {
@@ -17,8 +17,8 @@ func (g StartupScriptGenerator) createResources(scriptList []govultr.StartupScri
 	var resources []terraformutils.Resource
 	for _, script := range scriptList {
 		resources = append(resources, terraformutils.NewSimpleResource(
-			script.ScriptID,
-			script.ScriptID,
+			script.ID,
+			script.ID,
 			"vultr_startup_script",
 			"vultr",
 			[]string{}))
@@ -28,7 +28,7 @@ func (g StartupScriptGenerator) createResources(scriptList []govultr.StartupScri
 
 func (g *StartupScriptGenerator) InitResources() error {
 	client := g.generateClient()
-	output, err := client.StartupScript.List(context.Background())
+	output, _, _, err := client.StartupScript.List(context.Background(), nil)
 	if err != nil {
 		return err
 	}

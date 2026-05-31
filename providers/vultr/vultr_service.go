@@ -3,8 +3,11 @@
 package vultr
 
 import (
+	"context"
+
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/vultr/govultr"
+	"github.com/vultr/govultr/v3"
+	"golang.org/x/oauth2"
 )
 
 type VultrService struct { //nolint
@@ -12,5 +15,7 @@ type VultrService struct { //nolint
 }
 
 func (s *VultrService) generateClient() *govultr.Client {
-	return govultr.NewClient(nil, s.Args["api_key"].(string))
+	ctx := context.Background()
+	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: s.Args["api_key"].(string)})
+	return govultr.NewClient(oauth2.NewClient(ctx, tokenSource))
 }

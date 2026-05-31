@@ -6,7 +6,7 @@ import (
 	"context"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/vultr/govultr"
+	"github.com/vultr/govultr/v3"
 )
 
 type BlockStorageGenerator struct {
@@ -17,8 +17,8 @@ func (g BlockStorageGenerator) createResources(blockStorageList []govultr.BlockS
 	var resources []terraformutils.Resource
 	for _, blockStorage := range blockStorageList {
 		resources = append(resources, terraformutils.NewSimpleResource(
-			blockStorage.BlockStorageID,
-			blockStorage.BlockStorageID,
+			blockStorage.ID,
+			blockStorage.ID,
 			"vultr_block_storage",
 			"vultr",
 			[]string{}))
@@ -28,7 +28,7 @@ func (g BlockStorageGenerator) createResources(blockStorageList []govultr.BlockS
 
 func (g *BlockStorageGenerator) InitResources() error {
 	client := g.generateClient()
-	output, err := client.BlockStorage.List(context.Background())
+	output, _, _, err := client.BlockStorage.List(context.Background(), nil)
 	if err != nil {
 		return err
 	}

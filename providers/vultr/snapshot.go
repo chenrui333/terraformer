@@ -6,7 +6,7 @@ import (
 	"context"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/vultr/govultr"
+	"github.com/vultr/govultr/v3"
 )
 
 type SnapshotGenerator struct {
@@ -17,8 +17,8 @@ func (g SnapshotGenerator) createResources(snapshotList []govultr.Snapshot) []te
 	var resources []terraformutils.Resource
 	for _, snapshot := range snapshotList {
 		resources = append(resources, terraformutils.NewSimpleResource(
-			snapshot.SnapshotID,
-			snapshot.SnapshotID,
+			snapshot.ID,
+			snapshot.ID,
 			"vultr_snapshot",
 			"vultr",
 			[]string{}))
@@ -28,7 +28,7 @@ func (g SnapshotGenerator) createResources(snapshotList []govultr.Snapshot) []te
 
 func (g *SnapshotGenerator) InitResources() error {
 	client := g.generateClient()
-	output, err := client.Snapshot.List(context.Background())
+	output, _, _, err := client.Snapshot.List(context.Background(), nil)
 	if err != nil {
 		return err
 	}

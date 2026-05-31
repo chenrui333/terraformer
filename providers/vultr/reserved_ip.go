@@ -6,7 +6,7 @@ import (
 	"context"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/vultr/govultr"
+	"github.com/vultr/govultr/v3"
 )
 
 type ReservedIPGenerator struct {
@@ -17,8 +17,8 @@ func (g ReservedIPGenerator) createResources(ipList []govultr.ReservedIP) []terr
 	var resources []terraformutils.Resource
 	for _, ip := range ipList {
 		resources = append(resources, terraformutils.NewSimpleResource(
-			ip.ReservedIPID,
-			ip.ReservedIPID,
+			ip.ID,
+			ip.ID,
 			"vultr_reserved_ip",
 			"vultr",
 			[]string{}))
@@ -28,7 +28,7 @@ func (g ReservedIPGenerator) createResources(ipList []govultr.ReservedIP) []terr
 
 func (g *ReservedIPGenerator) InitResources() error {
 	client := g.generateClient()
-	output, err := client.ReservedIP.List(context.Background())
+	output, _, _, err := client.ReservedIP.List(context.Background(), nil)
 	if err != nil {
 		return err
 	}
