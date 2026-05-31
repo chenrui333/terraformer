@@ -6,19 +6,19 @@ import (
 	"context"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/vultr/govultr"
+	"github.com/vultr/govultr/v3"
 )
 
 type ServerGenerator struct {
 	VultrService
 }
 
-func (g ServerGenerator) createResources(serverList []govultr.Server) []terraformutils.Resource {
+func (g ServerGenerator) createResources(serverList []govultr.Instance) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 	for _, server := range serverList {
 		resources = append(resources, terraformutils.NewSimpleResource(
-			server.InstanceID,
-			server.InstanceID,
+			server.ID,
+			server.ID,
 			"vultr_server",
 			"vultr",
 			[]string{}))
@@ -28,7 +28,7 @@ func (g ServerGenerator) createResources(serverList []govultr.Server) []terrafor
 
 func (g *ServerGenerator) InitResources() error {
 	client := g.generateClient()
-	output, err := client.Server.List(context.Background())
+	output, _, _, err := client.Instance.List(context.Background(), nil)
 	if err != nil {
 		return err
 	}

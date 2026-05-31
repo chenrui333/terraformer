@@ -6,7 +6,7 @@ import (
 	"context"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/vultr/govultr"
+	"github.com/vultr/govultr/v3"
 )
 
 type SSHKeyGenerator struct {
@@ -17,8 +17,8 @@ func (g SSHKeyGenerator) createResources(keyList []govultr.SSHKey) []terraformut
 	var resources []terraformutils.Resource
 	for _, key := range keyList {
 		resources = append(resources, terraformutils.NewSimpleResource(
-			key.SSHKeyID,
-			key.SSHKeyID,
+			key.ID,
+			key.ID,
 			"vultr_ssh_key",
 			"vultr",
 			[]string{}))
@@ -28,7 +28,7 @@ func (g SSHKeyGenerator) createResources(keyList []govultr.SSHKey) []terraformut
 
 func (g *SSHKeyGenerator) InitResources() error {
 	client := g.generateClient()
-	output, err := client.SSHKey.List(context.Background())
+	output, _, _, err := client.SSHKey.List(context.Background(), nil)
 	if err != nil {
 		return err
 	}

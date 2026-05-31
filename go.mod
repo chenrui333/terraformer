@@ -544,7 +544,7 @@ require (
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tat v1.3.88
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tcaplusdb v1.3.17
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc v1.3.83
-	github.com/vultr/govultr v1.1.1
+	github.com/vultr/govultr/v3 v3.31.2
 	gitlab.com/gitlab-org/api/client-go v1.46.0
 	helm.sh/helm/v3 v3.21.0
 	k8s.io/cli-runtime v0.36.1

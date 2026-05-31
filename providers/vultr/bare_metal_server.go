@@ -6,7 +6,7 @@ import (
 	"context"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/vultr/govultr"
+	"github.com/vultr/govultr/v3"
 )
 
 type BareMetalServerGenerator struct {
@@ -17,8 +17,8 @@ func (g BareMetalServerGenerator) createResources(serverList []govultr.BareMetal
 	var resources []terraformutils.Resource
 	for _, server := range serverList {
 		resources = append(resources, terraformutils.NewSimpleResource(
-			server.BareMetalServerID,
-			server.BareMetalServerID,
+			server.ID,
+			server.ID,
 			"vultr_bare_metal_server",
 			"vultr",
 			[]string{}))
@@ -28,7 +28,7 @@ func (g BareMetalServerGenerator) createResources(serverList []govultr.BareMetal
 
 func (g *BareMetalServerGenerator) InitResources() error {
 	client := g.generateClient()
-	output, err := client.BareMetalServer.List(context.Background())
+	output, _, _, err := client.BareMetalServer.List(context.Background(), nil)
 	if err != nil {
 		return err
 	}

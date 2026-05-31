@@ -4,18 +4,17 @@ package vultr
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/vultr/govultr"
+	"github.com/vultr/govultr/v3"
 )
 
 type DNSDomainGenerator struct {
 	VultrService
 }
 
-func (g *DNSDomainGenerator) loadDNSDomains(client *govultr.Client) ([]govultr.DNSDomain, error) {
-	domainList, err := client.DNSDomain.List(context.Background())
+func (g *DNSDomainGenerator) loadDNSDomains(client *govultr.Client) ([]govultr.Domain, error) {
+	domainList, _, _, err := client.Domain.List(context.Background(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -31,14 +30,14 @@ func (g *DNSDomainGenerator) loadDNSDomains(client *govultr.Client) ([]govultr.D
 }
 
 func (g *DNSDomainGenerator) loadDNSRecords(client *govultr.Client, domain string) error {
-	recordList, err := client.DNSRecord.List(context.Background(), domain)
+	recordList, _, _, err := client.DomainRecord.List(context.Background(), domain, nil)
 	if err != nil {
 		return err
 	}
 	for _, record := range recordList {
 		g.Resources = append(g.Resources, terraformutils.NewResource(
-			strconv.Itoa(record.RecordID),
-			strconv.Itoa(record.RecordID),
+			record.ID,
+			record.ID,
 			"vultr_dns_record",
 			"vultr",
 			map[string]string{"domain": domain},
