@@ -8,7 +8,7 @@ import (
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/google/go-github/v35/github"
+	"github.com/google/go-github/v88/github"
 	"golang.org/x/oauth2"
 )
 
@@ -32,13 +32,13 @@ func (g *GithubService) createRegularClient() (*github.Client, error) {
 		if err != nil {
 			return nil, err
 		}
-		return github.NewClient(&http.Client{Transport: itr}), nil
+		return github.NewClient(github.WithHTTPClient(&http.Client{Transport: itr}))
 	}
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: g.Args["token"].(string)},
 	)
 	tc := oauth2.NewClient(ctx, ts)
-	return github.NewClient(tc), nil
+	return github.NewClient(github.WithHTTPClient(tc))
 }
 
 func (g *GithubService) createEnterpriseClient() (*github.Client, error) {
@@ -49,11 +49,17 @@ func (g *GithubService) createEnterpriseClient() (*github.Client, error) {
 		if err != nil {
 			return nil, err
 		}
-		return github.NewEnterpriseClient(baseURL, baseURL, &http.Client{Transport: itr})
+		return github.NewClient(
+			github.WithEnterpriseURLs(baseURL, baseURL),
+			github.WithHTTPClient(&http.Client{Transport: itr}),
+		)
 	}
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: g.Args["token"].(string)},
 	)
 	tc := oauth2.NewClient(ctx, ts)
-	return github.NewEnterpriseClient(baseURL, baseURL, tc)
+	return github.NewClient(
+		github.WithEnterpriseURLs(baseURL, baseURL),
+		github.WithHTTPClient(tc),
+	)
 }

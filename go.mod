@@ -514,7 +514,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/vpclattice v1.21.0
 	github.com/fastly/go-fastly/v15 v15.0.1
 	github.com/gofrs/uuid/v3 v3.1.2
-	github.com/google/go-github/v35 v35.3.0
+	github.com/google/go-github/v88 v88.0.0
 	github.com/hashicorp/go-azure-sdk/sdk v0.20260520.1174751
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/ionos-cloud/sdk-go-cert-manager v1.3.0
