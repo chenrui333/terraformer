@@ -3,10 +3,11 @@
 package fastly
 
 import (
+	"context"
 	"log"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/fastly/go-fastly/v7/fastly"
+	"github.com/fastly/go-fastly/v15/fastly"
 )
 
 type TLSSubscriptionGenerator struct {
@@ -14,7 +15,7 @@ type TLSSubscriptionGenerator struct {
 }
 
 func (g *TLSSubscriptionGenerator) loadTLSSubscriptions(client *fastly.Client) ([]*fastly.TLSSubscription, error) {
-	subscriptions, err := client.ListTLSSubscriptions(&fastly.ListTLSSubscriptionsInput{})
+	subscriptions, err := client.ListTLSSubscriptions(context.Background(), &fastly.ListTLSSubscriptionsInput{})
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +31,7 @@ func (g *TLSSubscriptionGenerator) loadTLSSubscriptions(client *fastly.Client) (
 }
 
 func (g *TLSSubscriptionGenerator) loadTLSActivations(client *fastly.Client) ([]*fastly.TLSActivation, error) {
-	activations, err := client.ListTLSActivations(&fastly.ListTLSActivationsInput{})
+	activations, err := client.ListTLSActivations(context.Background(), &fastly.ListTLSActivationsInput{})
 	if err != nil {
 		return nil, err
 	}
