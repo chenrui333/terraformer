@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	gitlabAPI "gitlab.com/gitlab-org/api/client-go"
+	gitlabAPI "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
 func TestCreateGroupsReturnsGroupGetError(t *testing.T) {
