@@ -541,7 +541,7 @@ require (
 	github.com/google/go-github/v88 v88.0.0
 	github.com/gophercloud/gophercloud/v2 v2.12.0
 	github.com/hashicorp/go-azure-sdk/sdk v0.20260520.1174751
-	github.com/hashicorp/hcl v1.0.1-vault-7
+	github.com/hashicorp/hcl/v2 v2.24.0
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/ionos-cloud/sdk-go-cert-manager v1.3.0
 	github.com/ionos-cloud/sdk-go-container-registry v1.3.1
