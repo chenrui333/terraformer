@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/hcl/hcl/ast"
 	hclPrinter "github.com/hashicorp/hcl/hcl/printer"
 	hclParser "github.com/hashicorp/hcl/json/parser"
+	"github.com/hashicorp/hcl/v2/hclwrite"
 )
 
 // Copy code from https://github.com/kubernetes/kops project with few changes for support many provider and heredoc
@@ -197,19 +198,9 @@ func hclPrint(data interface{}, mapsObjects map[string]struct{}, sort bool) ([]b
 	s = strings.ReplaceAll(s, "}\nresource", "}\n\nresource")
 
 	// Apply Terraform style (alignment etc.)
-	formatted, err := hclPrinter.Format([]byte(s))
-	if err != nil {
-		return nil, err
-	}
+	formatted := hclwrite.Format([]byte(s))
 	formatted = blockSyntaxAdjustments(formatted, mapsObjects)
 	formatted = requiredProvidersObjectAdjustments(formatted)
-	if err != nil {
-		log.Println("Invalid HCL follows:")
-		for i, line := range strings.Split(s, "\n") {
-			fmt.Printf("%4d|\t%s\n", i+1, line)
-		}
-		return nil, fmt.Errorf("error formatting HCL: %w", err)
-	}
 
 	return formatted, nil
 }
