@@ -6,7 +6,7 @@ import (
 	"context"
 	"encoding/base64"
 
-	"github.com/auth0/go-auth0/management"
+	"github.com/auth0/go-auth0/v2/management"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -18,7 +18,7 @@ type BrandingGenerator struct {
 	Auth0Service
 }
 
-func (g BrandingGenerator) createResources(branding *management.Branding) []terraformutils.Resource {
+func (g BrandingGenerator) createResources(branding *management.GetBrandingResponseContent) []terraformutils.Resource {
 	resources := []terraformutils.Resource{}
 	resourceName := base64.StdEncoding.EncodeToString([]byte(branding.String()))
 	resources = append(resources, terraformutils.NewSimpleResource(
@@ -37,7 +37,7 @@ func (g *BrandingGenerator) InitResources() error {
 		return err
 	}
 	ctx := context.Background()
-	branding, err := m.Branding.Read(ctx)
+	branding, err := m.Branding.Get(ctx)
 	if err != nil {
 		return err
 	}

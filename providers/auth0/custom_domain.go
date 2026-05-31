@@ -5,7 +5,7 @@ package auth0
 import (
 	"context"
 
-	"github.com/auth0/go-auth0/management"
+	"github.com/auth0/go-auth0/v2/management"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -23,13 +23,13 @@ func (g CustomDomainGenerator) createResources(customDomains []*management.Custo
 		if customDomain == nil {
 			return nil, auth0MissingResource("auth0_custom_domain")
 		}
-		resourceName, err := auth0RequiredString("auth0_custom_domain", "id", customDomain.ID)
+		resourceName, err := auth0RequiredValueString("auth0_custom_domain", "id", customDomain.CustomDomainID)
 		if err != nil {
 			return nil, err
 		}
 		resources = append(resources, terraformutils.NewSimpleResource(
 			resourceName,
-			auth0ResourceName(customDomain.Domain, resourceName),
+			auth0ResourceName(auth0OptionalStringPtr(customDomain.Domain), resourceName),
 			"auth0_custom_domain",
 			"auth0",
 			CustomDomainAllowEmptyValues,
@@ -44,7 +44,7 @@ func (g *CustomDomainGenerator) InitResources() error {
 		return err
 	}
 	ctx := context.Background()
-	list, err := m.CustomDomain.List(ctx)
+	list, err := m.CustomDomains.List(ctx, &management.ListCustomDomainsRequestParameters{})
 	if err != nil {
 		return err
 	}

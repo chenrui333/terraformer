@@ -6,11 +6,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/auth0/go-auth0/management"
+	"github.com/auth0/go-auth0/v2/management"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
 func auth0StringPtr(value string) *string {
+	return &value
+}
+
+func auth0ActionTriggerTypePtr(value management.ActionTriggerTypeEnum) *management.ActionTriggerTypeEnum {
 	return &value
 }
 
@@ -43,7 +47,7 @@ func TestAuth0CreateResourcesFallsBackToIDName(t *testing.T) {
 		{
 			name: "client grant",
 			create: func() ([]terraformutils.Resource, error) {
-				return (ClientGrantGenerator{}).createResources([]*management.ClientGrant{{ID: auth0StringPtr("grant-id")}})
+				return (ClientGrantGenerator{}).createResources([]*management.ClientGrantResponseContent{{ID: auth0StringPtr("grant-id")}})
 			},
 			wantID:   "grant-id",
 			wantName: "grant-id",
@@ -52,7 +56,7 @@ func TestAuth0CreateResourcesFallsBackToIDName(t *testing.T) {
 		{
 			name: "custom domain",
 			create: func() ([]terraformutils.Resource, error) {
-				return (CustomDomainGenerator{}).createResources([]*management.CustomDomain{{ID: auth0StringPtr("domain-id")}})
+				return (CustomDomainGenerator{}).createResources([]*management.CustomDomain{{CustomDomainID: "domain-id"}})
 			},
 			wantID:   "domain-id",
 			wantName: "domain-id",
@@ -61,7 +65,7 @@ func TestAuth0CreateResourcesFallsBackToIDName(t *testing.T) {
 		{
 			name: "email",
 			create: func() ([]terraformutils.Resource, error) {
-				return (EmailGenerator{}).createResources(&management.EmailProvider{Name: auth0StringPtr("smtp")})
+				return (EmailGenerator{}).createResources(&management.GetEmailProviderResponseContent{Name: auth0StringPtr("smtp")})
 			},
 			wantID:   "smtp",
 			wantName: "smtp",
@@ -79,7 +83,9 @@ func TestAuth0CreateResourcesFallsBackToIDName(t *testing.T) {
 		{
 			name: "log stream",
 			create: func() ([]terraformutils.Resource, error) {
-				return (LogStreamGenerator{}).createResources([]*management.LogStream{{ID: auth0StringPtr("stream-id")}})
+				return (LogStreamGenerator{}).createResources([]*management.LogStreamResponseSchema{{
+					LogStreamHTTPResponseSchema: &management.LogStreamHTTPResponseSchema{ID: auth0StringPtr("stream-id")},
+				}})
 			},
 			wantID:   "stream-id",
 			wantName: "stream-id",
@@ -118,7 +124,7 @@ func TestAuth0CreateResourcesFallsBackToIDName(t *testing.T) {
 				return (TriggerBindingGenerator{}).createResources(map[string]*management.ActionBinding{
 					"binding-id": {
 						ID:        auth0StringPtr("binding-id"),
-						TriggerID: auth0StringPtr("post-login"),
+						TriggerID: auth0ActionTriggerTypePtr("post-login"),
 					},
 				})
 			},
@@ -197,7 +203,7 @@ func TestAuth0CreateResourcesRequiresIDs(t *testing.T) {
 		{
 			name: "client grant id",
 			create: func() ([]terraformutils.Resource, error) {
-				return (ClientGrantGenerator{}).createResources([]*management.ClientGrant{{}})
+				return (ClientGrantGenerator{}).createResources([]*management.ClientGrantResponseContent{{}})
 			},
 			wantErr: "missing id",
 		},
@@ -211,7 +217,7 @@ func TestAuth0CreateResourcesRequiresIDs(t *testing.T) {
 		{
 			name: "email name",
 			create: func() ([]terraformutils.Resource, error) {
-				return (EmailGenerator{}).createResources(&management.EmailProvider{})
+				return (EmailGenerator{}).createResources(&management.GetEmailProviderResponseContent{})
 			},
 			wantErr: "missing name",
 		},
@@ -225,7 +231,7 @@ func TestAuth0CreateResourcesRequiresIDs(t *testing.T) {
 		{
 			name: "log stream id",
 			create: func() ([]terraformutils.Resource, error) {
-				return (LogStreamGenerator{}).createResources([]*management.LogStream{{}})
+				return (LogStreamGenerator{}).createResources([]*management.LogStreamResponseSchema{{}})
 			},
 			wantErr: "missing id",
 		},
@@ -254,7 +260,7 @@ func TestAuth0CreateResourcesRequiresIDs(t *testing.T) {
 			name: "trigger binding id",
 			create: func() ([]terraformutils.Resource, error) {
 				return (TriggerBindingGenerator{}).createResources(map[string]*management.ActionBinding{
-					"binding": {TriggerID: auth0StringPtr("post-login")},
+					"binding": {TriggerID: auth0ActionTriggerTypePtr("post-login")},
 				})
 			},
 			wantErr: "missing id",
