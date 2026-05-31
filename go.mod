@@ -325,6 +325,7 @@ require (
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
+	github.com/robertkrimen/otto v0.5.1 // indirect
 	github.com/rubenv/sql-migrate v1.8.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 // indirect
@@ -332,6 +333,7 @@ require (
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/spf13/cast v1.7.0 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
+	gopkg.in/sourcemap.v1 v1.0.5 // indirect
 	k8s.io/apiextensions-apiserver v0.36.0 // indirect
 	k8s.io/apiserver v0.36.0 // indirect
 	k8s.io/component-base v0.36.0 // indirect
@@ -524,7 +526,7 @@ require (
 	github.com/keycloak/terraform-provider-keycloak v0.0.0-20260508073653-4a34efa743f5
 	github.com/launchdarkly/api-client-go/v22 v22.0.0
 	github.com/logzio/logzio_terraform_client v1.30.2
-	github.com/newrelic/newrelic-client-go v1.1.0
+	github.com/newrelic/newrelic-client-go/v2 v2.86.1
 	github.com/okta/okta-sdk-golang/v5 v5.0.6
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/as v1.3.88
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cbs v1.3.102
