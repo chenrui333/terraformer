@@ -136,7 +136,7 @@ require (
 	github.com/spf13/pflag v1.0.10
 	github.com/tencentyun/cos-go-sdk-v5 v0.7.73
 	github.com/yandex-cloud/go-genproto v0.82.0
-	github.com/yandex-cloud/go-sdk v0.31.0
+	github.com/yandex-cloud/go-sdk/v2 v2.110.0
 	github.com/zclconf/go-cty v1.18.1
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/text v0.37.0
@@ -572,6 +572,7 @@ require (
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tcaplusdb v1.3.17
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc v1.3.83
 	github.com/vultr/govultr/v3 v3.31.2
+	github.com/yandex-cloud/go-sdk v0.31.0
 	gitlab.com/gitlab-org/api/client-go/v2 v2.32.0
 	helm.sh/helm/v4 v4.2.0
 	k8s.io/cli-runtime v0.36.1
