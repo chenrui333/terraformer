@@ -7,7 +7,7 @@ import (
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/yandex-cloud/go-genproto/yandex/cloud/vpc/v1"
-	ycsdk "github.com/yandex-cloud/go-sdk"
+	ycsdk "github.com/yandex-cloud/go-sdk/v2"
 )
 
 type SubnetGenerator struct {
@@ -18,7 +18,7 @@ func (g *SubnetGenerator) loadSubnets(sdk *ycsdk.SDK, folderID string) ([]*vpc.S
 	subnets := []*vpc.Subnet{}
 	pageToken := ""
 	for {
-		resp, err := sdk.VPC().Subnet().List(context.Background(), &vpc.ListSubnetsRequest{
+		resp, err := vpc.NewSubnetServiceClient(yandexGRPCClient(sdk)).List(context.Background(), &vpc.ListSubnetsRequest{
 			FolderId:  folderID,
 			PageSize:  defaultPageSize,
 			PageToken: pageToken,
@@ -38,9 +38,7 @@ func (g *SubnetGenerator) loadSubnets(sdk *ycsdk.SDK, folderID string) ([]*vpc.S
 }
 
 func (g *SubnetGenerator) InitResources() error {
-	sdk, err := ycsdk.Build(context.Background(), ycsdk.Config{
-		Credentials: ycsdk.OAuthToken(g.Args["token"].(string)),
-	})
+	sdk, err := g.InitSDK()
 	if err != nil {
 		return err
 	}

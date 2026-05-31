@@ -136,7 +136,7 @@ require (
 	github.com/spf13/pflag v1.0.10
 	github.com/tencentyun/cos-go-sdk-v5 v0.7.73
 	github.com/yandex-cloud/go-genproto v0.82.0
-	github.com/yandex-cloud/go-sdk v0.31.0
+	github.com/yandex-cloud/go-sdk/v2 v2.110.0
 	github.com/zclconf/go-cty v1.18.1
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/text v0.37.0
@@ -347,6 +347,8 @@ require (
 	go.opentelemetry.io/otel/exporters/stdout/stdoutlog v0.19.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.43.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.10.0 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
+	go.uber.org/zap v1.27.1 // indirect
 	golang.org/x/exp v0.0.0-20251219203646-944ab1f22d93 // indirect
 	golang.org/x/mod v0.35.0 // indirect
 	golang.org/x/tools v0.44.0 // indirect

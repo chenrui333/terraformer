@@ -7,7 +7,7 @@ import (
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/yandex-cloud/go-genproto/yandex/cloud/compute/v1"
-	ycsdk "github.com/yandex-cloud/go-sdk"
+	ycsdk "github.com/yandex-cloud/go-sdk/v2"
 )
 
 type DiskGenerator struct {
@@ -18,7 +18,7 @@ func (g *DiskGenerator) loadDisks(sdk *ycsdk.SDK, folderID string) ([]*compute.D
 	disks := []*compute.Disk{}
 	pageToken := ""
 	for {
-		resp, err := sdk.Compute().Disk().List(context.Background(), &compute.ListDisksRequest{
+		resp, err := compute.NewDiskServiceClient(yandexGRPCClient(sdk)).List(context.Background(), &compute.ListDisksRequest{
 			FolderId:  folderID,
 			PageSize:  defaultPageSize,
 			PageToken: pageToken,

@@ -7,7 +7,7 @@ import (
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/yandex-cloud/go-genproto/yandex/cloud/vpc/v1"
-	ycsdk "github.com/yandex-cloud/go-sdk"
+	ycsdk "github.com/yandex-cloud/go-sdk/v2"
 )
 
 type NetworkGenerator struct {
@@ -18,7 +18,7 @@ func (g *NetworkGenerator) loadNetworks(sdk *ycsdk.SDK, folderID string) ([]*vpc
 	networks := []*vpc.Network{}
 	pageToken := ""
 	for {
-		resp, err := sdk.VPC().Network().List(context.Background(), &vpc.ListNetworksRequest{
+		resp, err := vpc.NewNetworkServiceClient(yandexGRPCClient(sdk)).List(context.Background(), &vpc.ListNetworksRequest{
 			FolderId:  folderID,
 			PageSize:  defaultPageSize,
 			PageToken: pageToken,
@@ -38,9 +38,7 @@ func (g *NetworkGenerator) loadNetworks(sdk *ycsdk.SDK, folderID string) ([]*vpc
 }
 
 func (g *NetworkGenerator) InitResources() error {
-	sdk, err := ycsdk.Build(context.Background(), ycsdk.Config{
-		Credentials: ycsdk.OAuthToken(g.Args["token"].(string)),
-	})
+	sdk, err := g.InitSDK()
 	if err != nil {
 		return err
 	}
