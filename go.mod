@@ -113,7 +113,7 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/go-plugin v1.8.0
-	github.com/hashicorp/hcl v1.0.1-vault-7
+	github.com/hashicorp/hcl/v2 v2.24.0
 	github.com/heimweh/go-pagerduty v0.0.0-20250801140645-0b96cfc9bf17
 	github.com/heroku/heroku-go/v6 v6.1.0
 	github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f // indirect
@@ -533,6 +533,7 @@ require (
 	github.com/google/go-github/v88 v88.0.0
 	github.com/gophercloud/gophercloud/v2 v2.12.0
 	github.com/hashicorp/go-azure-sdk/sdk v0.20260520.1174751
+	github.com/hashicorp/hcl v1.0.1-vault-7
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/ionos-cloud/sdk-go-cert-manager v1.3.0
 	github.com/ionos-cloud/sdk-go-container-registry v1.3.1
