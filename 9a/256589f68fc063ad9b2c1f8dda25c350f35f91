@@ -1,0 +1,28 @@
+providers/fastly/user.go
+  s_cab1785d76bd54::t_57d09599ae9622 6-7,17,22-25,27-28
+  s_cab1785d76bd54::t_61ec70be0b158b 9
+providers/fastly/tls_subscription.go
+  s_cab1785d76bd54::t_57d09599ae9622 6,18,34
+  s_cab1785d76bd54::t_61ec70be0b158b 10
+providers/fastly/service_v1.go
+  s_cab1785d76bd54::t_57d09599ae9622 6-7,24-25,30-34,37-38,44-45,55-56,62-69,71,77-80,82-83,88,97-98,104-111,113,119-122,124-125,130,139-140,146-153,155,161-164,166,168-169,174,193-197,201,205
+  s_cab1785d76bd54::t_61ec70be0b158b 9
+providers/fastly/fastly_service.go
+  s_cab1785d76bd54::t_57d09599ae9622 12-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "9a256589f68fc063ad9b2c1f8dda25c350f35f91",
+  "prompts": {},
+  "sessions": {
+    "s_cab1785d76bd54": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e7a3b-626c-7660-bd49-51eeade61f9e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
