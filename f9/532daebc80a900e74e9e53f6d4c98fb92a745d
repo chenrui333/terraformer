@@ -1,0 +1,23 @@
+providers/github/github_errors_test.go
+  s_cab1785d76bd54::t_16d4bed11c75cd 12,206-210
+providers/github/github_service.go
+  s_cab1785d76bd54::t_16d4bed11c75cd 11,35,41,52-55,61-64
+providers/github/organization_project.go
+  s_cab1785d76bd54::t_16d4bed11c75cd 12,40-41,46,63,66
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "f9532daebc80a900e74e9e53f6d4c98fb92a745d",
+  "prompts": {},
+  "sessions": {
+    "s_cab1785d76bd54": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e7a3b-626c-7660-bd49-51eeade61f9e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
