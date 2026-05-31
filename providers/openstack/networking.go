@@ -3,12 +3,14 @@
 package openstack
 
 import (
+	"context"
+
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/gophercloud/gophercloud"
-	"github.com/gophercloud/gophercloud/openstack"
-	"github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/security/groups"
-	"github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/security/rules"
-	"github.com/gophercloud/gophercloud/pagination"
+	"github.com/gophercloud/gophercloud/v2"
+	"github.com/gophercloud/gophercloud/v2/openstack"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/groups"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/rules"
+	"github.com/gophercloud/gophercloud/v2/pagination"
 )
 
 type NetworkingGenerator struct {
@@ -19,7 +21,7 @@ type NetworkingGenerator struct {
 func (g *NetworkingGenerator) createSecgroupResources(list *pagination.Pager) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 
-	err := list.EachPage(func(page pagination.Page) (bool, error) {
+	err := list.EachPage(context.Background(), func(_ context.Context, page pagination.Page) (bool, error) {
 		groups, err := groups.ExtractGroups(page)
 		if err != nil {
 			return false, err
@@ -68,7 +70,7 @@ func (g *NetworkingGenerator) InitResources() error {
 		return err
 	}
 
-	provider, err := openstack.AuthenticatedClient(opts)
+	provider, err := openstack.AuthenticatedClient(context.Background(), opts)
 	if err != nil {
 		return err
 	}

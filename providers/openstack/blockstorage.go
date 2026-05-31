@@ -3,13 +3,14 @@
 package openstack
 
 import (
+	"context"
 	"log"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/gophercloud/gophercloud"
-	"github.com/gophercloud/gophercloud/openstack"
-	"github.com/gophercloud/gophercloud/openstack/blockstorage/v3/volumes"
-	"github.com/gophercloud/gophercloud/pagination"
+	"github.com/gophercloud/gophercloud/v2"
+	"github.com/gophercloud/gophercloud/v2/openstack"
+	"github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumes"
+	"github.com/gophercloud/gophercloud/v2/pagination"
 	"github.com/pkg/errors"
 )
 
@@ -27,7 +28,7 @@ type BlockStorageGenerator struct {
 func (g *BlockStorageGenerator) createResources(list *pagination.Pager, clientType string) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 
-	err := list.EachPage(func(page pagination.Page) (bool, error) {
+	err := list.EachPage(context.Background(), func(_ context.Context, page pagination.Page) (bool, error) {
 		volumes, err := volumes.ExtractVolumes(page)
 		if err != nil {
 			return false, err
@@ -90,7 +91,7 @@ func (g *BlockStorageGenerator) InitResources() error {
 		return err
 	}
 
-	provider, err := openstack.AuthenticatedClient(opts)
+	provider, err := openstack.AuthenticatedClient(context.Background(), opts)
 	if err != nil {
 		return err
 	}
