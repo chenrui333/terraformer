@@ -9,3 +9,17 @@ import (
 type FastlyService struct { //nolint
 	terraformutils.Service
 }
+
+func fastlyStringValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
+}
+
+func fastlyIntValue(value *int) int {
+	if value == nil {
+		return 0
+	}
+	return *value
+}

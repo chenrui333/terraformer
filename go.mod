@@ -276,6 +276,7 @@ require (
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/platforms v0.2.1 // indirect
 	github.com/cyphar/filepath-securejoin v0.6.1 // indirect
+	github.com/dnaeon/go-vcr v1.2.0 // indirect
 	github.com/eapache/go-resiliency v1.7.0 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
 	github.com/evanphx/json-patch v5.9.11+incompatible // indirect
@@ -510,7 +511,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sesv2 v1.61.0
 	github.com/aws/aws-sdk-go-v2/service/transcribe v1.55.0
 	github.com/aws/aws-sdk-go-v2/service/vpclattice v1.21.0
-	github.com/fastly/go-fastly/v7 v7.5.5
+	github.com/fastly/go-fastly/v15 v15.0.1
 	github.com/gofrs/uuid/v3 v3.1.2
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/hashicorp/go-azure-sdk/sdk v0.20260520.1174751

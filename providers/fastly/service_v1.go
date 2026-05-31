@@ -3,8 +3,10 @@
 package fastly
 
 import (
+	"context"
+
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/fastly/go-fastly/v7/fastly"
+	"github.com/fastly/go-fastly/v15/fastly"
 )
 
 const (
@@ -19,23 +21,28 @@ type ServiceV1Generator struct {
 }
 
 func (g *ServiceV1Generator) loadServices(client *fastly.Client) ([]*fastly.Service, error) {
-	services, err := client.ListServices(&fastly.ListServicesInput{})
+	ctx := context.Background()
+	services, err := client.ListServices(ctx, &fastly.ListServicesInput{})
 	if err != nil {
 		return nil, err
 	}
 	for _, service := range services {
-		switch service.Type {
+		serviceID := fastlyStringValue(service.ServiceID)
+		if serviceID == "" {
+			continue
+		}
+		switch fastlyStringValue(service.Type) {
 		case ServiceTypeVCL:
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				service.ID,
-				service.ID,
+				serviceID,
+				serviceID,
 				"fastly_service_v1",
 				"fastly",
 				[]string{}))
 		case ServiceTypeWasm:
 			g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
-				service.ID,
-				service.ID,
+				serviceID,
+				serviceID,
 				"fastly_service_compute",
 				"fastly",
 				[]string{}))
@@ -45,28 +52,40 @@ func (g *ServiceV1Generator) loadServices(client *fastly.Client) ([]*fastly.Serv
 }
 
 func (g *ServiceV1Generator) loadDictionaryItems(client *fastly.Client, serviceID string) error {
-	latest, err := client.LatestVersion(&fastly.LatestVersionInput{
+	ctx := context.Background()
+	latest, err := client.LatestVersion(ctx, &fastly.LatestVersionInput{
 		ServiceID: serviceID,
 	})
 	if err != nil {
 		return err
 	}
-	dictionaries, err := client.ListDictionaries(&fastly.ListDictionariesInput{
+	latestVersion := 0
+	if latest != nil {
+		latestVersion = fastlyIntValue(latest.Number)
+	}
+	if latestVersion == 0 {
+		return nil
+	}
+	dictionaries, err := client.ListDictionaries(ctx, &fastly.ListDictionariesInput{
 		ServiceID:      serviceID,
-		ServiceVersion: latest.Number,
+		ServiceVersion: latestVersion,
 	})
 	if err != nil {
 		return err
 	}
 	for _, dictionary := range dictionaries {
+		dictionaryID := fastlyStringValue(dictionary.DictionaryID)
+		if dictionaryID == "" {
+			continue
+		}
 		g.Resources = append(g.Resources, terraformutils.NewResource(
-			dictionary.ID,
-			dictionary.ID,
+			dictionaryID,
+			dictionaryID,
 			"fastly_service_dictionary_items_v1",
 			"fastly",
 			map[string]string{
 				"service_id":    serviceID,
-				"dictionary_id": dictionary.ID,
+				"dictionary_id": dictionaryID,
 			},
 			[]string{},
 			map[string]interface{}{}))
@@ -75,28 +94,40 @@ func (g *ServiceV1Generator) loadDictionaryItems(client *fastly.Client, serviceI
 }
 
 func (g *ServiceV1Generator) loadACLEntries(client *fastly.Client, serviceID string) error {
-	latest, err := client.LatestVersion(&fastly.LatestVersionInput{
+	ctx := context.Background()
+	latest, err := client.LatestVersion(ctx, &fastly.LatestVersionInput{
 		ServiceID: serviceID,
 	})
 	if err != nil {
 		return err
 	}
-	acls, err := client.ListACLs(&fastly.ListACLsInput{
+	latestVersion := 0
+	if latest != nil {
+		latestVersion = fastlyIntValue(latest.Number)
+	}
+	if latestVersion == 0 {
+		return nil
+	}
+	acls, err := client.ListACLs(ctx, &fastly.ListACLsInput{
 		ServiceID:      serviceID,
-		ServiceVersion: latest.Number,
+		ServiceVersion: latestVersion,
 	})
 	if err != nil {
 		return err
 	}
 	for _, acl := range acls {
+		aclID := fastlyStringValue(acl.ACLID)
+		if aclID == "" {
+			continue
+		}
 		g.Resources = append(g.Resources, terraformutils.NewResource(
-			acl.ID,
-			acl.ID,
+			aclID,
+			aclID,
 			"fastly_service_acl_entries_v1",
 			"fastly",
 			map[string]string{
 				"service_id": serviceID,
-				"acl_id":     acl.ID,
+				"acl_id":     aclID,
 			},
 			[]string{},
 			map[string]interface{}{}))
@@ -105,30 +136,42 @@ func (g *ServiceV1Generator) loadACLEntries(client *fastly.Client, serviceID str
 }
 
 func (g *ServiceV1Generator) loadDynamicSnippetContent(client *fastly.Client, serviceID string) error {
-	latest, err := client.LatestVersion(&fastly.LatestVersionInput{
+	ctx := context.Background()
+	latest, err := client.LatestVersion(ctx, &fastly.LatestVersionInput{
 		ServiceID: serviceID,
 	})
 	if err != nil {
 		return err
 	}
-	snippets, err := client.ListSnippets(&fastly.ListSnippetsInput{
+	latestVersion := 0
+	if latest != nil {
+		latestVersion = fastlyIntValue(latest.Number)
+	}
+	if latestVersion == 0 {
+		return nil
+	}
+	snippets, err := client.ListSnippets(ctx, &fastly.ListSnippetsInput{
 		ServiceID:      serviceID,
-		ServiceVersion: latest.Number,
+		ServiceVersion: latestVersion,
 	})
 	if err != nil {
 		return err
 	}
 	for _, snippet := range snippets {
+		snippetID := fastlyStringValue(snippet.SnippetID)
+		if snippetID == "" {
+			continue
+		}
 		// check if dynamic
-		if snippet.Dynamic == 1 {
+		if fastlyIntValue(snippet.Dynamic) == 1 {
 			g.Resources = append(g.Resources, terraformutils.NewResource(
-				snippet.ID,
-				snippet.ID,
+				snippetID,
+				snippetID,
 				"fastly_service_dynamic_snippet_content_v1",
 				"fastly",
 				map[string]string{
 					"service_id": serviceID,
-					"snippet_id": snippet.ID,
+					"snippet_id": snippetID,
 				},
 				[]string{},
 				map[string]interface{}{}))
@@ -147,15 +190,19 @@ func (g *ServiceV1Generator) InitResources() error {
 		return err
 	}
 	for _, service := range services {
-		err := g.loadDictionaryItems(client, service.ID)
+		serviceID := fastlyStringValue(service.ServiceID)
+		if serviceID == "" {
+			continue
+		}
+		err := g.loadDictionaryItems(client, serviceID)
 		if err != nil {
 			return err
 		}
-		err = g.loadACLEntries(client, service.ID)
+		err = g.loadACLEntries(client, serviceID)
 		if err != nil {
 			return err
 		}
-		err = g.loadDynamicSnippetContent(client, service.ID)
+		err = g.loadDynamicSnippetContent(client, serviceID)
 		if err != nil {
 			return err
 		}
