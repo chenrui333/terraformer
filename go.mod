@@ -515,7 +515,6 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/hashicorp/go-azure-sdk/sdk v0.20260520.1174751
 	github.com/hashicorp/vault/api v1.23.0
-	github.com/heroku/heroku-go/v5 v5.5.0
 	github.com/ionos-cloud/sdk-go-cert-manager v1.3.0
 	github.com/ionos-cloud/sdk-go-container-registry v1.3.1
 	github.com/ionos-cloud/sdk-go-dataplatform v1.1.1
