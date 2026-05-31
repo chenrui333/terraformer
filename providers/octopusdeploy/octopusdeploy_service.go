@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/OctopusDeploy/go-octopusdeploy/octopusdeploy"
+	octopusdeploy "github.com/OctopusDeploy/go-octopusdeploy/v2/pkg/client"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
