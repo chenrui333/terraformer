@@ -8,7 +8,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/datafactory/armdatafactory/v9"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/datafactory/armdatafactory/v10"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
