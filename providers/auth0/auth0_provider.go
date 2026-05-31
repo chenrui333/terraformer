@@ -6,7 +6,7 @@ import (
 	"errors"
 	"os"
 
-	"github.com/auth0/go-auth0/management"
+	managementclient "github.com/auth0/go-auth0/v2/management/client"
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -16,7 +16,7 @@ type Auth0Provider struct { //nolint
 	domain       string
 	clientID     string
 	clientSecret string
-	client       *management.Management
+	client       *managementclient.Management
 }
 
 func (p *Auth0Provider) Init(_ []string) error {

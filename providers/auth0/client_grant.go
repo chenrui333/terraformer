@@ -5,7 +5,7 @@ package auth0
 import (
 	"context"
 
-	"github.com/auth0/go-auth0/management"
+	"github.com/auth0/go-auth0/v2/management"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -17,7 +17,7 @@ type ClientGrantGenerator struct {
 	Auth0Service
 }
 
-func (g ClientGrantGenerator) createResources(clientGrantGrants []*management.ClientGrant) ([]terraformutils.Resource, error) {
+func (g ClientGrantGenerator) createResources(clientGrantGrants []*management.ClientGrantResponseContent) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	for _, clientGrant := range clientGrantGrants {
 		if clientGrant == nil {
@@ -44,19 +44,13 @@ func (g *ClientGrantGenerator) InitResources() error {
 		return err
 	}
 	ctx := context.Background()
-	list := []*management.ClientGrant{}
-
-	var page int
-	for {
-		l, err := m.ClientGrant.List(ctx, management.Page(page))
-		if err != nil {
-			return err
-		}
-		list = append(list, l.ClientGrants...)
-		if !l.HasNext() {
-			break
-		}
-		page++
+	page, err := m.ClientGrants.List(ctx, &management.ListClientGrantsRequestParameters{})
+	if err != nil {
+		return err
+	}
+	list, err := auth0PageResults(ctx, page)
+	if err != nil {
+		return err
 	}
 
 	resources, err := g.createResources(list)

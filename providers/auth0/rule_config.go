@@ -5,7 +5,7 @@ package auth0
 import (
 	"context"
 
-	"github.com/auth0/go-auth0/management"
+	"github.com/auth0/go-auth0/v2/management"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -17,7 +17,7 @@ type RuleConfigGenerator struct {
 	Auth0Service
 }
 
-func (g RuleConfigGenerator) createResources(ruleConfigConfigs []*management.RuleConfig) []terraformutils.Resource {
+func (g RuleConfigGenerator) createResources(ruleConfigConfigs []*management.RulesConfig) []terraformutils.Resource {
 	resources := []terraformutils.Resource{}
 	for _, ruleConfig := range ruleConfigConfigs {
 		resourceName := *ruleConfig.Key
@@ -39,7 +39,7 @@ func (g *RuleConfigGenerator) InitResources() error {
 	}
 	ctx := context.Background()
 
-	list, err := m.RuleConfig.List(ctx)
+	list, err := m.RulesConfigs.List(ctx)
 	if err != nil {
 		return err
 	}

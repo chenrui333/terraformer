@@ -5,7 +5,7 @@ package auth0
 import (
 	"context"
 
-	"github.com/auth0/go-auth0/management"
+	"github.com/auth0/go-auth0/v2/management"
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
@@ -17,7 +17,7 @@ type EmailGenerator struct {
 	Auth0Service
 }
 
-func (g EmailGenerator) createResources(email *management.EmailProvider) ([]terraformutils.Resource, error) {
+func (g EmailGenerator) createResources(email *management.GetEmailProviderResponseContent) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if email == nil {
 		return nil, auth0MissingResource("auth0_email")
@@ -42,7 +42,7 @@ func (g *EmailGenerator) InitResources() error {
 		return err
 	}
 	ctx := context.Background()
-	email, err := m.EmailProvider.Read(ctx)
+	email, err := m.Emails.Provider.Get(ctx, &management.GetEmailProviderRequestParameters{})
 	if err != nil {
 		return err
 	}
