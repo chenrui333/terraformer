@@ -14,6 +14,8 @@ import (
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	cf "github.com/cloudflare/cloudflare-go"
+	cfv7 "github.com/cloudflare/cloudflare-go/v7"
+	"github.com/cloudflare/cloudflare-go/v7/option"
 )
 
 const cloudflarePageSize = 50
@@ -40,14 +42,40 @@ func (s *CloudflareService) initializeAPI() (*cf.API, error) {
 	return cf.New(apiKey, apiEmail)
 }
 
+func (s *CloudflareService) initializeClientV7() (*cfv7.Client, error) {
+	apiKey := os.Getenv("CLOUDFLARE_API_KEY")
+	apiEmail := os.Getenv("CLOUDFLARE_EMAIL")
+	apiToken := os.Getenv("CLOUDFLARE_API_TOKEN")
+
+	if apiToken == "" && (apiEmail == "" || apiKey == "") {
+		err := errors.New("Either CLOUDFLARE_API_TOKEN or CLOUDFLARE_API_KEY/CLOUDFLARE_EMAIL environment variables must be set")
+		fmt.Fprintln(os.Stderr, err)
+		return nil, err
+	}
+
+	if apiToken != "" {
+		return cfv7.NewClient(option.WithAPIToken(apiToken)), nil
+	}
+
+	return cfv7.NewClient(option.WithAPIKey(apiKey), option.WithAPIEmail(apiEmail)), nil
+}
+
 func (s *CloudflareService) accountID() string {
 	return os.Getenv("CLOUDFLARE_ACCOUNT_ID")
 }
 
-func (s *CloudflareService) accountResourceContainer() (*cf.ResourceContainer, error) {
+func (s *CloudflareService) accountIDRequired() (string, error) {
 	accountID := s.accountID()
 	if accountID == "" {
-		return nil, errors.New("set CLOUDFLARE_ACCOUNT_ID env var")
+		return "", errors.New("set CLOUDFLARE_ACCOUNT_ID env var")
+	}
+	return accountID, nil
+}
+
+func (s *CloudflareService) accountResourceContainer() (*cf.ResourceContainer, error) {
+	accountID, err := s.accountIDRequired()
+	if err != nil {
+		return nil, err
 	}
 	return cf.AccountIdentifier(accountID), nil
 }
