@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/okta/okta-sdk-golang/v5/okta"
+	"github.com/okta/okta-sdk-golang/v6/okta"
 )
 
 type AppSamlGenerator struct {
@@ -40,7 +40,7 @@ func (g *AppSamlGenerator) createResources(appList []okta.ListApplications200Res
 }
 
 func (g *AppSamlGenerator) InitResources() error {
-	ctx, client, err := g.ClientV5()
+	ctx, client, err := g.ClientV6()
 	if err != nil {
 		return err
 	}

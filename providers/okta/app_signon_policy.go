@@ -6,7 +6,7 @@ import (
 	"context"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/okta/okta-sdk-golang/v5/okta"
+	"github.com/okta/okta-sdk-golang/v6/okta"
 )
 
 type AppSignOnPolicyGenerator struct {
@@ -34,7 +34,7 @@ func (g AppSignOnPolicyGenerator) createResources(policies []okta.ListPolicies20
 }
 
 func (g *AppSignOnPolicyGenerator) InitResources() error {
-	ctx, client, err := g.ClientV5()
+	ctx, client, err := g.ClientV6()
 	if err != nil {
 		return err
 	}

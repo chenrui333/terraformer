@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/okta/okta-sdk-golang/v5/okta"
+	"github.com/okta/okta-sdk-golang/v6/okta"
 )
 
 type NetworkZoneGenerator struct {
@@ -54,7 +54,7 @@ func (g *NetworkZoneGenerator) createResources(networkZoneList []okta.ListNetwor
 }
 
 func (g *NetworkZoneGenerator) InitResources() error {
-	ctx, client, err := g.ClientV5()
+	ctx, client, err := g.ClientV6()
 	if err != nil {
 		return fmt.Errorf("failed to create Okta client: %w", err)
 	}
