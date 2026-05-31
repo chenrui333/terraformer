@@ -388,7 +388,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.56.0 // indirect
 	github.com/Myra-Security-GmbH/signature v1.1.0 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
-	github.com/auth0/go-auth0 v1.42.0
+	github.com/auth0/go-auth0/v2 v2.11.0
 	github.com/avast/retry-go v3.0.0+incompatible // indirect
 	github.com/aws/aws-sdk-go-v2/service/signin v1.0.11 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -488,6 +488,7 @@ require (
 	github.com/IBM/go-sdk-core/v3 v3.3.1
 	github.com/IBM/go-sdk-core/v4 v4.10.0
 	github.com/IBM/sarama v1.49.0
+	github.com/auth0/go-auth0 v1.42.0
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
 	github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.35.0
 	github.com/aws/aws-sdk-go-v2/service/appconfig v1.44.0
