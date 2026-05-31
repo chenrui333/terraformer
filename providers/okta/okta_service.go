@@ -8,7 +8,7 @@ import (
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	oktaV2 "github.com/okta/okta-sdk-golang/v2/okta"
-	oktaV5 "github.com/okta/okta-sdk-golang/v5/okta"
+	oktaV6 "github.com/okta/okta-sdk-golang/v6/okta"
 	"github.com/okta/terraform-provider-okta/sdk"
 )
 
@@ -35,21 +35,21 @@ func (s *OktaService) Client() (context.Context, *oktaV2.Client, error) {
 	return ctx, client, nil
 }
 
-func (s *OktaService) ClientV5() (context.Context, *oktaV5.APIClient, error) {
+func (s *OktaService) ClientV6() (context.Context, *oktaV6.APIClient, error) {
 	orgName := s.Args["org_name"].(string)
 	baseURL := s.Args["base_url"].(string)
 	apiToken := s.Args["api_token"].(string)
 
 	orgURL := fmt.Sprintf("https://%v.%v", orgName, baseURL)
 
-	config, err := oktaV5.NewConfiguration(
-		oktaV5.WithOrgUrl(orgURL),
-		oktaV5.WithToken(apiToken),
+	config, err := oktaV6.NewConfiguration(
+		oktaV6.WithOrgUrl(orgURL),
+		oktaV6.WithToken(apiToken),
 	)
 	if err != nil {
 		return nil, nil, err
 	}
-	client := oktaV5.NewAPIClient(config)
+	client := oktaV6.NewAPIClient(config)
 
 	return context.Background(), client, nil
 }

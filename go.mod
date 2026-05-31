@@ -267,6 +267,7 @@ require (
 	github.com/PuerkitoBio/rehttp v1.4.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
+	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/chai2010/gettext-go v1.0.2 // indirect
 	github.com/containerd/containerd v1.7.30 // indirect
 	github.com/containerd/errdefs v0.3.0 // indirect
@@ -306,7 +307,10 @@ require (
 	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
 	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
 	github.com/lestrrat-go/httprc v1.0.6 // indirect
+	github.com/lestrrat-go/httprc/v3 v3.0.3 // indirect
 	github.com/lestrrat-go/jwx/v2 v2.1.6 // indirect
+	github.com/lestrrat-go/jwx/v3 v3.0.13 // indirect
+	github.com/lestrrat-go/option/v2 v2.0.0 // indirect
 	github.com/lib/pq v1.11.2 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
@@ -527,7 +531,6 @@ require (
 	github.com/logzio/logzio_terraform_client v1.30.2
 	github.com/newrelic/newrelic-client-go/v2 v2.86.1
 	github.com/okta/okta-sdk-golang/v2 v2.20.0
-	github.com/okta/okta-sdk-golang/v5 v5.0.6
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/as v1.3.88
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cbs v1.3.102
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cdb v1.3.101

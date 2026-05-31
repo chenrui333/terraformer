@@ -4,7 +4,7 @@ package okta
 
 import (
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/okta/okta-sdk-golang/v5/okta"
+	"github.com/okta/okta-sdk-golang/v6/okta"
 )
 
 type UserGenerator struct {
@@ -25,7 +25,7 @@ func (g UserGenerator) createResources(userList []okta.User) []terraformutils.Re
 }
 
 func (g *UserGenerator) InitResources() error {
-	ctx, client, err := g.ClientV5()
+	ctx, client, err := g.ClientV6()
 	if err != nil {
 		return err
 	}

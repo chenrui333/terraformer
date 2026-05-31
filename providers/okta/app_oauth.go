@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/okta/okta-sdk-golang/v5/okta"
+	"github.com/okta/okta-sdk-golang/v6/okta"
 )
 
 type AppOAuthGenerator struct {
@@ -32,7 +32,7 @@ func (g *AppOAuthGenerator) createResources(appList []okta.ListApplications200Re
 }
 
 func (g *AppOAuthGenerator) InitResources() error {
-	ctx, client, err := g.ClientV5()
+	ctx, client, err := g.ClientV6()
 	if err != nil {
 		return err
 	}
