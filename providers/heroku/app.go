@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	heroku "github.com/heroku/heroku-go/v5"
+	heroku "github.com/heroku/heroku-go/v6"
 )
 
 type AppGenerator struct {

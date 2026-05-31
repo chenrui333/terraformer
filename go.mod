@@ -119,7 +119,7 @@ require (
 	github.com/hashicorp/go-plugin v1.8.0
 	github.com/hashicorp/hcl v1.0.1-vault-7
 	github.com/heimweh/go-pagerduty v0.0.0-20250801140645-0b96cfc9bf17
-	github.com/heroku/heroku-go/v5 v5.5.0
+	github.com/heroku/heroku-go/v6 v6.1.0
 	github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f // indirect
 	github.com/honeycombio/terraform-provider-honeycombio v0.49.0
 	github.com/iancoleman/strcase v0.3.0
