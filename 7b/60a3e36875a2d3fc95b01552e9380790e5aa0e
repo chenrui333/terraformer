@@ -1,0 +1,29 @@
+providers/yandex/compute_instance.go
+  s_cab1785d76bd54::t_fafa38def92f4c 10,21
+providers/yandex/sdk_conn.go
+  s_cab1785d76bd54::t_fafa38def92f4c 1-42
+providers/yandex/vpc_subnet.go
+  s_cab1785d76bd54::t_fafa38def92f4c 10,21,41
+providers/yandex/vpc_network.go
+  s_cab1785d76bd54::t_fafa38def92f4c 10,21,41
+providers/yandex/compute_disk.go
+  s_cab1785d76bd54::t_fafa38def92f4c 10,21
+providers/yandex/yandex_service.go
+  s_cab1785d76bd54::t_fafa38def92f4c 16-19,37,41,46,48,51-52,89,91
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "7b60a3e36875a2d3fc95b01552e9380790e5aa0e",
+  "prompts": {},
+  "sessions": {
+    "s_cab1785d76bd54": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e7a3b-626c-7660-bd49-51eeade61f9e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
