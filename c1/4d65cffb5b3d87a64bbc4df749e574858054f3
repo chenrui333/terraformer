@@ -1,0 +1,48 @@
+providers/okta/network_zone.go
+  s_cab1785d76bd54::t_4671eee83d6172 57
+  s_cab1785d76bd54::t_5ddb00f931c100 9
+providers/okta/app_saml.go
+  s_cab1785d76bd54::t_5ddb00f931c100 9
+  s_cab1785d76bd54::t_4671eee83d6172 43
+providers/okta/app_bookmark.go
+  s_cab1785d76bd54::t_4671eee83d6172 35
+  s_cab1785d76bd54::t_5ddb00f931c100 9
+providers/okta/authenticator.go
+  s_cab1785d76bd54::t_5ddb00f931c100 7
+  s_cab1785d76bd54::t_4671eee83d6172 58
+providers/okta/app_signon_policy.go
+  s_cab1785d76bd54::t_4671eee83d6172 37
+  s_cab1785d76bd54::t_5ddb00f931c100 9
+providers/okta/okta_service.go
+  s_cab1785d76bd54::t_4671eee83d6172 38
+  s_cab1785d76bd54::t_805cb9d0c1abd1 46-47
+  s_cab1785d76bd54::t_5ddb00f931c100 11,45,52
+providers/okta/app_oauth.go
+  s_cab1785d76bd54::t_4671eee83d6172 35
+  s_cab1785d76bd54::t_5ddb00f931c100 9
+providers/okta/user.go
+  s_cab1785d76bd54::t_4671eee83d6172 28
+  s_cab1785d76bd54::t_5ddb00f931c100 7
+providers/okta/app_signon_policy_rule.go
+  s_cab1785d76bd54::t_5ddb00f931c100 9
+  s_cab1785d76bd54::t_4671eee83d6172 43
+providers/okta/app_swa.go
+  s_cab1785d76bd54::t_5ddb00f931c100 9
+  s_cab1785d76bd54::t_4671eee83d6172 33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "c14d65cffb5b3d87a64bbc4df749e574858054f3",
+  "prompts": {},
+  "sessions": {
+    "s_cab1785d76bd54": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e7a3b-626c-7660-bd49-51eeade61f9e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
