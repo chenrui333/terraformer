@@ -1,0 +1,41 @@
+providers/vultr/server.go
+  s_cab1785d76bd54::t_03b3ee63b19a15 9,16,20-21,31
+providers/vultr/snapshot.go
+  s_cab1785d76bd54::t_03b3ee63b19a15 9,20-21,31
+providers/vultr/firewall_group.go
+  s_cab1785d76bd54::t_03b3ee63b19a15 10,18,24-25,34,39-42,44-45,65,69
+providers/vultr/vultr_service.go
+  s_cab1785d76bd54::t_03b3ee63b19a15 6-7,9-10,18-20
+providers/vultr/ssh_key.go
+  s_cab1785d76bd54::t_03b3ee63b19a15 9,20-21,31
+providers/vultr/bare_metal_server.go
+  s_cab1785d76bd54::t_03b3ee63b19a15 9,20-21,31
+providers/vultr/reserved_ip.go
+  s_cab1785d76bd54::t_03b3ee63b19a15 9,20-21,31
+providers/vultr/startup_script.go
+  s_cab1785d76bd54::t_03b3ee63b19a15 9,20-21,31
+providers/vultr/block_storage.go
+  s_cab1785d76bd54::t_03b3ee63b19a15 9,20-21,31
+providers/vultr/dns_domain.go
+  s_cab1785d76bd54::t_03b3ee63b19a15 9,16-17,33,39-40
+providers/vultr/network.go
+  s_cab1785d76bd54::t_03b3ee63b19a15 9,16,20-21,31
+providers/vultr/user.go
+  s_cab1785d76bd54::t_03b3ee63b19a15 9,20-21,31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "a59161b9f964c83014615f7ff69dac8c8e57d65e",
+  "prompts": {},
+  "sessions": {
+    "s_cab1785d76bd54": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e7a3b-626c-7660-bd49-51eeade61f9e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
