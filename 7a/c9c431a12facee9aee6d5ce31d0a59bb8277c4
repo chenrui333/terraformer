@@ -1,0 +1,23 @@
+providers/openstack/blockstorage.go
+  s_cab1785d76bd54::t_d47f6f31b19b19 6,10-13,31,94
+providers/openstack/compute.go
+  s_cab1785d76bd54::t_d47f6f31b19b19 6,13-17,28,40,123
+providers/openstack/networking.go
+  s_cab1785d76bd54::t_d47f6f31b19b19 6-7,9-13,24,73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "7ac9c431a12facee9aee6d5ce31d0a59bb8277c4",
+  "prompts": {},
+  "sessions": {
+    "s_cab1785d76bd54": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e7a3b-626c-7660-bd49-51eeade61f9e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
