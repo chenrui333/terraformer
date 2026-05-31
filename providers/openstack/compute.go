@@ -3,17 +3,18 @@
 package openstack
 
 import (
+	"context"
 	"log"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/gophercloud/gophercloud"
-	"github.com/gophercloud/gophercloud/openstack"
-	"github.com/gophercloud/gophercloud/openstack/blockstorage/v3/volumes"
-	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
-	"github.com/gophercloud/gophercloud/pagination"
+	"github.com/gophercloud/gophercloud/v2"
+	"github.com/gophercloud/gophercloud/v2/openstack"
+	"github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumes"
+	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
+	"github.com/gophercloud/gophercloud/v2/pagination"
 )
 
 type ComputeGenerator struct {
@@ -24,7 +25,7 @@ type ComputeGenerator struct {
 func (g *ComputeGenerator) createResources(list *pagination.Pager, volclient *gophercloud.ServiceClient) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 
-	err := list.EachPage(func(page pagination.Page) (bool, error) {
+	err := list.EachPage(context.Background(), func(ctx context.Context, page pagination.Page) (bool, error) {
 		servers, err := servers.ExtractServers(page)
 		if err != nil {
 			return false, err
@@ -36,7 +37,7 @@ func (g *ComputeGenerator) createResources(list *pagination.Pager, volclient *go
 			t := map[string]interface{}{}
 			if volclient != nil {
 				for _, av := range s.AttachedVolumes {
-					onevol, err := volumes.Get(volclient, av.ID).Extract()
+					onevol, err := volumes.Get(ctx, volclient, av.ID).Extract()
 					if err == nil {
 						vol = append(vol, *onevol)
 					}
@@ -119,7 +120,7 @@ func (g *ComputeGenerator) InitResources() error {
 		return err
 	}
 
-	provider, err := openstack.AuthenticatedClient(opts)
+	provider, err := openstack.AuthenticatedClient(context.Background(), opts)
 	if err != nil {
 		return err
 	}
