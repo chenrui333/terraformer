@@ -1,0 +1,60 @@
+providers/auth0/rule.go
+  s_cab1785d76bd54::t_e38774787db108 8,47-53
+providers/auth0/branding.go
+  s_cab1785d76bd54::t_e38774787db108 9,21,40
+providers/auth0/email.go
+  s_cab1785d76bd54::t_e38774787db108 8,20,45
+providers/auth0/log_stream.go
+  s_cab1785d76bd54::t_0d5b232521578e 8,20,26-27,33,42-72,79
+providers/auth0/user.go
+  s_cab1785d76bd54::t_e38774787db108 8,20,23,41-47
+providers/auth0/tenant.go
+  s_cab1785d76bd54::t_e38774787db108 9,21,40
+providers/auth0/client.go
+  s_cab1785d76bd54::t_e38774787db108 8,47-53
+providers/auth0/rule_config.go
+  s_cab1785d76bd54::t_e38774787db108 8,20,42
+providers/auth0/action.go
+  s_cab1785d76bd54::t_e38774787db108 8,47-53
+providers/auth0/custom_domain.go
+  s_cab1785d76bd54::t_c27cc705749dac 26
+  s_cab1785d76bd54::t_f00a5aa54faa70 32
+  s_cab1785d76bd54::t_e38774787db108 8,47
+providers/auth0/auth0_resource_test.go
+  s_cab1785d76bd54::t_d5b26ee8fc062a 9,17-20,50,59,68,86-88,127,206,220,234,263
+providers/auth0/client_grant.go
+  s_cab1785d76bd54::t_e38774787db108 8,20,47-53
+providers/auth0/role.go
+  s_cab1785d76bd54::t_e38774787db108 8,47-53
+providers/auth0/auth0_provider.go
+  s_cab1785d76bd54::t_e7675b2870d632 9,19
+providers/auth0/hook.go
+  s_cab1785d76bd54::t_e38774787db108 8,47-53
+providers/auth0/auth0_service.go
+  s_cab1785d76bd54::t_e7495b6399a71d 7,10-12,22-23,25,27,36-37,44-57
+  s_cab1785d76bd54::t_c27cc705749dac 71-77,79-84
+  s_cab1785d76bd54::t_f00a5aa54faa70 78
+providers/auth0/prompt.go
+  s_cab1785d76bd54::t_e38774787db108 9,21,40
+providers/auth0/resource_server.go
+  s_cab1785d76bd54::t_e38774787db108 8,47-53
+providers/auth0/trigger_binding.go
+  s_cab1785d76bd54::t_b5f3f7996b06ad 7
+  s_cab1785d76bd54::t_0d5b232521578e 9,28-30,32,60,69-77,81-85,89-90
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "80f616d48f3139dc0ffc94179d3c9f20de9b2e58",
+  "prompts": {},
+  "sessions": {
+    "s_cab1785d76bd54": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e7a3b-626c-7660-bd49-51eeade61f9e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
