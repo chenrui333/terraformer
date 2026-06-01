@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.13.3
+
+`0.13.3` is a provider dependency and release-safety patch. It rolls forward a
+large provider/client SDK refresh and adds stronger preflight coverage so future
+dependency updates compile, test, and pass release checks before publishing.
+
+### Highlights
+
+* Refresh provider and client SDK dependencies across AWS, GCP, Azure,
+  Cloudflare, Auth0, HashiCorp, IBM, Kubernetes, monitoring, VCS, and community
+  provider families.
+* Add a provider dependency preflight path for dependency-sensitive PRs covering
+  module tidiness, full builds, provider and command tests, vet, static diff
+  checks, and Terraform compatibility scripts.
+* Split vulnerability scanning into a blocking source `govulncheck` gate and a
+  report-only module baseline.
+* Add release preflight coverage for blocking source scanning, GoReleaser config
+  validation, and snapshot release builds.
+
+**Full Changelog**: <https://github.com/chenrui333/terraformer/compare/v0.13.2...v0.13.3>
+
 ## 0.13.2
 
 `0.13.2` is a focused AWS import correctness patch. It fixes refresh-stable
