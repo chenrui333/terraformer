@@ -1,0 +1,25 @@
+build/multi-build/main.go
+  s_cab1785d76bd54::t_a3b4277500d27a 18-35,58-65,67-69,79,82-83
+.goreleaser.yaml
+  s_cab1785d76bd54::t_680fb573f1f556 9-12,15
+CHANGELOG.md
+  s_cab1785d76bd54::t_47a35c48231ae1 3,5,30-32,34
+.github/workflows/release.yaml
+  s_cab1785d76bd54::t_e02121a23511c0 127-191,199,219-224,233,260-265,274
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "0d293fb2043568585797cac1f36e299838a35edd",
+  "prompts": {},
+  "sessions": {
+    "s_cab1785d76bd54": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e7a3b-626c-7660-bd49-51eeade61f9e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
