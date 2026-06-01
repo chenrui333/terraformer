@@ -14,7 +14,6 @@ import (
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	cf "github.com/cloudflare/cloudflare-go"
-	cfv7 "github.com/cloudflare/cloudflare-go/v7"
 	"github.com/cloudflare/cloudflare-go/v7/option"
 )
 
@@ -42,7 +41,7 @@ func (s *CloudflareService) initializeAPI() (*cf.API, error) {
 	return cf.New(apiKey, apiEmail)
 }
 
-func (s *CloudflareService) initializeClientV7() (*cfv7.Client, error) {
+func (s *CloudflareService) cloudflareV7Options() ([]option.RequestOption, error) {
 	apiKey := os.Getenv("CLOUDFLARE_API_KEY")
 	apiEmail := os.Getenv("CLOUDFLARE_EMAIL")
 	apiToken := os.Getenv("CLOUDFLARE_API_TOKEN")
@@ -54,10 +53,10 @@ func (s *CloudflareService) initializeClientV7() (*cfv7.Client, error) {
 	}
 
 	if apiToken != "" {
-		return cfv7.NewClient(option.WithAPIToken(apiToken)), nil
+		return []option.RequestOption{option.WithAPIToken(apiToken)}, nil
 	}
 
-	return cfv7.NewClient(option.WithAPIKey(apiKey), option.WithAPIEmail(apiEmail)), nil
+	return []option.RequestOption{option.WithAPIKey(apiKey), option.WithAPIEmail(apiEmail)}, nil
 }
 
 func (s *CloudflareService) accountID() string {
