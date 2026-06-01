@@ -1,8 +1,8 @@
 # Changelog
 
-## 0.13.10
+## 0.13.11
 
-`0.13.10` is a provider dependency and release-safety patch. It rolls forward a
+`0.13.11` is a provider dependency and release-safety patch. It rolls forward a
 large provider/client SDK refresh and adds stronger preflight coverage so future
 dependency updates compile, test, and pass release checks before publishing.
 
@@ -30,10 +30,10 @@ dependency updates compile, test, and pass release checks before publishing.
 * Fan out provider binary generation by OS and architecture so release snapshot
   and publish jobs can reuse prebuilt provider assets without exhausting runner
   disk space.
-* Run the remaining GoReleaser build phase serially to reduce peak release
-  runner disk pressure.
+* Fan out all-in-one binary generation and publish draft releases from prebuilt
+  assets plus checksums to reduce peak release runner disk pressure.
 
-**Full Changelog**: <https://github.com/chenrui333/terraformer/compare/v0.13.2...v0.13.10>
+**Full Changelog**: <https://github.com/chenrui333/terraformer/compare/v0.13.2...v0.13.11>
 
 ## 0.13.2
 

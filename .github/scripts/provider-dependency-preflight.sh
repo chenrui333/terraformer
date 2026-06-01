@@ -226,9 +226,15 @@ run_release_validation() {
   section "GoReleaser check"
   goreleaser check
 
-  section "GoReleaser snapshot preflight"
-  prepare_release_output_cleanup
-  goreleaser release --snapshot --clean --skip=publish --timeout=3h --parallelism=1
+  if [[ "${RUN_GORELEASER_SNAPSHOT:-0}" == "1" ]]; then
+    section "GoReleaser snapshot preflight"
+    prepare_release_output_cleanup
+    goreleaser release --snapshot --clean --skip=publish --timeout=3h --parallelism=1
+  else
+    section "GoReleaser snapshot preflight"
+    printf 'Skipping local GoReleaser snapshot by default; the release workflow runs fanout/fanin snapshot validation with prebuilt assets.\n'
+    printf 'Set RUN_GORELEASER_SNAPSHOT=1 to run the monolithic local snapshot anyway.\n'
+  fi
 }
 
 if [[ "$MODE" == "quick" ]]; then

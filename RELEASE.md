@@ -36,13 +36,14 @@ Use this checklist when cutting a new Terraformer release.
    ```
   This verifies `go mod tidy` output, full build coverage, provider and command
   tests, `go vet`, provider/state compatibility scripts, blocking govulncheck
-  source package scan, GoReleaser config, and snapshot release preflight.
+  source package scan, and GoReleaser config.
   `MODE=full` intentionally excludes govulncheck by default because source
   package scanning is handled by the dedicated govulncheck workflow and release
   mode. Set `GOVULNCHECK_SCAN_LEVEL=symbol` when a deeper local symbol scan is
-  needed and the runtime cost is acceptable.
-4. If local GoReleaser is unavailable, run the `release` workflow manually with
-   an empty `release_tag` to exercise the same snapshot path in GitHub Actions.
+  needed and the runtime cost is acceptable. Set `RUN_GORELEASER_SNAPSHOT=1`
+  only when a local monolithic snapshot is practical.
+4. Run the `release` workflow manually with an empty `release_tag` to exercise
+   the fanout/fanin snapshot path in GitHub Actions.
 5. Confirm the GitHub release body, tag, and artifact list are final.
 6. Create and push the release tag from the intended `main` commit:
    ```sh
@@ -53,7 +54,8 @@ Use this checklist when cutting a new Terraformer release.
    git tag -a "$VERSION" -m "$VERSION"
    git push origin "$VERSION"
    ```
-   The tag push runs GoReleaser and creates a draft GitHub release.
+   The tag push runs the release fanout/fanin workflow and creates a draft
+   GitHub release from prebuilt assets.
 7. Review the draft release, then publish it once the notes and assets are
    final.
 8. Verify the published release:
@@ -77,6 +79,7 @@ and assets as final before publishing.
 
 - Terraformer version tags use the `v` prefix (e.g. `v0.11.0`) for Go module
   compatibility. Releases before `v0.11.0` used plain tags (`0.9.0`, `0.10.0`).
-- GoReleaser creates draft releases for manual review before publication.
-- The GoReleaser config preserves the existing binary asset names used by README
-  install snippets and downstream packaging.
+- The release workflow creates draft releases for manual review before
+  publication.
+- The GoReleaser config check and release asset assembly preserve the existing
+  binary asset names used by README install snippets and downstream packaging.
