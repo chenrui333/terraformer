@@ -1,0 +1,31 @@
+go.mod
+  s_cab1785d76bd54::t_f41ac641d18537 237,239
+.github/scripts/provider-dependency-preflight.sh
+  s_cab1785d76bd54::t_1835e30c1b5eeb 178,181,185-193,209-210,216-217
+renovate.json
+  s_cab1785d76bd54::t_ffe08afc1c205d 5
+RELEASE.md
+  s_cab1785d76bd54::t_6e92f284cccbd6 37-43
+CHANGELOG.md
+  s_cab1785d76bd54::t_940725ff30b79e 3,5,22-25,27
+.github/workflows/govulncheck.yml
+  s_cab1785d76bd54::t_0d1c5542f34e60 34,40
+.github/workflows/release.yaml
+  s_cab1785d76bd54::t_0c9bc1bcdd3fa5 104
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "fc092aaae7305a6f4f4d862ad2d62fdca53561e9",
+  "prompts": {},
+  "sessions": {
+    "s_cab1785d76bd54": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e7a3b-626c-7660-bd49-51eeade61f9e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
