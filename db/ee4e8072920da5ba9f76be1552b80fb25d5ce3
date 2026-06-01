@@ -1,0 +1,23 @@
+providers/cloudflare/turnstile.go
+  s_cab1785d76bd54::t_c5b12511d5b1f7 18,22,27-34
+.golangci.json
+  s_cab1785d76bd54::t_db5eba115943c6 59
+providers/cloudflare/cloudflare_service.go
+  s_cab1785d76bd54::t_8cb9adad1ca7f1 44,56,59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "dbee4e8072920da5ba9f76be1552b80fb25d5ce3",
+  "prompts": {},
+  "sessions": {
+    "s_cab1785d76bd54": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e7a3b-626c-7660-bd49-51eeade61f9e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
