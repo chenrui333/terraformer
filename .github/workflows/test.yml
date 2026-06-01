@@ -36,6 +36,26 @@ jobs:
     - name: Test core packages
       run: go test ./build/... ./terraformutils/... ./version ./cmd ./providers ./providers/aws ./providers/gcp ./providers/azure -count=1
 
+  provider-dependency-preflight:
+    name: provider dependency preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+    - name: Install Go
+      uses: actions/setup-go@v6
+      with:
+        go-version-file: go.mod
+        cache: true
+        cache-dependency-path: go.sum
+    - name: Run provider dependency preflight
+      env:
+        MODE: ${{ github.event_name == 'pull_request' && 'quick' || 'full' }}
+        BASE_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || 'origin/main' }}
+      run: bash .github/scripts/provider-dependency-preflight.sh
+
   full:
     name: full test (${{ matrix.platform }})
     if: github.event_name != 'pull_request'

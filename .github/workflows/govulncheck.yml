@@ -17,8 +17,25 @@ env:
   GOWORK: off
 
 jobs:
+  source-scan:
+    name: source scan (blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+    - uses: actions/checkout@v6
+    - name: Install Go
+      uses: actions/setup-go@v6
+      with:
+        go-version-file: go.mod
+        cache: true
+        cache-dependency-path: go.sum
+    - name: Install govulncheck
+      run: go install golang.org/x/vuln/cmd/govulncheck@v1.3.0
+    - name: Run blocking source vulnerability scan
+      run: govulncheck ./...
+
   module-scan:
-    name: module scan
+    name: module scan (report-only)
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
@@ -30,10 +47,10 @@ jobs:
         cache-dependency-path: go.sum
     - name: Install govulncheck
       run: go install golang.org/x/vuln/cmd/govulncheck@v1.3.0
-    - name: Run module vulnerability scan
+    - name: Run report-only module vulnerability scan
       id: govulncheck
       continue-on-error: true
-      run: govulncheck -scan=module
+      run: govulncheck -scan=module ./...
     - name: Record non-blocking baseline
       if: steps.govulncheck.outcome == 'failure'
       run: |
@@ -41,5 +58,5 @@ jobs:
           echo "### govulncheck module scan"
           echo
           echo "The module scan found vulnerabilities in the current dependency baseline."
-          echo "This workflow is non-blocking while provider-scoped dependency cleanup is in progress."
+          echo "This module-level baseline is report-only; the source scan job is the blocking security gate."
         } >> "$GITHUB_STEP_SUMMARY"

@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
     - .github/release.yml
+    - .github/scripts/**
     - .github/workflows/release.yaml
     - .goreleaser.yaml
     - build/**
@@ -53,35 +54,48 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  snapshot:
-    name: Snapshot Release
-    if: github.event_name == 'workflow_dispatch' && inputs.release_tag == ''
+  preflight:
+    name: Release Preflight
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    timeout-minutes: 240
 
     steps:
     - uses: actions/checkout@v6
       with:
         fetch-depth: 0
+        ref: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag != '' && inputs.release_tag || github.ref }}
     - name: Install Go
       uses: actions/setup-go@v6
       with:
         go-version-file: go.mod
         cache: true
         cache-dependency-path: go.sum
-    - name: Test
-      run: go test ./... -count=1
-    - name: GoReleaser Snapshot
+    - name: Install GoReleaser
       uses: goreleaser/goreleaser-action@v7.2.2
       with:
         distribution: goreleaser
         version: ${{ env.GORELEASER_VERSION }}
-        args: release --snapshot --clean --skip=publish --timeout=${{ env.GORELEASER_TIMEOUT }}
+        install-only: true
+    - name: Run release preflight
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: MODE=release bash .github/scripts/provider-dependency-preflight.sh
+
+  snapshot:
+    name: Snapshot Release
+    if: github.event_name == 'workflow_dispatch' && inputs.release_tag == ''
+    needs: preflight
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Snapshot preflight complete
+      run: echo "Release preflight completed GoReleaser snapshot validation."
 
   release:
     name: Release
     if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
+    needs: preflight
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -97,8 +111,6 @@ jobs:
         go-version-file: go.mod
         cache: true
         cache-dependency-path: go.sum
-    - name: Test
-      run: go test ./... -count=1
     - name: GoReleaser Release
       uses: goreleaser/goreleaser-action@v7.2.2
       with:

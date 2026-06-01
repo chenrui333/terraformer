@@ -9,6 +9,9 @@ Use this checklist when cutting a new Terraformer release.
 - Review merged PRs since the previous release and keep the changelog focused on
   user-visible or maintainer-relevant changes.
 - Make sure `main` is current and the worktree is clean before publishing.
+- Normal provider dependency PRs are covered by the
+  `provider-dependency-preflight` CI job. The blocking source vulnerability scan
+  runs separately in `govulncheck.yml`.
 
 ## Checklist
 
@@ -27,22 +30,18 @@ Use this checklist when cutting a new Terraformer release.
      -f target_commitish=main \
      -f previous_tag_name="$PREVIOUS_VERSION"
    ```
-3. Run the local validation set:
+3. Run the provider dependency and release preflight:
    ```sh
-   GOWORK=off go mod tidy
-   git diff --exit-code -- go.mod go.sum
-   GOWORK=off go build -v ./...
-   GOWORK=off go test ./... -count=1
-   GOWORK=off go vet ./...
-   git diff --check
+   MODE=release bash .github/scripts/provider-dependency-preflight.sh
    ```
-4. Run the GoReleaser config and snapshot preflight before publishing:
-   ```sh
-   goreleaser check
-   goreleaser release --snapshot --clean --skip=publish
-   ```
-   You can also run the `release` workflow manually to exercise the same
-   snapshot path in GitHub Actions.
+   This verifies `go mod tidy` output, full build coverage, provider and command
+   tests, `go vet`, provider/state compatibility scripts, blocking govulncheck
+   source scan, GoReleaser config, and snapshot release preflight.
+   `MODE=full` intentionally excludes `govulncheck ./...` by default because
+   source scanning is handled by the dedicated govulncheck workflow and release
+   mode.
+4. If local GoReleaser is unavailable, run the `release` workflow manually with
+   an empty `release_tag` to exercise the same snapshot path in GitHub Actions.
 5. Confirm the GitHub release body, tag, and artifact list are final.
 6. Create and push the release tag from the intended `main` commit:
    ```sh
