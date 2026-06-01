@@ -56,7 +56,7 @@
     }
   },
   "run": {
-    "concurrency": 8,
+    "concurrency": 2,
     "issues-exit-code": 1,
     "modules-download-mode": "readonly"
   },

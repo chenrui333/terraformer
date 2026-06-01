@@ -101,7 +101,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/workspaces v1.68.1
 	github.com/aws/aws-sdk-go-v2/service/xray v1.36.23
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
-	github.com/cloudflare/cloudflare-go v0.117.0
+	github.com/cloudflare/cloudflare-go/v7 v7.3.0
 	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 // indirect
 	github.com/ddelnano/terraform-provider-mikrotik/client v0.0.0-20250110092516-5bc3b68c6245
 	github.com/ddelnano/terraform-provider-xenorchestra/client v0.18.0-alpha1
@@ -340,6 +340,10 @@ require (
 	github.com/spf13/cast v1.7.0 // indirect
 	github.com/tetratelabs/wabin v0.0.0-20230304001439-f6f874872834 // indirect
 	github.com/tetratelabs/wazero v1.11.0 // indirect
+	github.com/tidwall/gjson v1.14.4 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.1 // indirect
+	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.19.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.43.0 // indirect
@@ -537,6 +541,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sesv2 v1.61.0
 	github.com/aws/aws-sdk-go-v2/service/transcribe v1.55.0
 	github.com/aws/aws-sdk-go-v2/service/vpclattice v1.21.0
+	github.com/cloudflare/cloudflare-go v0.117.0
 	github.com/fastly/go-fastly/v15 v15.0.1
 	github.com/gofrs/uuid/v3 v3.1.2
 	github.com/google/go-github/v88 v88.0.0
