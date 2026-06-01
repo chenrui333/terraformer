@@ -1,6 +1,6 @@
 module github.com/chenrui333/terraformer
 
-go 1.26.2
+go 1.26.3
 
 require (
 	cloud.google.com/go v0.123.0 // indirect

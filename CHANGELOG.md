@@ -1,8 +1,8 @@
 # Changelog
 
-## 0.13.7
+## 0.13.8
 
-`0.13.7` is a provider dependency and release-safety patch. It rolls forward a
+`0.13.8` is a provider dependency and release-safety patch. It rolls forward a
 large provider/client SDK refresh and adds stronger preflight coverage so future
 dependency updates compile, test, and pass release checks before publishing.
 
@@ -23,8 +23,12 @@ dependency updates compile, test, and pass release checks before publishing.
   remains release-blocking without the long symbol-level runtime.
 * Update `golang.org/x/net` to `v0.55.0` to clear `GO-2026-5026`; `x/sys`
   moves to `v0.45.0` as part of that module update.
+* Bump the Go directive to `1.26.3` for standard-library vulnerability fixes
+  required by the blocking source scan.
+* Let Renovate automerge future Go patch directive updates after checks while
+  requiring manual approval for minor and major moves.
 
-**Full Changelog**: <https://github.com/chenrui333/terraformer/compare/v0.13.2...v0.13.7>
+**Full Changelog**: <https://github.com/chenrui333/terraformer/compare/v0.13.2...v0.13.8>
 
 ## 0.13.2
 

@@ -5,7 +5,7 @@
     "helpers:pinGitHubActionDigests",
     ":semanticCommits"
   ],
-  "baseBranches": ["main"],
+  "baseBranchPatterns": ["main"],
   "dependencyDashboard": true,
   "enabledManagers": ["github-actions", "gomod"],
   "internalChecksFilter": "strict",
@@ -46,11 +46,21 @@
       "automergeType": "pr"
     },
     {
-      "description": "Do not auto-bump the Go directive; handle Go version changes manually.",
+      "description": "Allow Go directive patch updates to automerge after checks.",
       "matchManagers": ["gomod"],
       "matchDepNames": ["go"],
       "matchDepTypes": ["golang"],
-      "enabled": false
+      "matchUpdateTypes": ["patch"],
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "description": "Hold Go minor and major directive updates for manual review.",
+      "matchManagers": ["gomod"],
+      "matchDepNames": ["go"],
+      "matchDepTypes": ["golang"],
+      "matchUpdateTypes": ["minor", "major"],
+      "dependencyDashboardApproval": true
     },
     {
       "description": "Hold major Go module updates for manual review.",
