@@ -1,0 +1,23 @@
+.github/workflows/release.yaml
+  s_cab1785d76bd54::t_29fea41832bbb6 230,271
+CHANGELOG.md
+  s_cab1785d76bd54::t_015179f7a5e823 3,5,33-34,36
+.github/scripts/provider-dependency-preflight.sh
+  s_cab1785d76bd54::t_9f6ea71fbed3bd 231
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "b77f4dce06d22db30dbd6cae937279f510fafa96",
+  "prompts": {},
+  "sessions": {
+    "s_cab1785d76bd54": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e7a3b-626c-7660-bd49-51eeade61f9e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
