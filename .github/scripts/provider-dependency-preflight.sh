@@ -175,13 +175,22 @@ run_provider_validation() {
 
 run_govulncheck_source_scan() {
   local batch=()
-  local batch_size="${GOVULNCHECK_BATCH_SIZE:-1}"
+  local batch_size="${GOVULNCHECK_BATCH_SIZE:-25}"
   local package
   local packages=()
+  local scan_level="${GOVULNCHECK_SCAN_LEVEL:-package}"
 
   ensure_govulncheck
 
-  section "govulncheck source scan"
+  case "$scan_level" in
+    package|symbol) ;;
+    *) fail "GOVULNCHECK_SCAN_LEVEL must be one of package or symbol" ;;
+  esac
+  if ! [[ "$batch_size" =~ ^[1-9][0-9]*$ ]]; then
+    fail "GOVULNCHECK_BATCH_SIZE must be a positive integer"
+  fi
+
+  section "govulncheck source scan ($scan_level level)"
   if [[ -n "${GOVULNCHECK_PACKAGES:-}" ]]; then
     read -r -a packages <<<"${GOVULNCHECK_PACKAGES}"
   else
@@ -197,15 +206,15 @@ run_govulncheck_source_scan() {
   for package in "${packages[@]}"; do
     batch+=("$package")
     if [[ "${#batch[@]}" -ge "$batch_size" ]]; then
-      printf 'Scanning %s package(s): %s\n' "${#batch[@]}" "${batch[*]}"
-      govulncheck "${batch[@]}"
+      printf 'Scanning %s package(s) at %s level: %s\n' "${#batch[@]}" "$scan_level" "${batch[*]}"
+      govulncheck -scan="$scan_level" "${batch[@]}"
       batch=()
     fi
   done
 
   if [[ "${#batch[@]}" -gt 0 ]]; then
-    printf 'Scanning %s package(s): %s\n' "${#batch[@]}" "${batch[*]}"
-    govulncheck "${batch[@]}"
+    printf 'Scanning %s package(s) at %s level: %s\n' "${#batch[@]}" "$scan_level" "${batch[*]}"
+    govulncheck -scan="$scan_level" "${batch[@]}"
   fi
 }
 

@@ -31,12 +31,13 @@ jobs:
         cache-dependency-path: go.sum
     - name: Install govulncheck
       run: go install golang.org/x/vuln/cmd/govulncheck@v1.3.0
-    - name: Run blocking source vulnerability scan
+    - name: Run blocking source package vulnerability scan
       run: ONLY_GOVULNCHECK=1 bash .github/scripts/provider-dependency-preflight.sh
 
   module-scan:
     name: module scan (report-only)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
     - name: Install Go

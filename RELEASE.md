@@ -34,12 +34,13 @@ Use this checklist when cutting a new Terraformer release.
    ```sh
    MODE=release bash .github/scripts/provider-dependency-preflight.sh
    ```
-   This verifies `go mod tidy` output, full build coverage, provider and command
-   tests, `go vet`, provider/state compatibility scripts, blocking govulncheck
-   source scan, GoReleaser config, and snapshot release preflight.
-   `MODE=full` intentionally excludes `govulncheck ./...` by default because
-   source scanning is handled by the dedicated govulncheck workflow and release
-   mode.
+  This verifies `go mod tidy` output, full build coverage, provider and command
+  tests, `go vet`, provider/state compatibility scripts, blocking govulncheck
+  source package scan, GoReleaser config, and snapshot release preflight.
+  `MODE=full` intentionally excludes govulncheck by default because source
+  package scanning is handled by the dedicated govulncheck workflow and release
+  mode. Set `GOVULNCHECK_SCAN_LEVEL=symbol` when a deeper local symbol scan is
+  needed and the runtime cost is acceptable.
 4. If local GoReleaser is unavailable, run the `release` workflow manually with
    an empty `release_tag` to exercise the same snapshot path in GitHub Actions.
 5. Confirm the GitHub release body, tag, and artifact list are final.

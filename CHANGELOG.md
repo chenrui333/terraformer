@@ -1,8 +1,8 @@
 # Changelog
 
-## 0.13.6
+## 0.13.7
 
-`0.13.6` is a provider dependency and release-safety patch. It rolls forward a
+`0.13.7` is a provider dependency and release-safety patch. It rolls forward a
 large provider/client SDK refresh and adds stronger preflight coverage so future
 dependency updates compile, test, and pass release checks before publishing.
 
@@ -19,8 +19,12 @@ dependency updates compile, test, and pass release checks before publishing.
 * Add release preflight coverage for blocking source scanning, GoReleaser config
   validation, and snapshot release builds.
 * Pin GitHub Actions dependencies to the latest immutable action revisions.
+* Keep the blocking source vulnerability scan at package level by default so it
+  remains release-blocking without the long symbol-level runtime.
+* Update `golang.org/x/net` to `v0.55.0` to clear `GO-2026-5026`; `x/sys`
+  moves to `v0.45.0` as part of that module update.
 
-**Full Changelog**: <https://github.com/chenrui333/terraformer/compare/v0.13.2...v0.13.6>
+**Full Changelog**: <https://github.com/chenrui333/terraformer/compare/v0.13.2...v0.13.7>
 
 ## 0.13.2
 

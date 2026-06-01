@@ -101,7 +101,7 @@ jobs:
         go-version-file: go.mod
         cache: true
         cache-dependency-path: go.sum
-    - name: Run blocking source vulnerability scan
+    - name: Run blocking source package vulnerability scan
       run: ONLY_GOVULNCHECK=1 bash .github/scripts/provider-dependency-preflight.sh
 
   goreleaser-check:
