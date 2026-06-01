@@ -1,0 +1,23 @@
+.github/workflows/release.yaml
+  s_cab1785d76bd54::t_7a9d875bef2c5e 64-68
+CHANGELOG.md
+  s_cab1785d76bd54::t_abc3769e822796 3,5,22
+.github/workflows/test.yml
+  s_cab1785d76bd54::t_02956b4028b586 44-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "cfec50af62fabda197b0ca3d5c7d8a457239db1c",
+  "prompts": {},
+  "sessions": {
+    "s_cab1785d76bd54": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e7a3b-626c-7660-bd49-51eeade61f9e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
