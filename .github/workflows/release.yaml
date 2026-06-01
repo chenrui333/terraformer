@@ -124,6 +124,71 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  provider-binaries:
+    name: Provider Binaries (${{ matrix.goos }}/${{ matrix.goarch }})
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs:
+    - provider-preflight
+    - source-scan
+    - goreleaser-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - goos: linux
+          goarch: amd64
+        - goos: linux
+          goarch: arm64
+        - goos: windows
+          goarch: amd64
+        - goos: windows
+          goarch: arm64
+        - goos: darwin
+          goarch: amd64
+        - goos: darwin
+          goarch: arm64
+
+    steps:
+    - name: Free runner disk space
+      if: runner.os == 'Linux'
+      run: |
+        sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+        df -h
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      with:
+        fetch-depth: 0
+        ref: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag != '' && inputs.release_tag || github.ref }}
+    - name: Install Go
+      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+      with:
+        go-version-file: go.mod
+        cache: true
+        cache-dependency-path: go.sum
+    - name: Build provider binaries
+      env:
+        RELEASE_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag != '' && inputs.release_tag || github.ref_name }}
+        TERRAFORMER_BUILD_GOOS: ${{ matrix.goos }}
+        TERRAFORMER_BUILD_GOARCH: ${{ matrix.goarch }}
+        TERRAFORMER_BUILD_OUTPUT_DIR: .goreleaser-extra/provider-binaries
+      run: |
+        case "$RELEASE_REF" in
+          v*) version="${RELEASE_REF#v}" ;;
+          [0-9]*) version="$RELEASE_REF" ;;
+          *) version="snapshot-${GITHUB_SHA::8}" ;;
+        esac
+        commit="$(git rev-parse HEAD)"
+        export TERRAFORMER_LDFLAGS="-s -w -X github.com/chenrui333/terraformer/version.Version=${version} -X github.com/chenrui333/terraformer/version.GitCommit=${commit}"
+        go run build/multi-build/main.go
+    - name: Upload provider binaries
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      with:
+        name: provider-binaries-${{ matrix.goos }}-${{ matrix.goarch }}
+        path: .goreleaser-extra/provider-binaries/terraformer-*
+        if-no-files-found: error
+        retention-days: 1
+
   snapshot:
     name: Snapshot Release
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
@@ -131,6 +196,7 @@ jobs:
     - provider-preflight
     - source-scan
     - goreleaser-check
+    - provider-binaries
     runs-on: ubuntu-latest
     timeout-minutes: 240
 
@@ -150,6 +216,12 @@ jobs:
         go-version-file: go.mod
         cache: true
         cache-dependency-path: go.sum
+    - name: Download provider binaries
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      with:
+        pattern: provider-binaries-*
+        path: .goreleaser-extra/provider-binaries
+        merge-multiple: true
     - name: GoReleaser Snapshot
       uses: goreleaser/goreleaser-action@5daf1e915a5f0af01ddbcd89a43b8061ff4f1a89
       with:
@@ -158,6 +230,7 @@ jobs:
         args: release --snapshot --clean --skip=publish --timeout=${{ env.GORELEASER_TIMEOUT }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        TERRAFORMER_SKIP_PROVIDER_BINARY_BUILD: "1"
 
   release:
     name: Release
@@ -184,6 +257,12 @@ jobs:
         go-version-file: go.mod
         cache: true
         cache-dependency-path: go.sum
+    - name: Download provider binaries
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      with:
+        pattern: provider-binaries-*
+        path: .goreleaser-extra/provider-binaries
+        merge-multiple: true
     - name: GoReleaser Release
       uses: goreleaser/goreleaser-action@5daf1e915a5f0af01ddbcd89a43b8061ff4f1a89
       with:
@@ -192,3 +271,4 @@ jobs:
         args: release --clean --timeout=${{ env.GORELEASER_TIMEOUT }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        TERRAFORMER_SKIP_PROVIDER_BINARY_BUILD: "1"

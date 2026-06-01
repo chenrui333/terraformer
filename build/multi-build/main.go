@@ -15,6 +15,24 @@ const filePrefix = "provider_cmd_"
 const fileSuffix = ".go"
 const packageCmdPath = "cmd"
 
+func envList(name string, defaults []string) []string {
+	value := strings.TrimSpace(os.Getenv(name))
+	if value == "" {
+		return defaults
+	}
+	fields := strings.FieldsFunc(value, func(r rune) bool {
+		return r == ',' || r == ' ' || r == '\t' || r == '\n'
+	})
+	items := make([]string, 0, len(fields))
+	for _, field := range fields {
+		item := strings.TrimSpace(field)
+		if item != "" {
+			items = append(items, item)
+		}
+	}
+	return items
+}
+
 func main() {
 	// provider := os.Args[1]
 	outputDir := os.Getenv("TERRAFORMER_BUILD_OUTPUT_DIR")
@@ -37,9 +55,18 @@ func main() {
 			allProviders = append(allProviders, providerName)
 		}
 	}
-	for _, arch := range []string{"amd64", "arm64"} {
-		for _, OS := range []string{"linux", "windows", "mac"} {
+	arches := envList("TERRAFORMER_BUILD_GOARCH", []string{"amd64", "arm64"})
+	oses := envList("TERRAFORMER_BUILD_GOOS", []string{"linux", "windows", "mac"})
+	providerFilter := map[string]bool{}
+	for _, provider := range envList("TERRAFORMER_BUILD_PROVIDERS", nil) {
+		providerFilter[provider] = true
+	}
+	for _, arch := range arches {
+		for _, OS := range oses {
 			for _, provider := range allProviders {
+				if len(providerFilter) > 0 && !providerFilter[provider] {
+					continue
+				}
 				GOOS := ""
 				binaryName := ""
 				switch OS {
@@ -49,9 +76,11 @@ func main() {
 				case "windows":
 					GOOS = "windows"
 					binaryName = "terraformer-" + provider + "-windows-" + arch + ".exe"
-				case "mac":
+				case "darwin", "mac":
 					GOOS = "darwin"
 					binaryName = "terraformer-" + provider + "-darwin-" + arch
+				default:
+					log.Fatal("err: unsupported TERRAFORMER_BUILD_GOOS value: ", OS)
 				}
 				log.Println("Build terraformer with "+provider+" provider...", "GOOS=", GOOS, " for GOARCH=", arch)
 				deletedProvider := []string{}

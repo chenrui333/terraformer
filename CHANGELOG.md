@@ -1,8 +1,8 @@
 # Changelog
 
-## 0.13.8
+## 0.13.9
 
-`0.13.8` is a provider dependency and release-safety patch. It rolls forward a
+`0.13.9` is a provider dependency and release-safety patch. It rolls forward a
 large provider/client SDK refresh and adds stronger preflight coverage so future
 dependency updates compile, test, and pass release checks before publishing.
 
@@ -27,8 +27,11 @@ dependency updates compile, test, and pass release checks before publishing.
   required by the blocking source scan.
 * Let Renovate automerge future Go patch directive updates after checks while
   requiring manual approval for minor and major moves.
+* Fan out provider binary generation by OS and architecture so release snapshot
+  and publish jobs can reuse prebuilt provider assets without exhausting runner
+  disk space.
 
-**Full Changelog**: <https://github.com/chenrui333/terraformer/compare/v0.13.2...v0.13.8>
+**Full Changelog**: <https://github.com/chenrui333/terraformer/compare/v0.13.2...v0.13.9>
 
 ## 0.13.2
 

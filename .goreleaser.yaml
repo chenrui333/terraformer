@@ -5,12 +5,14 @@ project_name: terraformer
 before:
   hooks:
     - go mod tidy
-    - rm -rf .goreleaser-extra/provider-binaries
     - >-
-      sh -c 'TERRAFORMER_BUILD_OUTPUT_DIR=.goreleaser-extra/provider-binaries
+      sh -c 'if [ "${TERRAFORMER_SKIP_PROVIDER_BINARY_BUILD:-0}" = "1" ]; then
+      test -n "$(find .goreleaser-extra/provider-binaries -type f -name "terraformer-*" -print -quit)";
+      else rm -rf .goreleaser-extra/provider-binaries;
+      TERRAFORMER_BUILD_OUTPUT_DIR=.goreleaser-extra/provider-binaries
       TERRAFORMER_LDFLAGS="-s -w -X github.com/chenrui333/terraformer/version.Version={{ .Version }}
       -X github.com/chenrui333/terraformer/version.GitCommit={{ .Commit }}"
-      go run build/multi-build/main.go'
+      go run build/multi-build/main.go; fi'
 
 builds:
   - id: all
