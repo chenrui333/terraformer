@@ -174,10 +174,39 @@ run_provider_validation() {
 }
 
 run_govulncheck_source_scan() {
+  local batch=()
+  local batch_size="${GOVULNCHECK_BATCH_SIZE:-1}"
+  local package
+  local packages=()
+
   ensure_govulncheck
 
   section "govulncheck source scan"
-  govulncheck ./...
+  if [[ -n "${GOVULNCHECK_PACKAGES:-}" ]]; then
+    read -r -a packages <<<"${GOVULNCHECK_PACKAGES}"
+  else
+    while IFS= read -r package; do
+      packages+=("$package")
+    done < <(go list ./...)
+  fi
+
+  if [[ "${#packages[@]}" -eq 0 ]]; then
+    fail "no Go packages found for govulncheck source scan"
+  fi
+
+  for package in "${packages[@]}"; do
+    batch+=("$package")
+    if [[ "${#batch[@]}" -ge "$batch_size" ]]; then
+      printf 'Scanning %s package(s): %s\n' "${#batch[@]}" "${batch[*]}"
+      govulncheck "${batch[@]}"
+      batch=()
+    fi
+  done
+
+  if [[ "${#batch[@]}" -gt 0 ]]; then
+    printf 'Scanning %s package(s): %s\n' "${#batch[@]}" "${batch[*]}"
+    govulncheck "${batch[@]}"
+  fi
 }
 
 run_release_validation() {
@@ -202,6 +231,12 @@ if [[ "$MODE" == "quick" ]]; then
     exit 0
   fi
   printf 'Dependency-sensitive changes detected; running provider dependency preflight.\n'
+fi
+
+if [[ "${ONLY_GOVULNCHECK:-0}" == "1" ]]; then
+  run_govulncheck_source_scan
+  section "Provider dependency preflight complete"
+  exit 0
 fi
 
 run_provider_validation

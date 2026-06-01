@@ -32,7 +32,7 @@ jobs:
     - name: Install govulncheck
       run: go install golang.org/x/vuln/cmd/govulncheck@v1.3.0
     - name: Run blocking source vulnerability scan
-      run: govulncheck ./...
+      run: ONLY_GOVULNCHECK=1 bash .github/scripts/provider-dependency-preflight.sh
 
   module-scan:
     name: module scan (report-only)
