@@ -227,7 +227,7 @@ jobs:
       with:
         distribution: goreleaser
         version: ${{ env.GORELEASER_VERSION }}
-        args: release --snapshot --clean --skip=publish --timeout=${{ env.GORELEASER_TIMEOUT }}
+        args: release --snapshot --clean --skip=publish --timeout=${{ env.GORELEASER_TIMEOUT }} --parallelism=1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         TERRAFORMER_SKIP_PROVIDER_BINARY_BUILD: "1"
@@ -268,7 +268,7 @@ jobs:
       with:
         distribution: goreleaser
         version: ${{ env.GORELEASER_VERSION }}
-        args: release --clean --timeout=${{ env.GORELEASER_TIMEOUT }}
+        args: release --clean --timeout=${{ env.GORELEASER_TIMEOUT }} --parallelism=1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         TERRAFORMER_SKIP_PROVIDER_BINARY_BUILD: "1"

@@ -228,7 +228,7 @@ run_release_validation() {
 
   section "GoReleaser snapshot preflight"
   prepare_release_output_cleanup
-  goreleaser release --snapshot --clean --skip=publish --timeout=3h
+  goreleaser release --snapshot --clean --skip=publish --timeout=3h --parallelism=1
 }
 
 if [[ "$MODE" == "quick" ]]; then
