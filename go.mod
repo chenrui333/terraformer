@@ -587,7 +587,7 @@ require (
 
 replace gopkg.in/ns1/ns1-go.v2 => github.com/ns1/ns1-go/v2 v2.17.2
 
-replace github.com/tencentcloud/tencentcloud-sdk-go => github.com/tencentcloud/tencentcloud-sdk-go v1.3.102
+replace github.com/tencentcloud/tencentcloud-sdk-go => github.com/tencentcloud/tencentcloud-sdk-go v1.3.104
 
 // Redirect stale transitive imports from abandoned dgrijalva/jwt-go to a compatible maintained fork.
 replace github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v3.2.5+incompatible
