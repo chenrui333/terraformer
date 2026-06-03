@@ -141,7 +141,7 @@ require (
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/text v0.37.0
 	gonum.org/v1/gonum v0.17.0
-	google.golang.org/api v0.280.0
+	google.golang.org/api v0.282.0
 	google.golang.org/genproto v0.0.0-20260526163538-3dc84a4a5aaa
 	k8s.io/apimachinery v0.36.1
 	k8s.io/client-go v0.36.1
@@ -420,7 +420,7 @@ require (
 	github.com/google/gnostic-models v0.7.1 // indirect
 	github.com/google/go-github/v84 v84.0.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
-	github.com/googleapis/enterprise-certificate-proxy v0.3.15 // indirect
+	github.com/googleapis/enterprise-certificate-proxy v0.3.16 // indirect
 	github.com/hashicorp/go-secure-stdlib/parseutil v0.2.0 // indirect
 	github.com/hashicorp/go-secure-stdlib/strutil v0.1.2 // indirect
 	github.com/hashicorp/jsonapi v1.5.0 // indirect
