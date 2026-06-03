@@ -975,8 +975,8 @@ github.com/kelseyhightower/envconfig v1.4.0 h1:Im6hONhd3pLkfDFsbRgu68RDNkGF1r3dv
 github.com/kelseyhightower/envconfig v1.4.0/go.mod h1:cccZRl6mQpaq41TPp5QxidR+Sa3axMbJDNb//FQX6Gg=
 github.com/keybase/go-keychain v0.0.1 h1:way+bWYa6lDppZoZcgMbYsvC7GxljxrskdNInRtuthU=
 github.com/keybase/go-keychain v0.0.1/go.mod h1:PdEILRW3i9D8JcdM+FmY6RwkHGnhHxXwkPPMeUgOK1k=
-github.com/keycloak/terraform-provider-keycloak v0.0.0-20260508073653-4a34efa743f5 h1:2BzSNU8ln3LWL8zXfa1mED8fmaRFwoSv6TotgN2w9BI=
-github.com/keycloak/terraform-provider-keycloak v0.0.0-20260508073653-4a34efa743f5/go.mod h1:vtO7qJu6FCgkq8W31L1521TR7Pwz2GiQ5yVfgV4q0l0=
+github.com/keycloak/terraform-provider-keycloak v0.0.0-20260526162604-f2be9656a483 h1:6bsozK+8GwlWhQLvE/OLB5UQIBNlkSiq1iJKDEOz7hs=
+github.com/keycloak/terraform-provider-keycloak v0.0.0-20260526162604-f2be9656a483/go.mod h1:ICCT/mBxNnYPgDnXyNJG8Nbj5thTHLmmjrxopd/kJvo=
 github.com/kinbiko/jsonassert v1.1.1 h1:DB12divY+YB+cVpHULLuKePSi6+ui4M/shHSzJISkSE=
 github.com/kinbiko/jsonassert v1.1.1/go.mod h1:NO4lzrogohtIdNUNzx8sdzB55M4R4Q1bsrWVdqQ7C+A=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=

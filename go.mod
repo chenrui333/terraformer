@@ -553,7 +553,7 @@ require (
 	github.com/ionos-cloud/sdk-go-dataplatform v1.1.1
 	github.com/ionos-cloud/sdk-go-dns v1.4.0
 	github.com/ionos-cloud/sdk-go-logging v1.3.0
-	github.com/keycloak/terraform-provider-keycloak v0.0.0-20260508073653-4a34efa743f5
+	github.com/keycloak/terraform-provider-keycloak v0.0.0-20260526162604-f2be9656a483
 	github.com/launchdarkly/api-client-go/v22 v22.0.0
 	github.com/logzio/logzio_terraform_client v1.30.2
 	github.com/newrelic/newrelic-client-go/v2 v2.86.1
