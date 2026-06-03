@@ -263,8 +263,8 @@ github.com/aws/aws-sdk-go-v2/service/bedrock v1.61.0 h1:KnLJsk989Y8FvZmEAzjNoQRy
 github.com/aws/aws-sdk-go-v2/service/bedrock v1.61.0/go.mod h1:v/+a2bHvfo04yQC/p2HOK1iJF6V59OwCfCSf4iYgob4=
 github.com/aws/aws-sdk-go-v2/service/bedrockagent v1.54.0 h1:OnHTo0dbX2kWlAYHQZceppeMDfp07I+Kjtuk3T+1N70=
 github.com/aws/aws-sdk-go-v2/service/bedrockagent v1.54.0/go.mod h1:zue4MN4ji6nlKYQYwVLmaPXJ66wB9JnIePX1e1yg5MU=
-github.com/aws/aws-sdk-go-v2/service/budgets v1.43.6 h1:2C1Fx5PAPB+8Se7nwnxAElSMW5KxuDVwzBu6t2qtlfg=
-github.com/aws/aws-sdk-go-v2/service/budgets v1.43.6/go.mod h1:W/ACxHO2V65T11t9KLLG+pQytcYk206Ff5b5lbGeMF8=
+github.com/aws/aws-sdk-go-v2/service/budgets v1.43.7 h1:5da51kHGIcUydFIQnPTQxwxlraBc6Z2M/Mg430mJGcw=
+github.com/aws/aws-sdk-go-v2/service/budgets v1.43.7/go.mod h1:W/ACxHO2V65T11t9KLLG+pQytcYk206Ff5b5lbGeMF8=
 github.com/aws/aws-sdk-go-v2/service/chatbot v1.14.23 h1:eVFe0spV/qN307E9M7EWomXBx20d6iSCRU9uhZnbbEM=
 github.com/aws/aws-sdk-go-v2/service/chatbot v1.14.23/go.mod h1:gDe8Q0Jr8+z3yoGmU38eVPCWGA3iBR9hJF8osx2Th5A=
 github.com/aws/aws-sdk-go-v2/service/chimesdkvoice v1.28.15 h1:21vkPfPLTrzWnp3c+d5NJu9om1sLHg2tS1p72bxU+3A=
@@ -417,8 +417,8 @@ github.com/aws/aws-sdk-go-v2/service/opensearchserverless v1.30.3 h1:47FPswEE4RK
 github.com/aws/aws-sdk-go-v2/service/opensearchserverless v1.30.3/go.mod h1:w/kwwh/dzVFrXLKUCj3M73lYUl+LrVn9gQ7RyiPNkZU=
 github.com/aws/aws-sdk-go-v2/service/opsworks v1.31.0 h1:wTMEW5MX0+KDR2twK2UkdZ2AHItnab8/XFrM6bHYvtY=
 github.com/aws/aws-sdk-go-v2/service/opsworks v1.31.0/go.mod h1:pGgL2+mF6Gtjq9diAn/tVmvRqfFI+2/oyz3dENRCPXw=
-github.com/aws/aws-sdk-go-v2/service/organizations v1.51.3 h1:LWSmXWwYzR9yRcszxyqaKuPCO4E6g/iknZv1kQIkD7I=
-github.com/aws/aws-sdk-go-v2/service/organizations v1.51.3/go.mod h1:DGpC4BVQ1zS8X/nFYfHGiHyAhrsb8gZ8pPxn+Jf0iPY=
+github.com/aws/aws-sdk-go-v2/service/organizations v1.51.4 h1:pYi/6x55k6/Qk4dbhnNfVWkgFUShdFeE8XiXx+/X86U=
+github.com/aws/aws-sdk-go-v2/service/organizations v1.51.4/go.mod h1:DGpC4BVQ1zS8X/nFYfHGiHyAhrsb8gZ8pPxn+Jf0iPY=
 github.com/aws/aws-sdk-go-v2/service/pinpoint v1.39.23 h1:YEwsIfiIhbD4eVaM8GmvFAb5w3MBtNka6lWNBQAEEuc=
 github.com/aws/aws-sdk-go-v2/service/pinpoint v1.39.23/go.mod h1:5cQboSsKjW/hMBKeTzbjK93jmgsiCakuK7m4iNxfiFY=
 github.com/aws/aws-sdk-go-v2/service/pinpointsmsvoicev2 v1.28.2 h1:CCUupPmQvjZRsQlyF6/qmrWgOwLhejP+prj273iCuyY=

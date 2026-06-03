@@ -28,7 +28,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/appsync v1.53.7
 	github.com/aws/aws-sdk-go-v2/service/autoscaling v1.66.2
 	github.com/aws/aws-sdk-go-v2/service/batch v1.64.3
-	github.com/aws/aws-sdk-go-v2/service/budgets v1.43.6
+	github.com/aws/aws-sdk-go-v2/service/budgets v1.43.7
 	github.com/aws/aws-sdk-go-v2/service/cloud9 v1.34.0
 	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.71.11
 	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.64.0
@@ -77,7 +77,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/mq v1.34.22
 	github.com/aws/aws-sdk-go-v2/service/neptune v1.44.5
 	github.com/aws/aws-sdk-go-v2/service/opsworks v1.31.0
-	github.com/aws/aws-sdk-go-v2/service/organizations v1.51.3
+	github.com/aws/aws-sdk-go-v2/service/organizations v1.51.4
 	github.com/aws/aws-sdk-go-v2/service/qldb v1.32.2
 	github.com/aws/aws-sdk-go-v2/service/rds v1.118.2
 	github.com/aws/aws-sdk-go-v2/service/redshift v1.62.8
