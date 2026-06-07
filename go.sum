@@ -161,8 +161,8 @@ github.com/IBM/keyprotect-go-client v0.16.0 h1:FAel9YYJvRym4fuj/SIwtpT3RkDBJo+bL
 github.com/IBM/keyprotect-go-client v0.16.0/go.mod h1:ya2yvOPBIgZUWiPDsHDgxeYrTy1pQk/70MY61k6Fdyw=
 github.com/IBM/networking-go-sdk v0.53.4 h1:XDGOhavZocjVfItgcaT7/SFqB8zT2kznYuJ9LXkz/ug=
 github.com/IBM/networking-go-sdk v0.53.4/go.mod h1:TAXWyBUk3C3R7aS1m84EfKdnDcBMZMAClwLfDj/SYZc=
-github.com/IBM/platform-services-go-sdk v0.97.4 h1:UiHTDanRY+Laydss68GFLHqoOy4l7VCj0dBNFgdGlYU=
-github.com/IBM/platform-services-go-sdk v0.97.4/go.mod h1:t93mozFmKrxexnKNdx2gNOtEI9Wd62dKAVffQYm0vRM=
+github.com/IBM/platform-services-go-sdk v0.97.5 h1:Q/4zkxDTzyrfBD8cFA1mfzmUGSU29VOkJ43ilRNvSEw=
+github.com/IBM/platform-services-go-sdk v0.97.5/go.mod h1:t93mozFmKrxexnKNdx2gNOtEI9Wd62dKAVffQYm0vRM=
 github.com/IBM/sarama v1.49.0 h1:FhLbVia5yi426qttj0kNTI86vPc3v+/3mGHkif1Fsao=
 github.com/IBM/sarama v1.49.0/go.mod h1:m/Q1aFezH82/AglfTpJbw/fO0ZybYXhPgTmvajiZX50=
 github.com/IBM/vpc-go-sdk v0.83.2 h1:RLMha7+buktU9hrhvAMF2QRHIvxaAsuU14W6akybJqs=
