@@ -1,6 +1,9 @@
 name: linter
 
 on:
+  push:
+    branches:
+    - main
   pull_request:
   workflow_dispatch:
 
@@ -30,7 +33,8 @@ jobs:
         reviewdog_version: v0.21.0
         go_version_file: go.mod
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        golangci_lint_flags: ${{ github.event_name == 'pull_request' && format('--new-from-rev={0}', github.event.pull_request.base.sha) || '' }}
+        golangci_lint_flags: ${{ github.event_name == 'pull_request' && format('--new-from-rev={0}', github.event.pull_request.base.sha) || github.event_name == 'push' && format('--new-from-rev={0}', github.event.before) || '' }}
+        reporter: ${{ github.event_name == 'pull_request' && 'github-pr-check' || 'github-check' }}
         filter_mode: added
         fail_level: error
         tool_name: golangci-lint

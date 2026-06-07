@@ -178,7 +178,7 @@ run_govulncheck_source_scan() {
   local batch_size="${GOVULNCHECK_BATCH_SIZE:-25}"
   local package
   local packages=()
-  local scan_level="${GOVULNCHECK_SCAN_LEVEL:-package}"
+  local scan_level="${GOVULNCHECK_SCAN_LEVEL:-symbol}"
 
   ensure_govulncheck
 

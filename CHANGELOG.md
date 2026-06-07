@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Highlights
+
+* Restore main-push CI coverage for tests, linting, and `govulncheck`.
+* Bump the Go directive to `1.26.4` for standard-library vulnerability fixes
+  required by the blocking source scan.
+* Run the blocking source `govulncheck` scan at symbol level by default to
+  reduce package-level false-positive noise.
+
 ## 0.13.11
 
 `0.13.11` is a provider dependency and release-safety patch. It rolls forward a
