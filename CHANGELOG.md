@@ -2,13 +2,30 @@
 
 ## Unreleased
 
+## 0.13.12
+
+`0.13.12` is a Kubernetes compatibility and provider dependency patch. It
+rolls the Kubernetes support window forward to cover Kubernetes 1.34 through
+1.36, refreshes several provider SDK families, and keeps the release checks
+aligned with the current Go and vulnerability-scanning baseline.
+
 ### Highlights
 
+* Add Kubernetes 1.36 API discovery coverage and shift the documented/tested
+  Kubernetes provider support window from 1.33 through 1.35 to 1.34 through
+  1.36.
+* Keep generated Kubernetes/runtime resources skipped while updating native
+  manifest coverage, unsupported-resource metadata, and Kubernetes docs for the
+  new API window.
+* Refresh provider dependencies across AWS, GCP, IBM, TencentCloud, Yandex, and
+  Keycloak provider/client SDK families.
 * Restore main-push CI coverage for tests, linting, and `govulncheck`.
 * Bump the Go directive to `1.26.4` for standard-library vulnerability fixes
   required by the blocking source scan.
 * Run the blocking source `govulncheck` scan at symbol level by default to
   reduce package-level false-positive noise.
+
+**Full Changelog**: <https://github.com/chenrui333/terraformer/compare/v0.13.11...v0.13.12>
 
 ## 0.13.11
 
