@@ -614,9 +614,9 @@ func TestSelectImportResourceName(t *testing.T) {
 			wantOK:      true,
 		},
 		{
-			name:    "falls back to manifest for alpha service cidr",
+			name:    "falls back to manifest for beta service cidr",
 			group:   "networking.k8s.io",
-			version: "v1alpha1",
+			version: "v1beta1",
 			resource: metav1.APIResource{
 				Name:  "servicecidrs",
 				Kind:  "ServiceCIDR",
@@ -797,9 +797,9 @@ func TestSelectImportResourceName(t *testing.T) {
 			wantOK: false,
 		},
 		{
-			name:    "skips allocator-managed alpha ip addresses",
+			name:    "skips allocator-managed beta ip addresses",
 			group:   "networking.k8s.io",
-			version: "v1alpha1",
+			version: "v1beta1",
 			resource: metav1.APIResource{
 				Name:  "ipaddresses",
 				Kind:  "IPAddress",
@@ -985,7 +985,7 @@ func TestSkipsImportResource(t *testing.T) {
 		{name: "original pod scheduling", group: "resource.k8s.io", version: "v1alpha1", kind: "PodScheduling", want: true},
 		{name: "resource pool status request", group: "resource.k8s.io", version: "v1alpha3", kind: "ResourcePoolStatusRequest", want: true},
 		{name: "ip address", group: "networking.k8s.io", version: "v1", kind: "IPAddress", want: true},
-		{name: "old ip address", group: "networking.k8s.io", version: "v1alpha1", kind: "IPAddress", want: true},
+		{name: "beta ip address", group: "networking.k8s.io", version: "v1beta1", kind: "IPAddress", want: true},
 		{name: "pod group", group: "scheduling.k8s.io", version: "v1alpha2", kind: "PodGroup", want: true},
 		{name: "controller revision", group: "apps", version: "v1", kind: "ControllerRevision", want: true},
 		{name: "lease candidate", group: "coordination.k8s.io", version: "v1alpha2", kind: "LeaseCandidate", want: true},
@@ -1216,7 +1216,7 @@ func TestSupportsNativeManifestResource(t *testing.T) {
 		{name: "flow schema v1", group: "flowcontrol.apiserver.k8s.io", version: "v1", kind: "FlowSchema", want: true},
 		{name: "priority level configuration v1beta3", group: "flowcontrol.apiserver.k8s.io", version: "v1beta3", kind: "PriorityLevelConfiguration", want: true},
 		{name: "service cidr v1", group: "networking.k8s.io", version: "v1", kind: "ServiceCIDR", want: true},
-		{name: "service cidr alpha", group: "networking.k8s.io", version: "v1alpha1", kind: "ServiceCIDR", want: true},
+		{name: "service cidr beta", group: "networking.k8s.io", version: "v1beta1", kind: "ServiceCIDR", want: true},
 		{name: "device class v1", group: "resource.k8s.io", version: "v1", kind: "DeviceClass", want: true},
 		{name: "resource claim v1beta2", group: "resource.k8s.io", version: "v1beta2", kind: "ResourceClaim", want: true},
 		{name: "resource claim template v1beta1", group: "resource.k8s.io", version: "v1beta1", kind: "ResourceClaimTemplate", want: true},
@@ -1254,10 +1254,10 @@ func TestSupportsNativeManifestResource(t *testing.T) {
 	}
 }
 
-// TestKubernetes133To135APIDiscoveryMatrix is a comprehensive fixture that
-// classifies every relevant Kubernetes 1.33–1.35 API resource into exactly one
+// TestKubernetes134To136APIDiscoveryMatrix is a comprehensive fixture that
+// classifies every relevant Kubernetes 1.34-1.36 API resource into exactly one
 // behavior class. This test is the definition of done for the native API policy.
-func TestKubernetes133To135APIDiscoveryMatrix(t *testing.T) {
+func TestKubernetes134To136APIDiscoveryMatrix(t *testing.T) {
 	clientset := fake.NewSimpleClientset()
 	manageableVerbs := []string{"create", "delete", "get", "list", "patch", "update"}
 

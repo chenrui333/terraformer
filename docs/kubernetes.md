@@ -8,7 +8,7 @@ Example:
 ```
 
 Terraformer discovers Kubernetes API resources from the active cluster and imports resources that are available through either the typed Kubernetes client or an explicit dynamic-client import path, and the installed Terraform Kubernetes provider schema.
-This provider's native Kubernetes resource policy is scoped to Kubernetes 1.33 through 1.35; historical alpha APIs that only existed before that support window are not added as native manifest selectors.
+This provider's native Kubernetes resource policy is scoped to Kubernetes 1.34 through 1.36; historical alpha APIs that only existed before that support window are not added as native manifest selectors.
 Discovered CRDs, other untyped API extensions, and selected native APIs without a first-class Terraform Kubernetes provider type can be imported through `kubernetes_manifest` when the API resource is manageable and the installed provider supports that resource.
 Manifest-backed resources use a group/version-qualified resource selector such as `example.com/v1/widgets`, `apps/v1/replicasets`, `v1/podtemplates`, or `admissionregistration.k8s.io/v1/validatingadmissionpolicybindings` to avoid collisions between API resources that share the same plural name.
 For selected native manifest-backed resources, beta and alpha variants are supported when the cluster advertises them and they satisfy the required management verbs. For example, use selectors like `certificates.k8s.io/v1beta1/clustertrustbundles`, `scheduling.k8s.io/v1alpha2/workloads`, or `storagemigration.k8s.io/v1alpha1/storageversionmigrations` on clusters that still serve those versions.
@@ -22,9 +22,9 @@ When `configmaps` and `configmapdata` are selected together, Terraformer keeps t
 When `secrets` and `secretdata` are selected together, Terraformer keeps the full `secrets` import and skips overlapping data-only resources to avoid duplicate Terraform ownership of the same Secret data.
 Because `kubernetes_secret_v1_data` only accepts string data, `secretdata` skips Secrets containing non-UTF-8 payloads instead of emitting lossy configuration.
 
-#### Kubernetes 1.33–1.35 support window
+#### Kubernetes 1.34–1.36 support window
 
-This provider's native API policy is scoped to Kubernetes 1.33 through 1.35.
+This provider's native API policy is scoped to Kubernetes 1.34 through 1.36.
 Every API resource discovered from the cluster is classified into exactly one
 behavior class:
 
@@ -62,7 +62,7 @@ strings are emitted:
 Native APIs with typed client support but no registered Terraform provider type
 (e.g. `Event`, `Lease`) are silently skipped without a verbose reason.
 
-These behaviors are enforced by `TestKubernetes133To135APIDiscoveryMatrix`,
+These behaviors are enforced by `TestKubernetes134To136APIDiscoveryMatrix`,
 `TestVerboseSkipLoggingForNativeAPIs`, and `TestCRDManifestFallbackNotBroken`
 in `providers/kubernetes/utils_test.go`.
 
@@ -141,8 +141,6 @@ Common supported resources include:
 *   `networking.k8s.io/v1/servicecidrs`
     * `kubernetes_manifest`
 *   `networking.k8s.io/v1beta1/servicecidrs`
-    * `kubernetes_manifest`
-*   `networking.k8s.io/v1alpha1/servicecidrs`
     * `kubernetes_manifest`
 *   `nodetaints`
     * `kubernetes_node_taint`
