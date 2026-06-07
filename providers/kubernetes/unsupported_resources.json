@@ -55,7 +55,7 @@
       "resource": "coordination.k8s.io/v1 Lease",
       "service_family": "coordination.k8s.io",
       "reason": "Lease objects are native coordination records with typed-client support but no registered Terraform provider resource.",
-      "evidence": "selectImportResourceName keeps native typed-client APIs on explicit provider resources only; TestKubernetes133To135APIDiscoveryMatrix classifies coordination.k8s.io/v1 Lease as a policy skip.",
+      "evidence": "selectImportResourceName keeps native typed-client APIs on explicit provider resources only; TestKubernetes134To136APIDiscoveryMatrix classifies coordination.k8s.io/v1 Lease as a policy skip.",
       "status": "policy-skip",
       "references": [
         "https://github.com/chenrui333/terraformer/issues/337"
@@ -95,7 +95,7 @@
       "resource": "events.k8s.io/v1 Event",
       "service_family": "events.k8s.io",
       "reason": "Events are observation records, not durable declarative resources, and are outside the explicit native manifest selector policy.",
-      "evidence": "selectImportResourceName does not apply generic manifest fallback to native typed-client APIs; TestKubernetes133To135APIDiscoveryMatrix classifies events.k8s.io/v1 Event as a policy skip.",
+      "evidence": "selectImportResourceName does not apply generic manifest fallback to native typed-client APIs; TestKubernetes134To136APIDiscoveryMatrix classifies events.k8s.io/v1 Event as a policy skip.",
       "status": "policy-skip",
       "references": [
         "https://github.com/chenrui333/terraformer/issues/337"
@@ -124,16 +124,6 @@
     },
     {
       "resource": "networking.k8s.io/v1 IPAddress",
-      "service_family": "networking.k8s.io",
-      "reason": "IPAddresses are control-plane allocator records and should not become Terraform-owned configuration.",
-      "evidence": "providers/kubernetes/utils.go lists IPAddress in skippedImportResources; importSkipPolicyReason reports runtime/controller-generated native APIs as not importable as Terraform-managed configuration.",
-      "status": "runtime-generated",
-      "references": [
-        "https://github.com/chenrui333/terraformer/issues/337"
-      ]
-    },
-    {
-      "resource": "networking.k8s.io/v1alpha1 IPAddress",
       "service_family": "networking.k8s.io",
       "reason": "IPAddresses are control-plane allocator records and should not become Terraform-owned configuration.",
       "evidence": "providers/kubernetes/utils.go lists IPAddress in skippedImportResources; importSkipPolicyReason reports runtime/controller-generated native APIs as not importable as Terraform-managed configuration.",
@@ -185,7 +175,7 @@
     {
       "resource": "resource.k8s.io/v1alpha2 ResourceClass",
       "service_family": "resource.k8s.io",
-      "reason": "Legacy alpha ResourceClass is outside the Kubernetes 1.33-1.35 explicit native manifest selector policy.",
+      "reason": "Legacy alpha ResourceClass is outside the Kubernetes 1.34-1.36 explicit native manifest selector policy.",
       "evidence": "importSkipPolicyReason returns 'native API is outside the explicit manifest import policy' for manageable native APIs that are not first-class resources, dynamic-client resources, explicit native manifest selectors, or CRD/custom-resource fallback candidates.",
       "status": "policy-skip",
       "references": [
