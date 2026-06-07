@@ -243,26 +243,6 @@
       ]
     },
     {
-      "resource": "scheduling.k8s.io/v1alpha1 PodGroup",
-      "service_family": "scheduling.k8s.io",
-      "reason": "PodGroups are scheduler/controller-created workload scheduling state and should not become Terraform-owned configuration.",
-      "evidence": "providers/kubernetes/utils.go lists PodGroup in skippedImportResources; docs/kubernetes.md documents PodGroup as a runtime/controller-generated skip.",
-      "status": "runtime-generated",
-      "references": [
-        "https://github.com/chenrui333/terraformer/issues/337"
-      ]
-    },
-    {
-      "resource": "scheduling.k8s.io/v1alpha2 PodGroup",
-      "service_family": "scheduling.k8s.io",
-      "reason": "PodGroups are scheduler/controller-created workload scheduling state and should not become Terraform-owned configuration.",
-      "evidence": "providers/kubernetes/utils.go lists PodGroup in skippedImportResources; docs/kubernetes.md documents PodGroup as a runtime/controller-generated skip.",
-      "status": "runtime-generated",
-      "references": [
-        "https://github.com/chenrui333/terraformer/issues/337"
-      ]
-    },
-    {
       "resource": "storage.k8s.io/v1 CSINode",
       "service_family": "storage.k8s.io",
       "reason": "CSINodes are CSI driver/node registration state and should not become Terraform-owned configuration.",
