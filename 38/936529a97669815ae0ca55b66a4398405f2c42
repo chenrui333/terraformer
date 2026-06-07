@@ -1,0 +1,29 @@
+go.mod
+  s_083355f3d9bea9::t_440504930b0629 3
+CHANGELOG.md
+  s_083355f3d9bea9::t_440504930b0629 3-12
+.github/workflows/test.yml
+  s_083355f3d9bea9::t_440504930b0629 4-6
+.github/workflows/linter.yml
+  s_083355f3d9bea9::t_440504930b0629 4-6,36-37
+.github/scripts/provider-dependency-preflight.sh
+  s_083355f3d9bea9::t_440504930b0629 181
+.github/workflows/govulncheck.yml
+  s_083355f3d9bea9::t_440504930b0629 4-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.3",
+  "base_commit_sha": "38936529a97669815ae0ca55b66a4398405f2c42",
+  "prompts": {},
+  "sessions": {
+    "s_083355f3d9bea9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ea31b-691d-7922-a4f1-98cb9bb28318",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
