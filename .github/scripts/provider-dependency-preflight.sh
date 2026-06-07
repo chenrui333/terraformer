@@ -159,11 +159,12 @@ run_provider_validation() {
 
   section "Build non-fixture packages"
   while IFS= read -r package; do
+    [[ -n "$package" ]] || continue
     case "$package" in
       github.com/chenrui333/terraformer/tests/*) continue ;;
     esac
     build_packages+=("$package")
-  done < <(go list ./...)
+  done < <(go list -f '{{if .GoFiles}}{{.ImportPath}}{{end}}' ./...)
   go build -v "${build_packages[@]}"
 
   section "Test provider and command packages"
