@@ -1,0 +1,23 @@
+providers/kubernetes/unsupported_resources.json
+  s_ce7ba83a419b47::t_754c0a8f93da03 58,98,178
+providers/kubernetes/utils_test.go
+  s_ce7ba83a419b47::t_fe62efa923dfd9 617,619,800,802,988,1219,1257-1258,1260
+docs/kubernetes.md
+  s_ce7ba83a419b47::t_fe62efa923dfd9 11,25,27,65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.3",
+  "base_commit_sha": "524815053d9bebf0720e090a20f18be086071b77",
+  "prompts": {},
+  "sessions": {
+    "s_ce7ba83a419b47": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ea31a-04e2-7eb2-82f5-c11b84f9cc7e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
