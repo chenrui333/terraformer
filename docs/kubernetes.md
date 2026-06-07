@@ -14,7 +14,7 @@ Manifest-backed resources use a group/version-qualified resource selector such a
 For selected native manifest-backed resources, beta and alpha variants are supported when the cluster advertises them and they satisfy the required management verbs. For example, use selectors like `certificates.k8s.io/v1beta1/clustertrustbundles`, `scheduling.k8s.io/v1alpha2/workloads`, or `storagemigration.k8s.io/v1alpha1/storageversionmigrations` on clusters that still serve those versions.
 Native Kubernetes API groups only use `kubernetes_manifest` when the resource kind is explicitly selected for manifest-backed import; unselected native kinds are skipped instead of falling through the generic CRD import path. Run with `--verbose` to log native API resources skipped by this policy or by generated-resource safeguards.
 Terraformer intentionally skips `PodCertificateRequest` (`podcertificaterequests`) even when served, because kubelets generate these runtime certificate request objects and their specs include pod, node, service account, and proof material that should not become Terraform-owned configuration.
-Terraformer also skips native runtime or controller-generated APIs such as `ResourceSlice`, `PodScheduling`/`PodSchedulingContext`, `IPAddress`, `ControllerRevision`, `LeaseCandidate`, `CSINode`, `CSIStorageCapacity`, and `VolumeAttachment`, even when an older served version is not recognized by the pinned typed client.
+Terraformer also skips native runtime or controller-generated APIs such as `ResourceSlice`, `PodScheduling`/`PodSchedulingContext`, `IPAddress`, `PodGroup`, `ControllerRevision`, `LeaseCandidate`, `CSINode`, `CSIStorageCapacity`, and `VolumeAttachment`, even when an older served version is not recognized by the pinned typed client.
 Structured unsupported-resource metadata for these Kubernetes import-policy skips is tracked in `providers/kubernetes/unsupported_resources.json`.
 When `labels` or `annotations` are selected with full resource imports, Terraformer keeps the full resource import and skips overlapping metadata-only resources to avoid duplicate Terraform ownership of the same object metadata.
 When `env` is selected with full workload imports, Terraformer keeps the full workload import and skips overlapping environment-only resources to avoid duplicate Terraform ownership of the same container environment.
@@ -22,7 +22,7 @@ When `configmaps` and `configmapdata` are selected together, Terraformer keeps t
 When `secrets` and `secretdata` are selected together, Terraformer keeps the full `secrets` import and skips overlapping data-only resources to avoid duplicate Terraform ownership of the same Secret data.
 Because `kubernetes_secret_v1_data` only accepts string data, `secretdata` skips Secrets containing non-UTF-8 payloads instead of emitting lossy configuration.
 
-#### Kubernetes 1.34-1.36 support window
+#### Kubernetes 1.34–1.36 support window
 
 This provider's native API policy is scoped to Kubernetes 1.34 through 1.36.
 Every API resource discovered from the cluster is classified into exactly one
@@ -196,11 +196,7 @@ Common supported resources include:
     * `kubernetes_role_binding_v1`
 *   `runtimeclasses`
     * `kubernetes_runtime_class_v1`
-*   `scheduling.k8s.io/v1alpha2/podgroups`
-    * `kubernetes_manifest`
 *   `scheduling.k8s.io/v1alpha2/workloads`
-    * `kubernetes_manifest`
-*   `scheduling.k8s.io/v1alpha1/podgroups`
     * `kubernetes_manifest`
 *   `scheduling.k8s.io/v1alpha1/workloads`
     * `kubernetes_manifest`
