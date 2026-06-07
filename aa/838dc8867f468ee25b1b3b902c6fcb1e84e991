@@ -1,0 +1,23 @@
+docs/kubernetes.md
+  s_ce7ba83a419b47::t_b04907634e420a 17,199-200,203
+providers/kubernetes/utils.go
+  s_ce7ba83a419b47::t_b04907634e420a 133,135
+providers/kubernetes/utils_test.go
+  s_ce7ba83a419b47::t_b04907634e420a 829-830,833-834,841-843,862-878,1246,1248,1598-1602
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.3",
+  "base_commit_sha": "aa838dc8867f468ee25b1b3b902c6fcb1e84e991",
+  "prompts": {},
+  "sessions": {
+    "s_ce7ba83a419b47": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ea31a-04e2-7eb2-82f5-c11b84f9cc7e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
