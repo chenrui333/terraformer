@@ -30,7 +30,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/batch v1.64.3
 	github.com/aws/aws-sdk-go-v2/service/budgets v1.43.8
 	github.com/aws/aws-sdk-go-v2/service/cloud9 v1.34.2
-	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.71.11
+	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.71.13
 	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.64.2
 	github.com/aws/aws-sdk-go-v2/service/cloudhsmv2 v1.34.26
 	github.com/aws/aws-sdk-go-v2/service/cloudtrail v1.55.12
@@ -62,7 +62,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/elasticsearchservice v1.41.2
 	github.com/aws/aws-sdk-go-v2/service/emr v1.59.4
 	github.com/aws/aws-sdk-go-v2/service/firehose v1.42.18
-	github.com/aws/aws-sdk-go-v2/service/glue v1.142.0
+	github.com/aws/aws-sdk-go-v2/service/glue v1.142.2
 	github.com/aws/aws-sdk-go-v2/service/iam v1.53.12
 	github.com/aws/aws-sdk-go-v2/service/identitystore v1.36.7
 	github.com/aws/aws-sdk-go-v2/service/iot v1.73.0

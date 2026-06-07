@@ -271,8 +271,8 @@ github.com/aws/aws-sdk-go-v2/service/chimesdkvoice v1.28.17 h1:bSoshxujuJ6JdVNF7
 github.com/aws/aws-sdk-go-v2/service/chimesdkvoice v1.28.17/go.mod h1:fEj81JLndO2yEifHfaq8IY9zZ2tFB0alhB9tTYK9SUs=
 github.com/aws/aws-sdk-go-v2/service/cloud9 v1.34.2 h1:nKQR394/wFN5TucZ0+ZV0pVEjubp8+W7Nj3zDzGm0f0=
 github.com/aws/aws-sdk-go-v2/service/cloud9 v1.34.2/go.mod h1:bPnG1u0MZUdz3tskmTMoTuWZVxxS/7efI4qVVW/GH4Q=
-github.com/aws/aws-sdk-go-v2/service/cloudformation v1.71.11 h1:gIRdzLv98ugE0nvMkub5yp4uziPFHF66ERrQ9JN+D54=
-github.com/aws/aws-sdk-go-v2/service/cloudformation v1.71.11/go.mod h1:BMpnKVWK+343lUuI2ZM5bm282z+p61ZK9kwRg6/wBm4=
+github.com/aws/aws-sdk-go-v2/service/cloudformation v1.71.13 h1:1TixKnfUAsCg3icj3QeWpet1JxCd5PQZ4sAtnD6zXaw=
+github.com/aws/aws-sdk-go-v2/service/cloudformation v1.71.13/go.mod h1:3xS1GYYtswXUUit2SRPeluKGV+qEGeI4yVRyh2pxkpQ=
 github.com/aws/aws-sdk-go-v2/service/cloudfront v1.64.2 h1:zDNNzwo9NgHjQnsG6dBTcZJOxHjGASISmVGeh8p9c5Q=
 github.com/aws/aws-sdk-go-v2/service/cloudfront v1.64.2/go.mod h1:ayc0OxRNuG6n7DfgtOT8Cai9/oF4C/3NyslqT1FenAA=
 github.com/aws/aws-sdk-go-v2/service/cloudhsmv2 v1.34.26 h1:lyAQbQ0pkqvAg4reG1JjKQ22Ctsc1GLBD1NfE8bTXdo=
@@ -347,8 +347,8 @@ github.com/aws/aws-sdk-go-v2/service/firehose v1.42.18 h1:6MOupzTs5YK6NtBHkShq59
 github.com/aws/aws-sdk-go-v2/service/firehose v1.42.18/go.mod h1:FFlTyzvzoDozbmrRubZBUV1++h7AnR6sDb+E4HnM/FE=
 github.com/aws/aws-sdk-go-v2/service/globalaccelerator v1.36.2 h1:sze33htysS+dE86DU1LNsdk+2S3k3M3Kd6V6fkVqAN0=
 github.com/aws/aws-sdk-go-v2/service/globalaccelerator v1.36.2/go.mod h1:ATfHWzYKGtCnPRNRzAsdq7KkpVlK34LYfJbcmF7/gCk=
-github.com/aws/aws-sdk-go-v2/service/glue v1.142.0 h1:ztxbPEsd9yyuf2A41ZwtCXtI61t7ocnQ7vUdziFiFUc=
-github.com/aws/aws-sdk-go-v2/service/glue v1.142.0/go.mod h1:FZCvt95CcJWRkZNRcmMW1uQkpDHmyUSkZfz3awyZgqg=
+github.com/aws/aws-sdk-go-v2/service/glue v1.142.2 h1:2bvZlcQmGmbS7cKkr6ZOydY1W10DvHoEtfIgD9GHJs8=
+github.com/aws/aws-sdk-go-v2/service/glue v1.142.2/go.mod h1:F3VT7EEBdNtyVhU0GSWTtLrX5WQL7ihkD9L49IgmXkQ=
 github.com/aws/aws-sdk-go-v2/service/guardduty v1.77.0 h1:kuekevrABIBZnFRkNQ2PKEJdYJ0BxEucGzPXIaDDBfw=
 github.com/aws/aws-sdk-go-v2/service/guardduty v1.77.0/go.mod h1:kCpMuo4vLtzUaugNCZGCkVtdehl2YvoSd73Jmiuh1M0=
 github.com/aws/aws-sdk-go-v2/service/iam v1.53.12 h1:nmWprhv80J825VaeJLIoLymyPbYOTqlKH8OqjLlWDG0=
