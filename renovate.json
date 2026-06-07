@@ -11,6 +11,7 @@
   "internalChecksFilter": "strict",
   "labels": ["dependencies"],
   "minimumReleaseAge": "7 days",
+  "semanticCommitType": "chore",
   "platformAutomerge": true,
   "automergeStrategy": "squash",
   "prConcurrentLimit": 8,
