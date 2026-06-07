@@ -1,0 +1,20 @@
+.github/scripts/provider-dependency-preflight.sh
+  s_ce7ba83a419b47::t_f0fd86ca6f0262 162
+  s_ce7ba83a419b47::t_468cbf6c633bef 167
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "e6df995ba455fb99d2ec930d35cb215489f182f9",
+  "prompts": {},
+  "sessions": {
+    "s_ce7ba83a419b47": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ea31a-04e2-7eb2-82f5-c11b84f9cc7e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
