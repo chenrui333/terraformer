@@ -12,7 +12,7 @@ require (
 	github.com/IBM/ibm-cos-sdk-go v1.14.0
 	github.com/IBM/keyprotect-go-client v0.16.0
 	github.com/IBM/networking-go-sdk v0.53.4
-	github.com/IBM/platform-services-go-sdk v0.97.5
+	github.com/IBM/platform-services-go-sdk v0.98.0
 	github.com/IBM/vpc-go-sdk v0.83.2
 	github.com/OctopusDeploy/go-octopusdeploy/v2 v2.109.0
 	github.com/PaloAltoNetworks/pango v0.10.2
@@ -233,7 +233,7 @@ require (
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
 	go.mongodb.org/mongo-driver v1.17.9 // indirect
-	golang.org/x/crypto v0.51.0 // indirect
+	golang.org/x/crypto v0.52.0 // indirect
 	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/sync v0.20.0
 	golang.org/x/sys v0.45.0 // indirect
@@ -275,7 +275,6 @@ require (
 	github.com/dnaeon/go-vcr v1.2.0 // indirect
 	github.com/dylibso/observe-sdk/go v0.0.0-20240819160327-2d926c5d788a // indirect
 	github.com/eapache/go-resiliency v1.7.0 // indirect
-	github.com/eapache/queue v1.1.0 // indirect
 	github.com/evanphx/json-patch/v5 v5.9.11 // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20210407135951-1de76d718b3f // indirect
 	github.com/extism/go-sdk v1.7.1 // indirect
@@ -492,7 +491,7 @@ require (
 	github.com/IBM/continuous-delivery-go-sdk/v2 v2.0.8
 	github.com/IBM/go-sdk-core/v3 v3.3.1
 	github.com/IBM/go-sdk-core/v4 v4.10.0
-	github.com/IBM/sarama v1.49.0
+	github.com/IBM/sarama v1.50.1
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
 	github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.35.2
 	github.com/aws/aws-sdk-go-v2/service/appconfig v1.44.2
