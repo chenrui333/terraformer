@@ -3,7 +3,8 @@
   "extends": [
     "config:recommended",
     "helpers:pinGitHubActionDigests",
-    ":semanticCommits"
+    ":semanticCommits",
+    ":semanticCommitTypeAll(chore)"
   ],
   "baseBranchPatterns": ["main"],
   "dependencyDashboard": true,
