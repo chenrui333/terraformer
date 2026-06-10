@@ -381,7 +381,7 @@ require (
 )
 
 require (
-	cel.dev/expr v0.25.1 // indirect
+	cel.dev/expr v0.25.2 // indirect
 	cloud.google.com/go/auth v0.20.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
@@ -578,7 +578,7 @@ require (
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tcaplusdb v1.3.105
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc v1.3.83
 	github.com/vultr/govultr/v3 v3.31.2
-	gitlab.com/gitlab-org/api/client-go/v2 v2.32.0
+	gitlab.com/gitlab-org/api/client-go/v2 v2.36.0
 	helm.sh/helm/v4 v4.2.0
 	k8s.io/cli-runtime v0.36.1
 	software.sslmate.com/src/go-pkcs12 v0.7.1
