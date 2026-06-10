@@ -119,19 +119,17 @@ func (g *AutoScalingGenerator) InitResources() error {
 }
 
 func (g *AutoScalingGenerator) PostConvertHook() error {
-	for i, r := range g.Resources {
-		if r.InstanceInfo.Type != "aws_autoscaling_group" {
+	for i := range g.Resources {
+		resource := &g.Resources[i]
+		if resource.InstanceInfo == nil || resource.InstanceInfo.Type != "aws_autoscaling_group" || resource.InstanceState == nil {
 			continue
 		}
-		if lcName, exist := r.InstanceState.Attributes["launch_configuration"]; exist {
-			for _, lc := range g.Resources {
-				if lc.InstanceInfo.Type != "aws_launch_configuration" {
-					continue
+		if lcName, exist := resource.InstanceState.Attributes["launch_configuration"]; exist {
+			if reference, ok := g.launchConfigurationReference(lcName); ok {
+				if resource.Item == nil {
+					resource.Item = map[string]interface{}{}
 				}
-				if lcName == lc.InstanceState.Attributes["name"] {
-					g.Resources[i].Item["launch_configuration"] = "${aws_launch_configuration." + lc.ResourceName + ".name}"
-					continue
-				}
+				resource.Item["launch_configuration"] = reference
 			}
 		}
 		// TODO add LaunchTemplate and mix policy connection naming
@@ -175,4 +173,19 @@ func (g *AutoScalingGenerator) PostConvertHook() error {
 		g.Resources = append(g.Resources, templateFiles...)
 	*/
 	return nil
+}
+
+func (g *AutoScalingGenerator) launchConfigurationReference(name string) (string, bool) {
+	if name == "" {
+		return "", false
+	}
+	for _, resource := range g.Resources {
+		if resource.InstanceInfo == nil || resource.InstanceInfo.Type != "aws_launch_configuration" || resource.InstanceState == nil {
+			continue
+		}
+		if name == resource.InstanceState.Attributes["name"] {
+			return "${aws_launch_configuration." + resource.ResourceName + ".name}", true
+		}
+	}
+	return "", false
 }

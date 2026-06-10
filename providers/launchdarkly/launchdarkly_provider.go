@@ -49,13 +49,7 @@ func (p *LaunchDarklyProvider) GetName() string {
 }
 
 func (p *LaunchDarklyProvider) GetProviderData(_ ...string) map[string]interface{} {
-	return map[string]interface{}{
-		"provider": map[string]interface{}{
-			"launchdarkly": map[string]interface{}{
-				"access_token": p.apiKey,
-			},
-		},
-	}
+	return map[string]interface{}{}
 }
 
 func (LaunchDarklyProvider) GetResourceConnections() map[string]map[string][]string {
