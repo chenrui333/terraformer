@@ -153,8 +153,8 @@ github.com/IBM/go-sdk-core/v3 v3.3.1/go.mod h1:lk9eOzNbNltPf3CBpcg1Ewkhw4qC3u2QC
 github.com/IBM/go-sdk-core/v4 v4.10.0 h1:aLoKusSFVsxMJeKHf8csj9tBWt4Y50kVvfxoKh6scN0=
 github.com/IBM/go-sdk-core/v4 v4.10.0/go.mod h1:0uz2ca0MZ2DwsBRGl9Jp3EaCTqxmKZTdvV/CkCB7JnI=
 github.com/IBM/go-sdk-core/v5 v5.5.1/go.mod h1:Sn+z+qTDREQvCr+UFa22TqqfXNxx3o723y8GsfLV8e0=
-github.com/IBM/go-sdk-core/v5 v5.21.2 h1:mJ5QbLPOm4g5qhZiVB6wbSllfpeUExftGoyPek2hk4M=
-github.com/IBM/go-sdk-core/v5 v5.21.2/go.mod h1:ngpMgwkjur1VNUjqn11LPk3o5eCyOCRbcfg/0YAY7Hc=
+github.com/IBM/go-sdk-core/v5 v5.21.3 h1:5HVPZu3aOdPHkqUGdyrmpuh8I/X+sdyog6HSLzahfHQ=
+github.com/IBM/go-sdk-core/v5 v5.21.3/go.mod h1:cZJMMEImJkIXCd61kHeDFtjbdDpXq4ua4ITrwpBYdWs=
 github.com/IBM/ibm-cos-sdk-go v1.14.0 h1:K8uhFw4/yAEVjCHpaFkQXdPaPC4LGa9Zhb66vt3rS3M=
 github.com/IBM/ibm-cos-sdk-go v1.14.0/go.mod h1:Nvo9K1YYlJ3NtolQnnbOwV5MFre24YhnRuMzheMakeI=
 github.com/IBM/keyprotect-go-client v0.16.0 h1:FAel9YYJvRym4fuj/SIwtpT3RkDBJo+bLkMNzFEeSpA=
