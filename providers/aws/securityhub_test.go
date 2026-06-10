@@ -317,6 +317,11 @@ func TestSecurityHubOptionalResourceUnavailable(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "unrelated administrator account access denied",
+			err:  &securityhubtypes.AccessDeniedException{Message: aws.String("administrator account cannot update Security Hub finding")},
+			want: false,
+		},
+		{
 			name: "not subscribed",
 			err:  &securityhubtypes.InvalidAccessException{Message: aws.String("not subscribed to AWS Security Hub")},
 			want: true,

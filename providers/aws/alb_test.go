@@ -80,6 +80,35 @@ func TestNewALBTargetGroupAttachmentResourceWithAvailabilityZoneOnly(t *testing.
 	}
 }
 
+func TestNewALBTargetGroupAttachmentResourcePortOnly(t *testing.T) {
+	targetGroupARN := "arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/app/abc"
+	resource, ok := newALBTargetGroupAttachmentResource(targetGroupARN, &types.TargetDescription{
+		Id:   aws.String("10.0.0.12"),
+		Port: aws.Int32(8080),
+	})
+	if !ok {
+		t.Fatal("newALBTargetGroupAttachmentResource() ok = false, want true")
+	}
+	wantID := targetGroupARN + ",10.0.0.12,8080"
+	if got := resource.InstanceState.ID; got != wantID {
+		t.Fatalf("state ID = %q, want %q", got, wantID)
+	}
+}
+
+func TestNewALBTargetGroupAttachmentResourceMinimal(t *testing.T) {
+	targetGroupARN := "arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/app/abc"
+	resource, ok := newALBTargetGroupAttachmentResource(targetGroupARN, &types.TargetDescription{
+		Id: aws.String("i-123"),
+	})
+	if !ok {
+		t.Fatal("newALBTargetGroupAttachmentResource() ok = false, want true")
+	}
+	wantID := targetGroupARN + ",i-123"
+	if got := resource.InstanceState.ID; got != wantID {
+		t.Fatalf("state ID = %q, want %q", got, wantID)
+	}
+}
+
 func TestNewALBTargetGroupAttachmentResourceSkipsIncompleteTargets(t *testing.T) {
 	if _, ok := newALBTargetGroupAttachmentResource("", &types.TargetDescription{Id: aws.String("i-123")}); ok {
 		t.Fatal("target without target group ARN should be skipped")

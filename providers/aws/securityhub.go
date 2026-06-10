@@ -587,7 +587,7 @@ func securityHubSkippableAccessMessage(message string) bool {
 		strings.Contains(message, "not a member of an organization") ||
 		strings.Contains(message, "not an administrator account") ||
 		strings.Contains(message, "not an admin account") ||
-		strings.Contains(message, "administrator account") ||
+		strings.Contains(message, "called from an administrator account") ||
 		strings.Contains(message, "securityhub:listorganizationadminaccounts") ||
 		strings.Contains(message, "securityhub:describeorganizationconfiguration") ||
 		strings.Contains(message, "delegated administrator") ||
