@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## 0.13.13
+
+`0.13.13` is an AWS provider fix and dependency refresh patch.
+
+### Highlights
+
+* Harden AWS provider importer refresh edge cases.
+* Refresh provider and client dependencies across AWS, Azure, GCP, IBM,
+  TencentCloud, Yandex, Cloudflare, Auth0, DigitalOcean, GitLab, and HashiCorp
+  Azure SDK families.
+
+**Full Changelog**: <https://github.com/chenrui333/terraformer/compare/v0.13.12...v0.13.13>
+
 ## 0.13.12
 
 `0.13.12` is a Kubernetes compatibility and provider dependency patch. It
