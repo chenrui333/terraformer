@@ -10,7 +10,7 @@
   "dependencyDashboard": true,
   "enabledManagers": ["github-actions", "gomod"],
   "internalChecksFilter": "strict",
-  "labels": ["dependencies"],
+  "labels": ["dependencies", "renovate"],
   "minimumReleaseAge": "7 days",
   "semanticCommitType": "chore",
   "platformAutomerge": true,
@@ -132,6 +132,25 @@
       "groupSlug": "go-ibm-provider"
     },
     {
+      "description": "TencentCloud provider dependency family.",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": [
+        "/^github\\.com/tencentcloud/tencentcloud-sdk-go($|\\/)/",
+        "/^github\\.com/tencentyun\\//"
+      ],
+      "groupName": "tencentcloud provider dependencies",
+      "groupSlug": "go-tencentcloud-provider"
+    },
+    {
+      "description": "Yandex provider dependency family.",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": [
+        "/^github\\.com/yandex-cloud\\//"
+      ],
+      "groupName": "yandex provider dependencies",
+      "groupSlug": "go-yandex-provider"
+    },
+    {
       "description": "Kubernetes provider dependency family.",
       "matchManagers": ["gomod"],
       "matchPackageNames": [
@@ -147,7 +166,8 @@
       "matchPackageNames": [
         "/^github\\.com/bradleyfalzon/ghinstallation($|\\/)/",
         "/^github\\.com/google/go-github($|\\/)/",
-        "/^github\\.com/xanzy/go-gitlab($|\\/)/"
+        "/^github\\.com/xanzy/go-gitlab($|\\/)/",
+        "/^gitlab\\.com/gitlab-org/api/client-go($|\\/)/"
       ],
       "groupName": "vcs provider dependencies",
       "groupSlug": "go-vcs-provider"
