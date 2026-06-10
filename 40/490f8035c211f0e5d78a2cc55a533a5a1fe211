@@ -1,0 +1,26 @@
+cmd/provider_cmd_audit_test.go
+  s_afdb657bd8ae26::t_e2a220cb3d4298 83-104
+providers/mikrotik/mikrotik_provider_test.go
+  s_afdb657bd8ae26::t_91a61ebef37f05 1-102
+providers/mikrotik/dhcp_leases_test.go
+  s_afdb657bd8ae26::t_16ac4079ac70fa 8,26,36
+  s_afdb657bd8ae26::t_91a61ebef37f05 1-7,9-25,27-35,37-39
+providers/mikrotik/mikrotik_provider.go
+  s_afdb657bd8ae26::t_91a61ebef37f05 28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "40490f8035c211f0e5d78a2cc55a533a5a1fe211",
+  "prompts": {},
+  "sessions": {
+    "s_afdb657bd8ae26": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019eaf3b-28e8-78b1-9b2b-942e4d2dac16",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
