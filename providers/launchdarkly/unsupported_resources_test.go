@@ -19,7 +19,7 @@ func TestLaunchDarklyUnsupportedResourcesMetadata(t *testing.T) {
 	if err := json.Unmarshal(data, &metadata); err != nil {
 		t.Fatalf("decode unsupported resources: %v", err)
 	}
-	if version, ok := metadata["version"].(float64); !ok || int(version) != 1 {
+	if version, ok := metadata["version"].(float64); !ok || version != 1 {
 		t.Fatalf("unsupported resources version = %v, want 1", metadata["version"])
 	}
 	rawResources, ok := metadata["resources"].([]interface{})
