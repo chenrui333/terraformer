@@ -1,0 +1,23 @@
+providers/aws/securityhub_test.go
+  s_9f3a7ce88d4ea8::t_b89bbe03aefb83 320-323
+providers/aws/alb_test.go
+  s_9f3a7ce88d4ea8::t_b89bbe03aefb83 83-111
+providers/aws/securityhub.go
+  s_9f3a7ce88d4ea8::t_b89bbe03aefb83 590
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "d81d33c7ef2cdd08d6d666aed7eb32931e115fda",
+  "prompts": {},
+  "sessions": {
+    "s_9f3a7ce88d4ea8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019eaa0d-0c4a-72b0-bd42-a83886f15e3b",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
