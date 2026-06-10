@@ -1,0 +1,20 @@
+renovate.json
+  s_d0dff4ce1c21c7::t_13de8466f82e53 13
+  s_d0dff4ce1c21c7::t_916fc1e361ad54 135-152,169-170
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "547bfbf8251e07620b5939f60d3267a7000080a1",
+  "prompts": {},
+  "sessions": {
+    "s_d0dff4ce1c21c7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019eaf12-f1a5-71b0-9f74-644639d5ebc5",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
