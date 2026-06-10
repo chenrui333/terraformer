@@ -561,7 +561,7 @@ require (
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cbs v1.3.102
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cdb v1.3.109
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cdn v1.3.90
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cfs v1.3.96
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cfs v1.3.108
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/clb v1.3.105
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.109
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cvm v1.3.105
