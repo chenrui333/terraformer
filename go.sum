@@ -1038,6 +1038,7 @@ github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de h1:9TO3cAIGXtEhn
 github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de/go.mod h1:zAbeS9B/r2mtpb6U+EI2rYA5OAXxsYw6wTamcNW+zcE=
 github.com/linode/linodego v1.69.1 h1:f45N2MHR/oece2/ktTTCYmrlfse4//k3NgwcF5zbGZ0=
 github.com/linode/linodego v1.69.1/go.mod h1:Fha0NYsQSx5VZK1HQNJY/z/dIxxkFp+vb5veawbmAUw=
+github.com/linode/linodego/v2 v2.0.0/go.mod h1:rsITrtsKFKBi+pEnznDbbF9ZGBou9S8UccCm1yHLbpI=
 github.com/logzio/logzio_terraform_client v1.30.2 h1:P5xL7ncwhti/n+3/opqMCypwWlGd19PNr8F1FeUwnnA=
 github.com/logzio/logzio_terraform_client v1.30.2/go.mod h1:pzXrr7gGIi6tU1mk2vTtg8dr6ttKMlt03kz6asC53o4=
 github.com/mackerelio/mackerel-client-go v0.42.0 h1:cmBjzLTnURZrVkjPYwAdduCHPTnq2gsMmT9LccFZRoY=

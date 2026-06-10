@@ -124,7 +124,7 @@ require (
 	github.com/ionos-cloud/sdk-go/v6 v6.3.7
 	github.com/jmespath/go-jmespath v0.4.0
 	github.com/labd/commercetools-go-sdk v1.9.0
-	github.com/linode/linodego v1.69.1
+	github.com/linode/linodego/v2 v2.0.0
 	github.com/microsoft/azure-devops-go-api/azuredevops v1.0.0-b5
 	github.com/nicksnyder/go-i18n v1.10.3 // indirect
 	github.com/okta/okta-sdk-golang/v6 v6.1.6
@@ -554,6 +554,7 @@ require (
 	github.com/ionos-cloud/sdk-go-logging v1.3.0
 	github.com/keycloak/terraform-provider-keycloak v0.0.0-20260526162604-f2be9656a483
 	github.com/launchdarkly/api-client-go/v22 v22.0.0
+	github.com/linode/linodego v1.69.1
 	github.com/logzio/logzio_terraform_client v1.30.2
 	github.com/newrelic/newrelic-client-go/v2 v2.86.1
 	github.com/okta/okta-sdk-golang/v2 v2.20.0
