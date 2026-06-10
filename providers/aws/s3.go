@@ -61,7 +61,11 @@ func (g *S3Generator) createResources(config aws.Config, buckets *s3.ListBuckets
 		resourceName := StringValue(bucket.Name)
 		location, err := svc.GetBucketLocation(context.TODO(), &s3.GetBucketLocationInput{Bucket: bucket.Name})
 		if err != nil {
-			log.Println(err)
+			if s3BucketAccessDenied(err) {
+				log.Printf("skipping S3 bucket %s location discovery: access denied", resourceName)
+			} else {
+				log.Printf("skipping S3 bucket %s location discovery: %v", resourceName, err)
+			}
 			continue
 		}
 		// check if bucket in region
@@ -507,6 +511,10 @@ func logS3OptionalBucketConfigurationError(bucketName, resourceType string, err 
 	if s3BucketConfigurationMissing(err) {
 		return
 	}
+	if s3BucketAccessDenied(err) {
+		log.Printf("skipping %s discovery for S3 bucket %s: access denied", resourceType, bucketName)
+		return
+	}
 	log.Printf("skipping %s discovery for S3 bucket %s: %v", resourceType, bucketName, err)
 }
 
@@ -535,6 +543,19 @@ func s3BucketConfigurationMissing(err error) bool {
 		"OwnershipControlsNotFoundError",
 		"ReplicationConfigurationNotFoundError",
 		"ServerSideEncryptionConfigurationNotFoundError":
+		return true
+	default:
+		return false
+	}
+}
+
+func s3BucketAccessDenied(err error) bool {
+	var apiErr smithy.APIError
+	if !errors.As(err, &apiErr) {
+		return false
+	}
+	switch apiErr.ErrorCode() {
+	case "AccessDenied", "AccessDeniedException":
 		return true
 	default:
 		return false

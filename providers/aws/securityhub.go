@@ -585,6 +585,11 @@ func securityHubSkippableAccessMessage(message string) bool {
 	return strings.Contains(message, "not subscribed to aws security hub") ||
 		strings.Contains(message, "no such resource found") ||
 		strings.Contains(message, "not a member of an organization") ||
+		strings.Contains(message, "not an administrator account") ||
+		strings.Contains(message, "not an admin account") ||
+		strings.Contains(message, "administrator account") ||
+		strings.Contains(message, "securityhub:listorganizationadminaccounts") ||
+		strings.Contains(message, "securityhub:describeorganizationconfiguration") ||
 		strings.Contains(message, "delegated administrator") ||
 		strings.Contains(message, "central configuration")
 }

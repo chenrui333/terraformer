@@ -339,6 +339,28 @@ func TestS3BucketConfigurationMissing(t *testing.T) {
 	}
 }
 
+func TestS3BucketAccessDenied(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "access denied", err: &smithy.GenericAPIError{Code: "AccessDenied"}, want: true},
+		{name: "access denied exception", err: &smithy.GenericAPIError{Code: "AccessDeniedException"}, want: true},
+		{name: "missing config", err: &smithy.GenericAPIError{Code: "NoSuchLifecycleConfiguration"}, want: false},
+		{name: "generic error", err: errors.New("boom"), want: false},
+		{name: "nil", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := s3BucketAccessDenied(tt.err); got != tt.want {
+				t.Fatalf("s3BucketAccessDenied() = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestS3BucketInlineFieldsByBucket(t *testing.T) {
 	versioning := terraformutils.NewResource(
 		"versioned-bucket",

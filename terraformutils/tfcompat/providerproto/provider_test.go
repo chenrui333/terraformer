@@ -138,6 +138,24 @@ func TestShouldSendProviderMeta(t *testing.T) {
 	}
 }
 
+func TestDecodeDynamicValueReportsMalformedPayloads(t *testing.T) {
+	value, err := decodeDynamicValue(&tfplugin5.DynamicValue{Msgpack: []byte{0xc1}}, cty.String)
+	if err == nil {
+		t.Fatal("decodeDynamicValue() error = nil, want malformed payload error")
+	}
+	if !value.IsNull() {
+		t.Fatalf("decodeDynamicValue() value = %#v, want null fallback", value)
+	}
+
+	value, err = decodeDynamicValue6(&tfplugin6.DynamicValue{Msgpack: []byte{0xc1}}, cty.String)
+	if err == nil {
+		t.Fatal("decodeDynamicValue6() error = nil, want malformed payload error")
+	}
+	if !value.IsNull() {
+		t.Fatalf("decodeDynamicValue6() value = %#v, want null fallback", value)
+	}
+}
+
 type largeSchemaProvider5 struct {
 	tfplugin5.UnimplementedProviderServer
 

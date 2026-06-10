@@ -178,7 +178,12 @@ func (p *ProviderWrapper) Refresh(info *tfcompat.InstanceInfo, state *tfcompat.I
 
 	if resp.NewState.IsNull() {
 		msg := fmt.Sprintf("ERROR: Read resource response is null for resource %s", info.Id)
-		return nil, errors.New(msg)
+		log.Printf("%s, trying import command", msg)
+		importedState, err := p.importResourceState(info, state, schema)
+		if err == nil {
+			return importedState, nil
+		}
+		return nil, fmt.Errorf("%s; import fallback failed: %w", msg, err)
 	}
 
 	refreshedState := tfcompat.NewInstanceStateShimmedFromValue(resp.NewState, int(schema.ResourceTypes[info.Type].Version))
