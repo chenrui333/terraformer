@@ -540,7 +540,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sesv2 v1.61.1
 	github.com/aws/aws-sdk-go-v2/service/transcribe v1.55.2
 	github.com/aws/aws-sdk-go-v2/service/vpclattice v1.21.3
-	github.com/cloudflare/cloudflare-go v0.117.0
+	github.com/cloudflare/cloudflare-go/v7 v7.4.0
 	github.com/fastly/go-fastly/v15 v15.0.1
 	github.com/gofrs/uuid/v3 v3.1.2
 	github.com/google/go-github/v88 v88.0.0
