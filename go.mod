@@ -141,7 +141,7 @@ require (
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/text v0.37.0
 	gonum.org/v1/gonum v0.17.0
-	google.golang.org/api v0.282.0
+	google.golang.org/api v0.283.0
 	google.golang.org/genproto v0.0.0-20260526163538-3dc84a4a5aaa
 	k8s.io/apimachinery v0.36.1
 	k8s.io/client-go v0.36.1
