@@ -302,6 +302,26 @@ func TestSecurityHubOptionalResourceUnavailable(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "access denied for org admin list",
+			err:  &securityhubtypes.AccessDeniedException{Message: aws.String("User is not authorized to perform: securityhub:ListOrganizationAdminAccounts")},
+			want: true,
+		},
+		{
+			name: "access denied for org configuration",
+			err:  &securityhubtypes.AccessDeniedException{Message: aws.String("User is not authorized to perform: securityhub:DescribeOrganizationConfiguration")},
+			want: true,
+		},
+		{
+			name: "not administrator account",
+			err:  &securityhubtypes.AccessDeniedException{Message: aws.String("The request must be called from an administrator account")},
+			want: true,
+		},
+		{
+			name: "unrelated administrator account access denied",
+			err:  &securityhubtypes.AccessDeniedException{Message: aws.String("administrator account cannot update Security Hub finding")},
+			want: false,
+		},
+		{
 			name: "not subscribed",
 			err:  &securityhubtypes.InvalidAccessException{Message: aws.String("not subscribed to AWS Security Hub")},
 			want: true,

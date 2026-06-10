@@ -5,6 +5,8 @@ package aws
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
@@ -173,21 +175,49 @@ func (g *AlbGenerator) loadTargetGroupTargets(svc *elasticloadbalancingv2.Client
 		return err
 	}
 	for _, tgh := range targetHealths.TargetHealthDescriptions {
-		id := fmt.Sprintf("%s-%s", *targetGroupArn, *tgh.Target.Id)
-		g.Resources = append(g.Resources, terraformutils.NewResource(
-			id,
-			id,
-			"aws_lb_target_group_attachment",
-			"aws",
-			map[string]string{
-				"target_id":        *tgh.Target.Id,
-				"target_group_arn": *targetGroupArn,
-			},
-			AlbAllowEmptyValues,
-			map[string]interface{}{},
-		))
+		resource, ok := newALBTargetGroupAttachmentResource(StringValue(targetGroupArn), tgh.Target)
+		if ok {
+			g.Resources = append(g.Resources, resource)
+		}
 	}
 	return nil
+}
+
+func newALBTargetGroupAttachmentResource(targetGroupArn string, target *types.TargetDescription) (terraformutils.Resource, bool) {
+	if target == nil {
+		return terraformutils.Resource{}, false
+	}
+	targetID := StringValue(target.Id)
+	if targetGroupArn == "" || targetID == "" {
+		return terraformutils.Resource{}, false
+	}
+	attributes := map[string]string{
+		"target_id":        targetID,
+		"target_group_arn": targetGroupArn,
+	}
+	idParts := []string{targetGroupArn, targetID}
+	if target.Port != nil {
+		port := strconv.FormatInt(int64(*target.Port), 10)
+		attributes["port"] = port
+		idParts = append(idParts, port)
+	}
+	if availabilityZone := StringValue(target.AvailabilityZone); availabilityZone != "" {
+		attributes["availability_zone"] = availabilityZone
+		if target.Port == nil {
+			idParts = append(idParts, "")
+		}
+		idParts = append(idParts, availabilityZone)
+	}
+	resourceName := strings.Join(idParts, ",")
+	return terraformutils.NewResource(
+		resourceName,
+		resourceName,
+		"aws_lb_target_group_attachment",
+		"aws",
+		attributes,
+		AlbAllowEmptyValues,
+		map[string]interface{}{},
+	), true
 }
 
 // Generate TerraformResources from AWS API,

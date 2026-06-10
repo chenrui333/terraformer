@@ -318,12 +318,17 @@ func shouldSendProviderMeta(providerMeta cty.Value, schema configschema.Schema) 
 	return providerMeta.IsWhollyKnown() && !providerMeta.IsNull()
 }
 
-func decodeDynamicValue(v *tfplugin5.DynamicValue, ty cty.Type) (cty.Value, error) {
-	res := cty.NullVal(ty)
+func decodeDynamicValue(v *tfplugin5.DynamicValue, ty cty.Type) (res cty.Value, err error) {
+	res = cty.NullVal(ty)
 	if v == nil {
 		return res, nil
 	}
-	var err error
+	defer func() {
+		if rec := recover(); rec != nil {
+			res = cty.NullVal(ty)
+			err = fmt.Errorf("decode provider dynamic value: %v", rec)
+		}
+	}()
 	switch {
 	case len(v.Msgpack) > 0:
 		res, err = msgpack.Unmarshal(v.Msgpack, ty)
