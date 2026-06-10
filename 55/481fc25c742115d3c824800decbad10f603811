@@ -1,0 +1,41 @@
+providers/aws/alb_test.go
+  s_9f3a7ce88d4ea8::t_9601627ec6366f 49,65-79
+  s_9f3a7ce88d4ea8::t_afa254dead12db 8,35-37,39-48,50-64,80-83,85-86,88
+  s_9f3a7ce88d4ea8::t_8500261ba9c0c6 38,84,87,89-91
+providers/aws/alb.go
+  s_9f3a7ce88d4ea8::t_8500261ba9c0c6 186-189
+  s_9f3a7ce88d4ea8::t_9601627ec6366f 198,202,206-209,211
+  s_9f3a7ce88d4ea8::t_afa254dead12db 8-9,178-181,190-197,199-201,203-205,210,212-220
+providers/aws/s3_test.go
+  s_9f3a7ce88d4ea8::t_f2e5fccdb6acc0 342-363
+terraformutils/tfcompat/providerproto/provider.go
+  s_9f3a7ce88d4ea8::t_7f5355a542a660 321-322,326-331
+providers/aws/securityhub.go
+  s_9f3a7ce88d4ea8::t_f2e5fccdb6acc0 588-592
+providers/aws/securityhub_test.go
+  s_9f3a7ce88d4ea8::t_f2e5fccdb6acc0 305-318
+providers/aws/s3.go
+  s_9f3a7ce88d4ea8::t_f2e5fccdb6acc0 64-68,514-517,552-558
+terraformutils/providerwrapper/provider.go
+  s_9f3a7ce88d4ea8::t_7f5355a542a660 181-186
+terraformutils/tfcompat/providerproto/provider6.go
+  s_9f3a7ce88d4ea8::t_7f5355a542a660 164-165,169-174
+terraformutils/tfcompat/providerproto/provider_test.go
+  s_9f3a7ce88d4ea8::t_7f5355a542a660 141-158
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "55481fc25c742115d3c824800decbad10f603811",
+  "prompts": {},
+  "sessions": {
+    "s_9f3a7ce88d4ea8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019eaa0d-0c4a-72b0-bd42-a83886f15e3b",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
