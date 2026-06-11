@@ -126,7 +126,8 @@ func TestCloudflareOptionalSettingsMissing(t *testing.T) {
 		want bool
 	}{
 		{name: "not found", err: testCloudflareNotFoundError("not found"), want: true},
-		{name: "forbidden", err: testCloudflareForbiddenError("permission denied"), want: true},
+		{name: "legacy forbidden", err: testCloudflareForbiddenError("permission denied"), want: true},
+		{name: "authorization forbidden", err: testCloudflareAuthorizationError("permission denied"), want: true},
 		{name: "request error", err: testCloudflareRequestError("bad request"), want: false},
 		{name: "generic error", err: errors.New("boom"), want: false},
 	} {
@@ -144,6 +145,18 @@ func testCloudflareForbiddenError(messages ...string) error {
 		responseInfo = append(responseInfo, cf.ResponseInfo{Message: message})
 	}
 	err := cf.NewAuthenticationError(&cf.Error{
+		Errors:        responseInfo,
+		ErrorMessages: messages,
+	})
+	return &err
+}
+
+func testCloudflareAuthorizationError(messages ...string) error {
+	responseInfo := make([]cf.ResponseInfo, 0, len(messages))
+	for _, message := range messages {
+		responseInfo = append(responseInfo, cf.ResponseInfo{Message: message})
+	}
+	err := cf.NewAuthorizationError(&cf.Error{
 		Errors:        responseInfo,
 		ErrorMessages: messages,
 	})

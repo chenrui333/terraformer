@@ -717,7 +717,11 @@ func cloudflareOptionalSettingsMissing(err error) bool {
 func cloudflareForbiddenError(err error) bool {
 	// cloudflare-go maps HTTP 403 responses to AuthenticationError.
 	var forbiddenErr *cf.AuthenticationError
-	return errors.As(err, &forbiddenErr)
+	if errors.As(err, &forbiddenErr) {
+		return true
+	}
+	var authorizationErr *cf.AuthorizationError
+	return errors.As(err, &authorizationErr)
 }
 
 func cloudflareSettingIsOn(value string) bool {

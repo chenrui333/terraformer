@@ -117,13 +117,23 @@ type ResultInfo struct {
 }
 
 func (p ResultInfo) HasMorePages() bool {
-	if p.TotalPages > 0 && p.Page > 0 {
-		return p.Page < p.TotalPages
+	if totalPages := p.totalPages(); totalPages > 0 {
+		return p.Page >= 1 && p.Page < totalPages
 	}
 	if p.Cursor != "" || p.Cursors.After != "" {
 		return true
 	}
 	return false
+}
+
+func (p ResultInfo) totalPages() int {
+	if p.TotalPages > 0 {
+		return p.TotalPages
+	}
+	if p.Total > 0 && p.PerPage > 0 {
+		return (p.Total + p.PerPage - 1) / p.PerPage
+	}
+	return 0
 }
 
 func (p ResultInfo) Done() bool {
@@ -488,10 +498,33 @@ type ListDNSRecordsParams struct {
 	Content string `url:"content,omitempty"`
 }
 
+const listDNSRecordsDefaultPageSize = 100
+
 func (api *API) ListDNSRecords(ctx context.Context, rc *ResourceContainer, params ListDNSRecordsParams) ([]DNSRecord, *ResultInfo, error) {
+	autoPaginate := params.Page < 1 && params.PerPage < 1 && params.Cursor == "" && params.Cursors.After == "" && params.Cursors.Before == ""
+	if params.PerPage < 1 {
+		params.PerPage = listDNSRecordsDefaultPageSize
+	}
+	if params.Page < 1 && params.Cursor == "" {
+		params.Page = 1
+	}
+
 	var records []DNSRecord
-	info, err := api.get(ctx, rc.URLFragment()+"/dns_records", params, &records)
-	return records, info, err
+	var lastInfo *ResultInfo
+	for {
+		var pageRecords []DNSRecord
+		info, err := api.get(ctx, rc.URLFragment()+"/dns_records", params, &pageRecords)
+		if err != nil {
+			return []DNSRecord{}, info, err
+		}
+		records = append(records, pageRecords...)
+		lastInfo = info
+		if !autoPaginate || info == nil || !info.HasMorePages() {
+			break
+		}
+		params.ResultInfo = info.Next()
+	}
+	return records, lastInfo, nil
 }
 
 type LockdownListParams struct {
@@ -559,12 +592,12 @@ type ListItem struct {
 }
 
 type ListItemHostname struct {
-	UrlHostname string `json:"url_hostname"`
+	URLHostname string `json:"url_hostname"`
 }
 
 type ListItemRedirect struct {
-	SourceUrl           string `json:"source_url"`
-	TargetUrl           string `json:"target_url"`
+	SourceURL           string `json:"source_url"`
+	TargetURL           string `json:"target_url"`
 	IncludeSubdomains   *bool  `json:"include_subdomains"`
 	PreservePathSuffix  *bool  `json:"preserve_path_suffix"`
 	PreserveQueryString *bool  `json:"preserve_query_string"`
@@ -762,21 +795,27 @@ type MagicTransitRouteScope struct {
 }
 
 func (api *API) ListMagicTransitGRETunnels(ctx context.Context, accountID string) ([]MagicTransitGRETunnel, error) {
-	var tunnels []MagicTransitGRETunnel
-	_, err := api.get(ctx, "/accounts/"+url.PathEscape(accountID)+"/magic/gre_tunnels", nil, &tunnels)
-	return tunnels, err
+	var result struct {
+		Tunnels []MagicTransitGRETunnel `json:"gre_tunnels"`
+	}
+	_, err := api.get(ctx, "/accounts/"+url.PathEscape(accountID)+"/magic/gre_tunnels", nil, &result)
+	return result.Tunnels, err
 }
 
 func (api *API) ListMagicTransitIPsecTunnels(ctx context.Context, accountID string) ([]MagicTransitIPsecTunnel, error) {
-	var tunnels []MagicTransitIPsecTunnel
-	_, err := api.get(ctx, "/accounts/"+url.PathEscape(accountID)+"/magic/ipsec_tunnels", nil, &tunnels)
-	return tunnels, err
+	var result struct {
+		Tunnels []MagicTransitIPsecTunnel `json:"ipsec_tunnels"`
+	}
+	_, err := api.get(ctx, "/accounts/"+url.PathEscape(accountID)+"/magic/ipsec_tunnels", nil, &result)
+	return result.Tunnels, err
 }
 
 func (api *API) ListMagicTransitStaticRoutes(ctx context.Context, accountID string) ([]MagicTransitStaticRoute, error) {
-	var routes []MagicTransitStaticRoute
-	_, err := api.get(ctx, "/accounts/"+url.PathEscape(accountID)+"/magic/routes", nil, &routes)
-	return routes, err
+	var result struct {
+		Routes []MagicTransitStaticRoute `json:"routes"`
+	}
+	_, err := api.get(ctx, "/accounts/"+url.PathEscape(accountID)+"/magic/routes", nil, &result)
+	return result.Routes, err
 }
 
 type LocationStrategy struct {
@@ -917,11 +956,11 @@ type PagesDomain struct {
 }
 
 type PagesProject struct {
-	ID               string        `json:"id"`
-	Name             string        `json:"name"`
-	Subdomain        string        `json:"subdomain"`
-	Domains          []PagesDomain `json:"domains"`
-	ProductionBranch string        `json:"production_branch"`
+	ID               string   `json:"id"`
+	Name             string   `json:"name"`
+	Subdomain        string   `json:"subdomain"`
+	Domains          []string `json:"domains"`
+	ProductionBranch string   `json:"production_branch"`
 }
 
 type ListPagesProjectsParams struct{ PaginationOptions }
