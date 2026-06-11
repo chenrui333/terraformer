@@ -177,11 +177,30 @@ stage_asset_file() {
 stage_matching_assets() {
   local source_dir="$1"
   local pattern="$2"
+  local file_list
   local file
+  local stage_status
 
+  file_list="$(mktemp "${TMPDIR:-/tmp}/terraformer-release-assets.XXXXXX")" || return 1
+
+  if find "$source_dir" -type f -name "$pattern" -print0 >"$file_list"; then
+    :
+  else
+    local find_status="$?"
+    rm -f "$file_list"
+    return "$find_status"
+  fi
+
+  stage_status=0
   while IFS= read -r -d '' file; do
-    stage_asset_file "$file" || return 1
-  done < <(find "$source_dir" -type f -name "$pattern" -print0)
+    if ! stage_asset_file "$file"; then
+      stage_status=1
+      break
+    fi
+  done <"$file_list"
+
+  rm -f "$file_list"
+  return "$stage_status"
 }
 
 stage_provider_assets() {
