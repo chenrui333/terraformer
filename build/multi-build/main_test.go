@@ -14,6 +14,8 @@ func TestEnumerateProvidersPreservesLegacyNames(t *testing.T) {
 	writeFile(t, filepath.Join(cmdDir, "provider_cmd_google.go"), "package cmd\n")
 	writeFile(t, filepath.Join(cmdDir, "provider_cmd_aws.go"), "package cmd\n")
 	writeFile(t, filepath.Join(cmdDir, "provider_cmd_aws_test.go"), "package cmd\n")
+	writeFile(t, filepath.Join(cmdDir, "provider_cmd_notes.txt"), "not a Go file\n")
+	mustMkdir(t, filepath.Join(cmdDir, "provider_cmd_directory.go"))
 	writeFile(t, filepath.Join(cmdDir, "root.go"), "package cmd\n")
 
 	providers, err := enumerateProviders(cmdDir)
