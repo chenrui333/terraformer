@@ -1,0 +1,27 @@
+.github/scripts/provider-dependency-preflight.sh
+  s_d0dff4ce1c21c7::t_47e672fe077bf6 433-434,440,448
+  s_d0dff4ce1c21c7::t_c25d0d115310a4 230-252,254-281,283-293,296-298,300-301,311,317,321-328,330,332,334,336,338,340
+  s_d0dff4ce1c21c7::t_80e6910e61f1c1 204,206,282,294,299,302,306-309,318-319,361,365,379,383-386,389-390,401
+  s_d0dff4ce1c21c7::t_4ac47cb46a2a08 6-9
+  s_d0dff4ce1c21c7::t_cc591f47278056 345-354
+  s_d0dff4ce1c21c7::t_10c89b6235b14b 417,421,423,427-429
+  s_d0dff4ce1c21c7::t_e63c33d83ee414 303-305,380-382
+  s_d0dff4ce1c21c7::t_cc5e015067028c 187
+  s_d0dff4ce1c21c7::t_3ef87c7f6a3b9f 60-135
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "5a83b39fbf4ddd845da5b299e88e4cb2fb868163",
+  "prompts": {},
+  "sessions": {
+    "s_d0dff4ce1c21c7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019eaf12-f1a5-71b0-9f74-644639d5ebc5",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
