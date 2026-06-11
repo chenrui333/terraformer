@@ -210,7 +210,7 @@ func TestCreateResourcesPerDomainPaginationEmptyAndError(t *testing.T) {
 	})
 
 	t.Run("empty response", func(t *testing.T) {
-		api := newTestMyrasecAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		api := newTestMyrasecAPI(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			writeMyrasecData(t, w, `[]`)
 		}))
 
@@ -230,7 +230,7 @@ func TestCreateResourcesPerDomainPaginationEmptyAndError(t *testing.T) {
 	})
 
 	t.Run("api error", func(t *testing.T) {
-		api := newTestMyrasecAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		api := newTestMyrasecAPI(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			writeMyrasecError(t, w, "domain list failed")
 		}))
 
@@ -287,7 +287,7 @@ func TestMyrasecResourceGeneratorsCreateResources(t *testing.T) {
 		path       string
 		response   func(t *testing.T, w http.ResponseWriter)
 		checkQuery func(t *testing.T, r *http.Request)
-		run        func(t *testing.T, api *mgo.API) ([]terraformutils.Resource, error)
+		run        func(api *mgo.API) ([]terraformutils.Resource, error)
 		wantID     string
 		wantName   string
 		wantType   string
@@ -300,7 +300,7 @@ func TestMyrasecResourceGeneratorsCreateResources(t *testing.T) {
 			response: func(t *testing.T, w http.ResponseWriter) {
 				writeMyrasecData(t, w, `[{"id":101,"name":"www.example.com.","value":"127.0.0.1","ttl":300,"recordType":"A"}]`)
 			},
-			run: func(t *testing.T, api *mgo.API) ([]terraformutils.Resource, error) {
+			run: func(api *mgo.API) ([]terraformutils.Resource, error) {
 				generator := &DNSGenerator{}
 				err := generator.createDnsResources(api, mgo.Domain{ID: 7, Name: "example.com"})
 				return generator.GetResources(), err
@@ -319,7 +319,7 @@ func TestMyrasecResourceGeneratorsCreateResources(t *testing.T) {
 			response: func(t *testing.T, w http.ResponseWriter) {
 				writeMyrasecData(t, w, `[{"id":201}]`)
 			},
-			run: func(t *testing.T, api *mgo.API) ([]terraformutils.Resource, error) {
+			run: func(api *mgo.API) ([]terraformutils.Resource, error) {
 				generator := &CacheSettingGenerator{}
 				err := generator.createCacheSettingResources(api, 7, mgo.VHost{ID: 8, Label: "www.example.com"})
 				return generator.GetResources(), err
@@ -338,7 +338,7 @@ func TestMyrasecResourceGeneratorsCreateResources(t *testing.T) {
 			response: func(t *testing.T, w http.ResponseWriter) {
 				writeMyrasecData(t, w, `[{"id":301,"subDomainName":"www.example.com"}]`)
 			},
-			run: func(t *testing.T, api *mgo.API) ([]terraformutils.Resource, error) {
+			run: func(api *mgo.API) ([]terraformutils.Resource, error) {
 				generator := &RedirectGenerator{}
 				err := generator.createRedirectResources(api, 7, mgo.VHost{ID: 8, Label: "www.example.com"})
 				return generator.GetResources(), err
@@ -356,7 +356,7 @@ func TestMyrasecResourceGeneratorsCreateResources(t *testing.T) {
 			response: func(t *testing.T, w http.ResponseWriter) {
 				writeMyrasecData(t, w, `[{"id":401}]`)
 			},
-			run: func(t *testing.T, api *mgo.API) ([]terraformutils.Resource, error) {
+			run: func(api *mgo.API) ([]terraformutils.Resource, error) {
 				generator := &IPFilterGenerator{}
 				err := generator.createIPFilterResources(api, 7, mgo.VHost{ID: 8, Label: "www.example.com"})
 				return generator.GetResources(), err
@@ -374,7 +374,7 @@ func TestMyrasecResourceGeneratorsCreateResources(t *testing.T) {
 			response: func(t *testing.T, w http.ResponseWriter) {
 				writeMyrasecData(t, w, `[{"id":501}]`)
 			},
-			run: func(t *testing.T, api *mgo.API) ([]terraformutils.Resource, error) {
+			run: func(api *mgo.API) ([]terraformutils.Resource, error) {
 				generator := &MaintenanceGenerator{}
 				err := generator.createMaintenanceResources(api, 7, mgo.VHost{ID: 8, Label: "www.example.com"})
 				return generator.GetResources(), err
@@ -392,7 +392,7 @@ func TestMyrasecResourceGeneratorsCreateResources(t *testing.T) {
 			response: func(t *testing.T, w http.ResponseWriter) {
 				writeMyrasecData(t, w, `[{"id":601,"subDomainName":"www.example.com","errorCode":404,"content":"not found"}]`)
 			},
-			run: func(t *testing.T, api *mgo.API) ([]terraformutils.Resource, error) {
+			run: func(api *mgo.API) ([]terraformutils.Resource, error) {
 				generator := &ErrorPageGenerator{}
 				err := generator.createErrorPageResources(api, mgo.Domain{ID: 7, Name: "example.com"})
 				return generator.GetResources(), err
@@ -421,7 +421,7 @@ func TestMyrasecResourceGeneratorsCreateResources(t *testing.T) {
 					t.Fatalf("query = %q, want flat parameter", r.URL.RawQuery)
 				}
 			},
-			run: func(t *testing.T, api *mgo.API) ([]terraformutils.Resource, error) {
+			run: func(api *mgo.API) ([]terraformutils.Resource, error) {
 				generator := &SettingsGenerator{}
 				err := generator.createSettingResources(api, 7, mgo.VHost{ID: 8, Label: "www.example.com"})
 				return generator.GetResources(), err
@@ -443,7 +443,7 @@ func TestMyrasecResourceGeneratorsCreateResources(t *testing.T) {
 			checkQuery: func(t *testing.T, r *http.Request) {
 				assertQueryValue(t, r, "subDomain", "www.example.com")
 			},
-			run: func(t *testing.T, api *mgo.API) ([]terraformutils.Resource, error) {
+			run: func(api *mgo.API) ([]terraformutils.Resource, error) {
 				generator := &WafRuleGenerator{}
 				err := generator.createWafRuleResources(api, 7, mgo.VHost{ID: 8, Label: "www.example.com"})
 				return generator.GetResources(), err
@@ -473,7 +473,7 @@ func TestMyrasecResourceGeneratorsCreateResources(t *testing.T) {
 				tt.response(t, w)
 			}))
 
-			resources, err := tt.run(t, api)
+			resources, err := tt.run(api)
 			if err != nil {
 				t.Fatalf("generator returned error: %v", err)
 			}
@@ -486,7 +486,7 @@ func TestMyrasecResourceGeneratorsCreateResources(t *testing.T) {
 }
 
 func TestDNSGeneratorPropagatesAPIError(t *testing.T) {
-	api := newTestMyrasecAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	api := newTestMyrasecAPI(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		writeMyrasecError(t, w, "dns list failed")
 	}))
 
