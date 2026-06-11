@@ -340,6 +340,16 @@ build_non_fixture_packages() {
   go build -v "${BUILD_PACKAGES[@]}"
 }
 
+skip_build_non_fixture_packages() {
+  printf 'Skipping non-fixture package build in this job; the PR preflight build job validates the same package list.\n'
+}
+
+run_build_package_validation() {
+  time_phase "Go module tidy" "go mod tidy and go.mod/go.sum diff check" run_go_mod_tidy_check
+  time_phase "Package listing" "go list non-fixture packages for build" list_build_packages
+  time_phase "Build non-fixture packages" "go build selected non-fixture packages" build_non_fixture_packages
+}
+
 test_provider_and_command_packages() {
   go test ./providers/... ./cmd/... -count=1
 }
@@ -359,8 +369,13 @@ static_diff_check() {
 run_provider_validation() {
   time_phase "Environment diagnostics" "go version, go env, package counts, cache usage, filesystem space" environment_diagnostics
   time_phase "Go module tidy" "go mod tidy and go.mod/go.sum diff check" run_go_mod_tidy_check
-  time_phase "Package listing" "go list non-fixture packages for build" list_build_packages
-  time_phase "Build non-fixture packages" "go build selected non-fixture packages" build_non_fixture_packages
+  if [[ "${SKIP_BUILD_NON_FIXTURE:-0}" == "1" ]]; then
+    time_phase "Package listing" "skipped; PR preflight build job lists and builds packages" skip_build_non_fixture_packages
+    time_phase "Build non-fixture packages" "validated by the PR preflight build job" skip_build_non_fixture_packages
+  else
+    time_phase "Package listing" "go list non-fixture packages for build" list_build_packages
+    time_phase "Build non-fixture packages" "go build selected non-fixture packages" build_non_fixture_packages
+  fi
   time_phase "Test provider and command packages" "go test ./providers/... ./cmd/... -count=1" test_provider_and_command_packages
   time_phase "Test build and utility packages" "go test ./build/... ./terraformutils/... ./version -count=1" test_build_and_utility_packages
   time_phase "Vet dependency-sensitive packages" "go vet providers, cmd, build, terraformutils, version" vet_dependency_sensitive_packages
@@ -454,6 +469,12 @@ fi
 if [[ "${ONLY_GOVULNCHECK:-0}" == "1" ]]; then
   time_phase "govulncheck source scan" "install govulncheck if needed and scan source packages" run_govulncheck_source_scan
   section "Provider dependency preflight complete"
+  exit 0
+fi
+
+if [[ "${ONLY_BUILD_NON_FIXTURE:-0}" == "1" ]]; then
+  run_build_package_validation
+  section "Provider dependency preflight build complete"
   exit 0
 fi
 
