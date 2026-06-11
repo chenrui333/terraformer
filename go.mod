@@ -563,20 +563,20 @@ require (
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cdn v1.3.90
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cfs v1.3.108
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/clb v1.3.105
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.109
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.110
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cvm v1.3.105
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.3.78
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/es v1.3.104
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/gaap v1.3.34
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/mongodb v1.3.103
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/pts v1.3.29
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/redis v1.3.79
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/redis v1.3.110
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/scf v1.3.101
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/ses v1.3.106
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/ssl v1.3.105
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tat v1.3.107
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tcaplusdb v1.3.105
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc v1.3.83
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc v1.3.110
 	github.com/vultr/govultr/v3 v3.31.2
 	gitlab.com/gitlab-org/api/client-go/v2 v2.36.0
 	helm.sh/helm/v4 v4.2.0
@@ -586,7 +586,7 @@ require (
 
 replace gopkg.in/ns1/ns1-go.v2 => github.com/ns1/ns1-go/v2 v2.17.2
 
-replace github.com/tencentcloud/tencentcloud-sdk-go => github.com/tencentcloud/tencentcloud-sdk-go v1.3.109
+replace github.com/tencentcloud/tencentcloud-sdk-go => github.com/tencentcloud/tencentcloud-sdk-go v1.3.110
 
 // Redirect stale transitive imports from abandoned dgrijalva/jwt-go to a compatible maintained fork.
 replace github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v3.2.5+incompatible
