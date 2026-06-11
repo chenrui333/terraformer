@@ -340,8 +340,8 @@ build_non_fixture_packages() {
   go build -v "${BUILD_PACKAGES[@]}"
 }
 
-skip_build_non_fixture_packages() {
-  printf 'Skipping non-fixture package build in this job; the PR preflight build job validates the same package list.\n'
+skip_pr_build_job_validation() {
+  printf 'Skipping in this job; the PR preflight build job validates this phase.\n'
 }
 
 run_build_package_validation() {
@@ -368,11 +368,12 @@ static_diff_check() {
 
 run_provider_validation() {
   time_phase "Environment diagnostics" "go version, go env, package counts, cache usage, filesystem space" environment_diagnostics
-  time_phase "Go module tidy" "go mod tidy and go.mod/go.sum diff check" run_go_mod_tidy_check
   if [[ "${SKIP_BUILD_NON_FIXTURE:-0}" == "1" ]]; then
-    time_phase "Package listing" "skipped; PR preflight build job lists and builds packages" skip_build_non_fixture_packages
-    time_phase "Build non-fixture packages" "validated by the PR preflight build job" skip_build_non_fixture_packages
+    time_phase "Go module tidy" "validated by the PR preflight build job" skip_pr_build_job_validation
+    time_phase "Package listing" "validated by the PR preflight build job" skip_pr_build_job_validation
+    time_phase "Build non-fixture packages" "validated by the PR preflight build job" skip_pr_build_job_validation
   else
+    time_phase "Go module tidy" "go mod tidy and go.mod/go.sum diff check" run_go_mod_tidy_check
     time_phase "Package listing" "go list non-fixture packages for build" list_build_packages
     time_phase "Build non-fixture packages" "go build selected non-fixture packages" build_non_fixture_packages
   fi
