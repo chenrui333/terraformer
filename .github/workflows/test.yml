@@ -72,8 +72,12 @@ jobs:
       run: bash .github/scripts/provider-dependency-preflight.sh
 
   provider_dependency_tests:
-    name: provider dependency tests
+    name: provider dependency tests (${{ matrix.shard }})
     if: github.event_name == 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [a, b]
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -96,6 +100,7 @@ jobs:
         MODE: quick
         BASE_REF: ${{ github.event.pull_request.base.sha }}
         ONLY_PROVIDER_COMMAND_TESTS: "1"
+        PROVIDER_COMMAND_TEST_SHARD: ${{ matrix.shard }}
       run: bash .github/scripts/provider-dependency-preflight.sh
 
   provider_dependency_validation:
@@ -118,6 +123,12 @@ jobs:
         go-version-file: go.mod
         cache: true
         cache-dependency-path: go.sum
+    - name: Check provider command test shards
+      env:
+        MODE: quick
+        BASE_REF: ${{ github.event.pull_request.base.sha }}
+        ONLY_CHECK_PROVIDER_COMMAND_TEST_SHARDS: "1"
+      run: bash .github/scripts/provider-dependency-preflight.sh
     - name: Run provider dependency preflight
       env:
         MODE: quick

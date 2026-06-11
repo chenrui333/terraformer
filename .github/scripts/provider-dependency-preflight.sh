@@ -7,6 +7,7 @@ PHASE_ROWS=""
 SCRIPT_STARTED_AT="$(date +%s)"
 DEPENDENCY_SENSITIVE=1
 BUILD_PACKAGES=()
+PROVIDER_COMMAND_TEST_PACKAGES=()
 
 section() {
   printf '\n==> %s\n' "$1"
@@ -340,6 +341,143 @@ build_non_fixture_packages() {
   go build -v "${BUILD_PACKAGES[@]}"
 }
 
+validate_provider_command_test_shard() {
+  local shard="${1:-all}"
+
+  case "$shard" in
+    all|a|b) ;;
+    *) fail "PROVIDER_COMMAND_TEST_SHARD must be one of all, a, or b" ;;
+  esac
+}
+
+provider_command_test_package_group() {
+  local package="$1"
+  local prefix="github.com/chenrui333/terraformer/providers/"
+  local provider
+
+  case "$package" in
+    github.com/chenrui333/terraformer/cmd|github.com/chenrui333/terraformer/cmd/*)
+      printf 'a\n'
+      return
+      ;;
+    github.com/chenrui333/terraformer/providers)
+      printf 'a\n'
+      return
+      ;;
+    "$prefix"*)
+      provider="${package#"$prefix"}"
+      provider="${provider%%/*}"
+      ;;
+    *)
+      fail "unexpected provider/cmd test package: $package"
+      ;;
+  esac
+
+  case "$provider" in
+    aws|azure|azuredevops|commercetools|datadog|equinixmetal|fastly|github|gmailfilter|helm|honeycombio|ionoscloud|keycloak|launchdarkly|logzio|mikrotik|newrelic|octopusdeploy|opal|opsgenie|panos|tencentcloud|vultr|yandex)
+      printf 'a\n'
+      ;;
+    *)
+      printf 'b\n'
+      ;;
+  esac
+}
+
+provider_command_test_package_matches_shard() {
+  local package="$1"
+  local shard="${2:-all}"
+  local package_group
+
+  validate_provider_command_test_shard "$shard"
+  if [[ "$shard" == "all" ]]; then
+    return 0
+  fi
+
+  package_group="$(provider_command_test_package_group "$package")"
+  [[ "$package_group" == "$shard" ]]
+}
+
+list_provider_command_test_packages() {
+  local package_file
+  local package
+  local shard="${PROVIDER_COMMAND_TEST_SHARD:-all}"
+
+  validate_provider_command_test_shard "$shard"
+  package_file="$(mktemp "${TMPDIR:-/tmp}/terraformer-provider-command-test-packages.XXXXXX")" || return
+  if go list ./providers/... ./cmd/... >"$package_file"; then
+    :
+  else
+    local list_status="$?"
+    rm -f "$package_file"
+    return "$list_status"
+  fi
+
+  PROVIDER_COMMAND_TEST_PACKAGES=()
+  while IFS= read -r package; do
+    [[ -n "$package" ]] || continue
+    if provider_command_test_package_matches_shard "$package" "$shard"; then
+      PROVIDER_COMMAND_TEST_PACKAGES+=("$package")
+    fi
+  done <"$package_file"
+  rm -f "$package_file"
+
+  if [[ "${#PROVIDER_COMMAND_TEST_PACKAGES[@]}" -eq 0 ]]; then
+    fail "provider/cmd test shard $shard selected no packages"
+  fi
+  printf 'Selected %s provider/cmd test package(s) for shard %s.\n' "${#PROVIDER_COMMAND_TEST_PACKAGES[@]}" "$shard"
+}
+
+write_provider_command_test_packages() {
+  local shard="$1"
+  local output_file="$2"
+  local old_shard="${PROVIDER_COMMAND_TEST_SHARD:-}"
+
+  PROVIDER_COMMAND_TEST_SHARD="$shard"
+  list_provider_command_test_packages >/dev/null
+  printf '%s\n' "${PROVIDER_COMMAND_TEST_PACKAGES[@]}" | sort >"$output_file"
+
+  if [[ -n "$old_shard" ]]; then
+    PROVIDER_COMMAND_TEST_SHARD="$old_shard"
+  else
+    unset PROVIDER_COMMAND_TEST_SHARD
+  fi
+}
+
+check_provider_command_test_shards() {
+  local all_packages shard_a shard_b union duplicates
+
+  all_packages="$(mktemp "${TMPDIR:-/tmp}/terraformer-provider-command-test-all.XXXXXX")" || return
+  shard_a="$(mktemp "${TMPDIR:-/tmp}/terraformer-provider-command-test-a.XXXXXX")" || return
+  shard_b="$(mktemp "${TMPDIR:-/tmp}/terraformer-provider-command-test-b.XXXXXX")" || return
+  union="$(mktemp "${TMPDIR:-/tmp}/terraformer-provider-command-test-union.XXXXXX")" || return
+  duplicates="$(mktemp "${TMPDIR:-/tmp}/terraformer-provider-command-test-duplicates.XXXXXX")" || return
+
+  write_provider_command_test_packages all "$all_packages"
+  write_provider_command_test_packages a "$shard_a"
+  write_provider_command_test_packages b "$shard_b"
+
+  cat "$shard_a" "$shard_b" | sort >"$union"
+  cat "$shard_a" "$shard_b" | sort | uniq -d >"$duplicates"
+
+  if [[ -s "$duplicates" ]]; then
+    printf 'Duplicate provider/cmd test packages across shards:\n' >&2
+    cat "$duplicates" >&2
+    rm -f "$all_packages" "$shard_a" "$shard_b" "$union" "$duplicates"
+    return 1
+  fi
+
+  if ! diff -u "$all_packages" "$union"; then
+    rm -f "$all_packages" "$shard_a" "$shard_b" "$union" "$duplicates"
+    return 1
+  fi
+
+  printf 'Provider/cmd test shard coverage ok: all=%s shard_a=%s shard_b=%s.\n' \
+    "$(wc -l <"$all_packages" | tr -d ' ')" \
+    "$(wc -l <"$shard_a" | tr -d ' ')" \
+    "$(wc -l <"$shard_b" | tr -d ' ')"
+  rm -f "$all_packages" "$shard_a" "$shard_b" "$union" "$duplicates"
+}
+
 skip_pr_build_job_validation() {
   printf 'Skipping in this job; the PR preflight build job validates this phase.\n'
 }
@@ -355,11 +493,14 @@ run_build_package_validation() {
 }
 
 test_provider_and_command_packages() {
-  go test ./providers/... ./cmd/... -count=1
+  list_provider_command_test_packages || return
+  go test "${PROVIDER_COMMAND_TEST_PACKAGES[@]}" -count=1
 }
 
 run_provider_command_test_validation() {
-  time_phase "Test provider and command packages" "go test ./providers/... ./cmd/... -count=1" test_provider_and_command_packages
+  local shard="${PROVIDER_COMMAND_TEST_SHARD:-all}"
+
+  time_phase "Test provider and command packages" "go test provider/cmd packages shard=$shard" test_provider_and_command_packages
 }
 
 test_build_and_utility_packages() {
@@ -492,6 +633,12 @@ fi
 if [[ "${ONLY_PROVIDER_COMMAND_TESTS:-0}" == "1" ]]; then
   run_provider_command_test_validation
   section "Provider dependency preflight provider tests complete"
+  exit 0
+fi
+
+if [[ "${ONLY_CHECK_PROVIDER_COMMAND_TEST_SHARDS:-0}" == "1" ]]; then
+  time_phase "Check provider command test shards" "prove provider/cmd test shard union and non-overlap" check_provider_command_test_shards
+  section "Provider dependency preflight provider test shard check complete"
   exit 0
 fi
 
