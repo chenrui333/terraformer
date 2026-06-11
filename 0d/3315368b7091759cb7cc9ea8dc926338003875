@@ -1,0 +1,21 @@
+.github/workflows/govulncheck.yml
+  s_afdb657bd8ae26::t_61f9a69c9fdf63 28-32,43-44
+.github/workflows/test.yml
+  s_afdb657bd8ae26::t_61f9a69c9fdf63 28-32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "0d3315368b7091759cb7cc9ea8dc926338003875",
+  "prompts": {},
+  "sessions": {
+    "s_afdb657bd8ae26": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019eaf3b-28e8-78b1-9b2b-942e4d2dac16",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
