@@ -182,9 +182,15 @@ has_dependency_sensitive_changes() {
   local path
   local diff_args=("$base_ref...HEAD")
 
-  if ! changed_paths="$(git diff --name-only "${diff_args[@]}" 2>/dev/null)"; then
+  if changed_paths="$(git diff --name-only "${diff_args[@]}" 2>/dev/null)"; then
+    :
+  else
     warn "could not diff $base_ref...HEAD; falling back to $base_ref HEAD"
-    changed_paths="$(git diff --name-only "$base_ref" HEAD)" || return
+    if changed_paths="$(git diff --name-only "$base_ref" HEAD)"; then
+      :
+    else
+      return 2
+    fi
   fi
 
   while IFS= read -r path; do
@@ -278,16 +284,25 @@ environment_diagnostics() {
 
 detect_dependency_sensitive_changes() {
   local base_ref
+  local sensitive_status
 
   base_ref="$(resolve_base_ref)" || return
   printf 'Using base ref: %s\n' "$base_ref"
-  if ! has_dependency_sensitive_changes "$base_ref"; then
+  if has_dependency_sensitive_changes "$base_ref"; then
+    DEPENDENCY_SENSITIVE=1
+    printf 'Dependency-sensitive changes detected; running provider dependency preflight.\n'
+    return
+  else
+    sensitive_status="$?"
+  fi
+
+  if [[ "$sensitive_status" -eq 1 ]]; then
     DEPENDENCY_SENSITIVE=0
     printf 'No dependency-sensitive changes detected; skipping provider dependency preflight.\n'
     return
   fi
-  DEPENDENCY_SENSITIVE=1
-  printf 'Dependency-sensitive changes detected; running provider dependency preflight.\n'
+
+  return "$sensitive_status"
 }
 
 run_go_mod_tidy_check() {
