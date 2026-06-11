@@ -682,7 +682,14 @@ func (api *API) ListAllRateLimits(ctx context.Context, zoneID string) ([]RateLim
 			return []RateLimit{}, err
 		}
 		limits = append(limits, pageLimits...)
-		if info == nil || info.PerPage < 1 || info.Count < info.PerPage {
+		if info == nil || info.PerPage < 1 {
+			break
+		}
+		if info.TotalPages > 0 || info.Total > 0 {
+			if !info.HasMorePages() {
+				break
+			}
+		} else if info.Count < info.PerPage {
 			break
 		}
 		params.Page++

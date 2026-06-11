@@ -8,6 +8,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 )
 
@@ -383,6 +384,45 @@ func TestListAllRateLimitsPaginatesUntilShortPage(t *testing.T) {
 	}
 	if got, want := len(pages), 2; got != want {
 		t.Fatalf("request count = %d, want %d", got, want)
+	}
+}
+
+func TestListAllRateLimitsUsesPaginationMetadata(t *testing.T) {
+	pages := make([]string, 0, 2)
+	api := newTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		page := r.URL.Query().Get("page")
+		pages = append(pages, page)
+		switch page {
+		case "1":
+			writeTestResponse(t, w, []RateLimit{{ID: "limit-1"}}, map[string]int{
+				"count":       100,
+				"page":        1,
+				"per_page":    100,
+				"total_count": 200,
+				"total_pages": 2,
+			})
+		case "2":
+			writeTestResponse(t, w, []RateLimit{{ID: "limit-2"}}, map[string]int{
+				"count":       100,
+				"page":        2,
+				"per_page":    100,
+				"total_count": 200,
+				"total_pages": 2,
+			})
+		default:
+			t.Fatalf("unexpected page query %q", page)
+		}
+	}))
+
+	limits, err := api.ListAllRateLimits(context.Background(), "zone-123")
+	if err != nil {
+		t.Fatalf("ListAllRateLimits() error = %v", err)
+	}
+	if got, want := len(limits), 2; got != want {
+		t.Fatalf("rate limit count = %d, want %d", got, want)
+	}
+	if got, want := pages, []string{"1", "2"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("pages = %#v, want %#v", got, want)
 	}
 }
 
