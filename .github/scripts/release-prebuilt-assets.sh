@@ -160,13 +160,56 @@ prepare_asset_dir() {
   rm -rf "$ASSET_DIR" && mkdir -p "$ASSET_DIR"
 }
 
+stage_asset_file() {
+  local source="$1"
+  local destination
+
+  destination="$ASSET_DIR/$(basename "$source")"
+
+  rm -f "$destination"
+  if ln "$source" "$destination" 2>/dev/null; then
+    return 0
+  fi
+
+  cp "$source" "$destination"
+}
+
+stage_matching_assets() {
+  local source_dir="$1"
+  local pattern="$2"
+  local file_list
+  local file
+  local stage_status
+
+  file_list="$(mktemp "${TMPDIR:-/tmp}/terraformer-release-assets.XXXXXX")" || return 1
+
+  if find "$source_dir" -type f -name "$pattern" -print0 >"$file_list"; then
+    :
+  else
+    local find_status="$?"
+    rm -f "$file_list"
+    return "$find_status"
+  fi
+
+  stage_status=0
+  while IFS= read -r -d '' file; do
+    if ! stage_asset_file "$file"; then
+      stage_status=1
+      break
+    fi
+  done <"$file_list"
+
+  rm -f "$file_list"
+  return "$stage_status"
+}
+
 stage_provider_assets() {
   [[ -d "$PROVIDER_DIR" ]] || {
     phase_error "missing provider binary directory: $PROVIDER_DIR"
     return 1
   }
 
-  find "$PROVIDER_DIR" -type f -name 'terraformer-*' -exec cp '{}' "$ASSET_DIR/" \;
+  stage_matching_assets "$PROVIDER_DIR" 'terraformer-*'
 }
 
 stage_all_assets() {
@@ -175,7 +218,7 @@ stage_all_assets() {
     return 1
   }
 
-  find "$ALL_DIR" -type f -name 'terraformer-all-*' -exec cp '{}' "$ASSET_DIR/" \;
+  stage_matching_assets "$ALL_DIR" 'terraformer-all-*'
 }
 
 verify_expected_counts() {
@@ -251,8 +294,8 @@ version="$(version_from_ref)"
 checksum_name="terraformer_${version}_checksums.txt"
 
 time_phase "Prepare asset directory" "reset $ASSET_DIR" prepare_asset_dir
-time_phase "Stage provider binaries" "copy terraformer-* from $PROVIDER_DIR" stage_provider_assets
-time_phase "Stage all-in-one binaries" "copy terraformer-all-* from $ALL_DIR" stage_all_assets
+time_phase "Stage provider binaries" "hardlink/copy terraformer-* from $PROVIDER_DIR" stage_provider_assets
+time_phase "Stage all-in-one binaries" "hardlink/copy terraformer-all-* from $ALL_DIR" stage_all_assets
 time_phase "Verify expected counts" "require provider binaries and 4 all-in-one binaries" verify_expected_counts
 time_phase "Staged assets" "list staged release assets" list_staged_assets
 time_phase "Checksum generation" "write $checksum_name" checksum_assets "$checksum_name"
