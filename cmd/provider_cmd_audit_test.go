@@ -80,6 +80,28 @@ func TestKubernetesProviderCommandRegistration(t *testing.T) {
 	}
 }
 
+func TestMikrotikProviderCommandRegistration(t *testing.T) {
+	provider := newMikrotikProvider()
+	if provider.GetName() != "mikrotik" {
+		t.Fatalf("provider name = %q, want mikrotik", provider.GetName())
+	}
+	if _, ok := provider.GetSupportedService()["dhcp_lease"]; !ok {
+		t.Fatal("Mikrotik dhcp_lease service is not registered")
+	}
+
+	cmd := importerSubcommand(t, "mikrotik")
+	if cmd.PersistentFlags().Lookup("resources") == nil {
+		t.Fatal("Mikrotik command missing resources flag")
+	}
+	if cmd.PersistentFlags().Lookup("filter") == nil {
+		t.Fatal("Mikrotik command missing filter flag")
+	}
+
+	if _, ok := providerGenerators()["mikrotik"]; !ok {
+		t.Fatal("Mikrotik provider generator is not registered")
+	}
+}
+
 func importerSubcommand(t *testing.T, use string) *cobra.Command {
 	t.Helper()
 	for _, importer := range providerImporterSubcommands() {

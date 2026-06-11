@@ -25,14 +25,7 @@ func (p *MikrotikProvider) GetName() string {
 }
 
 func (p *MikrotikProvider) GetProviderData(_ ...string) map[string]interface{} {
-	return map[string]interface{}{
-		"provider": map[string]interface{}{
-			"mikrotik": map[string]interface{}{
-				"host": p.Host,
-				"user": p.Username,
-			},
-		},
-	}
+	return map[string]interface{}{}
 }
 
 func (MikrotikProvider) GetResourceConnections() map[string]map[string][]string {
