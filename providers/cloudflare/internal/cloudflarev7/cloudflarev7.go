@@ -1090,9 +1090,11 @@ type ListWorkerCronTriggersParams struct {
 }
 
 func (api *API) ListWorkerCronTriggers(ctx context.Context, rc *ResourceContainer, params ListWorkerCronTriggersParams) ([]WorkerCronTrigger, error) {
-	var triggers []WorkerCronTrigger
-	_, err := api.get(ctx, rc.URLFragment()+"/workers/scripts/"+url.PathEscape(params.ScriptName)+"/schedules", nil, &triggers)
-	return triggers, err
+	var response struct {
+		Schedules []WorkerCronTrigger
+	}
+	_, err := api.get(ctx, rc.URLFragment()+"/workers/scripts/"+url.PathEscape(params.ScriptName)+"/schedules", nil, &response)
+	return response.Schedules, err
 }
 
 type WorkersForPlatformsDispatchNamespace struct {

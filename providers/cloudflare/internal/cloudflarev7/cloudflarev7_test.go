@@ -529,6 +529,32 @@ func TestListPagesProjectsAcceptsStringDomains(t *testing.T) {
 	}
 }
 
+func TestListWorkerCronTriggersUnwrapsSchedules(t *testing.T) {
+	api := newTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.EscapedPath() != "/accounts/account-123/workers/scripts/worker%20one/schedules" {
+			t.Fatalf("path = %q, want worker schedules path", r.URL.EscapedPath())
+		}
+		writeTestResponse(t, w, map[string][]WorkerCronTrigger{
+			"schedules": {
+				{Cron: "*/15 * * * *"},
+				{Cron: "0 0 * * *"},
+			},
+		}, nil)
+	}))
+
+	triggers, err := api.ListWorkerCronTriggers(
+		context.Background(),
+		AccountIdentifier("account-123"),
+		ListWorkerCronTriggersParams{ScriptName: "worker one"},
+	)
+	if err != nil {
+		t.Fatalf("ListWorkerCronTriggers() error = %v", err)
+	}
+	if got, want := triggers, []WorkerCronTrigger{{Cron: "*/15 * * * *"}, {Cron: "0 0 * * *"}}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("triggers = %#v, want %#v", got, want)
+	}
+}
+
 func newTestAPI(t *testing.T, handler http.Handler) *API {
 	t.Helper()
 
