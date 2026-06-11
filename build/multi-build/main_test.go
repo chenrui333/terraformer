@@ -169,7 +169,7 @@ func mustMkdir(t *testing.T, path string) {
 func writeFile(t *testing.T, path string, content string) {
 	t.Helper()
 	mustMkdir(t, filepath.Dir(path))
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		t.Fatalf("WriteFile(%q) error = %v", path, err)
 	}
 }

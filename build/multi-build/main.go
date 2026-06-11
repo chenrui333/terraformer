@@ -155,7 +155,6 @@ func run(options buildOptions) (err error) {
 	}()
 
 	for _, target := range targets {
-		target := target
 		phase := fmt.Sprintf("provider build %s %s/%s", target.Provider.Name, target.GOOS, target.GOARCH)
 		if err := timed(phase, func() error {
 			return buildProviderBinary(workspace, providers, target, options.LDFlags)
