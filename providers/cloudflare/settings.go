@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
+	cf "github.com/chenrui333/terraformer/providers/cloudflare/internal/cloudflarev7"
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
-	cf "github.com/cloudflare/cloudflare-go"
 )
 
 type SettingsGenerator struct {

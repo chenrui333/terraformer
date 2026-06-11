@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"strings"
 
+	cf "github.com/chenrui333/terraformer/providers/cloudflare/internal/cloudflarev7"
 	"github.com/chenrui333/terraformer/terraformutils"
-	cf "github.com/cloudflare/cloudflare-go"
 )
 
 type SecurityGenerator struct {
