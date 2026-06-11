@@ -373,9 +373,7 @@ run_provider_validation() {
     time_phase "Package listing" "validated by the PR preflight build job" skip_pr_build_job_validation
     time_phase "Build non-fixture packages" "validated by the PR preflight build job" skip_pr_build_job_validation
   else
-    time_phase "Go module tidy" "go mod tidy and go.mod/go.sum diff check" run_go_mod_tidy_check
-    time_phase "Package listing" "go list non-fixture packages for build" list_build_packages
-    time_phase "Build non-fixture packages" "go build selected non-fixture packages" build_non_fixture_packages
+    run_build_package_validation
   fi
   time_phase "Test provider and command packages" "go test ./providers/... ./cmd/... -count=1" test_provider_and_command_packages
   time_phase "Test build and utility packages" "go test ./build/... ./terraformutils/... ./version -count=1" test_build_and_utility_packages
