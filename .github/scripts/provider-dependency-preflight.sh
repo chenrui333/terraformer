@@ -344,6 +344,10 @@ skip_pr_build_job_validation() {
   printf 'Skipping in this job; the PR preflight build job validates this phase.\n'
 }
 
+skip_pr_provider_test_job_validation() {
+  printf 'Skipping in this job; the PR provider test job validates this phase.\n'
+}
+
 run_build_package_validation() {
   time_phase "Go module tidy" "go mod tidy and go.mod/go.sum diff check" run_go_mod_tidy_check
   time_phase "Package listing" "go list non-fixture packages for build" list_build_packages
@@ -352,6 +356,10 @@ run_build_package_validation() {
 
 test_provider_and_command_packages() {
   go test ./providers/... ./cmd/... -count=1
+}
+
+run_provider_command_test_validation() {
+  time_phase "Test provider and command packages" "go test ./providers/... ./cmd/... -count=1" test_provider_and_command_packages
 }
 
 test_build_and_utility_packages() {
@@ -375,7 +383,11 @@ run_provider_validation() {
   else
     run_build_package_validation
   fi
-  time_phase "Test provider and command packages" "go test ./providers/... ./cmd/... -count=1" test_provider_and_command_packages
+  if [[ "${SKIP_PROVIDER_COMMAND_TESTS:-0}" == "1" ]]; then
+    time_phase "Test provider and command packages" "validated by the PR provider test job" skip_pr_provider_test_job_validation
+  else
+    run_provider_command_test_validation
+  fi
   time_phase "Test build and utility packages" "go test ./build/... ./terraformutils/... ./version -count=1" test_build_and_utility_packages
   time_phase "Vet dependency-sensitive packages" "go vet providers, cmd, build, terraformutils, version" vet_dependency_sensitive_packages
   time_phase "Static diff check" "git diff --check" static_diff_check
@@ -474,6 +486,12 @@ fi
 if [[ "${ONLY_BUILD_NON_FIXTURE:-0}" == "1" ]]; then
   run_build_package_validation
   section "Provider dependency preflight build complete"
+  exit 0
+fi
+
+if [[ "${ONLY_PROVIDER_COMMAND_TESTS:-0}" == "1" ]]; then
+  run_provider_command_test_validation
+  section "Provider dependency preflight provider tests complete"
   exit 0
 fi
 
