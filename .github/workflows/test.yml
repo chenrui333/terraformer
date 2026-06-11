@@ -37,7 +37,7 @@ jobs:
     - name: Check go.mod and go.sum
       run: git diff --exit-code -- go.mod go.sum
     - name: Test core packages
-      run: go test ./build/... ./terraformutils/... ./version ./cmd ./providers ./providers/aws ./providers/gcp ./providers/azure -count=1
+      run: bash .github/scripts/pr-core-test.sh
 
   provider-dependency-preflight:
     name: provider dependency preflight
