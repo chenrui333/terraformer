@@ -1,0 +1,20 @@
+.github/scripts/release-prebuilt-assets.sh
+  s_d0dff4ce1c21c7::t_eab7906d739d1c 165-167
+  s_d0dff4ce1c21c7::t_27ce4daac6532b 163-164,168-186,193,202,278-279
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "4c5b0109e37f0b0bf72e7810260a8602d3f1256a",
+  "prompts": {},
+  "sessions": {
+    "s_d0dff4ce1c21c7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019eaf12-f1a5-71b0-9f74-644639d5ebc5",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
