@@ -36,4 +36,7 @@ func TestDhcpLeaseGeneratorCreateResources(t *testing.T) {
 	if got, want := resources[1].ResourceName, terraformutils.TfSanitize("*2"); got != want {
 		t.Fatalf("second resource name = %q, want %q", got, want)
 	}
+	if got, want := resources[1].InstanceInfo.Type, "mikrotik_dhcp_lease"; got != want {
+		t.Fatalf("second resource type = %q, want %q", got, want)
+	}
 }
