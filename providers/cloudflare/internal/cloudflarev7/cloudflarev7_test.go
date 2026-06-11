@@ -386,6 +386,28 @@ func TestListAllRateLimitsPaginatesUntilShortPage(t *testing.T) {
 	}
 }
 
+func TestListAllRateLimitsStopsWhenResultInfoMissing(t *testing.T) {
+	requestCount := 0
+	api := newTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestCount++
+		if got := r.URL.Query().Get("page"); got != "1" {
+			t.Fatalf("page query = %q, want 1", got)
+		}
+		writeTestResponse(t, w, []RateLimit{{ID: "limit-1"}}, nil)
+	}))
+
+	limits, err := api.ListAllRateLimits(context.Background(), "zone-123")
+	if err != nil {
+		t.Fatalf("ListAllRateLimits() error = %v", err)
+	}
+	if got, want := len(limits), 1; got != want {
+		t.Fatalf("rate limit count = %d, want %d", got, want)
+	}
+	if requestCount != 1 {
+		t.Fatalf("request count = %d, want 1", requestCount)
+	}
+}
+
 func TestListMagicTransitResourcesUnwrapResultObjects(t *testing.T) {
 	api := newTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
