@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 
 	mgo "github.com/Myra-Security-GmbH/myrasec-go/v2"
@@ -38,10 +39,17 @@ func (s *MyrasecService) initializeAPI() (*mgo.API, error) {
 
 	api, err := mgo.New(apiKey, apiSecret)
 	if urlPresent {
-		api.BaseURL = apiURL
+		api.BaseURL = normalizeMyrasecAPIBaseURL(apiURL)
 	}
 	api.EnableCaching()
 	api.SetCachingTTL(3600)
 
 	return api, err
+}
+
+func normalizeMyrasecAPIBaseURL(apiURL string) string {
+	if apiURL == "" || strings.Contains(apiURL, "%s") {
+		return apiURL
+	}
+	return strings.TrimRight(apiURL, "/") + "/%s"
 }
