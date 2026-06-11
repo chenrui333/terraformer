@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
+	cf "github.com/chenrui333/terraformer/providers/cloudflare/internal/cloudflarev7"
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/chenrui333/terraformer/terraformutils/tfcompat"
-	cf "github.com/cloudflare/cloudflare-go"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -126,7 +126,11 @@ func TestCloudflareOptionalSettingsMissing(t *testing.T) {
 		want bool
 	}{
 		{name: "not found", err: testCloudflareNotFoundError("not found"), want: true},
-		{name: "forbidden", err: testCloudflareForbiddenError("permission denied"), want: true},
+		{name: "legacy forbidden", err: testCloudflareForbiddenError("permission denied"), want: true},
+		{name: "authorization forbidden", err: testCloudflareAuthorizationError("permission denied"), want: true},
+		{name: "authorization entitlement", err: testCloudflareAuthorizationError("upgrade your plan to use this setting"), want: true},
+		{name: "legacy credential error", err: testCloudflareForbiddenError("invalid token"), want: false},
+		{name: "authorization credential error", err: testCloudflareAuthorizationError("invalid token"), want: false},
 		{name: "request error", err: testCloudflareRequestError("bad request"), want: false},
 		{name: "generic error", err: errors.New("boom"), want: false},
 	} {
@@ -144,6 +148,18 @@ func testCloudflareForbiddenError(messages ...string) error {
 		responseInfo = append(responseInfo, cf.ResponseInfo{Message: message})
 	}
 	err := cf.NewAuthenticationError(&cf.Error{
+		Errors:        responseInfo,
+		ErrorMessages: messages,
+	})
+	return &err
+}
+
+func testCloudflareAuthorizationError(messages ...string) error {
+	responseInfo := make([]cf.ResponseInfo, 0, len(messages))
+	for _, message := range messages {
+		responseInfo = append(responseInfo, cf.ResponseInfo{Message: message})
+	}
+	err := cf.NewAuthorizationError(&cf.Error{
 		Errors:        responseInfo,
 		ErrorMessages: messages,
 	})

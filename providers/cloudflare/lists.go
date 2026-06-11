@@ -10,8 +10,8 @@ import (
 	"net/url"
 	"strconv"
 
+	cf "github.com/chenrui333/terraformer/providers/cloudflare/internal/cloudflarev7"
 	"github.com/chenrui333/terraformer/terraformutils"
-	cf "github.com/cloudflare/cloudflare-go"
 )
 
 type ListsGenerator struct {
@@ -30,11 +30,11 @@ func addListItemAttributes(attributes map[string]string, index int, item cf.List
 		attributes[prefix+".comment"] = item.Comment
 	}
 	if item.Hostname != nil {
-		attributes[prefix+".hostname.url_hostname"] = item.Hostname.UrlHostname
+		attributes[prefix+".hostname.url_hostname"] = item.Hostname.URLHostname
 	}
 	if item.Redirect != nil {
-		attributes[prefix+".redirect.source_url"] = item.Redirect.SourceUrl
-		attributes[prefix+".redirect.target_url"] = item.Redirect.TargetUrl
+		attributes[prefix+".redirect.source_url"] = item.Redirect.SourceURL
+		attributes[prefix+".redirect.target_url"] = item.Redirect.TargetURL
 		if item.Redirect.IncludeSubdomains != nil {
 			attributes[prefix+".redirect.include_subdomains"] = strconv.FormatBool(*item.Redirect.IncludeSubdomains)
 		}

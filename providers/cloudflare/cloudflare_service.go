@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
-//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package cloudflare
 
 import (
@@ -12,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 
+	cf "github.com/chenrui333/terraformer/providers/cloudflare/internal/cloudflarev7"
 	"github.com/chenrui333/terraformer/terraformutils"
-	cf "github.com/cloudflare/cloudflare-go"
 	"github.com/cloudflare/cloudflare-go/v7/option"
 )
 
@@ -29,7 +28,7 @@ func (s *CloudflareService) initializeAPI() (*cf.API, error) {
 	apiToken := os.Getenv("CLOUDFLARE_API_TOKEN")
 
 	if apiToken == "" && (apiEmail == "" || apiKey == "") {
-		err := errors.New("Either CLOUDFLARE_API_TOKEN or CLOUDFLARE_API_KEY/CLOUDFLARE_EMAIL environment variables must be set")
+		err := errors.New("either CLOUDFLARE_API_TOKEN or CLOUDFLARE_API_KEY/CLOUDFLARE_EMAIL environment variables must be set")
 		fmt.Fprintln(os.Stderr, err)
 		return nil, err
 	}
@@ -47,7 +46,7 @@ func (s *CloudflareService) cloudflareV7Options() ([]option.RequestOption, error
 	apiToken := os.Getenv("CLOUDFLARE_API_TOKEN")
 
 	if apiToken == "" && (apiEmail == "" || apiKey == "") {
-		err := errors.New("Either CLOUDFLARE_API_TOKEN or CLOUDFLARE_API_KEY/CLOUDFLARE_EMAIL environment variables must be set")
+		err := errors.New("either CLOUDFLARE_API_TOKEN or CLOUDFLARE_API_KEY/CLOUDFLARE_EMAIL environment variables must be set")
 		fmt.Fprintln(os.Stderr, err)
 		return nil, err
 	}

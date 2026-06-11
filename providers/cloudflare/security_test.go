@@ -14,7 +14,7 @@ import (
 	"strings"
 	"testing"
 
-	cf "github.com/cloudflare/cloudflare-go"
+	cf "github.com/chenrui333/terraformer/providers/cloudflare/internal/cloudflarev7"
 )
 
 func TestCloudflareZoneSecurityResourceUsesCompositeImportID(t *testing.T) {
