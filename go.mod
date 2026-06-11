@@ -5,7 +5,7 @@ go 1.26.4
 require (
 	cloud.google.com/go v0.123.0 // indirect
 	cloud.google.com/go/logging v1.18.0
-	cloud.google.com/go/storage v1.62.2
+	cloud.google.com/go/storage v1.62.3
 	github.com/Azure/azure-storage-blob-go v0.15.0
 	github.com/IBM-Cloud/bluemix-go v0.0.0-20260424100510-275dcc5549eb
 	github.com/IBM/go-sdk-core/v5 v5.21.4
