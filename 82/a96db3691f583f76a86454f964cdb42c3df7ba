@@ -1,0 +1,30 @@
+providers/cloudflare/internal/cloudflarev7/cloudflarev7_test.go
+  s_afdb657bd8ae26::t_3586b00044943b 206-388,501-511
+providers/cloudflare/internal/cloudflarev7/cloudflarev7.go
+  s_afdb657bd8ae26::t_d5beaa517659fe 501-502,509-511,513,541-542,546,572-573,590,652,665,673-674,676,678-690
+  s_afdb657bd8ae26::t_b5af246065fbf2 368-370,372-373,375-376,378-399
+  s_afdb657bd8ae26::t_071ab8bb4a0943 367
+  s_afdb657bd8ae26::t_b6aea0a4f7e075 371,374
+  s_afdb657bd8ae26::t_f7ed08e9bf876c 377
+providers/cloudflare/settings_test.go
+  s_afdb657bd8ae26::t_768a90f620fa40 131-133
+providers/cloudflare/settings.go
+  s_afdb657bd8ae26::t_dbec0a1a8e1a15 714,727
+  s_afdb657bd8ae26::t_312b10faa64bfa 718,730-761
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "82a96db3691f583f76a86454f964cdb42c3df7ba",
+  "prompts": {},
+  "sessions": {
+    "s_afdb657bd8ae26": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019eaf3b-28e8-78b1-9b2b-942e4d2dac16",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
