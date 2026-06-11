@@ -128,6 +128,9 @@ func TestCloudflareOptionalSettingsMissing(t *testing.T) {
 		{name: "not found", err: testCloudflareNotFoundError("not found"), want: true},
 		{name: "legacy forbidden", err: testCloudflareForbiddenError("permission denied"), want: true},
 		{name: "authorization forbidden", err: testCloudflareAuthorizationError("permission denied"), want: true},
+		{name: "authorization entitlement", err: testCloudflareAuthorizationError("upgrade your plan to use this setting"), want: true},
+		{name: "legacy credential error", err: testCloudflareForbiddenError("invalid token"), want: false},
+		{name: "authorization credential error", err: testCloudflareAuthorizationError("invalid token"), want: false},
 		{name: "request error", err: testCloudflareRequestError("bad request"), want: false},
 		{name: "generic error", err: errors.New("boom"), want: false},
 	} {

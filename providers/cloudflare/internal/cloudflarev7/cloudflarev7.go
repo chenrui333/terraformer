@@ -364,6 +364,39 @@ func (api *API) get(ctx context.Context, endpoint string, params interface{}, re
 	return raw.ResultInfo, nil
 }
 
+func listWithPaginationOptions[T any](ctx context.Context, api *API, endpoint string, params PaginationOptions, defaultPerPage int) ([]T, *ResultInfo, error) {
+	autoPaginate := params.Page < 1 && params.PerPage < 1 && params.Cursor == ""
+	normalizePaginationOptions(&params, defaultPerPage)
+
+	var results []T
+	var lastInfo *ResultInfo
+	for {
+		var pageResults []T
+		info, err := api.get(ctx, endpoint, params, &pageResults)
+		if err != nil {
+			return []T{}, info, err
+		}
+		results = append(results, pageResults...)
+		lastInfo = info
+		if !autoPaginate || info == nil || !info.HasMorePages() {
+			break
+		}
+		next := info.Next()
+		params.Page = next.Page
+		params.Cursor = next.Cursor
+	}
+	return results, lastInfo, nil
+}
+
+func normalizePaginationOptions(params *PaginationOptions, defaultPerPage int) {
+	if params.PerPage < 1 {
+		params.PerPage = defaultPerPage
+	}
+	if params.Page < 1 && params.Cursor == "" {
+		params.Page = 1
+	}
+}
+
 func endpointWithQuery(endpoint string, values url.Values) string {
 	if len(values) == 0 {
 		return endpoint
@@ -465,15 +498,19 @@ type Zone struct {
 	Name string `json:"name"`
 }
 
+const listZonesDefaultPageSize = 50
+
 func (api *API) ListZones(ctx context.Context, names ...string) ([]Zone, error) {
 	params := struct {
 		Name string `url:"name,omitempty"`
 	}{}
 	if len(names) > 0 {
 		params.Name = names[0]
+		var zones []Zone
+		_, err := api.get(ctx, "/zones", params, &zones)
+		return zones, err
 	}
-	var zones []Zone
-	_, err := api.get(ctx, "/zones", params, &zones)
+	zones, _, err := listWithPaginationOptions[Zone](ctx, api, "/zones", PaginationOptions{}, listZonesDefaultPageSize)
 	return zones, err
 }
 
@@ -501,11 +538,12 @@ type ListDNSRecordsParams struct {
 const listDNSRecordsDefaultPageSize = 100
 
 func (api *API) ListDNSRecords(ctx context.Context, rc *ResourceContainer, params ListDNSRecordsParams) ([]DNSRecord, *ResultInfo, error) {
-	autoPaginate := params.Page < 1 && params.PerPage < 1 && params.Cursor == "" && params.Cursors.After == "" && params.Cursors.Before == ""
+	hasCursor := params.Cursor != "" || params.Cursors.After != "" || params.Cursors.Before != ""
+	autoPaginate := params.Page < 1 && params.PerPage < 1 && !hasCursor
 	if params.PerPage < 1 {
 		params.PerPage = listDNSRecordsDefaultPageSize
 	}
-	if params.Page < 1 && params.Cursor == "" {
+	if params.Page < 1 && !hasCursor {
 		params.Page = 1
 	}
 
@@ -531,6 +569,8 @@ type LockdownListParams struct {
 	PaginationOptions
 }
 
+const firewallListDefaultPageSize = 50
+
 type AccessRule struct {
 	ID    string          `json:"id"`
 	Notes string          `json:"notes"`
@@ -547,9 +587,7 @@ type AccessRulesResponse struct {
 }
 
 func (api *API) ListZoneLockdowns(ctx context.Context, rc *ResourceContainer, params LockdownListParams) ([]AccessRule, *ResultInfo, error) {
-	var rules []AccessRule
-	info, err := api.get(ctx, rc.URLFragment()+"/firewall/lockdowns", params, &rules)
-	return rules, info, err
+	return listWithPaginationOptions[AccessRule](ctx, api, rc.URLFragment()+"/firewall/lockdowns", params.PaginationOptions, firewallListDefaultPageSize)
 }
 
 func (api *API) ListAccountAccessRules(ctx context.Context, accountID string, _ AccessRule, page int) (AccessRulesResponse, error) {
@@ -611,9 +649,7 @@ type Filter struct {
 }
 
 func (api *API) Filters(ctx context.Context, rc *ResourceContainer, params FilterListParams) ([]Filter, *ResultInfo, error) {
-	var filters []Filter
-	info, err := api.get(ctx, rc.URLFragment()+"/filters", params, &filters)
-	return filters, info, err
+	return listWithPaginationOptions[Filter](ctx, api, rc.URLFragment()+"/filters", params.PaginationOptions, firewallListDefaultPageSize)
 }
 
 type FirewallRuleListParams struct {
@@ -626,9 +662,7 @@ type FirewallRule struct {
 }
 
 func (api *API) FirewallRules(ctx context.Context, rc *ResourceContainer, params FirewallRuleListParams) ([]FirewallRule, *ResultInfo, error) {
-	var rules []FirewallRule
-	info, err := api.get(ctx, rc.URLFragment()+"/firewall/rules", params, &rules)
-	return rules, info, err
+	return listWithPaginationOptions[FirewallRule](ctx, api, rc.URLFragment()+"/firewall/rules", params.PaginationOptions, firewallListDefaultPageSize)
 }
 
 type RateLimit struct {
@@ -636,10 +670,24 @@ type RateLimit struct {
 	Description string `json:"description"`
 }
 
+const listRateLimitsDefaultPageSize = 100
+
 func (api *API) ListAllRateLimits(ctx context.Context, zoneID string) ([]RateLimit, error) {
+	params := PaginationOptions{Page: 1, PerPage: listRateLimitsDefaultPageSize}
 	var limits []RateLimit
-	_, err := api.get(ctx, "/zones/"+url.PathEscape(zoneID)+"/rate_limits", nil, &limits)
-	return limits, err
+	for {
+		var pageLimits []RateLimit
+		info, err := api.get(ctx, "/zones/"+url.PathEscape(zoneID)+"/rate_limits", params, &pageLimits)
+		if err != nil {
+			return []RateLimit{}, err
+		}
+		limits = append(limits, pageLimits...)
+		if info == nil || info.Count < info.PerPage {
+			break
+		}
+		params.Page++
+	}
+	return limits, nil
 }
 
 type PageRule struct {

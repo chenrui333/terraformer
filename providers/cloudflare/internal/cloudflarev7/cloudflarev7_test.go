@@ -203,6 +203,189 @@ func TestListDNSRecordsDoesNotAutoPaginateWhenPaginationExplicit(t *testing.T) {
 	}
 }
 
+func TestListDNSRecordsDoesNotForcePageForExplicitCursor(t *testing.T) {
+	api := newTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("page"); got != "" {
+			t.Fatalf("page query = %q, want empty for cursor pagination", got)
+		}
+		if got := r.URL.Query().Get("after"); got != "cursor-after" {
+			t.Fatalf("after query = %q, want cursor-after", got)
+		}
+		if got := r.URL.Query().Get("per_page"); got != "100" {
+			t.Fatalf("per_page query = %q, want 100", got)
+		}
+		writeTestResponse(t, w, []DNSRecord{{ID: "record-1", Name: "a.example.com", Type: "A"}}, nil)
+	}))
+
+	records, _, err := api.ListDNSRecords(
+		context.Background(),
+		ZoneIdentifier("zone-123"),
+		ListDNSRecordsParams{ResultInfo: ResultInfo{Cursors: ResultInfoCursors{After: "cursor-after"}}},
+	)
+	if err != nil {
+		t.Fatalf("ListDNSRecords() error = %v", err)
+	}
+	if got, want := len(records), 1; got != want {
+		t.Fatalf("record count = %d, want %d", got, want)
+	}
+}
+
+func TestListZonesAutoPaginatesWhenNamesOmitted(t *testing.T) {
+	pages := make([]string, 0, 2)
+	api := newTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/zones" {
+			t.Fatalf("path = %q, want /zones", r.URL.Path)
+		}
+		if got := r.URL.Query().Get("per_page"); got != "50" {
+			t.Fatalf("per_page query = %q, want 50", got)
+		}
+		page := r.URL.Query().Get("page")
+		pages = append(pages, page)
+		switch page {
+		case "1":
+			writeTestResponse(t, w, []Zone{{ID: "zone-1", Name: "example.com"}}, map[string]int{
+				"page":        1,
+				"per_page":    50,
+				"total_pages": 2,
+			})
+		case "2":
+			writeTestResponse(t, w, []Zone{{ID: "zone-2", Name: "example.org"}}, map[string]int{
+				"page":        2,
+				"per_page":    50,
+				"total_pages": 2,
+			})
+		default:
+			t.Fatalf("unexpected page query %q", page)
+		}
+	}))
+
+	zones, err := api.ListZones(context.Background())
+	if err != nil {
+		t.Fatalf("ListZones() error = %v", err)
+	}
+	if got, want := len(zones), 2; got != want {
+		t.Fatalf("zone count = %d, want %d", got, want)
+	}
+	if zones[0].ID != "zone-1" || zones[1].ID != "zone-2" {
+		t.Fatalf("zones = %#v, want both pages", zones)
+	}
+	if got, want := len(pages), 2; got != want {
+		t.Fatalf("request count = %d, want %d", got, want)
+	}
+}
+
+func TestFirewallListMethodsAutoPaginateWhenPaginationOmitted(t *testing.T) {
+	requests := map[string][]string{}
+	api := newTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("per_page"); got != "50" {
+			t.Fatalf("per_page query = %q, want 50", got)
+		}
+		page := r.URL.Query().Get("page")
+		requests[r.URL.Path] = append(requests[r.URL.Path], page)
+		var result []map[string]string
+		switch page {
+		case "1":
+			result = []map[string]string{{"id": "first"}}
+		case "2":
+			result = []map[string]string{{"id": "second"}}
+		default:
+			t.Fatalf("unexpected page query %q for %s", page, r.URL.Path)
+		}
+		writeTestResponse(t, w, result, map[string]int{
+			"page":        mustAtoi(t, page),
+			"per_page":    50,
+			"total_pages": 2,
+		})
+	}))
+
+	lockdowns, info, err := api.ListZoneLockdowns(context.Background(), ZoneIdentifier("zone-123"), LockdownListParams{})
+	if err != nil {
+		t.Fatalf("ListZoneLockdowns() error = %v", err)
+	}
+	if got, want := len(lockdowns), 2; got != want || lockdowns[0].ID != "first" || lockdowns[1].ID != "second" {
+		t.Fatalf("lockdowns = %#v, want both pages", lockdowns)
+	}
+	if info == nil || info.Page != 2 {
+		t.Fatalf("lockdown ResultInfo = %#v, want page 2", info)
+	}
+
+	filters, info, err := api.Filters(context.Background(), ZoneIdentifier("zone-123"), FilterListParams{})
+	if err != nil {
+		t.Fatalf("Filters() error = %v", err)
+	}
+	if got, want := len(filters), 2; got != want || filters[0].ID != "first" || filters[1].ID != "second" {
+		t.Fatalf("filters = %#v, want both pages", filters)
+	}
+	if info == nil || info.Page != 2 {
+		t.Fatalf("filters ResultInfo = %#v, want page 2", info)
+	}
+
+	rules, info, err := api.FirewallRules(context.Background(), ZoneIdentifier("zone-123"), FirewallRuleListParams{})
+	if err != nil {
+		t.Fatalf("FirewallRules() error = %v", err)
+	}
+	if got, want := len(rules), 2; got != want || rules[0].ID != "first" || rules[1].ID != "second" {
+		t.Fatalf("firewall rules = %#v, want both pages", rules)
+	}
+	if info == nil || info.Page != 2 {
+		t.Fatalf("firewall rules ResultInfo = %#v, want page 2", info)
+	}
+
+	for _, path := range []string{
+		"/zones/zone-123/firewall/lockdowns",
+		"/zones/zone-123/filters",
+		"/zones/zone-123/firewall/rules",
+	} {
+		if got := requests[path]; len(got) != 2 || got[0] != "1" || got[1] != "2" {
+			t.Fatalf("requests[%s] = %#v, want pages 1 and 2", path, got)
+		}
+	}
+}
+
+func TestListAllRateLimitsPaginatesUntilShortPage(t *testing.T) {
+	pages := make([]string, 0, 2)
+	api := newTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/zones/zone-123/rate_limits" {
+			t.Fatalf("path = %q, want rate limits path", r.URL.Path)
+		}
+		if got := r.URL.Query().Get("per_page"); got != "100" {
+			t.Fatalf("per_page query = %q, want 100", got)
+		}
+		page := r.URL.Query().Get("page")
+		pages = append(pages, page)
+		switch page {
+		case "1":
+			writeTestResponse(t, w, []RateLimit{{ID: "limit-1"}}, map[string]int{
+				"count":    100,
+				"page":     1,
+				"per_page": 100,
+			})
+		case "2":
+			writeTestResponse(t, w, []RateLimit{{ID: "limit-2"}}, map[string]int{
+				"count":    1,
+				"page":     2,
+				"per_page": 100,
+			})
+		default:
+			t.Fatalf("unexpected page query %q", page)
+		}
+	}))
+
+	limits, err := api.ListAllRateLimits(context.Background(), "zone-123")
+	if err != nil {
+		t.Fatalf("ListAllRateLimits() error = %v", err)
+	}
+	if got, want := len(limits), 2; got != want {
+		t.Fatalf("rate limit count = %d, want %d", got, want)
+	}
+	if limits[0].ID != "limit-1" || limits[1].ID != "limit-2" {
+		t.Fatalf("rate limits = %#v, want both pages", limits)
+	}
+	if got, want := len(pages), 2; got != want {
+		t.Fatalf("request count = %d, want %d", got, want)
+	}
+}
+
 func TestListMagicTransitResourcesUnwrapResultObjects(t *testing.T) {
 	api := newTestAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -314,4 +497,16 @@ func writeTestResponse(t *testing.T, w http.ResponseWriter, result interface{}, 
 	if err := json.NewEncoder(w).Encode(payload); err != nil {
 		t.Fatalf("encode response: %v", err)
 	}
+}
+
+func mustAtoi(t *testing.T, value string) int {
+	t.Helper()
+	if value == "1" {
+		return 1
+	}
+	if value == "2" {
+		return 2
+	}
+	t.Fatalf("unexpected integer string %q", value)
+	return 0
 }

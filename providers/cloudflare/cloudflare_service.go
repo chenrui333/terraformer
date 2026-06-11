@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
-//nolint:staticcheck // lint triage: legacy provider/API/security baseline is tracked in #175.
 package cloudflare
 
 import (

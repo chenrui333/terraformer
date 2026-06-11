@@ -711,17 +711,54 @@ func cloudflareReadRawSetting(ctx context.Context, api *cf.API, path string, tar
 }
 
 func cloudflareOptionalSettingsMissing(err error) bool {
-	return cloudflareNotFoundError(err) || cloudflareForbiddenError(err)
+	return cloudflareNotFoundError(err) || cloudflareSettingsForbiddenError(err)
 }
 
 func cloudflareForbiddenError(err error) bool {
-	// cloudflare-go maps HTTP 403 responses to AuthenticationError.
+	// Legacy cloudflare-go mapped HTTP 403 responses to AuthenticationError; v7 maps them to AuthorizationError.
 	var forbiddenErr *cf.AuthenticationError
 	if errors.As(err, &forbiddenErr) {
 		return true
 	}
 	var authorizationErr *cf.AuthorizationError
 	return errors.As(err, &authorizationErr)
+}
+
+func cloudflareSettingsForbiddenError(err error) bool {
+	var forbiddenErr *cf.AuthenticationError
+	if errors.As(err, &forbiddenErr) {
+		return cloudflareSettingsOptionalErrorMessage(forbiddenErr.Error(), forbiddenErr.ErrorMessages())
+	}
+	var authorizationErr *cf.AuthorizationError
+	if errors.As(err, &authorizationErr) {
+		return cloudflareSettingsOptionalErrorMessage(authorizationErr.Error(), authorizationErr.ErrorMessages())
+	}
+	return false
+}
+
+func cloudflareSettingsOptionalErrorMessage(message string, errorMessages []string) bool {
+	messages := append([]string{message}, errorMessages...)
+	for _, msg := range messages {
+		normalized := strings.ToLower(msg)
+		for _, marker := range []string{
+			"access denied",
+			"feature is not available",
+			"missing permission",
+			"not authorized",
+			"not configured",
+			"not enabled",
+			"not entitled",
+			"permission denied",
+			"requires a paid plan",
+			"unauthorized to access requested resource",
+			"upgrade your plan",
+		} {
+			if strings.Contains(normalized, marker) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func cloudflareSettingIsOn(value string) bool {
