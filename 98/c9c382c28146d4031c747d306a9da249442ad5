@@ -1,0 +1,21 @@
+docs/ci-build-performance.md
+  s_d0dff4ce1c21c7::t_82fd885fa5b204 55
+.github/scripts/provider-dependency-preflight.sh
+  s_d0dff4ce1c21c7::t_931c104c08b382 564,572-575
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "98c9c382c28146d4031c747d306a9da249442ad5",
+  "prompts": {},
+  "sessions": {
+    "s_d0dff4ce1c21c7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019eaf12-f1a5-71b0-9f74-644639d5ebc5",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
