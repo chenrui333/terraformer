@@ -488,6 +488,10 @@ skip_pr_provider_test_job_validation() {
   printf 'Skipping in this job; the PR provider test job validates this phase.\n'
 }
 
+skip_pr_vet_job_validation() {
+  printf 'Skipping in this job; the PR provider vet job validates this phase.\n'
+}
+
 run_build_package_validation() {
   time_phase "Go module tidy" "go mod tidy and go.mod/go.sum diff check" run_go_mod_tidy_check
   time_phase "Package listing" "go list non-fixture packages for build" list_build_packages
@@ -503,6 +507,10 @@ run_provider_command_test_validation() {
   local shard="${PROVIDER_COMMAND_TEST_SHARD:-all}"
 
   time_phase "Test provider and command packages" "go test provider/cmd packages shard=$shard" test_provider_and_command_packages
+}
+
+run_vet_validation() {
+  time_phase "Vet dependency-sensitive packages" "go vet providers, cmd, build, terraformutils, version" vet_dependency_sensitive_packages
 }
 
 test_build_and_utility_packages() {
@@ -532,7 +540,11 @@ run_provider_validation() {
     run_provider_command_test_validation
   fi
   time_phase "Test build and utility packages" "go test ./build/... ./terraformutils/... ./version -count=1" test_build_and_utility_packages
-  time_phase "Vet dependency-sensitive packages" "go vet providers, cmd, build, terraformutils, version" vet_dependency_sensitive_packages
+  if [[ "${SKIP_VET_DEPENDENCY_PACKAGES:-0}" == "1" ]]; then
+    time_phase "Vet dependency-sensitive packages" "validated by the PR provider vet job" skip_pr_vet_job_validation
+  else
+    run_vet_validation
+  fi
   time_phase "Static diff check" "git diff --check" static_diff_check
   time_phase "Terraform state compatibility" "bash .github/scripts/terraform-state-compat.sh if present" run_compat_script ".github/scripts/terraform-state-compat.sh" "Terraform state compatibility"
   time_phase "Terraform provider compatibility" "bash .github/scripts/terraform-provider-compat.sh if present" run_compat_script ".github/scripts/terraform-provider-compat.sh" "Terraform provider compatibility"
@@ -651,6 +663,12 @@ fi
 if [[ "${ONLY_PROVIDER_COMMAND_TESTS:-0}" == "1" ]]; then
   run_provider_command_test_validation
   section "Provider dependency preflight provider tests complete"
+  exit 0
+fi
+
+if [[ "${ONLY_VET_DEPENDENCY_PACKAGES:-0}" == "1" ]]; then
+  run_vet_validation
+  section "Provider dependency preflight vet complete"
   exit 0
 fi
 

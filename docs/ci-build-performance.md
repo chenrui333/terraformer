@@ -8,7 +8,8 @@ The pull request `tests` workflow keeps dependency-sensitive validation split in
 
 - `preflight build packages`: runs `go mod tidy`, lists non-fixture packages, and builds the selected package list.
 - `provider dependency tests`: runs provider and command package tests in deterministic shards.
-- `provider dependency validation`: runs the remaining preflight checks, including utility tests, vet, static diff, and Terraform compatibility.
+- `provider dependency vet`: runs the same dependency-sensitive `go vet` command that the full preflight runs.
+- `provider dependency validation`: runs the remaining preflight checks, including utility tests, static diff, and Terraform compatibility.
 - `provider dependency preflight`: aggregates the shard results into one required status.
 - `test (ubuntu-latest)`: runs the regular PR core test path and package timing summary.
 
@@ -52,6 +53,7 @@ The check validates that:
 - the sorted union equals `go list ./providers/... ./cmd/...`
 
 Non-fixture build package selection must continue to use packages with non-test Go files and must keep fixture packages out of the build target set.
+The PR-only vet shard must keep using `vet_dependency_sensitive_packages` from `.github/scripts/provider-dependency-preflight.sh`; do not duplicate or narrow its package list in workflow YAML.
 The blocking govulncheck source scan follows the same non-fixture package boundary. The root CLI entrypoint and `cmd` package are scanned at package level because symbol-level analysis of those packages traverses the full command/provider graph and has been runner-canceled in CI.
 
 ## Change Guidelines
