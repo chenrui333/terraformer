@@ -345,8 +345,8 @@ validate_provider_command_test_shard() {
   local shard="${1:-all}"
 
   case "$shard" in
-    all|a|b) ;;
-    *) fail "PROVIDER_COMMAND_TEST_SHARD must be one of all, a, or b" ;;
+    all|a|b|cmd) ;;
+    *) fail "PROVIDER_COMMAND_TEST_SHARD must be one of all, a, b, or cmd" ;;
   esac
 }
 
@@ -357,7 +357,7 @@ provider_command_test_package_group() {
 
   case "$package" in
     github.com/chenrui333/terraformer/cmd|github.com/chenrui333/terraformer/cmd/*)
-      printf 'a\n'
+      printf 'cmd\n'
       return
       ;;
     github.com/chenrui333/terraformer/providers)
@@ -373,8 +373,9 @@ provider_command_test_package_group() {
       ;;
   esac
 
-  # Keep shard membership explicit and deterministic. The current split balances
-  # package count for the measured provider/cmd test path; new providers default to shard b.
+  # Keep shard membership explicit and deterministic. The cmd package is its own
+  # shard because it compiles the command/provider graph and dominated shard a.
+  # New providers default to shard b.
   case "$provider" in
     aws|azure|azuredevops|commercetools|datadog|equinixmetal|fastly|github|gmailfilter|helm|honeycombio|ionoscloud|keycloak|launchdarkly|logzio|mikrotik|newrelic|octopusdeploy|opal|opsgenie|panos|tencentcloud|vultr|yandex)
       printf 'a\n'
@@ -446,38 +447,41 @@ write_provider_command_test_packages() {
 }
 
 check_provider_command_test_shards() {
-  local all_packages shard_a shard_b union duplicates
+  local all_packages shard_a shard_b shard_cmd union duplicates
 
   all_packages="$(mktemp "${TMPDIR:-/tmp}/terraformer-provider-command-test-all.XXXXXX")" || return
   shard_a="$(mktemp "${TMPDIR:-/tmp}/terraformer-provider-command-test-a.XXXXXX")" || return
   shard_b="$(mktemp "${TMPDIR:-/tmp}/terraformer-provider-command-test-b.XXXXXX")" || return
+  shard_cmd="$(mktemp "${TMPDIR:-/tmp}/terraformer-provider-command-test-cmd.XXXXXX")" || return
   union="$(mktemp "${TMPDIR:-/tmp}/terraformer-provider-command-test-union.XXXXXX")" || return
   duplicates="$(mktemp "${TMPDIR:-/tmp}/terraformer-provider-command-test-duplicates.XXXXXX")" || return
 
   write_provider_command_test_packages all "$all_packages"
   write_provider_command_test_packages a "$shard_a"
   write_provider_command_test_packages b "$shard_b"
+  write_provider_command_test_packages cmd "$shard_cmd"
 
-  cat "$shard_a" "$shard_b" | sort >"$union"
-  cat "$shard_a" "$shard_b" | sort | uniq -d >"$duplicates"
+  cat "$shard_a" "$shard_b" "$shard_cmd" | sort >"$union"
+  cat "$shard_a" "$shard_b" "$shard_cmd" | sort | uniq -d >"$duplicates"
 
   if [[ -s "$duplicates" ]]; then
     printf 'Duplicate provider/cmd test packages across shards:\n' >&2
     cat "$duplicates" >&2
-    rm -f "$all_packages" "$shard_a" "$shard_b" "$union" "$duplicates"
+    rm -f "$all_packages" "$shard_a" "$shard_b" "$shard_cmd" "$union" "$duplicates"
     return 1
   fi
 
   if ! diff -u "$all_packages" "$union"; then
-    rm -f "$all_packages" "$shard_a" "$shard_b" "$union" "$duplicates"
+    rm -f "$all_packages" "$shard_a" "$shard_b" "$shard_cmd" "$union" "$duplicates"
     return 1
   fi
 
-  printf 'Provider/cmd test shard coverage ok: all=%s shard_a=%s shard_b=%s.\n' \
+  printf 'Provider/cmd test shard coverage ok: all=%s shard_a=%s shard_b=%s shard_cmd=%s.\n' \
     "$(wc -l <"$all_packages" | tr -d ' ')" \
     "$(wc -l <"$shard_a" | tr -d ' ')" \
-    "$(wc -l <"$shard_b" | tr -d ' ')"
-  rm -f "$all_packages" "$shard_a" "$shard_b" "$union" "$duplicates"
+    "$(wc -l <"$shard_b" | tr -d ' ')" \
+    "$(wc -l <"$shard_cmd" | tr -d ' ')"
+  rm -f "$all_packages" "$shard_a" "$shard_b" "$shard_cmd" "$union" "$duplicates"
 }
 
 skip_pr_build_job_validation() {
