@@ -125,6 +125,24 @@ func TestInitializeAPI(t *testing.T) {
 			t.Fatalf("api.BaseURL = %q, want %q", got, want)
 		}
 	})
+
+	t.Run("empty base URL keeps SDK default", func(t *testing.T) {
+		t.Setenv("MYRASEC_API_KEY", "key")
+		t.Setenv("MYRASEC_API_SECRET", "secret")
+		t.Setenv("MYRASEC_API_BASE_URL", "")
+
+		defaultAPI, err := mgo.New("key", "secret")
+		if err != nil {
+			t.Fatalf("mgo.New() returned error: %v", err)
+		}
+		api, err := (&MyrasecService{}).initializeAPI()
+		if err != nil {
+			t.Fatalf("initializeAPI() returned error: %v", err)
+		}
+		if got, want := api.BaseURL, defaultAPI.BaseURL; got != want {
+			t.Fatalf("api.BaseURL = %q, want SDK default %q", got, want)
+		}
+	})
 }
 
 func TestDomainGeneratorInitResourcesUsesPlainBaseURL(t *testing.T) {

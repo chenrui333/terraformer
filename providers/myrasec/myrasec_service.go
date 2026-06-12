@@ -38,7 +38,10 @@ func (s *MyrasecService) initializeAPI() (*mgo.API, error) {
 	}
 
 	api, err := mgo.New(apiKey, apiSecret)
-	if urlPresent {
+	if err != nil {
+		return nil, err
+	}
+	if urlPresent && apiURL != "" {
 		api.BaseURL = normalizeMyrasecAPIBaseURL(apiURL)
 	}
 	api.EnableCaching()
