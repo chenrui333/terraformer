@@ -28,7 +28,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/appsync v1.54.3
 	github.com/aws/aws-sdk-go-v2/service/autoscaling v1.67.3
 	github.com/aws/aws-sdk-go-v2/service/batch v1.65.5
-	github.com/aws/aws-sdk-go-v2/service/budgets v1.44.3
+	github.com/aws/aws-sdk-go-v2/service/budgets v1.44.4
 	github.com/aws/aws-sdk-go-v2/service/cloud9 v1.34.5
 	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.71.15
 	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.64.4
@@ -57,7 +57,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/eks v1.84.5
 	github.com/aws/aws-sdk-go-v2/service/elasticache v1.54.2
 	github.com/aws/aws-sdk-go-v2/service/elasticbeanstalk v1.35.3
-	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing v1.34.3
+	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing v1.34.4
 	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2 v1.55.3
 	github.com/aws/aws-sdk-go-v2/service/elasticsearchservice v1.42.3
 	github.com/aws/aws-sdk-go-v2/service/emr v1.60.2
@@ -95,7 +95,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssoadmin v1.39.5
 	github.com/aws/aws-sdk-go-v2/service/sts v1.43.2
 	github.com/aws/aws-sdk-go-v2/service/swf v1.34.2
-	github.com/aws/aws-sdk-go-v2/service/waf v1.31.2
+	github.com/aws/aws-sdk-go-v2/service/waf v1.31.3
 	github.com/aws/aws-sdk-go-v2/service/wafregional v1.30.27
 	github.com/aws/aws-sdk-go-v2/service/wafv2 v1.72.3
 	github.com/aws/aws-sdk-go-v2/service/workspaces v1.68.5
@@ -169,7 +169,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.28 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.31.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.36.5 // indirect
-	github.com/aws/smithy-go v1.27.1
+	github.com/aws/smithy-go v1.27.2
 	github.com/beevik/etree v1.6.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/crewjam/saml v0.5.1 // indirect
@@ -524,13 +524,13 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/networkmanager v1.42.5
 	github.com/aws/aws-sdk-go-v2/service/notifications v1.8.5
 	github.com/aws/aws-sdk-go-v2/service/notificationscontacts v1.6.5
-	github.com/aws/aws-sdk-go-v2/service/opensearch v1.70.5
+	github.com/aws/aws-sdk-go-v2/service/opensearch v1.70.6
 	github.com/aws/aws-sdk-go-v2/service/opensearchserverless v1.31.3
 	github.com/aws/aws-sdk-go-v2/service/pinpoint v1.40.2
-	github.com/aws/aws-sdk-go-v2/service/pinpointsmsvoicev2 v1.29.4
+	github.com/aws/aws-sdk-go-v2/service/pinpointsmsvoicev2 v1.29.5
 	github.com/aws/aws-sdk-go-v2/service/pipes v1.24.5
 	github.com/aws/aws-sdk-go-v2/service/quicksight v1.113.3
-	github.com/aws/aws-sdk-go-v2/service/redshiftserverless v1.35.5
+	github.com/aws/aws-sdk-go-v2/service/redshiftserverless v1.35.6
 	github.com/aws/aws-sdk-go-v2/service/rekognition v1.52.2
 	github.com/aws/aws-sdk-go-v2/service/route53resolver v1.45.3
 	github.com/aws/aws-sdk-go-v2/service/s3control v1.71.4
