@@ -1,0 +1,23 @@
+.github/workflows/test.yml
+  s_d0dff4ce1c21c7::t_f3f67c622b2a27 139-166,203,213,219,221
+docs/ci-build-performance.md
+  s_d0dff4ce1c21c7::t_3bffbb97338cda 12-13,59
+.github/scripts/provider-dependency-preflight.sh
+  s_d0dff4ce1c21c7::t_079d0b293f05fd 499-502,536-539,562-566,691-693
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "3ba005e1a6e460676f1d6fb55abdf1e5c91965d7",
+  "prompts": {},
+  "sessions": {
+    "s_d0dff4ce1c21c7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019eaf12-f1a5-71b0-9f74-644639d5ebc5",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
