@@ -37,7 +37,7 @@ Prefer completed dependency-sensitive PR runs. Do not infer phase timing from ca
 
 ## Shard Safety Invariants
 
-Sharding is allowed only when the union of shard package lists is exactly the original package list and no package appears in more than one shard.
+Sharding is allowed only when the union of shard package lists matches the original package list and no package appears in more than one shard.
 
 Provider and command test shards are checked by:
 

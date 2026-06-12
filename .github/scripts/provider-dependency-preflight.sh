@@ -373,6 +373,8 @@ provider_command_test_package_group() {
       ;;
   esac
 
+  # Keep shard membership explicit and deterministic. The current split balances
+  # package count for the measured provider/cmd test path; new providers default to shard b.
   case "$provider" in
     aws|azure|azuredevops|commercetools|datadog|equinixmetal|fastly|github|gmailfilter|helm|honeycombio|ionoscloud|keycloak|launchdarkly|logzio|mikrotik|newrelic|octopusdeploy|opal|opsgenie|panos|tencentcloud|vultr|yandex)
       printf 'a\n'
@@ -433,7 +435,7 @@ write_provider_command_test_packages() {
   local old_shard="${PROVIDER_COMMAND_TEST_SHARD:-}"
 
   PROVIDER_COMMAND_TEST_SHARD="$shard"
-  list_provider_command_test_packages >/dev/null
+  list_provider_command_test_packages
   printf '%s\n' "${PROVIDER_COMMAND_TEST_PACKAGES[@]}" | sort >"$output_file"
 
   if [[ -n "$old_shard" ]]; then

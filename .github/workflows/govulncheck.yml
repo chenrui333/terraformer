@@ -41,7 +41,7 @@ jobs:
       run: go install golang.org/x/vuln/cmd/govulncheck@v1.3.0
     - name: Run blocking source package vulnerability scan
       env:
-        GOVULNCHECK_BATCH_SIZE: 5
+        GOVULNCHECK_BATCH_SIZE: 1
       run: ONLY_GOVULNCHECK=1 bash .github/scripts/provider-dependency-preflight.sh
 
   module-scan:

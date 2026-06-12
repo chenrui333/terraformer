@@ -125,7 +125,7 @@ jobs:
         cache-dependency-path: go.sum
     - name: Check provider command test shards
       env:
-        MODE: quick
+        MODE: full
         BASE_REF: ${{ github.event.pull_request.base.sha }}
         ONLY_CHECK_PROVIDER_COMMAND_TEST_SHARDS: "1"
       run: bash .github/scripts/provider-dependency-preflight.sh
