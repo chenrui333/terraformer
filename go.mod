@@ -7,13 +7,13 @@ require (
 	cloud.google.com/go/logging v1.18.0
 	cloud.google.com/go/storage v1.62.3
 	github.com/Azure/azure-storage-blob-go v0.15.0
-	github.com/IBM-Cloud/bluemix-go v0.0.0-20260424100510-275dcc5549eb
+	github.com/IBM-Cloud/bluemix-go v0.0.0-20260605140443-e006e534aa6d
 	github.com/IBM/go-sdk-core/v5 v5.21.4
 	github.com/IBM/ibm-cos-sdk-go v1.14.0
 	github.com/IBM/keyprotect-go-client v0.16.0
 	github.com/IBM/networking-go-sdk v0.53.4
-	github.com/IBM/platform-services-go-sdk v0.98.0
-	github.com/IBM/vpc-go-sdk v0.83.2
+	github.com/IBM/platform-services-go-sdk v0.99.0
+	github.com/IBM/vpc-go-sdk v0.84.0
 	github.com/OctopusDeploy/go-octopusdeploy/v2 v2.109.0
 	github.com/PaloAltoNetworks/pango v0.10.2
 	github.com/aliyun/alibaba-cloud-sdk-go v1.63.107
