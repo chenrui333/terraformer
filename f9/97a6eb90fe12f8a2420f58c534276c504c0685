@@ -1,0 +1,19 @@
+docs/ci-build-performance.md
+  s_d0dff4ce1c21c7::t_9c1192f63a40ed 3-62,64,66-67,69,71-78,80,83,86,88-90,92-152,154,156,159-161,164,166-225,231-232,236,240,242,247-249,251-253
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "f997a6eb90fe12f8a2420f58c534276c504c0685",
+  "prompts": {},
+  "sessions": {
+    "s_d0dff4ce1c21c7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019eaf12-f1a5-71b0-9f74-644639d5ebc5",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
