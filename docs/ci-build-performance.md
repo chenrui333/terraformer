@@ -9,7 +9,8 @@ The pull request `tests` workflow keeps dependency-sensitive validation split in
 - `preflight build packages`: runs `go mod tidy`, lists non-fixture packages, and builds the selected package list.
 - `provider dependency tests`: runs provider packages and the command package in deterministic shards.
 - `provider dependency vet`: runs the same dependency-sensitive `go vet` command that the full preflight runs.
-- `provider dependency validation`: runs the remaining preflight checks, including utility tests, static diff, and Terraform compatibility.
+- `provider dependency Terraform provider compatibility`: runs the provider registry compatibility test that exercises the command/provider graph.
+- `provider dependency validation`: runs the remaining preflight checks, including utility tests, static diff, and Terraform state compatibility.
 - `provider dependency preflight`: aggregates the shard results into one required status.
 - `test (ubuntu-latest)`: runs the regular PR core test path and package timing summary.
 
@@ -55,6 +56,7 @@ The check validates that:
 Keep the `cmd` package in its own provider dependency test shard unless fresh timing shows another layout is faster. The command package compiles the command/provider graph and was the longest part of shard `a` after PR #624.
 Non-fixture build package selection must continue to use packages with non-test Go files and must keep fixture packages out of the build target set.
 The PR-only vet shard must keep using `vet_dependency_sensitive_packages` from `.github/scripts/provider-dependency-preflight.sh`; do not duplicate or narrow its package list in workflow YAML.
+The Terraform provider compatibility shard must keep using `.github/scripts/terraform-provider-compat.sh` through `.github/scripts/provider-dependency-preflight.sh`. Keep it as a PR-only shard unless new timing shows it is no longer material; push, scheduled, and workflow-dispatch runs should continue using the full preflight path.
 The blocking govulncheck source scan follows the same non-fixture package boundary. The root CLI entrypoint and `cmd` package are scanned at package level because symbol-level analysis of those packages traverses the full command/provider graph and has been runner-canceled in CI.
 
 ## Change Guidelines

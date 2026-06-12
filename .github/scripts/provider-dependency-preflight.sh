@@ -496,6 +496,10 @@ skip_pr_vet_job_validation() {
   printf 'Skipping in this job; the PR provider vet job validates this phase.\n'
 }
 
+skip_pr_terraform_provider_compatibility_validation() {
+  printf 'Skipping in this job; the PR Terraform provider compatibility job validates this phase.\n'
+}
+
 run_build_package_validation() {
   time_phase "Go module tidy" "go mod tidy and go.mod/go.sum diff check" run_go_mod_tidy_check
   time_phase "Package listing" "go list non-fixture packages for build" list_build_packages
@@ -529,6 +533,10 @@ static_diff_check() {
   git diff --check
 }
 
+run_terraform_provider_compatibility_validation() {
+  time_phase "Terraform provider compatibility" "bash .github/scripts/terraform-provider-compat.sh if present" run_compat_script ".github/scripts/terraform-provider-compat.sh" "Terraform provider compatibility"
+}
+
 run_provider_validation() {
   time_phase "Environment diagnostics" "go version, go env, package counts, cache usage, filesystem space" environment_diagnostics
   if [[ "${SKIP_BUILD_NON_FIXTURE:-0}" == "1" ]]; then
@@ -551,7 +559,11 @@ run_provider_validation() {
   fi
   time_phase "Static diff check" "git diff --check" static_diff_check
   time_phase "Terraform state compatibility" "bash .github/scripts/terraform-state-compat.sh if present" run_compat_script ".github/scripts/terraform-state-compat.sh" "Terraform state compatibility"
-  time_phase "Terraform provider compatibility" "bash .github/scripts/terraform-provider-compat.sh if present" run_compat_script ".github/scripts/terraform-provider-compat.sh" "Terraform provider compatibility"
+  if [[ "${SKIP_TERRAFORM_PROVIDER_COMPATIBILITY:-0}" == "1" ]]; then
+    time_phase "Terraform provider compatibility" "validated by the PR Terraform provider compatibility job" skip_pr_terraform_provider_compatibility_validation
+  else
+    run_terraform_provider_compatibility_validation
+  fi
 }
 
 run_govulncheck_source_scan() {
@@ -673,6 +685,12 @@ fi
 if [[ "${ONLY_VET_DEPENDENCY_PACKAGES:-0}" == "1" ]]; then
   run_vet_validation
   section "Provider dependency preflight vet complete"
+  exit 0
+fi
+
+if [[ "${ONLY_TERRAFORM_PROVIDER_COMPATIBILITY:-0}" == "1" ]]; then
+  run_terraform_provider_compatibility_validation
+  section "Provider dependency preflight Terraform provider compatibility complete"
   exit 0
 fi
 
