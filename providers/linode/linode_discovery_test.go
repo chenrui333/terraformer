@@ -324,6 +324,20 @@ func TestNodeBalancerGeneratorInitResourcesUsesGeneratedClient(t *testing.T) {
 	assertLinodeResource(t, resources[0], "101", terraformutils.TfSanitize("101"), "linode_nodebalancer", map[string]string{})
 }
 
+func TestNewLinodeHTTPClientPreservesProxyAwareTransport(t *testing.T) {
+	client := newLinodeHTTPClient()
+	transport, ok := client.Transport.(*http.Transport)
+	if !ok {
+		t.Fatalf("client transport = %T, want *http.Transport", client.Transport)
+	}
+	if defaultTransport, ok := http.DefaultTransport.(*http.Transport); ok && transport == defaultTransport {
+		t.Fatal("client transport reuses http.DefaultTransport; want a clone")
+	}
+	if transport.Proxy == nil {
+		t.Fatal("client transport Proxy is nil, want proxy support from http.DefaultTransport")
+	}
+}
+
 func writeTestLinodeCA(t *testing.T, server *httptest.Server) string {
 	t.Helper()
 
