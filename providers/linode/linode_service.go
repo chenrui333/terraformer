@@ -3,25 +3,36 @@
 package linode
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/linode/linodego"
-	"golang.org/x/oauth2"
+	"github.com/linode/linodego/v2"
 )
 
 type LinodeService struct { //nolint
 	terraformutils.Service
 }
 
-func (s *LinodeService) generateClient() linodego.Client {
-	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: s.Args["token"].(string)})
-	oauth2Client := &http.Client{
-		Transport: &oauth2.Transport{
-			Source: tokenSource,
-		},
+func (s *LinodeService) generateClient() (linodego.Client, error) {
+	token, ok := s.Args["token"].(string)
+	if !ok || token == "" {
+		return linodego.Client{}, fmt.Errorf("linode: token arg is missing or not a string")
 	}
-	linodeClient := linodego.NewClient(oauth2Client)
+
+	linodeClient, err := linodego.NewClient(newLinodeHTTPClient())
+	if err != nil {
+		return linodeClient, err
+	}
+	linodeClient.SetToken(token)
 	linodeClient.SetDebug(s.Verbose)
-	return linodeClient
+	return linodeClient, nil
+}
+
+func newLinodeHTTPClient() *http.Client {
+	transport, ok := http.DefaultTransport.(*http.Transport)
+	if !ok {
+		return &http.Client{Transport: &http.Transport{Proxy: http.ProxyFromEnvironment}}
+	}
+	return &http.Client{Transport: transport.Clone()}
 }

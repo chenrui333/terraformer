@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/linode/linodego"
+	"github.com/linode/linodego/v2"
 )
 
 type StackScriptGenerator struct {
@@ -31,7 +31,10 @@ func (g StackScriptGenerator) createResources(stackscriptList []linodego.Stacksc
 }
 
 func (g *StackScriptGenerator) InitResources() error {
-	client := g.generateClient()
+	client, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	output, err := client.ListStackscripts(context.Background(), nil)
 	if err != nil {
 		return err

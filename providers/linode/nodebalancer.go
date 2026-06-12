@@ -4,10 +4,11 @@ package linode
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/linode/linodego"
+	"github.com/linode/linodego/v2"
 )
 
 type NodeBalancerGenerator struct {
@@ -70,7 +71,14 @@ func (g *NodeBalancerGenerator) loadNodeBalancerNodes(client linodego.Client, no
 }
 
 func (g *NodeBalancerGenerator) InitResources() error {
-	client := g.generateClient()
+	client, err := g.generateClient()
+	if err != nil {
+		return err
+	}
+	return g.initResources(client)
+}
+
+func (g *NodeBalancerGenerator) initResources(client linodego.Client) error {
 	nodeBalancerList, err := g.loadNodeBalancers(client)
 	if err != nil {
 		return err
@@ -78,12 +86,12 @@ func (g *NodeBalancerGenerator) InitResources() error {
 	for _, nodeBalancer := range nodeBalancerList {
 		nodeBalancerConfigList, err := g.loadNodeBalancerConfigs(client, nodeBalancer.ID)
 		if err != nil {
-			return err
+			return fmt.Errorf("list configs for nodebalancer %d: %w", nodeBalancer.ID, err)
 		}
 		for _, nodeBalancerConfig := range nodeBalancerConfigList {
 			err := g.loadNodeBalancerNodes(client, nodeBalancer.ID, nodeBalancerConfig.ID)
 			if err != nil {
-				return err
+				return fmt.Errorf("list nodes for nodebalancer %d config %d: %w", nodeBalancer.ID, nodeBalancerConfig.ID, err)
 			}
 		}
 	}

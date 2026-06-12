@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/linode/linodego"
+	"github.com/linode/linodego/v2"
 )
 
 type TokenGenerator struct {
@@ -28,7 +28,10 @@ func (g TokenGenerator) createResources(tokenList []linodego.Token) []terraformu
 }
 
 func (g *TokenGenerator) InitResources() error {
-	client := g.generateClient()
+	client, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	output, err := client.ListTokens(context.Background(), nil)
 	if err != nil {
 		return err
