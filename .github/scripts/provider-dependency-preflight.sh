@@ -572,7 +572,7 @@ run_govulncheck_source_scan() {
     while IFS= read -r package; do
       [[ -n "$package" ]] || continue
       case "$package" in
-        github.com/chenrui333/terraformer)
+        github.com/chenrui333/terraformer|github.com/chenrui333/terraformer/cmd)
           if [[ "$scan_level" == "symbol" ]]; then
             package_level_packages+=("$package")
             continue
