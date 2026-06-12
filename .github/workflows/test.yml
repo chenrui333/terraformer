@@ -136,6 +136,34 @@ jobs:
         SKIP_BUILD_NON_FIXTURE: "1"
         SKIP_PROVIDER_COMMAND_TESTS: "1"
         SKIP_VET_DEPENDENCY_PACKAGES: "1"
+        SKIP_TERRAFORM_PROVIDER_COMPATIBILITY: "1"
+      run: bash .github/scripts/provider-dependency-preflight.sh
+
+  provider_dependency_terraform_provider_compatibility:
+    name: provider dependency Terraform provider compatibility
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+    - name: Free runner disk space
+      if: runner.os == 'Linux'
+      run: |
+        sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+        df -h
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      with:
+        fetch-depth: 0
+    - name: Install Go
+      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+      with:
+        go-version-file: go.mod
+        cache: true
+        cache-dependency-path: go.sum
+    - name: Check Terraform provider compatibility
+      env:
+        MODE: quick
+        BASE_REF: ${{ github.event.pull_request.base.sha }}
+        ONLY_TERRAFORM_PROVIDER_COMPATIBILITY: "1"
       run: bash .github/scripts/provider-dependency-preflight.sh
 
   provider_dependency_vet:
@@ -172,6 +200,7 @@ jobs:
     - preflight_build
     - provider_dependency_tests
     - provider_dependency_validation
+    - provider_dependency_terraform_provider_compatibility
     - provider_dependency_vet
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -181,13 +210,15 @@ jobs:
         BUILD_RESULT: ${{ needs.preflight_build.result }}
         PROVIDER_TEST_RESULT: ${{ needs.provider_dependency_tests.result }}
         VALIDATION_RESULT: ${{ needs.provider_dependency_validation.result }}
+        TERRAFORM_PROVIDER_COMPATIBILITY_RESULT: ${{ needs.provider_dependency_terraform_provider_compatibility.result }}
         VET_RESULT: ${{ needs.provider_dependency_vet.result }}
       run: |
         printf 'preflight build packages: %s\n' "$BUILD_RESULT"
         printf 'provider dependency tests: %s\n' "$PROVIDER_TEST_RESULT"
         printf 'provider dependency validation: %s\n' "$VALIDATION_RESULT"
+        printf 'provider dependency Terraform provider compatibility: %s\n' "$TERRAFORM_PROVIDER_COMPATIBILITY_RESULT"
         printf 'provider dependency vet: %s\n' "$VET_RESULT"
-        if [[ "$BUILD_RESULT" != "success" || "$PROVIDER_TEST_RESULT" != "success" || "$VALIDATION_RESULT" != "success" || "$VET_RESULT" != "success" ]]; then
+        if [[ "$BUILD_RESULT" != "success" || "$PROVIDER_TEST_RESULT" != "success" || "$VALIDATION_RESULT" != "success" || "$TERRAFORM_PROVIDER_COMPATIBILITY_RESULT" != "success" || "$VET_RESULT" != "success" ]]; then
           printf 'provider dependency preflight failed because one or more shards failed.\n' >&2
           exit 1
         fi
