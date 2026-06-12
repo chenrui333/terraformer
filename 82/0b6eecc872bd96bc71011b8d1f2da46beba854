@@ -1,0 +1,25 @@
+.github/workflows/govulncheck.yml
+  s_d0dff4ce1c21c7::t_0f2b053cc5d8b7 44
+.github/scripts/provider-dependency-preflight.sh
+  s_d0dff4ce1c21c7::t_0f2b053cc5d8b7 376-377,438
+docs/ci-build-performance.md
+  s_d0dff4ce1c21c7::t_0f2b053cc5d8b7 40
+.github/workflows/test.yml
+  s_d0dff4ce1c21c7::t_0f2b053cc5d8b7 128
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "820b6eecc872bd96bc71011b8d1f2da46beba854",
+  "prompts": {},
+  "sessions": {
+    "s_d0dff4ce1c21c7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019eaf12-f1a5-71b0-9f74-644639d5ebc5",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
