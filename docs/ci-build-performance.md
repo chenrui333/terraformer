@@ -8,6 +8,9 @@ This document records the current native Go/GitHub Actions layout and the
 guardrails for future performance work. It intentionally does not propose a
 Bazel, Buck2, BuildBuddy, Dagger, Earthly, Pants, or Nix migration.
 
+For the decision timeline that led to this layout, see
+[CI Performance History](ci-performance-history.md).
+
 ## Current PR Shard Graph
 
 The pull request `tests` workflow keeps dependency-sensitive validation split
