@@ -561,7 +561,7 @@ run_govulncheck_source_scan() {
     read -r -a packages <<<"${GOVULNCHECK_PACKAGES}"
   else
     package_file="$(mktemp "${TMPDIR:-/tmp}/terraformer-govulncheck-packages.XXXXXX")" || return
-    if go list ./... >"$package_file"; then
+    if go list -f '{{if .GoFiles}}{{.ImportPath}}{{end}}' ./... >"$package_file"; then
       :
     else
       local list_status="$?"
@@ -569,6 +569,10 @@ run_govulncheck_source_scan() {
       return "$list_status"
     fi
     while IFS= read -r package; do
+      [[ -n "$package" ]] || continue
+      case "$package" in
+        github.com/chenrui333/terraformer/tests/*) continue ;;
+      esac
       packages+=("$package")
     done <"$package_file"
     rm -f "$package_file"
