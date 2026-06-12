@@ -1,0 +1,20 @@
+providers/myrasec/myrasec_test.go
+  s_afdb657bd8ae26::t_4137098fb6f721 233
+  s_afdb657bd8ae26::t_50948bcfa3daf2 213,290,303,322,341,359,377,395,424,446,476,489
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "b7cf5152c119f62b7de207f61eefe5ba049595ad",
+  "prompts": {},
+  "sessions": {
+    "s_afdb657bd8ae26": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019eaf3b-28e8-78b1-9b2b-942e4d2dac16",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
