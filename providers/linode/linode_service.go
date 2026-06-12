@@ -3,11 +3,8 @@
 package linode
 
 import (
-	"net/http"
-
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/linode/linodego/v2"
-	"golang.org/x/oauth2"
 )
 
 type LinodeService struct { //nolint
@@ -15,16 +12,11 @@ type LinodeService struct { //nolint
 }
 
 func (s *LinodeService) generateClient() (linodego.Client, error) {
-	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: s.Args["token"].(string)})
-	oauth2Client := &http.Client{
-		Transport: &oauth2.Transport{
-			Source: tokenSource,
-		},
-	}
-	linodeClient, err := linodego.NewClient(oauth2Client)
+	linodeClient, err := linodego.NewClient(nil)
 	if err != nil {
 		return linodeClient, err
 	}
+	linodeClient.SetToken(s.Args["token"].(string))
 	linodeClient.SetDebug(s.Verbose)
 	return linodeClient, nil
 }

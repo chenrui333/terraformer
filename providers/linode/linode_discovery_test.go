@@ -4,9 +4,11 @@ package linode
 
 import (
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"slices"
 	"strconv"
@@ -288,7 +290,10 @@ func TestNodeBalancerGeneratorInitResourcesEmptyResponse(t *testing.T) {
 }
 
 func TestNodeBalancerGeneratorInitResourcesUsesGeneratedClient(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got, want := r.Header.Get("Authorization"), "Bearer token"; got != want {
+			t.Fatalf("Authorization header = %q, want %q", got, want)
+		}
 		switch r.URL.Path {
 		case "/v4/nodebalancers":
 			assertLinodePageQuery(t, r)
@@ -301,8 +306,10 @@ func TestNodeBalancerGeneratorInitResourcesUsesGeneratedClient(t *testing.T) {
 		}
 	}))
 	t.Cleanup(server.Close)
+	caPath := writeTestLinodeCA(t, server)
 	t.Setenv("LINODE_URL", server.URL)
 	t.Setenv("LINODE_API_VERSION", "v4")
+	t.Setenv("LINODE_CA", caPath)
 
 	generator := &NodeBalancerGenerator{}
 	generator.SetArgs(map[string]interface{}{"token": "token"})
@@ -315,6 +322,24 @@ func TestNodeBalancerGeneratorInitResourcesUsesGeneratedClient(t *testing.T) {
 		t.Fatalf("resources length = %d, want 1", len(resources))
 	}
 	assertLinodeResource(t, resources[0], "101", terraformutils.TfSanitize("101"), "linode_nodebalancer", map[string]string{})
+}
+
+func writeTestLinodeCA(t *testing.T, server *httptest.Server) string {
+	t.Helper()
+
+	cert := server.Certificate()
+	if cert == nil {
+		t.Fatal("test server did not expose a certificate")
+	}
+	caPath := t.TempDir() + "/linode-test-ca.pem"
+	caPEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: cert.Raw,
+	})
+	if err := os.WriteFile(caPath, caPEM, 0o600); err != nil {
+		t.Fatalf("write test CA: %v", err)
+	}
+	return caPath
 }
 
 func TestNodeBalancerGeneratorInitResourcesWrapsChildErrors(t *testing.T) {
