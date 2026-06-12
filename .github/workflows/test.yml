@@ -77,7 +77,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [a, b]
+        shard: [a, b, cmd]
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
