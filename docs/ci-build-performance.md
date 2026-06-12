@@ -52,7 +52,7 @@ The check validates that:
 - the sorted union equals `go list ./providers/... ./cmd/...`
 
 Non-fixture build package selection must continue to use packages with non-test Go files and must keep fixture packages out of the build target set.
-The blocking govulncheck source scan follows the same non-fixture package boundary.
+The blocking govulncheck source scan follows the same non-fixture package boundary. The root CLI entrypoint is scanned at package level because symbol-level analysis of that package traverses the full command/provider graph and has been runner-canceled in CI.
 
 ## Change Guidelines
 

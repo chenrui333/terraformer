@@ -543,6 +543,7 @@ run_govulncheck_source_scan() {
   local batch_size="${GOVULNCHECK_BATCH_SIZE:-25}"
   local package
   local package_file=""
+  local package_level_packages=()
   local packages=()
   local scan_level="${GOVULNCHECK_SCAN_LEVEL:-symbol}"
 
@@ -571,6 +572,12 @@ run_govulncheck_source_scan() {
     while IFS= read -r package; do
       [[ -n "$package" ]] || continue
       case "$package" in
+        github.com/chenrui333/terraformer)
+          if [[ "$scan_level" == "symbol" ]]; then
+            package_level_packages+=("$package")
+            continue
+          fi
+          ;;
         github.com/chenrui333/terraformer/tests/*) continue ;;
       esac
       packages+=("$package")
@@ -578,8 +585,13 @@ run_govulncheck_source_scan() {
     rm -f "$package_file"
   fi
 
-  if [[ "${#packages[@]}" -eq 0 ]]; then
+  if [[ "${#packages[@]}" -eq 0 && "${#package_level_packages[@]}" -eq 0 ]]; then
     fail "no Go packages found for govulncheck source scan"
+  fi
+
+  if [[ "${#package_level_packages[@]}" -gt 0 ]]; then
+    printf 'Scanning %s package(s) at package level: %s\n' "${#package_level_packages[@]}" "${package_level_packages[*]}"
+    govulncheck -scan=package "${package_level_packages[@]}" || return
   fi
 
   for package in "${packages[@]}"; do
