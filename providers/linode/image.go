@@ -6,7 +6,7 @@ import (
 	"context"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/linode/linodego"
+	"github.com/linode/linodego/v2"
 )
 
 type ImageGenerator struct {
@@ -27,7 +27,10 @@ func (g ImageGenerator) createResources(imageList []linodego.Image) []terraformu
 }
 
 func (g *ImageGenerator) InitResources() error {
-	client := g.generateClient()
+	client, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	output, err := client.ListImages(context.Background(), nil)
 	if err != nil {
 		return err

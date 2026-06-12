@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/linode/linodego"
+	"github.com/linode/linodego/v2"
 )
 
 type SSHKeyGenerator struct {
@@ -28,7 +28,10 @@ func (g SSHKeyGenerator) createResources(keyList []linodego.SSHKey) []terraformu
 }
 
 func (g *SSHKeyGenerator) InitResources() error {
-	client := g.generateClient()
+	client, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	output, err := client.ListSSHKeys(context.Background(), nil)
 	if err != nil {
 		return err

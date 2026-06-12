@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/linode/linodego"
+	"github.com/linode/linodego/v2"
 )
 
 type DomainGenerator struct {
@@ -49,7 +49,10 @@ func (g *DomainGenerator) loadDomainRecords(client linodego.Client, domainID int
 }
 
 func (g *DomainGenerator) InitResources() error {
-	client := g.generateClient()
+	client, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	domainList, err := g.loadDomains(client)
 	if err != nil {
 		return err
