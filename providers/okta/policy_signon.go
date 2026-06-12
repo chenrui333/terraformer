@@ -6,22 +6,30 @@ import (
 	"context"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/okta/okta-sdk-golang/v2/okta"
-	"github.com/okta/okta-sdk-golang/v2/okta/query"
+	"github.com/okta/okta-sdk-golang/v6/okta"
 )
 
 type SignOnPolicyGenerator struct {
 	OktaService
 }
 
-func (g SignOnPolicyGenerator) createResources(signOnPolicyList []*okta.Policy) []terraformutils.Resource {
+type oktaPolicySummary struct {
+	ID   string
+	Name string
+}
+
+func (g SignOnPolicyGenerator) createResources(signOnPolicyList []okta.ListPolicies200ResponseInner) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 	for _, signOnPolicy := range signOnPolicyList {
-		resourceName := normalizeResourceName(signOnPolicy.Name)
+		policy, ok := oktaPolicySummaryFromListPolicy(signOnPolicy)
+		if !ok {
+			continue
+		}
+		resourceName := normalizeResourceName(policy.Name)
 		resourceType := "okta_policy_signon"
 
 		resources = append(resources, terraformutils.NewSimpleResource(
-			signOnPolicy.Id,
+			policy.ID,
 			"policy_signon_"+resourceName,
 			resourceType,
 			"okta",
@@ -44,25 +52,37 @@ func (g *SignOnPolicyGenerator) InitResources() error {
 	return nil
 }
 
-func getSignOnPolicies(ctx context.Context, client *okta.Client) ([]*okta.Policy, error) {
-	qp := query.NewQueryParams(query.WithType("OKTA_SIGN_ON"))
-	var policies []*okta.Policy
-	data, resp, err := client.Policy.ListPolicies(ctx, qp)
+func getSignOnPolicies(ctx context.Context, client *okta.APIClient) ([]okta.ListPolicies200ResponseInner, error) {
+	policies, resp, err := client.PolicyAPI.ListPolicies(ctx).Type_("OKTA_SIGN_ON").Execute()
 	if err != nil {
 		return nil, err
 	}
 
 	for resp.HasNextPage() {
-		var nextPolicies []*okta.Policy
-		resp, err = resp.Next(ctx, &nextPolicies)
+		var nextPolicies []okta.ListPolicies200ResponseInner
+		resp, err = resp.Next(&nextPolicies)
 		if err != nil {
 			return nil, err
 		}
 		policies = append(policies, nextPolicies...)
 	}
-	for _, p := range data {
-		policies = append(policies, p.(*okta.Policy))
-	}
 
 	return policies, nil
+}
+
+func oktaPolicySummaryFromListPolicy(policy okta.ListPolicies200ResponseInner) (oktaPolicySummary, bool) {
+	switch {
+	case policy.AccessPolicy != nil:
+		return oktaPolicySummary{ID: policy.AccessPolicy.GetId(), Name: policy.AccessPolicy.GetName()}, true
+	case policy.AuthenticatorEnrollmentPolicy != nil:
+		return oktaPolicySummary{ID: policy.AuthenticatorEnrollmentPolicy.GetId(), Name: policy.AuthenticatorEnrollmentPolicy.GetName()}, true
+	case policy.OktaSignOnPolicy != nil:
+		return oktaPolicySummary{ID: policy.OktaSignOnPolicy.GetId(), Name: policy.OktaSignOnPolicy.GetName()}, true
+	case policy.PasswordPolicy != nil:
+		return oktaPolicySummary{ID: policy.PasswordPolicy.GetId(), Name: policy.PasswordPolicy.GetName()}, true
+	case policy.ProfileEnrollmentPolicy != nil:
+		return oktaPolicySummary{ID: policy.ProfileEnrollmentPolicy.GetId(), Name: policy.ProfileEnrollmentPolicy.GetName()}, true
+	default:
+		return oktaPolicySummary{}, false
+	}
 }

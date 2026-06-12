@@ -6,10 +6,12 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/okta/okta-sdk-golang/v2/okta"
+	"github.com/okta/okta-sdk-golang/v6/okta"
 )
 
 const oktaUserSchemaPathPrefix = "/api/v1/meta/schemas/user/"
@@ -20,7 +22,15 @@ type UserSchemaPropertyGenerator struct {
 
 func (g UserSchemaPropertyGenerator) createResources(userSchema *okta.UserSchema, userTypeID string, userTypeName string) []terraformutils.Resource {
 	var resources []terraformutils.Resource
-	for index := range userSchema.Definitions.Custom.Properties {
+	definitions := userSchema.GetDefinitions()
+	var customPropertyNames []string
+	if custom, ok := definitions.GetCustomOk(); ok {
+		for index := range custom.GetProperties() {
+			customPropertyNames = append(customPropertyNames, index)
+		}
+	}
+	sort.Strings(customPropertyNames)
+	for _, index := range customPropertyNames {
 		resources = append(resources, terraformutils.NewResource(
 			index,
 			normalizeResourceName(userTypeName)+"_property_"+normalizeResourceName(index),
@@ -35,7 +45,11 @@ func (g UserSchemaPropertyGenerator) createResources(userSchema *okta.UserSchema
 		))
 	}
 
-	for index := range userSchema.Definitions.Base.Properties {
+	var basePropertyNames []string
+	if base, ok := definitions.GetBaseOk(); ok {
+		basePropertyNames = userSchemaBasePropertyNames(base.GetProperties())
+	}
+	for _, index := range basePropertyNames {
 		resources = append(resources, terraformutils.NewResource(
 			index,
 			normalizeResourceName(userTypeName)+"_property_"+normalizeResourceName(index),
@@ -70,17 +84,18 @@ func (g *UserSchemaPropertyGenerator) InitResources() error {
 			return err
 		}
 		if schemaID != "" {
-			schema, _, err := client.UserSchema.GetUserSchema(ctx, schemaID)
+			schema, _, err := client.SchemaAPI.GetUserSchema(ctx, schemaID).Execute()
 			if err != nil {
 				return err
 			}
 
 			userTypeID := "default"
-			if userType.Name != "user" {
-				userTypeID = userType.Id
+			userTypeName := getUserTypeName(userType)
+			if userTypeName != "user" {
+				userTypeID = userType.GetId()
 			}
 
-			resources = append(resources, g.createResources(schema, userTypeID, userType.Name)...)
+			resources = append(resources, g.createResources(schema, userTypeID, userTypeName)...)
 		}
 	}
 
@@ -88,15 +103,15 @@ func (g *UserSchemaPropertyGenerator) InitResources() error {
 	return nil
 }
 
-func getUserTypes(ctx context.Context, client *okta.Client) ([]*okta.UserType, error) {
-	output, resp, err := client.UserType.ListUserTypes(ctx)
+func getUserTypes(ctx context.Context, client *okta.APIClient) ([]okta.UserType, error) {
+	output, resp, err := client.UserTypeAPI.ListUserTypes(ctx).Execute()
 	if err != nil {
 		return nil, err
 	}
 
 	for resp.HasNextPage() {
-		var nextUserTypeSet []*okta.UserType
-		resp, err = resp.Next(ctx, &nextUserTypeSet)
+		var nextUserTypeSet []okta.UserType
+		resp, err = resp.Next(&nextUserTypeSet)
 		if err != nil {
 			return nil, err
 		}
@@ -106,13 +121,24 @@ func getUserTypes(ctx context.Context, client *okta.Client) ([]*okta.UserType, e
 	return output, nil
 }
 
-func getUserTypeSchemaID(ut *okta.UserType) (string, error) {
-	fm, ok := ut.Links.(map[string]interface{})
+func getUserTypeName(ut okta.UserType) string {
+	if name, ok := ut.AdditionalProperties["name"].(string); ok && name != "" {
+		return name
+	}
+	if displayName, ok := ut.AdditionalProperties["displayName"].(string); ok && displayName != "" {
+		return displayName
+	}
+	return ut.GetId()
+}
+
+func getUserTypeSchemaID(ut okta.UserType) (string, error) {
+	links, ok := ut.AdditionalProperties["_links"]
 	if !ok {
-		if ut.Links == nil {
-			return "", nil
-		}
-		return "", fmt.Errorf("parse Okta user type %q schema link: links has type %T, want map[string]interface{}", ut.Id, ut.Links)
+		return "", nil
+	}
+	fm, ok := links.(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("parse Okta user type %q schema link: links has type %T, want map[string]interface{}", ut.GetId(), links)
 	}
 	schemaValue, ok := fm["schema"]
 	if !ok {
@@ -120,7 +146,7 @@ func getUserTypeSchemaID(ut *okta.UserType) (string, error) {
 	}
 	sm, ok := schemaValue.(map[string]interface{})
 	if !ok {
-		return "", fmt.Errorf("parse Okta user type %q schema link: schema has type %T, want map[string]interface{}", ut.Id, schemaValue)
+		return "", fmt.Errorf("parse Okta user type %q schema link: schema has type %T, want map[string]interface{}", ut.GetId(), schemaValue)
 	}
 	hrefValue, ok := sm["href"]
 	if !ok {
@@ -128,19 +154,43 @@ func getUserTypeSchemaID(ut *okta.UserType) (string, error) {
 	}
 	href, ok := hrefValue.(string)
 	if !ok {
-		return "", fmt.Errorf("parse Okta user type %q schema link: href has type %T, want string", ut.Id, hrefValue)
+		return "", fmt.Errorf("parse Okta user type %q schema link: href has type %T, want string", ut.GetId(), hrefValue)
 	}
 	u, err := url.Parse(href)
 	if err != nil {
-		return "", fmt.Errorf("parse Okta user type %q schema link: %w", ut.Id, err)
+		return "", fmt.Errorf("parse Okta user type %q schema link: %w", ut.GetId(), err)
 	}
 	path := u.EscapedPath()
 	if !strings.HasPrefix(path, oktaUserSchemaPathPrefix) {
-		return "", fmt.Errorf("parse Okta user type %q schema link %q: unexpected path %q", ut.Id, href, path)
+		return "", fmt.Errorf("parse Okta user type %q schema link %q: unexpected path %q", ut.GetId(), href, path)
 	}
 	schemaID := strings.TrimPrefix(path, oktaUserSchemaPathPrefix)
 	if schemaID == "" {
-		return "", fmt.Errorf("parse Okta user type %q schema link %q: missing schema ID", ut.Id, href)
+		return "", fmt.Errorf("parse Okta user type %q schema link %q: missing schema ID", ut.GetId(), href)
 	}
 	return schemaID, nil
+}
+
+func userSchemaBasePropertyNames(properties okta.UserSchemaBaseProperties) []string {
+	names := make([]string, 0, len(properties.AdditionalProperties))
+	value := reflect.ValueOf(properties)
+	typeOfProperties := value.Type()
+	for i := 0; i < value.NumField(); i++ {
+		field := typeOfProperties.Field(i)
+		if field.Name == "AdditionalProperties" {
+			continue
+		}
+		jsonName := strings.Split(field.Tag.Get("json"), ",")[0]
+		if jsonName == "" || jsonName == "-" {
+			continue
+		}
+		if !value.Field(i).IsNil() {
+			names = append(names, jsonName)
+		}
+	}
+	for index := range properties.AdditionalProperties {
+		names = append(names, index)
+	}
+	sort.Strings(names)
+	return names
 }

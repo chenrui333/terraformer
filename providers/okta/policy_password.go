@@ -6,24 +6,27 @@ import (
 	"context"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/okta/okta-sdk-golang/v2/okta"
-	"github.com/okta/okta-sdk-golang/v2/okta/query"
+	"github.com/okta/okta-sdk-golang/v6/okta"
 )
 
 type PasswordPolicyGenerator struct {
 	OktaService
 }
 
-func (g PasswordPolicyGenerator) createResources(passwordPolicyList []*okta.Policy) []terraformutils.Resource {
+func (g PasswordPolicyGenerator) createResources(passwordPolicyList []okta.ListPolicies200ResponseInner) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 	for _, passwordPolicy := range passwordPolicyList {
-		resourceName := normalizeResourceName(passwordPolicy.Name)
+		policy, ok := oktaPolicySummaryFromListPolicy(passwordPolicy)
+		if !ok {
+			continue
+		}
+		resourceName := normalizeResourceName(policy.Name)
 		resourceType := "okta_policy_password"
-		if passwordPolicy.Name == "Default Policy" {
+		if policy.Name == "Default Policy" {
 			resourceType = "okta_policy_password_default"
 		}
 		resources = append(resources, terraformutils.NewSimpleResource(
-			passwordPolicy.Id,
+			policy.ID,
 			"policy_password_"+resourceName,
 			resourceType,
 			"okta",
@@ -46,24 +49,19 @@ func (g *PasswordPolicyGenerator) InitResources() error {
 	return nil
 }
 
-func getPasswordPolicies(ctx context.Context, client *okta.Client) ([]*okta.Policy, error) {
-	qp := query.NewQueryParams(query.WithType("PASSWORD"))
-	var policies []*okta.Policy
-	data, resp, err := client.Policy.ListPolicies(ctx, qp)
+func getPasswordPolicies(ctx context.Context, client *okta.APIClient) ([]okta.ListPolicies200ResponseInner, error) {
+	policies, resp, err := client.PolicyAPI.ListPolicies(ctx).Type_("PASSWORD").Execute()
 	if err != nil {
 		return nil, err
 	}
 
 	for resp.HasNextPage() {
-		var nextPolicies []*okta.Policy
-		resp, err = resp.Next(ctx, &nextPolicies)
+		var nextPolicies []okta.ListPolicies200ResponseInner
+		resp, err = resp.Next(&nextPolicies)
 		if err != nil {
 			return nil, err
 		}
 		policies = append(policies, nextPolicies...)
-	}
-	for _, p := range data {
-		policies = append(policies, p.(*okta.Policy))
 	}
 
 	return policies, nil

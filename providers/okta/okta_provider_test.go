@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	oktasdk "github.com/okta/okta-sdk-golang/v2/okta"
+	oktasdk "github.com/okta/okta-sdk-golang/v6/okta"
 )
 
 func TestOktaProviderInitClearsStateOnMissingAPIToken(t *testing.T) {
@@ -32,14 +32,11 @@ func TestOktaProviderInitClearsStateOnMissingAPIToken(t *testing.T) {
 }
 
 func TestGetUserTypeSchemaID(t *testing.T) {
-	userType := &oktasdk.UserType{
-		Id: "custom",
-		Links: map[string]interface{}{
-			"schema": map[string]interface{}{
-				"href": "https://example.okta.com/api/v1/meta/schemas/user/custom",
-			},
+	userType := testOktaUserType(map[string]interface{}{
+		"schema": map[string]interface{}{
+			"href": "https://example.okta.com/api/v1/meta/schemas/user/custom",
 		},
-	}
+	})
 
 	schemaID, err := getUserTypeSchemaID(userType)
 	if err != nil {
@@ -50,30 +47,56 @@ func TestGetUserTypeSchemaID(t *testing.T) {
 	}
 }
 
+func TestGetUserTypeName(t *testing.T) {
+	tests := []struct {
+		name     string
+		userType oktasdk.UserType
+		want     string
+	}{
+		{
+			name:     "name metadata",
+			userType: testOktaUserTypeWithProperties(map[string]interface{}{"name": "Custom User"}),
+			want:     "Custom User",
+		},
+		{
+			name:     "display name metadata",
+			userType: testOktaUserTypeWithProperties(map[string]interface{}{"displayName": "Display User"}),
+			want:     "Display User",
+		},
+		{
+			name:     "fallback id",
+			userType: testOktaUserTypeWithProperties(nil),
+			want:     "custom",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getUserTypeName(tt.userType); got != tt.want {
+				t.Fatalf("getUserTypeName() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestGetUserTypeSchemaIDAllowsMissingLinkFields(t *testing.T) {
 	tests := []struct {
 		name     string
-		userType *oktasdk.UserType
+		userType oktasdk.UserType
 	}{
 		{
 			name:     "links missing",
-			userType: &oktasdk.UserType{Id: "custom"},
+			userType: testOktaUserTypeWithProperties(nil),
 		},
 		{
-			name: "schema missing",
-			userType: &oktasdk.UserType{
-				Id:    "custom",
-				Links: map[string]interface{}{},
-			},
+			name:     "schema missing",
+			userType: testOktaUserType(map[string]interface{}{}),
 		},
 		{
 			name: "href missing",
-			userType: &oktasdk.UserType{
-				Id: "custom",
-				Links: map[string]interface{}{
-					"schema": map[string]interface{}{},
-				},
-			},
+			userType: testOktaUserType(map[string]interface{}{
+				"schema": map[string]interface{}{},
+			}),
 		},
 	}
 
@@ -93,34 +116,26 @@ func TestGetUserTypeSchemaIDAllowsMissingLinkFields(t *testing.T) {
 func TestGetUserTypeSchemaIDRejectsMalformedLinkFields(t *testing.T) {
 	tests := []struct {
 		name     string
-		userType *oktasdk.UserType
+		userType oktasdk.UserType
 		wantErr  string
 	}{
 		{
 			name:     "links wrong type",
-			userType: &oktasdk.UserType{Id: "custom", Links: "bad-links"},
+			userType: testOktaUserTypeWithProperties(map[string]interface{}{"_links": "bad-links"}),
 			wantErr:  "links has type",
 		},
 		{
-			name: "schema wrong type",
-			userType: &oktasdk.UserType{
-				Id: "custom",
-				Links: map[string]interface{}{
-					"schema": "bad-schema",
-				},
-			},
-			wantErr: "schema has type",
+			name:     "schema wrong type",
+			userType: testOktaUserType(map[string]interface{}{"schema": "bad-schema"}),
+			wantErr:  "schema has type",
 		},
 		{
 			name: "href wrong type",
-			userType: &oktasdk.UserType{
-				Id: "custom",
-				Links: map[string]interface{}{
-					"schema": map[string]interface{}{
-						"href": 123,
-					},
+			userType: testOktaUserType(map[string]interface{}{
+				"schema": map[string]interface{}{
+					"href": 123,
 				},
-			},
+			}),
 			wantErr: "href has type",
 		},
 	}
@@ -139,14 +154,11 @@ func TestGetUserTypeSchemaIDRejectsMalformedLinkFields(t *testing.T) {
 }
 
 func TestGetUserTypeSchemaIDReturnsParseError(t *testing.T) {
-	userType := &oktasdk.UserType{
-		Id: "custom",
-		Links: map[string]interface{}{
-			"schema": map[string]interface{}{
-				"href": "https://example.okta.com/%zz",
-			},
+	userType := testOktaUserType(map[string]interface{}{
+		"schema": map[string]interface{}{
+			"href": "https://example.okta.com/%zz",
 		},
-	}
+	})
 
 	_, err := getUserTypeSchemaID(userType)
 	if err == nil {
@@ -158,14 +170,11 @@ func TestGetUserTypeSchemaIDReturnsParseError(t *testing.T) {
 }
 
 func TestGetUserTypeSchemaIDRejectsUnexpectedPath(t *testing.T) {
-	userType := &oktasdk.UserType{
-		Id: "custom",
-		Links: map[string]interface{}{
-			"schema": map[string]interface{}{
-				"href": "https://example.okta.com/api/v1/users/custom",
-			},
+	userType := testOktaUserType(map[string]interface{}{
+		"schema": map[string]interface{}{
+			"href": "https://example.okta.com/api/v1/users/custom",
 		},
-	}
+	})
 
 	_, err := getUserTypeSchemaID(userType)
 	if err == nil {
@@ -177,14 +186,11 @@ func TestGetUserTypeSchemaIDRejectsUnexpectedPath(t *testing.T) {
 }
 
 func TestGetUserTypeSchemaIDRejectsMissingSchemaID(t *testing.T) {
-	userType := &oktasdk.UserType{
-		Id: "custom",
-		Links: map[string]interface{}{
-			"schema": map[string]interface{}{
-				"href": "https://example.okta.com/api/v1/meta/schemas/user/",
-			},
+	userType := testOktaUserType(map[string]interface{}{
+		"schema": map[string]interface{}{
+			"href": "https://example.okta.com/api/v1/meta/schemas/user/",
 		},
-	}
+	})
 
 	_, err := getUserTypeSchemaID(userType)
 	if err == nil {
@@ -193,4 +199,26 @@ func TestGetUserTypeSchemaIDRejectsMissingSchemaID(t *testing.T) {
 	if !strings.Contains(err.Error(), "missing schema ID") {
 		t.Fatalf("error = %q, want missing schema ID context", err)
 	}
+}
+
+func testOktaUserType(links map[string]interface{}) oktasdk.UserType {
+	props := map[string]interface{}{}
+	if links != nil {
+		props["_links"] = links
+	}
+	return testOktaUserTypeWithProperties(props)
+}
+
+func testOktaUserTypeWithProperties(props map[string]interface{}) oktasdk.UserType {
+	if props == nil {
+		props = map[string]interface{}{}
+	}
+	return oktasdk.UserType{
+		Id:                   stringPtr("custom"),
+		AdditionalProperties: props,
+	}
+}
+
+func stringPtr(value string) *string {
+	return &value
 }

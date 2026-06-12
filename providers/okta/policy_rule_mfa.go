@@ -45,12 +45,16 @@ func (g *MFAPolicyRuleGenerator) InitResources() error {
 	}
 
 	for _, policy := range mfaPolicies {
-		output, err := getMFAPolicyRules(g, policy.Id)
+		policySummary, ok := oktaPolicySummaryFromListPolicy(policy)
+		if !ok {
+			continue
+		}
+		output, err := getMFAPolicyRules(g, policySummary.ID)
 		if err != nil {
 			return err
 		}
 
-		resources = append(resources, g.createResources(output, policy.Id, policy.Name)...)
+		resources = append(resources, g.createResources(output, policySummary.ID, policySummary.Name)...)
 	}
 
 	g.Resources = resources

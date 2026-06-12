@@ -45,12 +45,16 @@ func (g *PasswordPolicyRuleGenerator) InitResources() error {
 	}
 
 	for _, policy := range passwordPolicies {
-		output, err := getPasswordPolicyRules(g, policy.Id)
+		policySummary, ok := oktaPolicySummaryFromListPolicy(policy)
+		if !ok {
+			continue
+		}
+		output, err := getPasswordPolicyRules(g, policySummary.ID)
 		if err != nil {
 			return err
 		}
 
-		resources = append(resources, g.createResources(output, policy.Id, policy.Name)...)
+		resources = append(resources, g.createResources(output, policySummary.ID, policySummary.Name)...)
 	}
 
 	g.Resources = resources

@@ -3,8 +3,10 @@
 package okta
 
 import (
+	"sort"
+
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/okta/okta-sdk-golang/v2/okta"
+	"github.com/okta/okta-sdk-golang/v6/okta"
 )
 
 type AppUserSchemaPropertyGenerator struct {
@@ -13,7 +15,15 @@ type AppUserSchemaPropertyGenerator struct {
 
 func (g AppUserSchemaPropertyGenerator) createResources(appUserSchema *okta.UserSchema, appID string) []terraformutils.Resource {
 	var resources []terraformutils.Resource
-	for index := range appUserSchema.Definitions.Custom.Properties {
+	definitions := appUserSchema.GetDefinitions()
+	var customPropertyNames []string
+	if custom, ok := definitions.GetCustomOk(); ok {
+		for index := range custom.GetProperties() {
+			customPropertyNames = append(customPropertyNames, index)
+		}
+	}
+	sort.Strings(customPropertyNames)
+	for _, index := range customPropertyNames {
 		resources = append(resources, terraformutils.NewResource(
 			index,
 			normalizeResourceName(appID)+"_property_"+normalizeResourceName(index),
@@ -28,7 +38,11 @@ func (g AppUserSchemaPropertyGenerator) createResources(appUserSchema *okta.User
 		))
 	}
 
-	for index := range appUserSchema.Definitions.Base.Properties {
+	var basePropertyNames []string
+	if base, ok := definitions.GetBaseOk(); ok {
+		basePropertyNames = userSchemaBasePropertyNames(base.GetProperties())
+	}
+	for _, index := range basePropertyNames {
 		resources = append(resources, terraformutils.NewResource(
 			index,
 			normalizeResourceName(appID)+"_property_"+normalizeResourceName(index),
@@ -58,12 +72,16 @@ func (g *AppUserSchemaPropertyGenerator) InitResources() error {
 	}
 
 	for _, app := range apps {
-		appUserSchema, _, err := client.UserSchema.GetApplicationUserSchema(ctx, app.Id)
+		appSummary, ok := getApplicationSummary(app)
+		if !ok {
+			continue
+		}
+		appUserSchema, _, err := client.SchemaAPI.GetApplicationUserSchema(ctx, appSummary.ID).Execute()
 		if err != nil {
 			return err
 		}
 
-		resources = append(resources, g.createResources(appUserSchema, app.Id)...)
+		resources = append(resources, g.createResources(appUserSchema, appSummary.ID)...)
 	}
 	g.Resources = resources
 	return nil

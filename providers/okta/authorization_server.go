@@ -6,24 +6,24 @@ import (
 	"context"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/okta/okta-sdk-golang/v2/okta"
+	"github.com/okta/okta-sdk-golang/v6/okta"
 )
 
 type AuthorizationServerGenerator struct {
 	OktaService
 }
 
-func (g AuthorizationServerGenerator) createResources(authorizationServerList []*okta.AuthorizationServer) []terraformutils.Resource {
+func (g AuthorizationServerGenerator) createResources(authorizationServerList []okta.AuthorizationServer) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 	for _, authorizationServer := range authorizationServerList {
 		resourceType := "okta_auth_server"
-		if authorizationServer.Name == "default" {
+		if authorizationServer.GetName() == "default" {
 			resourceType = "okta_auth_server_default"
 		}
 
 		resources = append(resources, terraformutils.NewSimpleResource(
-			authorizationServer.Id,
-			"auth_server_"+authorizationServer.Name,
+			authorizationServer.GetId(),
+			"auth_server_"+authorizationServer.GetName(),
 			resourceType,
 			"okta",
 			[]string{}))
@@ -46,15 +46,15 @@ func (g *AuthorizationServerGenerator) InitResources() error {
 	return nil
 }
 
-func getAuthorizationServers(ctx context.Context, client *okta.Client) ([]*okta.AuthorizationServer, error) {
-	output, resp, err := client.AuthorizationServer.ListAuthorizationServers(ctx, nil)
+func getAuthorizationServers(ctx context.Context, client *okta.APIClient) ([]okta.AuthorizationServer, error) {
+	output, resp, err := client.AuthorizationServerAPI.ListAuthorizationServers(ctx).Execute()
 	if err != nil {
 		return nil, err
 	}
 
 	for resp.HasNextPage() {
-		var nextAuthorizationServerSet []*okta.AuthorizationServer
-		resp, err = resp.Next(ctx, &nextAuthorizationServerSet)
+		var nextAuthorizationServerSet []okta.AuthorizationServer
+		resp, err = resp.Next(&nextAuthorizationServerSet)
 		if err != nil {
 			return nil, err
 		}

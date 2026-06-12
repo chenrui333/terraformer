@@ -4,24 +4,24 @@ package okta
 
 import (
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/okta/okta-sdk-golang/v2/okta"
+	"github.com/okta/okta-sdk-golang/v6/okta"
 )
 
 type AuthorizationServerClaimGenerator struct {
 	OktaService
 }
 
-func (g AuthorizationServerClaimGenerator) createResources(authorizationServerClaimList []*okta.OAuth2Claim, authorizationServerID string, authorizationServerName string) []terraformutils.Resource {
+func (g AuthorizationServerClaimGenerator) createResources(authorizationServerClaimList []okta.OAuth2Claim, authorizationServerID string, authorizationServerName string) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 
 	for _, authorizationServerClaim := range authorizationServerClaimList {
 		resourceType := "okta_auth_server_claim"
-		if authorizationServerClaim.Name == "sub" {
+		if authorizationServerClaim.GetName() == "sub" {
 			resourceType = "okta_auth_server_claim_default"
 		}
 		resources = append(resources, terraformutils.NewResource(
-			authorizationServerClaim.Id,
-			normalizeResourceName("auth_server_"+authorizationServerName+"_claim_"+authorizationServerClaim.Id),
+			authorizationServerClaim.GetId(),
+			normalizeResourceName("auth_server_"+authorizationServerName+"_claim_"+authorizationServerClaim.GetId()),
 			resourceType,
 			"okta",
 			map[string]string{
@@ -47,12 +47,12 @@ func (g *AuthorizationServerClaimGenerator) InitResources() error {
 	}
 
 	for _, authorizationServer := range authorizationServers {
-		output, _, err := client.AuthorizationServer.ListOAuth2Claims(ctx, authorizationServer.Id)
+		output, _, err := client.AuthorizationServerClaimsAPI.ListOAuth2Claims(ctx, authorizationServer.GetId()).Execute()
 		if err != nil {
 			return err
 		}
 
-		resources = append(resources, g.createResources(output, authorizationServer.Id, authorizationServer.Name)...)
+		resources = append(resources, g.createResources(output, authorizationServer.GetId(), authorizationServer.GetName())...)
 	}
 
 	g.Resources = resources

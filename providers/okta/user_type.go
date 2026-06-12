@@ -4,19 +4,19 @@ package okta
 
 import (
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/okta/okta-sdk-golang/v2/okta"
+	"github.com/okta/okta-sdk-golang/v6/okta"
 )
 
 type UserTypeGenerator struct {
 	OktaService
 }
 
-func (g UserTypeGenerator) createResources(userTypeList []*okta.UserType) []terraformutils.Resource {
+func (g UserTypeGenerator) createResources(userTypeList []okta.UserType) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 	for _, userType := range userTypeList {
 		resources = append(resources, terraformutils.NewSimpleResource(
-			userType.Id,
-			"usertype_"+userType.Name,
+			userType.GetId(),
+			"usertype_"+getUserTypeName(userType),
 			"okta_user_type",
 			"okta",
 			[]string{}))
@@ -30,14 +30,14 @@ func (g *UserTypeGenerator) InitResources() error {
 		return e
 	}
 
-	output, resp, err := client.UserType.ListUserTypes(ctx)
+	output, resp, err := client.UserTypeAPI.ListUserTypes(ctx).Execute()
 	if err != nil {
 		return err
 	}
 
 	for resp.HasNextPage() {
-		var nextUserTypeSet []*okta.UserType
-		resp, err = resp.Next(ctx, &nextUserTypeSet)
+		var nextUserTypeSet []okta.UserType
+		resp, err = resp.Next(&nextUserTypeSet)
 		if err != nil {
 			return err
 		}

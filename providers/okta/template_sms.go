@@ -4,19 +4,19 @@ package okta
 
 import (
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/okta/okta-sdk-golang/v2/okta"
+	"github.com/okta/okta-sdk-golang/v6/okta"
 )
 
 type SMSTemplateGenerator struct {
 	OktaService
 }
 
-func (g SMSTemplateGenerator) createResources(smsTemplateList []*okta.SmsTemplate) []terraformutils.Resource {
+func (g SMSTemplateGenerator) createResources(smsTemplateList []okta.SmsTemplate) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 	for _, smsTemplate := range smsTemplateList {
 		resources = append(resources, terraformutils.NewSimpleResource(
-			smsTemplate.Id,
-			"template_sms_"+smsTemplate.Name,
+			smsTemplate.GetId(),
+			"template_sms_"+smsTemplate.GetName(),
 			"okta_template_sms",
 			"okta",
 			[]string{}))
@@ -30,14 +30,14 @@ func (g *SMSTemplateGenerator) InitResources() error {
 		return e
 	}
 
-	output, resp, err := client.SmsTemplate.ListSmsTemplates(ctx, nil)
+	output, resp, err := client.TemplateAPI.ListSmsTemplates(ctx).Execute()
 	if err != nil {
 		return err
 	}
 
 	for resp.HasNextPage() {
-		var nextSmsTemplateSet []*okta.SmsTemplate
-		resp, err = resp.Next(ctx, &nextSmsTemplateSet)
+		var nextSmsTemplateSet []okta.SmsTemplate
+		resp, err = resp.Next(&nextSmsTemplateSet)
 		if err != nil {
 			return err
 		}
