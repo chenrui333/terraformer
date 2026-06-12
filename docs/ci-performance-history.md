@@ -23,6 +23,7 @@ see [CI Build Performance Notes](ci-build-performance.md).
 | Command test shard | Split command package tests into their own deterministic shard | Command packages were the long pole inside provider test shard a | Provider/cmd shard coverage now includes a, b, and cmd | Keep cmd dedicated unless later timing proves a better split |
 | Terraform provider compatibility shard | Split Terraform provider compatibility into a dedicated PR-only shard | Compatibility checks dominated the remaining validation job | Full compatibility coverage stayed intact | Do not split compatibility further from one near-tied run |
 | Current docs cleanup | Recorded the current shard graph, invariants, and plateau decision | The workflow reached a near-tie plateau where more generic sharding had weaker risk/reward | Documentation only | Study provider-only path-sensitive narrowing after more completed runs |
+| Provider-only narrowing study | Studied strict provider-only preflight narrowing and deferred it | Only 1 of the last 100 merged PRs qualified, below the threshold of at least 3 recent qualifying PRs; preflight-only narrowing was capped by test (ubuntu-latest), so the current upside was about 8 seconds | No behavior change | Revisit only when recent PR history has 3 to 5 isolated provider-only PRs and preflight shards materially exceed test (ubuntu-latest) |
 
 ## Timing Baselines
 
@@ -69,9 +70,15 @@ are close enough that another shard is likely to add runner scheduling,
 branch-protection, and maintenance overhead unless future runs show a clearer
 long pole.
 
-The next likely performance study is path-sensitive provider-only narrowing.
-That should start only after completed run data and PR history show enough
-isolated provider-only changes to justify the extra classifier complexity.
+Path-sensitive provider-only narrowing was studied and deferred. Only 1 of the
+last 100 merged PRs qualified as strict provider-only, below the threshold of
+at least 3 recent qualifying PRs. The current preflight-only upside was also
+capped by `test (ubuntu-latest)`: even perfect preflight narrowing would move
+the observed critical path only from about 991 seconds to about 983 seconds.
+
+Revisit provider-only narrowing only when recent PR history has 3 to 5 isolated
+provider-only PRs and completed CI data shows provider preflight shards
+materially exceeding `test (ubuntu-latest)`.
 
 Bazel, Buck2, BuildBuddy, Dagger, Earthly, Pants, Nix, or another build system
 remain premature. Native Go and GitHub Actions still expose actionable

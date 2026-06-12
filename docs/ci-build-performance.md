@@ -149,10 +149,10 @@ clearer long pole.
 - Provider preflight quick mode now fails closed on diff/classification errors.
 - PR core tests, provider preflight phases, provider/cmd test shards, vet, and
   Terraform provider compatibility now report timing at the phase/job boundary.
-- After run `27440198139`, pause generic sharding. The next likely useful
-  study is path-sensitive provider-only narrowing, but only after more completed
-  post-#627 runs confirm the plateau and provider-only PR history shows enough
-  upside.
+- After run `27440198139`, pause generic sharding. Provider-only narrowing was
+  studied and deferred because only 1 of the last 100 merged PRs qualified and
+  the current preflight-only upside was capped at roughly 8 seconds by
+  `test (ubuntu-latest)`.
 
 ## Measurement Workflow
 
@@ -179,9 +179,16 @@ cancelled runs or still-running jobs.
 
 ## Future Provider-Only Narrowing Study
 
-Provider-only narrowing is the next likely optimization direction if future
-completed runs keep showing a plateau. Do not implement it until the classifier
-and expected savings are proven from real PR history.
+Provider-only narrowing was studied and deferred. Do not implement it until the
+classifier and expected savings are proven from real PR history.
+
+Current revisit trigger:
+
+- recent PR history has 3 to 5 isolated provider-only PRs
+- completed CI data shows provider preflight shards materially exceeding
+  `test (ubuntu-latest)`
+- the focused path would improve the required-check critical path, not only one
+  non-critical shard
 
 Study plan:
 
