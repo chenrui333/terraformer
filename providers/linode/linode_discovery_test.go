@@ -13,6 +13,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -171,7 +172,10 @@ func TestDomainGeneratorLoadDomainsAndRecords(t *testing.T) {
 		requests = append(requests, r.URL.String())
 		switch r.URL.Path {
 		case "/v4/domains":
-			page := assertLinodePageQuery(t, r)
+			page, ok := assertLinodePageQuery(t, w, r)
+			if !ok {
+				return
+			}
 			switch page {
 			case 1:
 				writeLinodePage(t, w, 1, 2, []map[string]any{{"id": 11, "domain": "example.com"}})
@@ -181,10 +185,14 @@ func TestDomainGeneratorLoadDomainsAndRecords(t *testing.T) {
 				unexpectedLinodePage(t, w, r, page)
 			}
 		case "/v4/domains/11/records":
-			assertLinodePageQuery(t, r)
+			if _, ok := assertLinodePageQuery(t, w, r); !ok {
+				return
+			}
 			writeLinodePage(t, w, 1, 1, []map[string]any{{"id": 101, "type": "A", "name": "www", "target": "192.0.2.10"}})
 		case "/v4/domains/12/records":
-			assertLinodePageQuery(t, r)
+			if _, ok := assertLinodePageQuery(t, w, r); !ok {
+				return
+			}
 			writeLinodePage[map[string]any](t, w, 1, 1, nil)
 		default:
 			unexpectedLinodeRequest(t, w, r)
@@ -218,7 +226,10 @@ func TestDomainGeneratorLoadDomainsAndRecords(t *testing.T) {
 func TestNodeBalancerGeneratorInitResourcesPaginatesParentsConfigsAndNodes(t *testing.T) {
 	seenPages := map[string][]int{}
 	client := newTestLinodeClient(t, func(w http.ResponseWriter, r *http.Request) {
-		page := assertLinodePageQuery(t, r)
+		page, ok := assertLinodePageQuery(t, w, r)
+		if !ok {
+			return
+		}
 		seenPages[r.URL.Path] = append(seenPages[r.URL.Path], page)
 
 		switch r.URL.Path {
@@ -276,7 +287,9 @@ func TestNodeBalancerGeneratorInitResourcesEmptyResponse(t *testing.T) {
 			unexpectedLinodeRequest(t, w, r)
 			return
 		}
-		assertLinodePageQuery(t, r)
+		if _, ok := assertLinodePageQuery(t, w, r); !ok {
+			return
+		}
 		writeLinodePage[map[string]any](t, w, 1, 1, nil)
 	})
 
@@ -292,14 +305,20 @@ func TestNodeBalancerGeneratorInitResourcesEmptyResponse(t *testing.T) {
 func TestNodeBalancerGeneratorInitResourcesUsesGeneratedClient(t *testing.T) {
 	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if got, want := r.Header.Get("Authorization"), "Bearer token"; got != want {
-			t.Fatalf("Authorization header = %q, want %q", got, want)
+			t.Errorf("Authorization header = %q, want %q", got, want)
+			writeLinodeError(t, w, http.StatusUnauthorized, "unexpected authorization header")
+			return
 		}
 		switch r.URL.Path {
 		case "/v4/nodebalancers":
-			assertLinodePageQuery(t, r)
+			if _, ok := assertLinodePageQuery(t, w, r); !ok {
+				return
+			}
 			writeLinodePage(t, w, 1, 1, []map[string]any{{"id": 101, "label": "nb-one", "region": "us-east"}})
 		case "/v4/nodebalancers/101/configs":
-			assertLinodePageQuery(t, r)
+			if _, ok := assertLinodePageQuery(t, w, r); !ok {
+				return
+			}
 			writeLinodePage[map[string]any](t, w, 1, 1, nil)
 		default:
 			unexpectedLinodeRequest(t, w, r)
@@ -338,6 +357,41 @@ func TestNewLinodeHTTPClientPreservesProxyAwareTransport(t *testing.T) {
 	}
 }
 
+func TestLinodeServiceGenerateClientValidatesToken(t *testing.T) {
+	tests := []struct {
+		name string
+		args map[string]interface{}
+	}{
+		{
+			name: "missing token",
+			args: map[string]interface{}{},
+		},
+		{
+			name: "non-string token",
+			args: map[string]interface{}{"token": 123},
+		},
+		{
+			name: "empty token",
+			args: map[string]interface{}{"token": ""},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			service := &LinodeService{}
+			service.SetArgs(tt.args)
+
+			_, err := service.generateClient()
+			if err == nil {
+				t.Fatal("generateClient() returned nil error")
+			}
+			if got := err.Error(); !strings.Contains(got, "token arg is missing or not a string") {
+				t.Fatalf("generateClient() error = %q, want token validation error", got)
+			}
+		})
+	}
+}
+
 func writeTestLinodeCA(t *testing.T, server *httptest.Server) string {
 	t.Helper()
 
@@ -357,13 +411,19 @@ func writeTestLinodeCA(t *testing.T, server *httptest.Server) string {
 }
 
 func TestNodeBalancerGeneratorInitResourcesWrapsChildErrors(t *testing.T) {
+	var configRequests atomic.Int64
 	client := newTestLinodeClient(t, func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/v4/nodebalancers":
-			assertLinodePageQuery(t, r)
+			if _, ok := assertLinodePageQuery(t, w, r); !ok {
+				return
+			}
 			writeLinodePage(t, w, 1, 1, []map[string]any{{"id": 101, "label": "nb-one", "region": "us-east"}})
 		case "/v4/nodebalancers/101/configs":
-			assertLinodePageQuery(t, r)
+			configRequests.Add(1)
+			if _, ok := assertLinodePageQuery(t, w, r); !ok {
+				return
+			}
 			writeLinodeError(t, w, http.StatusInternalServerError, "configs unavailable")
 		default:
 			unexpectedLinodeRequest(t, w, r)
@@ -376,6 +436,9 @@ func TestNodeBalancerGeneratorInitResourcesWrapsChildErrors(t *testing.T) {
 	}
 	if got := err.Error(); !strings.Contains(got, "list configs for nodebalancer 101") || !strings.Contains(got, "configs unavailable") {
 		t.Fatalf("initResources() error = %q, want parent context and API reason", got)
+	}
+	if got := configRequests.Load(); got != 1 {
+		t.Fatalf("config request count = %d, want 1", got)
 	}
 }
 
@@ -391,6 +454,7 @@ func newTestLinodeClient(t *testing.T, handler http.HandlerFunc) linodego.Client
 		t.Fatalf("linodego.NewClient() returned error: %v", err)
 	}
 	client.SetBaseURL(server.URL)
+	// linodego/v2 treats retry count as total attempts; keep tests single-shot.
 	client.SetRetryCount(1)
 	client.UseCache(false)
 	return client
@@ -410,7 +474,7 @@ func writeLinodePage[T any](t *testing.T, w http.ResponseWriter, page, pages int
 		"results": len(data),
 	}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		t.Fatalf("write response: %v", err)
+		t.Errorf("write response: %v", err)
 	}
 }
 
@@ -422,7 +486,7 @@ func writeLinodeError(t *testing.T, w http.ResponseWriter, status int, reason st
 	if err := json.NewEncoder(w).Encode(map[string]any{
 		"errors": []map[string]string{{"reason": reason}},
 	}); err != nil {
-		t.Fatalf("write error response: %v", err)
+		t.Errorf("write error response: %v", err)
 	}
 }
 
@@ -440,14 +504,16 @@ func unexpectedLinodePage(t *testing.T, w http.ResponseWriter, r *http.Request, 
 	writeLinodeError(t, w, http.StatusNotFound, "unexpected test page")
 }
 
-func assertLinodePageQuery(t *testing.T, r *http.Request) int {
+func assertLinodePageQuery(t *testing.T, w http.ResponseWriter, r *http.Request) (int, bool) {
 	t.Helper()
 
 	page, err := strconv.Atoi(r.URL.Query().Get("page"))
 	if err != nil {
-		t.Fatalf("request %s query page = %q, want integer: %v", r.URL.Path, r.URL.Query().Get("page"), err)
+		t.Errorf("request %s query page = %q, want integer: %v", r.URL.Path, r.URL.Query().Get("page"), err)
+		writeLinodeError(t, w, http.StatusBadRequest, "invalid test page query")
+		return 0, false
 	}
-	return page
+	return page, true
 }
 
 func assertPages(t *testing.T, got, want []int) {
