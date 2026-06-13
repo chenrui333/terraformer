@@ -45,13 +45,27 @@ func vultrInstanceAttachmentAttributes(attachments vultrInstanceAttachments) map
 }
 
 func addVultrStringSetAttributes(attributes map[string]string, field string, values []string) {
-	if len(values) == 0 {
+	uniqueValues := uniqueVultrStrings(values)
+	if len(uniqueValues) == 0 {
 		return
 	}
-	attributes[field+".#"] = strconv.Itoa(len(values))
-	for _, value := range values {
+	attributes[field+".#"] = strconv.Itoa(len(uniqueValues))
+	for _, value := range uniqueValues {
 		attributes[fmt.Sprintf("%s.%d", field, terraformutils.HashString(value))] = value
 	}
+}
+
+func uniqueVultrStrings(values []string) []string {
+	seen := make(map[string]struct{}, len(values))
+	uniqueValues := make([]string, 0, len(values))
+	for _, value := range values {
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		uniqueValues = append(uniqueValues, value)
+	}
+	return uniqueValues
 }
 
 func (g *ServerGenerator) loadInstanceAttachments(client *govultr.Client, instances []govultr.Instance) (map[string]vultrInstanceAttachments, error) {
