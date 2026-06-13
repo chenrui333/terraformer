@@ -4,7 +4,10 @@ package github
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -43,7 +46,10 @@ func (g *GithubService) createRegularClient() (*github.Client, error) {
 
 func (g *GithubService) createEnterpriseClient() (*github.Client, error) {
 	ctx := context.Background()
-	baseURL := g.GetArgs()["base_url"].(string)
+	baseURL, err := normalizeGithubBaseURL(g.GetArgs()["base_url"].(string))
+	if err != nil {
+		return nil, err
+	}
 	if g.Args["app_id"].(int64) != 0 && g.Args["installation_id"].(int64) != 0 && g.Args["pem"].(string) != "" {
 		itr, err := ghinstallation.New(http.DefaultTransport, g.Args["app_id"].(int64), g.Args["installation_id"].(int64), []byte(g.Args["pem"].(string)))
 		if err != nil {
@@ -62,4 +68,22 @@ func (g *GithubService) createEnterpriseClient() (*github.Client, error) {
 		github.WithEnterpriseURLs(baseURL, baseURL),
 		github.WithHTTPClient(tc),
 	)
+}
+
+func normalizeGithubBaseURL(baseURL string) (string, error) {
+	baseURL = strings.TrimSpace(baseURL)
+	parsed, err := url.Parse(baseURL)
+	if err != nil {
+		return "", fmt.Errorf("github: invalid base_url %q: %w", baseURL, err)
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return "", fmt.Errorf("github: invalid base_url %q: scheme must be http or https", baseURL)
+	}
+	if parsed.Host == "" {
+		return "", fmt.Errorf("github: invalid base_url %q: host is required", baseURL)
+	}
+	if !strings.HasSuffix(parsed.Path, "/") {
+		parsed.Path += "/"
+	}
+	return parsed.String(), nil
 }

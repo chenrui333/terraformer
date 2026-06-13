@@ -44,36 +44,52 @@ func (g *TeamsGenerator) createTeamsResources(ctx context.Context, teams []*gith
 
 func (g *TeamsGenerator) createTeamMembersResources(ctx context.Context, team *githubAPI.Team, client *githubAPI.Client) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
-	members, _, err := client.Teams.ListTeamMembersBySlug(ctx, g.Args["owner"].(string), team.GetSlug(), nil)
-	if err != nil {
-		return nil, fmt.Errorf("list github team members for %s: %w", team.GetSlug(), err)
+	opt := &githubAPI.TeamListTeamMembersOptions{
+		ListOptions: githubAPI.ListOptions{PerPage: 100},
 	}
-	for _, member := range members {
-		resources = append(resources, terraformutils.NewSimpleResource(
-			strconv.FormatInt(team.GetID(), 10)+":"+member.GetLogin(),
-			team.GetName()+"_"+member.GetLogin(),
-			"github_team_membership",
-			"github",
-			[]string{},
-		))
+	for {
+		members, resp, err := client.Teams.ListTeamMembersBySlug(ctx, g.Args["owner"].(string), team.GetSlug(), opt)
+		if err != nil {
+			return nil, fmt.Errorf("list github team members for %s: %w", team.GetSlug(), err)
+		}
+		for _, member := range members {
+			resources = append(resources, terraformutils.NewSimpleResource(
+				strconv.FormatInt(team.GetID(), 10)+":"+member.GetLogin(),
+				team.GetName()+"_"+member.GetLogin(),
+				"github_team_membership",
+				"github",
+				[]string{},
+			))
+		}
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.Page = resp.NextPage
 	}
 	return resources, nil
 }
 
 func (g *TeamsGenerator) createTeamRepositoriesResources(ctx context.Context, team *githubAPI.Team, client *githubAPI.Client) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
-	repos, _, err := client.Teams.ListTeamReposBySlug(ctx, g.Args["owner"].(string), team.GetSlug(), nil)
-	if err != nil {
-		return nil, fmt.Errorf("list github team repositories for %s: %w", team.GetSlug(), err)
-	}
-	for _, repo := range repos {
-		resources = append(resources, terraformutils.NewSimpleResource(
-			strconv.FormatInt(team.GetID(), 10)+":"+repo.GetName(),
-			team.GetName()+"_"+repo.GetName(),
-			"github_team_repository",
-			"github",
-			[]string{},
-		))
+	opt := &githubAPI.ListOptions{PerPage: 100}
+	for {
+		repos, resp, err := client.Teams.ListTeamReposBySlug(ctx, g.Args["owner"].(string), team.GetSlug(), opt)
+		if err != nil {
+			return nil, fmt.Errorf("list github team repositories for %s: %w", team.GetSlug(), err)
+		}
+		for _, repo := range repos {
+			resources = append(resources, terraformutils.NewSimpleResource(
+				strconv.FormatInt(team.GetID(), 10)+":"+repo.GetName(),
+				team.GetName()+"_"+repo.GetName(),
+				"github_team_repository",
+				"github",
+				[]string{},
+			))
+		}
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.Page = resp.NextPage
 	}
 	return resources, nil
 }
