@@ -184,7 +184,7 @@ classifier and expected savings are proven from real PR history.
 
 Current revisit trigger:
 
-- recent PR history has 3 to 5 isolated provider-only PRs
+- recent PR history has at least 3 isolated provider-only PRs
 - completed CI data shows provider preflight shards materially exceeding
   `test (ubuntu-latest)`
 - the focused path would improve the required-check critical path, not only one
