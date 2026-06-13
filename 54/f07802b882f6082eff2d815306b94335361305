@@ -1,0 +1,30 @@
+providers/okta/okta_provider_test.go
+  s_afdb657bd8ae26::t_1470bf552156ef 82-113
+providers/okta/authorization_server_policy_rule.go
+  s_afdb657bd8ae26::t_293f4440a8398c 47
+providers/okta/app_user_schema.go
+  s_afdb657bd8ae26::t_293f4440a8398c 75
+providers/okta/user_schema.go
+  s_afdb657bd8ae26::t_293f4440a8398c 93,122,128-140
+providers/okta/okta_discovery_test.go
+  s_afdb657bd8ae26::t_7945cef0239630 167
+  s_afdb657bd8ae26::t_3454c81038abec 155-166,168-192
+providers/okta/authorization_server_policy.go
+  s_afdb657bd8ae26::t_293f4440a8398c 6-7,48,59-75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "54f07802b882f6082eff2d815306b94335361305",
+  "prompts": {},
+  "sessions": {
+    "s_afdb657bd8ae26": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019eaf3b-28e8-78b1-9b2b-942e4d2dac16",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
