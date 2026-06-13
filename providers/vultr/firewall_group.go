@@ -4,6 +4,8 @@ package vultr
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"strconv"
 
 	"github.com/chenrui333/terraformer/terraformutils"
@@ -15,9 +17,9 @@ type FirewallGroupGenerator struct {
 }
 
 func (g *FirewallGroupGenerator) loadFirewallGroups(client *govultr.Client) ([]govultr.FirewallGroup, error) {
-	firewallGroups, _, _, err := client.FirewallGroup.List(context.Background(), nil)
+	firewallGroups, err := listAllVultrResources(context.Background(), client.FirewallGroup.List)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list vultr firewall groups: %w", err)
 	}
 	for _, firewallGroup := range firewallGroups {
 		g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
@@ -31,9 +33,11 @@ func (g *FirewallGroupGenerator) loadFirewallGroups(client *govultr.Client) ([]g
 }
 
 func (g *FirewallGroupGenerator) loadFirewallRulesByIPType(client *govultr.Client, firewallGroupID string, ipType string) error {
-	firewallRules, _, _, err := client.FirewallRule.List(context.Background(), firewallGroupID, nil)
+	firewallRules, err := listAllVultrResources(context.Background(), func(ctx context.Context, opt *govultr.ListOptions) ([]govultr.FirewallRule, *govultr.Meta, *http.Response, error) {
+		return client.FirewallRule.List(ctx, firewallGroupID, opt)
+	})
 	if err != nil {
-		return err
+		return fmt.Errorf("list vultr firewall rules for %q: %w", firewallGroupID, err)
 	}
 	for _, firewallRule := range firewallRules {
 		if firewallRule.IPType != ipType {
@@ -56,7 +60,10 @@ func (g *FirewallGroupGenerator) loadFirewallRulesByIPType(client *govultr.Clien
 }
 
 func (g *FirewallGroupGenerator) InitResources() error {
-	client := g.generateClient()
+	client, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	firewallGroups, err := g.loadFirewallGroups(client)
 	if err != nil {
 		return err

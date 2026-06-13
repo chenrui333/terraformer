@@ -4,6 +4,7 @@ package vultr
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/vultr/govultr/v3"
@@ -27,10 +28,13 @@ func (g ReservedIPGenerator) createResources(ipList []govultr.ReservedIP) []terr
 }
 
 func (g *ReservedIPGenerator) InitResources() error {
-	client := g.generateClient()
-	output, _, _, err := client.ReservedIP.List(context.Background(), nil)
+	client, err := g.generateClient()
 	if err != nil {
 		return err
+	}
+	output, err := listAllVultrResources(context.Background(), client.ReservedIP.List)
+	if err != nil {
+		return fmt.Errorf("list vultr reserved IPs: %w", err)
 	}
 	g.Resources = g.createResources(output)
 	return nil

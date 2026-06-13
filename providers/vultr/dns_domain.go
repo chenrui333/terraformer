@@ -4,6 +4,8 @@ package vultr
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/vultr/govultr/v3"
@@ -14,9 +16,9 @@ type DNSDomainGenerator struct {
 }
 
 func (g *DNSDomainGenerator) loadDNSDomains(client *govultr.Client) ([]govultr.Domain, error) {
-	domainList, _, _, err := client.Domain.List(context.Background(), nil)
+	domainList, err := listAllVultrResources(context.Background(), client.Domain.List)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list vultr DNS domains: %w", err)
 	}
 	for _, domain := range domainList {
 		g.Resources = append(g.Resources, terraformutils.NewSimpleResource(
@@ -30,9 +32,11 @@ func (g *DNSDomainGenerator) loadDNSDomains(client *govultr.Client) ([]govultr.D
 }
 
 func (g *DNSDomainGenerator) loadDNSRecords(client *govultr.Client, domain string) error {
-	recordList, _, _, err := client.DomainRecord.List(context.Background(), domain, nil)
+	recordList, err := listAllVultrResources(context.Background(), func(ctx context.Context, opt *govultr.ListOptions) ([]govultr.DomainRecord, *govultr.Meta, *http.Response, error) {
+		return client.DomainRecord.List(ctx, domain, opt)
+	})
 	if err != nil {
-		return err
+		return fmt.Errorf("list vultr DNS records for %q: %w", domain, err)
 	}
 	for _, record := range recordList {
 		g.Resources = append(g.Resources, terraformutils.NewResource(
@@ -48,7 +52,10 @@ func (g *DNSDomainGenerator) loadDNSRecords(client *govultr.Client, domain strin
 }
 
 func (g *DNSDomainGenerator) InitResources() error {
-	client := g.generateClient()
+	client, err := g.generateClient()
+	if err != nil {
+		return err
+	}
 	domainList, err := g.loadDNSDomains(client)
 	if err != nil {
 		return err

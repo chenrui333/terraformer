@@ -4,6 +4,7 @@ package vultr
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/vultr/govultr/v3"
@@ -19,7 +20,7 @@ func (g NetworkGenerator) createResources(networkList []govultr.VPC) []terraform
 		resources = append(resources, terraformutils.NewSimpleResource(
 			network.ID,
 			network.ID,
-			"vultr_network",
+			"vultr_vpc",
 			"vultr",
 			[]string{}))
 	}
@@ -27,10 +28,13 @@ func (g NetworkGenerator) createResources(networkList []govultr.VPC) []terraform
 }
 
 func (g *NetworkGenerator) InitResources() error {
-	client := g.generateClient()
-	output, _, _, err := client.VPC.List(context.Background(), nil)
+	client, err := g.generateClient()
 	if err != nil {
 		return err
+	}
+	output, err := listAllVultrResources(context.Background(), client.VPC.List)
+	if err != nil {
+		return fmt.Errorf("list vultr VPCs: %w", err)
 	}
 	g.Resources = g.createResources(output)
 	return nil
