@@ -4,20 +4,20 @@ package okta
 
 import (
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/okta/okta-sdk-golang/v2/okta"
+	"github.com/okta/okta-sdk-golang/v6/okta"
 )
 
 type AuthorizationServerPolicyRuleGenerator struct {
 	OktaService
 }
 
-func (g AuthorizationServerPolicyRuleGenerator) createResources(authorizationServerPolicyRuleList []*okta.AuthorizationServerPolicyRule, authorizationServerID string, authorizationServerName string, authorizationServerPolicyID string, authorizationServerPolicyName string) []terraformutils.Resource {
+func (g AuthorizationServerPolicyRuleGenerator) createResources(authorizationServerPolicyRuleList []okta.AuthorizationServerPolicyRule, authorizationServerID string, authorizationServerName string, authorizationServerPolicyID string, authorizationServerPolicyName string) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 
 	for _, authorizationServerPolicyRule := range authorizationServerPolicyRuleList {
 		resources = append(resources, terraformutils.NewResource(
-			authorizationServerPolicyRule.Id,
-			normalizeResourceName("auth_server_"+authorizationServerName+"_policy_"+authorizationServerPolicyName+"_rule_"+authorizationServerPolicyRule.Name),
+			authorizationServerPolicyRule.GetId(),
+			normalizeResourceName("auth_server_"+authorizationServerName+"_policy_"+authorizationServerPolicyName+"_rule_"+authorizationServerPolicyRule.GetName()),
 			"okta_auth_server_policy_rule",
 			"okta",
 			map[string]string{
@@ -44,18 +44,18 @@ func (g *AuthorizationServerPolicyRuleGenerator) InitResources() error {
 	}
 
 	for _, authorizationServer := range authorizationServers {
-		authorizationServerPolicies, _, err := client.AuthorizationServer.ListAuthorizationServerPolicies(ctx, authorizationServer.Id)
+		authorizationServerPolicies, err := getAuthorizationServerPolicies(ctx, client, authorizationServer.GetId())
 		if err != nil {
 			return err
 		}
 
 		for _, authorizationServerPolicy := range authorizationServerPolicies {
-			output, _, err := client.AuthorizationServer.ListAuthorizationServerPolicyRules(ctx, authorizationServer.Id, authorizationServerPolicy.Id)
+			output, _, err := client.AuthorizationServerRulesAPI.ListAuthorizationServerPolicyRules(ctx, authorizationServer.GetId(), authorizationServerPolicy.GetId()).Execute()
 			if err != nil {
 				return err
 			}
 
-			resources = append(resources, g.createResources(output, authorizationServer.Id, authorizationServer.Name, authorizationServerPolicy.Id, authorizationServerPolicy.Name)...)
+			resources = append(resources, g.createResources(output, authorizationServer.GetId(), authorizationServer.GetName(), authorizationServerPolicy.GetId(), authorizationServerPolicy.GetName())...)
 		}
 	}
 

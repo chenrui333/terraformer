@@ -3,21 +3,23 @@
 package okta
 
 import (
+	"context"
+
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/okta/okta-sdk-golang/v2/okta"
+	"github.com/okta/okta-sdk-golang/v6/okta"
 )
 
 type AuthorizationServerPolicyGenerator struct {
 	OktaService
 }
 
-func (g AuthorizationServerPolicyGenerator) createResources(authorizationServerPolicyList []*okta.AuthorizationServerPolicy, authorizationServerID string, authorizationServerName string) []terraformutils.Resource {
+func (g AuthorizationServerPolicyGenerator) createResources(authorizationServerPolicyList []okta.AuthorizationServerPolicy, authorizationServerID string, authorizationServerName string) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 
 	for _, authorizationServerPolicy := range authorizationServerPolicyList {
 		resources = append(resources, terraformutils.NewResource(
-			authorizationServerPolicy.Id,
-			normalizeResourceName("auth_server_"+authorizationServerName+"_policy_"+authorizationServerPolicy.Name),
+			authorizationServerPolicy.GetId(),
+			normalizeResourceName("auth_server_"+authorizationServerName+"_policy_"+authorizationServerPolicy.GetName()),
 			"okta_auth_server_policy",
 			"okta",
 			map[string]string{
@@ -43,14 +45,32 @@ func (g *AuthorizationServerPolicyGenerator) InitResources() error {
 	}
 
 	for _, authorizationServer := range authorizationServers {
-		output, _, err := client.AuthorizationServer.ListAuthorizationServerPolicies(ctx, authorizationServer.Id)
+		output, err := getAuthorizationServerPolicies(ctx, client, authorizationServer.GetId())
 		if err != nil {
 			return err
 		}
 
-		resources = append(resources, g.createResources(output, authorizationServer.Id, authorizationServer.Name)...)
+		resources = append(resources, g.createResources(output, authorizationServer.GetId(), authorizationServer.GetName())...)
 	}
 
 	g.Resources = resources
 	return nil
+}
+
+func getAuthorizationServerPolicies(ctx context.Context, client *okta.APIClient, authorizationServerID string) ([]okta.AuthorizationServerPolicy, error) {
+	output, resp, err := client.AuthorizationServerPoliciesAPI.ListAuthorizationServerPolicies(ctx, authorizationServerID).Execute()
+	if err != nil {
+		return nil, err
+	}
+
+	for resp.HasNextPage() {
+		var nextPolicySet []okta.AuthorizationServerPolicy
+		resp, err = resp.Next(&nextPolicySet)
+		if err != nil {
+			return nil, err
+		}
+		output = append(output, nextPolicySet...)
+	}
+
+	return output, nil
 }

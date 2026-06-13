@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	oktaV2 "github.com/okta/okta-sdk-golang/v2/okta"
 	oktaV6 "github.com/okta/okta-sdk-golang/v6/okta"
 	"github.com/okta/terraform-provider-okta/sdk"
 )
@@ -16,26 +15,7 @@ type OktaService struct { //nolint
 	terraformutils.Service
 }
 
-func (s *OktaService) Client() (context.Context, *oktaV2.Client, error) {
-	orgName := s.Args["org_name"].(string)
-	baseURL := s.Args["base_url"].(string)
-	apiToken := s.Args["api_token"].(string)
-
-	orgURL := fmt.Sprintf("https://%v.%v", orgName, baseURL)
-
-	ctx, client, err := oktaV2.NewClient(
-		context.Background(),
-		oktaV2.WithOrgUrl(orgURL),
-		oktaV2.WithToken(apiToken),
-	)
-	if err != nil {
-		return ctx, nil, err
-	}
-
-	return ctx, client, nil
-}
-
-func (s *OktaService) ClientV6() (context.Context, *oktaV6.APIClient, error) {
+func (s *OktaService) Client() (context.Context, *oktaV6.APIClient, error) {
 	orgName := s.Args["org_name"].(string)
 	baseURL := s.Args["base_url"].(string)
 	apiToken := s.Args["api_token"].(string)
@@ -52,6 +32,10 @@ func (s *OktaService) ClientV6() (context.Context, *oktaV6.APIClient, error) {
 	client := oktaV6.NewAPIClient(config)
 
 	return context.Background(), client, nil
+}
+
+func (s *OktaService) ClientV6() (context.Context, *oktaV6.APIClient, error) {
+	return s.Client()
 }
 
 func (s *OktaService) APISupplementClient() (context.Context, *sdk.APISupplement, error) {

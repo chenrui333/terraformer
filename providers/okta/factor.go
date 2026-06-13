@@ -6,7 +6,7 @@ import (
 	"context"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/okta/okta-sdk-golang/v2/okta"
+	"github.com/okta/okta-sdk-golang/v6/okta"
 	"github.com/okta/terraform-provider-okta/sdk"
 )
 
@@ -17,20 +17,20 @@ type FactorGenerator struct {
 func (g FactorGenerator) createResources(ctx context.Context, factorList []*okta.UserFactor, client *sdk.APISupplement) ([]terraformutils.Resource, error) {
 	var resources []terraformutils.Resource
 	for _, factor := range factorList {
-		if factor.Status == "ACTIVE" {
+		if factor.GetStatus() == "ACTIVE" {
 			resources = append(resources, terraformutils.NewResource(
-				factor.Id,
-				"factor_"+normalizeResourceNameWithRandom(factor.Id),
+				factor.GetId(),
+				"factor_"+normalizeResourceNameWithRandom(factor.GetId()),
 				"okta_factor",
 				"okta",
 				map[string]string{
-					"provider_id": factor.Id,
+					"provider_id": factor.GetId(),
 				},
 				[]string{},
 				map[string]interface{}{},
 			))
 
-			if factor.FactorType == "token:hotp" {
+			if factor.GetFactorType() == "token:hotp" {
 				hotpFactorProfiles, _, err := getHotpFactorProfiles(ctx, client)
 				if err != nil {
 					return nil, err

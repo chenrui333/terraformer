@@ -6,19 +6,23 @@ import (
 	"context"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/okta/okta-sdk-golang/v2/okta"
+	"github.com/okta/okta-sdk-golang/v6/okta"
 )
 
 type AppBasicAuthGenerator struct {
 	OktaService
 }
 
-func (g AppBasicAuthGenerator) createResources(appList []*okta.Application) []terraformutils.Resource {
+func (g AppBasicAuthGenerator) createResources(appList []okta.ListApplications200ResponseInner) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 	for _, app := range appList {
+		summary, ok := getApplicationSummary(app)
+		if !ok {
+			continue
+		}
 		resources = append(resources, terraformutils.NewSimpleResource(
-			app.Id,
-			normalizeResourceName(app.Id+"_"+app.Name),
+			summary.ID,
+			normalizeResourceName(summary.ID+"_"+summary.Name),
 			"okta_app_basic_auth",
 			"okta",
 			[]string{}))
@@ -41,7 +45,7 @@ func (g *AppBasicAuthGenerator) InitResources() error {
 	return nil
 }
 
-func getBasicAuthApplications(ctx context.Context, client *okta.Client) ([]*okta.Application, error) {
+func getBasicAuthApplications(ctx context.Context, client *okta.APIClient) ([]okta.ListApplications200ResponseInner, error) {
 	signOnMode := "BASIC_AUTH"
 	apps, err := getApplications(ctx, client, signOnMode)
 	if err != nil {

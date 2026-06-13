@@ -6,20 +6,19 @@ import (
 	"context"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/okta/okta-sdk-golang/v2/okta"
-	"github.com/okta/okta-sdk-golang/v2/okta/query"
+	"github.com/okta/okta-sdk-golang/v6/okta"
 )
 
 type IdpSAMLGenerator struct {
 	OktaService
 }
 
-func (g IdpSAMLGenerator) createResources(idpSAMLList []*okta.IdentityProvider) []terraformutils.Resource {
+func (g IdpSAMLGenerator) createResources(idpSAMLList []okta.IdentityProvider) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 	for _, idp := range idpSAMLList {
 		resources = append(resources, terraformutils.NewSimpleResource(
-			idp.Id,
-			"idp_"+normalizeResourceName(idp.Type+"_"+idp.Name),
+			idp.GetId(),
+			"idp_"+normalizeResourceName(idp.GetType()+"_"+idp.GetName()),
 			"okta_idp_saml",
 			"okta",
 			[]string{}))
@@ -42,16 +41,15 @@ func (g *IdpSAMLGenerator) InitResources() error {
 	return nil
 }
 
-func getIdpSAML(ctx context.Context, client *okta.Client) ([]*okta.IdentityProvider, error) {
-	qp := &query.Params{Type: "SAML2", Limit: 1}
-	output, resp, err := client.IdentityProvider.ListIdentityProviders(ctx, qp)
+func getIdpSAML(ctx context.Context, client *okta.APIClient) ([]okta.IdentityProvider, error) {
+	output, resp, err := client.IdentityProviderAPI.ListIdentityProviders(ctx).Type_("SAML2").Limit(1).Execute()
 	if err != nil {
 		return nil, err
 	}
 
 	for resp.HasNextPage() {
-		var nextIdpSAMLSet []*okta.IdentityProvider
-		resp, err = resp.Next(ctx, &nextIdpSAMLSet)
+		var nextIdpSAMLSet []okta.IdentityProvider
+		resp, err = resp.Next(&nextIdpSAMLSet)
 		if err != nil {
 			return nil, err
 		}

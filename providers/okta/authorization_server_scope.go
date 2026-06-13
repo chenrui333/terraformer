@@ -4,20 +4,20 @@ package okta
 
 import (
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/okta/okta-sdk-golang/v2/okta"
+	"github.com/okta/okta-sdk-golang/v6/okta"
 )
 
 type AuthorizationServerScopeGenerator struct {
 	OktaService
 }
 
-func (g AuthorizationServerScopeGenerator) createResources(authorizationServerScopeList []*okta.OAuth2Scope, authorizationServerID string, authorizationServerName string) []terraformutils.Resource {
+func (g AuthorizationServerScopeGenerator) createResources(authorizationServerScopeList []okta.OAuth2Scope, authorizationServerID string, authorizationServerName string) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 
 	for _, authorizationServerScope := range authorizationServerScopeList {
 		resources = append(resources, terraformutils.NewResource(
-			authorizationServerScope.Id,
-			normalizeResourceName("auth_server_"+authorizationServerName+"_scope_"+authorizationServerScope.Name),
+			authorizationServerScope.GetId(),
+			normalizeResourceName("auth_server_"+authorizationServerName+"_scope_"+authorizationServerScope.GetName()),
 			"okta_auth_server_scope",
 			"okta",
 			map[string]string{
@@ -43,12 +43,12 @@ func (g *AuthorizationServerScopeGenerator) InitResources() error {
 	}
 
 	for _, authorizationServer := range authorizationServers {
-		output, _, err := client.AuthorizationServer.ListOAuth2Scopes(ctx, authorizationServer.Id, nil)
+		output, _, err := client.AuthorizationServerScopesAPI.ListOAuth2Scopes(ctx, authorizationServer.GetId()).Execute()
 		if err != nil {
 			return err
 		}
 
-		resources = append(resources, g.createResources(output, authorizationServer.Id, authorizationServer.Name)...)
+		resources = append(resources, g.createResources(output, authorizationServer.GetId(), authorizationServer.GetName())...)
 	}
 
 	g.Resources = resources

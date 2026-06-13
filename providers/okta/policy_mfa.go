@@ -6,24 +6,27 @@ import (
 	"context"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/okta/okta-sdk-golang/v2/okta"
-	"github.com/okta/okta-sdk-golang/v2/okta/query"
+	"github.com/okta/okta-sdk-golang/v6/okta"
 )
 
 type MFAPolicyGenerator struct {
 	OktaService
 }
 
-func (g MFAPolicyGenerator) createResources(mfaPolicyList []*okta.Policy) []terraformutils.Resource {
+func (g MFAPolicyGenerator) createResources(mfaPolicyList []okta.ListPolicies200ResponseInner) []terraformutils.Resource {
 	var resources []terraformutils.Resource
 	for _, mfaPolicy := range mfaPolicyList {
-		resourceName := normalizeResourceName(mfaPolicy.Name)
+		policy, ok := oktaPolicySummaryFromListPolicy(mfaPolicy)
+		if !ok {
+			continue
+		}
+		resourceName := normalizeResourceName(policy.Name)
 		resourceType := "okta_policy_mfa"
-		if mfaPolicy.Name == "Default Policy" {
+		if policy.Name == "Default Policy" {
 			resourceType = "okta_policy_mfa_default"
 		}
 		resources = append(resources, terraformutils.NewSimpleResource(
-			mfaPolicy.Id,
+			policy.ID,
 			"policy_mfa_"+resourceName,
 			resourceType,
 			"okta",
@@ -46,24 +49,19 @@ func (g *MFAPolicyGenerator) InitResources() error {
 	return nil
 }
 
-func getMFAPolicies(ctx context.Context, client *okta.Client) ([]*okta.Policy, error) {
-	qp := query.NewQueryParams(query.WithType("MFA_ENROLL"))
-	var policies []*okta.Policy
-	data, resp, err := client.Policy.ListPolicies(ctx, qp)
+func getMFAPolicies(ctx context.Context, client *okta.APIClient) ([]okta.ListPolicies200ResponseInner, error) {
+	policies, resp, err := client.PolicyAPI.ListPolicies(ctx).Type_("MFA_ENROLL").Execute()
 	if err != nil {
 		return nil, err
 	}
 
 	for resp.HasNextPage() {
-		var nextPolicies []*okta.Policy
-		resp, err = resp.Next(ctx, &nextPolicies)
+		var nextPolicies []okta.ListPolicies200ResponseInner
+		resp, err = resp.Next(&nextPolicies)
 		if err != nil {
 			return nil, err
 		}
 		policies = append(policies, nextPolicies...)
-	}
-	for _, p := range data {
-		policies = append(policies, p.(*okta.Policy))
 	}
 
 	return policies, nil

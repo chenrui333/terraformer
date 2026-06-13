@@ -404,7 +404,6 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
-	github.com/go-jose/go-jose/v3 v3.0.5 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v0.23.1 // indirect
@@ -554,7 +553,6 @@ require (
 	github.com/linode/linodego/v2 v2.1.0
 	github.com/logzio/logzio_terraform_client v1.30.2
 	github.com/newrelic/newrelic-client-go/v2 v2.86.1
-	github.com/okta/okta-sdk-golang/v2 v2.20.0
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/as v1.3.88
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cbs v1.3.102
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cdb v1.3.109
