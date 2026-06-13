@@ -152,6 +152,23 @@ func TestOktaPolicyCreateResources(t *testing.T) {
 	}
 }
 
+func TestOktaGroupCreateResourcesPreservesDecodedProfileName(t *testing.T) {
+	var group oktasdk.Group
+	groupJSON := "{\"id\":\"group-1\",\"type\":\"OKTA_GROUP\",\"profile\":{\"name\":\"Engineering\",\"description\":\"Engineering team\"}}"
+	if err := json.Unmarshal([]byte(groupJSON), &group); err != nil {
+		t.Fatalf("unmarshal Okta group: %v", err)
+	}
+	if profile := group.GetProfile(); profile.OktaActiveDirectoryGroupProfile == nil {
+		t.Fatal("expected v6 group profile decoder to use AD profile branch")
+	}
+
+	resources := GroupGenerator{}.createResources([]oktasdk.Group{group})
+	if len(resources) != 1 {
+		t.Fatalf("resources length = %d, want 1", len(resources))
+	}
+	assertOktaResource(t, resources[0], "group-1", "group_Engineering", "okta_group", map[string]string{})
+}
+
 func TestGetAuthorizationServerPoliciesPaginates(t *testing.T) {
 	var requests []string
 	client := newTestOktaClient(t, func(w http.ResponseWriter, r *http.Request) {
