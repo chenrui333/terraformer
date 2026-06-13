@@ -1,0 +1,21 @@
+providers/okta/group.go
+  s_afdb657bd8ae26::t_49b5a3f46f727f 57-59
+providers/okta/okta_discovery_test.go
+  s_afdb657bd8ae26::t_ae597426461df6 155-171
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "a0d5b1151c2a72d5a226e728b9ed8e589b6ea707",
+  "prompts": {},
+  "sessions": {
+    "s_afdb657bd8ae26": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019eaf3b-28e8-78b1-9b2b-942e4d2dac16",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
