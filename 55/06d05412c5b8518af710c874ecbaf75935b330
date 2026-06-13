@@ -1,0 +1,21 @@
+providers/vultr/vultr_discovery_test.go
+  s_afdb657bd8ae26::t_e536f580dd6b40 162,182
+providers/vultr/server.go
+  s_afdb657bd8ae26::t_e536f580dd6b40 48-49,52-53,58-68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "5506d05412c5b8518af710c874ecbaf75935b330",
+  "prompts": {},
+  "sessions": {
+    "s_afdb657bd8ae26": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019eaf3b-28e8-78b1-9b2b-942e4d2dac16",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
