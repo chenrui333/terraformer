@@ -54,8 +54,5 @@ func getGroupName(group okta.Group) string {
 	if profile.OktaUserGroupProfile != nil {
 		return profile.OktaUserGroupProfile.GetName()
 	}
-	if profile.OktaActiveDirectoryGroupProfile != nil {
-		return profile.OktaActiveDirectoryGroupProfile.GetName()
-	}
 	return group.GetId()
 }

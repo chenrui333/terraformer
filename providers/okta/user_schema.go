@@ -89,11 +89,8 @@ func (g *UserSchemaPropertyGenerator) InitResources() error {
 				return err
 			}
 
-			userTypeID := "default"
 			userTypeName := getUserTypeName(userType)
-			if userTypeName != "user" {
-				userTypeID = userType.GetId()
-			}
+			userTypeID := getUserTypeResourceID(userType)
 
 			resources = append(resources, g.createResources(schema, userTypeID, userTypeName)...)
 		}
@@ -122,11 +119,25 @@ func getUserTypes(ctx context.Context, client *okta.APIClient) ([]okta.UserType,
 }
 
 func getUserTypeName(ut okta.UserType) string {
-	if name, ok := ut.AdditionalProperties["name"].(string); ok && name != "" {
+	if name := getUserTypeAPIName(ut); name != "" {
 		return name
 	}
 	if displayName, ok := ut.AdditionalProperties["displayName"].(string); ok && displayName != "" {
 		return displayName
+	}
+	return ut.GetId()
+}
+
+func getUserTypeAPIName(ut okta.UserType) string {
+	if name, ok := ut.AdditionalProperties["name"].(string); ok {
+		return name
+	}
+	return ""
+}
+
+func getUserTypeResourceID(ut okta.UserType) string {
+	if getUserTypeAPIName(ut) == "user" {
+		return "default"
 	}
 	return ut.GetId()
 }

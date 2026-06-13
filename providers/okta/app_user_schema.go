@@ -72,10 +72,7 @@ func (g *AppUserSchemaPropertyGenerator) InitResources() error {
 	}
 
 	for _, app := range apps {
-		appSummary, ok := getApplicationSummary(app)
-		if !ok {
-			continue
-		}
+		appSummary, _ := getApplicationSummary(app)
 		appUserSchema, _, err := client.SchemaAPI.GetApplicationUserSchema(ctx, appSummary.ID).Execute()
 		if err != nil {
 			return err

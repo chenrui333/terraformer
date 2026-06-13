@@ -152,6 +152,44 @@ func TestOktaPolicyCreateResources(t *testing.T) {
 	}
 }
 
+func TestGetAuthorizationServerPoliciesPaginates(t *testing.T) {
+	var requests []string
+	client := newTestOktaClient(t, func(w http.ResponseWriter, r *http.Request) {
+		requests = append(requests, r.URL.String())
+		if r.URL.Path != "/api/v1/authorizationServers/authz-1/policies" {
+			t.Errorf("request path = %q, want /api/v1/authorizationServers/authz-1/policies", r.URL.Path)
+			writeOktaError(t, w, http.StatusNotFound, "unexpected path")
+			return
+		}
+
+		switch r.URL.Query().Get("after") {
+		case "":
+			w.Header().Set("Link", fmt.Sprintf("<%s/api/v1/authorizationServers/authz-1/policies?after=second>; rel=%q", testOktaRequestBaseURL(r), "next"))
+			writeOktaJSON(t, w, []map[string]string{{"id": "policy-1", "type": "RESOURCE_ACCESS", "name": "First Policy"}})
+		case "second":
+			writeOktaJSON(t, w, []map[string]string{{"id": "policy-2", "type": "RESOURCE_ACCESS", "name": "Second Policy"}})
+		default:
+			t.Errorf("after query = %q, want empty or second", r.URL.Query().Get("after"))
+			writeOktaError(t, w, http.StatusBadRequest, "unexpected page")
+		}
+	})
+
+	policies, err := getAuthorizationServerPolicies(context.Background(), client, "authz-1")
+	if err != nil {
+		t.Fatalf("getAuthorizationServerPolicies() returned error: %v", err)
+	}
+	if len(policies) != 2 {
+		t.Fatalf("getAuthorizationServerPolicies() returned %d policies, want 2; requests=%v", len(policies), requests)
+	}
+
+	resources := AuthorizationServerPolicyGenerator{}.createResources(policies, "authz-1", "Authorization Server")
+	if len(resources) != 2 {
+		t.Fatalf("resources length = %d, want 2", len(resources))
+	}
+	assertOktaResource(t, resources[0], "policy-1", normalizeResourceName("auth_server_Authorization Server_policy_First Policy"), "okta_auth_server_policy", map[string]string{"auth_server_id": "authz-1"})
+	assertOktaResource(t, resources[1], "policy-2", normalizeResourceName("auth_server_Authorization Server_policy_Second Policy"), "okta_auth_server_policy", map[string]string{"auth_server_id": "authz-1"})
+}
+
 func TestGetIdpOIDCPaginates(t *testing.T) {
 	var requests []string
 	client := newTestOktaClient(t, func(w http.ResponseWriter, r *http.Request) {

@@ -79,6 +79,38 @@ func TestGetUserTypeName(t *testing.T) {
 	}
 }
 
+func TestGetUserTypeResourceID(t *testing.T) {
+	tests := []struct {
+		name     string
+		userType oktasdk.UserType
+		want     string
+	}{
+		{
+			name:     "default user type uses API name",
+			userType: testOktaUserTypeWithProperties(map[string]interface{}{"name": "user", "displayName": "End User"}),
+			want:     "default",
+		},
+		{
+			name:     "display name alone does not select default",
+			userType: testOktaUserTypeWithProperties(map[string]interface{}{"displayName": "user"}),
+			want:     "custom",
+		},
+		{
+			name:     "custom API name preserves user type id",
+			userType: testOktaUserTypeWithProperties(map[string]interface{}{"name": "custom", "displayName": "user"}),
+			want:     "custom",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getUserTypeResourceID(tt.userType); got != tt.want {
+				t.Fatalf("getUserTypeResourceID() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestGetUserTypeSchemaIDAllowsMissingLinkFields(t *testing.T) {
 	tests := []struct {
 		name     string

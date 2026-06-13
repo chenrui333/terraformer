@@ -44,7 +44,7 @@ func (g *AuthorizationServerPolicyRuleGenerator) InitResources() error {
 	}
 
 	for _, authorizationServer := range authorizationServers {
-		authorizationServerPolicies, _, err := client.AuthorizationServerPoliciesAPI.ListAuthorizationServerPolicies(ctx, authorizationServer.GetId()).Execute()
+		authorizationServerPolicies, err := getAuthorizationServerPolicies(ctx, client, authorizationServer.GetId())
 		if err != nil {
 			return err
 		}
