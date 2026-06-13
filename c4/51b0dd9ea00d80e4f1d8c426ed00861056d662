@@ -1,0 +1,26 @@
+providers/vultr/server.go
+  s_afdb657bd8ae26::t_692616e76d4208 8-10,20-25,28,33-35,40-79,81,83-90,93,96-105,115-127
+  s_afdb657bd8ae26::t_dd224bd4495726 95
+  s_afdb657bd8ae26::t_375220015ad0f0 91-92,94
+providers/vultr/vultr_discovery_test.go
+  s_afdb657bd8ae26::t_fad6eeeef3bc1b 11,440-456
+  s_afdb657bd8ae26::t_c74eb87332dca8 132-177,182-183,185-186,190-191,194-195,209-210,212-213,280-312,314-319,324-325
+README.md
+  s_afdb657bd8ae26::t_d99a93d759fd6f 275
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "c451b0dd9ea00d80e4f1d8c426ed00861056d662",
+  "prompts": {},
+  "sessions": {
+    "s_afdb657bd8ae26": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019eaf3b-28e8-78b1-9b2b-942e4d2dac16",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
