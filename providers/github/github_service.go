@@ -4,6 +4,7 @@ package github
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -75,6 +76,15 @@ func normalizeGithubBaseURL(baseURL string) (string, error) {
 	parsed, err := url.Parse(baseURL)
 	if err != nil {
 		return "", fmt.Errorf("github: invalid base_url %q: %w", baseURL, err)
+	}
+	if parsed.User != nil {
+		return "", errors.New("github: invalid base_url: credentials are not allowed")
+	}
+	if parsed.RawQuery != "" {
+		return "", errors.New("github: invalid base_url: query parameters are not allowed")
+	}
+	if parsed.Fragment != "" {
+		return "", errors.New("github: invalid base_url: fragments are not allowed")
 	}
 	if parsed.Scheme != "http" && parsed.Scheme != "https" {
 		return "", fmt.Errorf("github: invalid base_url %q: scheme must be http or https", baseURL)

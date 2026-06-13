@@ -120,23 +120,54 @@ func TestGithubServiceCreateEnterpriseClientUsesNormalizedBaseURL(t *testing.T) 
 }
 
 func TestGithubServiceCreateEnterpriseClientRejectsInvalidBaseURL(t *testing.T) {
-	service := &GithubService{}
-	service.SetArgs(map[string]interface{}{
-		"base_url":        "github.example.com/api/v3",
-		"app_id":          int64(0),
-		"installation_id": int64(0),
-		"pem":             "",
-		"token":           "test-token",
-	})
+	tests := []struct {
+		name      string
+		baseURL   string
+		errorText string
+	}{
+		{
+			name:      "missing scheme",
+			baseURL:   "github.example.com/api/v3",
+			errorText: "scheme must be http or https",
+		},
+		{
+			name:      "credentials",
+			baseURL:   "https://user:pass@github.example.com/api/v3",
+			errorText: "credentials are not allowed",
+		},
+		{
+			name:      "query",
+			baseURL:   "https://github.example.com/api/v3?token=secret",
+			errorText: "query parameters are not allowed",
+		},
+		{
+			name:      "fragment",
+			baseURL:   "https://github.example.com/api/v3#fragment",
+			errorText: "fragments are not allowed",
+		},
+	}
 
-	client, err := service.createClient()
-	if err == nil {
-		t.Fatal("expected invalid base_url error")
-	}
-	if client != nil {
-		t.Fatalf("client = %v, want nil", client)
-	}
-	if !strings.Contains(err.Error(), "scheme must be http or https") {
-		t.Fatalf("error = %q, want scheme validation", err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			service := &GithubService{}
+			service.SetArgs(map[string]interface{}{
+				"base_url":        tt.baseURL,
+				"app_id":          int64(0),
+				"installation_id": int64(0),
+				"pem":             "",
+				"token":           "test-token",
+			})
+
+			client, err := service.createClient()
+			if err == nil {
+				t.Fatal("expected invalid base_url error")
+			}
+			if client != nil {
+				t.Fatalf("client = %v, want nil", client)
+			}
+			if !strings.Contains(err.Error(), tt.errorText) {
+				t.Fatalf("error = %q, want %q", err, tt.errorText)
+			}
+		})
 	}
 }
