@@ -380,6 +380,132 @@ func TestDNSDomainGeneratorMapsDomainsAndRecords(t *testing.T) {
 	}
 }
 
+func TestFirewallGroupGeneratorMapsRules(t *testing.T) {
+	var rulesRequests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/v2/firewalls":
+			if !assertVultrListQuery(t, w, r, "") {
+				return
+			}
+			writeVultrJSON(w, http.StatusOK, map[string]interface{}{
+				"firewall_groups": []map[string]interface{}{{"id": "fw-1"}},
+				"meta":            emptyVultrMeta(),
+			})
+		case "/v2/firewalls/fw-1/rules":
+			rulesRequests.Add(1)
+			if !assertVultrListQuery(t, w, r, "") {
+				return
+			}
+			writeVultrJSON(w, http.StatusOK, map[string]interface{}{
+				"firewall_rules": []map[string]interface{}{
+					{"id": 20, "ip_type": "v6"},
+					{"id": 10, "ip_type": "v4"},
+					{"id": 30, "ip_type": "unknown"},
+				},
+				"meta": emptyVultrMeta(),
+			})
+		default:
+			t.Errorf("request path = %q, want firewall group or rules path", r.URL.Path)
+			http.Error(w, "unexpected path", http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+
+	generator := &FirewallGroupGenerator{}
+	client := newTestVultrClient(t, server)
+	groups, err := generator.loadFirewallGroups(client)
+	if err != nil {
+		t.Fatalf("loadFirewallGroups returned error: %v", err)
+	}
+	if got := len(groups); got != 1 {
+		t.Fatalf("firewall group count = %d, want 1", got)
+	}
+	if err := generator.loadFirewallRules(client, groups[0].ID); err != nil {
+		t.Fatalf("loadFirewallRules returned error: %v", err)
+	}
+	if got := rulesRequests.Load(); got != 1 {
+		t.Fatalf("firewall rule list request count = %d, want 1", got)
+	}
+
+	if got := len(generator.Resources); got != 3 {
+		t.Fatalf("resource count = %d, want 3", got)
+	}
+	assertVultrResource(t, generator.Resources[0], "fw-1", "fw-1", "vultr_firewall_group")
+	assertVultrResource(t, generator.Resources[1], "10", "10", "vultr_firewall_rule")
+	assertFirewallRuleAttributes(t, generator.Resources[1], "fw-1", "v4")
+	assertVultrResource(t, generator.Resources[2], "20", "20", "vultr_firewall_rule")
+	assertFirewallRuleAttributes(t, generator.Resources[2], "fw-1", "v6")
+}
+
+func TestVultrSimpleGeneratorResourceTypes(t *testing.T) {
+	tests := []struct {
+		name      string
+		wantType  string
+		resources func() []terraformutils.Resource
+	}{
+		{
+			name:     "bare metal server",
+			wantType: "vultr_bare_metal_server",
+			resources: func() []terraformutils.Resource {
+				return BareMetalServerGenerator{}.createResources([]govultr.BareMetalServer{{ID: "resource-id"}})
+			},
+		},
+		{
+			name:     "block storage",
+			wantType: "vultr_block_storage",
+			resources: func() []terraformutils.Resource {
+				return BlockStorageGenerator{}.createResources([]govultr.BlockStorage{{ID: "resource-id"}})
+			},
+		},
+		{
+			name:     "reserved IP",
+			wantType: "vultr_reserved_ip",
+			resources: func() []terraformutils.Resource {
+				return ReservedIPGenerator{}.createResources([]govultr.ReservedIP{{ID: "resource-id"}})
+			},
+		},
+		{
+			name:     "snapshot",
+			wantType: "vultr_snapshot",
+			resources: func() []terraformutils.Resource {
+				return SnapshotGenerator{}.createResources([]govultr.Snapshot{{ID: "resource-id"}})
+			},
+		},
+		{
+			name:     "SSH key",
+			wantType: "vultr_ssh_key",
+			resources: func() []terraformutils.Resource {
+				return SSHKeyGenerator{}.createResources([]govultr.SSHKey{{ID: "resource-id"}})
+			},
+		},
+		{
+			name:     "startup script",
+			wantType: "vultr_startup_script",
+			resources: func() []terraformutils.Resource {
+				return StartupScriptGenerator{}.createResources([]govultr.StartupScript{{ID: "resource-id"}})
+			},
+		},
+		{
+			name:     "user",
+			wantType: "vultr_user",
+			resources: func() []terraformutils.Resource {
+				return UserGenerator{}.createResources([]govultr.User{{ID: "resource-id"}})
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resources := tt.resources()
+			if got := len(resources); got != 1 {
+				t.Fatalf("resource count = %d, want 1", got)
+			}
+			assertVultrResource(t, resources[0], "resource-id", "resource-id", tt.wantType)
+		})
+	}
+}
+
 func sortedVultrServiceNames(services map[string]terraformutils.ServiceGenerator) []string {
 	names := make([]string, 0, len(services))
 	for name := range services {
@@ -434,6 +560,16 @@ func assertVultrResource(t *testing.T, resource terraformutils.Resource, wantID,
 	}
 	if got := resource.InstanceInfo.Type; got != wantType {
 		t.Fatalf("resource type = %q, want %q", got, wantType)
+	}
+}
+
+func assertFirewallRuleAttributes(t *testing.T, resource terraformutils.Resource, wantGroupID, wantIPType string) {
+	t.Helper()
+	if got := resource.InstanceState.Attributes["firewall_group_id"]; got != wantGroupID {
+		t.Fatalf("firewall_group_id = %q, want %q", got, wantGroupID)
+	}
+	if got := resource.InstanceState.Attributes["ip_type"]; got != wantIPType {
+		t.Fatalf("ip_type = %q, want %q", got, wantIPType)
 	}
 }
 

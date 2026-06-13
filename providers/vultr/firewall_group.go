@@ -32,29 +32,31 @@ func (g *FirewallGroupGenerator) loadFirewallGroups(client *govultr.Client) ([]g
 	return firewallGroups, nil
 }
 
-func (g *FirewallGroupGenerator) loadFirewallRulesByIPType(client *govultr.Client, firewallGroupID string, ipType string) error {
+func (g *FirewallGroupGenerator) loadFirewallRules(client *govultr.Client, firewallGroupID string) error {
 	firewallRules, err := listAllVultrResources(context.Background(), func(ctx context.Context, opt *govultr.ListOptions) ([]govultr.FirewallRule, *govultr.Meta, *http.Response, error) {
 		return client.FirewallRule.List(ctx, firewallGroupID, opt)
 	})
 	if err != nil {
 		return fmt.Errorf("list vultr firewall rules for %q: %w", firewallGroupID, err)
 	}
-	for _, firewallRule := range firewallRules {
-		if firewallRule.IPType != ipType {
-			continue
-		}
+	for _, ipType := range []string{"v4", "v6"} {
+		for _, firewallRule := range firewallRules {
+			if firewallRule.IPType != ipType {
+				continue
+			}
 
-		g.Resources = append(g.Resources, terraformutils.NewResource(
-			strconv.Itoa(firewallRule.ID),
-			strconv.Itoa(firewallRule.ID),
-			"vultr_firewall_rule",
-			"vultr",
-			map[string]string{
-				"firewall_group_id": firewallGroupID,
-				"ip_type":           ipType,
-			},
-			[]string{},
-			map[string]interface{}{}))
+			g.Resources = append(g.Resources, terraformutils.NewResource(
+				strconv.Itoa(firewallRule.ID),
+				strconv.Itoa(firewallRule.ID),
+				"vultr_firewall_rule",
+				"vultr",
+				map[string]string{
+					"firewall_group_id": firewallGroupID,
+					"ip_type":           ipType,
+				},
+				[]string{},
+				map[string]interface{}{}))
+		}
 	}
 	return nil
 }
@@ -69,11 +71,7 @@ func (g *FirewallGroupGenerator) InitResources() error {
 		return err
 	}
 	for _, firewallGroup := range firewallGroups {
-		err := g.loadFirewallRulesByIPType(client, firewallGroup.ID, "v4")
-		if err != nil {
-			return err
-		}
-		err = g.loadFirewallRulesByIPType(client, firewallGroup.ID, "v6")
+		err := g.loadFirewallRules(client, firewallGroup.ID)
 		if err != nil {
 			return err
 		}
