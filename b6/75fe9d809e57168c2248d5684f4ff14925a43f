@@ -1,0 +1,67 @@
+providers/vultr/block_storage.go
+  s_afdb657bd8ae26::t_ab32ede1b5b69e 7,35-37
+  s_afdb657bd8ae26::t_358c8efae02a52 31
+providers/vultr/network.go
+  s_afdb657bd8ae26::t_dd7da1471723d5 7,23,35-37
+  s_afdb657bd8ae26::t_00a52fd6998286 31
+cmd/provider_cmd_vultr.go
+  s_afdb657bd8ae26::t_4e410fbe408f7a 27
+providers/vultr/user.go
+  s_afdb657bd8ae26::t_358c8efae02a52 31
+  s_afdb657bd8ae26::t_ab32ede1b5b69e 7,35-37
+providers/vultr/vultr_discovery_test.go
+  s_afdb657bd8ae26::t_03621c2ad1c254 117-121
+  s_afdb657bd8ae26::t_c2e3492e03ca1f 1-116,122-374
+providers/vultr/ssh_key.go
+  s_afdb657bd8ae26::t_358c8efae02a52 31
+  s_afdb657bd8ae26::t_ab32ede1b5b69e 7,35-37
+providers/vultr/reserved_ip.go
+  s_afdb657bd8ae26::t_ab32ede1b5b69e 7,35-37
+  s_afdb657bd8ae26::t_358c8efae02a52 31
+providers/vultr/pagination.go
+  s_afdb657bd8ae26::t_f4112347404287 1-16,21-33
+  s_afdb657bd8ae26::t_03621c2ad1c254 17-20
+providers/vultr/server.go
+  s_afdb657bd8ae26::t_dd7da1471723d5 7,23,30-31,33,38-39
+  s_afdb657bd8ae26::t_00a52fd6998286 40-44
+providers/vultr/vultr_provider.go
+  s_afdb657bd8ae26::t_4e410fbe408f7a 47,53
+providers/vultr/bare_metal_server.go
+  s_afdb657bd8ae26::t_ab32ede1b5b69e 7,35-37
+  s_afdb657bd8ae26::t_358c8efae02a52 31
+providers/vultr/dns_domain.go
+  s_afdb657bd8ae26::t_dd7da1471723d5 7,19,21,35-37,39
+  s_afdb657bd8ae26::t_00a52fd6998286 55-58
+  s_afdb657bd8ae26::t_4e410fbe408f7a 8
+providers/vultr/startup_script.go
+  s_afdb657bd8ae26::t_358c8efae02a52 31
+  s_afdb657bd8ae26::t_ab32ede1b5b69e 7,35-37
+providers/vultr/firewall_group.go
+  s_afdb657bd8ae26::t_00a52fd6998286 63-66
+  s_afdb657bd8ae26::t_4e410fbe408f7a 7-8,20,22,36-38,40
+README.md
+  s_afdb657bd8ae26::t_a64ae984848ecc 275
+providers/vultr/vultr_service.go
+  s_afdb657bd8ae26::t_e98c0423cb342c 7,18-23,25-26
+docs/vultr.md
+  s_afdb657bd8ae26::t_4531614d4789e7 7,22-23,34-35
+providers/vultr/snapshot.go
+  s_afdb657bd8ae26::t_358c8efae02a52 31
+  s_afdb657bd8ae26::t_ab32ede1b5b69e 7,35-37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "b675fe9d809e57168c2248d5684f4ff14925a43f",
+  "prompts": {},
+  "sessions": {
+    "s_afdb657bd8ae26": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019eaf3b-28e8-78b1-9b2b-942e4d2dac16",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
