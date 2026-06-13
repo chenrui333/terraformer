@@ -1,0 +1,33 @@
+providers/github/repositories_test.go
+  s_afdb657bd8ae26::t_c49b30035e17ea 82-83,94-95,103-104,112-113
+  s_afdb657bd8ae26::t_fc2d23d28a3357 74-75,146-147
+  s_afdb657bd8ae26::t_1f5f6e55210186 1-73,76-81,84-93,96-102,105-111,114-145,148-251
+providers/github/teams_test.go
+  s_afdb657bd8ae26::t_89fc9ecd7cb7f5 66-67,75-76
+  s_afdb657bd8ae26::t_1a1412bce0c812 1-51,55,59-65,68-74,77-78
+  s_afdb657bd8ae26::t_bd91a95a334d1d 52-54,56-58
+providers/github/github_service.go
+  s_afdb657bd8ae26::t_1c0f8767555136 7,9-10,49-52,72-88
+providers/github/github_provider_test.go
+  s_afdb657bd8ae26::t_6cd1142d7f2626 1-142
+providers/github/teams.go
+  s_afdb657bd8ae26::t_b2a54864d5348a 47-48,50-67,74-92
+providers/github/repositories.go
+  s_afdb657bd8ae26::t_71b289c5891890 78-100,107-108,110-113,115-129,136-137,139-156,163-181
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "3b2824ba8be0188c4e50da91af7907c82af0bfcd",
+  "prompts": {},
+  "sessions": {
+    "s_afdb657bd8ae26": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019eaf3b-28e8-78b1-9b2b-942e4d2dac16",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
