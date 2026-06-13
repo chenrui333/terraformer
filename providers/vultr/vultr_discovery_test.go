@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"sort"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -128,31 +129,70 @@ func TestVultrServiceGenerateClientUsesBearerToken(t *testing.T) {
 
 func TestServerGeneratorInitResourcesPaginatesInstances(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v2/instances" {
-			t.Errorf("request path = %q, want /v2/instances", r.URL.Path)
-			http.Error(w, "unexpected path", http.StatusNotFound)
-			return
-		}
-		switch cursor := r.URL.Query().Get("cursor"); cursor {
-		case "":
+		switch r.URL.Path {
+		case "/v2/instances":
+			switch cursor := r.URL.Query().Get("cursor"); cursor {
+			case "":
+				if !assertVultrListQuery(t, w, r, "") {
+					return
+				}
+				writeVultrJSON(w, http.StatusOK, map[string]interface{}{
+					"instances": []map[string]interface{}{{"id": "instance-1"}},
+					"meta":      vultrMeta("cursor-2"),
+				})
+			case "cursor-2":
+				if !assertVultrListQuery(t, w, r, "cursor-2") {
+					return
+				}
+				writeVultrJSON(w, http.StatusOK, map[string]interface{}{
+					"instances": []map[string]interface{}{{"id": "instance-2"}},
+					"meta":      emptyVultrMeta(),
+				})
+			default:
+				t.Errorf("cursor = %q, want empty or cursor-2", cursor)
+				http.Error(w, "unexpected cursor", http.StatusBadRequest)
+			}
+		case "/v2/instances/instance-1/vpcs":
+			switch cursor := r.URL.Query().Get("cursor"); cursor {
+			case "":
+				if !assertVultrListQuery(t, w, r, "") {
+					return
+				}
+				writeVultrJSON(w, http.StatusOK, map[string]interface{}{
+					"vpcs": []map[string]interface{}{{"id": "vpc-b"}},
+					"meta": vultrMeta("vpc-cursor-2"),
+				})
+			case "vpc-cursor-2":
+				if !assertVultrListQuery(t, w, r, "vpc-cursor-2") {
+					return
+				}
+				writeVultrJSON(w, http.StatusOK, map[string]interface{}{
+					"vpcs": []map[string]interface{}{{"id": "vpc-a"}},
+					"meta": emptyVultrMeta(),
+				})
+			default:
+				t.Errorf("cursor = %q, want empty or vpc-cursor-2", cursor)
+				http.Error(w, "unexpected cursor", http.StatusBadRequest)
+			}
+		case "/v2/instances/instance-1/vpc2":
 			if !assertVultrListQuery(t, w, r, "") {
 				return
 			}
 			writeVultrJSON(w, http.StatusOK, map[string]interface{}{
-				"instances": []map[string]interface{}{{"id": "instance-1"}},
-				"meta":      vultrMeta("cursor-2"),
+				"vpcs": []map[string]interface{}{{"id": "vpc2-a"}},
+				"meta": emptyVultrMeta(),
 			})
-		case "cursor-2":
-			if !assertVultrListQuery(t, w, r, "cursor-2") {
+		case "/v2/instances/instance-2/vpcs", "/v2/instances/instance-2/vpc2":
+			if !assertVultrListQuery(t, w, r, "") {
 				return
 			}
 			writeVultrJSON(w, http.StatusOK, map[string]interface{}{
-				"instances": []map[string]interface{}{{"id": "instance-2"}},
-				"meta":      emptyVultrMeta(),
+				"vpcs": []map[string]interface{}{},
+				"meta": emptyVultrMeta(),
 			})
 		default:
-			t.Errorf("cursor = %q, want empty or cursor-2", cursor)
-			http.Error(w, "unexpected cursor", http.StatusBadRequest)
+			t.Errorf("request path = %q, want instances or attachment path", r.URL.Path)
+			http.Error(w, "unexpected path", http.StatusNotFound)
 		}
 	}))
 	defer server.Close()
@@ -166,7 +206,11 @@ func TestServerGeneratorInitResourcesPaginatesInstances(t *testing.T) {
 		t.Fatalf("resource count = %d, want 2", got)
 	}
 	assertVultrResource(t, generator.Resources[0], "instance-1", "instance-1", "vultr_instance")
+	assertFlatmapStringSet(t, generator.Resources[0].InstanceState.Attributes, "vpc_ids", []string{"vpc-a", "vpc-b"})
+	assertFlatmapStringSet(t, generator.Resources[0].InstanceState.Attributes, "vpc2_ids", []string{"vpc2-a"})
 	assertVultrResource(t, generator.Resources[1], "instance-2", "instance-2", "vultr_instance")
+	assertFlatmapStringSet(t, generator.Resources[1].InstanceState.Attributes, "vpc_ids", nil)
+	assertFlatmapStringSet(t, generator.Resources[1].InstanceState.Attributes, "vpc2_ids", nil)
 }
 
 func TestServerGeneratorInitResourcesHandlesEmptyPage(t *testing.T) {
@@ -233,12 +277,52 @@ func TestServerGeneratorInitResourcesReturnsSecondPageError(t *testing.T) {
 	}
 }
 
+func TestServerGeneratorInitResourcesReturnsAttachmentError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/v2/instances":
+			if !assertVultrListQuery(t, w, r, "") {
+				return
+			}
+			writeVultrJSON(w, http.StatusOK, map[string]interface{}{
+				"instances": []map[string]interface{}{{"id": "instance-1"}},
+				"meta":      emptyVultrMeta(),
+			})
+		case "/v2/instances/instance-1/vpcs":
+			if !assertVultrListQuery(t, w, r, "") {
+				return
+			}
+			writeVultrJSON(w, http.StatusInternalServerError, map[string]interface{}{"error": "backend unavailable"})
+		default:
+			t.Errorf("request path = %q, want instances or VPC attachment path", r.URL.Path)
+			http.Error(w, "unexpected path", http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+
+	generator := &ServerGenerator{}
+	err := generator.initResources(newTestVultrClient(t, server))
+	if err == nil {
+		t.Fatal("initResources returned nil error, want attachment error")
+	}
+	if !strings.Contains(err.Error(), "list vultr VPC attachments for instance \"instance-1\"") {
+		t.Fatalf("initResources error = %q, want attachment context", err)
+	}
+}
+
 func TestVultrResourceMappingUsesV3TerraformTypes(t *testing.T) {
-	instances := ServerGenerator{}.createResources([]govultr.Instance{{ID: "instance-id"}})
+	instances := ServerGenerator{}.createResources([]govultr.Instance{{ID: "instance-id"}}, map[string]vultrInstanceAttachments{
+		"instance-id": {
+			vpcIDs:  []string{"vpc-id"},
+			vpc2IDs: []string{"vpc2-id"},
+		},
+	})
 	if got := len(instances); got != 1 {
 		t.Fatalf("instance resource count = %d, want 1", got)
 	}
 	assertVultrResource(t, instances[0], "instance-id", "instance-id", "vultr_instance")
+	assertFlatmapStringSet(t, instances[0].InstanceState.Attributes, "vpc_ids", []string{"vpc-id"})
+	assertFlatmapStringSet(t, instances[0].InstanceState.Attributes, "vpc2_ids", []string{"vpc2-id"})
 
 	vpcs := NetworkGenerator{}.createResources([]govultr.VPC{{ID: "vpc-id"}})
 	if got := len(vpcs); got != 1 {
@@ -350,6 +434,26 @@ func assertVultrResource(t *testing.T, resource terraformutils.Resource, wantID,
 	}
 	if got := resource.InstanceInfo.Type; got != wantType {
 		t.Fatalf("resource type = %q, want %q", got, wantType)
+	}
+}
+
+func assertFlatmapStringSet(t *testing.T, attributes map[string]string, field string, want []string) {
+	t.Helper()
+	if len(want) == 0 {
+		if _, ok := attributes[field+".#"]; ok {
+			t.Fatalf("%s.# is present for empty set: %#v", field, attributes)
+		}
+		return
+	}
+
+	if got := attributes[field+".#"]; got != strconv.Itoa(len(want)) {
+		t.Fatalf("%s.# = %q, want %d", field, got, len(want))
+	}
+	for _, value := range want {
+		key := field + "." + strconv.Itoa(terraformutils.HashString(value))
+		if got := attributes[key]; got != value {
+			t.Fatalf("%s = %q, want %q", key, got, value)
+		}
 	}
 }
 

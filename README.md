@@ -272,7 +272,7 @@ Links to download Terraform provider plugins:
     * Linode provider >1.8.0 - [here](https://releases.hashicorp.com/terraform-provider-linode/)
     * OpenStack provider >1.21.1 - [here](https://releases.hashicorp.com/terraform-provider-openstack/)
     * TencentCloud provider >1.50.0 - [here](https://releases.hashicorp.com/terraform-provider-tencentcloud/)
-    * Vultr provider >=2.11.0 - [here](https://github.com/vultr/terraform-provider-vultr/releases)
+    * Vultr provider >=2.16.0 - [here](https://github.com/vultr/terraform-provider-vultr/releases)
     * Yandex provider >0.42.0 - [here](https://releases.hashicorp.com/terraform-provider-yandex/)
     * Ionoscloud provider >6.3.3 - [here](https://github.com/ionos-cloud/terraform-provider-ionoscloud/releases)
 * Infrastructure Software
