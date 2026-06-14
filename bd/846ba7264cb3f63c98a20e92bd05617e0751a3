@@ -1,0 +1,30 @@
+docs/unsupported-resources.md
+  s_afdb657bd8ae26::t_2d31d1b1028ae5 129
+providers/panos/panos_provider_test.go
+  s_afdb657bd8ae26::t_91e761c6fe9b78 6-7,12-22,48-88
+docs/panos.md
+  s_afdb657bd8ae26::t_e2a0053bd17a9a 25-26
+providers/panos/panorama_networking.go
+  s_afdb657bd8ae26::t_8c306e122f4177 168-169,171
+providers/panos/unsupported_resources.json
+  s_afdb657bd8ae26::t_ff430b2f1a6e22 1-10,12-20,22-25
+  s_afdb657bd8ae26::t_79d928b913d34d 11,21
+providers/panos/firewall_networking.go
+  s_afdb657bd8ae26::t_0a6a6219260c7d 161-162,164
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "bd846ba7264cb3f63c98a20e92bd05617e0751a3",
+  "prompts": {},
+  "sessions": {
+    "s_afdb657bd8ae26": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019eaf3b-28e8-78b1-9b2b-942e4d2dac16",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
