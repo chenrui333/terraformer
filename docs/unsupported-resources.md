@@ -89,7 +89,7 @@ This inventory is an informational coverage snapshot. The source of truth is the
 | Provider | Has `unsupported_resources.json` | Has provider-local `unsupported_resources_test.go` | Notes |
 | --- | --- | --- | --- |
 | alicloud | no | no | not present yet |
-| auth0 | no | no | not present yet |
+| auth0 | yes | no | metadata present |
 | aws | yes | no | metadata present |
 | azure | no | no | not present yet |
 | azuread | no | no | not present yet |

@@ -17,19 +17,25 @@ type UserGenerator struct {
 	Auth0Service
 }
 
-func (g UserGenerator) createResources(users []*management.UserResponseSchema) []terraformutils.Resource {
+func (g UserGenerator) createResources(users []*management.UserResponseSchema) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	for _, user := range users {
-		resourceName := user.UserID
+		if user == nil {
+			return nil, auth0MissingResource("auth0_user")
+		}
+		resourceName, err := auth0RequiredString("auth0_user", "user_id", user.UserID)
+		if err != nil {
+			return nil, err
+		}
 		resources = append(resources, terraformutils.NewSimpleResource(
-			*resourceName,
-			*resourceName,
+			resourceName,
+			resourceName,
 			"auth0_user",
 			"auth0",
 			UserAllowEmptyValues,
 		))
 	}
-	return resources
+	return resources, nil
 }
 
 func (g *UserGenerator) InitResources() error {
@@ -47,6 +53,10 @@ func (g *UserGenerator) InitResources() error {
 		return err
 	}
 
-	g.Resources = g.createResources(list)
+	resources, err := g.createResources(list)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 	return nil
 }

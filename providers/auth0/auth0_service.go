@@ -38,7 +38,28 @@ func (s *Auth0Service) generateClient() (*managementclient.Management, error) {
 		return apiClient, nil
 	}
 
-	return newManagementClient(s.Args["domain"].(string), s.Args["client_id"].(string), s.Args["client_secret"].(string))
+	domain, err := auth0ServiceArgString(s.Args, "domain")
+	if err != nil {
+		return nil, err
+	}
+	clientID, err := auth0ServiceArgString(s.Args, "client_id")
+	if err != nil {
+		return nil, err
+	}
+	clientSecret, err := auth0ServiceArgString(s.Args, "client_secret")
+	if err != nil {
+		return nil, err
+	}
+
+	return newManagementClient(domain, clientID, clientSecret)
+}
+
+func auth0ServiceArgString(args map[string]interface{}, key string) (string, error) {
+	value, ok := args[key].(string)
+	if !ok || value == "" {
+		return "", fmt.Errorf("auth0: %s arg is missing, empty, or not a string", key)
+	}
+	return value, nil
 }
 
 func auth0PageResults[C comparable, T any, R any](ctx context.Context, page *managementcore.Page[C, T, R]) ([]T, error) {

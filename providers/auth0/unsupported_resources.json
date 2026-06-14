@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "resources": [
+    {
+      "resource": "auth0_email_provider",
+      "service_family": "email",
+      "reason": "Email provider imports require write-only provider credentials that broad Auth0 discovery cannot safely reconstruct.",
+      "evidence": "The Auth0 Terraform provider requires a credentials block for auth0_email_provider and marks provider credentials such as API keys, SMTP passwords, SES secret access keys, Azure connection strings, and Microsoft 365 client secrets as sensitive inputs. Its read path preserves those values from existing Terraform state rather than recovering them from the Auth0 Management API, so Terraformer cannot emit refresh-safe configuration for broad imports.",
+      "status": "secret-required",
+      "references": [
+        "https://registry.terraform.io/providers/auth0/auth0/latest/docs/resources/email_provider",
+        "https://github.com/auth0/terraform-provider-auth0/blob/v1.49.0/internal/auth0/email/resource.go",
+        "https://github.com/auth0/terraform-provider-auth0/blob/v1.49.0/internal/auth0/email/flatten.go"
+      ]
+    }
+  ]
+}
