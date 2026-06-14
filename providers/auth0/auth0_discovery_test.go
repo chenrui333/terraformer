@@ -31,7 +31,6 @@ func TestAuth0ProviderSupportedServicesUseCurrentResourceNames(t *testing.T) {
 		"auth0_client",
 		"auth0_client_grant",
 		"auth0_custom_domain",
-		"auth0_email_provider",
 		"auth0_hook",
 		"auth0_log_stream",
 		"auth0_prompt",
@@ -50,9 +49,9 @@ func TestAuth0ProviderSupportedServicesUseCurrentResourceNames(t *testing.T) {
 		}
 	}
 
-	for _, staleService := range []string{"auth0_email", "auth0_trigger_binding"} {
-		if _, ok := services[staleService]; ok {
-			t.Fatalf("supported services still includes stale service %s", staleService)
+	for _, unsupportedService := range []string{"auth0_email", "auth0_email_provider", "auth0_trigger_binding"} {
+		if _, ok := services[unsupportedService]; ok {
+			t.Fatalf("supported services still includes unsupported service %s", unsupportedService)
 		}
 	}
 
@@ -62,15 +61,15 @@ func TestAuth0ProviderSupportedServicesUseCurrentResourceNames(t *testing.T) {
 	}
 	docText := string(docs)
 	for _, service := range wantServices {
-		quotedService := string(rune(0x60)) + service + string(rune(0x60))
+		quotedService := "`" + service + "`"
 		if !strings.Contains(docText, quotedService) {
 			t.Fatalf("docs/auth0.md missing %s", quotedService)
 		}
 	}
-	for _, staleService := range []string{"auth0_email", "auth0_trigger_binding"} {
-		quotedService := string(rune(0x60)) + staleService + string(rune(0x60))
+	for _, unsupportedService := range []string{"auth0_email", "auth0_email_provider", "auth0_trigger_binding"} {
+		quotedService := "`" + unsupportedService + "`"
 		if strings.Contains(docText, quotedService) {
-			t.Fatalf("docs/auth0.md still documents stale service %s", quotedService)
+			t.Fatalf("docs/auth0.md still documents unsupported service %s", quotedService)
 		}
 	}
 }

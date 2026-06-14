@@ -95,7 +95,6 @@ func (p *Auth0Provider) GetSupportedService() map[string]terraformutils.ServiceG
 		"auth0_user":            &UserGenerator{},
 		"auth0_branding":        &BrandingGenerator{},
 		"auth0_custom_domain":   &CustomDomainGenerator{},
-		"auth0_email_provider":  &EmailGenerator{},
 		"auth0_prompt":          &PromptGenerator{},
 		"auth0_log_stream":      &LogStreamGenerator{},
 		"auth0_tenant":          &TenantGenerator{},

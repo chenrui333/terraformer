@@ -63,15 +63,6 @@ func TestAuth0CreateResourcesFallsBackToIDName(t *testing.T) {
 			wantType: "auth0_custom_domain",
 		},
 		{
-			name: "email",
-			create: func() ([]terraformutils.Resource, error) {
-				return (EmailGenerator{}).createResources(&management.GetEmailProviderResponseContent{Name: auth0StringPtr("smtp")})
-			},
-			wantID:   "smtp",
-			wantName: "smtp",
-			wantType: "auth0_email_provider",
-		},
-		{
 			name: "hook",
 			create: func() ([]terraformutils.Resource, error) {
 				return (HookGenerator{}).createResources([]*management.Hook{{ID: auth0StringPtr("hook-id")}})
@@ -268,13 +259,6 @@ func TestAuth0CreateResourcesRequiresIDs(t *testing.T) {
 				return (CustomDomainGenerator{}).createResources([]*management.CustomDomain{{}})
 			},
 			wantErr: "missing id",
-		},
-		{
-			name: "email name",
-			create: func() ([]terraformutils.Resource, error) {
-				return (EmailGenerator{}).createResources(&management.GetEmailProviderResponseContent{})
-			},
-			wantErr: "missing name",
 		},
 		{
 			name: "rule config nil resource",

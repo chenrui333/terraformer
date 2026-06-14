@@ -16,7 +16,6 @@ List of supported Auth0 services:
 * `auth0_client`
 * `auth0_client_grant`
 * `auth0_custom_domain`
-* `auth0_email_provider`
 * `auth0_hook`
 * `auth0_log_stream`
 * `auth0_prompt`
