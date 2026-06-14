@@ -1,0 +1,22 @@
+providers/auth0/auth0_resource_test.go
+  s_afdb657bd8ae26::t_15835835bd5f80 258-262
+  s_afdb657bd8ae26::t_d03b08f56aa2a7 226-257,263-297
+providers/auth0/trigger_binding.go
+  s_afdb657bd8ae26::t_e0cfa1953e364d 16-28,44-46,67-71,118-119
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "4bf562f90615e6c53ad43925a1012001729080fb",
+  "prompts": {},
+  "sessions": {
+    "s_afdb657bd8ae26": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019eaf3b-28e8-78b1-9b2b-942e4d2dac16",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
