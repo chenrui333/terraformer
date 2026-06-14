@@ -204,18 +204,22 @@ func TestTriggerActionsCreateResourcesSeedsActions(t *testing.T) {
 	if resources[0].AdditionalFields["trigger"] != "post-login" {
 		t.Fatalf("trigger field = %#v, want post-login", resources[0].AdditionalFields["trigger"])
 	}
-	actions, ok := resources[0].AdditionalFields["actions"].([]map[string]interface{})
+	actions, ok := resources[0].AdditionalFields["actions"].([]interface{})
 	if !ok {
-		t.Fatalf("actions field = %#v, want []map[string]interface{}", resources[0].AdditionalFields["actions"])
+		t.Fatalf("actions field = %#v, want []interface{}", resources[0].AdditionalFields["actions"])
 	}
 	if len(actions) != 1 {
 		t.Fatalf("actions len = %d, want 1", len(actions))
 	}
-	if actions[0]["id"] != "action-id" {
-		t.Fatalf("action id = %#v, want action-id", actions[0]["id"])
+	action, ok := actions[0].(map[string]interface{})
+	if !ok {
+		t.Fatalf("actions[0] = %#v, want map[string]interface{}", actions[0])
 	}
-	if actions[0]["display_name"] != "Action Name" {
-		t.Fatalf("action display_name = %#v, want Action Name", actions[0]["display_name"])
+	if action["id"] != "action-id" {
+		t.Fatalf("action id = %#v, want action-id", action["id"])
+	}
+	if action["display_name"] != "Action Name" {
+		t.Fatalf("action display_name = %#v, want Action Name", action["display_name"])
 	}
 }
 

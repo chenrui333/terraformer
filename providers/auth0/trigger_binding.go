@@ -48,8 +48,8 @@ func (g TriggerBindingGenerator) createResources(bindings map[string][]*manageme
 	return resources, nil
 }
 
-func auth0TriggerActions(bindings []*management.ActionBinding) ([]map[string]interface{}, error) {
-	actions := make([]map[string]interface{}, 0, len(bindings))
+func auth0TriggerActions(bindings []*management.ActionBinding) ([]interface{}, error) {
+	actions := make([]interface{}, 0, len(bindings))
 	for _, binding := range bindings {
 		if binding == nil {
 			return nil, auth0MissingResource("auth0_trigger_actions binding")
