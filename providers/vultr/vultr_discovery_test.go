@@ -159,7 +159,7 @@ func TestServerGeneratorInitResourcesPaginatesInstances(t *testing.T) {
 					return
 				}
 				writeVultrJSON(w, http.StatusOK, map[string]interface{}{
-					"vpcs": []map[string]interface{}{{"id": "vpc-b"}, {"id": "vpc-a"}},
+					"vpcs": []map[string]interface{}{{"id": "vpc-b"}},
 					"meta": vultrMeta("vpc-cursor-2"),
 				})
 			case "vpc-cursor-2":
@@ -167,7 +167,7 @@ func TestServerGeneratorInitResourcesPaginatesInstances(t *testing.T) {
 					return
 				}
 				writeVultrJSON(w, http.StatusOK, map[string]interface{}{
-					"vpcs": []map[string]interface{}{{"id": "vpc-a"}},
+					"vpcs": []map[string]interface{}{{"id": "vpc-a"}, {"id": "vpc-a"}},
 					"meta": emptyVultrMeta(),
 				})
 			default:
