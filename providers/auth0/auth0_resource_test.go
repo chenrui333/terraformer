@@ -223,6 +223,78 @@ func TestTriggerActionsCreateResourcesSeedsActions(t *testing.T) {
 	}
 }
 
+func TestTriggerActionsCreateResourcesSkipsUnsupportedTriggers(t *testing.T) {
+	resources, err := (TriggerBindingGenerator{}).createResources(map[string][]*management.ActionBinding{
+		"custom-token-exchange": {
+			{
+				Action: &management.Action{ID: auth0StringPtr("token-action-id")},
+			},
+		},
+		"event-stream": {
+			{
+				Action: &management.Action{ID: auth0StringPtr("stream-action-id")},
+			},
+		},
+		"password-hash-migration": {
+			{
+				Action: &management.Action{ID: auth0StringPtr("migration-action-id")},
+			},
+		},
+		"post-login": {
+			{
+				Action: &management.Action{ID: auth0StringPtr("supported-action-id")},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected no error: %v", err)
+	}
+	if len(resources) != 1 {
+		t.Fatalf("resources len = %d, want 1", len(resources))
+	}
+	if resources[0].InstanceState.ID != "post-login" {
+		t.Fatalf("resource ID = %q, want post-login", resources[0].InstanceState.ID)
+	}
+	if resources[0].ResourceName != terraformutils.TfSanitize("post-login") {
+		t.Fatalf("resource name = %q, want %q", resources[0].ResourceName, terraformutils.TfSanitize("post-login"))
+	}
+	if resources[0].InstanceInfo.Type != "auth0_trigger_actions" {
+		t.Fatalf("resource type = %q, want auth0_trigger_actions", resources[0].InstanceInfo.Type)
+	}
+}
+
+func TestTriggerActionsSupportedTriggersMatchTerraformProvider(t *testing.T) {
+	supportedTriggers := []management.ActionTriggerTypeEnum{
+		management.ActionTriggerTypeEnumPostLogin,
+		management.ActionTriggerTypeEnumCredentialsExchange,
+		management.ActionTriggerTypeEnumPreUserRegistration,
+		management.ActionTriggerTypeEnumPostUserRegistration,
+		management.ActionTriggerTypeEnumPostChangePassword,
+		management.ActionTriggerTypeEnumSendPhoneMessage,
+		management.ActionTriggerTypeEnumPasswordResetPostChallenge,
+		management.ActionTriggerTypeEnumCustomEmailProvider,
+		management.ActionTriggerTypeEnumCustomPhoneProvider,
+		management.ActionTriggerTypeEnumLoginPostIdentifier,
+		management.ActionTriggerTypeEnumSignupPostIdentifier,
+	}
+	for _, trigger := range supportedTriggers {
+		if !auth0TriggerActionsSupportedTrigger(string(trigger)) {
+			t.Fatalf("trigger %q should be supported", trigger)
+		}
+	}
+
+	unsupportedTriggers := []management.ActionTriggerTypeEnum{
+		management.ActionTriggerTypeEnumCustomTokenExchange,
+		management.ActionTriggerTypeEnumEventStream,
+		management.ActionTriggerTypeEnumPasswordHashMigration,
+	}
+	for _, trigger := range unsupportedTriggers {
+		if auth0TriggerActionsSupportedTrigger(string(trigger)) {
+			t.Fatalf("trigger %q should not be supported", trigger)
+		}
+	}
+}
+
 func TestAuth0CreateResourcesRequiresIDs(t *testing.T) {
 	tests := []struct {
 		name    string

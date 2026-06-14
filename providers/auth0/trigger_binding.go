@@ -12,7 +12,20 @@ import (
 )
 
 var (
-	TriggerBindingAllowEmptyValues = []string{}
+	TriggerBindingAllowEmptyValues       = []string{}
+	auth0TriggerActionsSupportedTriggers = map[string]struct{}{
+		string(management.ActionTriggerTypeEnumPostLogin):                  {},
+		string(management.ActionTriggerTypeEnumCredentialsExchange):        {},
+		string(management.ActionTriggerTypeEnumPreUserRegistration):        {},
+		string(management.ActionTriggerTypeEnumPostUserRegistration):       {},
+		string(management.ActionTriggerTypeEnumPostChangePassword):         {},
+		string(management.ActionTriggerTypeEnumSendPhoneMessage):           {},
+		string(management.ActionTriggerTypeEnumPasswordResetPostChallenge): {},
+		string(management.ActionTriggerTypeEnumCustomEmailProvider):        {},
+		string(management.ActionTriggerTypeEnumCustomPhoneProvider):        {},
+		string(management.ActionTriggerTypeEnumLoginPostIdentifier):        {},
+		string(management.ActionTriggerTypeEnumSignupPostIdentifier):       {},
+	}
 )
 
 type TriggerBindingGenerator struct {
@@ -28,6 +41,9 @@ func (g TriggerBindingGenerator) createResources(bindings map[string][]*manageme
 	sort.Strings(triggerIDs)
 
 	for _, triggerID := range triggerIDs {
+		if !auth0TriggerActionsSupportedTrigger(triggerID) {
+			continue
+		}
 		actions, err := auth0TriggerActions(bindings[triggerID])
 		if err != nil {
 			return nil, err
@@ -46,6 +62,11 @@ func (g TriggerBindingGenerator) createResources(bindings map[string][]*manageme
 		))
 	}
 	return resources, nil
+}
+
+func auth0TriggerActionsSupportedTrigger(triggerID string) bool {
+	_, ok := auth0TriggerActionsSupportedTriggers[triggerID]
+	return ok
 }
 
 func auth0TriggerActions(bindings []*management.ActionBinding) ([]interface{}, error) {
@@ -93,6 +114,9 @@ func (g *TriggerBindingGenerator) InitResources() error {
 		triggerID := trigger.GetID()
 		if triggerID == "" {
 			return fmt.Errorf("%s resource is missing %s", "auth0_trigger_actions", "trigger_id")
+		}
+		if !auth0TriggerActionsSupportedTrigger(string(triggerID)) {
+			continue
 		}
 		page, err := m.Actions.Triggers.Bindings.List(ctx, &triggerID, &management.ListActionTriggerBindingsRequestParameters{})
 		if err != nil {
