@@ -23,6 +23,17 @@ type auth0ResourceExpectation struct {
 	typeName string
 }
 
+type auth0UnsupportedResourcesFile struct {
+	Version   int                                `json:"version"`
+	Resources []auth0UnsupportedResourceMetadata `json:"resources"`
+}
+
+type auth0UnsupportedResourceMetadata struct {
+	Resource   string   `json:"resource"`
+	Status     string   `json:"status"`
+	References []string `json:"references"`
+}
+
 func TestAuth0ProviderSupportedServicesUseCurrentResourceNames(t *testing.T) {
 	services := (&Auth0Provider{}).GetSupportedService()
 	wantServices := []string{
@@ -71,6 +82,37 @@ func TestAuth0ProviderSupportedServicesUseCurrentResourceNames(t *testing.T) {
 		if strings.Contains(docText, quotedService) {
 			t.Fatalf("docs/auth0.md still documents unsupported service %s", quotedService)
 		}
+	}
+}
+
+func TestAuth0UnsupportedResourcesMetadata(t *testing.T) {
+	data, err := os.ReadFile("unsupported_resources.json")
+	if err != nil {
+		t.Fatalf("read unsupported resources: %v", err)
+	}
+
+	var metadata auth0UnsupportedResourcesFile
+	if err := json.Unmarshal(data, &metadata); err != nil {
+		t.Fatalf("decode unsupported resources: %v", err)
+	}
+	if metadata.Version != 1 {
+		t.Fatalf("unsupported resources version = %d, want 1", metadata.Version)
+	}
+
+	entries := map[string]auth0UnsupportedResourceMetadata{}
+	for _, resource := range metadata.Resources {
+		entries[resource.Resource] = resource
+	}
+
+	emailProvider, ok := entries["auth0_email_provider"]
+	if !ok {
+		t.Fatal("unsupported metadata is missing auth0_email_provider")
+	}
+	if emailProvider.Status != "secret-required" {
+		t.Fatalf("auth0_email_provider status = %q, want secret-required", emailProvider.Status)
+	}
+	if len(emailProvider.References) == 0 {
+		t.Fatal("auth0_email_provider metadata is missing references")
 	}
 }
 
