@@ -1,0 +1,45 @@
+providers/auth0/trigger_binding.go
+  s_afdb657bd8ae26::t_8eec22299a5058 57-60
+  s_afdb657bd8ae26::t_dc7adba4bf6ae6 8,22,24-28,30-31,36-38,43-44,51-56,61-75,82,91,95,107,109
+providers/auth0/auth0_provider.go
+  s_afdb657bd8ae26::t_a25d72503de069 94,98
+providers/auth0/auth0_resource_test.go
+  s_afdb657bd8ae26::t_3e66a09ff8904c 135,201,341
+  s_afdb657bd8ae26::t_5af82b1b8df4f4 198-200,202-230
+  s_afdb657bd8ae26::t_658bd438b6d30e 72,121-129,133-134,136-140,145-155,279-292,329,331-332,335,338,340,344-358
+providers/auth0/rule_config.go
+  s_afdb657bd8ae26::t_d111777e3db324 20,23-29,38,53-57
+docs/auth0.md
+  s_afdb657bd8ae26::t_a25d72503de069 19,28
+README.md
+  s_afdb657bd8ae26::t_a25d72503de069 307
+providers/auth0/email.go
+  s_afdb657bd8ae26::t_a25d72503de069 23,25
+  s_afdb657bd8ae26::t_d111777e3db324 32
+providers/auth0/auth0_service.go
+  s_afdb657bd8ae26::t_2c6b908ba7d1d2 41-62
+providers/auth0/user.go
+  s_afdb657bd8ae26::t_d111777e3db324 20,23-29,31-32,38,56-60
+providers/auth0/auth0_discovery_test.go
+  s_afdb657bd8ae26::t_37d81311589624 1-2,121,127,134,141,170,176,183,190,219,223,249,255,262,268,363-365,370
+  s_afdb657bd8ae26::t_1ba8a112b918da 3-26,28-120,122-126,128-133,135-140,142-153,155-157,159-160,163-169,171-175,177-182,184-189,191-202,204-206,208-209,212-218,220-222,224-234,236-238,240-248,250-254,256-261,263-267,269-280,282-292,294-354,357-362,366-369,371-372
+  s_afdb657bd8ae26::t_8eec22299a5058 27,154,158,203,207,235,239,281,293
+  s_afdb657bd8ae26::t_f0c2a76b046417 355-356
+  s_afdb657bd8ae26::t_fdda9b4f317d88 161-162,210-211
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "ad1ecd1f53a95ce84567e780c40e3c182596199c",
+  "prompts": {},
+  "sessions": {
+    "s_afdb657bd8ae26": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019eaf3b-28e8-78b1-9b2b-942e4d2dac16",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
