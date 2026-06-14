@@ -126,7 +126,7 @@ This inventory is an informational coverage snapshot. The source of truth is the
 | openstack | no | no | not present yet |
 | opsgenie | no | no | not present yet |
 | pagerduty | no | no | not present yet |
-| panos | no | no | not present yet |
+| panos | yes | no | metadata present |
 | rabbitmq | no | no | not present yet |
 | tencentcloud | no | no | not present yet |
 | vault | no | no | not present yet |

@@ -165,12 +165,10 @@ func (g *PanoramaNetworkingGenerator) createBGPAggregateSuppressFilterResources(
 	)
 }
 
-// The secret argument will contain "(incorrect)", not the real value
+// PAN-OS returns "(incorrect)" instead of the real auth secret, so broad import
+// would generate non-reconstructable Terraform for this resource.
 func (g *PanoramaNetworkingGenerator) createBGPAuthProfileResources(tmpl, ts, virtualRouter string) []terraformutils.Resource {
-	return g.createResourcesFromList(
-		getGeneric{g.client.(*pango.Panorama).Network.BgpAuthProfile, []string{tmpl, ts, virtualRouter}},
-		tmpl+":"+ts+":"+virtualRouter+":", true, "panos_panorama_bgp_auth_profile",
-	)
+	return nil
 }
 
 func (g *PanoramaNetworkingGenerator) createBGPConditionalAdvertisementResources(tmpl, ts, virtualRouter string) (resources []terraformutils.Resource) {

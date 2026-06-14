@@ -22,6 +22,8 @@ The list of usable environment variables is the same as the [pango go-client](ht
 *  `PANOS_VERIFY_CERTIFICATE`
 *  `PANOS_LOGGING`
 
+Unsupported PAN-OS resources are tracked in [providers/panos/unsupported_resources.json](../providers/panos/unsupported_resources.json). BGP auth profile resources are not imported because PAN-OS returns `"(incorrect)"` instead of the real auth secret.
+
 Here is the list of resources which are currently supported:
 
 *   `firewall_device_config`
@@ -38,7 +40,6 @@ Here is the list of resources which are currently supported:
     * `panos_bgp_aggregate`
     * `panos_bgp_aggregate_advertise_filter`
     * `panos_bgp_aggregate_suppress_filter`
-    * `panos_bgp_auth_profile` # The secret argument will contain "(incorrect)"
     * `panos_bgp_conditional_adv`
     * `panos_bgp_conditional_adv_advertise_filter`
     * `panos_bgp_conditional_adv_non_exist_filter`
@@ -108,7 +109,6 @@ Here is the list of resources which are currently supported:
     * `panos_panorama_bgp_aggregate`
     * `panos_panorama_bgp_aggregate_advertise_filter`
     * `panos_panorama_bgp_aggregate_suppress_filter`
-    * `panos_panorama_bgp_auth_profile` # The secret argument will contain "(incorrect)"
     * `panos_panorama_bgp_conditional_adv`
     * `panos_panorama_bgp_conditional_adv_advertise_filter`
     * `panos_panorama_bgp_conditional_adv_non_exist_filter`
