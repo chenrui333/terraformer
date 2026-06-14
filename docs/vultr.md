@@ -4,7 +4,7 @@ Example:
 
 ```
 export VULTR_API_KEY=[VULTR_API_KEY]
-./terraformer import vultr -r server
+./terraformer import vultr -r instance
 ```
 
 List of supported Vultr resources:
@@ -19,12 +19,10 @@ List of supported Vultr resources:
 *   `firewall_group`
     * `vultr_firewall_group`
     * `vultr_firewall_rule`
-*   `network`
-    * `vultr_network`
+*   `instance`
+    * `vultr_instance`
 *   `reserved_ip`
     * `vultr_reserved_ip`
-*   `server`
-    * `vultr_server`
 *   `snapshot`
     * `vultr_snapshot`
 *   `ssh_key`
@@ -33,3 +31,5 @@ List of supported Vultr resources:
     * `vultr_startup_script`
 *   `user`
     * `vultr_user`
+*   `vpc`
+    * `vultr_vpc`

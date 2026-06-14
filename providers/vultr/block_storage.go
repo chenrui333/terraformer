@@ -4,6 +4,7 @@ package vultr
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/vultr/govultr/v3"
@@ -27,10 +28,13 @@ func (g BlockStorageGenerator) createResources(blockStorageList []govultr.BlockS
 }
 
 func (g *BlockStorageGenerator) InitResources() error {
-	client := g.generateClient()
-	output, _, _, err := client.BlockStorage.List(context.Background(), nil)
+	client, err := g.generateClient()
 	if err != nil {
 		return err
+	}
+	output, err := listAllVultrResources(context.Background(), client.BlockStorage.List)
+	if err != nil {
+		return fmt.Errorf("list vultr block storage: %w", err)
 	}
 	g.Resources = g.createResources(output)
 	return nil

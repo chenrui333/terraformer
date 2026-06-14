@@ -44,13 +44,13 @@ func (p *VultrProvider) GetSupportedService() map[string]terraformutils.ServiceG
 		"block_storage":     &BlockStorageGenerator{},
 		"dns_domain":        &DNSDomainGenerator{},
 		"firewall_group":    &FirewallGroupGenerator{},
-		"network":           &NetworkGenerator{},
+		"instance":          &ServerGenerator{},
 		"reserved_ip":       &ReservedIPGenerator{},
-		"server":            &ServerGenerator{},
 		"snapshot":          &SnapshotGenerator{},
 		"ssh_key":           &SSHKeyGenerator{},
 		"startup_script":    &StartupScriptGenerator{},
 		"user":              &UserGenerator{},
+		"vpc":               &NetworkGenerator{},
 	}
 }
 

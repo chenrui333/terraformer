@@ -4,6 +4,7 @@ package vultr
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/chenrui333/terraformer/terraformutils"
 	"github.com/vultr/govultr/v3"
@@ -27,10 +28,13 @@ func (g SnapshotGenerator) createResources(snapshotList []govultr.Snapshot) []te
 }
 
 func (g *SnapshotGenerator) InitResources() error {
-	client := g.generateClient()
-	output, _, _, err := client.Snapshot.List(context.Background(), nil)
+	client, err := g.generateClient()
 	if err != nil {
 		return err
+	}
+	output, err := listAllVultrResources(context.Background(), client.Snapshot.List)
+	if err != nil {
+		return fmt.Errorf("list vultr snapshots: %w", err)
 	}
 	g.Resources = g.createResources(output)
 	return nil
