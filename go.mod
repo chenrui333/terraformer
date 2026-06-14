@@ -117,7 +117,7 @@ require (
 	github.com/heimweh/go-pagerduty v0.0.0-20250801140645-0b96cfc9bf17
 	github.com/heroku/heroku-go/v6 v6.1.0
 	github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f // indirect
-	github.com/honeycombio/terraform-provider-honeycombio v0.49.0
+	github.com/honeycombio/terraform-provider-honeycombio v0.50.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/ionos-cloud/sdk-go-dbaas-mongo v1.4.1
 	github.com/ionos-cloud/sdk-go-dbaas-postgres v1.1.4
