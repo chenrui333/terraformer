@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+## 0.13.14
+
+`0.13.14` is a provider SDK migration, provider hardening, dependency refresh,
+and release/CI reliability patch.
+
+### Highlights
+
+* Complete major provider SDK migration lanes for Cloudflare, Linode, and Okta,
+  and harden discovery/import behavior across GitHub, Vultr, Auth0, Myrasec,
+  and PAN-OS.
+* Refresh provider and client dependencies across AWS, Azure, IBM,
+  TencentCloud, DigitalOcean, Yandex, New Relic, monitoring, Fastly, GCP, and
+  shared Go module families.
+* Improve provider dependency CI and release reliability with additional
+  test/vet/build/compatibility sharding, release asset staging hardening, and
+  CI performance documentation.
+
+**Full Changelog**: <https://github.com/chenrui333/terraformer/compare/v0.13.13...v0.13.14>
+
 ## 0.13.13
 
 `0.13.13` is an AWS provider fix and dependency refresh patch.
