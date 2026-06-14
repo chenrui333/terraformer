@@ -17,10 +17,16 @@ type RuleConfigGenerator struct {
 	Auth0Service
 }
 
-func (g RuleConfigGenerator) createResources(ruleConfigConfigs []*management.RulesConfig) []terraformutils.Resource {
+func (g RuleConfigGenerator) createResources(ruleConfigConfigs []*management.RulesConfig) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	for _, ruleConfig := range ruleConfigConfigs {
-		resourceName := *ruleConfig.Key
+		if ruleConfig == nil {
+			return nil, auth0MissingResource("auth0_rule_config")
+		}
+		resourceName, err := auth0RequiredString("auth0_rule_config", "key", ruleConfig.Key)
+		if err != nil {
+			return nil, err
+		}
 		resources = append(resources, terraformutils.NewSimpleResource(
 			resourceName,
 			resourceName,
@@ -29,7 +35,7 @@ func (g RuleConfigGenerator) createResources(ruleConfigConfigs []*management.Rul
 			RuleConfigAllowEmptyValues,
 		))
 	}
-	return resources
+	return resources, nil
 }
 
 func (g *RuleConfigGenerator) InitResources() error {
@@ -44,6 +50,10 @@ func (g *RuleConfigGenerator) InitResources() error {
 		return err
 	}
 
-	g.Resources = g.createResources(list)
+	resources, err := g.createResources(list)
+	if err != nil {
+		return err
+	}
+	g.Resources = resources
 	return nil
 }

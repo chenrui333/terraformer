@@ -304,7 +304,7 @@ Links to download Terraform provider plugins:
     * Xen Orchestra provider >= 0.18.0 - [here](https://github.com/ddelnano/terraform-provider-xenorchestra)
     * GmailFilter provider >= 1.0.1 - [here](https://github.com/yamamoto-febc/terraform-provider-gmailfilter)
     * Vault provider - [here](https://github.com/hashicorp/terraform-provider-vault)
-    * Auth0 provider - [here](https://github.com/alexkappa/terraform-provider-auth0)
+    * Auth0 provider - [Auth0 Terraform provider](https://github.com/auth0/terraform-provider-auth0)
     * AzureAD provider - [here](https://github.com/hashicorp/terraform-provider-azuread)
 
 Information on provider plugins:

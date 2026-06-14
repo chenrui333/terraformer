@@ -69,7 +69,7 @@ func TestAuth0CreateResourcesFallsBackToIDName(t *testing.T) {
 			},
 			wantID:   "smtp",
 			wantName: "smtp",
-			wantType: "auth0_email",
+			wantType: "auth0_email_provider",
 		},
 		{
 			name: "hook",
@@ -119,18 +119,40 @@ func TestAuth0CreateResourcesFallsBackToIDName(t *testing.T) {
 			wantType: "auth0_rule",
 		},
 		{
+			name: "rule config",
+			create: func() ([]terraformutils.Resource, error) {
+				return (RuleConfigGenerator{}).createResources([]*management.RulesConfig{{Key: auth0StringPtr("config-key")}})
+			},
+			wantID:   "config-key",
+			wantName: "config-key",
+			wantType: "auth0_rule_config",
+		},
+		{
 			name: "trigger binding",
 			create: func() ([]terraformutils.Resource, error) {
-				return (TriggerBindingGenerator{}).createResources(map[string]*management.ActionBinding{
-					"binding-id": {
-						ID:        auth0StringPtr("binding-id"),
-						TriggerID: auth0ActionTriggerTypePtr("post-login"),
+				return (TriggerBindingGenerator{}).createResources(map[string][]*management.ActionBinding{
+					"post-login": {
+						{
+							ID:          auth0StringPtr("binding-id"),
+							TriggerID:   auth0ActionTriggerTypePtr("post-login"),
+							Action:      &management.Action{ID: auth0StringPtr("action-id")},
+							DisplayName: auth0StringPtr("Action Name"),
+						},
 					},
 				})
 			},
 			wantID:   "post-login",
-			wantName: "binding-id",
-			wantType: "auth0_trigger_binding",
+			wantName: "post-login",
+			wantType: "auth0_trigger_actions",
+		},
+		{
+			name: "user",
+			create: func() ([]terraformutils.Resource, error) {
+				return (UserGenerator{}).createResources([]*management.UserResponseSchema{{UserID: auth0StringPtr("auth0|user-id")}})
+			},
+			wantID:   "auth0|user-id",
+			wantName: "auth0|user-id",
+			wantType: "auth0_user",
 		},
 	}
 
@@ -170,6 +192,39 @@ func TestAuth0CreateResourcesIncludesDisplayNameWhenAvailable(t *testing.T) {
 	}
 	if resources[0].ResourceName != terraformutils.TfSanitize("action-id_display-name") {
 		t.Fatalf("resource name = %q, want id/display name", resources[0].ResourceName)
+	}
+}
+
+func TestTriggerActionsCreateResourcesSeedsActions(t *testing.T) {
+	resources, err := (TriggerBindingGenerator{}).createResources(map[string][]*management.ActionBinding{
+		"post-login": {
+			{
+				Action:      &management.Action{ID: auth0StringPtr("action-id")},
+				DisplayName: auth0StringPtr("Action Name"),
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected no error: %v", err)
+	}
+	if len(resources) != 1 {
+		t.Fatalf("resources len = %d, want 1", len(resources))
+	}
+	if resources[0].AdditionalFields["trigger"] != "post-login" {
+		t.Fatalf("trigger field = %#v, want post-login", resources[0].AdditionalFields["trigger"])
+	}
+	actions, ok := resources[0].AdditionalFields["actions"].([]map[string]interface{})
+	if !ok {
+		t.Fatalf("actions field = %#v, want []map[string]interface{}", resources[0].AdditionalFields["actions"])
+	}
+	if len(actions) != 1 {
+		t.Fatalf("actions len = %d, want 1", len(actions))
+	}
+	if actions[0]["id"] != "action-id" {
+		t.Fatalf("action id = %#v, want action-id", actions[0]["id"])
+	}
+	if actions[0]["display_name"] != "Action Name" {
+		t.Fatalf("action display_name = %#v, want Action Name", actions[0]["display_name"])
 	}
 }
 
@@ -222,6 +277,20 @@ func TestAuth0CreateResourcesRequiresIDs(t *testing.T) {
 			wantErr: "missing name",
 		},
 		{
+			name: "rule config nil resource",
+			create: func() ([]terraformutils.Resource, error) {
+				return (RuleConfigGenerator{}).createResources([]*management.RulesConfig{nil})
+			},
+			wantErr: "resource is nil",
+		},
+		{
+			name: "rule config key",
+			create: func() ([]terraformutils.Resource, error) {
+				return (RuleConfigGenerator{}).createResources([]*management.RulesConfig{{}})
+			},
+			wantErr: "missing key",
+		},
+		{
 			name: "hook id",
 			create: func() ([]terraformutils.Resource, error) {
 				return (HookGenerator{}).createResources([]*management.Hook{{}})
@@ -257,22 +326,36 @@ func TestAuth0CreateResourcesRequiresIDs(t *testing.T) {
 			wantErr: "missing id",
 		},
 		{
-			name: "trigger binding id",
+			name: "trigger action nil binding",
 			create: func() ([]terraformutils.Resource, error) {
-				return (TriggerBindingGenerator{}).createResources(map[string]*management.ActionBinding{
-					"binding": {TriggerID: auth0ActionTriggerTypePtr("post-login")},
+				return (TriggerBindingGenerator{}).createResources(map[string][]*management.ActionBinding{
+					"post-login": {nil},
 				})
 			},
-			wantErr: "missing id",
+			wantErr: "resource is nil",
 		},
 		{
-			name: "trigger binding trigger id",
+			name: "trigger action action id",
 			create: func() ([]terraformutils.Resource, error) {
-				return (TriggerBindingGenerator{}).createResources(map[string]*management.ActionBinding{
-					"binding": {ID: auth0StringPtr("binding-id")},
+				return (TriggerBindingGenerator{}).createResources(map[string][]*management.ActionBinding{
+					"post-login": {{ID: auth0StringPtr("binding-id")}},
 				})
 			},
-			wantErr: "missing trigger_id",
+			wantErr: "missing action_id",
+		},
+		{
+			name: "user nil resource",
+			create: func() ([]terraformutils.Resource, error) {
+				return (UserGenerator{}).createResources([]*management.UserResponseSchema{nil})
+			},
+			wantErr: "resource is nil",
+		},
+		{
+			name: "user id",
+			create: func() ([]terraformutils.Resource, error) {
+				return (UserGenerator{}).createResources([]*management.UserResponseSchema{{}})
+			},
+			wantErr: "missing user_id",
 		},
 	}
 

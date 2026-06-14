@@ -20,16 +20,16 @@ type EmailGenerator struct {
 func (g EmailGenerator) createResources(email *management.GetEmailProviderResponseContent) ([]terraformutils.Resource, error) {
 	resources := []terraformutils.Resource{}
 	if email == nil {
-		return nil, auth0MissingResource("auth0_email")
+		return nil, auth0MissingResource("auth0_email_provider")
 	}
-	resourceName, err := auth0RequiredString("auth0_email", "name", email.Name)
+	resourceName, err := auth0RequiredString("auth0_email_provider", "name", email.Name)
 	if err != nil {
 		return nil, err
 	}
 	resources = append(resources, terraformutils.NewSimpleResource(
 		resourceName,
 		resourceName,
-		"auth0_email",
+		"auth0_email_provider",
 		"auth0",
 		EmailAllowEmptyValues,
 	))
