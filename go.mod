@@ -552,7 +552,7 @@ require (
 	github.com/launchdarkly/api-client-go/v22 v22.0.0
 	github.com/linode/linodego/v2 v2.1.0
 	github.com/logzio/logzio_terraform_client v1.30.2
-	github.com/newrelic/newrelic-client-go/v2 v2.86.1
+	github.com/newrelic/newrelic-client-go/v2 v2.87.1
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/as v1.3.88
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cbs v1.3.102
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cdb v1.3.109
