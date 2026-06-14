@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "resources": [
+    {
+      "resource": "panos_bgp_auth_profile",
+      "service_family": "networking",
+      "reason": "PAN-OS BGP auth profiles require the real shared secret, but PAN-OS discovery returns the placeholder \"(incorrect)\" instead of the secret value.",
+      "evidence": "Terraformer previously documented and generated panos_bgp_auth_profile with the secret argument set to \"(incorrect)\". That placeholder is not the real credential, so generated Terraform cannot safely recreate or refresh the existing auth profile.",
+      "status": "secret-required",
+      "references": [
+        "https://registry.terraform.io/providers/PaloAltoNetworks/panos/latest/docs/resources/bgp_auth_profile"
+      ]
+    },
+    {
+      "resource": "panos_panorama_bgp_auth_profile",
+      "service_family": "networking",
+      "reason": "Panorama BGP auth profiles require the real shared secret, but PAN-OS discovery returns the placeholder \"(incorrect)\" instead of the secret value.",
+      "evidence": "Terraformer previously documented and generated panos_panorama_bgp_auth_profile with the secret argument set to \"(incorrect)\". That placeholder is not the real credential, so generated Terraform cannot safely recreate or refresh the existing auth profile.",
+      "status": "secret-required",
+      "references": [
+        "https://registry.terraform.io/providers/PaloAltoNetworks/panos/latest/docs/resources/panorama_bgp_auth_profile"
+      ]
+    }
+  ]
+}

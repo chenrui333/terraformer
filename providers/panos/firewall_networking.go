@@ -158,12 +158,10 @@ func (g *FirewallNetworkingGenerator) createBGPAggregateSuppressFilterResources(
 	)
 }
 
-// The secret argument will contain "(incorrect)", not the real value
+// PAN-OS returns "(incorrect)" instead of the real auth secret, so broad import
+// would generate non-reconstructable Terraform for this resource.
 func (g *FirewallNetworkingGenerator) createBGPAuthProfileResources(virtualRouter string) []terraformutils.Resource {
-	return g.createResourcesFromList(
-		getGeneric{g.client.(*pango.Firewall).Network.BgpAuthProfile, []string{virtualRouter}},
-		virtualRouter+":", true, "panos_bgp_auth_profile", false, "",
-	)
+	return nil
 }
 
 func (g *FirewallNetworkingGenerator) createBGPConditionalAdvertisementResources(virtualRouter string) (resources []terraformutils.Resource) {
