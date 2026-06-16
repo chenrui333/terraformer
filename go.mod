@@ -85,7 +85,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.63.3
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.103.3
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.42.3
-	github.com/aws/aws-sdk-go-v2/service/securityhub v1.71.6
+	github.com/aws/aws-sdk-go-v2/service/securityhub v1.71.7
 	github.com/aws/aws-sdk-go-v2/service/servicecatalog v1.40.4
 	github.com/aws/aws-sdk-go-v2/service/ses v1.35.2
 	github.com/aws/aws-sdk-go-v2/service/sfn v1.42.2
@@ -498,7 +498,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/appstream v1.60.5
 	github.com/aws/aws-sdk-go-v2/service/athena v1.58.4
 	github.com/aws/aws-sdk-go-v2/service/backup v1.57.6
-	github.com/aws/aws-sdk-go-v2/service/bedrock v1.63.3
+	github.com/aws/aws-sdk-go-v2/service/bedrock v1.63.4
 	github.com/aws/aws-sdk-go-v2/service/bedrockagent v1.54.6
 	github.com/aws/aws-sdk-go-v2/service/chatbot v1.15.6
 	github.com/aws/aws-sdk-go-v2/service/chimesdkvoice v1.29.2
