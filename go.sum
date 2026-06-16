@@ -259,8 +259,8 @@ github.com/aws/aws-sdk-go-v2/service/backup v1.57.6 h1:rUFMsZ9SMt5VQTH4gdhy7w72W
 github.com/aws/aws-sdk-go-v2/service/backup v1.57.6/go.mod h1:p8DakzX08sirMAhh2ySCVqGvsTU21hmaBI8L5EL+kIc=
 github.com/aws/aws-sdk-go-v2/service/batch v1.65.6 h1:gVXOXnD5kjDGtkGgWGva7cRXYY7w/nR+1rv23xh5Jag=
 github.com/aws/aws-sdk-go-v2/service/batch v1.65.6/go.mod h1:PcfGh6couv2ZOZSSdPqbkXM+RuUrwpxeLqSQC3x7ofc=
-github.com/aws/aws-sdk-go-v2/service/bedrock v1.63.3 h1:4zoxLg/KlIk+MP7wEJFQ8zrY9lHGJJ9u8mL1R66EcS4=
-github.com/aws/aws-sdk-go-v2/service/bedrock v1.63.3/go.mod h1:63ve0/t5wlX+XJGhpUec4R2Ig9IsqDwZukYcDIvVYSI=
+github.com/aws/aws-sdk-go-v2/service/bedrock v1.63.4 h1:i/+Jh9Ltiti6JqSEWC+3wcSL89Zrg9ekR84B8keIdX4=
+github.com/aws/aws-sdk-go-v2/service/bedrock v1.63.4/go.mod h1:f0MnAznWRN75Dnezt6MBnHOKHEpAI/ztr4Q6Lo1IGDk=
 github.com/aws/aws-sdk-go-v2/service/bedrockagent v1.54.6 h1:4Z9EIZUF8dkVDYTEt7NxKhA3yE3S/x7iWYL/C+reRgw=
 github.com/aws/aws-sdk-go-v2/service/bedrockagent v1.54.6/go.mod h1:GlwXK7c/0CMTSU4a0PAAp5jiYXH55DRYT3mliKlqf6M=
 github.com/aws/aws-sdk-go-v2/service/budgets v1.44.6 h1:J/+Txi6glp85LSGzi8iRbc1Jii/FYmgVZ7p2qzHrbYM=
@@ -455,8 +455,8 @@ github.com/aws/aws-sdk-go-v2/service/scheduler v1.18.7 h1:lzyNgsb0Y9l5t1pScZgSfr
 github.com/aws/aws-sdk-go-v2/service/scheduler v1.18.7/go.mod h1:Z6XrFAHEJAyZCbSY6naL6cylzYJunhoazrtk7qHpfdA=
 github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.42.3 h1:L9gPLf3sFH1/ao3oB2QZcaX1xGYi8hj+WJlsf3/dN+M=
 github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.42.3/go.mod h1:9DKRlwDCw2OUDlyCIFcQCroL5M0mQTUU9qW8JEDcXmI=
-github.com/aws/aws-sdk-go-v2/service/securityhub v1.71.6 h1:eMPmpoa7ky0pHIPVGolPStWe7HE72sc6mvvWRTaG/Tw=
-github.com/aws/aws-sdk-go-v2/service/securityhub v1.71.6/go.mod h1:SS/9UFk3PQyMZyKumEF7C8Z//TkUEd1AShPnzUbAKqQ=
+github.com/aws/aws-sdk-go-v2/service/securityhub v1.71.7 h1:7H0Y7DA+SLT9U0ssRSIPo7+dMY5p6kXMU63ncCx8ayI=
+github.com/aws/aws-sdk-go-v2/service/securityhub v1.71.7/go.mod h1:SS/9UFk3PQyMZyKumEF7C8Z//TkUEd1AShPnzUbAKqQ=
 github.com/aws/aws-sdk-go-v2/service/servicecatalog v1.40.4 h1:sPN+5sCOI+9atEK/+d4B56qNB4U0QQMIryiFZP/Ys2c=
 github.com/aws/aws-sdk-go-v2/service/servicecatalog v1.40.4/go.mod h1:53zak1XHl8EqtLsLhNFnFUtOjtEtS6ZWDvAEYWooMEc=
 github.com/aws/aws-sdk-go-v2/service/ses v1.35.2 h1:5J/RDIAzCvoarvi2Z7+XsZC1SIbhV96g72if26qxv9g=
