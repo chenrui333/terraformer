@@ -1317,8 +1317,8 @@ github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tcaplusdb v1.3.105 h1:6
 github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tcaplusdb v1.3.105/go.mod h1:FR3HD44YAbGbfiDbMUA5IHxSk9j8MZ2Wdl8zKf/Z8rw=
 github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc v1.3.110 h1:pQ4RmVGFsZaeVa7tXm9bUSbthlQWHoJ960KIajDVBXI=
 github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc v1.3.110/go.mod h1:+nvwqTjwe6ND1antQZJXUeHMM+FmLWYbZ+m5GZPw2WU=
-github.com/tencentyun/cos-go-sdk-v5 v0.7.73 h1:uFfgp1A7cQaAGR6QP9DsIkoEQ67b8ewj5r1RV6XB540=
-github.com/tencentyun/cos-go-sdk-v5 v0.7.73/go.mod h1:STbTNaNKq03u+gscPEGOahKzLcGSYOj6Dzc5zNay7Pg=
+github.com/tencentyun/cos-go-sdk-v5 v0.7.74 h1:YCsGhIK+Q5vMcmAiQqPuMyhSQ3zN1p7U+dhlHQD++6c=
+github.com/tencentyun/cos-go-sdk-v5 v0.7.74/go.mod h1:STbTNaNKq03u+gscPEGOahKzLcGSYOj6Dzc5zNay7Pg=
 github.com/tencentyun/qcloud-cos-sts-sdk v0.0.0-20250515025012-e0eec8a5d123/go.mod h1:b18KQa4IxHbxeseW1GcZox53d7J0z39VNONTxvvlkXw=
 github.com/tetratelabs/wabin v0.0.0-20230304001439-f6f874872834 h1:ZF+QBjOI+tILZjBaFj3HgFonKXUcwgJ4djLb6i42S3Q=
 github.com/tetratelabs/wabin v0.0.0-20230304001439-f6f874872834/go.mod h1:m9ymHTgNSEjuxvw8E7WWe4Pl4hZQHXONY8wE6dMLaRk=
