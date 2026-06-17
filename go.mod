@@ -133,7 +133,7 @@ require (
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
-	github.com/tencentyun/cos-go-sdk-v5 v0.7.73
+	github.com/tencentyun/cos-go-sdk-v5 v0.7.74
 	github.com/yandex-cloud/go-genproto v0.86.0
 	github.com/yandex-cloud/go-sdk/v2 v2.118.0
 	github.com/zclconf/go-cty v1.18.1
