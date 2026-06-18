@@ -9,10 +9,10 @@ require (
 	github.com/Azure/azure-storage-blob-go v0.15.0
 	github.com/IBM-Cloud/bluemix-go v0.0.0-20260605140443-e006e534aa6d
 	github.com/IBM/go-sdk-core/v5 v5.21.4
-	github.com/IBM/ibm-cos-sdk-go v1.14.0
+	github.com/IBM/ibm-cos-sdk-go v1.14.1
 	github.com/IBM/keyprotect-go-client v0.16.0
 	github.com/IBM/networking-go-sdk v0.53.4
-	github.com/IBM/platform-services-go-sdk v0.99.0
+	github.com/IBM/platform-services-go-sdk v0.99.1
 	github.com/IBM/vpc-go-sdk v0.84.0
 	github.com/OctopusDeploy/go-octopusdeploy/v2 v2.109.0
 	github.com/PaloAltoNetworks/pango v0.10.2
@@ -485,7 +485,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/sql/armsql v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/storage/armstorage/v4 v4.1.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/synapse/armsynapse v0.8.0
-	github.com/IBM/continuous-delivery-go-sdk/v2 v2.0.11
+	github.com/IBM/continuous-delivery-go-sdk/v2 v2.0.12
 	github.com/IBM/go-sdk-core/v3 v3.3.1
 	github.com/IBM/go-sdk-core/v4 v4.10.0
 	github.com/IBM/sarama v1.50.2
