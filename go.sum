@@ -602,8 +602,8 @@ github.com/exponent-io/jsonpath v0.0.0-20210407135951-1de76d718b3f h1:Wl78ApPPB2
 github.com/exponent-io/jsonpath v0.0.0-20210407135951-1de76d718b3f/go.mod h1:OSYXu++VVOHnXeitef/D8n/6y4QV8uLHSFXX4NeXMGc=
 github.com/extism/go-sdk v1.7.1 h1:lWJos6uY+tRFdlIHR+SJjwFDApY7OypS/2nMhiVQ9Sw=
 github.com/extism/go-sdk v1.7.1/go.mod h1:IT+Xdg5AZM9hVtpFUA+uZCJMge/hbvshl8bwzLtFyKA=
-github.com/fastly/go-fastly/v15 v15.0.2 h1:T5PutYmcACkGHRivZ68yXFi5g7WmTrJ++kzeE8ev4Mw=
-github.com/fastly/go-fastly/v15 v15.0.2/go.mod h1:oZmar1FnJBOn9ZsiJJVhwlXMFBhu1uP3Eyngewi7F8w=
+github.com/fastly/go-fastly/v15 v15.0.3 h1:eSeviq6rSbwJfV+uyV5m5H2nWePtYsrEaKPCLH8gFes=
+github.com/fastly/go-fastly/v15 v15.0.3/go.mod h1:ZwzEo1cN3adPpQc3dg83+siO8CUYCsSBSEJJzUjxkQo=
 github.com/fatih/color v1.13.0/go.mod h1:kLAiJbzzSOZDVNGyDpeOxJ47H46qBXwg5ILebYFFOfk=
 github.com/fatih/color v1.19.0 h1:Zp3PiM21/9Ld6FzSKyL5c/BULoe/ONr9KlbYVOfG8+w=
 github.com/fatih/color v1.19.0/go.mod h1:zNk67I0ZUT1bEGsSGyCZYZNrHuTkJJB+r6Q9VuMi0LE=
