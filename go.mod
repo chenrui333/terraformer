@@ -11,7 +11,7 @@ require (
 	github.com/IBM/go-sdk-core/v5 v5.21.4
 	github.com/IBM/ibm-cos-sdk-go v1.14.1
 	github.com/IBM/keyprotect-go-client v0.16.0
-	github.com/IBM/networking-go-sdk v0.53.4
+	github.com/IBM/networking-go-sdk v0.53.5
 	github.com/IBM/platform-services-go-sdk v0.99.1
 	github.com/IBM/vpc-go-sdk v0.84.0
 	github.com/OctopusDeploy/go-octopusdeploy/v2 v2.109.0
@@ -138,7 +138,7 @@ require (
 	github.com/yandex-cloud/go-sdk/v2 v2.118.0
 	github.com/zclconf/go-cty v1.18.1
 	golang.org/x/oauth2 v0.36.0
-	golang.org/x/text v0.37.0
+	golang.org/x/text v0.38.0
 	gonum.org/v1/gonum v0.17.0
 	google.golang.org/api v0.283.0
 	google.golang.org/genproto v0.0.0-20260526163538-3dc84a4a5aaa
@@ -231,11 +231,11 @@ require (
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
 	go.mongodb.org/mongo-driver v1.17.9 // indirect
-	golang.org/x/crypto v0.52.0 // indirect
-	golang.org/x/net v0.55.0 // indirect
+	golang.org/x/crypto v0.53.0 // indirect
+	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/sync v0.21.0
-	golang.org/x/sys v0.45.0 // indirect
-	golang.org/x/term v0.43.0 // indirect
+	golang.org/x/sys v0.46.0 // indirect
+	golang.org/x/term v0.44.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/grpc v1.81.1
 	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af
@@ -352,8 +352,8 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.1 // indirect
 	golang.org/x/exp v0.0.0-20251219203646-944ab1f22d93 // indirect
-	golang.org/x/mod v0.35.0 // indirect
-	golang.org/x/tools v0.44.0 // indirect
+	golang.org/x/mod v0.36.0 // indirect
+	golang.org/x/tools v0.45.0 // indirect
 	gopkg.in/sourcemap.v1 v1.0.5 // indirect
 	k8s.io/apiextensions-apiserver v0.36.0 // indirect
 	k8s.io/apiserver v0.36.0 // indirect
@@ -488,7 +488,7 @@ require (
 	github.com/IBM/continuous-delivery-go-sdk/v2 v2.0.12
 	github.com/IBM/go-sdk-core/v3 v3.3.1
 	github.com/IBM/go-sdk-core/v4 v4.10.0
-	github.com/IBM/sarama v1.50.2
+	github.com/IBM/sarama v1.50.3
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
 	github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.35.6
 	github.com/aws/aws-sdk-go-v2/service/appconfig v1.44.6
