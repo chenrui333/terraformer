@@ -550,7 +550,7 @@ require (
 	github.com/ionos-cloud/sdk-go-logging v1.3.0
 	github.com/keycloak/terraform-provider-keycloak v0.0.0-20260526162604-f2be9656a483
 	github.com/launchdarkly/api-client-go/v22 v22.0.0
-	github.com/linode/linodego/v2 v2.1.0
+	github.com/linode/linodego/v2 v2.1.2
 	github.com/logzio/logzio_terraform_client v1.30.2
 	github.com/newrelic/newrelic-client-go/v2 v2.87.1
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/as v1.3.115
