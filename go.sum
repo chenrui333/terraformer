@@ -351,8 +351,8 @@ github.com/aws/aws-sdk-go-v2/service/glue v1.143.1 h1:B1dliWJXE5s3KwWp7nEYwoaqAf
 github.com/aws/aws-sdk-go-v2/service/glue v1.143.1/go.mod h1:cPV3sb+zsvCS8gCgOubuCIN2uWMeFrwgJTr8C1sDspg=
 github.com/aws/aws-sdk-go-v2/service/guardduty v1.79.3 h1:AGUhgPCJKoXbNbk93EtLt6nzu7WoaFyln1g753W9E6g=
 github.com/aws/aws-sdk-go-v2/service/guardduty v1.79.3/go.mod h1:OOwqiU2hPl8v3FomNDgNPj3RCCsTfrsjzgWmuqHidhw=
-github.com/aws/aws-sdk-go-v2/service/iam v1.54.4 h1:V5Fl1MjjTCuC6PUsHOVWEbI5kMg0MP5Xsxw9fHX94V8=
-github.com/aws/aws-sdk-go-v2/service/iam v1.54.4/go.mod h1:tMNzI+fYFCk4cIdZ7FEybLzShwnmWkfxQw85ED1b4ng=
+github.com/aws/aws-sdk-go-v2/service/iam v1.54.5 h1:a/gAOhIOi+vHYeRU224WIXlJrLXs4Z1Qbm92vfX64jc=
+github.com/aws/aws-sdk-go-v2/service/iam v1.54.5/go.mod h1:tMNzI+fYFCk4cIdZ7FEybLzShwnmWkfxQw85ED1b4ng=
 github.com/aws/aws-sdk-go-v2/service/identitystore v1.37.7 h1:c5WBKnEhJJ5YNVyCHH1Py7efoJoVer74JNDhWfD6aV4=
 github.com/aws/aws-sdk-go-v2/service/identitystore v1.37.7/go.mod h1:wffTtevfE3YQ0/eQhwZaNXUv4QSIor8Fc7PBYd0uSG0=
 github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.12 h1:ZD2+BSw9vFsNlKYIasSNt3uDbjqqXIBcM13UJv/Lx2k=
@@ -429,8 +429,8 @@ github.com/aws/aws-sdk-go-v2/service/qldb v1.32.2 h1:tSctQisNHgXnDmyoOdLXkSQmHYo
 github.com/aws/aws-sdk-go-v2/service/qldb v1.32.2/go.mod h1:m6bmXbLs5XiGnTLcgKn9eNk5+GCO5e/wHQsIuN7d1Tw=
 github.com/aws/aws-sdk-go-v2/service/quicksight v1.114.1 h1:dQJja/VpH/v1RbH1HSzeJAhDNyy2FyK+jFgZ2e5Itkk=
 github.com/aws/aws-sdk-go-v2/service/quicksight v1.114.1/go.mod h1:5lLhyi3JRJ0RZbP6uWBKSeG2OWRNpNafHrG/p/oCqZY=
-github.com/aws/aws-sdk-go-v2/service/rds v1.119.2 h1:sqAj/4zLlTTqSgvzbRWbYKgaT/IyGVXtwJZKoWcgBdM=
-github.com/aws/aws-sdk-go-v2/service/rds v1.119.2/go.mod h1:zCRPUdp05FEZG3OO7LmJq9xkSDjMEhkiVrZV0oJs2a0=
+github.com/aws/aws-sdk-go-v2/service/rds v1.119.3 h1:SIGdk+wA+xGXgN+L7Jr3Ot83Mjh3jpjyJIwZd3DqAnU=
+github.com/aws/aws-sdk-go-v2/service/rds v1.119.3/go.mod h1:zCRPUdp05FEZG3OO7LmJq9xkSDjMEhkiVrZV0oJs2a0=
 github.com/aws/aws-sdk-go-v2/service/redshift v1.63.3 h1:g8NdnGa2MfVcLV5zMmAfm8qMmXHdaY+dJ1EL491YLmE=
 github.com/aws/aws-sdk-go-v2/service/redshift v1.63.3/go.mod h1:/J3w2Q34Bo7iPfti+eu9Y8OGjgn0/1j7BbwQItUQxW0=
 github.com/aws/aws-sdk-go-v2/service/redshiftserverless v1.35.8 h1:B+bmVtCAd+6brL1lrAckNIhDz2whBadB3w4HtuT1Es0=
