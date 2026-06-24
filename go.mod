@@ -485,7 +485,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/sql/armsql v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/storage/armstorage/v4 v4.1.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/synapse/armsynapse v0.8.0
-	github.com/IBM/continuous-delivery-go-sdk/v2 v2.0.12
+	github.com/IBM/continuous-delivery-go-sdk/v2 v2.0.14
 	github.com/IBM/go-sdk-core/v3 v3.3.1
 	github.com/IBM/go-sdk-core/v4 v4.10.0
 	github.com/IBM/sarama v1.50.3
