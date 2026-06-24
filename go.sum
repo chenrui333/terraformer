@@ -927,8 +927,8 @@ github.com/ionos-cloud/sdk-go-dns v1.4.0 h1:mZsjPigGn6V9wAHUaAtCXjecQ2ZkB4i6kro+
 github.com/ionos-cloud/sdk-go-dns v1.4.0/go.mod h1:8RHKLPUY6jtZqPtqeEIXmRFM7w4mii9pLXR7phLxwC8=
 github.com/ionos-cloud/sdk-go-logging v1.3.0 h1:OCvd2QOdiD7lCmt8hmxlLKIJ9dt0DFUS53eN/GOide8=
 github.com/ionos-cloud/sdk-go-logging v1.3.0/go.mod h1:te5YxwqNOiPbERppJlnTc8FtFFpxweBUETo7E1lWYfg=
-github.com/ionos-cloud/sdk-go/v6 v6.3.7 h1:t773JkC/asnyVqeQ+OvN9WCRZuosSoPtJfyM82EFCWY=
-github.com/ionos-cloud/sdk-go/v6 v6.3.7/go.mod h1:nUGHP4kZHAZngCVr4v6C8nuargFrtvt7GrzH/hqn7c4=
+github.com/ionos-cloud/sdk-go/v6 v6.3.9 h1:pFqFrkhAJqVfhaT6ofrZH2soHykAwigtkYSWIsgaSpM=
+github.com/ionos-cloud/sdk-go/v6 v6.3.9/go.mod h1:nUGHP4kZHAZngCVr4v6C8nuargFrtvt7GrzH/hqn7c4=
 github.com/jarcoal/httpmock v1.4.1 h1:0Ju+VCFuARfFlhVXFc2HxlcQkfB+Xq12/EotHko+x2A=
 github.com/jarcoal/httpmock v1.4.1/go.mod h1:ftW1xULwo+j0R0JJkJIIi7UKigZUXCLLanykgjwBXL0=
 github.com/jcmturner/aescts/v2 v2.0.0 h1:9YKLH6ey7H4eDBXW8khjYslgyqG2xZikXP0EQFKrle8=

@@ -121,7 +121,7 @@ require (
 	github.com/iancoleman/strcase v0.3.0
 	github.com/ionos-cloud/sdk-go-dbaas-mongo v1.4.1
 	github.com/ionos-cloud/sdk-go-dbaas-postgres v1.1.4
-	github.com/ionos-cloud/sdk-go/v6 v6.3.7
+	github.com/ionos-cloud/sdk-go/v6 v6.3.9
 	github.com/jmespath/go-jmespath v0.4.0
 	github.com/labd/commercetools-go-sdk v1.9.0
 	github.com/microsoft/azure-devops-go-api/azuredevops v1.0.0-b5
