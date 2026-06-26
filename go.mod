@@ -8,7 +8,7 @@ require (
 	cloud.google.com/go/storage v1.62.3
 	github.com/Azure/azure-storage-blob-go v0.15.0
 	github.com/IBM-Cloud/bluemix-go v0.0.0-20260605140443-e006e534aa6d
-	github.com/IBM/go-sdk-core/v5 v5.21.4
+	github.com/IBM/go-sdk-core/v5 v5.22.0
 	github.com/IBM/ibm-cos-sdk-go v1.14.1
 	github.com/IBM/keyprotect-go-client v0.16.0
 	github.com/IBM/networking-go-sdk v0.53.5
