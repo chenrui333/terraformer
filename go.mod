@@ -12,7 +12,7 @@ require (
 	github.com/IBM/ibm-cos-sdk-go v1.14.1
 	github.com/IBM/keyprotect-go-client v0.16.0
 	github.com/IBM/networking-go-sdk v0.53.5
-	github.com/IBM/platform-services-go-sdk v0.99.1
+	github.com/IBM/platform-services-go-sdk v0.99.2
 	github.com/IBM/vpc-go-sdk v0.84.0
 	github.com/OctopusDeploy/go-octopusdeploy/v2 v2.109.0
 	github.com/PaloAltoNetworks/pango v0.10.2
