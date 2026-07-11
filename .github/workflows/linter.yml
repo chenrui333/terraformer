@@ -25,7 +25,19 @@ jobs:
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
         fetch-depth: 0
+    - name: Check for lintable changes
+      id: changes
+      if: github.event_name != 'workflow_dispatch'
+      env:
+        BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+      run: |
+        if git diff --quiet "$BASE_SHA" HEAD -- '*.go' '.golangci.json'; then
+          echo "lint=false" >> "$GITHUB_OUTPUT"
+        else
+          echo "lint=true" >> "$GITHUB_OUTPUT"
+        fi
     - name: golangci-lint
+      if: github.event_name == 'workflow_dispatch' || steps.changes.outputs.lint == 'true'
       uses: reviewdog/action-golangci-lint@c76cceaaab89abe74e649d2e34c6c9adc26662d2
       with:
         cache: true
