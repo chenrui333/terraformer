@@ -1,0 +1,19 @@
+.github/workflows/linter.yml
+  s_b2ce6710e92514::t_fa330c4a98dc3d 28-38,40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "aaffcd9672d37c6cdb35a8f074c8027f0983d3e7",
+  "prompts": {},
+  "sessions": {
+    "s_b2ce6710e92514": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f52de-e693-74d2-aefb-e8d96bda2cf9",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
