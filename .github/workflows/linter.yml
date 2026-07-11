@@ -31,11 +31,20 @@ jobs:
       env:
         BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
       run: |
-        if git diff --quiet "$BASE_SHA" HEAD -- '*.go' '.golangci.json'; then
-          echo "lint=false" >> "$GITHUB_OUTPUT"
-        else
+        if ! git rev-parse --verify "$BASE_SHA^{commit}" >/dev/null 2>&1; then
           echo "lint=true" >> "$GITHUB_OUTPUT"
+          exit 0
         fi
+
+        echo "base_sha=$BASE_SHA" >> "$GITHUB_OUTPUT"
+        lint=false
+        if ! git diff --quiet "$BASE_SHA" HEAD -- '*.go' '.golangci.json'; then
+          lint=true
+        fi
+        if git diff --unified=0 "$BASE_SHA" HEAD -- go.mod | grep -Eq '^[+-](go|toolchain)[[:space:]]'; then
+          lint=true
+        fi
+        echo "lint=$lint" >> "$GITHUB_OUTPUT"
     - name: golangci-lint
       if: github.event_name == 'workflow_dispatch' || steps.changes.outputs.lint == 'true'
       uses: reviewdog/action-golangci-lint@c76cceaaab89abe74e649d2e34c6c9adc26662d2
@@ -45,7 +54,7 @@ jobs:
         reviewdog_version: v0.21.0
         go_version_file: go.mod
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        golangci_lint_flags: ${{ github.event_name == 'pull_request' && format('--new-from-rev={0}', github.event.pull_request.base.sha) || github.event_name == 'push' && format('--new-from-rev={0}', github.event.before) || '' }}
+        golangci_lint_flags: ${{ steps.changes.outputs.base_sha && format('--new-from-rev={0}', steps.changes.outputs.base_sha) || '' }}
         reporter: ${{ github.event_name == 'pull_request' && 'github-pr-check' || 'github-check' }}
         filter_mode: added
         fail_level: error
