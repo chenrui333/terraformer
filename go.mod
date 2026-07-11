@@ -7,13 +7,13 @@ require (
 	cloud.google.com/go/logging v1.18.0
 	cloud.google.com/go/storage v1.62.3
 	github.com/Azure/azure-storage-blob-go v0.15.0
-	github.com/IBM-Cloud/bluemix-go v0.0.0-20260605140443-e006e534aa6d
-	github.com/IBM/go-sdk-core/v5 v5.21.4
+	github.com/IBM-Cloud/bluemix-go v0.0.0-20260624064701-576d2f801297
+	github.com/IBM/go-sdk-core/v5 v5.22.1
 	github.com/IBM/ibm-cos-sdk-go v1.14.1
-	github.com/IBM/keyprotect-go-client v0.16.0
+	github.com/IBM/keyprotect-go-client v0.17.3
 	github.com/IBM/networking-go-sdk v0.53.5
-	github.com/IBM/platform-services-go-sdk v0.99.2
-	github.com/IBM/vpc-go-sdk v0.84.0
+	github.com/IBM/platform-services-go-sdk v0.101.0
+	github.com/IBM/vpc-go-sdk v0.87.0
 	github.com/OctopusDeploy/go-octopusdeploy/v2 v2.109.0
 	github.com/PaloAltoNetworks/pango v0.10.2
 	github.com/aliyun/alibaba-cloud-sdk-go v1.63.107
@@ -178,8 +178,8 @@ require (
 	github.com/form3tech-oss/jwt-go v3.2.3+incompatible // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
-	github.com/go-openapi/errors v0.22.7 // indirect
-	github.com/go-openapi/strfmt v0.26.3 // indirect
+	github.com/go-openapi/errors v0.22.8 // indirect
+	github.com/go-openapi/strfmt v0.26.4 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-routeros/routeros v0.0.0-20210123142807-2a44d57c6730 // indirect
@@ -409,7 +409,7 @@ require (
 	github.com/go-openapi/jsonpointer v0.23.1 // indirect
 	github.com/go-openapi/jsonreference v0.21.5 // indirect
 	github.com/go-openapi/swag v0.26.0 // indirect
-	github.com/go-playground/validator/v10 v10.30.2 // indirect
+	github.com/go-playground/validator/v10 v10.30.3 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/goccy/go-json v0.10.6 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1
