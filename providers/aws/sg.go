@@ -174,8 +174,12 @@ func findSgsToMoveOut(securityGroups []types.SecurityGroup) []string {
 			pairs := rule.UserIdGroupPairs
 			for _, pair := range pairs {
 				if pair.GroupId != nil {
+					toIdx, ok := sgToIdx[StringValue(pair.GroupId)]
+					if !ok {
+						continue
+					}
 					fromNode := sourceGraph.Node(int64(idx))
-					toNode := sourceGraph.Node(sgToIdx[StringValue(pair.GroupId)])
+					toNode := sourceGraph.Node(toIdx)
 					if fromNode.ID() != toNode.ID() {
 						sourceGraph.SetEdge(sourceGraph.NewEdge(fromNode, toNode))
 					}

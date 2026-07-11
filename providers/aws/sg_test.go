@@ -113,6 +113,41 @@ func TestNoCycleReference(t *testing.T) {
 	}
 }
 
+func TestNoCycleReferenceToExternalGroup(t *testing.T) {
+	securityGroups := []types.SecurityGroup{
+		{
+			GroupId: aws.String("aaaa"),
+			IpPermissions: []types.IpPermission{
+				{
+					UserIdGroupPairs: []types.UserIdGroupPair{
+						{
+							GroupId: aws.String("bbbb"),
+						},
+					},
+				},
+			},
+		},
+		{
+			GroupId: aws.String("bbbb"),
+			IpPermissions: []types.IpPermission{
+				{
+					UserIdGroupPairs: []types.UserIdGroupPair{
+						{
+							GroupId: aws.String("external"),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	rulesToMoveOut := findSgsToMoveOut(securityGroups)
+
+	if len(rulesToMoveOut) != 0 {
+		t.Errorf("failed to ignore external security group reference: %v", rulesToMoveOut)
+	}
+}
+
 func Test3Cycle1CycleReference(t *testing.T) {
 	sgA := types.SecurityGroup{
 		GroupId: aws.String("aaaa"),
