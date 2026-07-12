@@ -150,7 +150,7 @@ require (
 	github.com/IBM-Cloud/container-services-go-sdk v0.0.0-20250409011111-61af13302654
 	github.com/IBM/go-sdk-core v1.1.0
 	github.com/mackerelio/mackerel-client-go v0.42.0
-	github.com/okta/terraform-provider-okta v0.0.0-20260615042503-01f088f45abc
+	github.com/okta/terraform-provider-okta v0.0.0-20260702070331-24922a50016c
 )
 
 require (
@@ -374,7 +374,7 @@ require (
 	github.com/Myra-Security-GmbH/myrasec-go/v2 v2.51.0
 	github.com/bradleyfalzon/ghinstallation/v2 v2.18.0
 	github.com/manicminer/hamilton v0.72.0
-	github.com/opalsecurity/opal-go v1.4.0
+	github.com/opalsecurity/opal-go v1.5.0
 	gopkg.in/ns1/ns1-go.v2 v2.17.2
 )
 
