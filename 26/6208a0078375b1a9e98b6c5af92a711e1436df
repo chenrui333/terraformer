@@ -1,0 +1,21 @@
+go.mod
+  s_b2ce6710e92514::t_cef007454d9424 544
+go.sum
+  s_b2ce6710e92514::t_91ae387be59fef 844-845
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "266208a0078375b1a9e98b6c5af92a711e1436df",
+  "prompts": {},
+  "sessions": {
+    "s_b2ce6710e92514": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f52de-e693-74d2-aefb-e8d96bda2cf9",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
