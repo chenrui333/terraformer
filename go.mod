@@ -372,7 +372,7 @@ require (
 	cloud.google.com/go/monitoring v1.29.0
 	github.com/DataDog/datadog-api-client-go/v2 v2.62.0
 	github.com/Myra-Security-GmbH/myrasec-go/v2 v2.51.0
-	github.com/bradleyfalzon/ghinstallation/v2 v2.18.0
+	github.com/bradleyfalzon/ghinstallation/v2 v2.19.0
 	github.com/manicminer/hamilton v0.72.0
 	github.com/opalsecurity/opal-go v1.5.0
 	gopkg.in/ns1/ns1-go.v2 v2.18.0
@@ -414,7 +414,6 @@ require (
 	github.com/goccy/go-json v0.10.6 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/gnostic-models v0.7.1 // indirect
-	github.com/google/go-github/v84 v84.0.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.17 // indirect
 	github.com/hashicorp/go-secure-stdlib/parseutil v0.2.0 // indirect
@@ -574,7 +573,7 @@ require (
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tcaplusdb v1.3.105
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc v1.3.127
 	github.com/vultr/govultr/v3 v3.31.2
-	gitlab.com/gitlab-org/api/client-go/v2 v2.36.3
+	gitlab.com/gitlab-org/api/client-go/v2 v2.45.0
 	helm.sh/helm/v4 v4.2.2
 	k8s.io/cli-runtime v0.36.2
 	software.sslmate.com/src/go-pkcs12 v0.7.3
