@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+## 0.13.15
+
+`0.13.15` is an AWS importer correctness, security/toolchain, provider SDK,
+and CI reliability patch.
+
+### Highlights
+
+* Ignore external AWS security group references instead of emitting invalid
+  Terraform dependencies for groups outside the imported set.
+* Move the Go baseline to `1.26.5` to pick up standard-library vulnerability
+  fixes, and skip no-op incremental lint analysis for dependency-only changes
+  that otherwise exhaust runner memory.
+* Refresh provider and client dependencies across AWS, Azure, GCP, IBM,
+  TencentCloud, Yandex, Auth0, Okta, Opal, Linode, IONOS, Kubernetes, Helm,
+  VCS, Fastly, and shared Go module families.
+
+**Full Changelog**: <https://github.com/chenrui333/terraformer/compare/v0.13.14...v0.13.15>
+
 ## 0.13.14
 
 `0.13.14` is a provider SDK migration, provider hardening, dependency refresh,
