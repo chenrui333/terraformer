@@ -375,7 +375,7 @@ require (
 	github.com/bradleyfalzon/ghinstallation/v2 v2.18.0
 	github.com/manicminer/hamilton v0.72.0
 	github.com/opalsecurity/opal-go v1.5.0
-	gopkg.in/ns1/ns1-go.v2 v2.17.2
+	gopkg.in/ns1/ns1-go.v2 v2.18.0
 )
 
 require (
