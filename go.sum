@@ -1101,8 +1101,8 @@ github.com/newrelic/newrelic-client-go/v2 v2.87.1/go.mod h1:kROngr/zeNyxbdOI3zPK
 github.com/nicksnyder/go-i18n v1.10.3 h1:0U60fnLBNrLBVt8vb8Q67yKNs+gykbQuLsIkiesJL+w=
 github.com/nicksnyder/go-i18n v1.10.3/go.mod h1:hvLG5HTlZ4UfSuVLSRuX7JRUomIaoKQM19hm6f+no7o=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
-github.com/ns1/ns1-go/v2 v2.17.2 h1:31K7/Cg2RFJRRv3BX11VrI9u9jUntcGkSiM2pCL7EdI=
-github.com/ns1/ns1-go/v2 v2.17.2/go.mod h1:pfaU0vECVP7DIOr453z03HXS6dFJpXdNRwOyRzwmPSc=
+github.com/ns1/ns1-go/v2 v2.18.0 h1:W8inf9E5fT1NlqKkVe23TzgL9C3z7jjDzV/nnc5f0yE=
+github.com/ns1/ns1-go/v2 v2.18.0/go.mod h1:hDx6jxNZBmEOkpV8buB2eR1rxlgYUgRDT3nRHi8RWWc=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
 github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
 github.com/nxadm/tail v1.4.8/go.mod h1:+ncqLTQzXmGhMZNUePPaPqPvBxHAIsmXswZKocGu+AU=

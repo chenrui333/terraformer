@@ -580,7 +580,7 @@ require (
 	software.sslmate.com/src/go-pkcs12 v0.7.3
 )
 
-replace gopkg.in/ns1/ns1-go.v2 => github.com/ns1/ns1-go/v2 v2.17.2
+replace gopkg.in/ns1/ns1-go.v2 => github.com/ns1/ns1-go/v2 v2.18.0
 
 replace github.com/tencentcloud/tencentcloud-sdk-go => github.com/tencentcloud/tencentcloud-sdk-go v1.3.127
 
