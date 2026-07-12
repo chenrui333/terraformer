@@ -1,0 +1,24 @@
+providers/datadog/security_notification_rule.go
+  s_b2ce6710e92514::t_902f771e3c4365 163-166
+  s_b2ce6710e92514::t_3a6e97111ef6ec 162,167-168
+go.mod
+  s_b2ce6710e92514::t_631bef070f5be7 120,152,373
+go.sum
+  s_b2ce6710e92514::t_baf0103066ffe9 130-131,902-903,1036-1037
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "858bc1cc625e34e8a2d35daf2b80ce655cff2226",
+  "prompts": {},
+  "sessions": {
+    "s_b2ce6710e92514": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f52de-e693-74d2-aefb-e8d96bda2cf9",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
