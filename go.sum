@@ -185,8 +185,8 @@ github.com/Myra-Security-GmbH/signature v1.1.0 h1:/Tv8SilN0P8k5fKArvQHkf9iJWU5H3
 github.com/Myra-Security-GmbH/signature v1.1.0/go.mod h1:kyX4FQ2XWvJQnvxkWmcyUIqG0jAzGL22fQMf2RTvoj0=
 github.com/OctopusDeploy/go-octodiff v1.0.0 h1:U+ORg6azniwwYo+O44giOw6TiD5USk8S4VDhOQ0Ven0=
 github.com/OctopusDeploy/go-octodiff v1.0.0/go.mod h1:Mze0+EkOWTgTmi8++fyUc6r0aLZT7qD9gX+31t8MmIU=
-github.com/OctopusDeploy/go-octopusdeploy/v2 v2.109.0 h1:6XouVmWwxeGczIV2OyAdRf/PUGnQbcMRT21/h4WN5pg=
-github.com/OctopusDeploy/go-octopusdeploy/v2 v2.109.0/go.mod h1:VkTXDoIPbwGFi5+goo1VSwFNdMVo784cVtJdKIEvfus=
+github.com/OctopusDeploy/go-octopusdeploy/v2 v2.111.0 h1:0r7rKTTxm9XnATlzOVuXoxuLYGMWUCYwKcQsUWkp1Yk=
+github.com/OctopusDeploy/go-octopusdeploy/v2 v2.111.0/go.mod h1:VkTXDoIPbwGFi5+goo1VSwFNdMVo784cVtJdKIEvfus=
 github.com/PaloAltoNetworks/pango v0.10.2 h1:Tjn6vIzzAq6Dd7N0mDuiP8w8pz8k5W9zz/TTSUQCsQY=
 github.com/PaloAltoNetworks/pango v0.10.2/go.mod h1:GztcRnVLur7G+VFG7Z5ZKNFgScLtsycwPMp1qVebE5g=
 github.com/ProtonMail/go-crypto v1.4.1 h1:9RfcZHqEQUvP8RzecWEUafnZVtEvrBVL9BiF67IQOfM=
