@@ -127,8 +127,8 @@ github.com/BurntSushi/toml v1.6.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/DATA-DOG/go-sqlmock v1.5.2 h1:OcvFkGmslmlZibjAjaHm3L//6LiuBgolP7OputlJIzU=
 github.com/DATA-DOG/go-sqlmock v1.5.2/go.mod h1:88MAG/4G7SMwSE3CeA0ZKzrT5CiOU3OJ+JlNzwDqpNU=
-github.com/DataDog/datadog-api-client-go/v2 v2.60.0 h1:YzEB2H42symyDlHzNo0wcjW1mfXSW1E1UCbThHx4xrc=
-github.com/DataDog/datadog-api-client-go/v2 v2.60.0/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
+github.com/DataDog/datadog-api-client-go/v2 v2.62.0 h1:AIe01Tyl5Y+kHCJskB4Vkw6ANjHcD45bfbi//ICmAaU=
+github.com/DataDog/datadog-api-client-go/v2 v2.62.0/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
 github.com/DataDog/zstd v1.5.7 h1:ybO8RBeh29qrxIhCA9E8gKY6xfONU9T6G6aP9DTKfLE=
 github.com/DataDog/zstd v1.5.7/go.mod h1:g4AWEaM3yOg3HYfnJ3YIawPnVdXJh9QME85blwSAmyw=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.32.0 h1:rIkQfkCOVKc1OiRCNcSDD8ml5RJlZbH/Xsq7lbpynwc=
@@ -899,8 +899,8 @@ github.com/heroku/heroku-go/v6 v6.1.0 h1:Osd5X/8vJtDlkdNUQwC/EsS/k0/ptGimcfJlL8e
 github.com/heroku/heroku-go/v6 v6.1.0/go.mod h1:TOVibkAD3yVSHzG0hIJc9KkyxuXiDNcr3zalcdjyeRc=
 github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f h1:7LYC+Yfkj3CTRcShK0KOL/w6iTiKyqqBA9a41Wnggw8=
 github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f/go.mod h1:pFlLw2CfqZiIBOx6BuCeRLCrfxBJipTY0nIOF/VbGcI=
-github.com/honeycombio/terraform-provider-honeycombio v0.50.0 h1:qsf/+lqcZmXw9BmXKSUYHhjOxfo96G8kLAAJRbl1SqE=
-github.com/honeycombio/terraform-provider-honeycombio v0.50.0/go.mod h1:KDW3AxP9Sl6VDB7+bnaCOtEeF4GIRGUPJLbqwsb5ogQ=
+github.com/honeycombio/terraform-provider-honeycombio v0.51.1 h1:qE1Z9nyBLmE2lwB/ubRqqcgqgaXWGSQbXIlReYYPi7c=
+github.com/honeycombio/terraform-provider-honeycombio v0.51.1/go.mod h1:XaF6dHJg7b+zUT1AjgCxHkYHukx6kqrrYCHXBsBG28I=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
 github.com/huandu/xstrings v1.5.0 h1:2ag3IFq9ZDANvthTwTiqSSZLjDc+BedvHPAp5tJy2TI=
 github.com/huandu/xstrings v1.5.0/go.mod h1:y5/lhBue+AyNmUVz9RLU9xbLR0o4KIIExikq4ovT0aE=
@@ -1033,8 +1033,8 @@ github.com/linode/linodego/v2 v2.4.0 h1:U5gjzswVj+Spjo8kLqemvcNkDtXMmMvjqKR2q6qE
 github.com/linode/linodego/v2 v2.4.0/go.mod h1:Xd78WEdX9RHs2BdR1tjqkui3zQkn4EXJvdq4S0NLvs4=
 github.com/logzio/logzio_terraform_client v1.30.2 h1:P5xL7ncwhti/n+3/opqMCypwWlGd19PNr8F1FeUwnnA=
 github.com/logzio/logzio_terraform_client v1.30.2/go.mod h1:pzXrr7gGIi6tU1mk2vTtg8dr6ttKMlt03kz6asC53o4=
-github.com/mackerelio/mackerel-client-go v0.42.0 h1:cmBjzLTnURZrVkjPYwAdduCHPTnq2gsMmT9LccFZRoY=
-github.com/mackerelio/mackerel-client-go v0.42.0/go.mod h1:idAyt+GkVknFIupw1Y3vW1v5fJuqz2eiQrWU/oHOrEM=
+github.com/mackerelio/mackerel-client-go v0.43.0 h1:LwE2EsfY5uGezDIBnmqyhwGTtiyBtwe9LieM/OAc610=
+github.com/mackerelio/mackerel-client-go v0.43.0/go.mod h1:idAyt+GkVknFIupw1Y3vW1v5fJuqz2eiQrWU/oHOrEM=
 github.com/magiconair/properties v1.8.6 h1:5ibWZ6iY0NctNGWo87LalDlEZ6R41TqbbDamhfG/Qzo=
 github.com/magiconair/properties v1.8.6/go.mod h1:y3VJvCyxH9uVvJTWEGAELF3aiYNyPKd5NZ3oSwXrF60=
 github.com/manicminer/hamilton v0.72.0 h1:QWW/FUt2AJtdaHIPiiZgQIVFL9I42HbH11MX972Hlkg=
