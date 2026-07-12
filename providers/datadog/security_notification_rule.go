@@ -159,6 +159,13 @@ func listSecurityNotificationRules(auth context.Context, api *datadogV2.Security
 }
 
 func securityNotificationRulesFromRawData(rawData interface{}) ([]datadogV2.NotificationRule, error) {
+	if response, ok := rawData.(datadogV2.NotificationRulesListResponse); ok {
+		if response.UnparsedObject == nil {
+			return response.GetData(), nil
+		}
+		rawData = response.UnparsedObject
+	}
+
 	rawResponse, ok := rawData.(map[string]interface{})
 	if !ok {
 		return nil, fmt.Errorf("security notification rules raw response is not an object")
