@@ -1,0 +1,56 @@
+cmd/import.go
+  s_b2ce6710e92514::t_8f2ad96bf4567f 61-64,122,166-172
+  s_84f9cf2cdf3e31::t_ced95d861edbd8 173
+terraformutils/service_test.go
+  s_b2ce6710e92514::t_399008f0231ae9 76,109-118,132-135
+  s_b2ce6710e92514::t_c96de502ad387a 72-75
+terraformutils/utils_test.go
+  s_b2ce6710e92514::t_399008f0231ae9 167-168,202-203,219-224,247-259
+  s_84f9cf2cdf3e31::t_c234d03a16d3cc 260-261
+cmd/import_test.go
+  s_b2ce6710e92514::t_8f2ad96bf4567f 50,54,57,174-175,184-186
+  s_b2ce6710e92514::t_399008f0231ae9 45-49,51-53,55-56,58-65,166-173,176-183,187-191
+  s_b2ce6710e92514::t_62907221d231c5 192
+providers/kafka/acl.go
+  s_b2ce6710e92514::t_8f2ad96bf4567f 55-58,60-63,81-88,90,93
+terraformutils/service.go
+  s_b2ce6710e92514::t_8f2ad96bf4567f 166-168,170,179
+  s_b2ce6710e92514::t_dfc03fd9f4d556 169
+providers/kafka/acl_test.go
+  s_b2ce6710e92514::t_399008f0231ae9 241-283
+providers/kafka/kafka_provider_test.go
+  s_b2ce6710e92514::t_399008f0231ae9 106-112,114-115,117-120
+  s_b2ce6710e92514::t_dfc03fd9f4d556 113,116
+terraformutils/utils.go
+  s_b2ce6710e92514::t_8f2ad96bf4567f 360-363,366,405,412-414
+  s_84f9cf2cdf3e31::t_f9154a6fe5e516 415-416
+providers/kafka/kafka_provider.go
+  s_b2ce6710e92514::t_8f2ad96bf4567f 68-75,77-78,80-90
+  s_b2ce6710e92514::t_686300e6fabdd2 67,76,79
+README.md
+  s_b2ce6710e92514::t_8f2ad96bf4567f 132
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "ee7ff68ab6548be83ac10832ec5f0afa33784981",
+  "prompts": {},
+  "sessions": {
+    "s_84f9cf2cdf3e31": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f5126-892e-71e1-a6fc-8aaad682a7bb",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    },
+    "s_b2ce6710e92514": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f52de-e693-74d2-aefb-e8d96bda2cf9",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
