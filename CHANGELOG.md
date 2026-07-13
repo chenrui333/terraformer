@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* Harden Datadog security notification-rule discovery against malformed API
+  response shapes, incorrect endpoint fallback, and delayed response cleanup.
 * Reject malformed import filters before provider initialization, and preserve
   distinct Terraform resource types that share an import ID during filtering.
 * Detect AWS security group dependency cycles that include egress or mixed
