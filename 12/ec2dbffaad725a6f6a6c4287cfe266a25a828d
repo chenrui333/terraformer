@@ -1,0 +1,24 @@
+providers/aws/sg_test.go
+  s_b2ce6710e92514::t_0a163d49163c5e 6,8-9,14,224-426,428-446,448-461,463-473,475-548,550,553-572
+  s_b2ce6710e92514::t_54d1040beee7b7 427,447,462,474,549,551-552
+providers/aws/sg.go
+  s_b2ce6710e92514::t_8ed56a16075249 35,37-42,44,48-51,55-56,61-67,72-73,84-87,112-115,119,122,126-127,167-181,183-189,191-209,211-213,218-221,225,229-231,233-237,240-242,245-247,249,254-268,272-294,314
+CHANGELOG.md
+  s_b2ce6710e92514::t_201a0e1d9341bb 7-8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "12ec2dbffaad725a6f6a6c4287cfe266a25a828d",
+  "prompts": {},
+  "sessions": {
+    "s_b2ce6710e92514": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f52de-e693-74d2-aefb-e8d96bda2cf9",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": null
+    }
+  }
+}
