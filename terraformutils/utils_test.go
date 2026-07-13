@@ -164,6 +164,8 @@ func TestParseFilterValues(t *testing.T) {
 		{"single value", "myid", []string{"myid"}},
 		{"colon separated", "id1:id2:id3", []string{"id1", "id2", "id3"}},
 		{"quoted value with colon", "'project:dataset'", []string{"project:dataset"}},
+		{"quoted leading colon", "':id'", []string{":id"}},
+		{"quoted colon", "':'", []string{":"}},
 		{"mixed", "id1:'a:b':id2", []string{"id1", "a:b", "id2"}},
 		{"leading colon", ":myid", []string{"myid"}},
 		{"empty", "", nil},
@@ -197,6 +199,8 @@ func TestContainsResource(t *testing.T) {
 	r2 := NewSimpleResource("different-id", "b", "aws_vpc", "aws", nil)
 	sameRemoteObject := NewSimpleResource("shared-id", "different-name", "aws_vpc", "aws", nil)
 	differentResourceType := NewSimpleResource("shared-id", "same-id-subnet", "aws_subnet", "aws", nil)
+	differentProvider := NewSimpleResource("shared-id", "different-provider", "aws_vpc", "customaws", nil)
+	addressCollision := NewSimpleResource("different-id", "a", "aws_vpc", "aws", nil)
 
 	list := []Resource{r1}
 
@@ -211,6 +215,12 @@ func TestContainsResource(t *testing.T) {
 	}
 	if ContainsResource(list, differentResourceType) {
 		t.Error("should not treat different Terraform resource types with the same import ID as duplicates")
+	}
+	if ContainsResource(list, differentProvider) {
+		t.Error("should not treat different providers with the same resource type and import ID as duplicates")
+	}
+	if !ContainsResource(list, addressCollision) {
+		t.Error("should deduplicate resources with the same Terraform address")
 	}
 }
 
@@ -231,6 +241,21 @@ func TestFilterCleanupDeduplicatesByStableResourceIdentity(t *testing.T) {
 	if service.Resources[0].InstanceInfo.Type != "aws_vpc" || service.Resources[1].InstanceInfo.Type != "aws_subnet" {
 		t.Fatalf("InitialCleanup() retained unexpected resource types: %s, %s",
 			service.Resources[0].InstanceInfo.Type, service.Resources[1].InstanceInfo.Type)
+	}
+}
+
+func TestFilterCleanupDeduplicatesTerraformAddressCollisions(t *testing.T) {
+	first := NewSimpleResource("first-id", "shared-name", "aws_vpc", "aws", nil)
+	second := NewSimpleResource("second-id", "shared-name", "aws_vpc", "aws", nil)
+	service := Service{
+		Filter:    []ResourceFilter{{FieldPath: "id", AcceptableValues: []string{"first-id", "second-id"}}},
+		Resources: []Resource{first, second},
+	}
+
+	service.InitialCleanup()
+
+	if len(service.Resources) != 1 {
+		t.Fatalf("InitialCleanup() retained %d address-colliding resources, want 1", len(service.Resources))
 	}
 }
 

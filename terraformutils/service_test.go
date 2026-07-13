@@ -69,11 +69,11 @@ func TestEdgeIdFiltersParsing(t *testing.T) {
 
 func TestParseFilterSyntax(t *testing.T) {
 	tests := []struct {
-		name       string
-		raw        string
-		want       ResourceFilter
-		wantErr    bool
-		errorValue string
+		name        string
+		raw         string
+		want        ResourceFilter
+		wantErr     bool
+		errorValues []string
 	}{
 		{
 			name: "simple ID",
@@ -106,10 +106,16 @@ func TestParseFilterSyntax(t *testing.T) {
 		{name: "empty field", raw: "Name=;Value=prod", wantErr: true},
 		{name: "empty required value", raw: "Name=tags.env;Value=", wantErr: true},
 		{
-			name:       "error redacts rejected value",
-			raw:        "resource='credential-value",
-			wantErr:    true,
-			errorValue: "credential-value",
+			name:        "error redacts rejected value",
+			raw:         "resource='credential-value",
+			wantErr:     true,
+			errorValues: []string{"credential-value"},
+		},
+		{
+			name:        "error redacts unstructured segments",
+			raw:         "resource=top-secret;still-secret",
+			wantErr:     true,
+			errorValues: []string{"top-secret", "still-secret"},
 		},
 	}
 
@@ -123,8 +129,10 @@ func TestParseFilterSyntax(t *testing.T) {
 				if !strings.Contains(err.Error(), "invalid filter") {
 					t.Fatalf("ParseFilter() error = %q, want rejected filter context", err)
 				}
-				if tt.errorValue != "" && strings.Contains(err.Error(), tt.errorValue) {
-					t.Fatalf("ParseFilter() error exposed filter value: %q", err)
+				for _, errorValue := range tt.errorValues {
+					if strings.Contains(err.Error(), errorValue) {
+						t.Fatalf("ParseFilter() error exposed filter value %q: %q", errorValue, err)
+					}
 				}
 				return
 			}

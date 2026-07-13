@@ -103,6 +103,21 @@ func TestProviderSupportedServices(t *testing.T) {
 	}
 }
 
+func TestProviderValidateFiltersUsesACLGrammar(t *testing.T) {
+	provider := &Provider{}
+	filters := []string{
+		"acls=User:O'Connor|*|Write|Allow|Topic|orders|Literal",
+		"acls=User:producer|*|Write|Allow|Topic|orders;archive|Literal",
+	}
+
+	if err := provider.ValidateFilters(filters, []string{"acls"}); err != nil {
+		t.Fatalf("ValidateFilters() error = %v", err)
+	}
+	if err := provider.ValidateFilters([]string{"acl=bad"}, []string{"acls"}); err == nil {
+		t.Fatal("ValidateFilters() error = nil for malformed ACL import ID")
+	}
+}
+
 func forbiddenTestSecrets() []string {
 	return []string{
 		"sasl-password",

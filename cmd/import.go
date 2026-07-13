@@ -58,6 +58,10 @@ type importProviderConfigurer interface {
 	ConfigureImportProvider(*providerwrapper.ProviderWrapper) error
 }
 
+type importFilterValidator interface {
+	ValidateFilters(filters []string, resources []string) error
+}
+
 const DefaultPathPattern = "{output}/{provider}/{service}/"
 const DefaultPathOutput = "generated"
 const DefaultState = "local"
@@ -115,7 +119,7 @@ func newImportCmd() *cobra.Command {
 func Import(provider terraformutils.ProviderGenerator, options ImportOptions, args []string) error {
 	importExecuted = true
 	sessionKey := provider.GetName() + ":" + strings.Join(args, ":")
-	if _, err := terraformutils.ParseFilters(options.Filter); err != nil {
+	if err := validateImportFilters(provider, options.Filter, options.Resources); err != nil {
 		processReport.Add(importreport.ResourceEvent{
 			Service:  provider.GetName(),
 			Status:   importreport.StatusFailed,
@@ -157,6 +161,14 @@ func Import(provider terraformutils.ProviderGenerator, options ImportOptions, ar
 	providerMapping.ConvertTypedStates(providerWrapper, processReport)
 
 	return importFromPlan(providerMapping, options, args, processReport, eventStart)
+}
+
+func validateImportFilters(provider terraformutils.ProviderGenerator, filters, resources []string) error {
+	if validator, ok := provider.(importFilterValidator); ok {
+		return validator.ValidateFilters(filters, resources)
+	}
+	_, err := terraformutils.ParseFilters(filters)
+	return err
 }
 
 func initOptionsAndWrapper(provider terraformutils.ProviderGenerator, options ImportOptions, args []string) (*providerwrapper.ProviderWrapper, ImportOptions, error) {

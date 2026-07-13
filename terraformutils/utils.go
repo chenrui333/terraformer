@@ -357,9 +357,13 @@ func ParseFilterValues(value string) ([]string, error) {
 			wrapped = !wrapped
 			continue
 		} else if value[i] == ':' {
+			if wrapped {
+				valueBuffer = append(valueBuffer, value[i])
+				continue
+			}
 			if len(valueBuffer) == 0 {
 				continue
-			} else if !wrapped {
+			} else {
 				values = append(values, string(valueBuffer))
 				valueBuffer = []byte{}
 				continue
@@ -398,11 +402,16 @@ func FilterCleanup(s *Service, isInitial bool) {
 
 func ContainsResource(s []Resource, e Resource) bool {
 	for _, a := range s {
-		if sameResourceIdentity(a, e) {
+		if sameTerraformAddress(a, e) || sameResourceIdentity(a, e) {
 			return true
 		}
 	}
 	return false
+}
+
+func sameTerraformAddress(left, right Resource) bool {
+	return left.InstanceInfo != nil && right.InstanceInfo != nil &&
+		left.InstanceInfo.Id != "" && left.InstanceInfo.Id == right.InstanceInfo.Id
 }
 
 func sameResourceIdentity(left, right Resource) bool {

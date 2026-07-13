@@ -64,6 +64,30 @@ func (p *Provider) GetSupportedService() map[string]terraformutils.ServiceGenera
 	}
 }
 
+func (Provider) ValidateFilters(rawFilters, resources []string) error {
+	validateACLs := false
+	for _, resource := range resources {
+		if resource == "*" || resource == "acls" {
+			validateACLs = true
+			break
+		}
+	}
+
+	aclParser := &ACLGenerator{}
+	for _, rawFilter := range rawFilters {
+		if validateACLs {
+			if _, err := aclParser.ParseFilter(rawFilter); err != nil {
+				return err
+			}
+			continue
+		}
+		if _, err := terraformutils.ParseFilter(rawFilter); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (Provider) GetResourceConnections() map[string]map[string][]string {
 	return map[string]map[string][]string{}
 }

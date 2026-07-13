@@ -163,6 +163,11 @@ func parseFilterComponent(component, name string) (string, error) {
 }
 
 func invalidFilter(rawFilter, reason string) error {
+	return NewFilterParseError(rawFilter, reason)
+}
+
+// NewFilterParseError reports a rejected filter while redacting user-supplied values.
+func NewFilterParseError(rawFilter, reason string) error {
 	return fmt.Errorf("invalid filter %q: %s", filterForError(rawFilter), reason)
 }
 
@@ -171,6 +176,7 @@ func filterForError(rawFilter string) string {
 	for i, part := range parts {
 		keyValue := strings.SplitN(part, "=", 2)
 		if len(keyValue) != 2 {
+			parts[i] = "<redacted>"
 			continue
 		}
 		if keyValue[0] == "Type" || keyValue[0] == "Name" {

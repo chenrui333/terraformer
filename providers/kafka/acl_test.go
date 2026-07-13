@@ -238,6 +238,49 @@ func TestACLIDFilterSyntaxKeepsPrincipalColon(t *testing.T) {
 	}
 }
 
+func TestACLFilterPreservesProviderSpecificCharacters(t *testing.T) {
+	tests := []string{
+		"acls=User:O'Connor|*|Write|Allow|Topic|orders|Literal",
+		"acls=User:producer|*|Write|Allow|Topic|orders;archive|Literal",
+	}
+
+	for _, rawFilter := range tests {
+		t.Run(rawFilter, func(t *testing.T) {
+			generator := &ACLGenerator{}
+			if err := generator.ParseFilters([]string{rawFilter}); err != nil {
+				t.Fatalf("ParseFilters() error = %v", err)
+			}
+			if len(generator.Filter) != 1 {
+				t.Fatalf("filter len = %d, want 1", len(generator.Filter))
+			}
+			want := strings.TrimPrefix(rawFilter, "acls=")
+			if !reflect.DeepEqual(generator.Filter[0].AcceptableValues, []string{want}) {
+				t.Fatalf("filter values = %#v, want %#v", generator.Filter[0].AcceptableValues, []string{want})
+			}
+		})
+	}
+}
+
+func TestACLFilterRejectsMalformedImportIDs(t *testing.T) {
+	tests := []string{
+		"acl=bad",
+		"acl=User:producer|*|InvalidOperation|Allow|Topic|orders|Literal",
+	}
+
+	for _, rawFilter := range tests {
+		t.Run(rawFilter, func(t *testing.T) {
+			generator := &ACLGenerator{}
+			err := generator.ParseFilters([]string{rawFilter})
+			if err == nil {
+				t.Fatal("ParseFilters() error = nil, want error")
+			}
+			if strings.Contains(err.Error(), strings.TrimPrefix(rawFilter, "acl=")) {
+				t.Fatalf("ParseFilters() error exposed ACL import ID: %q", err)
+			}
+		})
+	}
+}
+
 func TestACLPreservesRequiredFieldsAfterImportFallback(t *testing.T) {
 	acl := ACL{
 		Principal:                 "User:ANONYMOUS",
