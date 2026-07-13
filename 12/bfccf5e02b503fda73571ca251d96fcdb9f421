@@ -1,0 +1,36 @@
+providers/datadog/security_notification_rule_test.go
+  s_b2ce6710e92514::t_aa755c0301662c 104,152,724-727,771-774,818-821
+  s_b2ce6710e92514::t_a6b4839eba73af 181-228,627-642,664-680,682-685,760-768,875-880
+  s_b2ce6710e92514::t_5d91ccf9d46c27 8,10,15,600-626,643-663,681,686-723,728-759,769-770,775-817,822-874,881
+  s_b2ce6710e92514::t_d32c08ac0c90f7 1-7,9,11-14,16-103,105-151,153-180,229-599,882-1007
+CHANGELOG.md
+  s_b2ce6710e92514::t_b7d66d10ab15ee 5-6
+providers/datadog/security_notification_rule.go
+  s_b2ce6710e92514::t_7ddf72e9f5a91a 26-32,91,117,175
+  s_b2ce6710e92514::t_b7d66d10ab15ee 64,119-129,131-133,135-139,141-143,149-173,181,185,192,196,215,217-224,243-251,254-255,258-261,268-280
+  s_84f9cf2cdf3e31::t_3aff84688a1e9f 174
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "12bfccf5e02b503fda73571ca251d96fcdb9f421",
+  "prompts": {},
+  "sessions": {
+    "s_84f9cf2cdf3e31": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f5126-892e-71e1-a6fc-8aaad682a7bb",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    },
+    "s_b2ce6710e92514": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f52de-e693-74d2-aefb-e8d96bda2cf9",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
