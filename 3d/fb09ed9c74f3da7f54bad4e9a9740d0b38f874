@@ -1,0 +1,61 @@
+providers/kafka/acl.go
+  s_b2ce6710e92514::t_56e94bf75ff601 55-57
+  s_b2ce6710e92514::t_dd8a3939b7a3d8 54,60-64,68,73-74,76-80,82-83
+terraformutils/service.go
+  s_b2ce6710e92514::t_72e310d652f1d4 159-161
+  s_b2ce6710e92514::t_dd8a3939b7a3d8 6,16-17,58-59,61-147,151-157,162-198
+providers/aws/filter.go
+  s_b2ce6710e92514::t_dd8a3939b7a3d8 11-13,15-16,19-23,25
+terraformutils/utils_test.go
+  s_b2ce6710e92514::t_28cad5cf3f23f0 174-177,189-192,196-199,209-234
+providers/aws/filter_test.go
+  s_b2ce6710e92514::t_28cad5cf3f23f0 13-15,40-42
+providers/aws/aws_facade.go
+  s_b2ce6710e92514::t_dd8a3939b7a3d8 23-24,27
+terraformutils/service_accessors_test.go
+  s_b2ce6710e92514::t_28cad5cf3f23f0 95-98,116-119,121
+terraformutils/utils.go
+  s_b2ce6710e92514::t_dd8a3939b7a3d8 350,362,370-372,377,401,407-417
+  s_84f9cf2cdf3e31::t_20b6034f980146 418
+terraformutils/service_test.go
+  s_b2ce6710e92514::t_28cad5cf3f23f0 5,13-15,24-26,40-42,56-58,70-100,102-153
+  s_b2ce6710e92514::t_72e310d652f1d4 101
+  s_84f9cf2cdf3e31::t_f4053eed0019d9 154
+providers/gcp/gcp_facade.go
+  s_b2ce6710e92514::t_dd8a3939b7a3d8 21-22,25
+cmd/import_test.go
+  s_b2ce6710e92514::t_28cad5cf3f23f0 40-49,128-143
+  s_84f9cf2cdf3e31::t_2ac1045163f187 144
+cmd/import.go
+  s_b2ce6710e92514::t_dd8a3939b7a3d8 118-126,327-330
+README.md
+  s_b2ce6710e92514::t_56e94bf75ff601 132-134
+providers/kafka/topic.go
+  s_b2ce6710e92514::t_dd8a3939b7a3d8 53,64-65,67-71,73-74
+CHANGELOG.md
+  s_b2ce6710e92514::t_56e94bf75ff601 5-7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "3dfb09ed9c74f3da7f54bad4e9a9740d0b38f874",
+  "prompts": {},
+  "sessions": {
+    "s_84f9cf2cdf3e31": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f5126-892e-71e1-a6fc-8aaad682a7bb",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    },
+    "s_b2ce6710e92514": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f52de-e693-74d2-aefb-e8d96bda2cf9",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
