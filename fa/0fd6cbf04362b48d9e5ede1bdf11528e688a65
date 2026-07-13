@@ -1,0 +1,42 @@
+providers/datadog/security_notification_rule.go
+  s_b2ce6710e92514::t_f1f6a2bad217a9 47-48,50,129-135,152-158,184,197,208,217-235,237,239-240,242,303,306
+providers/datadog/security_notification_rule_test.go
+  s_b2ce6710e92514::t_b286b5a5731bf4 173-204,1188
+  s_b2ce6710e92514::t_f5276f6f081c02 281
+  s_b2ce6710e92514::t_c3d9132575a2e2 443,479
+  s_b2ce6710e92514::t_68d3df2a6c8178 50,127,130,137,140,162,164,167,217,219,242,244,780
+  s_b2ce6710e92514::t_b7e5c07a1d6263 152-153
+  s_b2ce6710e92514::t_d4d81590cbdaf0 151,154-161,163,165-166,168-171,1161,1168-1174,1178-1187,1189-1190
+  s_b2ce6710e92514::t_0d43eb02da67c2 121,437-442,444,469-478,480
+  s_b2ce6710e92514::t_24ae613b6b66e6 172,205-216,218,220-241,243,245-260,1162-1167,1175-1177,1191
+  s_b2ce6710e92514::t_85ba950c239256 25-28,49,51,54,60-120,128-129,131-136,138-139,141-142
+  s_b2ce6710e92514::t_302ec1164197bc 952,967
+  s_84f9cf2cdf3e31::t_7f04fd3e1d0e62 1192
+providers/datadog/security_platform_test.go
+  s_b2ce6710e92514::t_c08e3c5c74986f 181,202,208-247
+  s_84f9cf2cdf3e31::t_b4a85072372320 248
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "fa0fd6cbf04362b48d9e5ede1bdf11528e688a65",
+  "prompts": {},
+  "sessions": {
+    "s_84f9cf2cdf3e31": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f5126-892e-71e1-a6fc-8aaad682a7bb",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    },
+    "s_b2ce6710e92514": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f52de-e693-74d2-aefb-e8d96bda2cf9",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
