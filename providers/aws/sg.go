@@ -13,7 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"gonum.org/v1/gonum/graph"
 	simplegraph "gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
 )
@@ -28,54 +27,49 @@ type SecurityGenerator struct {
 	AWSService
 }
 
-type ByGroupPair []types.UserIdGroupPair
-
-func (b ByGroupPair) Len() int      { return len(b) }
-func (b ByGroupPair) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
-func (b ByGroupPair) Less(i, j int) bool {
-	if b[i].GroupId != nil && b[j].GroupId != nil {
-		return *b[i].GroupId < *b[j].GroupId
-	}
-	if b[i].GroupName != nil && b[j].GroupName != nil {
-		return *b[i].GroupName < *b[j].GroupName
-	}
-
-	panic("mismatched security group rules, may be a terraform bug")
-}
-
 func (SecurityGenerator) createResources(securityGroups []types.SecurityGroup) []terraformutils.Resource {
 	var sgIDsToMoveOut []string
 	_, shouldSplitRules := os.LookupEnv("SPLIT_SG_RULES")
 	if shouldSplitRules {
+		ids := make(map[string]struct{})
 		for _, sg := range securityGroups {
-			sgIDsToMoveOut = append(sgIDsToMoveOut, *sg.GroupId)
+			if groupID := StringValue(sg.GroupId); groupID != "" {
+				ids[groupID] = struct{}{}
+			}
 		}
+		for groupID := range ids {
+			sgIDsToMoveOut = append(sgIDsToMoveOut, groupID)
+		}
+		sort.Strings(sgIDsToMoveOut)
 	} else {
 		sgIDsToMoveOut = findSgsToMoveOut(securityGroups)
+	}
+	moveRulesOut := make(map[string]struct{}, len(sgIDsToMoveOut))
+	for _, groupID := range sgIDsToMoveOut {
+		moveRulesOut[groupID] = struct{}{}
 	}
 
 	var resources []terraformutils.Resource
 	for _, sg := range securityGroups {
-		if sg.VpcId == nil {
+		groupID := StringValue(sg.GroupId)
+		if groupID == "" || sg.VpcId == nil {
 			continue
 		}
 		ruleAttributes := map[string]interface{}{}
 		// we must move out all of the rules - https://github.com/hashicorp/terraform/issues/11011#issuecomment-283076580
-		for _, groupIDToMoveOut := range sgIDsToMoveOut {
-			if groupIDToMoveOut == *sg.GroupId {
-				ruleAttributes["clearRules"] = true
-				for _, rule := range sg.IpPermissions {
-					resources = processRule(rule, "ingress", sg, resources)
-				}
-				for _, rule := range sg.IpPermissionsEgress {
-					resources = processRule(rule, "egress", sg, resources)
-				}
+		if _, ok := moveRulesOut[groupID]; ok {
+			ruleAttributes["clearRules"] = true
+			for _, rule := range sg.IpPermissions {
+				resources = processRule(rule, "ingress", sg, resources)
+			}
+			for _, rule := range sg.IpPermissionsEgress {
+				resources = processRule(rule, "egress", sg, resources)
 			}
 		}
 
 		resources = append(resources, terraformutils.NewResource(
-			StringValue(sg.GroupId),
-			strings.Trim(StringValue(sg.GroupName)+"_"+StringValue(sg.GroupId), " "),
+			groupID,
+			strings.Trim(StringValue(sg.GroupName)+"_"+groupID, " "),
 			"aws_security_group",
 			"aws",
 			map[string]string{},
@@ -86,19 +80,12 @@ func (SecurityGenerator) createResources(securityGroups []types.SecurityGroup) [
 }
 
 func processRule(rule types.IpPermission, ruleType string, sg types.SecurityGroup, resources []terraformutils.Resource) []terraformutils.Resource {
+	securityGroupID := StringValue(sg.GroupId)
+	if securityGroupID == "" {
+		return resources
+	}
 	if len(rule.UserIdGroupPairs) > 0 {
-		if len(rule.IpRanges) > 0 { // we must unwind coupled CIDR IPv4 range + security group rules
-			attributes := baseRuleAttributes(ruleType, rule, sg)
-			resources = append(resources, terraformutils.NewResource(
-				permissionID(*sg.GroupId, ruleType, "", rule),
-				permissionID(*sg.GroupId, ruleType, "", rule),
-				"aws_security_group_rule",
-				"aws",
-				terraformutils.Flatten(attributes),
-				SgAllowEmptyValues,
-				map[string]interface{}{}))
-		}
-		if len(rule.Ipv6Ranges) > 0 { // we must unwind coupled CIDR IPv6 range + security group rules
+		if len(rule.IpRanges) > 0 || len(rule.Ipv6Ranges) > 0 || len(rule.PrefixListIds) > 0 { // we must unwind coupled non-group sources + security group rules
 			attributes := baseRuleAttributes(ruleType, rule, sg)
 			resources = append(resources, terraformutils.NewResource(
 				permissionID(*sg.GroupId, ruleType, "", rule),
@@ -110,18 +97,23 @@ func processRule(rule types.IpPermission, ruleType string, sg types.SecurityGrou
 				map[string]interface{}{}))
 		}
 		for _, groupPair := range rule.UserIdGroupPairs {
+			referencedGroupID := StringValue(groupPair.GroupId)
+			if referencedGroupID == "" {
+				continue
+			}
 			attributes := baseRuleAttributes(ruleType, rule, sg)
 			delete(attributes, "cidr_blocks")
 			delete(attributes, "ipv6_cidr_blocks")
-			if *groupPair.GroupId == *sg.GroupId { // Solution to C1
+			delete(attributes, "prefix_list_ids")
+			if referencedGroupID == securityGroupID { // Solution to C1
 				attributes["self"] = true
 			} else {
-				attributes["source_security_group_id"] = *groupPair.GroupId
+				attributes["source_security_group_id"] = sourceSecurityGroupID(groupPair, StringValue(sg.OwnerId))
 			}
 
 			resources = append(resources, terraformutils.NewResource(
-				permissionID(*sg.GroupId, ruleType, *groupPair.GroupId, rule),
-				permissionID(*sg.GroupId, ruleType, *groupPair.GroupId, rule),
+				permissionID(securityGroupID, ruleType, referencedGroupID, rule),
+				permissionID(securityGroupID, ruleType, referencedGroupID, rule),
 				"aws_security_group_rule",
 				"aws",
 				terraformutils.Flatten(attributes),
@@ -156,78 +148,137 @@ func baseRuleAttributes(ruleType string, rule types.IpPermission, sg types.Secur
 	return attributes
 }
 
-// Let's try to find all cycles by applying Johnson's method on the directed graph
-// We cannot build a line graph and move out only rules because of hashicorp/terraform#11011
+func sourceSecurityGroupID(groupPair types.UserIdGroupPair, ownerID string) string {
+	groupID := StringValue(groupPair.GroupId)
+	referencedOwnerID := StringValue(groupPair.UserId)
+	if referencedOwnerID != "" && ownerID != referencedOwnerID {
+		return referencedOwnerID + "/" + groupID
+	}
+	return groupID
+}
+
+// We cannot build a line graph and move out only rules because of hashicorp/terraform#11011.
 func findSgsToMoveOut(securityGroups []types.SecurityGroup) []string {
 	// Vertexes are security groups, edges are rules. The task is to find correct set of rule definitions, so that we
 	// won't have cycles
-	sourceGraph := simplegraph.NewDirectedGraph()
-	idToSg := make(map[int]types.SecurityGroup)
-	sgToIdx := make(map[string]int64)
-	for idx, sg := range securityGroups {
-		idToSg[idx] = sg
-		sgToIdx[StringValue(sg.GroupId)] = int64(idx)
-		sourceGraph.AddNode(sourceGraph.NewNode())
-	}
-	for idx, sg := range securityGroups {
-		for _, rule := range sg.IpPermissions {
-			pairs := rule.UserIdGroupPairs
-			for _, pair := range pairs {
-				if pair.GroupId != nil {
-					toIdx, ok := sgToIdx[StringValue(pair.GroupId)]
-					if !ok {
-						continue
-					}
-					fromNode := sourceGraph.Node(int64(idx))
-					toNode := sourceGraph.Node(toIdx)
-					if fromNode.ID() != toNode.ID() {
-						sourceGraph.SetEdge(sourceGraph.NewEdge(fromNode, toNode))
-					}
-				}
-			}
+	groupIDs := make([]string, 0, len(securityGroups))
+	groupIDSet := make(map[string]struct{}, len(securityGroups))
+	for _, sg := range securityGroups {
+		groupID := StringValue(sg.GroupId)
+		if groupID == "" {
+			continue
 		}
+		if _, exists := groupIDSet[groupID]; exists {
+			continue
+		}
+		groupIDSet[groupID] = struct{}{}
+		groupIDs = append(groupIDs, groupID)
+	}
+	sort.Strings(groupIDs)
+
+	sourceGraph := simplegraph.NewDirectedGraph()
+	groupIDToNode := make(map[string]int64, len(groupIDs))
+	nodeToGroupID := make(map[int64]string, len(groupIDs))
+	for _, groupID := range groupIDs {
+		node := sourceGraph.NewNode()
+		sourceGraph.AddNode(node)
+		groupIDToNode[groupID] = node.ID()
+		nodeToGroupID[node.ID()] = groupID
 	}
 
-	cyclesInLineGraph := topo.DirectedCyclesIn(sourceGraph) // C1 cycles won't be found but Terraform solves that issue
-	resultingSet := make(map[string]void)
-
-	for _, v := range cyclesInLineGraph {
-		if elementAlreadyFound(resultingSet, v, idToSg) {
+	ruleCounts := make(map[string]int, len(groupIDs))
+	for _, sg := range securityGroups {
+		groupID := StringValue(sg.GroupId)
+		fromID, ok := groupIDToNode[groupID]
+		if !ok {
 			continue
 		}
 
-		// Try to move out node with lowest number of rules
-		group := idToSg[int(v[0].ID())]
-		for _, vi := range v {
-			viGroup := idToSg[int(vi.ID())]
-			if len(viGroup.IpPermissions) < len(group.IpPermissions) {
-				group = viGroup
-			}
+		// Duplicate API entries are collapsed by group ID. Keep the largest
+		// observed rule count so exact duplicates do not skew cycle selection.
+		ruleCount := len(sg.IpPermissions) + len(sg.IpPermissionsEgress)
+		if ruleCount > ruleCounts[groupID] {
+			ruleCounts[groupID] = ruleCount
 		}
 
-		resultingSet[*group.GroupId] = member
+		for _, toID := range internalSecurityGroupReferences(sg, groupIDToNode) {
+			if fromID == toID {
+				continue
+			}
+			fromNode := sourceGraph.Node(fromID)
+			toNode := sourceGraph.Node(toID)
+			sourceGraph.SetEdge(sourceGraph.NewEdge(fromNode, toNode))
+		}
 	}
 
-	result := make([]string, len(resultingSet))
-	i := 0
-	for k := range resultingSet {
-		result[i] = k
-		i++
+	resultingSet := make(map[string]void)
+	for {
+		var groupsToMoveOut []string
+		for _, component := range topo.TarjanSCC(sourceGraph) {
+			if len(component) < 2 { // Self references are not graph edges.
+				continue
+			}
+
+			// Move out the node with the fewest total ingress and egress rules.
+			// Use the group ID as a stable tie-breaker.
+			groupID := ""
+			for _, node := range component {
+				candidateID := nodeToGroupID[node.ID()]
+				if groupID == "" ||
+					ruleCounts[candidateID] < ruleCounts[groupID] ||
+					(ruleCounts[candidateID] == ruleCounts[groupID] && candidateID < groupID) {
+					groupID = candidateID
+				}
+			}
+			groupsToMoveOut = append(groupsToMoveOut, groupID)
+		}
+		if len(groupsToMoveOut) == 0 {
+			break
+		}
+
+		// Components are disjoint, so their selected nodes can be removed together.
+		// A selected group has no inline outgoing rules and cannot join a later cycle.
+		sort.Strings(groupsToMoveOut)
+		for _, groupID := range groupsToMoveOut {
+			resultingSet[groupID] = member
+			sourceGraph.RemoveNode(groupIDToNode[groupID])
+		}
 	}
+
+	result := make([]string, 0, len(resultingSet))
+	for groupID := range resultingSet {
+		result = append(result, groupID)
+	}
+	sort.Strings(result)
 
 	return result
 }
 
-func elementAlreadyFound(resultingSet map[string]void, v []graph.Node, idToSg map[int]types.SecurityGroup) bool {
-	for k := range resultingSet {
-		for _, vi := range v {
-			viGroupID := *idToSg[int(vi.ID())].GroupId
-			if k == viGroupID {
-				return true
+func internalSecurityGroupReferences(sg types.SecurityGroup, importedGroupIndexes map[string]int64) []int64 {
+	referenceSet := make(map[int64]struct{})
+	permissions := [][]types.IpPermission{sg.IpPermissions, sg.IpPermissionsEgress}
+	for _, permissionSet := range permissions {
+		for _, permission := range permissionSet {
+			for _, pair := range permission.UserIdGroupPairs {
+				groupID := StringValue(pair.GroupId)
+				if groupID == "" {
+					continue
+				}
+				index, ok := importedGroupIndexes[groupID]
+				if !ok {
+					continue
+				}
+				referenceSet[index] = struct{}{}
 			}
 		}
 	}
-	return false
+
+	references := make([]int64, 0, len(referenceSet))
+	for index := range referenceSet {
+		references = append(references, index)
+	}
+	sort.Slice(references, func(i, j int) bool { return references[i] < references[j] })
+	return references
 }
 
 func (g *SecurityGenerator) InitResources() error {
@@ -246,7 +297,7 @@ func (g *SecurityGenerator) InitResources() error {
 		resourcesToFilter = append(resourcesToFilter, page.SecurityGroups...)
 	}
 	sort.Slice(resourcesToFilter, func(i, j int) bool {
-		return *resourcesToFilter[i].GroupId < *resourcesToFilter[j].GroupId
+		return StringValue(resourcesToFilter[i].GroupId) < StringValue(resourcesToFilter[j].GroupId)
 	})
 	g.Resources = g.createResources(resourcesToFilter)
 
