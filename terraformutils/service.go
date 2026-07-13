@@ -172,17 +172,15 @@ func NewFilterParseError(rawFilter, reason string) error {
 }
 
 func filterForError(rawFilter string) string {
-	parts := strings.Split(rawFilter, ";")
+	originalParts := strings.Split(rawFilter, ";")
+	parts := append([]string(nil), originalParts...)
 	for i, part := range parts {
 		keyValue := strings.SplitN(part, "=", 2)
 		if len(keyValue) != 2 {
 			parts[i] = "<redacted>"
 			continue
 		}
-		if keyValue[0] == "Type" || keyValue[0] == "Name" {
-			if strings.Contains(keyValue[1], "=") {
-				parts[i] = keyValue[0] + "=<redacted>"
-			}
+		if (keyValue[0] == "Type" || keyValue[0] == "Name") && filterMetadataIsStructural(originalParts, i) {
 			continue
 		}
 		key := keyValue[0]
@@ -192,6 +190,29 @@ func filterForError(rawFilter string) string {
 		parts[i] = key + "=<redacted>"
 	}
 	return strings.Join(parts, ";")
+}
+
+func filterMetadataIsStructural(parts []string, index int) bool {
+	switch len(parts) {
+	case 1:
+		return index == 0 && validFilterComponent(parts[0], "Name")
+	case 2:
+		return index == 0 &&
+			validFilterComponent(parts[0], "Name") &&
+			validFilterComponent(parts[1], "Value")
+	case 3:
+		return (index == 0 || index == 1) &&
+			validFilterComponent(parts[0], "Type") &&
+			validFilterComponent(parts[1], "Name") &&
+			validFilterComponent(parts[2], "Value")
+	default:
+		return false
+	}
+}
+
+func validFilterComponent(component, name string) bool {
+	_, err := parseFilterComponent(component, name)
+	return err == nil
 }
 
 func (s *Service) ParseFilters(rawFilters []string) error {

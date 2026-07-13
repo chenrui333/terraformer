@@ -64,18 +64,10 @@ func (p *Provider) GetSupportedService() map[string]terraformutils.ServiceGenera
 	}
 }
 
-func (Provider) ValidateFilters(rawFilters, resources []string) error {
-	validateACLs := false
-	for _, resource := range resources {
-		if resource == "*" || resource == "acls" {
-			validateACLs = true
-			break
-		}
-	}
-
+func (Provider) ValidateFilters(rawFilters, _ []string) error {
 	aclParser := &ACLGenerator{}
 	for _, rawFilter := range rawFilters {
-		if validateACLs {
+		if _, ok := kafkaACLFilterValue(rawFilter); ok {
 			if _, err := aclParser.ParseFilter(rawFilter); err != nil {
 				return err
 			}

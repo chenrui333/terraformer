@@ -124,10 +124,28 @@ func TestParseFilterSyntax(t *testing.T) {
 			errorValues: []string{"type-secret"},
 		},
 		{
+			name:        "error redacts metadata from malformed typed shape",
+			raw:         "Type=service=type-secret;Name=name-secret;Value=x",
+			wantErr:     true,
+			errorValues: []string{"type-secret", "name-secret"},
+		},
+		{
 			name:        "error redacts malformed Name component",
 			raw:         "Name=field=name-secret;Value=x",
 			wantErr:     true,
 			errorValues: []string{"name-secret"},
+		},
+		{
+			name:        "error redacts Type-like value suffix",
+			raw:         "acl=User:producer|*|Write|Allow|Topic|orders;Type=customer-secret|Literal",
+			wantErr:     true,
+			errorValues: []string{"customer-secret"},
+		},
+		{
+			name:        "error redacts Name-like value suffix",
+			raw:         "acl=User:producer|*|Write|Allow|Topic|orders;Name=customer-secret|Literal",
+			wantErr:     true,
+			errorValues: []string{"customer-secret"},
 		},
 	}
 

@@ -116,8 +116,26 @@ func TestProviderValidateFiltersUsesACLGrammar(t *testing.T) {
 	if err := provider.ValidateFilters(filters, []string{"acls", "topics"}); err != nil {
 		t.Fatalf("ValidateFilters() rejected mixed-resource ACL filters: %v", err)
 	}
+	if err := provider.ValidateFilters(filters, []string{"topics"}); err != nil {
+		t.Fatalf("ValidateFilters() rejected ACL-scoped filters for a topic-only import: %v", err)
+	}
 	if err := provider.ValidateFilters([]string{"acl=bad"}, []string{"acls"}); err == nil {
 		t.Fatal("ValidateFilters() error = nil for malformed ACL import ID")
+	}
+	if err := provider.ValidateFilters([]string{"acl=bad"}, []string{"topics"}); err == nil {
+		t.Fatal("ValidateFilters() error = nil for malformed ACL import ID during a topic-only import")
+	}
+	for _, rawFilter := range []string{
+		"acl=User:producer|*|InvalidOperation|Allow|Topic|orders;Type=customer-secret|Literal",
+		"acl=User:producer|*|InvalidOperation|Allow|Topic|orders;Name=customer-secret|Literal",
+	} {
+		err := provider.ValidateFilters([]string{rawFilter}, []string{"topics"})
+		if err == nil {
+			t.Fatalf("ValidateFilters() error = nil for malformed ACL filter %q", rawFilter)
+		}
+		if strings.Contains(err.Error(), "customer-secret") {
+			t.Fatalf("ValidateFilters() exposed ACL filter value: %v", err)
+		}
 	}
 	if err := provider.ValidateFilters([]string{"Name=id;Value=orders"}, []string{"topics"}); err != nil {
 		t.Fatalf("ValidateFilters() rejected topic-only filter: %v", err)
