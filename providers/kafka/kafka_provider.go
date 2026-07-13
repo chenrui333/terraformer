@@ -64,6 +64,22 @@ func (p *Provider) GetSupportedService() map[string]terraformutils.ServiceGenera
 	}
 }
 
+func (Provider) ValidateFilters(rawFilters, _ []string) error {
+	aclParser := &ACLGenerator{}
+	for _, rawFilter := range rawFilters {
+		if _, ok := kafkaACLFilterValue(rawFilter); ok {
+			if _, err := aclParser.ParseFilter(rawFilter); err != nil {
+				return err
+			}
+			continue
+		}
+		if _, err := terraformutils.ParseFilter(rawFilter); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (Provider) GetResourceConnections() map[string]map[string][]string {
 	return map[string]map[string][]string{}
 }

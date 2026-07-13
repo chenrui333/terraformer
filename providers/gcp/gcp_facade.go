@@ -18,11 +18,11 @@ func (s *GCPFacade) SetVerbose(verbose bool) {
 	s.service.SetVerbose(verbose)
 }
 
-func (s *GCPFacade) ParseFilters(rawFilters []string) {
-	s.service.ParseFilters(rawFilters)
+func (s *GCPFacade) ParseFilters(rawFilters []string) error {
+	return s.service.ParseFilters(rawFilters)
 }
 
-func (s *GCPFacade) ParseFilter(rawFilter string) []terraformutils.ResourceFilter {
+func (s *GCPFacade) ParseFilter(rawFilter string) ([]terraformutils.ResourceFilter, error) {
 	return s.service.ParseFilter(rawFilter)
 }
 

@@ -238,6 +238,93 @@ func TestACLIDFilterSyntaxKeepsPrincipalColon(t *testing.T) {
 	}
 }
 
+func TestACLFilterLeavesTopicIDFilterNonApplicable(t *testing.T) {
+	generator := &ACLGenerator{}
+	if err := generator.ParseFilters([]string{"Name=id;Value=orders"}); err != nil {
+		t.Fatalf("ParseFilters() error = %v", err)
+	}
+	if len(generator.Filter) != 1 {
+		t.Fatalf("filter len = %d, want 1", len(generator.Filter))
+	}
+	if generator.Filter[0].ServiceName != "topic" {
+		t.Fatalf("filter service = %q, want topic", generator.Filter[0].ServiceName)
+	}
+	acls, err := generator.explicitlyRequestedACLs()
+	if err != nil {
+		t.Fatalf("explicitlyRequestedACLs() error = %v", err)
+	}
+	if len(acls) != 0 {
+		t.Fatalf("topic filter selected ACLs: %#v", acls)
+	}
+}
+
+func TestACLFilterPreservesProviderSpecificCharacters(t *testing.T) {
+	tests := []struct {
+		rawFilter string
+		want      string
+	}{
+		{
+			rawFilter: "acls=User:O'Connor|*|Write|Allow|Topic|orders|Literal",
+			want:      "User:O'Connor|*|Write|Allow|Topic|orders|Literal",
+		},
+		{
+			rawFilter: "acls=User:producer|*|Write|Allow|Topic|orders;archive|Literal",
+			want:      "User:producer|*|Write|Allow|Topic|orders;archive|Literal",
+		},
+		{
+			rawFilter: "acls='User:producer|*|Write|Allow|Topic|orders|Literal'",
+			want:      "User:producer|*|Write|Allow|Topic|orders|Literal",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.rawFilter, func(t *testing.T) {
+			generator := &ACLGenerator{}
+			if err := generator.ParseFilters([]string{tt.rawFilter}); err != nil {
+				t.Fatalf("ParseFilters() error = %v", err)
+			}
+			if len(generator.Filter) != 1 {
+				t.Fatalf("filter len = %d, want 1", len(generator.Filter))
+			}
+			if !reflect.DeepEqual(generator.Filter[0].AcceptableValues, []string{tt.want}) {
+				t.Fatalf("filter values = %#v, want %#v", generator.Filter[0].AcceptableValues, []string{tt.want})
+			}
+		})
+	}
+}
+
+func TestACLFilterRejectsMalformedImportIDs(t *testing.T) {
+	tests := []struct {
+		name       string
+		rawFilter  string
+		wantReason string
+	}{
+		{name: "wrong segment count", rawFilter: "acl=bad", wantReason: "seven non-empty pipe-delimited segments"},
+		{name: "empty principal", rawFilter: "acl=|*|Write|Allow|Topic|orders|Literal", wantReason: "seven non-empty pipe-delimited segments"},
+		{name: "empty host", rawFilter: "acl=User:producer||Write|Allow|Topic|orders|Literal", wantReason: "seven non-empty pipe-delimited segments"},
+		{name: "untyped empty host", rawFilter: "Name=id;Value=User:producer||Write|Allow|Topic|orders|Literal", wantReason: "seven non-empty pipe-delimited segments"},
+		{name: "empty resource name", rawFilter: "acl=User:producer|*|Write|Allow|Topic||Literal", wantReason: "seven non-empty pipe-delimited segments"},
+		{name: "unbalanced outer quote", rawFilter: "acl='User:producer|*|Write|Allow|Topic|orders|Literal", wantReason: "unbalanced single quote"},
+		{name: "invalid operation", rawFilter: "acl=User:producer|*|InvalidOperation|Allow|Topic|orders|Literal", wantReason: "invalid resource type, pattern type, operation, or permission type"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			generator := &ACLGenerator{}
+			err := generator.ParseFilters([]string{tt.rawFilter})
+			if err == nil {
+				t.Fatal("ParseFilters() error = nil, want error")
+			}
+			if !strings.Contains(err.Error(), tt.wantReason) {
+				t.Fatalf("ParseFilters() error = %q, want reason %q", err, tt.wantReason)
+			}
+			if strings.Contains(err.Error(), strings.TrimPrefix(tt.rawFilter, "acl=")) {
+				t.Fatalf("ParseFilters() error exposed ACL import ID: %q", err)
+			}
+		})
+	}
+}
+
 func TestACLPreservesRequiredFieldsAfterImportFallback(t *testing.T) {
 	acl := ACL{
 		Principal:                 "User:ANONYMOUS",

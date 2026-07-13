@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+* Reject malformed import filters before provider initialization, and preserve
+  distinct Terraform resource types that share an import ID during filtering.
+
 ## 0.13.15
 
 `0.13.15` is an AWS importer correctness, security/toolchain, provider SDK,

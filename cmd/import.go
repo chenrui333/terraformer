@@ -58,6 +58,10 @@ type importProviderConfigurer interface {
 	ConfigureImportProvider(*providerwrapper.ProviderWrapper) error
 }
 
+type importFilterValidator interface {
+	ValidateFilters(filters []string, resources []string) error
+}
+
 const DefaultPathPattern = "{output}/{provider}/{service}/"
 const DefaultPathOutput = "generated"
 const DefaultState = "local"
@@ -115,6 +119,15 @@ func newImportCmd() *cobra.Command {
 func Import(provider terraformutils.ProviderGenerator, options ImportOptions, args []string) error {
 	importExecuted = true
 	sessionKey := provider.GetName() + ":" + strings.Join(args, ":")
+	if err := validateImportFilters(provider, options.Filter, options.Resources, options.Excludes); err != nil {
+		processReport.Add(importreport.ResourceEvent{
+			Service:  provider.GetName(),
+			Status:   importreport.StatusFailed,
+			Category: importreport.ClassifyError(err),
+			Error:    err.Error(),
+		})
+		return err
+	}
 
 	providerWrapper, options, err := initOptionsAndWrapper(provider, options, args)
 	if err != nil {
@@ -148,6 +161,36 @@ func Import(provider terraformutils.ProviderGenerator, options ImportOptions, ar
 	providerMapping.ConvertTypedStates(providerWrapper, processReport)
 
 	return importFromPlan(providerMapping, options, args, processReport, eventStart)
+}
+
+func validateImportFilters(provider terraformutils.ProviderGenerator, filters, resources, excludes []string) error {
+	if validator, ok := provider.(importFilterValidator); ok {
+		return validator.ValidateFilters(filters, filterValidationResources(provider, resources, excludes))
+	}
+	_, err := terraformutils.ParseFilters(filters)
+	return err
+}
+
+func filterValidationResources(provider terraformutils.ProviderGenerator, resources, excludes []string) []string {
+	selected := append([]string(nil), resources...)
+	if terraformerstring.ContainsString(selected, "*") {
+		selected = providerServices(provider)
+	}
+	if len(excludes) == 0 {
+		return selected
+	}
+
+	excluded := make(map[string]struct{}, len(excludes))
+	for _, resource := range excludes {
+		excluded[resource] = struct{}{}
+	}
+	effective := make([]string, 0, len(selected))
+	for _, resource := range selected {
+		if _, ok := excluded[resource]; !ok {
+			effective = append(effective, resource)
+		}
+	}
+	return effective
 }
 
 func initOptionsAndWrapper(provider terraformutils.ProviderGenerator, options ImportOptions, args []string) (*providerwrapper.ProviderWrapper, ImportOptions, error) {
@@ -315,7 +358,10 @@ func initServiceResources(service string, provider terraformutils.ProviderGenera
 		log.Printf("%s error importing %s, err: %s\n", provider.GetName(), service, err)
 		return err
 	}
-	provider.GetService().ParseFilters(options.Filter)
+	if err := provider.GetService().ParseFilters(options.Filter); err != nil {
+		log.Printf("%s error parsing filters for %s, err: %s\n", provider.GetName(), service, err)
+		return err
+	}
 	err = provider.GetService().InitResources()
 	if err != nil {
 		log.Printf("%s error initializing resources in service %s, err: %s\n", provider.GetName(), service, err)

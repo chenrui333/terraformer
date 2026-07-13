@@ -10,7 +10,9 @@ import (
 
 func TestAWSServiceParseFiltersNormalizesAWSResourceTypes(t *testing.T) {
 	s := AWSService{}
-	s.ParseFilters([]string{"Type=aws_ebs_snapshot;Name=id;Value=snap-123"})
+	if err := s.ParseFilters([]string{"Type=aws_ebs_snapshot;Name=id;Value=snap-123"}); err != nil {
+		t.Fatalf("ParseFilters() error = %v", err)
+	}
 
 	if len(s.Filter) != 1 {
 		t.Fatalf("filters length = %d, want 1", len(s.Filter))
@@ -35,7 +37,9 @@ func TestAWSServiceParseFiltersNormalizesAWSResourceTypes(t *testing.T) {
 
 func TestAWSServiceParseFiltersNormalizesTransitGatewayServiceName(t *testing.T) {
 	s := AWSService{}
-	s.ParseFilters([]string{"transit_gateway=tgw-123"})
+	if err := s.ParseFilters([]string{"transit_gateway=tgw-123"}); err != nil {
+		t.Fatalf("ParseFilters() error = %v", err)
+	}
 
 	if len(s.Filter) != 1 {
 		t.Fatalf("filters length = %d, want 1", len(s.Filter))

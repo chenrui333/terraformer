@@ -51,32 +51,75 @@ func (g *ACLGenerator) InitResources() error {
 	return nil
 }
 
-func (g *ACLGenerator) ParseFilter(rawFilter string) []terraformutils.ResourceFilter {
-	for _, prefix := range []string{"kafka_acl=", "acls=", "acl="} {
-		if strings.HasPrefix(rawFilter, prefix) {
-			return []terraformutils.ResourceFilter{aclIDFilter(strings.TrimPrefix(rawFilter, prefix))}
+func (g *ACLGenerator) ParseFilter(rawFilter string) ([]terraformutils.ResourceFilter, error) {
+	if value, ok := kafkaACLFilterValue(rawFilter); ok {
+		value, err := unwrapKafkaACLFilterValue(value)
+		if err != nil {
+			return nil, terraformutils.NewFilterParseError(rawFilter, err.Error())
+		}
+		acl, err := parseKafkaACLImportID(value)
+		if err != nil {
+			return nil, terraformutils.NewFilterParseError(rawFilter, "Kafka ACL import ID must contain seven non-empty pipe-delimited segments")
+		}
+		if _, err := acl.SaramaFilter(); err != nil {
+			return nil, terraformutils.NewFilterParseError(rawFilter, "Kafka ACL import ID contains an invalid resource type, pattern type, operation, or permission type")
+		}
+		return []terraformutils.ResourceFilter{aclIDFilter(value)}, nil
+	}
+	filters, err := g.Service.ParseFilter(rawFilter)
+	if err != nil {
+		return nil, err
+	}
+	if strings.HasPrefix(rawFilter, "Name=id;Value=") {
+		for i := range filters {
+			filters[i].ServiceName = "topic"
 		}
 	}
-	if filter, ok := parseACLIDFilter(rawFilter); ok {
-		return []terraformutils.ResourceFilter{filter}
-	}
-	return g.Service.ParseFilter(rawFilter)
+	return filters, nil
 }
 
-func (g *ACLGenerator) ParseFilters(rawFilters []string) {
-	g.Filter = []terraformutils.ResourceFilter{}
+func (g *ACLGenerator) ParseFilters(rawFilters []string) error {
+	filters := []terraformutils.ResourceFilter{}
 	for _, rawFilter := range rawFilters {
-		g.Filter = append(g.Filter, g.ParseFilter(rawFilter)...)
+		parsed, err := g.ParseFilter(rawFilter)
+		if err != nil {
+			return err
+		}
+		filters = append(filters, parsed...)
 	}
+	g.Filter = filters
+	return nil
 }
 
-func parseACLIDFilter(rawFilter string) (terraformutils.ResourceFilter, bool) {
-	for _, prefix := range []string{"Type=acl;Name=id;Value=", "Name=id;Value="} {
+func kafkaACLFilterValue(rawFilter string) (string, bool) {
+	for _, prefix := range []string{
+		"kafka_acl=",
+		"acls=",
+		"acl=",
+		"Type=acl;Name=id;Value=",
+	} {
 		if strings.HasPrefix(rawFilter, prefix) {
-			return aclIDFilter(strings.TrimPrefix(rawFilter, prefix)), true
+			return strings.TrimPrefix(rawFilter, prefix), true
 		}
 	}
-	return terraformutils.ResourceFilter{}, false
+	const untypedIDPrefix = "Name=id;Value="
+	if strings.HasPrefix(rawFilter, untypedIDPrefix) {
+		value := strings.TrimPrefix(rawFilter, untypedIDPrefix)
+		if strings.Contains(value, "|") {
+			return value, true
+		}
+	}
+	return "", false
+}
+
+func unwrapKafkaACLFilterValue(value string) (string, error) {
+	if value == "" || value[0] != '\'' {
+		return value, nil
+	}
+	if len(value) == 1 || value[len(value)-1] != '\'' {
+		return "", fmt.Errorf("unbalanced single quote")
+	}
+	return value[1 : len(value)-1], nil
 }
 
 func aclIDFilter(id string) terraformutils.ResourceFilter {
@@ -245,6 +288,12 @@ func parseKafkaACLImportID(id string) (ACL, error) {
 	parts := strings.Split(id, "|")
 	if len(parts) != 7 {
 		return ACL{}, fmt.Errorf("kafka acl import ID must have 7 pipe-delimited segments, got %d", len(parts))
+	}
+	segmentNames := []string{"principal", "host", "operation", "permission type", "resource type", "resource name", "pattern type"}
+	for i, part := range parts {
+		if part == "" {
+			return ACL{}, fmt.Errorf("kafka acl import ID %s segment is empty", segmentNames[i])
+		}
 	}
 	return ACL{
 		Principal:                 parts[0],

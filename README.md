@@ -129,7 +129,9 @@ To import resources from all services, use `--resources="*"` . If you want to ex
 
 #### Filtering
 
-Filters are a way to choose which resources `terraformer` imports. It's possible to filter resources by its identifiers or attributes. Multiple filtering values are separated by `:`. If an identifier contains this symbol, value should be wrapped in `'` e.g. `--filter=resource=id1:'project:dataset_id'`. Identifier based filters will be executed before Terraformer will try to refresh remote state.
+Filters are a way to choose which resources `terraformer` imports. It's possible to filter resources by its identifiers or attributes. Supported forms are `service=value`, `Name=field`, `Name=field;Value=value`, and `Type=service;Name=field;Value=value`. Multiple filtering values are separated by `:`. If an identifier contains this symbol, value should be wrapped in `'` e.g. `--filter=resource=id1:'project:dataset_id'`. Values may contain `=` without additional escaping. Identifier-based filters will be executed before Terraformer will try to refresh remote state.
+
+Terraformer validates every supplied filter before initializing the provider. A malformed filter, including one with an unbalanced quote or an empty required component, aborts the entire import instead of falling back to an unfiltered import.
 
 Use `Type` when you need to filter only one of several types of resources. Multiple filters can be combined when importing different resource types. An example would be importing all AWS security groups from a specific AWS VPC:
 ```

@@ -37,6 +37,37 @@ type validatingTestProvider struct {
 	resources []string
 }
 
+type initializationTrackingProvider struct {
+	testProvider
+	initCalled bool
+}
+
+type providerFilterValidationTestProvider struct {
+	testProvider
+	filterErr          error
+	validated          bool
+	validatedInput     []string
+	validatedResources []string
+	initCalled         bool
+}
+
+func (p *providerFilterValidationTestProvider) ValidateFilters(filters, resources []string) error {
+	p.validated = true
+	p.validatedInput = append([]string(nil), filters...)
+	p.validatedResources = append([]string(nil), resources...)
+	return p.filterErr
+}
+
+func (p *providerFilterValidationTestProvider) Init(_ []string) error {
+	p.initCalled = true
+	return nil
+}
+
+func (p *initializationTrackingProvider) Init(_ []string) error {
+	p.initCalled = true
+	return nil
+}
+
 func (p *validatingTestProvider) ValidateImport(resources []string) error {
 	p.resources = append([]string(nil), resources...)
 	return p.err
@@ -112,6 +143,79 @@ func TestValidateImport(t *testing.T) {
 	}
 	if !reflect.DeepEqual(provider.resources, resources) {
 		t.Fatalf("expected validator resources %v, got %v", resources, provider.resources)
+	}
+}
+
+func TestImportRejectsInvalidFilterBeforeProviderInitialization(t *testing.T) {
+	provider := &initializationTrackingProvider{
+		testProvider: testProvider{name: "filter-validation-test"},
+	}
+
+	err := Import(provider, ImportOptions{
+		Resources: []string{"service"},
+		Filter:    []string{"valid=id", "Type=service;Name=id;Value="},
+	}, nil)
+	if err == nil {
+		t.Fatal("Import() error = nil, want invalid filter error")
+	}
+	if provider.initCalled {
+		t.Fatal("provider.Init() called for invalid filters")
+	}
+}
+
+func TestImportUsesProviderFilterValidationBeforeInitialization(t *testing.T) {
+	wantErr := errors.New("provider-specific filter validation failed")
+	filter := "acls=User:O'Connor|*|Write|Allow|Topic|orders;archive|Literal"
+	provider := &providerFilterValidationTestProvider{
+		testProvider: testProvider{name: "provider-filter-validation-test"},
+		filterErr:    wantErr,
+	}
+
+	resources := []string{"acls"}
+	err := Import(provider, ImportOptions{Resources: resources, Filter: []string{filter}}, nil)
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("Import() error = %v, want %v", err, wantErr)
+	}
+	if !provider.validated {
+		t.Fatal("provider-specific filter validator was not called")
+	}
+	if !reflect.DeepEqual(provider.validatedInput, []string{filter}) {
+		t.Fatalf("validated filters = %#v, want %#v", provider.validatedInput, []string{filter})
+	}
+	if !reflect.DeepEqual(provider.validatedResources, resources) {
+		t.Fatalf("validated resources = %#v, want %#v", provider.validatedResources, resources)
+	}
+	if provider.initCalled {
+		t.Fatal("provider.Init() called after provider-specific filter validation failed")
+	}
+}
+
+func TestImportAppliesExclusionsBeforeProviderFilterValidation(t *testing.T) {
+	wantErr := errors.New("stop after validation")
+	provider := &providerFilterValidationTestProvider{
+		testProvider: testProvider{
+			name: "provider-filter-validation-test",
+			services: map[string]terraformutils.ServiceGenerator{
+				"acls":   &terraformutils.Service{},
+				"topics": &terraformutils.Service{},
+			},
+		},
+		filterErr: wantErr,
+	}
+
+	err := Import(provider, ImportOptions{
+		Resources: []string{"*"},
+		Excludes:  []string{"acls"},
+		Filter:    []string{"Name=id;Value=orders"},
+	}, nil)
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("Import() error = %v, want %v", err, wantErr)
+	}
+	if !reflect.DeepEqual(provider.validatedResources, []string{"topics"}) {
+		t.Fatalf("validated resources = %#v, want %#v", provider.validatedResources, []string{"topics"})
+	}
+	if provider.initCalled {
+		t.Fatal("provider.Init() called after provider-specific filter validation failed")
 	}
 }
 

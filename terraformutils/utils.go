@@ -347,10 +347,9 @@ func IgnoreKeys(resourcesTypes []string, p *providerwrapper.ProviderWrapper) map
 	return readOnlyAttributes
 }
 
-func ParseFilterValues(value string) []string {
+func ParseFilterValues(value string) ([]string, error) {
 	var values []string
 
-	valueBuffering := true
 	wrapped := false
 	var valueBuffer []byte
 	for i := 0; i < len(value); i++ {
@@ -358,23 +357,27 @@ func ParseFilterValues(value string) []string {
 			wrapped = !wrapped
 			continue
 		} else if value[i] == ':' {
-			if len(valueBuffer) == 0 {
-				continue
-			} else if valueBuffering && !wrapped {
-				values = append(values, string(valueBuffer))
-				valueBuffering = false
-				valueBuffer = []byte{}
+			if wrapped {
+				valueBuffer = append(valueBuffer, value[i])
 				continue
 			}
+			if len(valueBuffer) == 0 {
+				continue
+			}
+			values = append(values, string(valueBuffer))
+			valueBuffer = []byte{}
+			continue
 		}
-		valueBuffering = true
 		valueBuffer = append(valueBuffer, value[i])
+	}
+	if wrapped {
+		return nil, errors.New("unbalanced single quote")
 	}
 	if len(valueBuffer) > 0 {
 		values = append(values, string(valueBuffer))
 	}
 
-	return values
+	return values, nil
 }
 
 func FilterCleanup(s *Service, isInitial bool) {
@@ -398,9 +401,26 @@ func FilterCleanup(s *Service, isInitial bool) {
 
 func ContainsResource(s []Resource, e Resource) bool {
 	for _, a := range s {
-		if a.InstanceInfo.Id == e.InstanceInfo.Id {
+		if sameTerraformAddress(a, e) || sameResourceIdentity(a, e) {
 			return true
 		}
 	}
 	return false
+}
+
+func sameTerraformAddress(left, right Resource) bool {
+	return left.InstanceInfo != nil && right.InstanceInfo != nil &&
+		left.InstanceInfo.Id != "" && left.InstanceInfo.Id == right.InstanceInfo.Id
+}
+
+func sameResourceIdentity(left, right Resource) bool {
+	if left.InstanceInfo == nil || left.InstanceState == nil || right.InstanceInfo == nil || right.InstanceState == nil {
+		return false
+	}
+	if left.InstanceState.ID == "" || right.InstanceState.ID == "" {
+		return false
+	}
+	return left.Provider == right.Provider &&
+		left.InstanceInfo.Type == right.InstanceInfo.Type &&
+		left.InstanceState.ID == right.InstanceState.ID
 }
