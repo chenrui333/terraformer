@@ -1,0 +1,32 @@
+providers/aws/sg.go
+  s_b2ce6710e92514::t_f1d2f4c8c365c6 88,110,150,152-154
+CHANGELOG.md
+  s_b2ce6710e92514::t_b2881c13530cd5 9
+providers/aws/sg_test.go
+  s_b2ce6710e92514::t_bb0fc61461f32c 488,491,494,500-501,510,516-543
+  s_84f9cf2cdf3e31::t_b824ce7cf71e59 544-545
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "dbed8555851f4668d6beb28d0d73ee6ecd6f534b",
+  "prompts": {},
+  "sessions": {
+    "s_84f9cf2cdf3e31": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f5126-892e-71e1-a6fc-8aaad682a7bb",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    },
+    "s_b2ce6710e92514": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f52de-e693-74d2-aefb-e8d96bda2cf9",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
