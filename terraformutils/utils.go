@@ -363,11 +363,10 @@ func ParseFilterValues(value string) ([]string, error) {
 			}
 			if len(valueBuffer) == 0 {
 				continue
-			} else {
-				values = append(values, string(valueBuffer))
-				valueBuffer = []byte{}
-				continue
 			}
+			values = append(values, string(valueBuffer))
+			valueBuffer = []byte{}
+			continue
 		}
 		valueBuffer = append(valueBuffer, value[i])
 	}
