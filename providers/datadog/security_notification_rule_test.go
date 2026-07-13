@@ -22,9 +22,10 @@ import (
 
 func TestSecurityNotificationRulesFromTypedResponses(t *testing.T) {
 	tests := []struct {
-		name     string
-		response datadogV2.NotificationRulesListResponse
-		wantIDs  []string
+		name         string
+		response     datadogV2.NotificationRulesListResponse
+		wantIDs      []string
+		wantErrParts []string
 	}{
 		{
 			name:     "one rule",
@@ -45,34 +46,216 @@ func TestSecurityNotificationRulesFromTypedResponses(t *testing.T) {
 			wantIDs:  []string{},
 		},
 		{
-			name:     "zero value",
-			response: datadogV2.NotificationRulesListResponse{},
-			wantIDs:  []string{},
+			name:         "nil data",
+			response:     datadogV2.NotificationRulesListResponse{},
+			wantErrParts: []string{"data", "nil"},
 		},
 		{
-			name: "unparsed object",
+			name: "outer unparsed object",
 			response: datadogV2.NotificationRulesListResponse{UnparsedObject: map[string]interface{}{
 				"data": []interface{}{securityNotificationRuleRaw("raw-rule")},
 			}},
 			wantIDs: []string{"raw-rule"},
+		},
+		{
+			name: "child unparsed object with valid identity",
+			response: datadogV2.NotificationRulesListResponse{Data: []datadogV2.NotificationRule{{
+				UnparsedObject: securityNotificationRuleRaw("raw-child"),
+			}}},
+			wantIDs: []string{"raw-child"},
+		},
+		{
+			name: "valid item followed by missing id",
+			response: datadogV2.NotificationRulesListResponse{Data: []datadogV2.NotificationRule{
+				securityNotificationRule("valid-rule"),
+				{Type: datadogV2.NOTIFICATIONRULESTYPE_NOTIFICATION_RULES},
+			}},
+			wantErrParts: []string{"data[1]", "missing id"},
+		},
+		{
+			name: "valid item followed by missing type",
+			response: datadogV2.NotificationRulesListResponse{Data: []datadogV2.NotificationRule{
+				securityNotificationRule("valid-rule"),
+				{Id: "missing-type"},
+			}},
+			wantErrParts: []string{"data[1]", "missing type"},
+		},
+		{
+			name: "valid item followed by wrong type",
+			response: datadogV2.NotificationRulesListResponse{Data: []datadogV2.NotificationRule{
+				securityNotificationRule("valid-rule"),
+				{Id: "wrong-type", Type: datadogV2.NotificationRulesType("other_type")},
+			}},
+			wantErrParts: []string{"data[1]", "unexpected", "type"},
+		},
+		{
+			name: "child raw object missing id at index zero",
+			response: datadogV2.NotificationRulesListResponse{Data: []datadogV2.NotificationRule{{
+				UnparsedObject: map[string]interface{}{"type": "notification_rules"},
+			}}},
+			wantErrParts: []string{"data[0]", "missing id"},
+		},
+		{
+			name: "child raw object has wrong id type",
+			response: datadogV2.NotificationRulesListResponse{Data: []datadogV2.NotificationRule{
+				securityNotificationRule("valid-rule"),
+				{UnparsedObject: map[string]interface{}{"id": 42, "type": "notification_rules"}},
+			}},
+			wantErrParts: []string{"data[1]", "id"},
+		},
+		{
+			name: "child raw object missing type",
+			response: datadogV2.NotificationRulesListResponse{Data: []datadogV2.NotificationRule{
+				securityNotificationRule("valid-rule"),
+				{UnparsedObject: map[string]interface{}{"id": "missing-type"}},
+			}},
+			wantErrParts: []string{"data[1]", "missing type"},
+		},
+		{
+			name: "child raw object has wrong type",
+			response: datadogV2.NotificationRulesListResponse{Data: []datadogV2.NotificationRule{
+				securityNotificationRule("valid-rule"),
+				{UnparsedObject: map[string]interface{}{"id": "wrong-type", "type": "other_type"}},
+			}},
+			wantErrParts: []string{"data[1]", "unexpected", "type"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			before := fmt.Sprintf("%#v", tt.response)
-			rules, err := securityNotificationRulesFromRawData(tt.response)
-			if err != nil {
-				t.Fatalf("securityNotificationRulesFromRawData returned error: %v", err)
-			}
-			if got := notificationRuleIDs(rules); !reflect.DeepEqual(got, tt.wantIDs) {
-				t.Fatalf("notification rule IDs = %v, want %v", got, tt.wantIDs)
+			rules, err := securityNotificationRulesFromResponse(tt.response)
+			if len(tt.wantErrParts) == 0 {
+				if err != nil {
+					t.Fatalf("securityNotificationRulesFromResponse returned error: %v", err)
+				}
+				if got := notificationRuleIDs(rules); !reflect.DeepEqual(got, tt.wantIDs) {
+					t.Fatalf("notification rule IDs = %v, want %v", got, tt.wantIDs)
+				}
+			} else {
+				if err == nil {
+					t.Fatalf("securityNotificationRulesFromResponse returned rules %v, want error", notificationRuleIDs(rules))
+				}
+				if rules != nil {
+					t.Fatalf("securityNotificationRulesFromResponse returned partial rules %v with error %v", notificationRuleIDs(rules), err)
+				}
+				assertErrorContains(t, err, tt.wantErrParts...)
 			}
 			if after := fmt.Sprintf("%#v", tt.response); after != before {
 				t.Fatalf("input response mutated:\nbefore: %s\nafter:  %s", before, after)
 			}
 		})
 	}
+}
+
+func TestSecurityNotificationRulesFromTypedResponsesRejectMalformedEntries(t *testing.T) {
+	malformedResponse := securityNotificationRuleListResponseWithType(t, "malformed-rule", "other_type")
+	malformedRule := malformedResponse.GetData()[0]
+	if malformedRule.UnparsedObject == nil {
+		t.Fatal("SDK-decoded malformed rule has nil UnparsedObject, want raw item data")
+	}
+
+	response := datadogV2.NotificationRulesListResponse{Data: []datadogV2.NotificationRule{
+		securityNotificationRule("valid-rule"),
+		malformedRule,
+	}}
+	rules, err := securityNotificationRulesFromResponse(response)
+	if err == nil {
+		t.Fatalf("securityNotificationRulesFromResponse returned rules %v, want error", notificationRuleIDs(rules))
+	}
+	if rules != nil {
+		t.Fatalf("securityNotificationRulesFromResponse returned partial rules %v with error %v", notificationRuleIDs(rules), err)
+	}
+	assertErrorContains(t, err, "data[1]", "type")
+}
+
+func TestSecurityNotificationRuleSDKListDecoding(t *testing.T) {
+	t.Run("explicit empty data list", func(t *testing.T) {
+		var response datadogV2.NotificationRulesListResponse
+		if err := json.Unmarshal([]byte(`{"data":[]}`), &response); err != nil {
+			t.Fatalf("decode empty notification rule list through SDK model: %v", err)
+		}
+		if response.Data == nil {
+			t.Fatal("SDK-decoded explicit empty data list is nil")
+		}
+		rules, err := securityNotificationRulesFromResponse(response)
+		if err != nil {
+			t.Fatalf("securityNotificationRulesFromResponse returned error: %v", err)
+		}
+		if len(rules) != 0 {
+			t.Fatalf("notification rule count = %d, want 0", len(rules))
+		}
+	})
+
+	t.Run("null data list", func(t *testing.T) {
+		var response datadogV2.NotificationRulesListResponse
+		if err := json.Unmarshal([]byte(`{"data":null}`), &response); err != nil {
+			t.Fatalf("decode null notification rule list through SDK model: %v", err)
+		}
+		if response.Data != nil {
+			t.Fatalf("SDK-decoded null data list = %#v, want nil", response.Data)
+		}
+		if _, err := securityNotificationRulesFromResponse(response); err == nil {
+			t.Fatal("securityNotificationRulesFromResponse returned nil error, want nil data error")
+		} else {
+			assertErrorContains(t, err, "data", "nil")
+		}
+	})
+
+	t.Run("valid typed item", func(t *testing.T) {
+		response := securityNotificationRuleListResponseWithMutation(t, "valid-rule", nil)
+		if response.UnparsedObject != nil {
+			t.Fatal("SDK-decoded valid list has non-nil outer UnparsedObject")
+		}
+		if len(response.Data) != 1 {
+			t.Fatalf("SDK-decoded valid list length = %d, want 1", len(response.Data))
+		}
+		if response.Data[0].UnparsedObject != nil {
+			t.Fatal("SDK-decoded valid rule has non-nil child UnparsedObject")
+		}
+
+		rules, err := securityNotificationRulesFromResponse(response)
+		if err != nil {
+			t.Fatalf("securityNotificationRulesFromResponse returned error: %v", err)
+		}
+		if got := notificationRuleIDs(rules); !reflect.DeepEqual(got, []string{"valid-rule"}) {
+			t.Fatalf("notification rule IDs = %v, want [valid-rule]", got)
+		}
+	})
+
+	t.Run("unsupported nested selector is recovered from child raw data", func(t *testing.T) {
+		response := securityNotificationRuleListResponseWithMutation(t, "forward-compatible-rule", func(rawRule map[string]interface{}) {
+			attributes := rawRule["attributes"].(map[string]interface{})
+			selectors := attributes["selectors"].(map[string]interface{})
+			selectors["trigger_source"] = "future_security_source"
+		})
+		if response.UnparsedObject != nil {
+			t.Fatal("SDK-decoded forward-incompatible list has non-nil outer UnparsedObject")
+		}
+		if len(response.Data) != 1 {
+			t.Fatalf("SDK-decoded forward-incompatible list length = %d, want 1", len(response.Data))
+		}
+		if response.Data[0].UnparsedObject == nil {
+			t.Fatal("SDK-decoded forward-incompatible rule has nil child UnparsedObject")
+		}
+
+		rules, err := securityNotificationRulesFromResponse(response)
+		if err != nil {
+			t.Fatalf("securityNotificationRulesFromResponse returned error: %v", err)
+		}
+		if got := notificationRuleIDs(rules); !reflect.DeepEqual(got, []string{"forward-compatible-rule"}) {
+			t.Fatalf("notification rule IDs = %v, want [forward-compatible-rule]", got)
+		}
+
+		generator := &SecurityNotificationRuleGenerator{}
+		resource, err := generator.createResource(rules[0])
+		if err != nil {
+			t.Fatalf("createResource returned error: %v", err)
+		}
+		if resource.InstanceState.ID != "forward-compatible-rule" || resource.InstanceInfo.Type != "datadog_security_notification_rule" {
+			t.Fatalf("resource identity = (%q, %q), want forward-compatible-rule and datadog_security_notification_rule", resource.InstanceState.ID, resource.InstanceInfo.Type)
+		}
+	})
 }
 
 func TestSecurityNotificationRulesFromRawResponseShapes(t *testing.T) {
@@ -95,6 +278,7 @@ func TestSecurityNotificationRulesFromRawResponseShapes(t *testing.T) {
 			}},
 			wantIDs: []string{"signal-rule", "vulnerability-rule"},
 		},
+		{name: "empty data list", raw: map[string]interface{}{"data": []interface{}{}}, wantIDs: []string{}},
 		{name: "missing data", raw: map[string]interface{}{}, wantErrParts: []string{"missing data"}},
 		{name: "null data", raw: map[string]interface{}{"data": nil}, wantErrParts: []string{"data", "null"}},
 		{name: "object data", raw: map[string]interface{}{"data": map[string]interface{}{}}, wantErrParts: []string{"data", "list"}},
@@ -251,6 +435,14 @@ func TestGetSecurityNotificationRuleFallbackPolicy(t *testing.T) {
 			wantID:    "rule",
 		},
 		{
+			name: "signal response ID mismatch does not fall back",
+			responses: map[string]notificationRuleHTTPFixture{
+				"/api/v2/security/signals/notification_rules/rule": {body: securityNotificationRuleResponseJSON(t, "other-rule")},
+			},
+			wantPaths:    []string{"/api/v2/security/signals/notification_rules/rule"},
+			wantErrParts: []string{"signal", `"other-rule"`, `"rule"`, "does not match"},
+		},
+		{
 			name: "signal 404 then decoded vulnerability rule",
 			responses: map[string]notificationRuleHTTPFixture{
 				"/api/v2/security/signals/notification_rules/rule":         {status: http.StatusNotFound},
@@ -273,6 +465,18 @@ func TestGetSecurityNotificationRuleFallbackPolicy(t *testing.T) {
 				"/api/v2/security/vulnerabilities/notification_rules/rule",
 			},
 			wantID: "rule",
+		},
+		{
+			name: "vulnerability response ID mismatch",
+			responses: map[string]notificationRuleHTTPFixture{
+				"/api/v2/security/signals/notification_rules/rule":         {status: http.StatusNotFound},
+				"/api/v2/security/vulnerabilities/notification_rules/rule": {body: securityNotificationRuleResponseJSON(t, "other-rule")},
+			},
+			wantPaths: []string{
+				"/api/v2/security/signals/notification_rules/rule",
+				"/api/v2/security/vulnerabilities/notification_rules/rule",
+			},
+			wantErrParts: []string{"vulnerability", `"other-rule"`, `"rule"`, "does not match"},
 		},
 		{
 			name: "both endpoints return 404",
@@ -573,7 +777,7 @@ func TestSecurityNotificationRuleInitResourcesDiscovery(t *testing.T) {
 }
 
 func TestSecurityNotificationRuleTypedAndRawResourcesHaveEquivalentIdentity(t *testing.T) {
-	typedRules, err := securityNotificationRulesFromRawData(datadogV2.NotificationRulesListResponse{
+	typedRules, err := securityNotificationRulesFromResponse(datadogV2.NotificationRulesListResponse{
 		Data: []datadogV2.NotificationRule{securityNotificationRule("rule")},
 	})
 	if err != nil {
@@ -745,7 +949,7 @@ func TestListSecurityNotificationRulesClosesResponseBodies(t *testing.T) {
 		},
 		{
 			name:                  "vulnerability list error",
-			signalResponse:        datadogV2.NotificationRulesListResponse{},
+			signalResponse:        datadogV2.NotificationRulesListResponse{Data: []datadogV2.NotificationRule{}},
 			vulnerabilityStatus:   http.StatusInternalServerError,
 			vulnerabilityErr:      errors.New("500 Internal Server Error"),
 			wantVulnerabilityCall: true,
@@ -760,7 +964,7 @@ func TestListSecurityNotificationRulesClosesResponseBodies(t *testing.T) {
 		},
 		{
 			name:           "vulnerability parse error",
-			signalResponse: datadogV2.NotificationRulesListResponse{},
+			signalResponse: datadogV2.NotificationRulesListResponse{Data: []datadogV2.NotificationRule{}},
 			vulnerabilityResponse: datadogV2.NotificationRulesListResponse{UnparsedObject: map[string]interface{}{
 				"data": []interface{}{map[string]interface{}{"id": "missing-type"}},
 			}},
@@ -952,6 +1156,38 @@ func securityNotificationRuleListResponseJSONTyped(t *testing.T, ids ...string) 
 	}
 	response := datadogV2.NotificationRulesListResponse{Data: rules}
 	return marshalSecurityNotificationRuleJSON(t, response)
+}
+
+func securityNotificationRuleListResponseWithType(t *testing.T, id string, ruleType string) datadogV2.NotificationRulesListResponse {
+	return securityNotificationRuleListResponseWithMutation(t, id, func(rawRule map[string]interface{}) {
+		rawRule["type"] = ruleType
+	})
+}
+
+func securityNotificationRuleListResponseWithMutation(t *testing.T, id string, mutate func(map[string]interface{})) datadogV2.NotificationRulesListResponse {
+	t.Helper()
+
+	var rawResponse map[string]interface{}
+	if err := json.Unmarshal([]byte(securityNotificationRuleListResponseJSONTyped(t, id)), &rawResponse); err != nil {
+		t.Fatalf("unmarshal notification rule list fixture: %v", err)
+	}
+	rawRules := rawResponse["data"].([]interface{})
+	if mutate != nil {
+		mutate(rawRules[0].(map[string]interface{}))
+	}
+
+	payload, err := json.Marshal(rawResponse)
+	if err != nil {
+		t.Fatalf("marshal notification rule list fixture: %v", err)
+	}
+	var response datadogV2.NotificationRulesListResponse
+	if err := json.Unmarshal(payload, &response); err != nil {
+		t.Fatalf("decode notification rule list fixture through SDK model: %v", err)
+	}
+	if response.UnparsedObject != nil {
+		t.Fatal("SDK-decoded notification rule list has non-nil outer UnparsedObject")
+	}
+	return response
 }
 
 func marshalSecurityNotificationRuleJSON(t *testing.T, value interface{}) string {
