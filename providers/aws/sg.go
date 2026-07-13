@@ -85,18 +85,7 @@ func processRule(rule types.IpPermission, ruleType string, sg types.SecurityGrou
 		return resources
 	}
 	if len(rule.UserIdGroupPairs) > 0 {
-		if len(rule.IpRanges) > 0 { // we must unwind coupled CIDR IPv4 range + security group rules
-			attributes := baseRuleAttributes(ruleType, rule, sg)
-			resources = append(resources, terraformutils.NewResource(
-				permissionID(*sg.GroupId, ruleType, "", rule),
-				permissionID(*sg.GroupId, ruleType, "", rule),
-				"aws_security_group_rule",
-				"aws",
-				terraformutils.Flatten(attributes),
-				SgAllowEmptyValues,
-				map[string]interface{}{}))
-		}
-		if len(rule.Ipv6Ranges) > 0 { // we must unwind coupled CIDR IPv6 range + security group rules
+		if len(rule.IpRanges) > 0 || len(rule.Ipv6Ranges) > 0 { // we must unwind coupled CIDR ranges + security group rules
 			attributes := baseRuleAttributes(ruleType, rule, sg)
 			resources = append(resources, terraformutils.NewResource(
 				permissionID(*sg.GroupId, ruleType, "", rule),
@@ -118,7 +107,7 @@ func processRule(rule types.IpPermission, ruleType string, sg types.SecurityGrou
 			if referencedGroupID == securityGroupID { // Solution to C1
 				attributes["self"] = true
 			} else {
-				attributes["source_security_group_id"] = sourceSecurityGroupID(groupPair)
+				attributes["source_security_group_id"] = sourceSecurityGroupID(groupPair, StringValue(sg.OwnerId))
 			}
 
 			resources = append(resources, terraformutils.NewResource(
@@ -158,10 +147,11 @@ func baseRuleAttributes(ruleType string, rule types.IpPermission, sg types.Secur
 	return attributes
 }
 
-func sourceSecurityGroupID(groupPair types.UserIdGroupPair) string {
+func sourceSecurityGroupID(groupPair types.UserIdGroupPair, ownerID string) string {
 	groupID := StringValue(groupPair.GroupId)
-	if ownerID := StringValue(groupPair.UserId); ownerID != "" {
-		return ownerID + "/" + groupID
+	referencedOwnerID := StringValue(groupPair.UserId)
+	if ownerID != "" && referencedOwnerID != "" && ownerID != referencedOwnerID {
+		return referencedOwnerID + "/" + groupID
 	}
 	return groupID
 }

@@ -485,17 +485,20 @@ func TestSecurityGroupResourceGenerationSkipsNilReferences(t *testing.T) {
 	assertSecurityGroupResourceCounts(t, resources, 1)
 }
 
-func TestSecurityGroupSplitRulePreservesCrossAccountOwner(t *testing.T) {
+func TestSecurityGroupSplitRulePreservesOwnerSemantics(t *testing.T) {
 	disableSplitSecurityGroupRules(t)
 	crossAccountPermission := securityGroupPermission("bbbb")
+	crossAccountPermission.UserIdGroupPairs[0].UserId = aws.String("local-owner")
 	crossAccountPermission.UserIdGroupPairs = append(crossAccountPermission.UserIdGroupPairs, types.UserIdGroupPair{
 		GroupId: aws.String("external"),
-		UserId:  aws.String("test-owner"),
+		UserId:  aws.String("remote-owner"),
 	})
 	groups := []types.SecurityGroup{
 		testSecurityGroup("aaaa", nil, []types.IpPermission{crossAccountPermission}),
 		testSecurityGroup("bbbb", nil, []types.IpPermission{securityGroupPermission("aaaa")}),
 	}
+	groups[0].OwnerId = aws.String("local-owner")
+	groups[1].OwnerId = aws.String("local-owner")
 
 	resources := (SecurityGenerator{}).createResources(groups)
 	assertSecurityGroupResourceCounts(t, resources, 2)
@@ -504,9 +507,39 @@ func TestSecurityGroupSplitRulePreservesCrossAccountOwner(t *testing.T) {
 		sources = append(sources, resource.InstanceState.Attributes["source_security_group_id"])
 	}
 	sort.Strings(sources)
-	want := []string{"bbbb", "test-owner/external"}
+	want := []string{"bbbb", "remote-owner/external"}
 	if !reflect.DeepEqual(sources, want) {
 		t.Fatalf("split rule sources = %v, want %v", sources, want)
+	}
+}
+
+func TestSecurityGroupSplitRuleCoalescesDualStackCIDRs(t *testing.T) {
+	disableSplitSecurityGroupRules(t)
+	compoundPermission := securityGroupPermission("bbbb")
+	compoundPermission.IpRanges = []types.IpRange{{CidrIp: aws.String("10.0.0.0/8")}}
+	compoundPermission.Ipv6Ranges = []types.Ipv6Range{{CidrIpv6: aws.String("2001:db8::/32")}}
+	groups := []types.SecurityGroup{
+		testSecurityGroup("aaaa", nil, []types.IpPermission{compoundPermission}),
+		testSecurityGroup("bbbb", nil, []types.IpPermission{securityGroupPermission("aaaa")}),
+	}
+
+	resources := (SecurityGenerator{}).createResources(groups)
+	assertSecurityGroupResourceCounts(t, resources, 2)
+	standaloneRules := resourcesOfType(resources, "aws_security_group_rule")
+	resourceIDs := make(map[string]struct{}, len(standaloneRules))
+	var dualStackRules int
+	for _, resource := range standaloneRules {
+		resourceIDs[resource.InstanceInfo.Id] = struct{}{}
+		attributes := resource.InstanceState.Attributes
+		if attributes["cidr_blocks.#"] == "1" && attributes["ipv6_cidr_blocks.#"] == "1" {
+			dualStackRules++
+		}
+	}
+	if len(resourceIDs) != len(standaloneRules) {
+		t.Fatalf("standalone rule IDs are not unique: %v", standaloneRules)
+	}
+	if dualStackRules != 1 {
+		t.Fatalf("dual-stack standalone rule count = %d, want 1", dualStackRules)
 	}
 }
 
