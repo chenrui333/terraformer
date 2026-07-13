@@ -3,7 +3,7 @@
 package terraformutils
 
 import (
-	"log"
+	"fmt"
 	"strings"
 
 	"github.com/chenrui333/terraformer/terraformutils/providerwrapper"
@@ -13,8 +13,8 @@ type ServiceGenerator interface {
 	InitResources() error
 	GetResources() []Resource
 	SetResources(resources []Resource)
-	ParseFilter(rawFilter string) []ResourceFilter
-	ParseFilters(rawFilters []string)
+	ParseFilter(rawFilter string) ([]ResourceFilter, error)
+	ParseFilters(rawFilters []string) error
 	PostConvertHook() error
 	GetArgs() map[string]interface{}
 	SetArgs(args map[string]interface{})
@@ -55,55 +55,147 @@ func (s *Service) SetVerbose(verbose bool) {
 	s.Verbose = verbose
 }
 
-func (s *Service) ParseFilters(rawFilters []string) {
-	s.Filter = []ResourceFilter{}
+func ParseFilters(rawFilters []string) ([]ResourceFilter, error) {
+	filters := make([]ResourceFilter, 0, len(rawFilters))
 	for _, rawFilter := range rawFilters {
-		filters := s.ParseFilter(rawFilter)
-		s.Filter = append(s.Filter, filters...)
+		parsed, err := ParseFilter(rawFilter)
+		if err != nil {
+			return nil, err
+		}
+		filters = append(filters, parsed...)
+	}
+	return filters, nil
+}
+
+func ParseFilter(rawFilter string) ([]ResourceFilter, error) {
+	if rawFilter == "" {
+		return nil, invalidFilter(rawFilter, "filter is empty")
+	}
+	if _, err := ParseFilterValues(rawFilter); err != nil {
+		return nil, invalidFilter(rawFilter, err.Error())
+	}
+
+	parts := strings.Split(rawFilter, ";")
+	switch len(parts) {
+	case 1:
+		if strings.HasPrefix(rawFilter, "Name=") {
+			fieldPath, err := parseFilterComponent(parts[0], "Name")
+			if err != nil {
+				return nil, invalidFilter(rawFilter, err.Error())
+			}
+			return []ResourceFilter{{FieldPath: fieldPath}}, nil
+		}
+
+		simple := strings.SplitN(rawFilter, "=", 2)
+		if len(simple) != 2 {
+			return nil, invalidFilter(rawFilter, "expected service=value")
+		}
+		serviceName, rawValues := simple[0], simple[1]
+		if strings.TrimSpace(serviceName) == "" {
+			return nil, invalidFilter(rawFilter, "service name is empty")
+		}
+		if serviceName == "Type" || serviceName == "Value" {
+			return nil, invalidFilter(rawFilter, "expected service=value or a complete named filter")
+		}
+		values, err := ParseFilterValues(rawValues)
+		if err != nil {
+			return nil, invalidFilter(rawFilter, err.Error())
+		}
+		if len(values) == 0 {
+			return nil, invalidFilter(rawFilter, "filter value is empty")
+		}
+		return []ResourceFilter{{ServiceName: serviceName, FieldPath: "id", AcceptableValues: values}}, nil
+	case 2:
+		fieldPath, err := parseFilterComponent(parts[0], "Name")
+		if err != nil {
+			return nil, invalidFilter(rawFilter, err.Error())
+		}
+		rawValues, err := parseFilterComponent(parts[1], "Value")
+		if err != nil {
+			return nil, invalidFilter(rawFilter, err.Error())
+		}
+		values, err := ParseFilterValues(rawValues)
+		if err != nil {
+			return nil, invalidFilter(rawFilter, err.Error())
+		}
+		if len(values) == 0 {
+			return nil, invalidFilter(rawFilter, "filter value is empty")
+		}
+		return []ResourceFilter{{FieldPath: fieldPath, AcceptableValues: values}}, nil
+	case 3:
+		serviceName, err := parseFilterComponent(parts[0], "Type")
+		if err != nil {
+			return nil, invalidFilter(rawFilter, err.Error())
+		}
+		fieldPath, err := parseFilterComponent(parts[1], "Name")
+		if err != nil {
+			return nil, invalidFilter(rawFilter, err.Error())
+		}
+		rawValues, err := parseFilterComponent(parts[2], "Value")
+		if err != nil {
+			return nil, invalidFilter(rawFilter, err.Error())
+		}
+		values, err := ParseFilterValues(rawValues)
+		if err != nil {
+			return nil, invalidFilter(rawFilter, err.Error())
+		}
+		if len(values) == 0 {
+			return nil, invalidFilter(rawFilter, "filter value is empty")
+		}
+		return []ResourceFilter{{ServiceName: serviceName, FieldPath: fieldPath, AcceptableValues: values}}, nil
+	default:
+		return nil, invalidFilter(rawFilter, "unexpected semicolon component")
 	}
 }
 
-func (s *Service) ParseFilter(rawFilter string) []ResourceFilter {
-	var filters []ResourceFilter
-	if !strings.HasPrefix(rawFilter, "Name=") && len(strings.Split(rawFilter, "=")) == 2 {
-		parts := strings.Split(rawFilter, "=")
-		serviceName, resourcesID := parts[0], parts[1]
-		filters = append(filters, ResourceFilter{
-			ServiceName:      serviceName,
-			FieldPath:        "id",
-			AcceptableValues: ParseFilterValues(resourcesID),
-		})
-	} else {
-		parts := strings.Split(rawFilter, ";")
-		if (len(parts) != 1 || !strings.HasPrefix(rawFilter, "Name=")) && len(parts) != 2 && len(parts) != 3 {
-			log.Print("Invalid filter: " + rawFilter)
-			return filters
-		}
-		var ServiceNamePart string
-		var FieldPathPart string
-		var AcceptableValuesPart string
-		switch len(parts) {
-		case 1:
-			ServiceNamePart = ""
-			FieldPathPart = parts[0]
-			AcceptableValuesPart = ""
-		case 2:
-			ServiceNamePart = ""
-			FieldPathPart = parts[0]
-			AcceptableValuesPart = parts[1]
-		default:
-			ServiceNamePart = strings.TrimPrefix(parts[0], "Type=")
-			FieldPathPart = parts[1]
-			AcceptableValuesPart = parts[2]
-		}
-
-		filters = append(filters, ResourceFilter{
-			ServiceName:      ServiceNamePart,
-			FieldPath:        strings.TrimPrefix(FieldPathPart, "Name="),
-			AcceptableValues: ParseFilterValues(strings.TrimPrefix(AcceptableValuesPart, "Value=")),
-		})
+func parseFilterComponent(component, name string) (string, error) {
+	parts := strings.SplitN(component, "=", 2)
+	if len(parts) != 2 || parts[0] != name {
+		return "", fmt.Errorf("expected %s= component", name)
 	}
-	return filters
+	if strings.TrimSpace(parts[1]) == "" {
+		return "", fmt.Errorf("%s value is empty", name)
+	}
+	if name != "Value" && strings.Contains(parts[1], "=") {
+		return "", fmt.Errorf("%s value contains an unexpected separator", name)
+	}
+	return parts[1], nil
+}
+
+func invalidFilter(rawFilter, reason string) error {
+	return fmt.Errorf("invalid filter %q: %s", filterForError(rawFilter), reason)
+}
+
+func filterForError(rawFilter string) string {
+	parts := strings.Split(rawFilter, ";")
+	for i, part := range parts {
+		keyValue := strings.SplitN(part, "=", 2)
+		if len(keyValue) != 2 {
+			continue
+		}
+		if keyValue[0] == "Type" || keyValue[0] == "Name" {
+			continue
+		}
+		key := keyValue[0]
+		if key == "" {
+			key = "<empty>"
+		}
+		parts[i] = key + "=<redacted>"
+	}
+	return strings.Join(parts, ";")
+}
+
+func (s *Service) ParseFilters(rawFilters []string) error {
+	filters, err := ParseFilters(rawFilters)
+	if err != nil {
+		return err
+	}
+	s.Filter = filters
+	return nil
+}
+
+func (s *Service) ParseFilter(rawFilter string) ([]ResourceFilter, error) {
+	return ParseFilter(rawFilter)
 }
 
 func (s *Service) SetName(name string) {

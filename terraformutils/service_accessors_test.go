@@ -92,7 +92,10 @@ func TestServiceInitResourcesPanics(t *testing.T) {
 
 func TestServiceParseFilterThreeParts(t *testing.T) {
 	s := &Service{}
-	filters := s.ParseFilter("Type=vpc;Name=tags.env;Value=prod")
+	filters, err := s.ParseFilter("Type=vpc;Name=tags.env;Value=prod")
+	if err != nil {
+		t.Fatalf("ParseFilter() error = %v", err)
+	}
 	if len(filters) != 1 {
 		t.Fatalf("ParseFilter() len = %d, want 1", len(filters))
 	}
@@ -110,9 +113,12 @@ func TestServiceParseFilterThreeParts(t *testing.T) {
 
 func TestServiceParseFilterInvalid(t *testing.T) {
 	s := &Service{}
-	filters := s.ParseFilter("a;b;c;d")
+	filters, err := s.ParseFilter("a;b;c;d")
+	if err == nil {
+		t.Fatal("ParseFilter() error = nil, want error")
+	}
 	if len(filters) != 0 {
-		t.Errorf("ParseFilter() for invalid input should return empty, got %d", len(filters))
+		t.Errorf("ParseFilter() for invalid input returned %d filters, want 0", len(filters))
 	}
 }
 

@@ -8,18 +8,21 @@ import (
 	"github.com/chenrui333/terraformer/terraformutils"
 )
 
-func (s *AWSService) ParseFilters(rawFilters []string) {
-	s.Filter = []terraformutils.ResourceFilter{}
-	for _, rawFilter := range rawFilters {
-		filters := s.ParseFilter(rawFilter)
-		s.Filter = append(s.Filter, filters...)
+func (s *AWSService) ParseFilters(rawFilters []string) error {
+	if err := s.Service.ParseFilters(rawFilters); err != nil {
+		return err
 	}
+	normalizeAWSResourceFilters(s.Filter)
+	return nil
 }
 
-func (s *AWSService) ParseFilter(rawFilter string) []terraformutils.ResourceFilter {
-	filters := s.Service.ParseFilter(rawFilter)
+func (s *AWSService) ParseFilter(rawFilter string) ([]terraformutils.ResourceFilter, error) {
+	filters, err := s.Service.ParseFilter(rawFilter)
+	if err != nil {
+		return nil, err
+	}
 	normalizeAWSResourceFilters(filters)
-	return filters
+	return filters, nil
 }
 
 func shouldLoadAWSResourceForTypedFilters(filters []terraformutils.ResourceFilter, serviceNames ...string) bool {

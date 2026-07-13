@@ -50,7 +50,7 @@ func (g *TopicGenerator) InitResources() error {
 	return nil
 }
 
-func (g *TopicGenerator) ParseFilter(rawFilter string) []terraformutils.ResourceFilter {
+func (g *TopicGenerator) ParseFilter(rawFilter string) ([]terraformutils.ResourceFilter, error) {
 	normalized := rawFilter
 	for _, prefix := range []string{"kafka_topic=", "topics="} {
 		if strings.HasPrefix(rawFilter, prefix) {
@@ -61,11 +61,17 @@ func (g *TopicGenerator) ParseFilter(rawFilter string) []terraformutils.Resource
 	return g.Service.ParseFilter(normalized)
 }
 
-func (g *TopicGenerator) ParseFilters(rawFilters []string) {
-	g.Filter = []terraformutils.ResourceFilter{}
+func (g *TopicGenerator) ParseFilters(rawFilters []string) error {
+	filters := []terraformutils.ResourceFilter{}
 	for _, rawFilter := range rawFilters {
-		g.Filter = append(g.Filter, g.ParseFilter(rawFilter)...)
+		parsed, err := g.ParseFilter(rawFilter)
+		if err != nil {
+			return err
+		}
+		filters = append(filters, parsed...)
 	}
+	g.Filter = filters
+	return nil
 }
 
 func (g *TopicGenerator) listTopics(admin adminClient, config Config) ([]Topic, error) {

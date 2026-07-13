@@ -20,11 +20,11 @@ func (s *AwsFacade) SetVerbose(verbose bool) {
 	s.service.SetVerbose(verbose)
 }
 
-func (s *AwsFacade) ParseFilters(rawFilters []string) {
-	s.service.ParseFilters(rawFilters)
+func (s *AwsFacade) ParseFilters(rawFilters []string) error {
+	return s.service.ParseFilters(rawFilters)
 }
 
-func (s *AwsFacade) ParseFilter(rawFilter string) []terraformutils.ResourceFilter {
+func (s *AwsFacade) ParseFilter(rawFilter string) ([]terraformutils.ResourceFilter, error) {
 	return s.service.ParseFilter(rawFilter)
 }
 

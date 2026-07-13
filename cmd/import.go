@@ -115,6 +115,15 @@ func newImportCmd() *cobra.Command {
 func Import(provider terraformutils.ProviderGenerator, options ImportOptions, args []string) error {
 	importExecuted = true
 	sessionKey := provider.GetName() + ":" + strings.Join(args, ":")
+	if _, err := terraformutils.ParseFilters(options.Filter); err != nil {
+		processReport.Add(importreport.ResourceEvent{
+			Service:  provider.GetName(),
+			Status:   importreport.StatusFailed,
+			Category: importreport.ClassifyError(err),
+			Error:    err.Error(),
+		})
+		return err
+	}
 
 	providerWrapper, options, err := initOptionsAndWrapper(provider, options, args)
 	if err != nil {
@@ -315,7 +324,10 @@ func initServiceResources(service string, provider terraformutils.ProviderGenera
 		log.Printf("%s error importing %s, err: %s\n", provider.GetName(), service, err)
 		return err
 	}
-	provider.GetService().ParseFilters(options.Filter)
+	if err := provider.GetService().ParseFilters(options.Filter); err != nil {
+		log.Printf("%s error parsing filters for %s, err: %s\n", provider.GetName(), service, err)
+		return err
+	}
 	err = provider.GetService().InitResources()
 	if err != nil {
 		log.Printf("%s error initializing resources in service %s, err: %s\n", provider.GetName(), service, err)

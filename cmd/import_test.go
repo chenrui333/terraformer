@@ -37,6 +37,16 @@ type validatingTestProvider struct {
 	resources []string
 }
 
+type initializationTrackingProvider struct {
+	testProvider
+	initCalled bool
+}
+
+func (p *initializationTrackingProvider) Init(_ []string) error {
+	p.initCalled = true
+	return nil
+}
+
 func (p *validatingTestProvider) ValidateImport(resources []string) error {
 	p.resources = append([]string(nil), resources...)
 	return p.err
@@ -112,6 +122,23 @@ func TestValidateImport(t *testing.T) {
 	}
 	if !reflect.DeepEqual(provider.resources, resources) {
 		t.Fatalf("expected validator resources %v, got %v", resources, provider.resources)
+	}
+}
+
+func TestImportRejectsInvalidFilterBeforeProviderInitialization(t *testing.T) {
+	provider := &initializationTrackingProvider{
+		testProvider: testProvider{name: "filter-validation-test"},
+	}
+
+	err := Import(provider, ImportOptions{
+		Resources: []string{"service"},
+		Filter:    []string{"valid=id", "Type=service;Name=id;Value="},
+	}, nil)
+	if err == nil {
+		t.Fatal("Import() error = nil, want invalid filter error")
+	}
+	if provider.initCalled {
+		t.Fatal("provider.Init() called for invalid filters")
 	}
 }
 

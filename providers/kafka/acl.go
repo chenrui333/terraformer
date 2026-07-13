@@ -51,23 +51,36 @@ func (g *ACLGenerator) InitResources() error {
 	return nil
 }
 
-func (g *ACLGenerator) ParseFilter(rawFilter string) []terraformutils.ResourceFilter {
+func (g *ACLGenerator) ParseFilter(rawFilter string) ([]terraformutils.ResourceFilter, error) {
+	if _, err := terraformutils.ParseFilter(rawFilter); err != nil {
+		return nil, err
+	}
 	for _, prefix := range []string{"kafka_acl=", "acls=", "acl="} {
 		if strings.HasPrefix(rawFilter, prefix) {
-			return []terraformutils.ResourceFilter{aclIDFilter(strings.TrimPrefix(rawFilter, prefix))}
+			value := strings.TrimPrefix(rawFilter, prefix)
+			if value == "" {
+				return nil, fmt.Errorf("invalid filter %q: filter value is empty", strings.TrimSuffix(prefix, "=")+"=<redacted>")
+			}
+			return []terraformutils.ResourceFilter{aclIDFilter(value)}, nil
 		}
 	}
 	if filter, ok := parseACLIDFilter(rawFilter); ok {
-		return []terraformutils.ResourceFilter{filter}
+		return []terraformutils.ResourceFilter{filter}, nil
 	}
 	return g.Service.ParseFilter(rawFilter)
 }
 
-func (g *ACLGenerator) ParseFilters(rawFilters []string) {
-	g.Filter = []terraformutils.ResourceFilter{}
+func (g *ACLGenerator) ParseFilters(rawFilters []string) error {
+	filters := []terraformutils.ResourceFilter{}
 	for _, rawFilter := range rawFilters {
-		g.Filter = append(g.Filter, g.ParseFilter(rawFilter)...)
+		parsed, err := g.ParseFilter(rawFilter)
+		if err != nil {
+			return err
+		}
+		filters = append(filters, parsed...)
 	}
+	g.Filter = filters
+	return nil
 }
 
 func parseACLIDFilter(rawFilter string) (terraformutils.ResourceFilter, bool) {

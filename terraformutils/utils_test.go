@@ -171,7 +171,10 @@ func TestParseFilterValues(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := ParseFilterValues(tc.input)
+			got, err := ParseFilterValues(tc.input)
+			if err != nil {
+				t.Fatalf("ParseFilterValues(%q) error = %v", tc.input, err)
+			}
 			if len(got) != len(tc.want) {
 				t.Errorf("ParseFilterValues(%q) = %v, want %v", tc.input, got, tc.want)
 				return
@@ -183,11 +186,17 @@ func TestParseFilterValues(t *testing.T) {
 			}
 		})
 	}
+
+	if _, err := ParseFilterValues("'unbalanced"); err == nil {
+		t.Fatal("ParseFilterValues() error = nil for unbalanced quote")
+	}
 }
 
 func TestContainsResource(t *testing.T) {
-	r1 := Resource{InstanceInfo: &tfcompat.InstanceInfo{Id: "aws_vpc.a"}}
-	r2 := Resource{InstanceInfo: &tfcompat.InstanceInfo{Id: "aws_vpc.b"}}
+	r1 := NewSimpleResource("shared-id", "a", "aws_vpc", "aws", nil)
+	r2 := NewSimpleResource("different-id", "b", "aws_vpc", "aws", nil)
+	sameRemoteObject := NewSimpleResource("shared-id", "different-name", "aws_vpc", "aws", nil)
+	differentResourceType := NewSimpleResource("shared-id", "same-id-subnet", "aws_subnet", "aws", nil)
 
 	list := []Resource{r1}
 
@@ -196,6 +205,32 @@ func TestContainsResource(t *testing.T) {
 	}
 	if ContainsResource(list, r2) {
 		t.Error("should not contain r2")
+	}
+	if !ContainsResource(list, sameRemoteObject) {
+		t.Error("should contain the same provider, resource type, and import ID")
+	}
+	if ContainsResource(list, differentResourceType) {
+		t.Error("should not treat different Terraform resource types with the same import ID as duplicates")
+	}
+}
+
+func TestFilterCleanupDeduplicatesByStableResourceIdentity(t *testing.T) {
+	vpc := NewSimpleResource("shared-id", "vpc", "aws_vpc", "aws", nil)
+	vpcDuplicate := NewSimpleResource("shared-id", "vpc-copy", "aws_vpc", "aws", nil)
+	subnet := NewSimpleResource("shared-id", "subnet", "aws_subnet", "aws", nil)
+	service := Service{
+		Filter:    []ResourceFilter{{FieldPath: "id", AcceptableValues: []string{"shared-id"}}},
+		Resources: []Resource{vpc, vpcDuplicate, subnet},
+	}
+
+	service.InitialCleanup()
+
+	if len(service.Resources) != 2 {
+		t.Fatalf("InitialCleanup() retained %d resources, want 2", len(service.Resources))
+	}
+	if service.Resources[0].InstanceInfo.Type != "aws_vpc" || service.Resources[1].InstanceInfo.Type != "aws_subnet" {
+		t.Fatalf("InitialCleanup() retained unexpected resource types: %s, %s",
+			service.Resources[0].InstanceInfo.Type, service.Resources[1].InstanceInfo.Type)
 	}
 }
 
