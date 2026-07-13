@@ -66,7 +66,16 @@ func (g *ACLGenerator) ParseFilter(rawFilter string) ([]terraformutils.ResourceF
 		}
 		return []terraformutils.ResourceFilter{aclIDFilter(value)}, nil
 	}
-	return g.Service.ParseFilter(rawFilter)
+	filters, err := g.Service.ParseFilter(rawFilter)
+	if err != nil {
+		return nil, err
+	}
+	if strings.HasPrefix(rawFilter, "Name=id;Value=") {
+		for i := range filters {
+			filters[i].ServiceName = "topic"
+		}
+	}
+	return filters, nil
 }
 
 func (g *ACLGenerator) ParseFilters(rawFilters []string) error {
@@ -88,10 +97,16 @@ func kafkaACLFilterValue(rawFilter string) (string, bool) {
 		"acls=",
 		"acl=",
 		"Type=acl;Name=id;Value=",
-		"Name=id;Value=",
 	} {
 		if strings.HasPrefix(rawFilter, prefix) {
 			return strings.TrimPrefix(rawFilter, prefix), true
+		}
+	}
+	const untypedIDPrefix = "Name=id;Value="
+	if strings.HasPrefix(rawFilter, untypedIDPrefix) {
+		value := strings.TrimPrefix(rawFilter, untypedIDPrefix)
+		if strings.Contains(value, "|") {
+			return value, true
 		}
 	}
 	return "", false

@@ -238,6 +238,26 @@ func TestACLIDFilterSyntaxKeepsPrincipalColon(t *testing.T) {
 	}
 }
 
+func TestACLFilterLeavesTopicIDFilterNonApplicable(t *testing.T) {
+	generator := &ACLGenerator{}
+	if err := generator.ParseFilters([]string{"Name=id;Value=orders"}); err != nil {
+		t.Fatalf("ParseFilters() error = %v", err)
+	}
+	if len(generator.Filter) != 1 {
+		t.Fatalf("filter len = %d, want 1", len(generator.Filter))
+	}
+	if generator.Filter[0].ServiceName != "topic" {
+		t.Fatalf("filter service = %q, want topic", generator.Filter[0].ServiceName)
+	}
+	acls, err := generator.explicitlyRequestedACLs()
+	if err != nil {
+		t.Fatalf("explicitlyRequestedACLs() error = %v", err)
+	}
+	if len(acls) != 0 {
+		t.Fatalf("topic filter selected ACLs: %#v", acls)
+	}
+}
+
 func TestACLFilterPreservesProviderSpecificCharacters(t *testing.T) {
 	tests := []struct {
 		rawFilter string
@@ -282,6 +302,7 @@ func TestACLFilterRejectsMalformedImportIDs(t *testing.T) {
 		{name: "wrong segment count", rawFilter: "acl=bad", wantReason: "seven non-empty pipe-delimited segments"},
 		{name: "empty principal", rawFilter: "acl=|*|Write|Allow|Topic|orders|Literal", wantReason: "seven non-empty pipe-delimited segments"},
 		{name: "empty host", rawFilter: "acl=User:producer||Write|Allow|Topic|orders|Literal", wantReason: "seven non-empty pipe-delimited segments"},
+		{name: "untyped empty host", rawFilter: "Name=id;Value=User:producer||Write|Allow|Topic|orders|Literal", wantReason: "seven non-empty pipe-delimited segments"},
 		{name: "empty resource name", rawFilter: "acl=User:producer|*|Write|Allow|Topic||Literal", wantReason: "seven non-empty pipe-delimited segments"},
 		{name: "unbalanced outer quote", rawFilter: "acl='User:producer|*|Write|Allow|Topic|orders|Literal", wantReason: "unbalanced single quote"},
 		{name: "invalid operation", rawFilter: "acl=User:producer|*|InvalidOperation|Allow|Topic|orders|Literal", wantReason: "invalid resource type, pattern type, operation, or permission type"},

@@ -51,6 +51,9 @@ func (g *TopicGenerator) InitResources() error {
 }
 
 func (g *TopicGenerator) ParseFilter(rawFilter string) ([]terraformutils.ResourceFilter, error) {
+	if _, ok := kafkaACLFilterValue(rawFilter); ok {
+		return (&ACLGenerator{}).ParseFilter(rawFilter)
+	}
 	normalized := rawFilter
 	for _, prefix := range []string{"kafka_topic=", "topics="} {
 		if strings.HasPrefix(rawFilter, prefix) {

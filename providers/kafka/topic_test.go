@@ -629,6 +629,31 @@ func TestTopicIDFilterAliases(t *testing.T) {
 	}
 }
 
+func TestTopicFilterIgnoresACLOnlySyntax(t *testing.T) {
+	tests := []string{
+		"acls=User:O'Connor|*|Write|Allow|Topic|orders|Literal",
+		"acls=User:producer|*|Write|Allow|Topic|orders;archive|Literal",
+	}
+
+	for _, rawFilter := range tests {
+		t.Run(rawFilter, func(t *testing.T) {
+			generator := &TopicGenerator{}
+			if err := generator.ParseFilters([]string{rawFilter}); err != nil {
+				t.Fatalf("ParseFilters() error = %v", err)
+			}
+			if len(generator.Filter) != 1 {
+				t.Fatalf("filter len = %d, want 1", len(generator.Filter))
+			}
+			if generator.Filter[0].ServiceName != "acl" {
+				t.Fatalf("filter service = %q, want acl", generator.Filter[0].ServiceName)
+			}
+			if topics := generator.explicitlyRequestedTopics(); len(topics) != 0 {
+				t.Fatalf("ACL-only filter selected topics: %#v", topics)
+			}
+		})
+	}
+}
+
 func TestKafkaTopicResourceNameIsStableForPunctuation(t *testing.T) {
 	first := kafkaTopicResourceName("a.b_c-d/slash")
 	second := kafkaTopicResourceName("a.b_c-d/slash")

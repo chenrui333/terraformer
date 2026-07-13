@@ -113,11 +113,17 @@ func TestProviderValidateFiltersUsesACLGrammar(t *testing.T) {
 	if err := provider.ValidateFilters(filters, []string{"acls"}); err != nil {
 		t.Fatalf("ValidateFilters() error = %v", err)
 	}
+	if err := provider.ValidateFilters(filters, []string{"acls", "topics"}); err != nil {
+		t.Fatalf("ValidateFilters() rejected mixed-resource ACL filters: %v", err)
+	}
 	if err := provider.ValidateFilters([]string{"acl=bad"}, []string{"acls"}); err == nil {
 		t.Fatal("ValidateFilters() error = nil for malformed ACL import ID")
 	}
 	if err := provider.ValidateFilters([]string{"Name=id;Value=orders"}, []string{"topics"}); err != nil {
 		t.Fatalf("ValidateFilters() rejected topic-only filter: %v", err)
+	}
+	if err := provider.ValidateFilters([]string{"Name=id;Value=orders"}, []string{"acls", "topics"}); err != nil {
+		t.Fatalf("ValidateFilters() rejected mixed-resource topic filter: %v", err)
 	}
 }
 
