@@ -180,6 +180,9 @@ func filterForError(rawFilter string) string {
 			continue
 		}
 		if keyValue[0] == "Type" || keyValue[0] == "Name" {
+			if strings.Contains(keyValue[1], "=") {
+				parts[i] = keyValue[0] + "=<redacted>"
+			}
 			continue
 		}
 		key := keyValue[0]

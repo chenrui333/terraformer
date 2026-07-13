@@ -117,6 +117,18 @@ func TestParseFilterSyntax(t *testing.T) {
 			wantErr:     true,
 			errorValues: []string{"top-secret", "still-secret"},
 		},
+		{
+			name:        "error redacts malformed Type component",
+			raw:         "Type=service=type-secret;Name=id;Value=x",
+			wantErr:     true,
+			errorValues: []string{"type-secret"},
+		},
+		{
+			name:        "error redacts malformed Name component",
+			raw:         "Name=field=name-secret;Value=x",
+			wantErr:     true,
+			errorValues: []string{"name-secret"},
+		},
 	}
 
 	for _, tt := range tests {

@@ -116,6 +116,9 @@ func TestProviderValidateFiltersUsesACLGrammar(t *testing.T) {
 	if err := provider.ValidateFilters([]string{"acl=bad"}, []string{"acls"}); err == nil {
 		t.Fatal("ValidateFilters() error = nil for malformed ACL import ID")
 	}
+	if err := provider.ValidateFilters([]string{"Name=id;Value=orders"}, []string{"topics"}); err != nil {
+		t.Fatalf("ValidateFilters() rejected topic-only filter: %v", err)
+	}
 }
 
 func forbiddenTestSecrets() []string {

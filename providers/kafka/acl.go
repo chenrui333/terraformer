@@ -53,12 +53,16 @@ func (g *ACLGenerator) InitResources() error {
 
 func (g *ACLGenerator) ParseFilter(rawFilter string) ([]terraformutils.ResourceFilter, error) {
 	if value, ok := kafkaACLFilterValue(rawFilter); ok {
-		acl, err := parseKafkaACLImportID(value)
-		if err == nil {
-			_, err = acl.SaramaFilter()
-		}
+		value, err := unwrapKafkaACLFilterValue(value)
 		if err != nil {
-			return nil, terraformutils.NewFilterParseError(rawFilter, "Kafka ACL import ID must contain seven valid segments")
+			return nil, terraformutils.NewFilterParseError(rawFilter, err.Error())
+		}
+		acl, err := parseKafkaACLImportID(value)
+		if err != nil {
+			return nil, terraformutils.NewFilterParseError(rawFilter, "Kafka ACL import ID must contain seven non-empty pipe-delimited segments")
+		}
+		if _, err := acl.SaramaFilter(); err != nil {
+			return nil, terraformutils.NewFilterParseError(rawFilter, "Kafka ACL import ID contains an invalid resource type, pattern type, operation, or permission type")
 		}
 		return []terraformutils.ResourceFilter{aclIDFilter(value)}, nil
 	}
@@ -91,6 +95,16 @@ func kafkaACLFilterValue(rawFilter string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+func unwrapKafkaACLFilterValue(value string) (string, error) {
+	if value == "" || value[0] != '\'' {
+		return value, nil
+	}
+	if len(value) == 1 || value[len(value)-1] != '\'' {
+		return "", fmt.Errorf("unbalanced single quote")
+	}
+	return value[1 : len(value)-1], nil
 }
 
 func aclIDFilter(id string) terraformutils.ResourceFilter {
@@ -259,6 +273,12 @@ func parseKafkaACLImportID(id string) (ACL, error) {
 	parts := strings.Split(id, "|")
 	if len(parts) != 7 {
 		return ACL{}, fmt.Errorf("kafka acl import ID must have 7 pipe-delimited segments, got %d", len(parts))
+	}
+	segmentNames := []string{"principal", "host", "operation", "permission type", "resource type", "resource name", "pattern type"}
+	for i, part := range parts {
+		if part == "" {
+			return ACL{}, fmt.Errorf("kafka acl import ID %s segment is empty", segmentNames[i])
+		}
 	}
 	return ACL{
 		Principal:                 parts[0],

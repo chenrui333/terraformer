@@ -190,6 +190,35 @@ func TestImportUsesProviderFilterValidationBeforeInitialization(t *testing.T) {
 	}
 }
 
+func TestImportAppliesExclusionsBeforeProviderFilterValidation(t *testing.T) {
+	wantErr := errors.New("stop after validation")
+	provider := &providerFilterValidationTestProvider{
+		testProvider: testProvider{
+			name: "provider-filter-validation-test",
+			services: map[string]terraformutils.ServiceGenerator{
+				"acls":   &terraformutils.Service{},
+				"topics": &terraformutils.Service{},
+			},
+		},
+		filterErr: wantErr,
+	}
+
+	err := Import(provider, ImportOptions{
+		Resources: []string{"*"},
+		Excludes:  []string{"acls"},
+		Filter:    []string{"Name=id;Value=orders"},
+	}, nil)
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("Import() error = %v, want %v", err, wantErr)
+	}
+	if !reflect.DeepEqual(provider.validatedResources, []string{"topics"}) {
+		t.Fatalf("validated resources = %#v, want %#v", provider.validatedResources, []string{"topics"})
+	}
+	if provider.initCalled {
+		t.Fatal("provider.Init() called after provider-specific filter validation failed")
+	}
+}
+
 func TestBaseProviderFlags(t *testing.T) {
 	flags := pflag.NewFlagSet("test", pflag.ContinueOnError)
 	options := &ImportOptions{}

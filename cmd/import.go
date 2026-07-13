@@ -119,7 +119,7 @@ func newImportCmd() *cobra.Command {
 func Import(provider terraformutils.ProviderGenerator, options ImportOptions, args []string) error {
 	importExecuted = true
 	sessionKey := provider.GetName() + ":" + strings.Join(args, ":")
-	if err := validateImportFilters(provider, options.Filter, options.Resources); err != nil {
+	if err := validateImportFilters(provider, options.Filter, options.Resources, options.Excludes); err != nil {
 		processReport.Add(importreport.ResourceEvent{
 			Service:  provider.GetName(),
 			Status:   importreport.StatusFailed,
@@ -163,12 +163,34 @@ func Import(provider terraformutils.ProviderGenerator, options ImportOptions, ar
 	return importFromPlan(providerMapping, options, args, processReport, eventStart)
 }
 
-func validateImportFilters(provider terraformutils.ProviderGenerator, filters, resources []string) error {
+func validateImportFilters(provider terraformutils.ProviderGenerator, filters, resources, excludes []string) error {
 	if validator, ok := provider.(importFilterValidator); ok {
-		return validator.ValidateFilters(filters, resources)
+		return validator.ValidateFilters(filters, filterValidationResources(provider, resources, excludes))
 	}
 	_, err := terraformutils.ParseFilters(filters)
 	return err
+}
+
+func filterValidationResources(provider terraformutils.ProviderGenerator, resources, excludes []string) []string {
+	selected := append([]string(nil), resources...)
+	if terraformerstring.ContainsString(selected, "*") {
+		selected = providerServices(provider)
+	}
+	if len(excludes) == 0 {
+		return selected
+	}
+
+	excluded := make(map[string]struct{}, len(excludes))
+	for _, resource := range excludes {
+		excluded[resource] = struct{}{}
+	}
+	effective := make([]string, 0, len(selected))
+	for _, resource := range selected {
+		if _, ok := excluded[resource]; !ok {
+			effective = append(effective, resource)
+		}
+	}
+	return effective
 }
 
 func initOptionsAndWrapper(provider terraformutils.ProviderGenerator, options ImportOptions, args []string) (*providerwrapper.ProviderWrapper, ImportOptions, error) {
