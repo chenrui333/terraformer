@@ -5,7 +5,8 @@
 * Reject malformed import filters before provider initialization, and preserve
   distinct Terraform resource types that share an import ID during filtering.
 * Detect AWS security group dependency cycles that include egress or mixed
-  ingress and egress references when deciding whether to emit standalone rules.
+  ingress and egress references when deciding whether to emit standalone rules,
+  without dropping cross-account rule owner IDs.
 
 ## 0.13.15
 

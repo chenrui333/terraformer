@@ -3,6 +3,7 @@
 package aws
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 	"sort"
@@ -416,6 +417,28 @@ func TestSecurityGroupCycleSelectionIsIndependentOfInputOrder(t *testing.T) {
 	}
 }
 
+func TestSecurityGroupDenseCycleDetection(t *testing.T) {
+	groups := denseSecurityGroups(10)
+	want := []string{
+		"sg-00", "sg-01", "sg-02", "sg-03", "sg-04",
+		"sg-05", "sg-06", "sg-07", "sg-08",
+	}
+
+	got := findSgsToMoveOut(groups)
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("findSgsToMoveOut() = %v, want %v", got, want)
+	}
+}
+
+func BenchmarkSecurityGroupDenseCycleDetection(b *testing.B) {
+	groups := denseSecurityGroups(10)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		findSgsToMoveOut(groups)
+	}
+}
+
 func TestSecurityGroupEgressCycleCreatesStandaloneRules(t *testing.T) {
 	disableSplitSecurityGroupRules(t)
 	groups := []types.SecurityGroup{
@@ -462,6 +485,31 @@ func TestSecurityGroupResourceGenerationSkipsNilReferences(t *testing.T) {
 	assertSecurityGroupResourceCounts(t, resources, 1)
 }
 
+func TestSecurityGroupSplitRulePreservesCrossAccountOwner(t *testing.T) {
+	disableSplitSecurityGroupRules(t)
+	crossAccountPermission := securityGroupPermission("bbbb")
+	crossAccountPermission.UserIdGroupPairs = append(crossAccountPermission.UserIdGroupPairs, types.UserIdGroupPair{
+		GroupId: aws.String("external"),
+		UserId:  aws.String("test-owner"),
+	})
+	groups := []types.SecurityGroup{
+		testSecurityGroup("aaaa", nil, []types.IpPermission{crossAccountPermission}),
+		testSecurityGroup("bbbb", nil, []types.IpPermission{securityGroupPermission("aaaa")}),
+	}
+
+	resources := (SecurityGenerator{}).createResources(groups)
+	assertSecurityGroupResourceCounts(t, resources, 2)
+	var sources []string
+	for _, resource := range resourcesOfType(resources, "aws_security_group_rule") {
+		sources = append(sources, resource.InstanceState.Attributes["source_security_group_id"])
+	}
+	sort.Strings(sources)
+	want := []string{"bbbb", "test-owner/external"}
+	if !reflect.DeepEqual(sources, want) {
+		t.Fatalf("split rule sources = %v, want %v", sources, want)
+	}
+}
+
 func TestSplitSecurityGroupRulesPreservesOverrideBehavior(t *testing.T) {
 	t.Setenv("SPLIT_SG_RULES", "1")
 	groups := []types.SecurityGroup{
@@ -484,6 +532,29 @@ func testSecurityGroup(id string, ingress, egress []types.IpPermission) types.Se
 		IpPermissions:       ingress,
 		IpPermissionsEgress: egress,
 	}
+}
+
+func denseSecurityGroups(count int) []types.SecurityGroup {
+	groupIDs := make([]string, count)
+	for i := range groupIDs {
+		groupIDs[i] = fmt.Sprintf("sg-%02d", i)
+	}
+
+	groups := make([]types.SecurityGroup, 0, count)
+	for _, groupID := range groupIDs {
+		references := make([]string, 0, count-1)
+		for _, referencedGroupID := range groupIDs {
+			if referencedGroupID != groupID {
+				references = append(references, referencedGroupID)
+			}
+		}
+		groups = append(groups, testSecurityGroup(
+			groupID,
+			nil,
+			[]types.IpPermission{securityGroupPermission(references...)},
+		))
+	}
+	return groups
 }
 
 func securityGroupPermission(groupIDs ...string) types.IpPermission {

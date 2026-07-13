@@ -13,7 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/chenrui333/terraformer/terraformutils"
-	"gonum.org/v1/gonum/graph"
 	simplegraph "gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
 )
@@ -119,7 +118,7 @@ func processRule(rule types.IpPermission, ruleType string, sg types.SecurityGrou
 			if referencedGroupID == securityGroupID { // Solution to C1
 				attributes["self"] = true
 			} else {
-				attributes["source_security_group_id"] = referencedGroupID
+				attributes["source_security_group_id"] = sourceSecurityGroupID(groupPair)
 			}
 
 			resources = append(resources, terraformutils.NewResource(
@@ -159,8 +158,15 @@ func baseRuleAttributes(ruleType string, rule types.IpPermission, sg types.Secur
 	return attributes
 }
 
-// Let's try to find all cycles by applying Johnson's method on the directed graph
-// We cannot build a line graph and move out only rules because of hashicorp/terraform#11011
+func sourceSecurityGroupID(groupPair types.UserIdGroupPair) string {
+	groupID := StringValue(groupPair.GroupId)
+	if ownerID := StringValue(groupPair.UserId); ownerID != "" {
+		return ownerID + "/" + groupID
+	}
+	return groupID
+}
+
+// We cannot build a line graph and move out only rules because of hashicorp/terraform#11011.
 func findSgsToMoveOut(securityGroups []types.SecurityGroup) []string {
 	// Vertexes are security groups, edges are rules. The task is to find correct set of rule definitions, so that we
 	// won't have cycles
@@ -214,31 +220,37 @@ func findSgsToMoveOut(securityGroups []types.SecurityGroup) []string {
 		}
 	}
 
-	cyclesInLineGraph := topo.DirectedCyclesIn(sourceGraph) // C1 cycles won't be found but Terraform solves that issue
-	sort.Slice(cyclesInLineGraph, func(i, j int) bool {
-		return securityGroupCycleKey(cyclesInLineGraph[i], nodeToGroupID) <
-			securityGroupCycleKey(cyclesInLineGraph[j], nodeToGroupID)
-	})
 	resultingSet := make(map[string]void)
-
-	for _, v := range cyclesInLineGraph {
-		if securityGroupCycleAlreadyBroken(resultingSet, v, nodeToGroupID) {
-			continue
-		}
-
-		// Move out the node with the fewest total ingress and egress rules.
-		// Use the group ID as a stable tie-breaker.
-		groupID := ""
-		for _, vi := range v {
-			candidateID := nodeToGroupID[vi.ID()]
-			if groupID == "" ||
-				ruleCounts[candidateID] < ruleCounts[groupID] ||
-				(ruleCounts[candidateID] == ruleCounts[groupID] && candidateID < groupID) {
-				groupID = candidateID
+	for {
+		var groupsToMoveOut []string
+		for _, component := range topo.TarjanSCC(sourceGraph) {
+			if len(component) < 2 { // Self references are not graph edges.
+				continue
 			}
+
+			// Move out the node with the fewest total ingress and egress rules.
+			// Use the group ID as a stable tie-breaker.
+			groupID := ""
+			for _, node := range component {
+				candidateID := nodeToGroupID[node.ID()]
+				if groupID == "" ||
+					ruleCounts[candidateID] < ruleCounts[groupID] ||
+					(ruleCounts[candidateID] == ruleCounts[groupID] && candidateID < groupID) {
+					groupID = candidateID
+				}
+			}
+			groupsToMoveOut = append(groupsToMoveOut, groupID)
 		}
-		if groupID != "" {
+		if len(groupsToMoveOut) == 0 {
+			break
+		}
+
+		// Components are disjoint, so their selected nodes can be removed together.
+		// A selected group has no inline outgoing rules and cannot join a later cycle.
+		sort.Strings(groupsToMoveOut)
+		for _, groupID := range groupsToMoveOut {
 			resultingSet[groupID] = member
+			sourceGraph.RemoveNode(groupIDToNode[groupID])
 		}
 	}
 
@@ -276,23 +288,6 @@ func internalSecurityGroupReferences(sg types.SecurityGroup, importedGroupIndexe
 	}
 	sort.Slice(references, func(i, j int) bool { return references[i] < references[j] })
 	return references
-}
-
-func securityGroupCycleKey(cycle []graph.Node, nodeToGroupID map[int64]string) string {
-	groupIDs := make([]string, 0, len(cycle))
-	for _, node := range cycle {
-		groupIDs = append(groupIDs, nodeToGroupID[node.ID()])
-	}
-	return strings.Join(groupIDs, "\x00")
-}
-
-func securityGroupCycleAlreadyBroken(resultingSet map[string]void, cycle []graph.Node, nodeToGroupID map[int64]string) bool {
-	for _, node := range cycle {
-		if _, ok := resultingSet[nodeToGroupID[node.ID()]]; ok {
-			return true
-		}
-	}
-	return false
 }
 
 func (g *SecurityGenerator) InitResources() error {
