@@ -543,6 +543,77 @@ func TestSecurityGroupSplitRuleCoalescesDualStackCIDRs(t *testing.T) {
 	}
 }
 
+func TestSecurityGroupSplitRuleSeparatesPrefixListSources(t *testing.T) {
+	disableSplitSecurityGroupRules(t)
+	compoundPermission := securityGroupPermission("bbbb", "external")
+	compoundPermission.PrefixListIds = []types.PrefixListId{{PrefixListId: aws.String("pl-example")}}
+	groups := []types.SecurityGroup{
+		testSecurityGroup("aaaa", nil, []types.IpPermission{compoundPermission}),
+		testSecurityGroup("bbbb", nil, []types.IpPermission{securityGroupPermission("aaaa")}),
+	}
+
+	resources := (SecurityGenerator{}).createResources(groups)
+	assertSecurityGroupResourceCounts(t, resources, 3)
+	standaloneRules := resourcesOfType(resources, "aws_security_group_rule")
+	var prefixListRules, groupRules int
+	for _, resource := range standaloneRules {
+		attributes := resource.InstanceState.Attributes
+		if attributes["prefix_list_ids.#"] == "1" {
+			prefixListRules++
+		}
+		if _, ok := attributes["source_security_group_id"]; ok {
+			groupRules++
+			if _, ok := attributes["prefix_list_ids.#"]; ok {
+				t.Fatalf("group rule %q retains prefix-list sources: %v", resource.InstanceInfo.Id, attributes)
+			}
+		}
+	}
+	if prefixListRules != 1 {
+		t.Fatalf("prefix-list standalone rule count = %d, want 1", prefixListRules)
+	}
+	if groupRules != 2 {
+		t.Fatalf("security-group standalone rule count = %d, want 2", groupRules)
+	}
+}
+
+func TestSecurityGroupSplitRulePreservesPrefixOnlyPermissionWithNilGroupID(t *testing.T) {
+	t.Setenv("SPLIT_SG_RULES", "1")
+	prefixPermission := securityGroupPermissionPointers(nil)
+	prefixPermission.PrefixListIds = []types.PrefixListId{{PrefixListId: aws.String("pl-example")}}
+	resources := (SecurityGenerator{}).createResources([]types.SecurityGroup{
+		testSecurityGroup("aaaa", nil, []types.IpPermission{prefixPermission}),
+	})
+
+	standaloneRules := resourcesOfType(resources, "aws_security_group_rule")
+	if len(standaloneRules) != 1 {
+		t.Fatalf("security group rule resource count = %d, want 1", len(standaloneRules))
+	}
+	attributes := standaloneRules[0].InstanceState.Attributes
+	if attributes["prefix_list_ids.#"] != "1" {
+		t.Fatalf("prefix-list count = %q, want 1", attributes["prefix_list_ids.#"])
+	}
+	if source := attributes["source_security_group_id"]; source != "" {
+		t.Fatalf("source security group ID = %q, want empty", source)
+	}
+}
+
+func TestSecurityGroupSplitRulePreservesReferencedOwnerWhenGroupOwnerUnknown(t *testing.T) {
+	t.Setenv("SPLIT_SG_RULES", "1")
+	permission := securityGroupPermission("external")
+	permission.UserIdGroupPairs[0].UserId = aws.String("remote-owner")
+	resources := (SecurityGenerator{}).createResources([]types.SecurityGroup{
+		testSecurityGroup("aaaa", nil, []types.IpPermission{permission}),
+	})
+
+	standaloneRules := resourcesOfType(resources, "aws_security_group_rule")
+	if len(standaloneRules) != 1 {
+		t.Fatalf("security group rule resource count = %d, want 1", len(standaloneRules))
+	}
+	if source := standaloneRules[0].InstanceState.Attributes["source_security_group_id"]; source != "remote-owner/external" {
+		t.Fatalf("source security group ID = %q, want remote-owner/external", source)
+	}
+}
+
 func TestSplitSecurityGroupRulesPreservesOverrideBehavior(t *testing.T) {
 	t.Setenv("SPLIT_SG_RULES", "1")
 	groups := []types.SecurityGroup{

@@ -6,7 +6,8 @@
   distinct Terraform resource types that share an import ID during filtering.
 * Detect AWS security group dependency cycles that include egress or mixed
   ingress and egress references when deciding whether to emit standalone rules,
-  without dropping cross-account rule owner IDs or duplicating dual-stack rules.
+  without dropping cross-account rule owner IDs or duplicating compound rule
+  sources.
 
 ## 0.13.15
 

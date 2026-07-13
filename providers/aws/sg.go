@@ -85,7 +85,7 @@ func processRule(rule types.IpPermission, ruleType string, sg types.SecurityGrou
 		return resources
 	}
 	if len(rule.UserIdGroupPairs) > 0 {
-		if len(rule.IpRanges) > 0 || len(rule.Ipv6Ranges) > 0 { // we must unwind coupled CIDR ranges + security group rules
+		if len(rule.IpRanges) > 0 || len(rule.Ipv6Ranges) > 0 || len(rule.PrefixListIds) > 0 { // we must unwind coupled non-group sources + security group rules
 			attributes := baseRuleAttributes(ruleType, rule, sg)
 			resources = append(resources, terraformutils.NewResource(
 				permissionID(*sg.GroupId, ruleType, "", rule),
@@ -104,6 +104,7 @@ func processRule(rule types.IpPermission, ruleType string, sg types.SecurityGrou
 			attributes := baseRuleAttributes(ruleType, rule, sg)
 			delete(attributes, "cidr_blocks")
 			delete(attributes, "ipv6_cidr_blocks")
+			delete(attributes, "prefix_list_ids")
 			if referencedGroupID == securityGroupID { // Solution to C1
 				attributes["self"] = true
 			} else {
@@ -150,7 +151,7 @@ func baseRuleAttributes(ruleType string, rule types.IpPermission, sg types.Secur
 func sourceSecurityGroupID(groupPair types.UserIdGroupPair, ownerID string) string {
 	groupID := StringValue(groupPair.GroupId)
 	referencedOwnerID := StringValue(groupPair.UserId)
-	if ownerID != "" && referencedOwnerID != "" && ownerID != referencedOwnerID {
+	if referencedOwnerID != "" && ownerID != referencedOwnerID {
 		return referencedOwnerID + "/" + groupID
 	}
 	return groupID
