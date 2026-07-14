@@ -140,7 +140,7 @@ require (
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/text v0.39.0
 	gonum.org/v1/gonum v0.17.0
-	google.golang.org/api v0.287.0
+	google.golang.org/api v0.287.1
 	google.golang.org/genproto v0.0.0-20260526163538-3dc84a4a5aaa
 	k8s.io/apimachinery v0.36.2
 	k8s.io/client-go v0.36.2
@@ -448,7 +448,7 @@ require (
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260615183401-62b3387ff324 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260622175928-b703f567277d // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260630182238-925bb5da69e7 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/validator.v2 v2.0.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20260501160325-927ab1f70cd6 // indirect
