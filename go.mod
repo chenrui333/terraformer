@@ -138,7 +138,7 @@ require (
 	github.com/yandex-cloud/go-sdk/v2 v2.132.0
 	github.com/zclconf/go-cty v1.18.1
 	golang.org/x/oauth2 v0.36.0
-	golang.org/x/text v0.39.0
+	golang.org/x/text v0.40.0
 	gonum.org/v1/gonum v0.17.0
 	google.golang.org/api v0.287.1
 	google.golang.org/genproto v0.0.0-20260526163538-3dc84a4a5aaa
