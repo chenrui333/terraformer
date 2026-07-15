@@ -180,6 +180,9 @@ func securityNotificationRuleFromResponse(response datadogV2.NotificationRuleRes
 	if !ok {
 		return datadogV2.NotificationRule{}, fmt.Errorf("decoded response missing data")
 	}
+	if notificationRule.UnparsedObject != nil {
+		return securityNotificationRuleFromRawData(notificationRule.UnparsedObject)
+	}
 	if err := validateSecurityNotificationRule(*notificationRule); err != nil {
 		return datadogV2.NotificationRule{}, fmt.Errorf("validate decoded notification rule: %w", err)
 	}

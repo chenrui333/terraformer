@@ -410,6 +410,34 @@ func TestSecurityNotificationRuleFromResponseShapes(t *testing.T) {
 	}
 }
 
+func TestSecurityNotificationRuleFromResponseRecoversChildUnparsedData(t *testing.T) {
+	listResponse := securityNotificationRuleListResponseWithMutation(t, "forward-compatible-rule", func(rawRule map[string]interface{}) {
+		attributes := rawRule["attributes"].(map[string]interface{})
+		selectors := attributes["selectors"].(map[string]interface{})
+		selectors["trigger_source"] = "future_security_source"
+	})
+	childRule := listResponse.Data[0]
+	if childRule.UnparsedObject == nil {
+		t.Fatal("SDK-decoded forward-incompatible rule has nil child UnparsedObject")
+	}
+
+	response := datadogV2.NotificationRuleResponse{}
+	response.SetData(childRule)
+	recoveredRule, err := securityNotificationRuleFromResponse(response)
+	if err != nil {
+		t.Fatalf("securityNotificationRuleFromResponse returned error: %v", err)
+	}
+	if recoveredRule.GetId() != "forward-compatible-rule" {
+		t.Fatalf("notification rule ID = %q, want forward-compatible-rule", recoveredRule.GetId())
+	}
+	if recoveredRule.GetType() != datadogV2.NOTIFICATIONRULESTYPE_NOTIFICATION_RULES {
+		t.Fatalf("notification rule type = %q, want notification_rules", recoveredRule.GetType())
+	}
+	if recoveredRule.UnparsedObject != nil {
+		t.Fatal("recovered notification rule retained child UnparsedObject")
+	}
+}
+
 func TestGetSecurityNotificationRuleFallbackPolicy(t *testing.T) {
 	tests := []struct {
 		name         string
