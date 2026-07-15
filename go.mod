@@ -295,6 +295,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
+	github.com/google/go-github/v88 v88.0.0 // indirect
 	github.com/gosuri/uitable v0.0.4 // indirect
 	github.com/hashicorp/hcl v1.0.1-vault-7 // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
@@ -538,7 +539,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/vpclattice v1.24.0
 	github.com/fastly/go-fastly/v15 v15.0.3
 	github.com/gofrs/uuid/v3 v3.1.2
-	github.com/google/go-github/v88 v88.0.0
+	github.com/google/go-github/v89 v89.0.0
 	github.com/gophercloud/gophercloud/v2 v2.13.0
 	github.com/hashicorp/go-azure-sdk/sdk v0.20260629.1154953
 	github.com/hashicorp/vault/api v1.23.0

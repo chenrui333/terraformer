@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	githubAPI "github.com/google/go-github/v88/github"
+	githubAPI "github.com/google/go-github/v89/github"
 )
 
 func TestGithubProviderServiceRegistration(t *testing.T) {

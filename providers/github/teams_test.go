@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	githubAPI "github.com/google/go-github/v88/github"
+	githubAPI "github.com/google/go-github/v89/github"
 )
 
 func TestTeamChildResourcesPaginateAndMap(t *testing.T) {
