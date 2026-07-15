@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	githubAPI "github.com/google/go-github/v88/github"
+	githubAPI "github.com/google/go-github/v89/github"
 )
 
 func TestRepositoryChildResourcesPaginateAndMap(t *testing.T) {
