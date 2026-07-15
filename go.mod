@@ -539,6 +539,7 @@ require (
 	github.com/fastly/go-fastly/v15 v15.0.3
 	github.com/gofrs/uuid/v3 v3.1.2
 	github.com/google/go-github/v88 v88.0.0
+	github.com/google/go-github/v89 v89.0.0
 	github.com/gophercloud/gophercloud/v2 v2.13.0
 	github.com/hashicorp/go-azure-sdk/sdk v0.20260629.1154953
 	github.com/hashicorp/vault/api v1.23.0
