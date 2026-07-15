@@ -2,6 +2,8 @@
 
 Provider-local `unsupported_resources.json` files document resources that Terraformer should not import broadly without additional provider-specific work. They are evidence records, not a backlog of unimplemented resources.
 
+This document's [Status Values](#status-values) table is the human-readable source of truth for the repository-wide status vocabulary. The shared validator in `providers/unsupported_resources_test.go` is the machine source of truth and checks that the two sets match exactly.
+
 Keep these files next to the provider implementation, for example [providers/aws/unsupported_resources.json](../providers/aws/unsupported_resources.json). Omit the file when a provider has no evidence-backed unsupported resources yet.
 
 ## When To Add An Entry
@@ -48,8 +50,8 @@ Required fields for each resource entry:
 | Status | Meaning |
 | --- | --- |
 | `unsupported` | Import is known to be unsafe or not viable with the current provider/API behavior. |
-| `deferred` | Needs a dedicated follow-up because ownership, API shape, feature gates, or framework support require more design. |
-| `not-importable` | Terraform provider or resource semantics do not expose a usable import/read path. |
+| `deferred` | Importability has not been rejected, but ownership, API shape, feature gates, or framework support require dedicated design or follow-up. |
+| `not-importable` | The Terraform provider or resource semantics do not expose a usable import/read path. |
 | `cloudflare-managed` | Cloudflare owns or manages the configuration, so Terraformer should not emit it as user-managed Terraform. |
 | `secret-required` | Required configuration contains write-only credentials, secrets, private keys, or tokens. |
 | `request-style` | Resource represents a request, handshake, approval, or lifecycle action rather than stable inventory. |
@@ -57,6 +59,8 @@ Required fields for each resource entry:
 | `runtime-data` | Resource represents runtime data or observed state rather than desired configuration. |
 | `action-style` | Resource represents an action or operation rather than durable configuration. |
 | `policy-skip` | Resource is intentionally skipped by provider import policy even though it may be visible in discovery. |
+
+Provider-local tests may impose stricter naming, ordering, reference, or coverage requirements, but they must not redefine this shared vocabulary. Adding or changing a status requires documented semantics here, a matching update to the shared validator, exact synchronization tests, and review of the implications for existing metadata.
 
 ## Evidence Expectations
 
@@ -78,19 +82,19 @@ Run the shared validation with:
 go test ./providers
 ```
 
-The repo-wide test discovers every `providers/*/unsupported_resources.json` file and validates JSON decoding, schema version, required fields, non-empty references, allowed statuses, and duplicate resources. Provider-local tests may still add provider-specific assertions, such as expected Kubernetes skip-policy coverage.
+The repo-wide test discovers every `providers/*/unsupported_resources.json` file and validates JSON decoding, schema version, required fields, non-empty references, allowed statuses, and duplicate resources. It also parses the status table above and requires an exact match with the machine allowlist. Provider-local tests may still add provider-specific assertions, such as expected Kubernetes skip-policy coverage, without maintaining a separate general status allowlist.
 
 For provider resource PRs, use the pull request checklist to confirm that evidence-backed unsupported resources discovered during the work were added to the provider-local metadata file, or that no metadata update was needed.
 
 ## Inventory
 
-This inventory is an informational coverage snapshot. The source of truth is the discovered `providers/*/unsupported_resources.json` files validated by the Go test. Providers without metadata should remain `not present yet` until an evidence-backed unsupported resource has been investigated.
+This inventory is a validated coverage snapshot. A test compares every direct provider directory with the table and checks for the exact presence of `unsupported_resources.json` and provider-local `unsupported_resources_test.go` files. Providers without metadata should remain `not present yet` until an evidence-backed unsupported resource has been investigated.
 
 | Provider | Has `unsupported_resources.json` | Has provider-local `unsupported_resources_test.go` | Notes |
 | --- | --- | --- | --- |
 | alicloud | no | no | not present yet |
 | auth0 | yes | no | metadata present |
-| aws | yes | no | metadata present |
+| aws | yes | yes | metadata present; AWS-specific naming, ordering, and tracking-issue assertions |
 | azure | no | no | not present yet |
 | azuread | no | no | not present yet |
 | azuredevops | no | no | not present yet |
@@ -105,6 +109,7 @@ This inventory is an informational coverage snapshot. The source of truth is the
 | gitlab | no | no | not present yet |
 | gmailfilter | no | no | not present yet |
 | grafana | no | no | not present yet |
+| helm | no | no | not present yet |
 | heroku | no | no | not present yet |
 | honeycombio | no | no | not present yet |
 | ibm | no | no | not present yet |
@@ -112,7 +117,7 @@ This inventory is an informational coverage snapshot. The source of truth is the
 | keycloak | no | no | not present yet |
 | kafka | yes | yes | metadata present; provider-specific assertions |
 | kubernetes | yes | yes | metadata present; provider-specific assertions |
-| launchdarkly | yes | no | metadata present |
+| launchdarkly | yes | yes | metadata present; provider-specific assertions |
 | linode | no | no | not present yet |
 | logzio | no | no | not present yet |
 | mackerel | no | no | not present yet |

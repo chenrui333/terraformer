@@ -4,7 +4,6 @@ package providers
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -138,16 +137,4 @@ func sortedUnsupportedResourceStatuses() []string {
 	}
 	sort.Strings(statuses)
 	return statuses
-}
-
-func TestUnsupportedResourceStatusesAreDocumented(t *testing.T) {
-	data, err := os.ReadFile(filepath.Join("..", "docs", "unsupported-resources.md"))
-	if err != nil {
-		t.Fatalf("read unsupported resources documentation: %v", err)
-	}
-	for _, status := range sortedUnsupportedResourceStatuses() {
-		if !strings.Contains(string(data), fmt.Sprintf("`%s`", status)) {
-			t.Fatalf("status %q is not documented", status)
-		}
-	}
 }

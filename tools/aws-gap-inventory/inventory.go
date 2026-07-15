@@ -21,17 +21,9 @@ import (
 const awsProviderAddress = "registry.terraform.io/hashicorp/aws"
 
 var (
-	docsServiceRe   = regexp.MustCompile("^\\*\\s+`([^`]+)`")
-	docsResourceRe  = regexp.MustCompile("^\\s+\\*\\s+`(aws_[^`]+)`")
-	awsResourceRe   = regexp.MustCompile("^aws_[a-z0-9_]+$")
-	validSkipStatus = map[string]bool{
-		"deferred":         true,
-		"needs-research":   true,
-		"not-importable":   true,
-		"runtime-data":     true,
-		"unsupported":      true,
-		"unsafe-discovery": true,
-	}
+	docsServiceRe            = regexp.MustCompile("^\\*\\s+`([^`]+)`")
+	docsResourceRe           = regexp.MustCompile("^\\s+\\*\\s+`(aws_[^`]+)`")
+	awsResourceRe            = regexp.MustCompile("^aws_[a-z0-9_]+$")
 	resourceServiceOverrides = map[string]map[string][]string{
 		"lex.go": {
 			"aws_lex_bot":                {"lex"},
@@ -444,6 +436,8 @@ func readSkipList(path string) ([]skipListEntry, error) {
 	if list.Version != 1 {
 		return nil, fmt.Errorf("unsupported skip-list version %d", list.Version)
 	}
+	// The repository-wide providers test owns status membership validation.
+	// This tool requires a non-empty status and preserves it in its output.
 	for i, entry := range list.Resources {
 		if entry.Resource == "" || entry.ServiceFamily == "" || entry.Reason == "" || entry.Status == "" {
 			return nil, fmt.Errorf("skip-list resource %d is missing a required field", i)
@@ -453,9 +447,6 @@ func readSkipList(path string) ([]skipListEntry, error) {
 		}
 		if !awsResourceRe.MatchString(entry.Resource) {
 			return nil, fmt.Errorf("skip-list resource %d has invalid resource %q", i, entry.Resource)
-		}
-		if !validSkipStatus[entry.Status] {
-			return nil, fmt.Errorf("skip-list resource %q has invalid status %q", entry.Resource, entry.Status)
 		}
 	}
 	sort.Slice(list.Resources, func(i, j int) bool {

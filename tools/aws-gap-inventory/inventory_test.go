@@ -119,6 +119,31 @@ func TestReadSkipListValidatesRequiredFields(t *testing.T) {
 	}
 }
 
+func TestReadSkipListPreservesCanonicalStatus(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "unsupported_resources.json")
+	writeFile(t, path,
+		"{\n"+
+			"  \"version\": 1,\n"+
+			"  \"resources\": [\n"+
+			"    {\n"+
+			"      \"resource\": \"aws_example_action\",\n"+
+			"      \"service_family\": \"example\",\n"+
+			"      \"reason\": \"The resource performs an operation.\",\n"+
+			"      \"evidence\": \"The provider invokes an action instead of managing durable configuration.\",\n"+
+			"      \"status\": \"action-style\"\n"+
+			"    }\n"+
+			"  ]\n"+
+			"}\n")
+
+	entries, err := readSkipList(path)
+	if err != nil {
+		t.Fatalf("readSkipList() error = %v", err)
+	}
+	if len(entries) != 1 || entries[0].Status != "action-style" {
+		t.Fatalf("readSkipList() = %#v, want preserved action-style status", entries)
+	}
+}
+
 func TestBuildInventoryPreservesDuplicateDocsResourceFamilies(t *testing.T) {
 	root := t.TempDir()
 	awsDir := filepath.Join(root, "providers", "aws")
