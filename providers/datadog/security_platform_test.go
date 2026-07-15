@@ -178,6 +178,7 @@ func TestSecurityMonitoringCriticalAssetsFromRawDataMalformedEntry(t *testing.T)
 func TestSecurityNotificationRuleCreateResource(t *testing.T) {
 	notificationRule := datadogV2.NewNotificationRuleWithDefaults()
 	notificationRule.SetId("notification-rule-id")
+	notificationRule.SetType(datadogV2.NOTIFICATIONRULESTYPE_NOTIFICATION_RULES)
 
 	generator := &SecurityNotificationRuleGenerator{}
 	resource, err := generator.createResource(*notificationRule)
@@ -198,9 +199,50 @@ func TestSecurityNotificationRuleCreateResource(t *testing.T) {
 
 func TestSecurityNotificationRuleCreateResourceMissingID(t *testing.T) {
 	generator := &SecurityNotificationRuleGenerator{}
-	_, err := generator.createResource(datadogV2.NotificationRule{})
+	_, err := generator.createResource(datadogV2.NotificationRule{Type: datadogV2.NOTIFICATIONRULESTYPE_NOTIFICATION_RULES})
 	if err == nil {
 		t.Fatal("createResource returned nil error, want missing id error")
+	}
+}
+
+func TestSecurityNotificationRuleCreateResourceMissingType(t *testing.T) {
+	generator := &SecurityNotificationRuleGenerator{}
+	_, err := generator.createResource(datadogV2.NotificationRule{Id: "notification-rule-id"})
+	if err == nil {
+		t.Fatal("createResource returned nil error, want missing type error")
+	}
+}
+
+func TestSecurityNotificationRuleCreateResourceWrongType(t *testing.T) {
+	generator := &SecurityNotificationRuleGenerator{}
+	_, err := generator.createResource(datadogV2.NotificationRule{
+		Id:   "notification-rule-id",
+		Type: datadogV2.NotificationRulesType("other_type"),
+	})
+	if err == nil {
+		t.Fatal("createResource returned nil error, want wrong type error")
+	}
+}
+
+func TestSecurityNotificationRuleCreateResourceFromRawIdentity(t *testing.T) {
+	notificationRule, err := securityNotificationRuleFromRawData(map[string]interface{}{
+		"id":   "raw-rule-id",
+		"type": "notification_rules",
+	})
+	if err != nil {
+		t.Fatalf("securityNotificationRuleFromRawData returned error: %v", err)
+	}
+
+	generator := &SecurityNotificationRuleGenerator{}
+	resource, err := generator.createResource(notificationRule)
+	if err != nil {
+		t.Fatalf("createResource returned error: %v", err)
+	}
+	if resource.InstanceState.ID != "raw-rule-id" {
+		t.Fatalf("resource ID = %q, want raw-rule-id", resource.InstanceState.ID)
+	}
+	if resource.ResourceName != "tfer--security_notification_rule_raw-rule-id" {
+		t.Fatalf("resource name = %q, want tfer--security_notification_rule_raw-rule-id", resource.ResourceName)
 	}
 }
 
