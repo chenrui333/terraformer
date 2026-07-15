@@ -144,8 +144,8 @@ github.com/IBM-Cloud/bluemix-go v0.0.0-20260624064701-576d2f801297 h1:uYXaCOd4f1
 github.com/IBM-Cloud/bluemix-go v0.0.0-20260624064701-576d2f801297/go.mod h1:iTSp5bL8TiPGRY+QtbxcU8/mcnXsk9HluLWzOsGBqSs=
 github.com/IBM-Cloud/container-services-go-sdk v0.0.0-20250409011111-61af13302654 h1:9paic8qCEa9Q/Hr88DxReT8CKqBUfpVCJpcDKaEKF3E=
 github.com/IBM-Cloud/container-services-go-sdk v0.0.0-20250409011111-61af13302654/go.mod h1:xUQL9SGAjoZFd4GNjrjjtEpjpkgU7RFXRyHesbKTjiY=
-github.com/IBM/continuous-delivery-go-sdk/v2 v2.0.15 h1:vO4Az5vmrnpb42ic9TRJVYxq0SjHMmCDGNVYE6dmLgk=
-github.com/IBM/continuous-delivery-go-sdk/v2 v2.0.15/go.mod h1:TJGjBxnbV5PzpJXti2JbVDhMstUrgh1VzLkDLSUy5TI=
+github.com/IBM/continuous-delivery-go-sdk/v2 v2.0.16 h1:WPqNIccD03yNWHq3NXcq8UMw7N8unXUXBHqrRR+2Gsc=
+github.com/IBM/continuous-delivery-go-sdk/v2 v2.0.16/go.mod h1:odE52i2J9HwDDf5Z4pXTGB0Bm3Yf7atmgRH37GqSXm8=
 github.com/IBM/go-sdk-core v1.1.0 h1:pV73lZqr9r1xKb3h08c1uNG3AphwoV5KzUzhS+pfEqY=
 github.com/IBM/go-sdk-core v1.1.0/go.mod h1:2pcx9YWsIsZ3I7kH+1amiAkXvLTZtAq9kbxsfXilSoY=
 github.com/IBM/go-sdk-core/v3 v3.3.1 h1:DoXjP1+Wm8Yd4XJsvBMRcYLvQwSLFnzKlMjSrg3Rzpw=
