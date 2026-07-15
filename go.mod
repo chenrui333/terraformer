@@ -558,15 +558,15 @@ require (
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cdb v1.3.124
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cdn v1.3.116
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cfs v1.3.123
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/clb v1.3.123
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.129
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cvm v1.3.128
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/clb v1.3.130
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.130
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cvm v1.3.130
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.3.124
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/es v1.3.128
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/gaap v1.3.34
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/mongodb v1.3.128
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/pts v1.3.119
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/redis v1.3.123
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/redis v1.3.130
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/scf v1.3.101
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/ses v1.3.129
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/ssl v1.3.105
@@ -582,7 +582,7 @@ require (
 
 replace gopkg.in/ns1/ns1-go.v2 => github.com/ns1/ns1-go/v2 v2.18.0
 
-replace github.com/tencentcloud/tencentcloud-sdk-go => github.com/tencentcloud/tencentcloud-sdk-go v1.3.129
+replace github.com/tencentcloud/tencentcloud-sdk-go => github.com/tencentcloud/tencentcloud-sdk-go v1.3.130
 
 // Redirect stale transitive imports from abandoned dgrijalva/jwt-go to a compatible maintained fork.
 replace github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v3.2.5+incompatible
