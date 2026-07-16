@@ -1,0 +1,34 @@
+providers/unsupported_resources_test.go
+  s_b2ce6710e92514::t_862f095f1e11b2 12-13,100,103-104
+tools/aws-gap-inventory/inventory.go
+  s_b2ce6710e92514::t_862f095f1e11b2 19-20,442,451-452
+  s_b2ce6710e92514::t_ca6295b787c7fe 453
+docs/unsupported-resources.md
+  s_b2ce6710e92514::t_862f095f1e11b2 5,63
+internal/unsupportedresources/status.go
+  s_b2ce6710e92514::t_862f095f1e11b2 1-31
+providers/unsupported_resources_documentation_test.go
+  s_b2ce6710e92514::t_862f095f1e11b2 12-13,49
+tools/aws-gap-inventory/inventory_test.go
+  s_b2ce6710e92514::t_9a14398319d7e0 7,148-173,175
+  s_b2ce6710e92514::t_d5ccef5d3b35f5 174
+  s_b2ce6710e92514::t_162d61e5bfa179 176
+internal/unsupportedresources/status_test.go
+  s_b2ce6710e92514::t_862f095f1e11b2 1-36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "42600c5f6a38e41ed8147d93ccdc8a3665330501",
+  "prompts": {},
+  "sessions": {
+    "s_b2ce6710e92514": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f52de-e693-74d2-aefb-e8d96bda2cf9",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
