@@ -41,22 +41,44 @@ func TestAWSUnsupportedResourcesMetadata(t *testing.T) {
 	}
 }
 
-func TestAWSUnsupportedResourcesMetadataDoesNotRedefineSharedStatuses(t *testing.T) {
-	metadata := awsUnsupportedResourcesFile{
-		Version: 1,
-		Resources: []awsUnsupportedResourceMetadataRecord{
-			{
-				Resource:      "aws_example_action",
-				ServiceFamily: "example",
-				Reason:        "The resource represents an action.",
-				Evidence:      "The provider invokes an operation instead of managing durable configuration.",
-				Status:        "action-style",
-				References:    []string{awsUnsupportedIssue},
-			},
-		},
+func TestAWSUnsupportedResourcesMetadataDoesNotValidateStatusMembership(t *testing.T) {
+	tests := []struct {
+		name            string
+		status          string
+		wantErrContains string
+	}{
+		{name: "synthetic noncanonical status", status: "future-status"},
+		{name: "canonical status", status: "unsupported"},
+		{name: "empty status", wantErrContains: "missing status"},
+		{name: "whitespace-only status", status: " \t ", wantErrContains: "missing status"},
 	}
-	if err := validateAWSUnsupportedResourcesMetadata(metadata); err != nil {
-		t.Fatalf("AWS-local validation rejected shared canonical status: %v", err)
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			metadata := awsUnsupportedResourcesFile{
+				Version: 1,
+				Resources: []awsUnsupportedResourceMetadataRecord{
+					{
+						Resource:      "aws_example_action",
+						ServiceFamily: "example",
+						Reason:        "The resource represents an action.",
+						Evidence:      "The provider invokes an operation instead of managing durable configuration.",
+						Status:        test.status,
+						References:    []string{awsUnsupportedIssue},
+					},
+				},
+			}
+			err := validateAWSUnsupportedResourcesMetadata(metadata)
+			if test.wantErrContains == "" {
+				if err != nil {
+					t.Fatalf("AWS-local structural validation rejected status %q: %v", test.status, err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), test.wantErrContains) {
+				t.Fatalf("validateAWSUnsupportedResourcesMetadata() error = %v, want substring %q", err, test.wantErrContains)
+			}
+		})
 	}
 }
 
@@ -95,6 +117,9 @@ func validateAWSUnsupportedResourcesMetadata(metadata awsUnsupportedResourcesFil
 		}
 		if strings.TrimSpace(resource.Evidence) == "" {
 			return fmt.Errorf("unsupported resource %q is missing evidence", name)
+		}
+		if strings.TrimSpace(resource.Status) == "" {
+			return fmt.Errorf("unsupported resource %q is missing status", name)
 		}
 		if !hasUnsupportedResourceReference(resource.References, awsUnsupportedIssue) {
 			return fmt.Errorf("unsupported resource %q is missing issue #338 reference", name)

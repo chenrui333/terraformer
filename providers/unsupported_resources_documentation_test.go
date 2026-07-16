@@ -118,6 +118,32 @@ func TestParseUnsupportedResourceStatusTable(t *testing.T) {
 			allowed: stringSet("alpha"),
 		},
 		{
+			name: "unrelated table after intended table does not count",
+			markdown: statusTableMarkdown("alpha") + "\n" +
+				"| Other | Value |\n| --- | --- |\n| `gamma` | Unrelated table. |\n",
+			allowed: stringSet("alpha"),
+		},
+		{
+			name: "duplicate status tables",
+			markdown: "# Unsupported resources\n\n" + unsupportedResourceStatusHeading + "\n\n" +
+				statusMarkdownTable("alpha") + "\n" + statusMarkdownTable("beta"),
+			allowed:         stringSet("alpha"),
+			wantErrContains: "duplicate Markdown table with header [Status Meaning]",
+		},
+		{
+			name: "malformed intended separator",
+			markdown: "# Unsupported resources\n\n" + unsupportedResourceStatusHeading + "\n\n" +
+				"| Status | Meaning |\n| -- | --- |\n| `alpha` | Meaning for alpha. |\n",
+			allowed:         stringSet("alpha"),
+			wantErrContains: "missing Markdown table separator after header",
+		},
+		{
+			name:            "duplicate status sections",
+			markdown:        statusTableMarkdown("alpha") + "\n" + statusTableMarkdown("alpha"),
+			allowed:         stringSet("alpha"),
+			wantErrContains: "duplicate section \"## Status Values\"",
+		},
+		{
 			name: "section ends at next level two heading",
 			markdown: statusTableMarkdown("alpha") + "\n## Other\n\n" +
 				"| Status | Meaning |\n| --- | --- |\n| `gamma` | Outside the section. |\n",
@@ -136,6 +162,77 @@ func TestParseUnsupportedResourceStatusTable(t *testing.T) {
 			}
 			if err == nil || !strings.Contains(err.Error(), test.wantErrContains) {
 				t.Fatalf("validateUnsupportedResourceStatusDocumentation() error = %v, want substring %q", err, test.wantErrContains)
+			}
+		})
+	}
+}
+
+func TestUnsupportedResourceMarkdownLevelTwoSection(t *testing.T) {
+	tests := []struct {
+		name            string
+		markdown        string
+		heading         string
+		want            string
+		wantErrContains string
+	}{
+		{
+			name:     "requested section after another section",
+			markdown: "## Other\nignored\n## Status Values\nwanted\n## Next\nignored",
+			heading:  unsupportedResourceStatusHeading,
+			want:     "wanted",
+		},
+		{
+			name:     "requested section before another section",
+			markdown: "## Inventory\nwanted\n## Other\nignored",
+			heading:  unsupportedResourceInventoryHeading,
+			want:     "wanted",
+		},
+		{
+			name:     "requested section at end",
+			markdown: "# Document\n## Status Values\nfirst\nsecond",
+			heading:  unsupportedResourceStatusHeading,
+			want:     "first\nsecond",
+		},
+		{
+			name:     "CRLF section extraction",
+			markdown: "## Other\r\nignored\r\n## Inventory\r\nwanted\r\n## Next\r\nignored",
+			heading:  unsupportedResourceInventoryHeading,
+			want:     "wanted",
+		},
+		{
+			name:            "missing section",
+			markdown:        "## Other\nignored",
+			heading:         unsupportedResourceStatusHeading,
+			wantErrContains: "missing section \"## Status Values\"",
+		},
+		{
+			name:            "duplicate status sections",
+			markdown:        "## Status Values\nfirst\n## Other\nignored\n## Status Values\nsecond",
+			heading:         unsupportedResourceStatusHeading,
+			wantErrContains: "duplicate section \"## Status Values\"",
+		},
+		{
+			name:            "duplicate inventory sections",
+			markdown:        "## Inventory\nfirst\n## Other\nignored\n## Inventory\nsecond",
+			heading:         unsupportedResourceInventoryHeading,
+			wantErrContains: "duplicate section \"## Inventory\"",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			lines, err := markdownLevelTwoSection(test.markdown, test.heading)
+			if test.wantErrContains != "" {
+				if err == nil || !strings.Contains(err.Error(), test.wantErrContains) {
+					t.Fatalf("markdownLevelTwoSection() error = %v, want substring %q", err, test.wantErrContains)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("markdownLevelTwoSection() error = %v", err)
+			}
+			if got := strings.Join(lines, "\n"); got != test.want {
+				t.Fatalf("markdownLevelTwoSection() = %q, want %q", got, test.want)
 			}
 		})
 	}
@@ -224,6 +321,36 @@ func TestParseUnsupportedResourceProviderInventory(t *testing.T) {
 				"| alpha | yes | yes | metadata [details](alpha.md); `provider-specific` assertions and escaped \\| note |",
 				validRows[1],
 			),
+		},
+		{
+			name: "unrelated table before intended table",
+			markdown: "# Unsupported resources\n\n" + unsupportedResourceInventoryHeading + "\n\n" +
+				"| Other | Value |\n| --- | --- |\n| gamma | unrelated |\n\n" +
+				providerInventoryMarkdownTable(validRows...),
+		},
+		{
+			name: "unrelated table after intended table",
+			markdown: providerInventoryMarkdown(validRows...) + "\n" +
+				"| Other | Value |\n| --- | --- |\n| gamma | unrelated |\n",
+		},
+		{
+			name: "duplicate inventory tables",
+			markdown: "# Unsupported resources\n\n" + unsupportedResourceInventoryHeading + "\n\n" +
+				providerInventoryMarkdownTable(validRows...) + "\n" +
+				providerInventoryMarkdownTable("| alpha | no | no | conflicting row |"),
+			wantErrContains: "duplicate Markdown table with header [Provider Has `unsupported_resources.json` Has provider-local `unsupported_resources_test.go` Notes]",
+		},
+		{
+			name: "malformed intended separator",
+			markdown: "# Unsupported resources\n\n" + unsupportedResourceInventoryHeading + "\n\n" +
+				"| Provider | Has `unsupported_resources.json` | Has provider-local `unsupported_resources_test.go` | Notes |\n" +
+				"| -- | --- | --- | --- |\n" + validRows[0] + "\n" + validRows[1] + "\n",
+			wantErrContains: "missing Markdown table separator after header",
+		},
+		{
+			name:            "duplicate inventory sections",
+			markdown:        providerInventoryMarkdown(validRows...) + "\n" + providerInventoryMarkdown(validRows...),
+			wantErrContains: "duplicate section \"## Inventory\"",
 		},
 		{
 			name: "rows outside inventory are ignored",
@@ -463,60 +590,69 @@ func collectUnsupportedResourceProviderFiles(root string, excluded map[string]st
 func markdownLevelTwoSection(markdown, heading string) ([]string, error) {
 	lines := strings.Split(strings.ReplaceAll(markdown, "\r\n", "\n"), "\n")
 	start := -1
+	end := len(lines)
 	for index, line := range lines {
-		if strings.TrimSpace(line) == heading {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == heading {
+			if start != -1 {
+				return nil, fmt.Errorf("duplicate section %q", heading)
+			}
 			start = index + 1
-			break
+			continue
+		}
+		if start != -1 && end == len(lines) && strings.HasPrefix(trimmed, "## ") {
+			end = index
 		}
 	}
 	if start == -1 {
 		return nil, fmt.Errorf("missing section %q", heading)
 	}
-
-	end := len(lines)
-	for index := start; index < len(lines); index++ {
-		if strings.HasPrefix(strings.TrimSpace(lines[index]), "## ") {
-			end = index
-			break
-		}
-	}
 	return lines[start:end], nil
 }
 
 func markdownTableRows(section []string, expectedHeader []string) ([][]string, error) {
+	headerIndexes := []int{}
 	for index, line := range section {
 		cells, ok, err := splitMarkdownTableRow(line)
 		if err != nil || !ok || !equalStrings(cells, expectedHeader) {
 			continue
 		}
-		if index+1 >= len(section) {
-			return nil, fmt.Errorf("missing Markdown table separator")
-		}
-		separator, ok, err := splitMarkdownTableRow(section[index+1])
-		if err != nil || !ok || !isMarkdownTableSeparator(separator, len(expectedHeader)) {
-			return nil, fmt.Errorf("missing Markdown table separator after header")
-		}
-
-		rows := [][]string{}
-		for rowIndex := index + 2; rowIndex < len(section); rowIndex++ {
-			if !strings.HasPrefix(strings.TrimSpace(section[rowIndex]), "|") {
-				break
-			}
-			row, ok, err := splitMarkdownTableRow(section[rowIndex])
-			if err != nil {
-				return nil, err
-			}
-			if !ok {
-				break
-			}
-			rows = append(rows, row)
-		}
-		if len(rows) == 0 {
-			return nil, fmt.Errorf("Markdown table has no data rows")
-		}
-		return rows, nil
+		headerIndexes = append(headerIndexes, index)
 	}
-	return nil, fmt.Errorf("missing Markdown table with header %v", expectedHeader)
+	if len(headerIndexes) == 0 {
+		return nil, fmt.Errorf("missing Markdown table with header %v", expectedHeader)
+	}
+	if len(headerIndexes) > 1 {
+		return nil, fmt.Errorf("duplicate Markdown table with header %v", expectedHeader)
+	}
+
+	headerIndex := headerIndexes[0]
+	if headerIndex+1 >= len(section) {
+		return nil, fmt.Errorf("missing Markdown table separator")
+	}
+	separator, ok, err := splitMarkdownTableRow(section[headerIndex+1])
+	if err != nil || !ok || !isMarkdownTableSeparator(separator, len(expectedHeader)) {
+		return nil, fmt.Errorf("missing Markdown table separator after header")
+	}
+
+	rows := [][]string{}
+	for rowIndex := headerIndex + 2; rowIndex < len(section); rowIndex++ {
+		if !strings.HasPrefix(strings.TrimSpace(section[rowIndex]), "|") {
+			break
+		}
+		row, ok, err := splitMarkdownTableRow(section[rowIndex])
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			break
+		}
+		rows = append(rows, row)
+	}
+	if len(rows) == 0 {
+		return nil, fmt.Errorf("Markdown table has no data rows")
+	}
+	return rows, nil
 }
 
 func splitMarkdownTableRow(line string) ([]string, bool, error) {
@@ -658,10 +794,12 @@ func readUnsupportedResourcesDocumentation(t *testing.T) string {
 }
 
 func statusTableMarkdown(statuses ...string) string {
+	return "# Unsupported resources\n\n" + unsupportedResourceStatusHeading + "\n\n" + statusMarkdownTable(statuses...)
+}
+
+func statusMarkdownTable(statuses ...string) string {
 	var markdown strings.Builder
-	markdown.WriteString("# Unsupported resources\n\n")
-	markdown.WriteString(unsupportedResourceStatusHeading)
-	markdown.WriteString("\n\n| Status | Meaning |\n| --- | --- |\n")
+	markdown.WriteString("| Status | Meaning |\n| --- | --- |\n")
 	for _, status := range statuses {
 		fmt.Fprintf(&markdown, "| `%s` | Meaning for %s. |\n", status, status)
 	}
@@ -670,6 +808,11 @@ func statusTableMarkdown(statuses ...string) string {
 
 func providerInventoryMarkdown(rows ...string) string {
 	return "# Unsupported resources\n\n" + unsupportedResourceInventoryHeading + "\n\n" +
+		providerInventoryMarkdownTable(rows...)
+}
+
+func providerInventoryMarkdownTable(rows ...string) string {
+	return "" +
 		"| Provider | Has `unsupported_resources.json` | Has provider-local `unsupported_resources_test.go` | Notes |\n" +
 		"| --- | --- | --- | --- |\n" + strings.Join(rows, "\n") + "\n"
 }

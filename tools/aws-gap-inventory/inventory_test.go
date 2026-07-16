@@ -4,6 +4,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -115,8 +116,149 @@ func TestReadSkipListValidatesRequiredFields(t *testing.T) {
 	if err == nil {
 		t.Fatal("readSkipList() error = nil, want validation error")
 	}
-	if !strings.Contains(err.Error(), "missing a required field") {
-		t.Fatalf("readSkipList() error = %q, want required field error", err)
+	if !strings.Contains(err.Error(), "missing status") {
+		t.Fatalf("readSkipList() error = %q, want missing status error", err)
+	}
+}
+
+func TestReadSkipListRejectsWhitespaceOnlyFields(t *testing.T) {
+	tests := []struct {
+		name            string
+		mutate          func(*skipListEntry)
+		wantErrContains string
+		wantEvidence    string
+		wantSourceNotes string
+	}{
+		{name: "resource", mutate: func(entry *skipListEntry) { entry.Resource = " \t " }, wantErrContains: "missing resource"},
+		{name: "service family", mutate: func(entry *skipListEntry) { entry.ServiceFamily = " \t " }, wantErrContains: "missing service_family"},
+		{name: "reason", mutate: func(entry *skipListEntry) { entry.Reason = "\t" }, wantErrContains: "missing reason"},
+		{name: "status", mutate: func(entry *skipListEntry) { entry.Status = " \n " }, wantErrContains: "missing status"},
+		{
+			name: "evidence without source notes",
+			mutate: func(entry *skipListEntry) {
+				entry.Evidence = " \n "
+				entry.SourceNotes = ""
+			},
+			wantErrContains: "requires evidence or source_notes",
+		},
+		{
+			name: "source notes without evidence",
+			mutate: func(entry *skipListEntry) {
+				entry.Evidence = ""
+				entry.SourceNotes = " \n "
+			},
+			wantErrContains: "requires evidence or source_notes",
+		},
+		{
+			name: "valid source notes with whitespace evidence",
+			mutate: func(entry *skipListEntry) {
+				entry.Evidence = " \n "
+				entry.SourceNotes = "Legacy source notes."
+			},
+			wantEvidence:    " \n ",
+			wantSourceNotes: "Legacy source notes.",
+		},
+		{
+			name: "valid evidence with whitespace source notes",
+			mutate: func(entry *skipListEntry) {
+				entry.Evidence = "Provider read-path evidence."
+				entry.SourceNotes = " \n "
+			},
+			wantEvidence:    "Provider read-path evidence.",
+			wantSourceNotes: " \n ",
+		},
+		{
+			name: "reference",
+			mutate: func(entry *skipListEntry) {
+				entry.References = []string{"https://example.com/evidence", " \t "}
+			},
+			wantErrContains: "empty reference",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			entry := validSkipListEntry("aws_example_action", "example")
+			test.mutate(&entry)
+			entries, err := readSkipList(writeSkipListFixture(t, entry))
+			if test.wantErrContains != "" {
+				if err == nil || !strings.Contains(err.Error(), test.wantErrContains) {
+					t.Fatalf("readSkipList() error = %v, want substring %q", err, test.wantErrContains)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("readSkipList() error = %v", err)
+			}
+			if entries[0].Evidence != test.wantEvidence || entries[0].SourceNotes != test.wantSourceNotes {
+				t.Fatalf("readSkipList() = %#v, want evidence %q and source_notes %q preserved", entries[0], test.wantEvidence, test.wantSourceNotes)
+			}
+		})
+	}
+}
+
+func TestReadSkipListRejectsDuplicateResourceFamilyPairs(t *testing.T) {
+	tests := []struct {
+		name            string
+		entries         []skipListEntry
+		wantErrContains string
+		wantOrder       []resourceRecord
+	}{
+		{
+			name:            "exact duplicate pair",
+			entries:         []skipListEntry{validSkipListEntry("aws_example_one", "example"), validSkipListEntry("aws_example_one", "example")},
+			wantErrContains: `duplicate resource "aws_example_one" in service family "example"`,
+		},
+		{
+			name: "duplicate pair with different status",
+			entries: func() []skipListEntry {
+				first := validSkipListEntry("aws_example_one", "example")
+				second := validSkipListEntry("aws_example_one", "example")
+				second.Status = "deferred"
+				return []skipListEntry{first, second}
+			}(),
+			wantErrContains: `duplicate resource "aws_example_one" in service family "example"`,
+		},
+		{
+			name: "duplicate pair with different reason",
+			entries: func() []skipListEntry {
+				first := validSkipListEntry("aws_example_one", "example")
+				second := validSkipListEntry("aws_example_one", "example")
+				second.Reason = "A different limitation."
+				return []skipListEntry{first, second}
+			}(),
+			wantErrContains: `duplicate resource "aws_example_one" in service family "example"`,
+		},
+		{
+			name:      "same resource in different families",
+			entries:   []skipListEntry{validSkipListEntry("aws_example_one", "zeta"), validSkipListEntry("aws_example_one", "alpha")},
+			wantOrder: []resourceRecord{{Resource: "aws_example_one", ServiceFamily: "alpha"}, {Resource: "aws_example_one", ServiceFamily: "zeta"}},
+		},
+		{
+			name:      "different resources in same family",
+			entries:   []skipListEntry{validSkipListEntry("aws_example_two", "example"), validSkipListEntry("aws_example_one", "example")},
+			wantOrder: []resourceRecord{{Resource: "aws_example_one", ServiceFamily: "example"}, {Resource: "aws_example_two", ServiceFamily: "example"}},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			entries, err := readSkipList(writeSkipListFixture(t, test.entries...))
+			if test.wantErrContains != "" {
+				if err == nil || !strings.Contains(err.Error(), test.wantErrContains) {
+					t.Fatalf("readSkipList() error = %v, want substring %q", err, test.wantErrContains)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("readSkipList() error = %v", err)
+			}
+			gotOrder := make([]resourceRecord, 0, len(entries))
+			for _, entry := range entries {
+				gotOrder = append(gotOrder, resourceRecord{Resource: entry.Resource, ServiceFamily: entry.ServiceFamily})
+			}
+			assertRecords(t, gotOrder, test.wantOrder)
+		})
 	}
 }
 
@@ -368,6 +510,28 @@ func writeFile(t *testing.T, path string, contents string) {
 	}
 	if err := os.WriteFile(path, []byte(contents), 0o644); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func writeSkipListFixture(t *testing.T, entries ...skipListEntry) string {
+	t.Helper()
+	data, err := json.Marshal(skipList{Version: 1, Resources: entries})
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "unsupported_resources.json")
+	writeFile(t, path, string(data))
+	return path
+}
+
+func validSkipListEntry(resource, serviceFamily string) skipListEntry {
+	return skipListEntry{
+		Resource:      resource,
+		ServiceFamily: serviceFamily,
+		Reason:        "The resource cannot be imported safely.",
+		Evidence:      "Provider and API behavior demonstrate the limitation.",
+		Status:        "unsupported",
+		References:    []string{"https://example.com/evidence"},
 	}
 }
 

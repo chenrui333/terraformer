@@ -438,11 +438,25 @@ func readSkipList(path string) ([]skipListEntry, error) {
 	if list.Version != 1 {
 		return nil, fmt.Errorf("unsupported skip-list version %d", list.Version)
 	}
+	type skipListIdentity struct {
+		resource      string
+		serviceFamily string
+	}
+	seen := make(map[skipListIdentity]struct{}, len(list.Resources))
 	for i, entry := range list.Resources {
-		if entry.Resource == "" || entry.ServiceFamily == "" || entry.Reason == "" || strings.TrimSpace(entry.Status) == "" {
-			return nil, fmt.Errorf("skip-list resource %d is missing a required field", i)
+		if strings.TrimSpace(entry.Resource) == "" {
+			return nil, fmt.Errorf("skip-list resource %d is missing resource", i)
 		}
-		if entry.Evidence == "" && entry.SourceNotes == "" {
+		if strings.TrimSpace(entry.ServiceFamily) == "" {
+			return nil, fmt.Errorf("skip-list resource %d is missing service_family", i)
+		}
+		if strings.TrimSpace(entry.Reason) == "" {
+			return nil, fmt.Errorf("skip-list resource %d is missing reason", i)
+		}
+		if strings.TrimSpace(entry.Status) == "" {
+			return nil, fmt.Errorf("skip-list resource %d is missing status", i)
+		}
+		if strings.TrimSpace(entry.Evidence) == "" && strings.TrimSpace(entry.SourceNotes) == "" {
 			return nil, fmt.Errorf("skip-list resource %q requires evidence or source_notes", entry.Resource)
 		}
 		if !awsResourceRe.MatchString(entry.Resource) {
@@ -451,6 +465,16 @@ func readSkipList(path string) ([]skipListEntry, error) {
 		if !unsupportedresources.IsValidStatus(entry.Status) {
 			return nil, fmt.Errorf("skip-list resource %q has invalid status %q, want one of %v", entry.Resource, entry.Status, unsupportedresources.Statuses())
 		}
+		for referenceIndex, reference := range entry.References {
+			if strings.TrimSpace(reference) == "" {
+				return nil, fmt.Errorf("skip-list resource %q has empty reference at index %d", entry.Resource, referenceIndex)
+			}
+		}
+		identity := skipListIdentity{resource: entry.Resource, serviceFamily: entry.ServiceFamily}
+		if _, exists := seen[identity]; exists {
+			return nil, fmt.Errorf("skip-list has duplicate resource %q in service family %q", entry.Resource, entry.ServiceFamily)
+		}
+		seen[identity] = struct{}{}
 	}
 	sort.Slice(list.Resources, func(i, j int) bool {
 		if list.Resources[i].ServiceFamily == list.Resources[j].ServiceFamily {
