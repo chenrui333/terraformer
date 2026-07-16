@@ -20,8 +20,8 @@ require (
 	github.com/aliyun/aliyun-tablestore-go-sdk/v5 v5.0.6
 	github.com/apache/openwhisk-client-go v0.0.0-20250309042127-fa7fa7e48863
 	github.com/aws/aws-sdk-go-v2 v1.42.1
-	github.com/aws/aws-sdk-go-v2/config v1.32.28
-	github.com/aws/aws-sdk-go-v2/credentials v1.19.27
+	github.com/aws/aws-sdk-go-v2/config v1.32.29
+	github.com/aws/aws-sdk-go-v2/credentials v1.19.28
 	github.com/aws/aws-sdk-go-v2/service/accessanalyzer v1.50.0
 	github.com/aws/aws-sdk-go-v2/service/acm v1.42.0
 	github.com/aws/aws-sdk-go-v2/service/apigateway v1.41.0
@@ -393,7 +393,7 @@ require (
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/auth0/go-auth0/v2 v2.14.0
 	github.com/avast/retry-go v3.0.0+incompatible // indirect
-	github.com/aws/aws-sdk-go-v2/service/signin v1.3.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/signin v1.4.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clbanning/mxj v1.8.4 // indirect
 	github.com/cncf/xds/go v0.0.0-20260202195803-dba9d589def2 // indirect
