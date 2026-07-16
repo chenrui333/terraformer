@@ -1,0 +1,28 @@
+tools/aws-gap-inventory/inventory_test.go
+  s_b2ce6710e92514::t_c21065375c2a7d 7,119-261,516-536
+  s_b2ce6710e92514::t_aadc05630dab09 537
+providers/unsupported_resources_documentation_test.go
+  s_b2ce6710e92514::t_615a97d99f395e 120-145,170-240,325-354,797-800,802,811-815
+  s_b2ce6710e92514::t_857d61b9a0a873 593,595-599,601-604,614,620-627,629-645,647-648,650,652-655
+providers/aws/unsupported_resources_test.go
+  s_b2ce6710e92514::t_c21065375c2a7d 44-53,55-81
+  s_b2ce6710e92514::t_857d61b9a0a873 121-123
+tools/aws-gap-inventory/inventory.go
+  s_b2ce6710e92514::t_857d61b9a0a873 441-445,447-457,459,468-477
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "b53351f03f9ea251c4e4f289e563311ec86c1f0c",
+  "prompts": {},
+  "sessions": {
+    "s_b2ce6710e92514": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f52de-e693-74d2-aefb-e8d96bda2cf9",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
