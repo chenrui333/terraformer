@@ -9,22 +9,11 @@ import (
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/chenrui333/terraformer/internal/unsupportedresources"
 )
 
 const unsupportedResourcesVersion = 1
-
-var allowedUnsupportedResourceStatuses = map[string]struct{}{
-	"action-style":       {},
-	"cloudflare-managed": {},
-	"deferred":           {},
-	"not-importable":     {},
-	"policy-skip":        {},
-	"request-style":      {},
-	"runtime-data":       {},
-	"runtime-generated":  {},
-	"secret-required":    {},
-	"unsupported":        {},
-}
 
 type unsupportedResourcesFile struct {
 	Version   *int                          `json:"version"`
@@ -108,12 +97,11 @@ func validateRequiredString(t *testing.T, metadataFile, resource, field, value s
 func validateUnsupportedResourceStatus(t *testing.T, metadataFile, resource, status string) {
 	t.Helper()
 
-	status = strings.TrimSpace(status)
-	if status == "" {
+	if strings.TrimSpace(status) == "" {
 		t.Fatalf("%s resource %q is missing status", metadataFile, resource)
 	}
-	if _, ok := allowedUnsupportedResourceStatuses[status]; !ok {
-		t.Fatalf("%s resource %q has unsupported status %q, want one of %v", metadataFile, resource, status, sortedUnsupportedResourceStatuses())
+	if !unsupportedresources.IsValidStatus(status) {
+		t.Fatalf("%s resource %q has unsupported status %q, want one of %v", metadataFile, resource, status, unsupportedresources.Statuses())
 	}
 }
 
@@ -128,13 +116,4 @@ func validateUnsupportedResourceReferences(t *testing.T, metadataFile, resource 
 			t.Fatalf("%s resource %q has empty references[%d]", metadataFile, resource, index)
 		}
 	}
-}
-
-func sortedUnsupportedResourceStatuses() []string {
-	statuses := make([]string, 0, len(allowedUnsupportedResourceStatuses))
-	for status := range allowedUnsupportedResourceStatuses {
-		statuses = append(statuses, status)
-	}
-	sort.Strings(statuses)
-	return statuses
 }

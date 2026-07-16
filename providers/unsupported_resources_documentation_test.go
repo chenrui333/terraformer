@@ -9,6 +9,8 @@ import (
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/chenrui333/terraformer/internal/unsupportedresources"
 )
 
 const (
@@ -44,7 +46,7 @@ type unsupportedResourceProviderFiles struct {
 
 func TestUnsupportedResourceStatusesMatchDocumentation(t *testing.T) {
 	markdown := readUnsupportedResourcesDocumentation(t)
-	if err := validateUnsupportedResourceStatusDocumentation(markdown, allowedUnsupportedResourceStatuses); err != nil {
+	if err := validateUnsupportedResourceStatusDocumentation(markdown, stringSet(unsupportedresources.Statuses()...)); err != nil {
 		t.Fatal(err)
 	}
 }

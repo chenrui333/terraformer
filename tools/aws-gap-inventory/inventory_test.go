@@ -4,6 +4,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -141,6 +142,35 @@ func TestReadSkipListPreservesCanonicalStatus(t *testing.T) {
 	}
 	if len(entries) != 1 || entries[0].Status != "action-style" {
 		t.Fatalf("readSkipList() = %#v, want preserved action-style status", entries)
+	}
+}
+
+func TestReadSkipListRejectsUnknownStatuses(t *testing.T) {
+	for _, status := range []string{"future-status", "needs-research", "unsafe-discovery", " action-style "} {
+		t.Run(status, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "unsupported_resources.json")
+			writeFile(t, path, fmt.Sprintf(`{
+  "version": 1,
+  "resources": [
+    {
+      "resource": "aws_example_action",
+      "service_family": "example",
+      "reason": "The resource performs an operation.",
+      "evidence": "The provider invokes an action instead of managing durable configuration.",
+      "status": %q
+    }
+  ]
+}
+`, status))
+
+			_, err := readSkipList(path)
+			if err == nil {
+				t.Fatalf("readSkipList() error = nil, want invalid status error for %q", status)
+			}
+			if !strings.Contains(err.Error(), "invalid status") {
+				t.Fatalf("readSkipList() error = %q, want invalid status error", err)
+			}
+		})
 	}
 }
 

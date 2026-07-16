@@ -16,6 +16,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/chenrui333/terraformer/internal/unsupportedresources"
 )
 
 const awsProviderAddress = "registry.terraform.io/hashicorp/aws"
@@ -436,10 +438,8 @@ func readSkipList(path string) ([]skipListEntry, error) {
 	if list.Version != 1 {
 		return nil, fmt.Errorf("unsupported skip-list version %d", list.Version)
 	}
-	// The repository-wide providers test owns status membership validation.
-	// This tool requires a non-empty status and preserves it in its output.
 	for i, entry := range list.Resources {
-		if entry.Resource == "" || entry.ServiceFamily == "" || entry.Reason == "" || entry.Status == "" {
+		if entry.Resource == "" || entry.ServiceFamily == "" || entry.Reason == "" || strings.TrimSpace(entry.Status) == "" {
 			return nil, fmt.Errorf("skip-list resource %d is missing a required field", i)
 		}
 		if entry.Evidence == "" && entry.SourceNotes == "" {
@@ -447,6 +447,9 @@ func readSkipList(path string) ([]skipListEntry, error) {
 		}
 		if !awsResourceRe.MatchString(entry.Resource) {
 			return nil, fmt.Errorf("skip-list resource %d has invalid resource %q", i, entry.Resource)
+		}
+		if !unsupportedresources.IsValidStatus(entry.Status) {
+			return nil, fmt.Errorf("skip-list resource %q has invalid status %q, want one of %v", entry.Resource, entry.Status, unsupportedresources.Statuses())
 		}
 	}
 	sort.Slice(list.Resources, func(i, j int) bool {

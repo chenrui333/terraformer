@@ -2,7 +2,7 @@
 
 Provider-local `unsupported_resources.json` files document resources that Terraformer should not import broadly without additional provider-specific work. They are evidence records, not a backlog of unimplemented resources.
 
-This document's [Status Values](#status-values) table is the human-readable source of truth for the repository-wide status vocabulary. The shared validator in `providers/unsupported_resources_test.go` is the machine source of truth and checks that the two sets match exactly.
+This document's [Status Values](#status-values) table is the human-readable source of truth for the repository-wide status vocabulary. The shared definition in `internal/unsupportedresources/status.go` is the machine source of truth; repository tests check that the two sets match exactly, and metadata consumers reuse the same definition at runtime.
 
 Keep these files next to the provider implementation, for example [providers/aws/unsupported_resources.json](../providers/aws/unsupported_resources.json). Omit the file when a provider has no evidence-backed unsupported resources yet.
 
@@ -60,7 +60,7 @@ Required fields for each resource entry:
 | `action-style` | Resource represents an action or operation rather than durable configuration. |
 | `policy-skip` | Resource is intentionally skipped by provider import policy even though it may be visible in discovery. |
 
-Provider-local tests may impose stricter naming, ordering, reference, or coverage requirements, but they must not redefine this shared vocabulary. Adding or changing a status requires documented semantics here, a matching update to the shared validator, exact synchronization tests, and review of the implications for existing metadata.
+Provider-local tests may impose stricter naming, ordering, reference, or coverage requirements, but they must not redefine this shared vocabulary. Adding or changing a status requires documented semantics here, a matching update to the shared machine definition, exact synchronization tests, and review of the implications for existing metadata.
 
 ## Evidence Expectations
 
