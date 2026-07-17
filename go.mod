@@ -138,7 +138,7 @@ require (
 	github.com/yandex-cloud/go-sdk/v2 v2.132.0
 	github.com/zclconf/go-cty v1.18.1
 	golang.org/x/oauth2 v0.36.0
-	golang.org/x/text v0.39.0
+	golang.org/x/text v0.40.0
 	gonum.org/v1/gonum v0.17.0
 	google.golang.org/api v0.287.1
 	google.golang.org/genproto v0.0.0-20260526163538-3dc84a4a5aaa
@@ -230,11 +230,11 @@ require (
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
 	go.mongodb.org/mongo-driver v1.17.9 // indirect
-	golang.org/x/crypto v0.53.0 // indirect
+	golang.org/x/crypto v0.54.0 // indirect
 	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/sync v0.22.0
-	golang.org/x/sys v0.46.0 // indirect
-	golang.org/x/term v0.44.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/term v0.45.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/grpc v1.82.0
 	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af
@@ -575,7 +575,7 @@ require (
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc v1.3.128
 	github.com/vultr/govultr/v3 v3.31.2
 	gitlab.com/gitlab-org/api/client-go/v2 v2.46.0
-	helm.sh/helm/v4 v4.2.2
+	helm.sh/helm/v4 v4.2.3
 	k8s.io/cli-runtime v0.36.2
 	software.sslmate.com/src/go-pkcs12 v0.7.3
 )
