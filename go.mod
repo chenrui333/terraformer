@@ -5,7 +5,7 @@ go 1.26.5
 require (
 	cloud.google.com/go v0.123.0 // indirect
 	cloud.google.com/go/logging v1.18.0
-	cloud.google.com/go/storage v1.63.0
+	cloud.google.com/go/storage v1.63.1
 	github.com/Azure/azure-storage-blob-go v0.15.0
 	github.com/IBM-Cloud/bluemix-go v0.0.0-20260624064701-576d2f801297
 	github.com/IBM/go-sdk-core/v5 v5.22.1
@@ -187,7 +187,7 @@ require (
 	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/google/jsonapi v1.0.0 // indirect
 	github.com/google/uuid v1.6.0
-	github.com/googleapis/gax-go/v2 v2.22.0 // indirect
+	github.com/googleapis/gax-go/v2 v2.23.0 // indirect
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
@@ -384,7 +384,7 @@ require (
 	cloud.google.com/go/auth v0.20.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
-	cloud.google.com/go/longrunning v1.0.0 // indirect
+	cloud.google.com/go/longrunning v1.2.0 // indirect
 	github.com/DataDog/zstd v1.5.7 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.32.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.57.0 // indirect
@@ -448,7 +448,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20260615183401-62b3387ff324 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20260630182238-925bb5da69e7 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260630182238-925bb5da69e7 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/validator.v2 v2.0.1 // indirect
