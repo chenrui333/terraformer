@@ -240,7 +240,7 @@ require (
 	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af
 	gopkg.in/go-playground/validator.v9 v9.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	gopkg.in/ini.v1 v1.67.2 // indirect
+	gopkg.in/ini.v1 v1.67.3 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.36.2
@@ -550,7 +550,7 @@ require (
 	github.com/ionos-cloud/sdk-go-logging v1.3.0
 	github.com/keycloak/terraform-provider-keycloak v0.0.0-20260526162604-f2be9656a483
 	github.com/launchdarkly/api-client-go/v22 v22.0.0
-	github.com/linode/linodego/v2 v2.4.1
+	github.com/linode/linodego/v2 v2.4.2
 	github.com/logzio/logzio_terraform_client v1.30.2
 	github.com/newrelic/newrelic-client-go/v2 v2.90.0
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/as v1.3.128
