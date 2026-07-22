@@ -372,7 +372,7 @@ require (
 	cloud.google.com/go/iam v1.11.0
 	cloud.google.com/go/monitoring v1.29.0
 	github.com/DataDog/datadog-api-client-go/v2 v2.62.0
-	github.com/Myra-Security-GmbH/myrasec-go/v2 v2.51.0
+	github.com/Myra-Security-GmbH/myrasec-go/v2 v2.52.0
 	github.com/bradleyfalzon/ghinstallation/v2 v2.19.0
 	github.com/manicminer/hamilton v0.72.0
 	github.com/opalsecurity/opal-go v1.5.0
