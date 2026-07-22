@@ -101,7 +101,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/workspaces v1.71.1
 	github.com/aws/aws-sdk-go-v2/service/xray v1.38.1
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
-	github.com/cloudflare/cloudflare-go/v7 v7.6.0
+	github.com/cloudflare/cloudflare-go/v7 v7.7.0
 	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 // indirect
 	github.com/ddelnano/terraform-provider-mikrotik/client v0.0.0-20260707075008-78277d4b3d05
 	github.com/ddelnano/terraform-provider-xenorchestra/client v0.18.0-alpha1
