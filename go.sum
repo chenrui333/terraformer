@@ -549,8 +549,8 @@ github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/ddelnano/terraform-provider-mikrotik/client v0.0.0-20260707075008-78277d4b3d05 h1:Gfj1/WZYeILejn+Jfamzdh4pJZdjVE3OF1+SHhR70zs=
-github.com/ddelnano/terraform-provider-mikrotik/client v0.0.0-20260707075008-78277d4b3d05/go.mod h1:gDRWAmfZZ4lX6z8nYnXi/y1ncLjMvQgd8sno88W9wII=
+github.com/ddelnano/terraform-provider-mikrotik/client v0.0.0-20260716203948-b4f30abe1333 h1:AcyVXr/x2UFe2/ERmLjzlE6BNtzs8+O4auGxnsQhdOs=
+github.com/ddelnano/terraform-provider-mikrotik/client v0.0.0-20260716203948-b4f30abe1333/go.mod h1:gDRWAmfZZ4lX6z8nYnXi/y1ncLjMvQgd8sno88W9wII=
 github.com/ddelnano/terraform-provider-xenorchestra/client v0.18.0-alpha1 h1:P0a6ZVjbOqzOYqsSSWWF19dHaxX2AuHcv9kQafNVC+Y=
 github.com/ddelnano/terraform-provider-xenorchestra/client v0.18.0-alpha1/go.mod h1:1T10mQuoIeT4CXsvyc1G1m/+L7mWv6p7cBwmAut/uB0=
 github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.1 h1:5RVFMOWjMyRy8cARdy79nAmgYw3hK/4HUq48LQ6Wwqo=
