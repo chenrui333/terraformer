@@ -80,10 +80,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/organizations v1.52.1
 	github.com/aws/aws-sdk-go-v2/service/qldb v1.32.2
 	github.com/aws/aws-sdk-go-v2/service/rds v1.120.1
-	github.com/aws/aws-sdk-go-v2/service/redshift v1.64.1
+	github.com/aws/aws-sdk-go-v2/service/redshift v1.64.2
 	github.com/aws/aws-sdk-go-v2/service/resourcegroups v1.35.1
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.64.1
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.105.1
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.105.2
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.43.1
 	github.com/aws/aws-sdk-go-v2/service/securityhub v1.73.1
 	github.com/aws/aws-sdk-go-v2/service/servicecatalog v1.41.1
@@ -168,7 +168,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.31 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.32.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.37.1 // indirect
-	github.com/aws/smithy-go v1.27.3
+	github.com/aws/smithy-go v1.27.4
 	github.com/beevik/etree v1.6.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/crewjam/saml v0.5.1 // indirect
