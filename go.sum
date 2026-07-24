@@ -431,8 +431,8 @@ github.com/aws/aws-sdk-go-v2/service/quicksight v1.117.0 h1:0qHezwD0+dO+SIIxYsPy
 github.com/aws/aws-sdk-go-v2/service/quicksight v1.117.0/go.mod h1:F9zvNmM7uvi4IN2h0pVJO44VvDwWaM0peQ0C+w59aCA=
 github.com/aws/aws-sdk-go-v2/service/rds v1.120.1 h1:5wsyc5K9vvSegxdkzsLAFo9WF1Jd2PF8c3TUoBhaLlc=
 github.com/aws/aws-sdk-go-v2/service/rds v1.120.1/go.mod h1:Ve7qHa8jBmStKNz/oaxs2yBuFnwyvN0k/8PpPZVxkEY=
-github.com/aws/aws-sdk-go-v2/service/redshift v1.64.1 h1:7I13hCLoHVOQPlTzl/qyRWvz32oLtxkbPxMueG0aRec=
-github.com/aws/aws-sdk-go-v2/service/redshift v1.64.1/go.mod h1:AlZ/mczGeCw1ZQ/A/aRF7uDCOkXypCjtP29Ckoy+KnU=
+github.com/aws/aws-sdk-go-v2/service/redshift v1.64.2 h1:rzPfiI6evQCnvgE77m/hMYhJhadUyqayGDLjk7Gwjrw=
+github.com/aws/aws-sdk-go-v2/service/redshift v1.64.2/go.mod h1:AlZ/mczGeCw1ZQ/A/aRF7uDCOkXypCjtP29Ckoy+KnU=
 github.com/aws/aws-sdk-go-v2/service/redshiftserverless v1.36.0 h1:4ZxxETaZ11YSflxRkTQXW4x5zsKkfhosSkzhCuT5LQ0=
 github.com/aws/aws-sdk-go-v2/service/redshiftserverless v1.36.0/go.mod h1:suarck9cSGKaEbmz6IhEknaLaDdVFQQm1PgkgMKh17U=
 github.com/aws/aws-sdk-go-v2/service/rekognition v1.53.1 h1:VmDLdo1TFavT940HaflfI93tapZbvlNG0FqKl3EApFk=
@@ -443,8 +443,8 @@ github.com/aws/aws-sdk-go-v2/service/route53 v1.64.1 h1:qL5ELChQ1o1ZbzHvsl8gzQfA
 github.com/aws/aws-sdk-go-v2/service/route53 v1.64.1/go.mod h1:0hIRXFez1bZsDFMGkLZvNJbByTSVZ4sFZWpxZ39NPuM=
 github.com/aws/aws-sdk-go-v2/service/route53resolver v1.47.1 h1:tvXwuZTXel873RLI1s1UYfrdoHUrYfHMA6HHvg17sj8=
 github.com/aws/aws-sdk-go-v2/service/route53resolver v1.47.1/go.mod h1:SiEx1OwV7f5P+Pve+mlG1ePFquOTTPP9OPUyZJJJV3Y=
-github.com/aws/aws-sdk-go-v2/service/s3 v1.105.1 h1:LkBKxAOE5WXjlFuFZqPG1rREnl6I6QCMElcXFDEidos=
-github.com/aws/aws-sdk-go-v2/service/s3 v1.105.1/go.mod h1:zdmCoFO/dSI7GlrwsPqFJI+WlFnSU4Tc8TJnlXrM1Do=
+github.com/aws/aws-sdk-go-v2/service/s3 v1.105.2 h1:5C00eQYpTrgQXnp6V3P6P7zPElna3AXvlukbANE6nJI=
+github.com/aws/aws-sdk-go-v2/service/s3 v1.105.2/go.mod h1:zdmCoFO/dSI7GlrwsPqFJI+WlFnSU4Tc8TJnlXrM1Do=
 github.com/aws/aws-sdk-go-v2/service/s3control v1.72.1 h1:9i4w4ZrGZK9N91ADftA6fuUUeB0EIB81YBhB+PzE0Vg=
 github.com/aws/aws-sdk-go-v2/service/s3control v1.72.1/go.mod h1:tu1PvcXO61r71Q/aqtJNdXHvpkC7/jU4YRAX0wUMXfs=
 github.com/aws/aws-sdk-go-v2/service/s3tables v1.17.1 h1:u8oijOMLAQdVF1bTfTRZk0lY4rTJgezux4Nmr0j2KeA=
@@ -497,8 +497,8 @@ github.com/aws/aws-sdk-go-v2/service/workspaces v1.71.1 h1:M3UlmYc/cKAau/0gca5er
 github.com/aws/aws-sdk-go-v2/service/workspaces v1.71.1/go.mod h1:IGhs+6IIUtM6Lc5+LF2rTSZeQb4szMDXKW7t4t1chUM=
 github.com/aws/aws-sdk-go-v2/service/xray v1.38.1 h1:t12u1Kegjn5uWTJx6Vd+Fa5TYP1D3RXh1af5Xoiak/w=
 github.com/aws/aws-sdk-go-v2/service/xray v1.38.1/go.mod h1:39mwS3CnKnPysS03B/ph8fR77bXkWa9nya39VVbePlU=
-github.com/aws/smithy-go v1.27.3 h1:F3Zb497UhhskkfpJmfkXswyo+t0sh9OTBnIHjogWbVY=
-github.com/aws/smithy-go v1.27.3/go.mod h1:YE2RhdIuDbA5E5bTdciG9KrW3+TiEONeUWCqxX9i1Fc=
+github.com/aws/smithy-go v1.27.4 h1:JQcphmBN4f0q/sPqXqROIItRNV/hy10cgu7CsFy616M=
+github.com/aws/smithy-go v1.27.4/go.mod h1:YE2RhdIuDbA5E5bTdciG9KrW3+TiEONeUWCqxX9i1Fc=
 github.com/aybabtme/iocontrol v0.0.0-20150809002002-ad15bcfc95a0 h1:0NmehRCgyk5rljDQLKUO+cRJCnduDyn11+zGZIc9Z48=
 github.com/aybabtme/iocontrol v0.0.0-20150809002002-ad15bcfc95a0/go.mod h1:6L7zgvqo0idzI7IO8de6ZC051AfXb5ipkIJ7bIA2tGA=
 github.com/beevik/etree v1.6.0 h1:u8Kwy8pp9D9XeITj2Z0XtA5qqZEmtJtuXZRQi+j03eE=
