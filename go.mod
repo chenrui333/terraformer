@@ -497,7 +497,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/apprunner v1.41.1
 	github.com/aws/aws-sdk-go-v2/service/appstream v1.62.1
 	github.com/aws/aws-sdk-go-v2/service/athena v1.59.1
-	github.com/aws/aws-sdk-go-v2/service/backup v1.58.1
+	github.com/aws/aws-sdk-go-v2/service/backup v1.58.2
 	github.com/aws/aws-sdk-go-v2/service/bedrock v1.65.1
 	github.com/aws/aws-sdk-go-v2/service/bedrockagent v1.57.1
 	github.com/aws/aws-sdk-go-v2/service/chatbot v1.16.1

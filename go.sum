@@ -255,8 +255,8 @@ github.com/aws/aws-sdk-go-v2/service/athena v1.59.1 h1:5ibRBTSUNMX+JRbHkdL0PgR8h
 github.com/aws/aws-sdk-go-v2/service/athena v1.59.1/go.mod h1:T0Gh/6hdclavTDygr544bGGSbmYYnN7sVcfy8PWDqSo=
 github.com/aws/aws-sdk-go-v2/service/autoscaling v1.69.1 h1:r3nQYmQYCFjEYAvHGw1HPTu1AkSZVqkWHehdIJnSiZw=
 github.com/aws/aws-sdk-go-v2/service/autoscaling v1.69.1/go.mod h1:sN7IK8djnxCOQDGVhOvUlIA83i1wIA5jYnzr2TlY9a8=
-github.com/aws/aws-sdk-go-v2/service/backup v1.58.1 h1:0ymHKdNT3vVpoZeaNMDOxDlBAmXhtFkA6WnauIQNQFE=
-github.com/aws/aws-sdk-go-v2/service/backup v1.58.1/go.mod h1:aEBLhdyvJQTLTtUJfwpb5ABLfQAfRVJXgg3H96Mv7Pg=
+github.com/aws/aws-sdk-go-v2/service/backup v1.58.2 h1:MGdUmbeXuEaTUgfHwFGzkStT830xatzN1b6iqBlCLq8=
+github.com/aws/aws-sdk-go-v2/service/backup v1.58.2/go.mod h1:aEBLhdyvJQTLTtUJfwpb5ABLfQAfRVJXgg3H96Mv7Pg=
 github.com/aws/aws-sdk-go-v2/service/batch v1.67.1 h1:8NEZ+0umfwK2c4dSio3Z0rsCste2G9lM3p2uPVgTtYY=
 github.com/aws/aws-sdk-go-v2/service/batch v1.67.1/go.mod h1:xAqGFEks3zOMleaWMlPj8WiRL1hrZCgLKctJde6Sn3U=
 github.com/aws/aws-sdk-go-v2/service/bedrock v1.65.1 h1:eOYu92kIPQHfmYmYzKjZ6z8V0v52+DSMr5ErlKWOw98=
