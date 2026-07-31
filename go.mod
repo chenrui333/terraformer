@@ -576,7 +576,7 @@ require (
 	github.com/vultr/govultr/v3 v3.31.2
 	gitlab.com/gitlab-org/api/client-go/v2 v2.46.0
 	helm.sh/helm/v4 v4.2.3
-	k8s.io/cli-runtime v0.36.2
+	k8s.io/cli-runtime v0.36.3
 	software.sslmate.com/src/go-pkcs12 v0.7.3
 )
 
