@@ -134,8 +134,8 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/tencentyun/cos-go-sdk-v5 v0.7.75
-	github.com/yandex-cloud/go-genproto v0.93.0
-	github.com/yandex-cloud/go-sdk/v2 v2.132.0
+	github.com/yandex-cloud/go-genproto v0.98.0
+	github.com/yandex-cloud/go-sdk/v2 v2.142.0
 	github.com/zclconf/go-cty v1.18.1
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/text v0.40.0
