@@ -117,7 +117,7 @@ require (
 	github.com/heimweh/go-pagerduty v0.0.0-20250801140645-0b96cfc9bf17
 	github.com/heroku/heroku-go/v6 v6.1.0
 	github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f // indirect
-	github.com/honeycombio/terraform-provider-honeycombio v0.51.1
+	github.com/honeycombio/terraform-provider-honeycombio v0.52.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/ionos-cloud/sdk-go-dbaas-mongo v1.4.1
 	github.com/ionos-cloud/sdk-go-dbaas-postgres v1.1.4
@@ -149,7 +149,7 @@ require (
 require (
 	github.com/IBM-Cloud/container-services-go-sdk v0.0.0-20250409011111-61af13302654
 	github.com/IBM/go-sdk-core v1.1.0
-	github.com/mackerelio/mackerel-client-go v0.44.0
+	github.com/mackerelio/mackerel-client-go v0.45.0
 	github.com/okta/terraform-provider-okta v0.0.0-20260713040546-3e476118c6c5
 )
 
