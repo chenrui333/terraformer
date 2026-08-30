@@ -50,7 +50,9 @@ AWS provider gaps.
 
 Resources that cannot be imported safely should be recorded in
 providers/aws/unsupported_resources.json instead of being added as misleading
-Terraformer support.
+Terraformer support. The canonical status vocabulary and definitions are in
+[Unsupported Resource Metadata](unsupported-resources.md#status-values); this
+AWS workflow does not define a separate status list.
 
 ~~~json
 {
@@ -59,26 +61,31 @@ Terraformer support.
     {
       "resource": "aws_example_resource",
       "service_family": "example",
-      "reason": "AWS does not expose a list API with enough parent context for safe discovery.",
-      "evidence": "Checked Terraform AWS provider schema and AWS service API reference.",
-      "status": "unsafe-discovery",
+      "reason": "Importability needs a dedicated design for parent-scoped discovery.",
+      "evidence": "The AWS list API omits the parent identifier required by the Terraform provider importer.",
+      "status": "deferred",
       "references": [
-        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/example_resource"
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/example_resource",
+        "https://github.com/chenrui333/terraformer/issues/338"
       ]
     }
   ]
 }
 ~~~
 
-Supported statuses:
-
-- needs-research
-- not-importable
-- unsupported
-- unsafe-discovery
-- deferred
+Missing Terraformer support alone does not justify an unsupported-resource
+record. Every record needs concrete evidence of the import limitation.
+`deferred` is appropriate only after investigation identifies specific design
+work; `unsupported` or a more specific status requires evidence of the actual
+unsafe or non-viable behavior.
 
 The provider schema lists resource types, not importer contracts. Before adding
-an AWS resource importer, still verify the Terraform AWS provider read/import ID
-shape, AWS list and describe APIs, pagination, region or global behavior,
-generated address uniqueness, filter behavior, and unsupported or deleted states.
+an AWS resource importer or metadata record, verify:
+
+- Terraform AWS provider importer support.
+- The exact import ID and provider Read behavior.
+- AWS list and read APIs, including pagination.
+- Region or global ownership.
+- Generated address uniqueness.
+- Filter behavior.
+- Deleted and otherwise unsupported states.
