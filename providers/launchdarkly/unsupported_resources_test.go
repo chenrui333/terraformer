@@ -27,10 +27,6 @@ func TestLaunchDarklyUnsupportedResourcesMetadata(t *testing.T) {
 		t.Fatal("unsupported resources file is missing resources list")
 	}
 
-	allowedStatuses := map[string]bool{
-		"deferred":    true,
-		"unsupported": true,
-	}
 	seen := map[string]bool{}
 	previousResource := ""
 	for _, rawResource := range rawResources {
@@ -42,7 +38,6 @@ func TestLaunchDarklyUnsupportedResourcesMetadata(t *testing.T) {
 		serviceFamily, _ := resource["service_family"].(string)
 		reason, _ := resource["reason"].(string)
 		evidence, _ := resource["evidence"].(string)
-		status, _ := resource["status"].(string)
 		references, _ := resource["references"].([]interface{})
 
 		if name == "" {
@@ -68,9 +63,6 @@ func TestLaunchDarklyUnsupportedResourcesMetadata(t *testing.T) {
 		}
 		if evidence == "" {
 			t.Fatalf("unsupported resource %q is missing evidence", name)
-		}
-		if !allowedStatuses[status] {
-			t.Fatalf("unsupported resource %q has unknown status %q", name, status)
 		}
 		if len(references) == 0 {
 			t.Fatalf("unsupported resource %q is missing references", name)

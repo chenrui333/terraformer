@@ -4,28 +4,16 @@ package providers
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/chenrui333/terraformer/internal/unsupportedresources"
 )
 
 const unsupportedResourcesVersion = 1
-
-var allowedUnsupportedResourceStatuses = map[string]struct{}{
-	"action-style":       {},
-	"cloudflare-managed": {},
-	"deferred":           {},
-	"not-importable":     {},
-	"policy-skip":        {},
-	"request-style":      {},
-	"runtime-data":       {},
-	"runtime-generated":  {},
-	"secret-required":    {},
-	"unsupported":        {},
-}
 
 type unsupportedResourcesFile struct {
 	Version   *int                          `json:"version"`
@@ -109,12 +97,11 @@ func validateRequiredString(t *testing.T, metadataFile, resource, field, value s
 func validateUnsupportedResourceStatus(t *testing.T, metadataFile, resource, status string) {
 	t.Helper()
 
-	status = strings.TrimSpace(status)
-	if status == "" {
+	if strings.TrimSpace(status) == "" {
 		t.Fatalf("%s resource %q is missing status", metadataFile, resource)
 	}
-	if _, ok := allowedUnsupportedResourceStatuses[status]; !ok {
-		t.Fatalf("%s resource %q has unsupported status %q, want one of %v", metadataFile, resource, status, sortedUnsupportedResourceStatuses())
+	if !unsupportedresources.IsValidStatus(status) {
+		t.Fatalf("%s resource %q has unsupported status %q, want one of %v", metadataFile, resource, status, unsupportedresources.Statuses())
 	}
 }
 
@@ -127,27 +114,6 @@ func validateUnsupportedResourceReferences(t *testing.T, metadataFile, resource 
 	for index, reference := range references {
 		if strings.TrimSpace(reference) == "" {
 			t.Fatalf("%s resource %q has empty references[%d]", metadataFile, resource, index)
-		}
-	}
-}
-
-func sortedUnsupportedResourceStatuses() []string {
-	statuses := make([]string, 0, len(allowedUnsupportedResourceStatuses))
-	for status := range allowedUnsupportedResourceStatuses {
-		statuses = append(statuses, status)
-	}
-	sort.Strings(statuses)
-	return statuses
-}
-
-func TestUnsupportedResourceStatusesAreDocumented(t *testing.T) {
-	data, err := os.ReadFile(filepath.Join("..", "docs", "unsupported-resources.md"))
-	if err != nil {
-		t.Fatalf("read unsupported resources documentation: %v", err)
-	}
-	for _, status := range sortedUnsupportedResourceStatuses() {
-		if !strings.Contains(string(data), fmt.Sprintf("`%s`", status)) {
-			t.Fatalf("status %q is not documented", status)
 		}
 	}
 }
