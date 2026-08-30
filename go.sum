@@ -897,8 +897,8 @@ github.com/heroku/heroku-go/v6 v6.1.0 h1:Osd5X/8vJtDlkdNUQwC/EsS/k0/ptGimcfJlL8e
 github.com/heroku/heroku-go/v6 v6.1.0/go.mod h1:TOVibkAD3yVSHzG0hIJc9KkyxuXiDNcr3zalcdjyeRc=
 github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f h1:7LYC+Yfkj3CTRcShK0KOL/w6iTiKyqqBA9a41Wnggw8=
 github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f/go.mod h1:pFlLw2CfqZiIBOx6BuCeRLCrfxBJipTY0nIOF/VbGcI=
-github.com/honeycombio/terraform-provider-honeycombio v0.51.1 h1:qE1Z9nyBLmE2lwB/ubRqqcgqgaXWGSQbXIlReYYPi7c=
-github.com/honeycombio/terraform-provider-honeycombio v0.51.1/go.mod h1:XaF6dHJg7b+zUT1AjgCxHkYHukx6kqrrYCHXBsBG28I=
+github.com/honeycombio/terraform-provider-honeycombio v0.52.0 h1:D3OQbRu6g+QNoYT4Xp08eVrOWo7DkJbkIgbLGjHB75o=
+github.com/honeycombio/terraform-provider-honeycombio v0.52.0/go.mod h1:QjIfi6WS09UKzE+PHuqSR2aAEL8hGBVLDBgEDIB+cyY=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
 github.com/huandu/xstrings v1.5.0 h1:2ag3IFq9ZDANvthTwTiqSSZLjDc+BedvHPAp5tJy2TI=
 github.com/huandu/xstrings v1.5.0/go.mod h1:y5/lhBue+AyNmUVz9RLU9xbLR0o4KIIExikq4ovT0aE=
@@ -1031,8 +1031,8 @@ github.com/linode/linodego/v2 v2.4.2 h1:hOgnvX2IywFz3L1OXND08UP4D/90kmTSEreMMQkH
 github.com/linode/linodego/v2 v2.4.2/go.mod h1:LRzvYK/LFaGNqFmDxg1fZBtrolZOPvIdX9bssjwy5BA=
 github.com/logzio/logzio_terraform_client v1.30.2 h1:P5xL7ncwhti/n+3/opqMCypwWlGd19PNr8F1FeUwnnA=
 github.com/logzio/logzio_terraform_client v1.30.2/go.mod h1:pzXrr7gGIi6tU1mk2vTtg8dr6ttKMlt03kz6asC53o4=
-github.com/mackerelio/mackerel-client-go v0.44.0 h1:Qb9P1hpIdoXSCm26SPKLNK0vmKUCrlJOuur6ATfnQAY=
-github.com/mackerelio/mackerel-client-go v0.44.0/go.mod h1:idAyt+GkVknFIupw1Y3vW1v5fJuqz2eiQrWU/oHOrEM=
+github.com/mackerelio/mackerel-client-go v0.45.0 h1:Tw+eSr8AkSoM7wHtTwF/hRbi7/Ib8m+B3NsxnI0xV5I=
+github.com/mackerelio/mackerel-client-go v0.45.0/go.mod h1:idAyt+GkVknFIupw1Y3vW1v5fJuqz2eiQrWU/oHOrEM=
 github.com/magiconair/properties v1.8.6 h1:5ibWZ6iY0NctNGWo87LalDlEZ6R41TqbbDamhfG/Qzo=
 github.com/magiconair/properties v1.8.6/go.mod h1:y3VJvCyxH9uVvJTWEGAELF3aiYNyPKd5NZ3oSwXrF60=
 github.com/manicminer/hamilton v0.72.0 h1:QWW/FUt2AJtdaHIPiiZgQIVFL9I42HbH11MX972Hlkg=
