@@ -14,14 +14,14 @@ require (
 	github.com/IBM/networking-go-sdk v0.53.5
 	github.com/IBM/platform-services-go-sdk v0.101.0
 	github.com/IBM/vpc-go-sdk v0.87.1
-	github.com/OctopusDeploy/go-octopusdeploy/v2 v2.111.0
+	github.com/OctopusDeploy/go-octopusdeploy/v2 v2.114.0
 	github.com/PaloAltoNetworks/pango v0.10.2
 	github.com/aliyun/alibaba-cloud-sdk-go v1.63.107
 	github.com/aliyun/aliyun-tablestore-go-sdk/v5 v5.0.6
 	github.com/apache/openwhisk-client-go v0.0.0-20250309042127-fa7fa7e48863
 	github.com/aws/aws-sdk-go-v2 v1.43.0
-	github.com/aws/aws-sdk-go-v2/config v1.32.30
-	github.com/aws/aws-sdk-go-v2/credentials v1.19.29
+	github.com/aws/aws-sdk-go-v2/config v1.32.31
+	github.com/aws/aws-sdk-go-v2/credentials v1.19.30
 	github.com/aws/aws-sdk-go-v2/service/accessanalyzer v1.51.0
 	github.com/aws/aws-sdk-go-v2/service/acm v1.43.0
 	github.com/aws/aws-sdk-go-v2/service/apigateway v1.42.0
@@ -157,7 +157,7 @@ require (
 	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
 	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.14 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.30 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.31 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.31 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.31 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.32 // indirect
@@ -166,8 +166,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.12.8 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.31 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.32 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.32.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.37.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.33.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.38.0 // indirect
 	github.com/aws/smithy-go v1.27.4
 	github.com/beevik/etree v1.6.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
@@ -393,7 +393,7 @@ require (
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/auth0/go-auth0/v2 v2.14.0
 	github.com/avast/retry-go v3.0.0+incompatible // indirect
-	github.com/aws/aws-sdk-go-v2/service/signin v1.4.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/signin v1.5.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clbanning/mxj v1.8.4 // indirect
 	github.com/cncf/xds/go v0.0.0-20260202195803-dba9d589def2 // indirect
@@ -552,7 +552,7 @@ require (
 	github.com/launchdarkly/api-client-go/v22 v22.0.0
 	github.com/linode/linodego/v2 v2.4.2
 	github.com/logzio/logzio_terraform_client v1.30.2
-	github.com/newrelic/newrelic-client-go/v2 v2.90.0
+	github.com/newrelic/newrelic-client-go/v2 v2.91.1
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/as v1.3.128
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cbs v1.3.140
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cdb v1.3.139
@@ -573,7 +573,7 @@ require (
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tat v1.3.107
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tcaplusdb v1.3.105
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc v1.3.142
-	github.com/vultr/govultr/v3 v3.31.2
+	github.com/vultr/govultr/v3 v3.32.0
 	gitlab.com/gitlab-org/api/client-go/v2 v2.51.0
 	helm.sh/helm/v4 v4.2.3
 	k8s.io/cli-runtime v0.36.2
