@@ -19,9 +19,9 @@ require (
 	github.com/aliyun/alibaba-cloud-sdk-go v1.63.107
 	github.com/aliyun/aliyun-tablestore-go-sdk/v5 v5.0.6
 	github.com/apache/openwhisk-client-go v0.0.0-20250309042127-fa7fa7e48863
-	github.com/aws/aws-sdk-go-v2 v1.42.1
-	github.com/aws/aws-sdk-go-v2/config v1.32.30
-	github.com/aws/aws-sdk-go-v2/credentials v1.19.29
+	github.com/aws/aws-sdk-go-v2 v1.43.0
+	github.com/aws/aws-sdk-go-v2/config v1.32.31
+	github.com/aws/aws-sdk-go-v2/credentials v1.19.30
 	github.com/aws/aws-sdk-go-v2/service/accessanalyzer v1.50.1
 	github.com/aws/aws-sdk-go-v2/service/acm v1.42.1
 	github.com/aws/aws-sdk-go-v2/service/apigateway v1.41.1
@@ -77,7 +77,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/mq v1.37.1
 	github.com/aws/aws-sdk-go-v2/service/neptune v1.47.1
 	github.com/aws/aws-sdk-go-v2/service/opsworks v1.31.0
-	github.com/aws/aws-sdk-go-v2/service/organizations v1.52.1
+	github.com/aws/aws-sdk-go-v2/service/organizations v1.52.2
 	github.com/aws/aws-sdk-go-v2/service/qldb v1.32.2
 	github.com/aws/aws-sdk-go-v2/service/rds v1.120.1
 	github.com/aws/aws-sdk-go-v2/service/redshift v1.64.2
@@ -93,7 +93,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.45.1
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.71.1
 	github.com/aws/aws-sdk-go-v2/service/ssoadmin v1.41.1
-	github.com/aws/aws-sdk-go-v2/service/sts v1.44.1
+	github.com/aws/aws-sdk-go-v2/service/sts v1.45.0
 	github.com/aws/aws-sdk-go-v2/service/swf v1.36.1
 	github.com/aws/aws-sdk-go-v2/service/waf v1.32.1
 	github.com/aws/aws-sdk-go-v2/service/wafregional v1.32.1
@@ -157,17 +157,17 @@ require (
 	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
 	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.14 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.30 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.30 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.30 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.31 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.31 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.31 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.31 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.32 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.13 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.9.23 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.12.7 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.30 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.31 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.31 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.32.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.37.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.33.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.38.0 // indirect
 	github.com/aws/smithy-go v1.27.4
 	github.com/beevik/etree v1.6.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
@@ -393,7 +393,7 @@ require (
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/auth0/go-auth0/v2 v2.14.0
 	github.com/avast/retry-go v3.0.0+incompatible // indirect
-	github.com/aws/aws-sdk-go-v2/service/signin v1.4.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/signin v1.5.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clbanning/mxj v1.8.4 // indirect
 	github.com/cncf/xds/go v0.0.0-20260202195803-dba9d589def2 // indirect
