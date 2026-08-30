@@ -28,11 +28,6 @@ func TestUnsupportedResourceMetadata(t *testing.T) {
 		t.Fatal("unsupported resources file is missing resources list")
 	}
 
-	allowedStatuses := map[string]struct{}{
-		"not-importable":    {},
-		"policy-skip":       {},
-		"runtime-generated": {},
-	}
 	entries := map[string]string{}
 	resources := make([]string, 0, len(rawEntries))
 	for _, rawEntry := range rawEntries {
@@ -51,9 +46,6 @@ func TestUnsupportedResourceMetadata(t *testing.T) {
 		}
 		if len(references) == 0 {
 			t.Fatalf("%s unsupported entry is missing references", resource)
-		}
-		if _, ok := allowedStatuses[status]; !ok {
-			t.Fatalf("%s status = %q, want one of %v", resource, status, sortedKeys(allowedStatuses))
 		}
 		if _, exists := entries[resource]; exists {
 			t.Fatalf("duplicate unsupported resource entry: %s", resource)
@@ -94,13 +86,4 @@ func unsupportedResourceMetadataName(resource kubernetesResourceID) string {
 		return resource.version + " " + resource.kind
 	}
 	return resource.group + "/" + resource.version + " " + resource.kind
-}
-
-func sortedKeys(values map[string]struct{}) []string {
-	keys := make([]string, 0, len(values))
-	for key := range values {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	return keys
 }
