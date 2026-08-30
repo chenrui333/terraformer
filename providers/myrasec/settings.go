@@ -22,6 +22,10 @@ func (g *SettingsGenerator) createSettingResources(api *mgo.API, domainId int, v
 	if err != nil {
 		return err
 	}
+	onlyHTTPS := false
+	if s.OnlyHTTPS != nil {
+		onlyHTTPS = *s.OnlyHTTPS
+	}
 
 	r := terraformutils.NewResource(
 		strconv.Itoa(vhost.ID),
@@ -30,7 +34,7 @@ func (g *SettingsGenerator) createSettingResources(api *mgo.API, domainId int, v
 		"myrasec",
 		map[string]string{
 			"subdomain_name": vhost.Label,
-			"only_https":     strconv.FormatBool(s.OnlyHTTPS),
+			"only_https":     strconv.FormatBool(onlyHTTPS),
 		},
 		[]string{},
 		map[string]interface{}{},

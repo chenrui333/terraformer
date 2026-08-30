@@ -179,8 +179,8 @@ github.com/Masterminds/sprig/v3 v3.3.0 h1:mQh0Yrg1XPo6vjYXgtf5OtijNAKJRNcTdOOGZe
 github.com/Masterminds/sprig/v3 v3.3.0/go.mod h1:Zy1iXRYNqNLUolqCpL4uhk6SHUMAOSCzdgBfDb35Lz0=
 github.com/Masterminds/squirrel v1.5.4 h1:uUcX/aBc8O7Fg9kaISIUsHXdKuqehiXAMQTYX8afzqM=
 github.com/Masterminds/squirrel v1.5.4/go.mod h1:NNaOrjSoIDfDA40n7sr2tPNZRfjzjA400rg+riTZj10=
-github.com/Myra-Security-GmbH/myrasec-go/v2 v2.51.0 h1:HE6oTQgU3BffA1ciYHVxWptpq/6CGqaKNn2cpKnuzr8=
-github.com/Myra-Security-GmbH/myrasec-go/v2 v2.51.0/go.mod h1:JNnRAqwOMJ3x7VCAhoN9csnqxki2VkeYCXKGDKMN4nE=
+github.com/Myra-Security-GmbH/myrasec-go/v2 v2.52.0 h1:kWd5IOL+lCXTaZ04uOsWdREsDgYDgzgWzOCzaGr6Puk=
+github.com/Myra-Security-GmbH/myrasec-go/v2 v2.52.0/go.mod h1:JNnRAqwOMJ3x7VCAhoN9csnqxki2VkeYCXKGDKMN4nE=
 github.com/Myra-Security-GmbH/signature v1.1.0 h1:/Tv8SilN0P8k5fKArvQHkf9iJWU5H34TSvgEyyZ32f4=
 github.com/Myra-Security-GmbH/signature v1.1.0/go.mod h1:kyX4FQ2XWvJQnvxkWmcyUIqG0jAzGL22fQMf2RTvoj0=
 github.com/OctopusDeploy/go-octodiff v1.0.0 h1:U+ORg6azniwwYo+O44giOw6TiD5USk8S4VDhOQ0Ven0=

@@ -503,6 +503,49 @@ func TestMyrasecResourceGeneratorsCreateResources(t *testing.T) {
 	}
 }
 
+func TestSettingsGeneratorOnlyHTTPS(t *testing.T) {
+	tests := []struct {
+		name     string
+		response string
+		want     string
+	}{
+		{name: "enabled", response: `{"only_https":true}`, want: "true"},
+		{name: "disabled", response: `{"only_https":false}`, want: "false"},
+		{name: "omitted", response: `{}`, want: "false"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			api := newTestMyrasecAPI(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if got, want := r.URL.Path, "/domain/7/www.example.com/settings"; got != want {
+					t.Fatalf("request path = %q, want %q", got, want)
+				}
+				if _, ok := r.URL.Query()["flat"]; !ok {
+					t.Fatalf("query = %q, want flat parameter", r.URL.RawQuery)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				if _, err := w.Write([]byte(tt.response)); err != nil {
+					t.Fatalf("write response: %v", err)
+				}
+			}))
+
+			generator := &SettingsGenerator{}
+			err := generator.createSettingResources(api, 7, mgo.VHost{ID: 8, Label: "www.example.com"})
+			if err != nil {
+				t.Fatalf("createSettingResources() error = %v", err)
+			}
+			resources := generator.GetResources()
+			if len(resources) != 1 {
+				t.Fatalf("createSettingResources() produced %d resources, want 1", len(resources))
+			}
+			assertResource(t, resources[0], "8", terraformutils.TfSanitize("www.example.com_8"), "myrasec_settings", map[string]string{
+				"subdomain_name": "www.example.com",
+				"only_https":     tt.want,
+			}, nil)
+		})
+	}
+}
+
 func TestDNSGeneratorPropagatesAPIError(t *testing.T) {
 	api := newTestMyrasecAPI(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		writeMyrasecError(t, w, "dns list failed")
