@@ -4,8 +4,8 @@ go 1.26.6
 
 require (
 	cloud.google.com/go v0.123.0 // indirect
-	cloud.google.com/go/logging v1.18.0
-	cloud.google.com/go/storage v1.63.1
+	cloud.google.com/go/logging v1.19.0
+	cloud.google.com/go/storage v1.64.0
 	github.com/Azure/azure-storage-blob-go v0.15.0
 	github.com/IBM-Cloud/bluemix-go v0.0.0-20260624064701-576d2f801297
 	github.com/IBM/go-sdk-core/v5 v5.23.1
@@ -140,7 +140,7 @@ require (
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/text v0.40.0
 	gonum.org/v1/gonum v0.17.0
-	google.golang.org/api v0.287.1
+	google.golang.org/api v0.290.0
 	google.golang.org/genproto v0.0.0-20260526163538-3dc84a4a5aaa
 	k8s.io/apimachinery v0.36.3
 	k8s.io/client-go v0.36.3
@@ -367,10 +367,10 @@ require (
 )
 
 require (
-	cloud.google.com/go/cloudbuild v1.31.0
-	cloud.google.com/go/cloudtasks v1.18.0
-	cloud.google.com/go/iam v1.11.0
-	cloud.google.com/go/monitoring v1.29.0
+	cloud.google.com/go/cloudbuild v1.32.0
+	cloud.google.com/go/cloudtasks v1.19.0
+	cloud.google.com/go/iam v1.12.0
+	cloud.google.com/go/monitoring v1.30.0
 	github.com/DataDog/datadog-api-client-go/v2 v2.62.0
 	github.com/Myra-Security-GmbH/myrasec-go/v2 v2.51.0
 	github.com/bradleyfalzon/ghinstallation/v2 v2.19.0
@@ -416,7 +416,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/gnostic-models v0.7.1 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
-	github.com/googleapis/enterprise-certificate-proxy v0.3.17 // indirect
+	github.com/googleapis/enterprise-certificate-proxy v0.3.18 // indirect
 	github.com/hashicorp/go-secure-stdlib/parseutil v0.2.0 // indirect
 	github.com/hashicorp/go-secure-stdlib/strutil v0.1.2 // indirect
 	github.com/hashicorp/jsonapi v1.5.0 // indirect
@@ -449,7 +449,7 @@ require (
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260630182238-925bb5da69e7 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260630182238-925bb5da69e7 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260706201446-f0a921348800 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/validator.v2 v2.0.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20260501160325-927ab1f70cd6 // indirect
