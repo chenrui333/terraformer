@@ -4,6 +4,7 @@ package aws
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -11,86 +12,130 @@ import (
 
 const awsUnsupportedIssue = "https://github.com/chenrui333/terraformer/issues/338"
 
+type awsUnsupportedResourcesFile struct {
+	Version   int                                    `json:"version"`
+	Resources []awsUnsupportedResourceMetadataRecord `json:"resources"`
+}
+
+type awsUnsupportedResourceMetadataRecord struct {
+	Resource      string   `json:"resource"`
+	ServiceFamily string   `json:"service_family"`
+	Reason        string   `json:"reason"`
+	Evidence      string   `json:"evidence"`
+	Status        string   `json:"status"`
+	References    []string `json:"references"`
+}
+
 func TestAWSUnsupportedResourcesMetadata(t *testing.T) {
 	data, err := os.ReadFile("unsupported_resources.json")
 	if err != nil {
 		t.Fatalf("read unsupported resources: %v", err)
 	}
 
-	var metadata map[string]interface{}
+	var metadata awsUnsupportedResourcesFile
 	if err := json.Unmarshal(data, &metadata); err != nil {
 		t.Fatalf("decode unsupported resources: %v", err)
 	}
-	if version, ok := metadata["version"].(float64); !ok || version != 1 {
-		t.Fatalf("unsupported resources version = %v, want 1", metadata["version"])
-	}
-	rawResources, ok := metadata["resources"].([]interface{})
-	if !ok || len(rawResources) == 0 {
-		t.Fatal("unsupported resources file is missing resources list")
-	}
-
-	allowedStatuses := map[string]bool{
-		"deferred":       true,
-		"not-importable": true,
-		"runtime-data":   true,
-		"unsupported":    true,
-	}
-	seen := map[string]bool{}
-	previousResource := ""
-	for _, rawResource := range rawResources {
-		resource, ok := rawResource.(map[string]interface{})
-		if !ok {
-			t.Fatalf("unsupported resource entry has unexpected type %T", rawResource)
-		}
-		name, _ := resource["resource"].(string)
-		serviceFamily, _ := resource["service_family"].(string)
-		reason, _ := resource["reason"].(string)
-		evidence, _ := resource["evidence"].(string)
-		status, _ := resource["status"].(string)
-		references, _ := resource["references"].([]interface{})
-
-		if name == "" {
-			t.Fatal("unsupported resource entry is missing resource")
-		}
-		if !strings.HasPrefix(name, "aws_") {
-			t.Fatalf("unsupported resource %q does not use aws_ prefix", name)
-		}
-		if seen[name] {
-			t.Fatalf("unsupported resource %q is duplicated", name)
-		}
-		seen[name] = true
-		if previousResource != "" && previousResource > name {
-			t.Fatalf("unsupported resources are not sorted by resource: %q before %q", previousResource, name)
-		}
-		previousResource = name
-
-		if serviceFamily == "" {
-			t.Fatalf("unsupported resource %q is missing service_family", name)
-		}
-		if reason == "" {
-			t.Fatalf("unsupported resource %q is missing reason", name)
-		}
-		if evidence == "" {
-			t.Fatalf("unsupported resource %q is missing evidence", name)
-		}
-		if !allowedStatuses[status] {
-			t.Fatalf("unsupported resource %q has unknown status %q", name, status)
-		}
-		if !hasUnsupportedResourceReference(references, awsUnsupportedIssue) {
-			t.Fatalf("unsupported resource %q is missing issue #338 reference", name)
-		}
-		for _, rawReference := range references {
-			reference, _ := rawReference.(string)
-			if strings.TrimSpace(reference) == "" {
-				t.Fatalf("unsupported resource %q has an empty reference", name)
-			}
-		}
+	if err := validateAWSUnsupportedResourcesMetadata(metadata); err != nil {
+		t.Fatal(err)
 	}
 }
 
-func hasUnsupportedResourceReference(references []interface{}, expected string) bool {
-	for _, rawReference := range references {
-		if reference, _ := rawReference.(string); reference == expected {
+func TestAWSUnsupportedResourcesMetadataDoesNotValidateStatusMembership(t *testing.T) {
+	tests := []struct {
+		name            string
+		status          string
+		wantErrContains string
+	}{
+		{name: "synthetic noncanonical status", status: "future-status"},
+		{name: "canonical status", status: "unsupported"},
+		{name: "empty status", wantErrContains: "missing status"},
+		{name: "whitespace-only status", status: " \t ", wantErrContains: "missing status"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			metadata := awsUnsupportedResourcesFile{
+				Version: 1,
+				Resources: []awsUnsupportedResourceMetadataRecord{
+					{
+						Resource:      "aws_example_action",
+						ServiceFamily: "example",
+						Reason:        "The resource represents an action.",
+						Evidence:      "The provider invokes an operation instead of managing durable configuration.",
+						Status:        test.status,
+						References:    []string{awsUnsupportedIssue},
+					},
+				},
+			}
+			err := validateAWSUnsupportedResourcesMetadata(metadata)
+			if test.wantErrContains == "" {
+				if err != nil {
+					t.Fatalf("AWS-local structural validation rejected status %q: %v", test.status, err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), test.wantErrContains) {
+				t.Fatalf("validateAWSUnsupportedResourcesMetadata() error = %v, want substring %q", err, test.wantErrContains)
+			}
+		})
+	}
+}
+
+func validateAWSUnsupportedResourcesMetadata(metadata awsUnsupportedResourcesFile) error {
+	if metadata.Version != 1 {
+		return fmt.Errorf("unsupported resources version = %d, want 1", metadata.Version)
+	}
+	if len(metadata.Resources) == 0 {
+		return fmt.Errorf("unsupported resources file is missing resources list")
+	}
+
+	seen := map[string]bool{}
+	previousResource := ""
+	for _, resource := range metadata.Resources {
+		name := strings.TrimSpace(resource.Resource)
+		if name == "" {
+			return fmt.Errorf("unsupported resource entry is missing resource")
+		}
+		if !strings.HasPrefix(name, "aws_") {
+			return fmt.Errorf("unsupported resource %q does not use aws_ prefix", name)
+		}
+		if seen[name] {
+			return fmt.Errorf("unsupported resource %q is duplicated", name)
+		}
+		seen[name] = true
+		if previousResource != "" && previousResource > name {
+			return fmt.Errorf("unsupported resources are not sorted by resource: %q before %q", previousResource, name)
+		}
+		previousResource = name
+
+		if strings.TrimSpace(resource.ServiceFamily) == "" {
+			return fmt.Errorf("unsupported resource %q is missing service_family", name)
+		}
+		if strings.TrimSpace(resource.Reason) == "" {
+			return fmt.Errorf("unsupported resource %q is missing reason", name)
+		}
+		if strings.TrimSpace(resource.Evidence) == "" {
+			return fmt.Errorf("unsupported resource %q is missing evidence", name)
+		}
+		if strings.TrimSpace(resource.Status) == "" {
+			return fmt.Errorf("unsupported resource %q is missing status", name)
+		}
+		if !hasUnsupportedResourceReference(resource.References, awsUnsupportedIssue) {
+			return fmt.Errorf("unsupported resource %q is missing issue #338 reference", name)
+		}
+		for _, reference := range resource.References {
+			if strings.TrimSpace(reference) == "" {
+				return fmt.Errorf("unsupported resource %q has an empty reference", name)
+			}
+		}
+	}
+	return nil
+}
+
+func hasUnsupportedResourceReference(references []string, expected string) bool {
+	for _, reference := range references {
+		if reference == expected {
 			return true
 		}
 	}
