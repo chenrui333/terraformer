@@ -8,7 +8,7 @@ require (
 	cloud.google.com/go/storage v1.63.1
 	github.com/Azure/azure-storage-blob-go v0.15.0
 	github.com/IBM-Cloud/bluemix-go v0.0.0-20260624064701-576d2f801297
-	github.com/IBM/go-sdk-core/v5 v5.22.1
+	github.com/IBM/go-sdk-core/v5 v5.23.1
 	github.com/IBM/ibm-cos-sdk-go v1.14.1
 	github.com/IBM/keyprotect-go-client v0.17.3
 	github.com/IBM/networking-go-sdk v0.53.5
@@ -101,7 +101,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/workspaces v1.71.1
 	github.com/aws/aws-sdk-go-v2/service/xray v1.38.1
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
-	github.com/cloudflare/cloudflare-go/v7 v7.6.0
+	github.com/cloudflare/cloudflare-go/v7 v7.7.0
 	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 // indirect
 	github.com/ddelnano/terraform-provider-mikrotik/client v0.0.0-20260716203948-b4f30abe1333
 	github.com/ddelnano/terraform-provider-xenorchestra/client v0.18.0-alpha1
@@ -133,7 +133,7 @@ require (
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
-	github.com/tencentyun/cos-go-sdk-v5 v0.7.74
+	github.com/tencentyun/cos-go-sdk-v5 v0.7.75
 	github.com/yandex-cloud/go-genproto v0.93.0
 	github.com/yandex-cloud/go-sdk/v2 v2.132.0
 	github.com/zclconf/go-cty v1.18.1
@@ -142,8 +142,8 @@ require (
 	gonum.org/v1/gonum v0.17.0
 	google.golang.org/api v0.287.1
 	google.golang.org/genproto v0.0.0-20260526163538-3dc84a4a5aaa
-	k8s.io/apimachinery v0.36.2
-	k8s.io/client-go v0.36.2
+	k8s.io/apimachinery v0.36.3
+	k8s.io/client-go v0.36.3
 )
 
 require (
@@ -202,7 +202,7 @@ require (
 	github.com/jonboulle/clockwork v0.5.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0 // indirect
-	github.com/klauspost/compress v1.18.6 // indirect
+	github.com/klauspost/compress v1.19.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mattermost/xml-roundtrip-validator v0.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
@@ -243,7 +243,7 @@ require (
 	gopkg.in/ini.v1 v1.67.3 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.36.2
+	k8s.io/api v0.36.3
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/utils v0.0.0-20260319190234-28399d86e0b5 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
@@ -463,7 +463,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.14.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/analysisservices/armanalysisservices v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/appservice/armappservice/v6 v6.0.0
-	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v8 v8.1.0
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v8 v8.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerinstance/armcontainerinstance/v2 v2.4.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerregistry/armcontainerregistry/v3 v3.0.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/cosmos/armcosmos/v3 v3.4.0
@@ -488,7 +488,7 @@ require (
 	github.com/IBM/continuous-delivery-go-sdk/v2 v2.0.16
 	github.com/IBM/go-sdk-core/v3 v3.3.1
 	github.com/IBM/go-sdk-core/v4 v4.10.0
-	github.com/IBM/sarama v1.50.3
+	github.com/IBM/sarama v1.60.0
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
 	github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.36.1
 	github.com/aws/aws-sdk-go-v2/service/appconfig v1.46.0
@@ -541,7 +541,7 @@ require (
 	github.com/gofrs/uuid/v3 v3.1.2
 	github.com/google/go-github/v89 v89.0.0
 	github.com/gophercloud/gophercloud/v2 v2.13.0
-	github.com/hashicorp/go-azure-sdk/sdk v0.20260629.1154953
+	github.com/hashicorp/go-azure-sdk/sdk v0.20260709.1191450
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/ionos-cloud/sdk-go-cert-manager v1.3.0
 	github.com/ionos-cloud/sdk-go-container-registry v1.3.1
@@ -554,17 +554,17 @@ require (
 	github.com/logzio/logzio_terraform_client v1.30.2
 	github.com/newrelic/newrelic-client-go/v2 v2.90.0
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/as v1.3.128
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cbs v1.3.115
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cbs v1.3.140
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cdb v1.3.139
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cdn v1.3.116
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cfs v1.3.131
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/clb v1.3.133
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.139
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/clb v1.3.142
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.143
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cvm v1.3.130
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.3.131
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/es v1.3.134
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/gaap v1.3.34
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/mongodb v1.3.133
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/mongodb v1.3.141
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/pts v1.3.119
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/redis v1.3.133
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/scf v1.3.101
@@ -572,9 +572,9 @@ require (
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/ssl v1.3.105
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tat v1.3.107
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tcaplusdb v1.3.105
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc v1.3.139
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc v1.3.142
 	github.com/vultr/govultr/v3 v3.31.2
-	gitlab.com/gitlab-org/api/client-go/v2 v2.46.0
+	gitlab.com/gitlab-org/api/client-go/v2 v2.51.0
 	helm.sh/helm/v4 v4.2.3
 	k8s.io/cli-runtime v0.36.2
 	software.sslmate.com/src/go-pkcs12 v0.7.3
@@ -582,7 +582,7 @@ require (
 
 replace gopkg.in/ns1/ns1-go.v2 => github.com/ns1/ns1-go/v2 v2.18.0
 
-replace github.com/tencentcloud/tencentcloud-sdk-go => github.com/tencentcloud/tencentcloud-sdk-go v1.3.139
+replace github.com/tencentcloud/tencentcloud-sdk-go => github.com/tencentcloud/tencentcloud-sdk-go v1.3.143
 
 // Redirect stale transitive imports from abandoned dgrijalva/jwt-go to a compatible maintained fork.
 replace github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v3.2.5+incompatible

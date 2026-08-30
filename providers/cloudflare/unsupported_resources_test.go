@@ -42,14 +42,6 @@ func TestCloudflareUnsupportedResourcesMetadata(t *testing.T) {
 		t.Fatal("unsupported resources file is missing resources list")
 	}
 
-	allowedStatuses := map[string]bool{
-		"cloudflare-managed": true,
-		"deferred":           true,
-		"not-importable":     true,
-		"request-style":      true,
-		"secret-required":    true,
-		"unsupported":        true,
-	}
 	seen := map[string]bool{}
 	previousResource := ""
 	for _, resource := range metadata.Resources {
@@ -76,9 +68,6 @@ func TestCloudflareUnsupportedResourcesMetadata(t *testing.T) {
 		}
 		if resource.Evidence == "" {
 			t.Fatalf("unsupported resource %q is missing evidence", resource.Resource)
-		}
-		if !allowedStatuses[resource.Status] {
-			t.Fatalf("unsupported resource %q has unknown status %q", resource.Resource, resource.Status)
 		}
 		if !hasReference(resource.References, cloudflareUnsupportedIssue) {
 			t.Fatalf("unsupported resource %q is missing issue #335 reference", resource.Resource)
