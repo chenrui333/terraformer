@@ -50,6 +50,7 @@ func (g *RealmGenerator) InitResources() error {
 		userAgent,
 		g.GetArgs()["red_hat_sso"].(bool),
 		make(map[string]string),
+		"", // keycloakVersion
 	)
 	if err != nil {
 		return errors.New("keycloak: could not connect to Keycloak")
