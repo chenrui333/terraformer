@@ -2,14 +2,27 @@
 
 ## Unreleased
 
-* Harden Datadog security notification-rule discovery against malformed API
-  response shapes, incorrect endpoint fallback, and delayed response cleanup.
-* Reject malformed import filters before provider initialization, and preserve
-  distinct Terraform resource types that share an import ID during filtering.
-* Detect AWS security group dependency cycles that include egress or mixed
-  ingress and egress references when deciding whether to emit standalone rules,
-  without dropping cross-account rule owner IDs or duplicating compound rule
-  sources.
+## 0.13.16
+
+`0.13.16` is an importer correctness, provider maintenance, toolchain, and
+dependency refresh patch.
+
+### Highlights
+
+* Reject malformed import filters before provider initialization, preserve
+  distinct Terraform resource types that share an import ID, and harden Datadog
+  security notification-rule discovery against malformed API responses.
+* Detect AWS security group dependency cycles across ingress and egress rules
+  without dropping cross-account owner IDs or duplicating compound sources.
+* Unify unsupported-resource taxonomy and its documentation checks across
+  providers and the AWS gap inventory tooling.
+* Move the Go baseline to `1.26.6`, restore Keycloak and Myrasec SDK
+  compatibility, and include the `google.golang.org/grpc` security update.
+* Refresh provider and client dependencies across AWS, Azure, GCP, IBM,
+  TencentCloud, Yandex, Kubernetes, Cloudflare, DigitalOcean, monitoring, VCS,
+  and shared Go module families.
+
+**Full Changelog**: <https://github.com/chenrui333/terraformer/compare/v0.13.15...v0.13.16>
 
 ## 0.13.15
 
