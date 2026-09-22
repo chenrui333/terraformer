@@ -81,7 +81,8 @@
       "groupName": "terraform core dependencies",
       "groupSlug": "go-terraform-core",
       "dependencyDashboardApproval": true,
-      "automerge": false
+      "automerge": false,
+      "minimumReleaseAge": null
     },
     {
       "description": "AWS provider dependency family.",
