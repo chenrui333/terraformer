@@ -11,7 +11,7 @@
   "enabledManagers": ["github-actions", "gomod"],
   "internalChecksFilter": "strict",
   "labels": ["dependencies", "renovate"],
-  "minimumReleaseAge": "7 days",
+  "minimumReleaseAge": "3 days",
   "semanticCommitType": "chore",
   "platformAutomerge": true,
   "automergeStrategy": "squash",
