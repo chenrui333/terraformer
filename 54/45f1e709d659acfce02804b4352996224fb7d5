@@ -1,0 +1,19 @@
+renovate.json
+  s_500989a5e83bc2::t_00d77b54dd478d 35-36,48-49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "5445f1e709d659acfce02804b4352996224fb7d5",
+  "prompts": {},
+  "sessions": {
+    "s_500989a5e83bc2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0c774-1baf-7872-9c19-28bdc24eddae",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
