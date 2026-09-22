@@ -11,7 +11,6 @@
   "enabledManagers": ["github-actions", "gomod"],
   "internalChecksFilter": "strict",
   "labels": ["dependencies", "renovate"],
-  "minimumReleaseAge": "3 days",
   "semanticCommitType": "chore",
   "platformAutomerge": true,
   "automergeStrategy": "squash",
@@ -33,7 +32,8 @@
       "matchManagers": ["github-actions"],
       "automerge": true,
       "automergeType": "pr",
-      "matchUpdateTypes": ["patch", "digest"]
+      "matchUpdateTypes": ["patch", "digest"],
+      "minimumReleaseAge": "3 days"
     },
     {
       "description": "Run go mod tidy after Go module updates.",
@@ -45,7 +45,8 @@
       "matchManagers": ["gomod"],
       "matchUpdateTypes": ["patch", "digest"],
       "automerge": true,
-      "automergeType": "pr"
+      "automergeType": "pr",
+      "minimumReleaseAge": "3 days"
     },
     {
       "description": "Allow Go directive patch updates to automerge after checks.",
