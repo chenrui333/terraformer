@@ -126,7 +126,7 @@ require (
 	github.com/labd/commercetools-go-sdk v1.9.0
 	github.com/microsoft/azure-devops-go-api/azuredevops v1.0.0-b5
 	github.com/nicksnyder/go-i18n v1.10.3 // indirect
-	github.com/okta/okta-sdk-golang/v6 v6.1.6
+	github.com/okta/okta-sdk-golang/v6 v6.1.7
 	github.com/opsgenie/opsgenie-go-sdk-v2 v1.2.23
 	github.com/packethost/packngo v0.31.0
 	github.com/pkg/errors v0.9.1
@@ -150,7 +150,7 @@ require (
 	github.com/IBM-Cloud/container-services-go-sdk v0.0.0-20250409011111-61af13302654
 	github.com/IBM/go-sdk-core v1.1.0
 	github.com/mackerelio/mackerel-client-go v0.45.0
-	github.com/okta/terraform-provider-okta v0.0.0-20260713040546-3e476118c6c5
+	github.com/okta/terraform-provider-okta v0.0.0-20260909055202-33f6568264a6
 )
 
 require (
