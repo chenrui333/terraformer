@@ -103,7 +103,7 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cloudflare/cloudflare-go/v7 v7.7.0
 	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 // indirect
-	github.com/ddelnano/terraform-provider-mikrotik/client v0.0.0-20260716203948-b4f30abe1333
+	github.com/ddelnano/terraform-provider-mikrotik/client v0.0.0-20260811171324-606dce9e6e21
 	github.com/ddelnano/terraform-provider-xenorchestra/client v0.18.0-alpha1
 	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
