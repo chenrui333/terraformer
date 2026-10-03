@@ -575,7 +575,7 @@ require (
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc v1.3.142
 	github.com/vultr/govultr/v3 v3.32.0
 	gitlab.com/gitlab-org/api/client-go/v2 v2.51.0
-	helm.sh/helm/v4 v4.2.3
+	helm.sh/helm/v4 v4.2.4
 	k8s.io/cli-runtime v0.36.3
 	software.sslmate.com/src/go-pkcs12 v0.7.3
 )
