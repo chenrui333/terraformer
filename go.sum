@@ -1031,8 +1031,8 @@ github.com/linode/linodego/v2 v2.4.2 h1:hOgnvX2IywFz3L1OXND08UP4D/90kmTSEreMMQkH
 github.com/linode/linodego/v2 v2.4.2/go.mod h1:LRzvYK/LFaGNqFmDxg1fZBtrolZOPvIdX9bssjwy5BA=
 github.com/logzio/logzio_terraform_client v1.30.2 h1:P5xL7ncwhti/n+3/opqMCypwWlGd19PNr8F1FeUwnnA=
 github.com/logzio/logzio_terraform_client v1.30.2/go.mod h1:pzXrr7gGIi6tU1mk2vTtg8dr6ttKMlt03kz6asC53o4=
-github.com/mackerelio/mackerel-client-go v0.45.0 h1:Tw+eSr8AkSoM7wHtTwF/hRbi7/Ib8m+B3NsxnI0xV5I=
-github.com/mackerelio/mackerel-client-go v0.45.0/go.mod h1:idAyt+GkVknFIupw1Y3vW1v5fJuqz2eiQrWU/oHOrEM=
+github.com/mackerelio/mackerel-client-go v0.45.1 h1:NuyNOoUpWkU7Nv+BIoCo3uX3QQeLV+89oiAdD1gohuE=
+github.com/mackerelio/mackerel-client-go v0.45.1/go.mod h1:idAyt+GkVknFIupw1Y3vW1v5fJuqz2eiQrWU/oHOrEM=
 github.com/magiconair/properties v1.8.6 h1:5ibWZ6iY0NctNGWo87LalDlEZ6R41TqbbDamhfG/Qzo=
 github.com/magiconair/properties v1.8.6/go.mod h1:y3VJvCyxH9uVvJTWEGAELF3aiYNyPKd5NZ3oSwXrF60=
 github.com/manicminer/hamilton v0.72.0 h1:QWW/FUt2AJtdaHIPiiZgQIVFL9I42HbH11MX972Hlkg=
