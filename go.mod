@@ -8,10 +8,10 @@ require (
 	cloud.google.com/go/storage v1.64.0
 	github.com/Azure/azure-storage-blob-go v0.15.0
 	github.com/IBM-Cloud/bluemix-go v0.0.0-20260624064701-576d2f801297
-	github.com/IBM/go-sdk-core/v5 v5.23.1
+	github.com/IBM/go-sdk-core/v5 v5.23.5
 	github.com/IBM/ibm-cos-sdk-go v1.14.1
-	github.com/IBM/keyprotect-go-client v0.17.3
-	github.com/IBM/networking-go-sdk v0.53.5
+	github.com/IBM/keyprotect-go-client v0.17.4
+	github.com/IBM/networking-go-sdk v0.53.12
 	github.com/IBM/platform-services-go-sdk v0.101.0
 	github.com/IBM/vpc-go-sdk v0.87.1
 	github.com/OctopusDeploy/go-octopusdeploy/v2 v2.114.0
@@ -485,10 +485,10 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/sql/armsql v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/storage/armstorage/v4 v4.1.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/synapse/armsynapse v0.8.0
-	github.com/IBM/continuous-delivery-go-sdk/v2 v2.0.16
+	github.com/IBM/continuous-delivery-go-sdk/v2 v2.0.21
 	github.com/IBM/go-sdk-core/v3 v3.3.1
 	github.com/IBM/go-sdk-core/v4 v4.10.0
-	github.com/IBM/sarama v1.60.0
+	github.com/IBM/sarama v1.60.2
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
 	github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.37.0
 	github.com/aws/aws-sdk-go-v2/service/appconfig v1.48.0
