@@ -150,7 +150,7 @@ require (
 	github.com/IBM-Cloud/container-services-go-sdk v0.0.0-20250409011111-61af13302654
 	github.com/IBM/go-sdk-core v1.1.0
 	github.com/mackerelio/mackerel-client-go v0.45.0
-	github.com/okta/terraform-provider-okta v0.0.0-20260909055202-33f6568264a6
+	github.com/okta/terraform-provider-okta v0.0.0-20261013055329-752c497c8905
 )
 
 require (
