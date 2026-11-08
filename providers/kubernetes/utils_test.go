@@ -860,7 +860,24 @@ func TestSelectImportResourceName(t *testing.T) {
 		{
 			name:    "falls back to manifest for preferred scheduling workload",
 			group:   "scheduling.k8s.io",
-			version: "v1alpha2",
+			version: "v1beta1",
+			resource: metav1.APIResource{
+				Name:       "workloads",
+				Kind:       "Workload",
+				Namespaced: true,
+				Verbs:      manageableVerbs,
+			},
+			supportedTypes: map[string]struct{}{
+				manifestTerraformResourceName: {},
+			},
+			want:        manifestTerraformResourceName,
+			wantDynamic: true,
+			wantOK:      true,
+		},
+		{
+			name:    "falls back to manifest for alpha scheduling workload",
+			group:   "scheduling.k8s.io",
+			version: "v1alpha3",
 			resource: metav1.APIResource{
 				Name:       "workloads",
 				Kind:       "Workload",
@@ -975,6 +992,7 @@ func TestSkipsImportResource(t *testing.T) {
 		kind    string
 		want    bool
 	}{
+		{name: "ga pod certificate request", group: "certificates.k8s.io", version: "v1", kind: "PodCertificateRequest", want: true},
 		{name: "pod certificate request", group: "certificates.k8s.io", version: "v1beta1", kind: "PodCertificateRequest", want: true},
 		{name: "old pod certificate request", group: "certificates.k8s.io", version: "v1alpha1", kind: "PodCertificateRequest", want: true},
 		{name: "resource slice", group: "resource.k8s.io", version: "v1", kind: "ResourceSlice", want: true},
@@ -986,7 +1004,12 @@ func TestSkipsImportResource(t *testing.T) {
 		{name: "resource pool status request", group: "resource.k8s.io", version: "v1alpha3", kind: "ResourcePoolStatusRequest", want: true},
 		{name: "ip address", group: "networking.k8s.io", version: "v1", kind: "IPAddress", want: true},
 		{name: "beta ip address", group: "networking.k8s.io", version: "v1beta1", kind: "IPAddress", want: true},
-		{name: "pod group", group: "scheduling.k8s.io", version: "v1alpha2", kind: "PodGroup", want: true},
+		{name: "beta pod group", group: "scheduling.k8s.io", version: "v1beta1", kind: "PodGroup", want: true},
+		{name: "alpha pod group", group: "scheduling.k8s.io", version: "v1alpha3", kind: "PodGroup", want: true},
+		{name: "composite pod group", group: "scheduling.k8s.io", version: "v1alpha3", kind: "CompositePodGroup", want: true},
+		{name: "previous alpha pod group", group: "scheduling.k8s.io", version: "v1alpha2", kind: "PodGroup", want: true},
+		{name: "eviction", group: "lifecycle.k8s.io", version: "v1alpha1", kind: "Eviction", want: true},
+		{name: "eviction request", group: "lifecycle.k8s.io", version: "v1alpha1", kind: "EvictionRequest", want: true},
 		{name: "controller revision", group: "apps", version: "v1", kind: "ControllerRevision", want: true},
 		{name: "lease candidate", group: "coordination.k8s.io", version: "v1alpha2", kind: "LeaseCandidate", want: true},
 		{name: "historical lease candidate", group: "coordination.k8s.io", version: "v1alpha1", kind: "LeaseCandidate", want: true},
@@ -1212,12 +1235,14 @@ func TestSupportsNativeManifestResource(t *testing.T) {
 		{name: "validating admission policy beta", group: "admissionregistration.k8s.io", version: "v1beta1", kind: "ValidatingAdmissionPolicy", want: true},
 		{name: "mutating admission policy binding alpha", group: "admissionregistration.k8s.io", version: "v1alpha1", kind: "MutatingAdmissionPolicyBinding", want: true},
 		{name: "standalone replica set", group: "apps", version: "v1", kind: "ReplicaSet", want: true},
+		{name: "cluster trust bundle v1", group: "certificates.k8s.io", version: "v1", kind: "ClusterTrustBundle", want: true},
 		{name: "cluster trust bundle beta", group: "certificates.k8s.io", version: "v1beta1", kind: "ClusterTrustBundle", want: true},
 		{name: "flow schema v1", group: "flowcontrol.apiserver.k8s.io", version: "v1", kind: "FlowSchema", want: true},
 		{name: "priority level configuration v1beta3", group: "flowcontrol.apiserver.k8s.io", version: "v1beta3", kind: "PriorityLevelConfiguration", want: true},
 		{name: "service cidr v1", group: "networking.k8s.io", version: "v1", kind: "ServiceCIDR", want: true},
 		{name: "service cidr beta", group: "networking.k8s.io", version: "v1beta1", kind: "ServiceCIDR", want: true},
 		{name: "device class v1", group: "resource.k8s.io", version: "v1", kind: "DeviceClass", want: true},
+		{name: "device taint rule v1", group: "resource.k8s.io", version: "v1", kind: "DeviceTaintRule", want: true},
 		{name: "resource claim v1beta2", group: "resource.k8s.io", version: "v1beta2", kind: "ResourceClaim", want: true},
 		{name: "resource claim template v1beta1", group: "resource.k8s.io", version: "v1beta1", kind: "ResourceClaimTemplate", want: true},
 		{name: "device class alpha", group: "resource.k8s.io", version: "v1alpha3", kind: "DeviceClass", want: true},
@@ -1225,9 +1250,12 @@ func TestSupportsNativeManifestResource(t *testing.T) {
 		{name: "resource claim alpha", group: "resource.k8s.io", version: "v1alpha3", kind: "ResourceClaim", want: true},
 		{name: "resource claim template alpha", group: "resource.k8s.io", version: "v1alpha3", kind: "ResourceClaimTemplate", want: true},
 		{name: "legacy resource class is outside supported policy", group: "resource.k8s.io", version: "v1alpha2", kind: "ResourceClass", want: false},
-		{name: "scheduling workload preferred alpha", group: "scheduling.k8s.io", version: "v1alpha2", kind: "Workload", want: true},
+		{name: "scheduling workload beta", group: "scheduling.k8s.io", version: "v1beta1", kind: "Workload", want: true},
+		{name: "scheduling workload preferred alpha", group: "scheduling.k8s.io", version: "v1alpha3", kind: "Workload", want: true},
+		{name: "scheduling workload previous alpha", group: "scheduling.k8s.io", version: "v1alpha2", kind: "Workload", want: true},
 		{name: "scheduling workload alpha", group: "scheduling.k8s.io", version: "v1alpha1", kind: "Workload", want: true},
 		{name: "volume attributes class v1", group: "storage.k8s.io", version: "v1", kind: "VolumeAttributesClass", want: true},
+		{name: "storage version migration v1", group: "storagemigration.k8s.io", version: "v1", kind: "StorageVersionMigration", want: true},
 		{name: "storage version migration beta", group: "storagemigration.k8s.io", version: "v1beta1", kind: "StorageVersionMigration", want: true},
 		{name: "storage version migration alpha", group: "storagemigration.k8s.io", version: "v1alpha1", kind: "StorageVersionMigration", want: true},
 		{name: "pod template", version: "v1", kind: "PodTemplate", want: true},
@@ -1236,6 +1264,10 @@ func TestSupportsNativeManifestResource(t *testing.T) {
 		{name: "event is not manifest-backed", group: "events.k8s.io", version: "v1", kind: "Event", want: false},
 		{name: "token review is not manifest-backed", group: "authentication.k8s.io", version: "v1", kind: "TokenReview", want: false},
 		{name: "pod certificate request is kubelet-generated", group: "certificates.k8s.io", version: "v1beta1", kind: "PodCertificateRequest", want: false},
+		{name: "pod certificate request v1 is kubelet-generated", group: "certificates.k8s.io", version: "v1", kind: "PodCertificateRequest", want: false},
+		{name: "pod group beta is controller-created", group: "scheduling.k8s.io", version: "v1beta1", kind: "PodGroup", want: false},
+		{name: "composite pod group is controller-created", group: "scheduling.k8s.io", version: "v1alpha3", kind: "CompositePodGroup", want: false},
+		{name: "eviction request is imperative eviction intent", group: "lifecycle.k8s.io", version: "v1alpha1", kind: "EvictionRequest", want: false},
 		{name: "resource slice is generated by drivers", group: "resource.k8s.io", version: "v1", kind: "ResourceSlice", want: false},
 		{name: "pod scheduling context is generated scheduling state", group: "resource.k8s.io", version: "v1alpha2", kind: "PodSchedulingContext", want: false},
 		{name: "pod scheduling is generated scheduling state", group: "resource.k8s.io", version: "v1alpha1", kind: "PodScheduling", want: false},
@@ -1254,10 +1286,10 @@ func TestSupportsNativeManifestResource(t *testing.T) {
 	}
 }
 
-// TestKubernetes134To136APIDiscoveryMatrix is a comprehensive fixture that
-// classifies every relevant Kubernetes 1.34-1.36 API resource into exactly one
+// TestKubernetes135To137APIDiscoveryMatrix is a comprehensive fixture that
+// classifies every relevant Kubernetes 1.35-1.37 API resource into exactly one
 // behavior class. This test is the definition of done for the native API policy.
-func TestKubernetes134To136APIDiscoveryMatrix(t *testing.T) {
+func TestKubernetes135To137APIDiscoveryMatrix(t *testing.T) {
 	clientset := fake.NewSimpleClientset()
 	manageableVerbs := []string{"create", "delete", "get", "list", "patch", "update"}
 
@@ -1513,6 +1545,13 @@ func TestKubernetes134To136APIDiscoveryMatrix(t *testing.T) {
 			class:    nativeManifest,
 		},
 		{
+			name:     "certificates.k8s.io/v1 ClusterTrustBundle → native manifest",
+			group:    "certificates.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "clustertrustbundles", Kind: "ClusterTrustBundle", Verbs: manageableVerbs},
+			class:    nativeManifest,
+		},
+		{
 			name:     "certificates.k8s.io/v1beta1 ClusterTrustBundle → native manifest",
 			group:    "certificates.k8s.io",
 			version:  "v1beta1",
@@ -1562,6 +1601,13 @@ func TestKubernetes134To136APIDiscoveryMatrix(t *testing.T) {
 			class:    nativeManifest,
 		},
 		{
+			name:     "resource.k8s.io/v1 DeviceTaintRule → native manifest",
+			group:    "resource.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "devicetaintrules", Kind: "DeviceTaintRule", Verbs: manageableVerbs},
+			class:    nativeManifest,
+		},
+		{
 			name:     "resource.k8s.io/v1beta2 DeviceTaintRule → native manifest",
 			group:    "resource.k8s.io",
 			version:  "v1beta2",
@@ -1576,6 +1622,20 @@ func TestKubernetes134To136APIDiscoveryMatrix(t *testing.T) {
 			class:    nativeManifest,
 		},
 		{
+			name:     "scheduling.k8s.io/v1beta1 Workload → native manifest",
+			group:    "scheduling.k8s.io",
+			version:  "v1beta1",
+			resource: metav1.APIResource{Name: "workloads", Kind: "Workload", Namespaced: true, Verbs: manageableVerbs},
+			class:    nativeManifest,
+		},
+		{
+			name:     "scheduling.k8s.io/v1alpha3 Workload → native manifest",
+			group:    "scheduling.k8s.io",
+			version:  "v1alpha3",
+			resource: metav1.APIResource{Name: "workloads", Kind: "Workload", Namespaced: true, Verbs: manageableVerbs},
+			class:    nativeManifest,
+		},
+		{
 			name:     "scheduling.k8s.io/v1alpha2 Workload → native manifest",
 			group:    "scheduling.k8s.io",
 			version:  "v1alpha2",
@@ -1587,6 +1647,13 @@ func TestKubernetes134To136APIDiscoveryMatrix(t *testing.T) {
 			group:    "storage.k8s.io",
 			version:  "v1",
 			resource: metav1.APIResource{Name: "volumeattributesclasses", Kind: "VolumeAttributesClass", Verbs: manageableVerbs},
+			class:    nativeManifest,
+		},
+		{
+			name:     "storagemigration.k8s.io/v1 StorageVersionMigration → native manifest",
+			group:    "storagemigration.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "storageversionmigrations", Kind: "StorageVersionMigration", Verbs: manageableVerbs},
 			class:    nativeManifest,
 		},
 		{
@@ -1635,6 +1702,13 @@ func TestKubernetes134To136APIDiscoveryMatrix(t *testing.T) {
 			class:    runtimeSkip,
 		},
 		{
+			name:     "certificates.k8s.io/v1 PodCertificateRequest → runtime skip",
+			group:    "certificates.k8s.io",
+			version:  "v1",
+			resource: metav1.APIResource{Name: "podcertificaterequests", Kind: "PodCertificateRequest", Namespaced: true, Verbs: manageableVerbs},
+			class:    runtimeSkip,
+		},
+		{
 			name:     "certificates.k8s.io/v1beta1 PodCertificateRequest → runtime skip",
 			group:    "certificates.k8s.io",
 			version:  "v1beta1",
@@ -1646,6 +1720,20 @@ func TestKubernetes134To136APIDiscoveryMatrix(t *testing.T) {
 			group:    "coordination.k8s.io",
 			version:  "v1beta1",
 			resource: metav1.APIResource{Name: "leasecandidates", Kind: "LeaseCandidate", Namespaced: true, Verbs: manageableVerbs},
+			class:    runtimeSkip,
+		},
+		{
+			name:     "lifecycle.k8s.io/v1alpha1 EvictionRequest → runtime skip",
+			group:    "lifecycle.k8s.io",
+			version:  "v1alpha1",
+			resource: metav1.APIResource{Name: "evictionrequests", Kind: "EvictionRequest", Namespaced: true, Verbs: manageableVerbs},
+			class:    runtimeSkip,
+		},
+		{
+			name:     "lifecycle.k8s.io/v1alpha1 Eviction → runtime skip",
+			group:    "lifecycle.k8s.io",
+			version:  "v1alpha1",
+			resource: metav1.APIResource{Name: "evictions", Kind: "Eviction", Namespaced: true, Verbs: manageableVerbs},
 			class:    runtimeSkip,
 		},
 		{
@@ -1667,6 +1755,20 @@ func TestKubernetes134To136APIDiscoveryMatrix(t *testing.T) {
 			group:    "resource.k8s.io",
 			version:  "v1alpha3",
 			resource: metav1.APIResource{Name: "podschedulingcontexts", Kind: "PodSchedulingContext", Namespaced: true, Verbs: manageableVerbs},
+			class:    runtimeSkip,
+		},
+		{
+			name:     "scheduling.k8s.io/v1beta1 PodGroup → runtime skip",
+			group:    "scheduling.k8s.io",
+			version:  "v1beta1",
+			resource: metav1.APIResource{Name: "podgroups", Kind: "PodGroup", Namespaced: true, Verbs: manageableVerbs},
+			class:    runtimeSkip,
+		},
+		{
+			name:     "scheduling.k8s.io/v1alpha3 CompositePodGroup → runtime skip",
+			group:    "scheduling.k8s.io",
+			version:  "v1alpha3",
+			resource: metav1.APIResource{Name: "compositepodgroups", Kind: "CompositePodGroup", Namespaced: true, Verbs: manageableVerbs},
 			class:    runtimeSkip,
 		},
 		{
@@ -1998,10 +2100,15 @@ func TestSupportsTypedClientResource(t *testing.T) {
 		{name: "autoscaling hpa", group: "autoscaling", version: "v2", kind: "HorizontalPodAutoscaler", want: true},
 		{name: "autoscaling v2beta2 hpa is not exposed by kubernetes clientset", group: "autoscaling", version: "v2beta2", kind: "HorizontalPodAutoscaler", want: false},
 		{name: "certificate signing request", group: "certificates.k8s.io", version: "v1", kind: "CertificateSigningRequest", want: true},
-		{name: "pod certificate request", group: "certificates.k8s.io", version: "v1beta1", kind: "PodCertificateRequest", want: true},
+		{name: "pod certificate request", group: "certificates.k8s.io", version: "v1", kind: "PodCertificateRequest", want: true},
+		{name: "beta pod certificate request", group: "certificates.k8s.io", version: "v1beta1", kind: "PodCertificateRequest", want: true},
 		{name: "storage csi driver", group: "storage.k8s.io", version: "v1", kind: "CSIDriver", want: true},
-		{name: "storage version migration", group: "storagemigration.k8s.io", version: "v1beta1", kind: "StorageVersionMigration", want: true},
-		{name: "scheduling workload preferred alpha", group: "scheduling.k8s.io", version: "v1alpha2", kind: "Workload", want: true},
+		{name: "storage version migration", group: "storagemigration.k8s.io", version: "v1", kind: "StorageVersionMigration", want: true},
+		{name: "beta storage version migration", group: "storagemigration.k8s.io", version: "v1beta1", kind: "StorageVersionMigration", want: true},
+		{name: "scheduling workload beta", group: "scheduling.k8s.io", version: "v1beta1", kind: "Workload", want: true},
+		{name: "scheduling workload preferred alpha", group: "scheduling.k8s.io", version: "v1alpha3", kind: "Workload", want: true},
+		{name: "scheduling workload removed alpha is not typed", group: "scheduling.k8s.io", version: "v1alpha2", kind: "Workload", want: false},
+		{name: "lifecycle eviction request", group: "lifecycle.k8s.io", version: "v1alpha1", kind: "EvictionRequest", want: true},
 		{name: "scheduling priority class", group: "scheduling.k8s.io", version: "v1", kind: "PriorityClass", want: true},
 		{name: "admission validating policy", group: "admissionregistration.k8s.io", version: "v1", kind: "ValidatingAdmissionPolicy", want: true},
 		{name: "admission webhook", group: "admissionregistration.k8s.io", version: "v1", kind: "MutatingWebhookConfiguration", want: true},

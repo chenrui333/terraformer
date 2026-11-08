@@ -32,6 +32,16 @@
       ]
     },
     {
+      "resource": "certificates.k8s.io/v1 PodCertificateRequest",
+      "service_family": "certificates.k8s.io",
+      "reason": "PodCertificateRequests are kubelet-generated certificate request objects with runtime proof material, not stable declarative inventory.",
+      "evidence": "providers/kubernetes/utils.go lists PodCertificateRequest in skippedImportResources, and docs/kubernetes.md documents the kubelet-generated certificate request skip policy.",
+      "status": "runtime-generated",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/337"
+      ]
+    },
+    {
       "resource": "certificates.k8s.io/v1alpha1 PodCertificateRequest",
       "service_family": "certificates.k8s.io",
       "reason": "PodCertificateRequests are kubelet-generated certificate request objects with runtime proof material, not stable declarative inventory.",
@@ -55,7 +65,7 @@
       "resource": "coordination.k8s.io/v1 Lease",
       "service_family": "coordination.k8s.io",
       "reason": "Lease objects are native coordination records with typed-client support but no registered Terraform provider resource.",
-      "evidence": "selectImportResourceName keeps native typed-client APIs on explicit provider resources only; TestKubernetes134To136APIDiscoveryMatrix classifies coordination.k8s.io/v1 Lease as a policy skip.",
+      "evidence": "selectImportResourceName keeps native typed-client APIs on explicit provider resources only; TestKubernetes135To137APIDiscoveryMatrix classifies coordination.k8s.io/v1 Lease as a policy skip.",
       "status": "policy-skip",
       "references": [
         "https://github.com/chenrui333/terraformer/issues/337"
@@ -95,7 +105,7 @@
       "resource": "events.k8s.io/v1 Event",
       "service_family": "events.k8s.io",
       "reason": "Events are observation records, not durable declarative resources, and are outside the explicit native manifest selector policy.",
-      "evidence": "selectImportResourceName does not apply generic manifest fallback to native typed-client APIs; TestKubernetes134To136APIDiscoveryMatrix classifies events.k8s.io/v1 Event as a policy skip.",
+      "evidence": "selectImportResourceName does not apply generic manifest fallback to native typed-client APIs; TestKubernetes135To137APIDiscoveryMatrix classifies events.k8s.io/v1 Event as a policy skip.",
       "status": "policy-skip",
       "references": [
         "https://github.com/chenrui333/terraformer/issues/337"
@@ -120,6 +130,26 @@
       "references": [
         "https://github.com/chenrui333/terraformer/issues/337",
         "https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/token_request_v1"
+      ]
+    },
+    {
+      "resource": "lifecycle.k8s.io/v1alpha1 Eviction",
+      "service_family": "lifecycle.k8s.io",
+      "reason": "Evictions are eviction-controller coordination state for a target and its responders and should not become Terraform-owned configuration.",
+      "evidence": "providers/kubernetes/utils.go lists Eviction in skippedImportResources; docs/kubernetes.md documents Eviction as a runtime/controller-generated skip.",
+      "status": "runtime-generated",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/337"
+      ]
+    },
+    {
+      "resource": "lifecycle.k8s.io/v1alpha1 EvictionRequest",
+      "service_family": "lifecycle.k8s.io",
+      "reason": "EvictionRequests are imperative, short-lived eviction intents whose deletion withdraws the request, not stable declarative inventory.",
+      "evidence": "providers/kubernetes/utils.go lists EvictionRequest in skippedImportResources; docs/kubernetes.md documents EvictionRequest as a runtime/controller-generated skip.",
+      "status": "runtime-generated",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/337"
       ]
     },
     {
@@ -175,7 +205,7 @@
     {
       "resource": "resource.k8s.io/v1alpha2 ResourceClass",
       "service_family": "resource.k8s.io",
-      "reason": "Legacy alpha ResourceClass is outside the Kubernetes 1.34-1.36 explicit native manifest selector policy.",
+      "reason": "Legacy alpha ResourceClass is outside the Kubernetes 1.35-1.37 explicit native manifest selector policy.",
       "evidence": "importSkipPolicyReason returns 'native API is outside the explicit manifest import policy' for manageable native APIs that are not first-class resources, dynamic-client resources, explicit native manifest selectors, or CRD/custom-resource fallback candidates.",
       "status": "policy-skip",
       "references": [
@@ -254,6 +284,36 @@
     },
     {
       "resource": "scheduling.k8s.io/v1alpha2 PodGroup",
+      "service_family": "scheduling.k8s.io",
+      "reason": "PodGroups are scheduler/controller-created workload scheduling state and should not become Terraform-owned configuration.",
+      "evidence": "providers/kubernetes/utils.go lists PodGroup in skippedImportResources; docs/kubernetes.md documents PodGroup as a runtime/controller-generated skip.",
+      "status": "runtime-generated",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/337"
+      ]
+    },
+    {
+      "resource": "scheduling.k8s.io/v1alpha3 CompositePodGroup",
+      "service_family": "scheduling.k8s.io",
+      "reason": "CompositePodGroups are controller-created workload scheduling state and should not become Terraform-owned configuration.",
+      "evidence": "providers/kubernetes/utils.go lists CompositePodGroup in skippedImportResources; docs/kubernetes.md documents CompositePodGroup as a runtime/controller-generated skip.",
+      "status": "runtime-generated",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/337"
+      ]
+    },
+    {
+      "resource": "scheduling.k8s.io/v1alpha3 PodGroup",
+      "service_family": "scheduling.k8s.io",
+      "reason": "PodGroups are scheduler/controller-created workload scheduling state and should not become Terraform-owned configuration.",
+      "evidence": "providers/kubernetes/utils.go lists PodGroup in skippedImportResources; docs/kubernetes.md documents PodGroup as a runtime/controller-generated skip.",
+      "status": "runtime-generated",
+      "references": [
+        "https://github.com/chenrui333/terraformer/issues/337"
+      ]
+    },
+    {
+      "resource": "scheduling.k8s.io/v1beta1 PodGroup",
       "service_family": "scheduling.k8s.io",
       "reason": "PodGroups are scheduler/controller-created workload scheduling state and should not become Terraform-owned configuration.",
       "evidence": "providers/kubernetes/utils.go lists PodGroup in skippedImportResources; docs/kubernetes.md documents PodGroup as a runtime/controller-generated skip.",
