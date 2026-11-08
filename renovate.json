@@ -16,7 +16,6 @@
   "automergeStrategy": "squash",
   "prConcurrentLimit": 0,
   "prHourlyLimit": 0,
-  "rebaseWhen": "conflicted",
   "separateMajorMinor": true,
   "separateMinorPatch": true,
   "timezone": "America/New_York",
