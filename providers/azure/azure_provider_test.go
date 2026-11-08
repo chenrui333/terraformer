@@ -71,3 +71,28 @@ func TestAzureProviderInitClearsStateOnLaterInitError(t *testing.T) {
 		t.Fatal("clientOptions should be nil after failed init")
 	}
 }
+
+func TestAzureProviderDataFeaturesBlock(t *testing.T) {
+	tests := []struct {
+		version      string
+		wantFeatures bool
+	}{
+		{"~> 4.1.0", true},
+		{"~> 2.0.0", true},
+		{"~> 1.44.0", false},
+		{"", true},
+	}
+	for _, tt := range tests {
+		data := azureProviderData("azurerm", tt.version)
+		block, ok := data["provider"].(map[string]interface{})["azurerm"].(map[string]interface{})
+		if !ok {
+			t.Fatalf("version %q: provider data = %#v, want azurerm block", tt.version, data)
+		}
+		if _, got := block["features"].(map[string]interface{}); got != tt.wantFeatures {
+			t.Errorf("version %q: azurerm block = %#v, want features=%v", tt.version, block, tt.wantFeatures)
+		}
+		if _, ok := block["version"]; ok {
+			t.Errorf("version %q: azurerm block = %#v, want no in-block version", tt.version, block)
+		}
+	}
+}
