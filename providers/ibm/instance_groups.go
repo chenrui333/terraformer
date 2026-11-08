@@ -5,19 +5,17 @@ package ibm
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
-	"sync"
 
 	"github.com/IBM/go-sdk-core/v4/core"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 	"github.com/chenrui333/terraformer/terraformutils"
+	"golang.org/x/sync/errgroup"
 )
 
 // InstanceGroupGenerator ...
 type InstanceGroupGenerator struct {
 	IBMService
-	fatalErrors chan error
 }
 
 func (g *InstanceGroupGenerator) loadInstanceGroup(instanceGroupID, instanceGroupName string) terraformutils.Resource {
@@ -32,7 +30,7 @@ func (g *InstanceGroupGenerator) loadInstanceGroup(instanceGroupID, instanceGrou
 
 func (g *InstanceGroupGenerator) loadInstanceGroupManger(instanceGroupID, instanceGroupManagerID, managerName string, dependsOn []string) terraformutils.Resource {
 	if managerName == "" {
-		managerName = fmt.Sprintf("manager-%d-%d", rand.Intn(100), rand.Intn(50))
+		managerName = instanceGroupManagerID
 	}
 	resources := terraformutils.NewResource(
 		fmt.Sprintf("%s/%s", instanceGroupID, instanceGroupManagerID),
@@ -49,7 +47,7 @@ func (g *InstanceGroupGenerator) loadInstanceGroupManger(instanceGroupID, instan
 
 func (g *InstanceGroupGenerator) loadInstanceGroupMangerPolicy(instanceGroupID, instanceGroupManagerID, policyID, policyName string, dependsOn []string) terraformutils.Resource {
 	if policyName == "" {
-		policyName = fmt.Sprintf("manager-%d-%d", rand.Intn(100), rand.Intn(50))
+		policyName = policyID
 	}
 	resources := terraformutils.NewResource(
 		fmt.Sprintf("%s/%s/%s", instanceGroupID, instanceGroupManagerID, policyID),
@@ -64,8 +62,7 @@ func (g *InstanceGroupGenerator) loadInstanceGroupMangerPolicy(instanceGroupID, 
 	return resources
 }
 
-func (g *InstanceGroupGenerator) handlePolicies(sess *vpcv1.VpcV1, instanceGroupID, instanceGroupManagerID string, policies, dependsOn []string, waitGroup *sync.WaitGroup) {
-	defer waitGroup.Done()
+func (g *InstanceGroupGenerator) handlePolicies(sess *vpcv1.VpcV1, instanceGroupID, instanceGroupManagerID string, policies, dependsOn []string) error {
 	for _, instanceGroupManagerPolicyID := range policies {
 		getInstanceGroupManagerPolicyOptions := vpcv1.GetInstanceGroupManagerPolicyOptions{
 			ID:                     &instanceGroupManagerPolicyID,
@@ -74,9 +71,12 @@ func (g *InstanceGroupGenerator) handlePolicies(sess *vpcv1.VpcV1, instanceGroup
 		}
 		data, response, err := sess.GetInstanceGroupManagerPolicy(&getInstanceGroupManagerPolicyOptions)
 		if err != nil {
-			g.fatalErrors <- fmt.Errorf("error getting InstanceGroup Manager Policy: %w\n%s", err, response)
+			return fmt.Errorf("error getting InstanceGroup Manager Policy: %w\n%s", err, response)
 		}
-		instanceGroupManagerPolicy := data.(*vpcv1.InstanceGroupManagerPolicy)
+		instanceGroupManagerPolicy, ok := data.(*vpcv1.InstanceGroupManagerPolicy)
+		if !ok {
+			return fmt.Errorf("unexpected InstanceGroup Manager Policy type %T", data)
+		}
 		resourceMutex.Lock()
 		g.Resources = append(g.Resources, g.loadInstanceGroupMangerPolicy(instanceGroupID,
 			instanceGroupManagerID,
@@ -85,11 +85,11 @@ func (g *InstanceGroupGenerator) handlePolicies(sess *vpcv1.VpcV1, instanceGroup
 			dependsOn))
 		resourceMutex.Unlock()
 	}
+	return nil
 }
 
-func (g *InstanceGroupGenerator) handleManagers(sess *vpcv1.VpcV1, instanceGroupID string, managers, dependsOn []string, waitGroup *sync.WaitGroup) {
-	defer waitGroup.Done()
-	var policiesWG sync.WaitGroup
+func (g *InstanceGroupGenerator) handleManagers(sess *vpcv1.VpcV1, instanceGroupID string, managers, dependsOn []string) error {
+	var policies errgroup.Group
 	for _, instanceGroupManagerID := range managers {
 		getInstanceGroupManagerOptions := vpcv1.GetInstanceGroupManagerOptions{
 			ID:              &instanceGroupManagerID,
@@ -97,29 +97,32 @@ func (g *InstanceGroupGenerator) handleManagers(sess *vpcv1.VpcV1, instanceGroup
 		}
 		instanceGroupManagerIntf, response, err := sess.GetInstanceGroupManager(&getInstanceGroupManagerOptions)
 		if err != nil {
-			g.fatalErrors <- fmt.Errorf("error getting InstanceGroup Manager: %w\n%s", err, response)
+			return fmt.Errorf("error getting InstanceGroup Manager: %w\n%s", err, response)
 		}
-		instanceGroupManager := instanceGroupManagerIntf.(*vpcv1.InstanceGroupManager)
+		instanceGroupManager, ok := instanceGroupManagerIntf.(*vpcv1.InstanceGroupManager)
+		if !ok {
+			return fmt.Errorf("unexpected InstanceGroup Manager type %T", instanceGroupManagerIntf)
+		}
 		resourceMutex.Lock()
 		g.Resources = append(g.Resources, g.loadInstanceGroupManger(instanceGroupID, instanceGroupManagerID, *instanceGroupManager.Name, dependsOn))
 		resourceMutex.Unlock()
 
-		policies := make([]string, 0)
+		policyIDs := make([]string, 0)
 
 		for i := 0; i < len(instanceGroupManager.Policies); i++ {
-			policies = append(policies, *(instanceGroupManager.Policies[i].ID))
+			policyIDs = append(policyIDs, *(instanceGroupManager.Policies[i].ID))
 		}
-		policiesWG.Add(1)
 		dependsOn1 := makeDependsOn(dependsOn,
 			"ibm_is_instance_group_manger."+terraformutils.TfSanitize(*instanceGroupManager.Name))
-		go g.handlePolicies(sess, instanceGroupID, instanceGroupManagerID, policies, dependsOn1, &policiesWG)
+		policies.Go(func() error {
+			return g.handlePolicies(sess, instanceGroupID, instanceGroupManagerID, policyIDs, dependsOn1)
+		})
 	}
-	policiesWG.Wait()
+	return policies.Wait()
 }
 
-func (g *InstanceGroupGenerator) handleInstanceGroups(sess *vpcv1.VpcV1, waitGroup *sync.WaitGroup) {
+func (g *InstanceGroupGenerator) handleInstanceGroups(sess *vpcv1.VpcV1) error {
 	// Support for pagination
-	defer waitGroup.Done()
 	start := ""
 	var allrecs []vpcv1.InstanceGroup
 	for {
@@ -129,7 +132,7 @@ func (g *InstanceGroupGenerator) handleInstanceGroups(sess *vpcv1.VpcV1, waitGro
 		}
 		instanceGroupsCollection, response, err := sess.ListInstanceGroups(&listInstanceGroupOptions)
 		if err != nil {
-			g.fatalErrors <- fmt.Errorf("error fetching InstanceGroups %w\n%s", err, response)
+			return fmt.Errorf("error fetching InstanceGroups %w\n%s", err, response)
 		}
 		start = GetNext(instanceGroupsCollection.Next)
 		allrecs = append(allrecs, instanceGroupsCollection.InstanceGroups...)
@@ -138,7 +141,7 @@ func (g *InstanceGroupGenerator) handleInstanceGroups(sess *vpcv1.VpcV1, waitGro
 		}
 	}
 
-	var managersWG sync.WaitGroup
+	var managers errgroup.Group
 
 	for _, instanceGroup := range allrecs {
 		var dependsOn []string
@@ -148,14 +151,15 @@ func (g *InstanceGroupGenerator) handleInstanceGroups(sess *vpcv1.VpcV1, waitGro
 		resourceMutex.Lock()
 		g.Resources = append(g.Resources, g.loadInstanceGroup(instanceGoupID, *instanceGroup.Name))
 		resourceMutex.Unlock()
-		managers := make([]string, 0)
+		managerIDs := make([]string, 0)
 		for i := 0; i < len(instanceGroup.Managers); i++ {
-			managers = append(managers, *(instanceGroup.Managers[i].ID))
+			managerIDs = append(managerIDs, *(instanceGroup.Managers[i].ID))
 		}
-		managersWG.Add(1)
-		go g.handleManagers(sess, instanceGoupID, managers, dependsOn, &managersWG)
+		managers.Go(func() error {
+			return g.handleManagers(sess, instanceGoupID, managerIDs, dependsOn)
+		})
 	}
-	managersWG.Wait()
+	return managers.Wait()
 }
 
 // InitResources ...
@@ -175,10 +179,5 @@ func (g *InstanceGroupGenerator) InitResources() error {
 		return err
 	}
 
-	var instanceGroupWG sync.WaitGroup
-	instanceGroupWG.Add(1)
-	go g.handleInstanceGroups(sess, &instanceGroupWG)
-
-	instanceGroupWG.Wait()
-	return nil
+	return g.handleInstanceGroups(sess)
 }
