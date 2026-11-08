@@ -1,0 +1,16 @@
+.github/workflows/docs.yml
+  h_9df9c32c3f321d 21-23
+.github/workflows/stale.yaml
+  h_9df9c32c3f321d 6-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "07d63e65dc61fa53bd1a78d43a20c636d60e9af3",
+  "prompts": {},
+  "humans": {
+    "h_9df9c32c3f321d": {
+      "author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
