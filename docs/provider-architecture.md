@@ -142,6 +142,9 @@ instead. Refresh-time provider configuration may carry secrets when the provider
 requires them, but generated provider data and generated resources must remain
 secret-free.
 
+Diagnostics must not dump resource attributes or serialized configuration.
+Report resource addresses and error context without credential-bearing values.
+
 ## Data shape and refresh stability
 
 - Seed fields that the Terraform provider refresh path needs.

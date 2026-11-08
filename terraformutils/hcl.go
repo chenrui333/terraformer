@@ -45,7 +45,6 @@ func hclPrint(data interface{}, mapsObjects map[string]struct{}, sort bool) ([]b
 	}
 	var decoded interface{}
 	if err := json.Unmarshal(dataBytesJSON, &decoded); err != nil {
-		log.Println(string(dataBytesJSON))
 		return []byte{}, fmt.Errorf("error parsing terraform json: %w", err)
 	}
 	root, ok := decoded.(map[string]interface{})
@@ -506,7 +505,6 @@ func HclPrintResource(resources []Resource, providerData map[string]interface{},
 	for _, res := range resources {
 		if output == "hcl" && res.InstanceInfo.Type == "kubernetes_manifest" {
 			if _, exists := manifestResourceNames[res.ResourceName]; exists {
-				log.Println(resources)
 				log.Printf("[ERR]: duplicate resource found: %s.%s", res.InstanceInfo.Type, res.ResourceName)
 				continue
 			}
@@ -522,7 +520,6 @@ func HclPrintResource(resources []Resource, providerData map[string]interface{},
 		}
 
 		if r[res.ResourceName] != nil {
-			log.Println(resources)
 			log.Printf("[ERR]: duplicate resource found: %s.%s", res.InstanceInfo.Type, res.ResourceName)
 			continue
 		}
