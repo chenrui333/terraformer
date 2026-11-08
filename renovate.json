@@ -134,6 +134,12 @@
       "groupSlug": "go-ibm-provider"
     },
     {
+      "description": "keyprotect-go-client v0.17.4+ removed the root package used by providers/ibm/ibm_kp.go; hold until the importer migrates to the replacement SDK.",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": ["github.com/IBM/keyprotect-go-client"],
+      "allowedVersions": "<0.17.4"
+    },
+    {
       "description": "TencentCloud provider dependency family.",
       "matchManagers": ["gomod"],
       "matchPackageNames": [
