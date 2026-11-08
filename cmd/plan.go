@@ -102,17 +102,47 @@ func ExportPlanFile(plan *ImportPlan, path, filename string) error {
 	planfilePath := filepath.Join(path, filename)
 	log.Println("Saving planfile to", planfilePath)
 
-	if err := os.MkdirAll(path, os.ModePerm); err != nil {
+	if err := os.MkdirAll(path, 0o700); err != nil {
 		return err
 	}
 
-	f, err := os.OpenFile(planfilePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.ModePerm)
+	f, err := openPrivateFile(planfilePath)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
 
 	enc := json.NewEncoder(f)
 	enc.SetIndent("", "\t")
-	return enc.Encode(plan)
+	if err := enc.Encode(plan); err != nil {
+		f.Close()
+		return err
+	}
+	return f.Close()
+}
+
+// openPrivateFile truncates or creates name with owner-only permissions.
+// Plan and state files can contain provider credentials and resource secrets.
+func openPrivateFile(name string) (*os.File, error) {
+	f, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
+	if err != nil {
+		return nil, err
+	}
+	// OpenFile applies the mode only on creation; tighten files written by older releases.
+	if err := f.Chmod(0o600); err != nil {
+		f.Close()
+		return nil, err
+	}
+	return f, nil
+}
+
+func writePrivateFile(name string, data []byte) error {
+	f, err := openPrivateFile(name)
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write(data); err != nil {
+		f.Close()
+		return err
+	}
+	return f.Close()
 }
