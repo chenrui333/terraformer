@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestEnumerateProvidersPreservesLegacyNames(t *testing.T) {
+func TestEnumerateProvidersSkipsNonProviderFiles(t *testing.T) {
 	cmdDir := filepath.Join(t.TempDir(), "cmd")
 	mustMkdir(t, cmdDir)
 	writeFile(t, filepath.Join(cmdDir, "provider_cmd_google.go"), "package cmd\n")
@@ -24,7 +24,7 @@ func TestEnumerateProvidersPreservesLegacyNames(t *testing.T) {
 	}
 
 	got := providerNames(providers)
-	want := []string{"aws", "aws_test", "google"}
+	want := []string{"aws", "google"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("provider names = %#v, want %#v", got, want)
 	}

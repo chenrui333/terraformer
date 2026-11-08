@@ -186,11 +186,12 @@ func enumerateProviders(cmdDir string) ([]providerCommand, error) {
 
 	providers := make([]providerCommand, 0, len(files))
 	for _, f := range files {
-		if !f.Type().IsRegular() || !strings.HasPrefix(f.Name(), filePrefix) || !strings.HasSuffix(f.Name(), fileSuffix) {
+		name := f.Name()
+		if !f.Type().IsRegular() || !strings.HasPrefix(name, filePrefix) || !strings.HasSuffix(name, fileSuffix) || strings.HasSuffix(name, "_test.go") {
 			continue
 		}
-		providerName := strings.TrimSuffix(strings.TrimPrefix(f.Name(), filePrefix), fileSuffix)
-		providers = append(providers, providerCommand{Name: providerName, File: f.Name()})
+		providerName := strings.TrimSuffix(strings.TrimPrefix(name, filePrefix), fileSuffix)
+		providers = append(providers, providerCommand{Name: providerName, File: name})
 	}
 	if len(providers) == 0 {
 		return nil, fmt.Errorf("no provider command files found in %s", cmdDir)
