@@ -5,6 +5,7 @@ package ibm
 import (
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -19,16 +20,16 @@ const (
 	instanceGroupManagerPath  = "/instance_groups/ig-1/managers/m-1"
 	instanceGroupPolicyPath   = "/instance_groups/ig-1/managers/m-1/policies/p-1"
 	instanceGroupsBody        = `{"instance_groups":[{"id":"ig-1","name":"group","managers":[{"id":"m-1"}]}]}`
-	instanceGroupManagerBody  = `{"id":"m-1","name":"","policies":[{"id":"p-1"}]}`
-	instanceGroupPolicyBody   = `{"id":"p-1","name":""}`
+	unnamedManagerBody        = `{"id":"m-1","policies":[{"id":"p-1"}]}`
+	instanceGroupPolicyBody   = `{"id":"p-1"}`
 	instanceGroupTestDeadline = 10 * time.Second
 )
 
-func newInstanceGroupTestSession(t *testing.T, failPath string) *vpcv1.VpcV1 {
+func newInstanceGroupTestSession(t *testing.T, failPath, managerBody string) *vpcv1.VpcV1 {
 	t.Helper()
 	bodies := map[string]string{
 		instanceGroupsPath:       instanceGroupsBody,
-		instanceGroupManagerPath: instanceGroupManagerBody,
+		instanceGroupManagerPath: managerBody,
 		instanceGroupPolicyPath:  instanceGroupPolicyBody,
 	}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -78,7 +79,7 @@ func TestInstanceGroupsPropagateAPIErrors(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			g := &InstanceGroupGenerator{}
-			err := runInstanceGroups(t, g, newInstanceGroupTestSession(t, tt.failPath))
+			err := runInstanceGroups(t, g, newInstanceGroupTestSession(t, tt.failPath, unnamedManagerBody))
 			if err == nil || !strings.Contains(err.Error(), tt.want) {
 				t.Fatalf("expected error containing %q, got %v", tt.want, err)
 			}
@@ -86,24 +87,44 @@ func TestInstanceGroupsPropagateAPIErrors(t *testing.T) {
 	}
 }
 
-func TestInstanceGroupsUnnamedChildrenUseIDs(t *testing.T) {
-	g := &InstanceGroupGenerator{}
-	if err := runInstanceGroups(t, g, newInstanceGroupTestSession(t, "")); err != nil {
-		t.Fatalf("unexpected error: %v", err)
+func TestInstanceGroupsChildNamesAndDependencies(t *testing.T) {
+	tests := map[string]struct {
+		managerBody string
+		managerName string
+	}{
+		"unnamed manager": {managerBody: unnamedManagerBody, managerName: "m-1"},
+		"named manager":   {managerBody: `{"id":"m-1","name":"web-manager","policies":[{"id":"p-1"}]}`, managerName: "web-manager"},
 	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			g := &InstanceGroupGenerator{}
+			if err := runInstanceGroups(t, g, newInstanceGroupTestSession(t, "", tt.managerBody)); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 
-	names := map[string]string{}
-	for _, resource := range g.Resources {
-		names[resource.InstanceInfo.Type] = resource.ResourceName
-	}
-	want := map[string]string{
-		"ibm_is_instance_group":                "group",
-		"ibm_is_instance_group_manager":        "m-1",
-		"ibm_is_instance_group_manager_policy": "p-1",
-	}
-	for resourceType, name := range want {
-		if got := names[resourceType]; got != terraformutils.TfSanitize(name) {
-			t.Errorf("%s: expected resource name %q, got %q", resourceType, terraformutils.TfSanitize(name), got)
-		}
+			byType := map[string]terraformutils.Resource{}
+			for _, resource := range g.Resources {
+				byType[resource.InstanceInfo.Type] = resource
+			}
+			wantNames := map[string]string{
+				"ibm_is_instance_group":                "group",
+				"ibm_is_instance_group_manager":        tt.managerName,
+				"ibm_is_instance_group_manager_policy": "p-1",
+			}
+			for resourceType, name := range wantNames {
+				if got := byType[resourceType].ResourceName; got != terraformutils.TfSanitize(name) {
+					t.Errorf("%s: expected resource name %q, got %q", resourceType, terraformutils.TfSanitize(name), got)
+				}
+			}
+
+			wantDependsOn := []string{
+				"ibm_is_instance_group." + byType["ibm_is_instance_group"].ResourceName,
+				"ibm_is_instance_group_manager." + byType["ibm_is_instance_group_manager"].ResourceName,
+			}
+			gotDependsOn := byType["ibm_is_instance_group_manager_policy"].AdditionalFields["depends_on"]
+			if !reflect.DeepEqual(gotDependsOn, wantDependsOn) {
+				t.Fatalf("expected policy depends_on %v, got %v", wantDependsOn, gotDependsOn)
+			}
+		})
 	}
 }

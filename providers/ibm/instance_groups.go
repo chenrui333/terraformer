@@ -81,7 +81,7 @@ func (g *InstanceGroupGenerator) handlePolicies(sess *vpcv1.VpcV1, instanceGroup
 		g.Resources = append(g.Resources, g.loadInstanceGroupMangerPolicy(instanceGroupID,
 			instanceGroupManagerID,
 			instanceGroupManagerPolicyID,
-			*instanceGroupManagerPolicy.Name,
+			core.StringNilMapper(instanceGroupManagerPolicy.Name),
 			dependsOn))
 		resourceMutex.Unlock()
 	}
@@ -103,8 +103,9 @@ func (g *InstanceGroupGenerator) handleManagers(sess *vpcv1.VpcV1, instanceGroup
 		if !ok {
 			return fmt.Errorf("unexpected InstanceGroup Manager type %T", instanceGroupManagerIntf)
 		}
+		managerResource := g.loadInstanceGroupManger(instanceGroupID, instanceGroupManagerID, core.StringNilMapper(instanceGroupManager.Name), dependsOn)
 		resourceMutex.Lock()
-		g.Resources = append(g.Resources, g.loadInstanceGroupManger(instanceGroupID, instanceGroupManagerID, *instanceGroupManager.Name, dependsOn))
+		g.Resources = append(g.Resources, managerResource)
 		resourceMutex.Unlock()
 
 		policyIDs := make([]string, 0)
@@ -113,7 +114,7 @@ func (g *InstanceGroupGenerator) handleManagers(sess *vpcv1.VpcV1, instanceGroup
 			policyIDs = append(policyIDs, *(instanceGroupManager.Policies[i].ID))
 		}
 		dependsOn1 := makeDependsOn(dependsOn,
-			"ibm_is_instance_group_manger."+terraformutils.TfSanitize(*instanceGroupManager.Name))
+			"ibm_is_instance_group_manager."+managerResource.ResourceName)
 		policies.Go(func() error {
 			return g.handlePolicies(sess, instanceGroupID, instanceGroupManagerID, policyIDs, dependsOn1)
 		})
