@@ -10,7 +10,8 @@ dependency refresh patch.
 * Stop writing PagerDuty tokens, Xen Orchestra credentials, and Grafana
   authentication and TLS keys into generated `provider.tf`. Generated
   configurations use the Terraform providers' credential environment variables.
-  Gmail filter credential errors no longer echo service-account JSON.
+  Gmail filter credential errors and HCL diagnostics no longer echo secret
+  configuration values.
 * Restrict `terraform.tfstate` and `plan.json` to owner-only access (`0600`),
   including existing files, and protect plan directories with `0700`.
 * Emit `features {}` for AzureRM 2.x and later, and use `honeycombio` as the
@@ -23,8 +24,8 @@ dependency refresh patch.
 * Build provider release binaries with cgo disabled and exclude test files
   from provider enumeration, removing 24 provider-less release artifacts.
 * Move the Go baseline to `1.26.10` and update `klauspost/compress`,
-  OpenTelemetry SDK, and `oras-go` for security fixes. Keep the documented,
-  unreachable no-fix SAML finding explicitly allowlisted.
+  OpenTelemetry SDK, `oras-go`, and `go-jose` for security fixes. Keep the
+  documented, unreachable no-fix SAML finding explicitly allowlisted.
 * Pin `IBM/keyprotect-go-client` to `v0.17.3` after newer versions removed the
   root package required by the importer, and restore the module checksums.
 * Refresh AWS, Azure, GCP, IBM, TencentCloud, Kubernetes, Helm, Keycloak, Okta,
@@ -32,6 +33,9 @@ dependency refresh patch.
 * Repair the report-only module vulnerability scan, restore Renovate tracking
   of pinned actions, and run provider preflight for shared Go changes.
 * Detect the OS and architecture in release installation instructions.
+* Upgrade the static documentation site to patched Astro 7 and Starlight,
+  resolving its critical/high dependency advisories while preserving Markdown
+  rendering, search, and mobile navigation.
 
 **Full Changelog**: <https://github.com/chenrui333/terraformer/compare/v0.13.16...v0.13.17>
 
