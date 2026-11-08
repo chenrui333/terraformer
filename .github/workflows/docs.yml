@@ -18,7 +18,9 @@ on:
       - .github/workflows/docs.yml
 
 concurrency:
-  group: pages
+  # PR checks get their own group so they don't displace each other or the
+  # Pages deploy; main pushes keep the shared pages group.
+  group: ${{ github.event_name == 'pull_request' && format('docs-pr-{0}', github.event.pull_request.number) || 'pages' }}
   cancel-in-progress: false
 
 jobs:
