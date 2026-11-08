@@ -28,13 +28,20 @@ func (g *InstanceGroupGenerator) loadInstanceGroup(instanceGroupID, instanceGrou
 	return resources
 }
 
-func (g *InstanceGroupGenerator) loadInstanceGroupManger(instanceGroupID, instanceGroupManagerID, managerName string, dependsOn []string) terraformutils.Resource {
-	if managerName == "" {
-		managerName = instanceGroupManagerID
+// instanceGroupChildLabel returns the resource label for a manager or policy.
+// IBM VPC names allow only lowercase letters, digits, and hyphens, so the
+// underscore keeps ID-based fallback labels disjoint from real display names.
+func instanceGroupChildLabel(name, id string) string {
+	if name == "" {
+		return "id_" + id
 	}
+	return name
+}
+
+func (g *InstanceGroupGenerator) loadInstanceGroupManger(instanceGroupID, instanceGroupManagerID, managerName string, dependsOn []string) terraformutils.Resource {
 	resources := terraformutils.NewResource(
 		fmt.Sprintf("%s/%s", instanceGroupID, instanceGroupManagerID),
-		managerName,
+		instanceGroupChildLabel(managerName, instanceGroupManagerID),
 		"ibm_is_instance_group_manager",
 		"ibm",
 		map[string]string{},
@@ -46,12 +53,9 @@ func (g *InstanceGroupGenerator) loadInstanceGroupManger(instanceGroupID, instan
 }
 
 func (g *InstanceGroupGenerator) loadInstanceGroupMangerPolicy(instanceGroupID, instanceGroupManagerID, policyID, policyName string, dependsOn []string) terraformutils.Resource {
-	if policyName == "" {
-		policyName = policyID
-	}
 	resources := terraformutils.NewResource(
 		fmt.Sprintf("%s/%s/%s", instanceGroupID, instanceGroupManagerID, policyID),
-		policyName,
+		instanceGroupChildLabel(policyName, policyID),
 		"ibm_is_instance_group_manager_policy",
 		"ibm",
 		map[string]string{},
@@ -88,20 +92,31 @@ func (g *InstanceGroupGenerator) handlePolicies(sess *vpcv1.VpcV1, instanceGroup
 	return nil
 }
 
+func getInstanceGroupManager(sess *vpcv1.VpcV1, instanceGroupID, instanceGroupManagerID string) (*vpcv1.InstanceGroupManager, error) {
+	getInstanceGroupManagerOptions := vpcv1.GetInstanceGroupManagerOptions{
+		ID:              &instanceGroupManagerID,
+		InstanceGroupID: &instanceGroupID,
+	}
+	instanceGroupManagerIntf, response, err := sess.GetInstanceGroupManager(&getInstanceGroupManagerOptions)
+	if err != nil {
+		return nil, fmt.Errorf("error getting InstanceGroup Manager: %w\n%s", err, response)
+	}
+	instanceGroupManager, ok := instanceGroupManagerIntf.(*vpcv1.InstanceGroupManager)
+	if !ok {
+		return nil, fmt.Errorf("unexpected InstanceGroup Manager type %T", instanceGroupManagerIntf)
+	}
+	return instanceGroupManager, nil
+}
+
 func (g *InstanceGroupGenerator) handleManagers(sess *vpcv1.VpcV1, instanceGroupID string, managers, dependsOn []string) error {
 	var policies errgroup.Group
+	var managerErr error
 	for _, instanceGroupManagerID := range managers {
-		getInstanceGroupManagerOptions := vpcv1.GetInstanceGroupManagerOptions{
-			ID:              &instanceGroupManagerID,
-			InstanceGroupID: &instanceGroupID,
-		}
-		instanceGroupManagerIntf, response, err := sess.GetInstanceGroupManager(&getInstanceGroupManagerOptions)
+		instanceGroupManager, err := getInstanceGroupManager(sess, instanceGroupID, instanceGroupManagerID)
 		if err != nil {
-			return fmt.Errorf("error getting InstanceGroup Manager: %w\n%s", err, response)
-		}
-		instanceGroupManager, ok := instanceGroupManagerIntf.(*vpcv1.InstanceGroupManager)
-		if !ok {
-			return fmt.Errorf("unexpected InstanceGroup Manager type %T", instanceGroupManagerIntf)
+			// Policy workers for earlier managers must still be joined below.
+			managerErr = err
+			break
 		}
 		managerResource := g.loadInstanceGroupManger(instanceGroupID, instanceGroupManagerID, core.StringNilMapper(instanceGroupManager.Name), dependsOn)
 		resourceMutex.Lock()
@@ -119,7 +134,11 @@ func (g *InstanceGroupGenerator) handleManagers(sess *vpcv1.VpcV1, instanceGroup
 			return g.handlePolicies(sess, instanceGroupID, instanceGroupManagerID, policyIDs, dependsOn1)
 		})
 	}
-	return policies.Wait()
+	policiesErr := policies.Wait()
+	if managerErr != nil {
+		return managerErr
+	}
+	return policiesErr
 }
 
 func (g *InstanceGroupGenerator) handleInstanceGroups(sess *vpcv1.VpcV1) error {
