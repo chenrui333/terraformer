@@ -7,13 +7,13 @@ require (
 	cloud.google.com/go/logging v1.19.1
 	cloud.google.com/go/storage v1.64.0
 	github.com/Azure/azure-storage-blob-go v0.15.0
-	github.com/IBM-Cloud/bluemix-go v0.0.0-20260624064701-576d2f801297
-	github.com/IBM/go-sdk-core/v5 v5.23.5
-	github.com/IBM/ibm-cos-sdk-go v1.14.1
+	github.com/IBM-Cloud/bluemix-go v0.0.0-20260916083538-6e91b9f8f36f
+	github.com/IBM/go-sdk-core/v5 v5.25.3
+	github.com/IBM/ibm-cos-sdk-go v1.15.2
 	github.com/IBM/keyprotect-go-client v0.17.4
-	github.com/IBM/networking-go-sdk v0.53.12
-	github.com/IBM/platform-services-go-sdk v0.101.0
-	github.com/IBM/vpc-go-sdk v0.87.1
+	github.com/IBM/networking-go-sdk v0.56.2
+	github.com/IBM/platform-services-go-sdk v0.103.6
+	github.com/IBM/vpc-go-sdk v0.93.0
 	github.com/OctopusDeploy/go-octopusdeploy/v2 v2.114.1
 	github.com/PaloAltoNetworks/pango v0.10.2
 	github.com/aliyun/alibaba-cloud-sdk-go v1.63.107
@@ -488,7 +488,7 @@ require (
 	github.com/IBM/continuous-delivery-go-sdk/v2 v2.0.21
 	github.com/IBM/go-sdk-core/v3 v3.3.1
 	github.com/IBM/go-sdk-core/v4 v4.10.0
-	github.com/IBM/sarama v1.60.2
+	github.com/IBM/sarama v1.61.1
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
 	github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.37.8
 	github.com/aws/aws-sdk-go-v2/service/appconfig v1.48.8
