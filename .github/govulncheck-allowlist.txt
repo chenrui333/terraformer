@@ -1,0 +1,6 @@
+# govulncheck OSV IDs accepted by the blocking source scan.
+# One ID per line, followed by a justification comment. Only add findings with
+# no fixed version that Terraformer cannot reach; remove entries when the
+# affected dependency is upgraded to a fixed version.
+
+GO-2026-6909 # crewjam/saml SP assertion validation; no fixed version. Imported only via okta/terraform-provider-okta/sdk types; Terraformer never validates SAML assertions.

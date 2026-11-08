@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+* Move the Go baseline to `1.26.10` and update `klauspost/compress`,
+  OpenTelemetry SDK, and `oras-go` to clear govulncheck findings.
+
 ## 0.13.16
 
 `0.13.16` is an importer correctness, provider maintenance, toolchain, and
