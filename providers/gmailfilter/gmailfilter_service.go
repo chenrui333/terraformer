@@ -54,7 +54,7 @@ func (s *GmailfilterService) validateCredentials(creds string) error {
 		return nil
 	}
 	if _, err := googleoauth.CredentialsFromJSON(context.Background(), []byte(creds)); err != nil {
-		return fmt.Errorf("JSON credentials in %q are not valid: %w", creds, err)
+		return fmt.Errorf("JSON credentials are not valid: %w", err)
 	}
 	return nil
 }
@@ -71,7 +71,7 @@ func (s *GmailfilterService) getTokenSource(creds string, impersonatedEmailAddr 
 
 		var serviceAccount serviceAccountFile
 		if err := parseJSON(&serviceAccount, contents); err != nil {
-			return nil, fmt.Errorf("error parsing credentials %q: %w", contents, err)
+			return nil, fmt.Errorf("error parsing credentials: %w", err)
 		}
 
 		conf := jwt.Config{
