@@ -1,0 +1,16 @@
+go.mod
+  h_9df9c32c3f321d 355,359-362,443
+go.sum
+  h_9df9c32c3f321d 835-836,1175-1176,1179-1180,1183-1184,1401-1402,1413-1416,1480-1481,1670-1671,1674-1675,1680-1681,1686-1687
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c8e0b14840e897e8ee5dc6543e5d795b27807fc6",
+  "prompts": {},
+  "humans": {
+    "h_9df9c32c3f321d": {
+      "author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
