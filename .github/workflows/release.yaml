@@ -42,11 +42,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         fetch-depth: 0
     - name: GoReleaser Check
-      uses: goreleaser/goreleaser-action@5daf1e915a5f0af01ddbcd89a43b8061ff4f1a89
+      uses: goreleaser/goreleaser-action@5daf1e915a5f0af01ddbcd89a43b8061ff4f1a89 # v7.2.2
       with:
         distribution: goreleaser
         version: ${{ env.GORELEASER_VERSION }}
@@ -66,12 +66,12 @@ jobs:
       run: |
         sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
         df -h
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         fetch-depth: 0
         ref: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag != '' && inputs.release_tag || github.ref }}
     - name: Install Go
-      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
       with:
         go-version-file: go.mod
         cache: true
@@ -91,12 +91,12 @@ jobs:
       run: |
         sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
         df -h
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         fetch-depth: 0
         ref: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag != '' && inputs.release_tag || github.ref }}
     - name: Install Go
-      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
       with:
         go-version-file: go.mod
         cache: true
@@ -111,12 +111,12 @@ jobs:
     timeout-minutes: 15
 
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         fetch-depth: 0
         ref: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag != '' && inputs.release_tag || github.ref }}
     - name: GoReleaser Check
-      uses: goreleaser/goreleaser-action@5daf1e915a5f0af01ddbcd89a43b8061ff4f1a89
+      uses: goreleaser/goreleaser-action@5daf1e915a5f0af01ddbcd89a43b8061ff4f1a89 # v7.2.2
       with:
         distribution: goreleaser
         version: ${{ env.GORELEASER_VERSION }}
@@ -156,12 +156,12 @@ jobs:
       run: |
         sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
         df -h
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         fetch-depth: 0
         ref: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag != '' && inputs.release_tag || github.ref }}
     - name: Install Go
-      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
       with:
         go-version-file: go.mod
         cache: true
@@ -182,7 +182,7 @@ jobs:
         export TERRAFORMER_LDFLAGS="-s -w -X github.com/chenrui333/terraformer/version.Version=${version} -X github.com/chenrui333/terraformer/version.GitCommit=${commit}"
         go run build/multi-build/main.go
     - name: Upload provider binaries
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: provider-binaries-${{ matrix.goos }}-${{ matrix.goarch }}
         path: .goreleaser-extra/provider-binaries/terraformer-*
@@ -217,12 +217,12 @@ jobs:
       run: |
         sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
         df -h
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         fetch-depth: 0
         ref: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag != '' && inputs.release_tag || github.ref }}
     - name: Install Go
-      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
       with:
         go-version-file: go.mod
         cache: true
@@ -246,7 +246,7 @@ jobs:
           -o ".goreleaser-extra/all-binaries/terraformer-all-${GOOS}-${GOARCH}" \
           .
     - name: Upload all-in-one binary
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: all-binaries-${{ matrix.goos }}-${{ matrix.goarch }}
         path: .goreleaser-extra/all-binaries/terraformer-all-*
@@ -271,18 +271,18 @@ jobs:
       run: |
         sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
         df -h
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         fetch-depth: 0
         ref: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag != '' && inputs.release_tag || github.ref }}
     - name: Download provider binaries
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
       with:
         pattern: provider-binaries-*
         path: .goreleaser-extra/provider-binaries
         merge-multiple: true
     - name: Download all-in-one binaries
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
       with:
         pattern: all-binaries-*
         path: .goreleaser-extra/all-binaries
@@ -307,18 +307,18 @@ jobs:
       run: |
         sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
         df -h
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         fetch-depth: 0
         ref: ${{ inputs.release_tag || github.ref }}
     - name: Download provider binaries
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
       with:
         pattern: provider-binaries-*
         path: .goreleaser-extra/provider-binaries
         merge-multiple: true
     - name: Download all-in-one binaries
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
       with:
         pattern: all-binaries-*
         path: .goreleaser-extra/all-binaries
