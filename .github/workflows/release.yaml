@@ -172,6 +172,7 @@ jobs:
         TERRAFORMER_BUILD_GOOS: ${{ matrix.goos }}
         TERRAFORMER_BUILD_GOARCH: ${{ matrix.goarch }}
         TERRAFORMER_BUILD_OUTPUT_DIR: .goreleaser-extra/provider-binaries
+        CGO_ENABLED: "0"
       run: |
         case "$RELEASE_REF" in
           v*) version="${RELEASE_REF#v}" ;;
