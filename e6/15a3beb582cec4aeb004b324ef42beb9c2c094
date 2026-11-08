@@ -1,0 +1,16 @@
+providers/azure/azure_provider.go
+  h_9df9c32c3f321d 570-571,574-575
+providers/azure/azure_provider_test.go
+  h_9df9c32c3f321d 74-88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e615a3beb582cec4aeb004b324ef42beb9c2c094",
+  "prompts": {},
+  "humans": {
+    "h_9df9c32c3f321d": {
+      "author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
