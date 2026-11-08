@@ -1,0 +1,16 @@
+cmd/output_permissions_test.go
+  h_9df9c32c3f321d 21,27-28,33,35-38,42,53-54,60-61,77
+cmd/plan.go
+  h_9df9c32c3f321d 108-111
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "42268cce6b1d2d357169a72626cc5f09ebf98b88",
+  "prompts": {},
+  "humans": {
+    "h_9df9c32c3f321d": {
+      "author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
