@@ -25,7 +25,7 @@ func newCmdPagerDutyImporter(options ImportOptions) *cobra.Command {
 	}
 
 	cmd.AddCommand(listCmd(newPagerDutyProvider()))
-	cmd.PersistentFlags().StringVarP(&token, "token", "t", "", "env param PAGERDUTY_TOKEN")
+	cmd.PersistentFlags().StringVarP(&token, "token", "t", "", "PagerDuty API token for discovery/refresh only (or env PAGERDUTY_TOKEN); generated provider.tf omits it, so set PAGERDUTY_TOKEN for terraform")
 	baseProviderFlags(cmd.PersistentFlags(), &options, "user", "user=id1:id2:id4")
 	return cmd
 }

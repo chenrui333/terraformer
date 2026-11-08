@@ -21,6 +21,8 @@ GRAFANA_AUTH=username:password GRAFANA_URL=https://stack.grafana.net ./terraform
 | HTTPS_CA_CERT              | Path to CA cert file                                                 | no  | - |
 | HTTPS_INSECURE_SKIP_VERIFY | Whether to skip TLS certificate validation (1 for true, 0 for false) | no  | 0 |
 
+The generated `provider.tf` omits `auth` and `tls_key`. When running Terraform against the generated code, set `GRAFANA_AUTH` and, if needed, `GRAFANA_TLS_KEY` (the Terraform provider does not read `HTTPS_TLS_KEY`).
+
 List of supported [Grafana](https://grafana.com) resources:
 
 * `dashboard`

@@ -34,8 +34,10 @@ func (p GrafanaProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{
 		"provider": map[string]interface{}{
 			"grafana": map[string]interface{}{
-				// auth and tls_key are read from GRAFANA_AUTH and GRAFANA_TLS_KEY;
-				// never write credentials to provider.tf.
+				// Terraformer reads GRAFANA_AUTH and HTTPS_TLS_KEY for refresh (GetConfig).
+				// auth and tls_key are omitted here so credentials never land in
+				// provider.tf; the Terraform provider reads GRAFANA_AUTH and
+				// GRAFANA_TLS_KEY from the environment instead.
 				"org_id":               p.orgID,
 				"url":                  p.url,
 				"tls_cert":             p.tlsCert,
