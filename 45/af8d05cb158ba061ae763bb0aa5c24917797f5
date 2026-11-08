@@ -1,0 +1,16 @@
+providers/gmailfilter/gmailfilter_service.go
+  h_9df9c32c3f321d 57,74
+providers/gmailfilter/gmailfilter_service_test.go
+  h_9df9c32c3f321d 1-36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "45af8d05cb158ba061ae763bb0aa5c24917797f5",
+  "prompts": {},
+  "humans": {
+    "h_9df9c32c3f321d": {
+      "author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
