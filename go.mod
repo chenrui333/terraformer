@@ -577,7 +577,7 @@ require (
 	gitlab.com/gitlab-org/api/client-go/v2 v2.51.0
 	helm.sh/helm/v4 v4.2.3
 	k8s.io/cli-runtime v0.36.6
-	software.sslmate.com/src/go-pkcs12 v0.7.3
+	software.sslmate.com/src/go-pkcs12 v0.7.4
 )
 
 replace gopkg.in/ns1/ns1-go.v2 => github.com/ns1/ns1-go/v2 v2.18.0
