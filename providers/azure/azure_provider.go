@@ -26,7 +26,6 @@ import (
 	sslmatepkcs12 "software.sslmate.com/src/go-pkcs12"
 
 	"github.com/chenrui333/terraformer/terraformutils"
-	"github.com/chenrui333/terraformer/terraformutils/providerwrapper"
 )
 
 type AzureProvider struct { //nolint
@@ -568,20 +567,12 @@ func (p *AzureProvider) GetName() string {
 }
 
 func (p *AzureProvider) GetProviderData(_ ...string) map[string]interface{} {
-	version := providerwrapper.GetProviderVersion(p.GetName())
-	if strings.Contains(version, "v2.") {
-		return map[string]interface{}{
-			"provider": map[string]interface{}{
-				"azurerm": map[string]interface{}{
-					"features": map[string]interface{}{},
-				},
-			},
-		}
-	}
+	// azurerm >= 2.0 requires a features block; the version constraint is
+	// emitted in required_providers.
 	return map[string]interface{}{
 		"provider": map[string]interface{}{
-			"azurerm": map[string]interface{}{
-				"version": version,
+			p.GetName(): map[string]interface{}{
+				"features": map[string]interface{}{},
 			},
 		},
 	}
