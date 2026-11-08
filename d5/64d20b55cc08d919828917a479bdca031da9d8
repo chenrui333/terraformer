@@ -1,0 +1,26 @@
+.github/workflows/docs.yml
+  h_9df9c32c3f321d 32,35,53,56,74
+.github/workflows/govulncheck.yml
+  h_9df9c32c3f321d 33,35,52,54
+.github/workflows/labeler.yml
+  h_9df9c32c3f321d 26
+.github/workflows/linter.yml
+  h_9df9c32c3f321d 25,50,70,74
+.github/workflows/release.yaml
+  h_9df9c32c3f321d 45,49,69,74,94,99,114,119,159,164,185,220,225,249,274,279,285,310,315,321
+.github/workflows/stale.yaml
+  h_9df9c32c3f321d 10
+.github/workflows/test.yml
+  h_9df9c32c3f321d 33,35,58,62,89,93,117,121,153,157,180,184,237,241,261,263,284,286,299,301
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d564d20b55cc08d919828917a479bdca031da9d8",
+  "prompts": {},
+  "humans": {
+    "h_9df9c32c3f321d": {
+      "author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
