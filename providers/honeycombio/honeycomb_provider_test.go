@@ -76,3 +76,14 @@ func TestHoneycombDebugEnabledParsesValue(t *testing.T) {
 		t.Fatal("enabled = false, want true")
 	}
 }
+
+func TestHoneycombProviderGetProviderDataUsesProviderName(t *testing.T) {
+	provider := HoneycombProvider{apiURL: "https://api.honeycomb.io"}
+	providers := provider.GetProviderData()["provider"].(map[string]interface{})
+	if _, ok := providers["honeycombio"]; !ok {
+		t.Fatalf("provider data = %#v, want honeycombio block", providers)
+	}
+	if _, ok := providers["honeycomb"]; ok {
+		t.Fatalf("provider data = %#v, want no honeycomb block", providers)
+	}
+}

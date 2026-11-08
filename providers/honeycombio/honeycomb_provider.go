@@ -23,7 +23,7 @@ type HoneycombProvider struct {
 func (p HoneycombProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{
 		"provider": map[string]interface{}{
-			"honeycomb": map[string]interface{}{
+			p.GetName(): map[string]interface{}{
 				"api_url": p.apiURL,
 			},
 		},
