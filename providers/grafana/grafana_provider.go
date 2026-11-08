@@ -34,10 +34,10 @@ func (p GrafanaProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{
 		"provider": map[string]interface{}{
 			"grafana": map[string]interface{}{
+				// auth and tls_key are read from GRAFANA_AUTH and GRAFANA_TLS_KEY;
+				// never write credentials to provider.tf.
 				"org_id":               p.orgID,
 				"url":                  p.url,
-				"auth":                 p.auth,
-				"tls_key":              p.tlsKey,
 				"tls_cert":             p.tlsCert,
 				"ca_cert":              p.caCert,
 				"insecure_skip_verify": p.insecureSkipVerify,

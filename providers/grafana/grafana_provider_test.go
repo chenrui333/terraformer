@@ -2,7 +2,11 @@
 
 package grafana
 
-import "testing"
+import (
+	"fmt"
+	"strings"
+	"testing"
+)
 
 func TestGrafanaProviderInitClearsStateOnMissingURL(t *testing.T) {
 	provider := &GrafanaProvider{}
@@ -27,5 +31,25 @@ func TestGrafanaProviderInitClearsStateOnMissingURL(t *testing.T) {
 	}
 	if provider.auth != "" || provider.url != "" || provider.orgID != 0 || provider.tlsKey != "" || provider.tlsCert != "" || provider.caCert != "" || provider.insecureSkipVerify {
 		t.Fatalf("expected stale provider state to be cleared, got auth=%q url=%q orgID=%d tlsKey=%q tlsCert=%q caCert=%q insecure=%t", provider.auth, provider.url, provider.orgID, provider.tlsKey, provider.tlsCert, provider.caCert, provider.insecureSkipVerify)
+	}
+}
+
+func TestGrafanaProviderDataOmitsCredentials(t *testing.T) {
+	t.Setenv("GRAFANA_AUTH", "grafana-secret-auth")
+	t.Setenv("GRAFANA_URL", "https://grafana.example.com")
+	t.Setenv("HTTPS_TLS_KEY", "grafana-secret-tls-key")
+	provider := &GrafanaProvider{}
+	if err := provider.Init(nil); err != nil {
+		t.Fatalf("Init() error = %v", err)
+	}
+	rendered := fmt.Sprintf("%#v", provider.GetProviderData())
+	for _, secret := range []string{"grafana-secret-auth", "grafana-secret-tls-key"} {
+		if strings.Contains(rendered, secret) {
+			t.Fatalf("provider data contains secret %q: %s", secret, rendered)
+		}
+	}
+	config := provider.GetConfig()
+	if config.GetAttr("auth").AsString() != "grafana-secret-auth" || config.GetAttr("tls_key").AsString() != "grafana-secret-tls-key" {
+		t.Fatalf("GetConfig lost refresh credentials: %#v", config)
 	}
 }
