@@ -1,0 +1,16 @@
+build/multi-build/main.go
+  h_9df9c32c3f321d 189-190,193-194
+build/multi-build/main_test.go
+  h_9df9c32c3f321d 11,27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9385af7e3bfdb3da7af0f0a67adf5dc0768c7e5a",
+  "prompts": {},
+  "humans": {
+    "h_9df9c32c3f321d": {
+      "author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
