@@ -26,6 +26,7 @@ import (
 	sslmatepkcs12 "software.sslmate.com/src/go-pkcs12"
 
 	"github.com/chenrui333/terraformer/terraformutils"
+	"github.com/chenrui333/terraformer/terraformutils/providerwrapper"
 )
 
 type AzureProvider struct { //nolint
@@ -567,15 +568,35 @@ func (p *AzureProvider) GetName() string {
 }
 
 func (p *AzureProvider) GetProviderData(_ ...string) map[string]interface{} {
-	// azurerm >= 2.0 requires a features block; the version constraint is
-	// emitted in required_providers.
+	return azureProviderData(p.GetName(), providerwrapper.GetProviderVersion(p.GetName()))
+}
+
+// azureProviderData builds the provider block. azurerm >= 2.0 requires a
+// features block; it is also emitted when the version is unknown. The version
+// constraint itself is emitted in required_providers.
+func azureProviderData(name, version string) map[string]interface{} {
+	block := map[string]interface{}{}
+	if azureProviderMajorVersion(version) != 1 {
+		block["features"] = map[string]interface{}{}
+	}
 	return map[string]interface{}{
 		"provider": map[string]interface{}{
-			p.GetName(): map[string]interface{}{
-				"features": map[string]interface{}{},
-			},
+			name: block,
 		},
 	}
+}
+
+// azureProviderMajorVersion parses the major version from a constraint such as
+// "~> 2.1.0", returning 0 when it cannot be determined.
+func azureProviderMajorVersion(version string) int {
+	v := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(version), "~>"))
+	v = strings.TrimPrefix(v, "v")
+	major, _, _ := strings.Cut(v, ".")
+	n, err := strconv.Atoi(major)
+	if err != nil {
+		return 0
+	}
+	return n
 }
 
 func (AzureProvider) GetResourceConnections() map[string]map[string][]string {
