@@ -60,10 +60,17 @@ jobs:
       run: go install golang.org/x/vuln/cmd/govulncheck@v1.3.0
     - name: Run report-only module vulnerability scan
       id: govulncheck
-      continue-on-error: true
-      run: govulncheck -scan=module ./...
+      # Module mode rejects package patterns. Exit 3 means findings (report-only);
+      # any other non-zero status is a tool failure and fails the job.
+      run: |
+        status=0
+        govulncheck -scan=module || status=$?
+        echo "status=$status" >> "$GITHUB_OUTPUT"
+        if [ "$status" -ne 0 ] && [ "$status" -ne 3 ]; then
+          exit "$status"
+        fi
     - name: Record non-blocking baseline
-      if: steps.govulncheck.outcome == 'failure'
+      if: steps.govulncheck.outputs.status == '3'
       run: |
         {
           echo "### govulncheck module scan"
