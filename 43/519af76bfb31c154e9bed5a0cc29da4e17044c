@@ -1,0 +1,20 @@
+cmd/import.go
+  h_9df9c32c3f321d 448
+cmd/output_permissions_test.go
+  h_9df9c32c3f321d 1-73
+cmd/plan.go
+  h_9df9c32c3f321d 105,109,116-147
+terraformutils/terraformoutput/hcl.go
+  h_9df9c32c3f321d 16,121,124,135,151
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "43519af76bfb31c154e9bed5a0cc29da4e17044c",
+  "prompts": {},
+  "humans": {
+    "h_9df9c32c3f321d": {
+      "author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
