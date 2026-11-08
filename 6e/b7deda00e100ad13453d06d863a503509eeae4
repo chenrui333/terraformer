@@ -1,0 +1,24 @@
+docs/kubernetes.md
+  h_9df9c32c3f321d 11,14,17,25,27,36,41-48,68,89-90,170-171,206-209,230-231
+go.mod
+  h_9df9c32c3f321d 10,145-146,246,248,282-292,411-413,456,459,580
+go.sum
+  h_9df9c32c3f321d 143-144,654-657,663-690,1668-1669,1672-1673,1676-1679,1684-1685,1688-1689,1703-1704
+providers/kubernetes/unsupported_resources.json
+  h_9df9c32c3f321d 34-43,68,108,135-154,208,295-324
+providers/kubernetes/utils.go
+  h_9df9c32c3f321d 107,121,135-136,142,155,161-162,174-176,208
+providers/kubernetes/utils_test.go
+  h_9df9c32c3f321d 863-880,995,1007-1012,1238,1245,1253-1255,1258,1267-1270,1289-1290,1292,1547-1553,1603-1609,1624-1637,1652-1658,1704-1710,1725-1738,1760-1773,2103-2104,2106-2111
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6eb7deda00e100ad13453d06d863a503509eeae4",
+  "prompts": {},
+  "humans": {
+    "h_9df9c32c3f321d": {
+      "author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
