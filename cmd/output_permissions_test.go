@@ -18,25 +18,28 @@ func (p *outputTestProvider) GetProviderData(_ ...string) map[string]interface{}
 	return map[string]interface{}{}
 }
 
-func assertOwnerOnly(t *testing.T, path string) {
+func assertMode(t *testing.T, path string, want os.FileMode) {
 	t.Helper()
 	info, err := os.Stat(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if perm := info.Mode().Perm(); perm&0o077 != 0 {
-		t.Fatalf("%s mode = %#o, want no group/other permissions", path, perm)
+	if got := info.Mode().Perm(); got != want {
+		t.Fatalf("%s mode = %#o, want %#o", path, got, want)
 	}
 }
 
 func TestExportPlanFileIsOwnerOnly(t *testing.T) {
+	// A plan directory and planfile left by an older release must be tightened on overwrite.
 	dir := filepath.Join(t.TempDir(), "terraformer")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	// A planfile left by an older release must be tightened on overwrite.
+	if err := os.Chmod(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
 	planPath := filepath.Join(dir, "plan.json")
-	if err := os.WriteFile(planPath, []byte("{}"), 0o644); err != nil {
+	if err := os.WriteFile(planPath, []byte("{}"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.Chmod(planPath, 0o644); err != nil {
@@ -47,13 +50,15 @@ func TestExportPlanFileIsOwnerOnly(t *testing.T) {
 	if err := ExportPlanFile(plan, dir, "plan.json"); err != nil {
 		t.Fatalf("ExportPlanFile() error = %v", err)
 	}
-	assertOwnerOnly(t, planPath)
+	assertMode(t, dir, 0o700)
+	assertMode(t, planPath, 0o600)
 
 	newDir := filepath.Join(t.TempDir(), "fresh")
 	if err := ExportPlanFile(plan, newDir, "plan.json"); err != nil {
 		t.Fatalf("ExportPlanFile() error = %v", err)
 	}
-	assertOwnerOnly(t, filepath.Join(newDir, "plan.json"))
+	assertMode(t, newDir, 0o700)
+	assertMode(t, filepath.Join(newDir, "plan.json"), 0o600)
 }
 
 func TestPrintServiceWritesOwnerOnlyTfState(t *testing.T) {
@@ -69,5 +74,5 @@ func TestPrintServiceWritesOwnerOnlyTfState(t *testing.T) {
 	if err := printService(provider, "svc", options, resources, map[string][]terraformutils.Resource{"svc": resources}); err != nil {
 		t.Fatalf("printService() error = %v", err)
 	}
-	assertOwnerOnly(t, filepath.Join(out, "permtest", "svc", "terraform.tfstate"))
+	assertMode(t, filepath.Join(out, "permtest", "svc", "terraform.tfstate"), 0o600)
 }

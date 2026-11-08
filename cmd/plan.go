@@ -105,6 +105,10 @@ func ExportPlanFile(plan *ImportPlan, path, filename string) error {
 	if err := os.MkdirAll(path, 0o700); err != nil {
 		return err
 	}
+	// MkdirAll leaves an existing directory's mode alone; tighten one created by older releases.
+	if err := os.Chmod(path, 0o700); err != nil {
+		return err
+	}
 
 	f, err := openPrivateFile(planfilePath)
 	if err != nil {
