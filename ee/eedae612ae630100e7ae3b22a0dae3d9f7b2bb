@@ -1,0 +1,16 @@
+providers/ibm/instance_groups.go
+  h_9df9c32c3f321d 13,33,50,65,74-78,88,91-92,100-104,110,113,117-119,121,124,135,144,154,156,158-160,162,182
+providers/ibm/instance_groups_test.go
+  h_9df9c32c3f321d 1-109
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "eeeedae612ae630100e7ae3b22a0dae3d9f7b2bb",
+  "prompts": {},
+  "humans": {
+    "h_9df9c32c3f321d": {
+      "author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
