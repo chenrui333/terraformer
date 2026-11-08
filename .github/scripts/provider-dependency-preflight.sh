@@ -173,6 +173,7 @@ is_dependency_sensitive_path() {
     go.mod|go.sum|renovate.json|.goreleaser.yaml) return 0 ;;
     .github/workflows/test.yml|.github/workflows/release.yaml|.github/workflows/govulncheck.yml) return 0 ;;
     .github/scripts/*|build/*|providers/*|cmd/*) return 0 ;;
+    terraformutils/*|version/*|main.go) return 0 ;;
     *) return 1 ;;
   esac
 }
