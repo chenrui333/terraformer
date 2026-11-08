@@ -1,0 +1,18 @@
+CHANGELOG.md
+  h_9df9c32c3f321d 5-7
+go.mod
+  h_9df9c32c3f321d 3,180,205,364,445-449
+go.sum
+  h_9df9c32c3f321d 644-645,976-977,1403-1404,1429-1434,1437-1440,1690-1691
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ee9a935174f4f97fbd72d12cb51c029b5418ef77",
+  "prompts": {},
+  "humans": {
+    "h_9df9c32c3f321d": {
+      "author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
