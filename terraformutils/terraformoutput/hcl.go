@@ -13,7 +13,7 @@ import (
 )
 
 func OutputHclFiles(resources []terraformutils.Resource, provider terraformutils.ProviderGenerator, path string, serviceName string, isCompact bool, output string, sort bool) error {
-	if err := os.MkdirAll(path, os.ModePerm); err != nil {
+	if err := os.MkdirAll(path, 0o755); err != nil {
 		return err
 	}
 
@@ -118,10 +118,10 @@ func printFile(v []terraformutils.Resource, fileName, path, output string, sort 
 			continue
 		}
 		for fileName, content := range res.DataFiles {
-			if err := os.MkdirAll(path+"/data/", os.ModePerm); err != nil {
+			if err := os.MkdirAll(path+"/data/", 0o755); err != nil {
 				return err
 			}
-			err := os.WriteFile(path+"/data/"+fileName, content, os.ModePerm)
+			err := os.WriteFile(path+"/data/"+fileName, content, 0o644)
 			if err != nil {
 				return err
 			}
@@ -132,7 +132,7 @@ func printFile(v []terraformutils.Resource, fileName, path, output string, sort 
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(path+"/"+fileName+"."+GetFileExtension(output), tfFile, os.ModePerm)
+	err = os.WriteFile(path+"/"+fileName+"."+GetFileExtension(output), tfFile, 0o644)
 	if err != nil {
 		return err
 	}
@@ -148,7 +148,7 @@ func resourceOutputIDKey(resource terraformutils.Resource) (string, bool) {
 }
 
 func PrintFile(path string, data []byte) error {
-	return os.WriteFile(path, data, os.ModePerm)
+	return os.WriteFile(path, data, 0o644)
 }
 
 func GetFileExtension(outputFormat string) string {
