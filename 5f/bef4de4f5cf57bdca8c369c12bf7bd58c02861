@@ -1,0 +1,24 @@
+providers/grafana/grafana_provider.go
+  h_9df9c32c3f321d 37-38
+providers/grafana/grafana_provider_test.go
+  h_9df9c32c3f321d 5-9,36-55
+providers/pagerduty/pagerduty_provider.go
+  h_9df9c32c3f321d 43-44
+providers/pagerduty/pagerduty_provider_test.go
+  h_9df9c32c3f321d 5-9,22-35
+providers/xenorchestra/xenorchestra_provider.go
+  h_9df9c32c3f321d 53-55
+providers/xenorchestra/xenorchestra_provider_test.go
+  h_9df9c32c3f321d 5-9,32-50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5fbef4de4f5cf57bdca8c369c12bf7bd58c02861",
+  "prompts": {},
+  "humans": {
+    "h_9df9c32c3f321d": {
+      "author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
