@@ -111,6 +111,11 @@ boundary. The root CLI entrypoint and `cmd` package are scanned at package
 level because symbol-level analysis of those packages traverses the full
 command/provider graph and has been runner-canceled in CI.
 
+Affecting findings fail the scan unless their OSV ID is listed in
+`.github/govulncheck-allowlist.txt` with a justification. Only allowlist
+findings that have no fixed version and are not reachable from Terraformer,
+and remove the entry once upstream ships a fix.
+
 ## Timing Baseline
 
 The latest completed post-#627 dependency-sensitive PR run showed a near-tie

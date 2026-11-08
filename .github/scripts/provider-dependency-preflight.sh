@@ -566,6 +566,64 @@ run_provider_validation() {
   fi
 }
 
+govulncheck_allowlisted_ids() {
+  local allowlist_file="${GOVULNCHECK_ALLOWLIST_FILE:-.github/govulncheck-allowlist.txt}"
+  [[ -f "$allowlist_file" ]] || return 0
+  sed -e 's/#.*//' -e 's/[[:space:]]//g' "$allowlist_file" | grep -v '^$' || true
+}
+
+# Run govulncheck and fail only on affecting findings missing from the allowlist.
+# Text output stays the primary log; JSON is only consulted when findings exist.
+run_govulncheck_gated() {
+  local scan_level="$1"
+  shift
+  local status=0
+  local affected_field="function"
+  local json_file
+  local finding_ids
+  local allowed_ids
+  local id
+  local blocking=()
+
+  govulncheck -scan="$scan_level" "$@" || status="$?"
+  if [[ "$status" -ne 3 ]]; then
+    return "$status"
+  fi
+
+  if [[ "$scan_level" == "package" ]]; then
+    affected_field="package"
+  fi
+  json_file="$(mktemp "${TMPDIR:-/tmp}/terraformer-govulncheck-json.XXXXXX")" || return
+  if ! govulncheck -scan="$scan_level" -format json "$@" >"$json_file"; then
+    rm -f "$json_file"
+    return 1
+  fi
+  finding_ids="$(jq -r --arg field "$affected_field" \
+    'select(.finding != null) | .finding | select(.trace[0][$field] != null) | .osv' "$json_file" | sort -u)" || {
+    rm -f "$json_file"
+    return 1
+  }
+  rm -f "$json_file"
+
+  if [[ -z "$finding_ids" ]]; then
+    printf 'error: govulncheck reported findings that could not be mapped to OSV IDs\n' >&2
+    return 3
+  fi
+
+  allowed_ids="$(govulncheck_allowlisted_ids)"
+  while IFS= read -r id; do
+    if ! grep -qxF -- "$id" <<<"$allowed_ids"; then
+      blocking+=("$id")
+    fi
+  done <<<"$finding_ids"
+
+  if [[ "${#blocking[@]}" -gt 0 ]]; then
+    printf 'error: govulncheck findings not in the allowlist: %s\n' "${blocking[*]}" >&2
+    return 3
+  fi
+  printf 'govulncheck: all findings are allowlisted: %s\n' "$(tr '\n' ' ' <<<"$finding_ids")"
+}
+
 run_govulncheck_source_scan() {
   local batch=()
   local batch_size="${GOVULNCHECK_BATCH_SIZE:-25}"
@@ -619,21 +677,21 @@ run_govulncheck_source_scan() {
 
   if [[ "${#package_level_packages[@]}" -gt 0 ]]; then
     printf 'Scanning %s package(s) at package level: %s\n' "${#package_level_packages[@]}" "${package_level_packages[*]}"
-    govulncheck -scan=package "${package_level_packages[@]}" || return
+    run_govulncheck_gated package "${package_level_packages[@]}" || return
   fi
 
   for package in "${packages[@]}"; do
     batch+=("$package")
     if [[ "${#batch[@]}" -ge "$batch_size" ]]; then
       printf 'Scanning %s package(s) at %s level: %s\n' "${#batch[@]}" "$scan_level" "${batch[*]}"
-      govulncheck -scan="$scan_level" "${batch[@]}" || return
+      run_govulncheck_gated "$scan_level" "${batch[@]}" || return
       batch=()
     fi
   done
 
   if [[ "${#batch[@]}" -gt 0 ]]; then
     printf 'Scanning %s package(s) at %s level: %s\n' "${#batch[@]}" "$scan_level" "${batch[*]}"
-    govulncheck -scan="$scan_level" "${batch[@]}"
+    run_govulncheck_gated "$scan_level" "${batch[@]}"
   fi
 }
 
