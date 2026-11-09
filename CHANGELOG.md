@@ -31,7 +31,8 @@ dependency refresh patch.
 * Refresh AWS, Azure, GCP, IBM, TencentCloud, Kubernetes, Helm, Keycloak, Okta,
   Mikrotik, Mackerel, and OctopusDeploy dependencies.
 * Repair the report-only module vulnerability scan, restore Renovate tracking
-  of pinned actions, and run provider preflight for shared Go changes.
+  of pinned actions, run provider preflight for shared Go changes, and align
+  full-suite CI with the bounded-parallel, pure-Go release build contract.
 * Detect the OS and architecture in release installation instructions.
 * Upgrade the static documentation site to patched Astro 7 and Starlight,
   resolving its critical/high dependency advisories while preserving Markdown

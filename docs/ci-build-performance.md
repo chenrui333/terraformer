@@ -32,6 +32,19 @@ use the full workflow shape rather than this PR-only shard split.
 The aggregate job must require every PR-only shard that owns part of provider
 dependency validation. It should stay small and only report shard results.
 
+## Full-suite build contract
+
+The Ubuntu/macOS full-suite matrix uses `CGO_ENABLED=0`, matching the published
+provider and all-in-one binaries, and `GOFLAGS=-p=1` to bound simultaneous
+compilation/linking of the all-provider graph. Linux runners also use the same
+disk preparation as the provider preflight jobs.
+
+These settings retain the complete `go build ./...`, `go test ./...`, and
+`go vet ./...` package sets. They avoid testing an unshipped cgo-enabled macOS
+binary through Apple's external linker, which rejected the large command test
+binary with `invalid r_symbolnum`. Cgo-specific/race checks, when used, remain
+separate from this release-flavor matrix.
+
 ## Helper Modes
 
 `.github/scripts/provider-dependency-preflight.sh` supports these modes and

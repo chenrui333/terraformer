@@ -257,7 +257,17 @@ jobs:
       matrix:
         platform: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.platform }}
+    env:
+      # Exercise the shipped pure-Go binaries, not the macOS external linker.
+      CGO_ENABLED: "0"
+      # Bound concurrent compilation/linking of the large all-provider graph.
+      GOFLAGS: -p=1
     steps:
+    - name: Free runner disk space
+      if: runner.os == 'Linux'
+      run: |
+        sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+        df -h
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - name: Install Go
       uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
