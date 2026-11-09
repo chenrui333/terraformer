@@ -1,0 +1,18 @@
+.github/workflows/test.yml
+  h_9df9c32c3f321d 260-264,266-270
+CHANGELOG.md
+  h_9df9c32c3f321d 34-35
+docs/ci-build-performance.md
+  h_9df9c32c3f321d 35-47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5464a16d2f0fb9cac7c08a69f4e5725d9ed4af37",
+  "prompts": {},
+  "humans": {
+    "h_9df9c32c3f321d": {
+      "author": "Rui Chen <rui@chenrui.dev>"
+    }
+  }
+}
