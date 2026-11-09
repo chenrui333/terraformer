@@ -36,24 +36,6 @@ env:
   GORELEASER_TIMEOUT: 3h
 
 jobs:
-  check:
-    name: GoReleaser Check
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      with:
-        fetch-depth: 0
-    - name: GoReleaser Check
-      uses: goreleaser/goreleaser-action@5daf1e915a5f0af01ddbcd89a43b8061ff4f1a89 # v7.2.2
-      with:
-        distribution: goreleaser
-        version: ${{ env.GORELEASER_VERSION }}
-        args: check
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   provider-preflight:
     name: Provider Preflight
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
@@ -106,7 +88,6 @@ jobs:
 
   goreleaser-check:
     name: GoReleaser Config Check
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -116,13 +97,28 @@ jobs:
         fetch-depth: 0
         ref: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag != '' && inputs.release_tag || github.ref }}
     - name: GoReleaser Check
-      uses: goreleaser/goreleaser-action@5daf1e915a5f0af01ddbcd89a43b8061ff4f1a89 # v7.2.2
-      with:
-        distribution: goreleaser
-        version: ${{ env.GORELEASER_VERSION }}
-        args: check
+      shell: bash
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        tool_dir="$(mktemp -d)"
+        trap 'rm -rf "$tool_dir"' EXIT
+        archive=goreleaser_Linux_x86_64.tar.gz
+        release="$(gh api "repos/goreleaser/goreleaser/releases/tags/$GORELEASER_VERSION")"
+        archive_id="$(jq -er --arg name "$archive" '.assets[] | select(.name == $name) | .id' <<<"$release")"
+        checksum_id="$(jq -er '.assets[] | select(.name == "checksums.txt") | .id' <<<"$release")"
+        curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/octet-stream" \
+          "https://api.github.com/repos/goreleaser/goreleaser/releases/assets/$archive_id" \
+          -o "$tool_dir/$archive"
+        curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/octet-stream" \
+          "https://api.github.com/repos/goreleaser/goreleaser/releases/assets/$checksum_id" \
+          -o "$tool_dir/checksums.txt"
+        (
+          cd "$tool_dir"
+          grep '  goreleaser_Linux_x86_64\.tar\.gz$' checksums.txt | sha256sum --check --strict
+        )
+        tar -xzf "$tool_dir/$archive" -C "$tool_dir" goreleaser
+        "$tool_dir/goreleaser" check
 
   provider-binaries:
     name: Provider Binaries (${{ matrix.goos }}/${{ matrix.goarch }})

@@ -64,6 +64,27 @@ Use this checklist when cutting a new Terraformer release.
    - expected artifacts and checksums are attached
    - install snippets still match the published artifact names
 
+## Recover a failed tag run
+
+Do not move an existing release tag to repair a workflow failure. After a focused
+workflow fix merges, use the `release_tag` input to run the current workflow
+definition against the original tagged source:
+
+```sh
+gh workflow run release.yaml -R chenrui333/terraformer --ref main \
+  -f release_tag=v0.13.17
+```
+
+All build and validation checkouts still use that tag. The run's workflow/head
+revision may therefore differ from the artifact source commit: verify the tag
+target and binary `GitCommit`, not just the run's head SHA. Recovery repeats all
+release gates and may replace a draft, but must never replace a published
+immutable release.
+
+The shared GoReleaser config-check job uses the pinned tool version from
+`GORELEASER_VERSION`, downloads through GitHub's asset API, and verifies the
+archive against the upstream checksum manifest before executing it.
+
 ## Immutable Releases
 
 Release immutability is enabled for this repository. Treat release tags, notes,
