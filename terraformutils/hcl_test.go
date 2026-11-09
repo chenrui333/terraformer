@@ -3,11 +3,44 @@
 package terraformutils
 
 import (
+	"bytes"
+	"log"
 	"strings"
 	"testing"
 
 	"github.com/hashicorp/hcl/v2/hclparse"
 )
+
+func TestDuplicateResourceDiagnosticsOmitAttributeValues(t *testing.T) {
+	var diagnostics bytes.Buffer
+	previousOutput := log.Writer()
+	log.SetOutput(&diagnostics)
+	t.Cleanup(func() { log.SetOutput(previousOutput) })
+
+	for _, resourceType := range []string{"example_resource", "kubernetes_manifest"} {
+		t.Run(resourceType, func(t *testing.T) {
+			diagnostics.Reset()
+			resource := NewSimpleResource("id", "same-name", resourceType, "test", nil)
+			resource.Item = map[string]interface{}{
+				"password": "sensitive-diagnostic-marker",
+				"manifest": map[string]interface{}{
+					"apiVersion": "v1",
+					"kind":       "Secret",
+					"metadata":   map[string]interface{}{"name": "sample"},
+				},
+			}
+			if _, err := HclPrintResource([]Resource{resource, resource}, map[string]interface{}{}, "hcl", true); err != nil {
+				t.Fatal(err)
+			}
+			if strings.Contains(diagnostics.String(), "sensitive-diagnostic-marker") {
+				t.Fatal("duplicate-resource diagnostic disclosed an attribute value")
+			}
+			if !strings.Contains(diagnostics.String(), resourceType+"."+resource.ResourceName) {
+				t.Fatal("duplicate-resource diagnostic lost the resource address")
+			}
+		})
+	}
+}
 
 func TestPrintResource(t *testing.T) {
 	var resources []Resource
