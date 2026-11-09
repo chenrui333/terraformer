@@ -5,6 +5,8 @@ Example:
 ```
 ./terraformer import pagerduty -r team,schedule,user  -t YOUR_PAGERDUTY_TOKEN // or PAGERDUTY_TOKEN in env
 ```
+The token (`-t` or `PAGERDUTY_TOKEN`) is used only for discovery and refresh; it is not written to the generated `provider.tf`. Set `PAGERDUTY_TOKEN` in the environment when running Terraform against the generated code.
+
 Instructions to obtain a Auth Token: https://developer.pagerduty.com/docs/rest-api-v2/authentication/
 
 List of supported PagerDuty resources:

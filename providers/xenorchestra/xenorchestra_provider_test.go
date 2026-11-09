@@ -2,7 +2,11 @@
 
 package xenorchestra
 
-import "testing"
+import (
+	"fmt"
+	"strings"
+	"testing"
+)
 
 func TestXenorchestraProviderInitClearsStateOnMissingPassword(t *testing.T) {
 	provider := &XenorchestraProvider{}
@@ -23,5 +27,24 @@ func TestXenorchestraProviderInitClearsStateOnMissingPassword(t *testing.T) {
 	}
 	if provider.url != "" || provider.user != "" || provider.password != "" {
 		t.Fatalf("expected stale provider state to be cleared, got url=%q user=%q password=%q", provider.url, provider.user, provider.password)
+	}
+}
+
+func TestXenorchestraProviderDataOmitsCredentials(t *testing.T) {
+	t.Setenv("XOA_URL", "https://xoa.example.com")
+	t.Setenv("XOA_USER", "xoa-secret-user")
+	t.Setenv("XOA_PASSWORD", "xoa-secret-password")
+	provider := &XenorchestraProvider{}
+	if err := provider.Init(nil); err != nil {
+		t.Fatalf("Init() error = %v", err)
+	}
+	rendered := fmt.Sprintf("%#v", provider.GetProviderData())
+	for _, secret := range []string{"xoa-secret-user", "xoa-secret-password"} {
+		if strings.Contains(rendered, secret) {
+			t.Fatalf("provider data contains secret %q: %s", secret, rendered)
+		}
+	}
+	if !strings.Contains(rendered, "https://xoa.example.com") {
+		t.Fatalf("provider data missing url: %s", rendered)
 	}
 }

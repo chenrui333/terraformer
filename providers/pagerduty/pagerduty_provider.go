@@ -40,9 +40,8 @@ func (p *PagerDutyProvider) GetConfig() cty.Value {
 func (p *PagerDutyProvider) GetProviderData(_ ...string) map[string]interface{} {
 	return map[string]interface{}{
 		"provider": map[string]interface{}{
-			"pagerduty": map[string]interface{}{
-				"token": p.token,
-			},
+			// token is read from PAGERDUTY_TOKEN; never write it to provider.tf.
+			"pagerduty": map[string]interface{}{},
 		},
 	}
 }

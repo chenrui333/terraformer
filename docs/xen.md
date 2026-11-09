@@ -10,6 +10,8 @@ Example:
 XOA_URL=ws://your-xenorchestra-domain XOA_USER=username XOA_PASSWORD=password terraformer import xenorchestra -r=acl
 ```
 
+The generated `provider.tf` omits `username` and `password`. Keep `XOA_USER` and `XOA_PASSWORD` set when running Terraform against the generated code.
+
 List of supported xenorchestra resources:
 
 * `xenorchestra_acl`

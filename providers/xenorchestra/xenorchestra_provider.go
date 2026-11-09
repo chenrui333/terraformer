@@ -50,9 +50,9 @@ func (p *XenorchestraProvider) GetProviderData(_ ...string) map[string]interface
 	return map[string]interface{}{
 		"provider": map[string]interface{}{
 			"xenorchestra": map[string]interface{}{
-				"url":      p.url,
-				"username": p.user,
-				"password": p.password,
+				// username and password are read from XOA_USER and XOA_PASSWORD;
+				// never write credentials to provider.tf.
+				"url": p.url,
 			},
 		},
 	}
