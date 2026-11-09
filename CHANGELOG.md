@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.13.17 — 2026-11-08
+## 0.13.17 — 2026-11-09
 
 `0.13.17` is a security, generated-output correctness, release packaging, and
 dependency refresh patch.
