@@ -1,9 +1,43 @@
 # Changelog
 
-## Unreleased
+## 0.13.17 — 2026-11-09
 
+`0.13.17` is a security, generated-output correctness, release packaging, and
+dependency refresh patch.
+
+### Highlights
+
+* Stop writing PagerDuty tokens, Xen Orchestra credentials, and Grafana
+  authentication and TLS keys into generated `provider.tf`. Generated
+  configurations use the Terraform providers' credential environment variables.
+  Gmail filter credential errors and HCL diagnostics no longer echo secret
+  configuration values.
+* Restrict `terraform.tfstate` and `plan.json` to owner-only access (`0600`),
+  including existing files, and protect plan directories with `0700`.
+* Emit `features {}` for AzureRM 2.x and later, and use `honeycombio` as the
+  Honeycomb provider block name.
+* Propagate IBM instance-group API errors instead of hanging, join child
+  workers before returning, and fix policy references to instance-group
+  managers.
+* Update the Kubernetes client libraries to `v0.37` and move the supported
+  Kubernetes window to 1.35–1.37.
+* Build provider release binaries with cgo disabled and exclude test files
+  from provider enumeration, removing 24 provider-less release artifacts.
 * Move the Go baseline to `1.26.10` and update `klauspost/compress`,
-  OpenTelemetry SDK, and `oras-go` to clear govulncheck findings.
+  OpenTelemetry SDK, `oras-go`, and `go-jose` for security fixes. Keep the
+  documented, unreachable no-fix SAML finding explicitly allowlisted.
+* Pin `IBM/keyprotect-go-client` to `v0.17.3` after newer versions removed the
+  root package required by the importer, and restore the module checksums.
+* Refresh AWS, Azure, GCP, IBM, TencentCloud, Kubernetes, Helm, Keycloak, Okta,
+  Mikrotik, Mackerel, and OctopusDeploy dependencies.
+* Repair the report-only module vulnerability scan, restore Renovate tracking
+  of pinned actions, and run provider preflight for shared Go changes.
+* Detect the OS and architecture in release installation instructions.
+* Upgrade the static documentation site to patched Astro 7 and Starlight,
+  resolving its critical/high dependency advisories while preserving Markdown
+  rendering, search, and mobile navigation.
+
+**Full Changelog**: <https://github.com/chenrui333/terraformer/compare/v0.13.16...v0.13.17>
 
 ## 0.13.16
 
